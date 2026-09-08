@@ -40,11 +40,12 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Brand:** Octanest = octane (performance / octa wink) + nest (where repos live). Chosen over Octabase (collides with AFFiNE’s OctoBase) and Octahub (too GitHub-formula + OctoHub collisions).
 - **Model:** GitLab-style dual-mode (one product, cloud + self-host), not Codeberg/Forgejo split (hosted instance vs different software brand).
 - **Stack direction:** TypeScript workspace under `personal/typescript`; OctaneJS is already in the wider toolchain for other projects — do not name this product bare “Octane.”
+- **Source control (working):** [`git@github.com:Octanest-Git/Octanest.git`](https://github.com/Octanest-Git/Octanest) — org `Octanest-Git`, repo `Octanest`.
 - **Name availability (2026-09-08, informational):**
   - npm `octanest`: free
   - crates.io `octanest`: free
   - Docker Hub `library/octanest`: not found (free to claim)
-  - GitHub org [`octanest`](https://github.com/octanest): **already exists** (1 public repo) — may need a different org slug or outreach
+  - GitHub org [`octanest`](https://github.com/octanest): taken (unrelated); we use `Octanest-Git` instead
   - `octanest.com`: DNS resolves (consumer/LLP brand elsewhere)
   - `octanest.dev` / `.io` / `.app`: no DNS at check time (candidates)
 
@@ -58,9 +59,10 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Product name: **Octanest** | Octane DNA + nest metaphor; softer collisions than Octabase/Octahub | — Pending |
+| Product name: **Octanest** | Octane DNA + nest metaphor; softer collisions than Octabase/Octahub | ✓ Good |
 | Dual-mode (cloud + self-host) | Compete with GitHub while letting people run their own instance | — Pending |
 | One brand for both modes | Avoid Codeberg/Forgejo-style brand split | — Pending |
+| GitHub remote: **Octanest-Git/Octanest** | Working source-control home while product brand is Octanest | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after naming lock and repo scaffold*
+*Last updated: 2026-09-08 after connecting Octanest-Git/Octanest remote*
