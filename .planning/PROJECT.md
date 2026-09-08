@@ -106,7 +106,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Git engine: **gitoxide preferred** | Pure Rust; `git` CLI fallback documented if compat fails | ✓ Good |
 | Email: **log sink / SMTP / Resend** | Safe default locally; real relays when configured | ✓ Good |
 | Git HTTPS: **PATs only** | No account password over git; create/revoke in UI | ✓ Good |
+| PR merges: **merge / squash / rebase** | All three strategies; per-repo enable/disable | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking PAT-only git HTTPS auth*
+*Last updated: 2026-09-08 after locking all three PR merge strategies*

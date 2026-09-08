@@ -61,8 +61,9 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PR-02**: User can view PR diff, commits, and conversation
 - [ ] **PR-03**: User can comment on a PR (general and line comments)
 - [ ] **PR-04**: User can request changes / approve a PR
-- [ ] **PR-05**: User with permission can merge a PR (merge commit, squash, or rebase — at least one strategy in v1; document which)
+- [ ] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
 - [ ] **PR-06**: User can close or reopen a PR
+- [ ] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
 
 ### Issues
 
@@ -138,10 +139,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 58 total
+- v1 requirements: 59 total
 - Mapped to phases: 0
-- Unmapped: 58 — will map in roadmap
+- Unmapped: 59 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after email adapters + password reset in v1*
+*Last updated: 2026-09-08 after PAT-only git HTTPS*
