@@ -20,6 +20,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 <!-- Current scope. Building toward these. -->
 
+- [ ] Email/password signup, login, logout, and persistent sessions
 - [ ] Git hosting over SSH and HTTPS (clone, push, pull, browse)
 - [ ] Users, organizations, and repository permissions
 - [ ] Pull requests with review and merge
@@ -39,10 +40,13 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - Forking Gitea/Forgejo as the product identity — Octanest is its own brand and codebase direction
 - Separate cloud-only vs self-host-only feature forks — dual-mode means one product
 - Vercel as the forge app runtime — git/SSH/stateful services need containers; Docker is the unit of deploy
+- OAuth in v1 — email/password first; OAuth deferred
 
 ## Context
 
 - **Brand:** Octanest = octane (performance / octa wink) + nest (where repos live). Chosen over Octabase (collides with AFFiNE’s OctoBase) and Octahub (too GitHub-formula + OctoHub collisions).
+- **Logo (current):** [`brand/octanest-mark.png`](../brand/octanest-mark.png) — four-arrow X mark, blue (cool/left) + orange (warm/right) on black. Use as primary mark (UI, favicon, README) until a vector set exists.
+- **Brand colors (from mark):** cool blues/cyans vs warm oranges; high-contrast on dark surfaces.
 - **Model:** GitLab-style dual-mode (one product, cloud + self-host), not Codeberg/Forgejo split (hosted instance vs different software brand).
 - **Stack direction:** TypeScript workspace under `personal/typescript`; OctaneJS is already in the wider toolchain for other projects — do not name this product bare “Octane.”
 - **Source control (working):** [`git@github.com:Octanest-Git/Octanest.git`](https://github.com/Octanest-Git/Octanest) — org `Octanest-Git`, repo `Octanest`.
@@ -76,6 +80,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Cloud host: **Railway (or equiv.)** | Host the same Compose/images; not a second app architecture | — Pending |
 | Dropped: **Vercel as forge runtime** | Stateful git needs containers; Docker is enough | ✓ Good |
 | Project CI: **Compose validation** | CI proves the path operators actually run | — Pending |
+| Auth v1: **email + password** | Ship sessions first; OAuth later | ✓ Good |
+| Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking Docker/Railway as the deploy unit*
+*Last updated: 2026-09-08 after locking email/password auth and brand mark*
