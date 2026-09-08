@@ -39,6 +39,9 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
 - [ ] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
 - [ ] **GIT-07**: User can download a source archive for a ref
+- [ ] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
+- [ ] **GIT-09**: Git operations are implemented primarily via gitoxide (pure Rust)
+- [ ] **GIT-10**: Architecture docs and code boundaries allow swapping to a `git` CLI backend if gitoxide cannot meet smart HTTP/SSH compatibility
 
 ### Organizations & permissions
 
