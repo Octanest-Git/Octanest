@@ -173,8 +173,8 @@ Deferred; not in the current roadmap until promoted.
 | PLAT-07 | Phase 2 | Pending |
 | PLAT-08 | Phase 2 | Pending |
 | PLAT-09 | Phase 22 | Pending |
-| PLAT-10 | Phase 3 | Pending |
-| PLAT-11 | Phase 3 | Pending |
+| PLAT-10 | Phase 1 | Pending |
+| PLAT-11 | Phase 1 | Pending |
 | AUTH-01 | Phase 4 | Pending |
 | AUTH-02 | Phase 4 | Pending |
 | AUTH-03 | Phase 4 | Pending |
@@ -249,14 +249,12 @@ Deferred; not in the current roadmap until promoted.
 | BRAND-03 | Phase 3 | Pending |
 | BRAND-04 | Phase 3 | Pending |
 | BRAND-05 | Phase 3 | Pending |
-| PLAT-10 | Phase 1 | Pending |
-| PLAT-11 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 85 total
 - Mapped to phases: 85
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-09 — UI stack (TanStack Start / ShadCN / Tailwind v4 / theme) + roadmap coverage 85/85*
+*Last updated: 2026-09-09 — roadmap traceability (85/85 mapped)*

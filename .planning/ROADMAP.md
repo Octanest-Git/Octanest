@@ -48,6 +48,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Backend forge/API process is a Rust service reachable from the UI
   5. Changing a Rust RPC procedure regenerates the TypeScript client/types in watch-friendly local development
 **Plans**: TBD
+**UI hint**: yes
 
 ### Phase 2: Multi-DB Storage
 **Goal**: Operators can choose SQLite, PostgreSQL, or MySQL for app data with working migrations and core flows on all three
@@ -71,6 +72,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. User can set theme to light or dark and the preference persists across refresh
 **Plans**: TBD
 **UI hint**: yes
+
 ### Phase 4: Auth Sessions & Email
 **Goal**: Users can create accounts, stay signed in, manage a basic profile, and operators can send mail via log sink, SMTP, or Resend
 **Depends on**: Phase 2, Phase 3
