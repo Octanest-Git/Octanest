@@ -162,17 +162,101 @@ Deferred; not in the current roadmap until promoted.
 
 ## Traceability
 
-Filled during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| *(pending roadmap)* | — | Pending |
+| PLAT-01 | Phase 1 | Pending |
+| PLAT-02 | Phase 22 | Pending |
+| PLAT-03 | Phase 22 | Pending |
+| PLAT-04 | Phase 1 | Pending |
+| PLAT-05 | Phase 1 | Pending |
+| PLAT-06 | Phase 1 | Pending |
+| PLAT-07 | Phase 2 | Pending |
+| PLAT-08 | Phase 2 | Pending |
+| PLAT-09 | Phase 22 | Pending |
+| PLAT-10 | Phase 3 | Pending |
+| PLAT-11 | Phase 3 | Pending |
+| AUTH-01 | Phase 4 | Pending |
+| AUTH-02 | Phase 4 | Pending |
+| AUTH-03 | Phase 4 | Pending |
+| AUTH-04 | Phase 5 | Pending |
+| AUTH-05 | Phase 5 | Pending |
+| AUTH-06 | Phase 6 | Pending |
+| AUTH-07 | Phase 6 | Pending |
+| AUTH-08 | Phase 4 | Pending |
+| AUTH-09 | Phase 4 | Pending |
+| AUTH-10 | Phase 4 | Pending |
+| AUTH-11 | Phase 4 | Pending |
+| AUTH-12 | Phase 5 | Pending |
+| GIT-01 | Phase 7 | Pending |
+| GIT-02 | Phase 8 | Pending |
+| GIT-03 | Phase 9 | Pending |
+| GIT-04 | Phase 9 | Pending |
+| GIT-05 | Phase 7 | Pending |
+| GIT-06 | Phase 7 | Pending |
+| GIT-07 | Phase 7 | Pending |
+| GIT-08 | Phase 7 | Pending |
+| GIT-09 | Phase 7 | Pending |
+| GIT-10 | Phase 7 | Pending |
+| GIT-11 | Phase 8 | Pending |
+| GIT-12 | Phase 14 | Pending |
+| GIT-13 | Phase 14 | Pending |
+| GIT-14 | Phase 15 | Pending |
+| GIT-15 | Phase 15 | Pending |
+| GIT-16 | Phase 15 | Pending |
+| GIT-17 | Phase 15 | Pending |
+| GIT-18 | Phase 16 | Pending |
+| ORG-01 | Phase 10 | Pending |
+| ORG-02 | Phase 10 | Pending |
+| ORG-03 | Phase 10 | Pending |
+| ORG-04 | Phase 10 | Pending |
+| ORG-05 | Phase 13 | Pending |
+| ORG-06 | Phase 13 | Pending |
+| PR-01 | Phase 12 | Pending |
+| PR-02 | Phase 12 | Pending |
+| PR-03 | Phase 12 | Pending |
+| PR-04 | Phase 12 | Pending |
+| PR-05 | Phase 12 | Pending |
+| PR-06 | Phase 12 | Pending |
+| PR-07 | Phase 12 | Pending |
+| PR-08 | Phase 13 | Pending |
+| ISS-01 | Phase 11 | Pending |
+| ISS-02 | Phase 11 | Pending |
+| ISS-03 | Phase 11 | Pending |
+| ISS-04 | Phase 11 | Pending |
+| NOTF-01 | Phase 17 | Pending |
+| NOTF-02 | Phase 17 | Pending |
+| HOOK-01 | Phase 18 | Pending |
+| HOOK-02 | Phase 18 | Pending |
+| HOOK-03 | Phase 18 | Pending |
+| ACT-01 | Phase 19 | Pending |
+| ACT-02 | Phase 19 | Pending |
+| ACT-03 | Phase 19 | Pending |
+| ACT-04 | Phase 19 | Pending |
+| ACT-05 | Phase 19 | Pending |
+| ACT-06 | Phase 19 | Pending |
+| ACT-07 | Phase 19 | Pending |
+| PKG-01 | Phase 20 | Pending |
+| PKG-02 | Phase 20 | Pending |
+| PKG-03 | Phase 20 | Pending |
+| PKG-04 | Phase 20 | Pending |
+| PKG-05 | Phase 20 | Pending |
+| SOC-01 | Phase 21 | Pending |
+| SOC-02 | Phase 21 | Pending |
+| SOC-03 | Phase 21 | Pending |
+| SOC-04 | Phase 21 | Pending |
+| BRAND-01 | Phase 3 | Pending |
+| BRAND-02 | Phase 3 | Pending |
+| BRAND-03 | Phase 3 | Pending |
+| BRAND-04 | Phase 3 | Pending |
+| BRAND-05 | Phase 3 | Pending |
+| PLAT-10 | Phase 1 | Pending |
+| PLAT-11 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 80 total
-- Mapped to phases: 0
-- Unmapped: 80 — will map in roadmap
+- v1 requirements: 85 total
+- Mapped to phases: 85
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after A–G v1 product cuts*
+*Last updated: 2026-09-09 — UI stack (TanStack Start / ShadCN / Tailwind v4 / theme) + roadmap coverage 85/85*

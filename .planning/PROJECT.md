@@ -116,7 +116,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Packages: **OCI + npm + generic/raw** | Full registry surface for common publish needs | ✓ Good |
 | Actions: **official runner image + 3rd-party protocol** | Operator-hosted compute; Blacksmith-class providers can integrate; no managed minutes in v1 | ✓ Good |
 | v1 extras: **LFS, webhooks, notifs, search, releases, transfer, branch protection** | Full GitHub-shaped collaboration surface | ✓ Good |
+| Roadmap: **fine granularity (22 phases)** | Thin slices for parallel planning/execution | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking TanStack Start + ShadCN/BaseUI/Tailwind v4 theme*
+*Last updated: 2026-09-09 after UI stack + fine roadmap*
