@@ -13,6 +13,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
 - [ ] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS
+- [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
+- [ ] **PLAT-06**: API/domain types are defined in Rust and generate TypeScript types; local development regenerates them on change (watch-friendly)
 
 ### Authentication & accounts
 
