@@ -20,6 +20,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 <!-- Current scope. Building toward these. -->
 
+- [ ] Web UI built with OctaneJS
 - [ ] Email/password signup, login, logout, and persistent sessions
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
 - [ ] Open signup on Octanest Cloud (no invite gate in v1)
@@ -51,7 +52,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Logo (current):** [`brand/octanest-mark.png`](../brand/octanest-mark.png) — four-arrow X mark, blue (cool/left) + orange (warm/right) on black. Use as primary mark (UI, favicon, README) until a vector set exists.
 - **Brand colors (from mark):** cool blues/cyans vs warm oranges; high-contrast on dark surfaces.
 - **Model:** GitLab-style dual-mode (one product, cloud + self-host), not Codeberg/Forgejo split (hosted instance vs different software brand).
-- **Stack direction:** TypeScript workspace under `personal/typescript`; OctaneJS is already in the wider toolchain for other projects — do not name this product bare “Octane.”
+- **Stack direction:** TypeScript; **OctaneJS** for the web UI. Do not name this product bare “Octane.”
 - **Source control (working):** [`git@github.com:Octanest-Git/Octanest.git`](https://github.com/Octanest-Git/Octanest) — org `Octanest-Git`, repo `Octanest`.
 - **Name availability (2026-09-08, informational):**
   - npm `octanest`: free
@@ -69,6 +70,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Runtime:** Docker Compose is the supported way to run Octanest (local, self-host, and cloud)
 - **Cloud host:** Container platform such as Railway (same images as local Compose)
 - **Self-host bootstrap:** If `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set, create that admin on first boot. Otherwise show a one-time setup wizard to create the admin, then normal signup rules apply for the instance.
+- **UI:** OctaneJS for the product web UI
+- **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
 ## Key Decisions
 
@@ -86,7 +89,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Auth v1: **email + password** | Ship sessions first; OAuth later | ✓ Good |
 | Cloud signup: **open + email verify** | Public competitor feel; verify before privileged actions | ✓ Good |
 | Self-host admin: **wizard, or env if set** | Compose-friendly override; safe default for empty installs | ✓ Good |
+| UI: **OctaneJS** | Stay in existing toolchain; brand is Octanest not Octane | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking self-host admin bootstrap (env or wizard)*
+*Last updated: 2026-09-08 after locking OctaneJS UI and drafting REQUIREMENTS.md*
