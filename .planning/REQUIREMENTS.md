@@ -12,12 +12,14 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
 - [ ] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
 - [ ] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
-- [ ] **PLAT-04**: Web UI is implemented with OctaneJS
+- [ ] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
 - [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
 - [ ] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
 - [ ] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
 - [ ] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
+- [ ] **PLAT-10**: UI components are built with ShadCN + Base UI
+- [ ] **PLAT-11**: Styles use Tailwind CSS v4 with CSS-based configuration (CSS is the Tailwind config source of truth)
 
 ### Authentication & accounts
 
@@ -117,8 +119,11 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Brand & experience
 
-- [ ] **BRAND-01**: Product UI uses the Octanest mark (`brand/octanest-mark.png`) and blue/orange-on-dark brand direction
+- [ ] **BRAND-01**: Product UI uses the Octanest mark (`brand/octanest-mark.png`) and blue/orange brand direction
 - [ ] **BRAND-02**: Product is named and presented as Octanest (not a “GitHub clone” or bare Octane)
+- [ ] **BRAND-03**: UI supports light and dark color modes
+- [ ] **BRAND-04**: Theme preference defaults to the operating system (system)
+- [ ] **BRAND-05**: User can override theme preference to light or dark (and persist that choice)
 
 ## v2 Requirements
 

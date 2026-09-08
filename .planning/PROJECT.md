@@ -20,7 +20,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Web UI built with OctaneJS
+- [ ] Web UI: OctaneJS via `@octanejs/tanstack-start`, ShadCN + Base UI, Tailwind CSS v4 (CSS-based config)
+- [ ] Theme: light + dark modes; default follows system; user can force light or dark
 - [ ] Backend services in Rust
 - [ ] Shared types: Rust is source of truth; TypeScript client/types via RPC codegen (rspc/specta-style) with watch-friendly regen in development
 - [ ] App data store supports SQLite, PostgreSQL, and MySQL (operator-selected via config)
@@ -59,7 +60,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Logo (current):** [`brand/octanest-mark.png`](../brand/octanest-mark.png) — four-arrow X mark, blue (cool/left) + orange (warm/right) on black. Use as primary mark (UI, favicon, README) until a vector set exists.
 - **Brand colors (from mark):** cool blues/cyans vs warm oranges; high-contrast on dark surfaces.
 - **Model:** GitLab-style dual-mode (one product, cloud + self-host), not Codeberg/Forgejo split (hosted instance vs different software brand).
-- **Stack direction:** **Rust** backend services; **OctaneJS** web UI. Rust owns API/domain types; TypeScript consumes generated types with watch-friendly regen in development. Do not name this product bare “Octane.”
+- **Stack direction:** **Rust** backend services; **OctaneJS** web via [`@octanejs/tanstack-start`](https://github.com/octanejs/octane/tree/main/packages/tanstack-start). UI kit: **ShadCN + Base UI + Tailwind CSS v4** (CSS-based config). Theme: system default with light/dark override. Rust owns API/domain types; TypeScript consumes generated RPC types. Do not name this product bare “Octane.”
 - **Source control (working):** [`git@github.com:Octanest-Git/Octanest.git`](https://github.com/Octanest-Git/Octanest) — org `Octanest-Git`, repo `Octanest`.
 - **Name availability (2026-09-08, informational):**
   - npm `octanest`: free
@@ -77,7 +78,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Runtime:** Docker Compose is the supported way to run Octanest (local, self-host, and cloud)
 - **Cloud host:** Container platform such as Railway (same images as local Compose)
 - **Self-host bootstrap:** If `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set, create that admin on first boot. Otherwise show a one-time setup wizard to create the admin, then normal signup rules apply for the instance.
-- **UI:** OctaneJS for the product web UI
+- **UI:** OctaneJS on TanStack Start (`@octanejs/tanstack-start`); ShadCN + Base UI components; Tailwind CSS v4 with CSS-first configuration
+- **Theme:** Light and dark; default = system preference; user can lock light or dark
 - **Backend:** Rust for forge/API/git-facing services
 - **Type safety:** Rust → TypeScript via RPC + codegen (rspc / specta-style); procedures and types stay in sync with watch-friendly regen in development
 - **App database:** SQLite, PostgreSQL, and MySQL all supported via one storage abstraction; instance chooses dialect through config/env
@@ -101,7 +103,9 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Auth v1: **email + password** | Ship sessions first; OAuth later | ✓ Good |
 | Cloud signup: **open + email verify** | Public competitor feel; verify before privileged actions | ✓ Good |
 | Self-host admin: **wizard, or env if set** | Compose-friendly override; safe default for empty installs | ✓ Good |
-| UI: **OctaneJS** | Stay in existing toolchain; brand is Octanest not Octane | ✓ Good |
+| UI: **OctaneJS + TanStack Start** | `@octanejs/tanstack-start` app shell | ✓ Good |
+| UI kit: **ShadCN + Base UI + Tailwind v4** | CSS-based Tailwind config; component system | ✓ Good |
+| Theme: **system default, light/dark override** | Respect OS; allow explicit preference | ✓ Good |
 | Backend: **Rust** | Performance/correctness for git-heavy forge services | ✓ Good |
 | Types: **RPC + codegen (rspc/specta-style)** | End-to-end procedure + type safety; watch regen in dev | ✓ Good |
 | App DB: **SQLite + Postgres + MySQL** | Operator choice; one abstraction, three dialects | ✓ Good |
@@ -115,4 +119,4 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after promoting A–G product cuts into v1*
+*Last updated: 2026-09-08 after locking TanStack Start + ShadCN/BaseUI/Tailwind v4 theme*
