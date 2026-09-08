@@ -29,6 +29,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **AUTH-06**: On self-host, if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
 - [ ] **AUTH-07**: On self-host, if those env vars are absent, empty instance shows a one-time setup wizard to create the admin
 - [ ] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
+- [ ] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
+- [ ] **AUTH-10**: Operator can configure SMTP as the email provider
+- [ ] **AUTH-11**: Operator can configure Resend as the email provider
+- [ ] **AUTH-12**: User can reset password via email link when an email provider is configured
 
 ### Git hosting
 
@@ -99,7 +103,6 @@ Deferred; not in the current roadmap until promoted.
 
 - **AUTH-V2-01**: OAuth login (GitHub and/or Google)
 - **AUTH-V2-02**: Two-factor authentication
-- **AUTH-V2-03**: Password reset via email link (promote earlier if needed before public cloud launch)
 
 ### Collaboration
 
@@ -134,10 +137,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 51 total
+- v1 requirements: 58 total
 - Mapped to phases: 0
-- Unmapped: 51 — will map in roadmap
+- Unmapped: 58 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after multi-dialect DB support*
+*Last updated: 2026-09-08 after email adapters + password reset in v1*

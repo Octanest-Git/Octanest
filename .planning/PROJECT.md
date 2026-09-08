@@ -26,6 +26,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] App data store supports SQLite, PostgreSQL, and MySQL (operator-selected via config)
 - [ ] Git object layer prefers pure Rust (gitoxide) on filesystem storage; real `git` CLI documented as fallback if needed
 - [ ] Email/password signup, login, logout, and persistent sessions
+- [ ] Email delivery: log/dev sink when unconfigured; SMTP and Resend when configured
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
 - [ ] Open signup on Octanest Cloud (no invite gate in v1)
 - [ ] Self-host admin bootstrap: env credentials if set, otherwise one-time setup wizard
@@ -79,6 +80,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Type safety:** Rust → TypeScript via RPC + codegen (rspc / specta-style); procedures and types stay in sync with watch-friendly regen in development
 - **App database:** SQLite, PostgreSQL, and MySQL all supported via one storage abstraction; instance chooses dialect through config/env
 - **Git engine:** Prefer **gitoxide** (pure Rust) with repos on filesystem volumes; keep **`git` CLI + filesystem** as an explicit fallback path if protocol/compat gaps block progress
+- **Email:** Unconfigured → log/dev sink; configured → **SMTP** and **Resend** adapters
 - **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
 ## Key Decisions
@@ -102,7 +104,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Types: **RPC + codegen (rspc/specta-style)** | End-to-end procedure + type safety; watch regen in dev | ✓ Good |
 | App DB: **SQLite + Postgres + MySQL** | Operator choice; one abstraction, three dialects | ✓ Good |
 | Git engine: **gitoxide preferred** | Pure Rust; `git` CLI fallback documented if compat fails | ✓ Good |
+| Email: **log sink / SMTP / Resend** | Safe default locally; real relays when configured | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking gitoxide-preferred git engine*
+*Last updated: 2026-09-08 after locking email adapters (log/SMTP/Resend)*
