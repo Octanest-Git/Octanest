@@ -15,6 +15,9 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
 - [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
+- [ ] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
+- [ ] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
+- [ ] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
 
 ### Authentication & accounts
 
@@ -128,10 +131,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 48 total
+- v1 requirements: 51 total
 - Mapped to phases: 0
-- Unmapped: 48 — will map in roadmap
+- Unmapped: 51 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after OctaneJS lock and initial definition*
+*Last updated: 2026-09-08 after multi-dialect DB support*
