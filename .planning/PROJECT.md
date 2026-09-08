@@ -21,6 +21,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 <!-- Current scope. Building toward these. -->
 
 - [ ] Email/password signup, login, logout, and persistent sessions
+- [ ] Email verification required before privileged cloud actions (e.g. create repos)
+- [ ] Open signup on Octanest Cloud (no invite gate in v1)
 - [ ] Git hosting over SSH and HTTPS (clone, push, pull, browse)
 - [ ] Users, organizations, and repository permissions
 - [ ] Pull requests with review and merge
