@@ -111,7 +111,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | PR merges: **merge / squash / rebase** | All three strategies; per-repo enable/disable | ✓ Good |
 | Packages: **OCI + npm + generic/raw** | Full registry surface for common publish needs | ✓ Good |
 | Actions: **official runner image + 3rd-party protocol** | Operator-hosted compute; Blacksmith-class providers can integrate; no managed minutes in v1 | ✓ Good |
+| v1 extras: **LFS, webhooks, notifs, search, releases, transfer, branch protection** | Full GitHub-shaped collaboration surface | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking Actions runner model*
+*Last updated: 2026-09-08 after promoting A–G product cuts into v1*
