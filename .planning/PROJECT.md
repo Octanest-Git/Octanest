@@ -24,8 +24,12 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Users, organizations, and repository permissions
 - [ ] Pull requests with review and merge
 - [ ] Issues and basic project collaboration
-- [ ] Public Octanest Cloud deployment of the same codebase
-- [ ] Self-host install path (same binary/image as cloud)
+- [ ] Actions-compatible CI (product feature for hosted repos)
+- [ ] Packages / container registry
+- [ ] Public explore / social surface (stars, profiles, discovery)
+- [ ] Public Octanest Cloud on Vercel (linked project + preview deployments)
+- [ ] Self-host via Docker Compose (same app, compose-validated in CI)
+- [ ] Project CI: Vercel preview path and Docker Compose validation run in parallel
 
 ### Out of Scope
 
@@ -54,15 +58,22 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Brand:** Keep the octa/octane connection; never ship as “GitHub clone” branding
 - **Distribution:** Cloud and self-host must share one codebase and release train
 - **Compatibility:** Real git clients and remotes must work (`git@…:user/repo.git`)
+- **Cloud runtime:** Vercel linked project with preview deployments for PRs
+- **Self-host runtime:** Docker Compose as the supported local/self-host path
+- **Project CI:** Validate Vercel preview path and Docker Compose in parallel (not sequential gates that hide one path)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Product name: **Octanest** | Octane DNA + nest metaphor; softer collisions than Octabase/Octahub | ✓ Good |
-| Dual-mode (cloud + self-host) | Compete with GitHub while letting people run their own instance | — Pending |
-| One brand for both modes | Avoid Codeberg/Forgejo-style brand split | — Pending |
+| Dual-mode (cloud + self-host) | Compete with GitHub while letting people run their own instance | ✓ Good |
+| One brand for both modes | Avoid Codeberg/Forgejo-style brand split | ✓ Good |
 | GitHub remote: **Octanest-Git/Octanest** | Working source-control home while product brand is Octanest | ✓ Good |
+| v1 bar: **GitHub-shaped slice** | Thin forge + Actions CI + packages/registry + explore/social | — Pending |
+| Cloud: **Vercel** (linked + previews) | Regular Vercel project structure for cloud/PR previews | — Pending |
+| Self-host: **Docker Compose** | Supported install/run path for local and self-host | — Pending |
+| Project CI: **parallel Vercel + Compose** | Both paths validated every PR; neither is a silent afterthought | — Pending |
 
 ---
-*Last updated: 2026-09-08 after connecting Octanest-Git/Octanest remote*
+*Last updated: 2026-09-08 after locking Vercel + Docker Compose dual CI delivery*
