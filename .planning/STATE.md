@@ -42,9 +42,10 @@ Progress: [░░░░░░░░░░] 0%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Roadmap: fine granularity — 22 thin phases aligned to suggested forge delivery order
-- v1 bar: GitHub-shaped slice (git + PRs/issues + Actions + packages + explore)
-- Stack: Rust backend, OctaneJS UI, RPC codegen, multi-DB, gitoxide-preferred
+- Roadmap: fine granularity — 22 thin phases
+- UI: `@octanejs/tanstack-start` + ShadCN + Base UI + Tailwind CSS v4 (CSS config)
+- Theme: system default; user can force light or dark
+- Stack: Rust backend, RPC codegen, multi-DB, gitoxide-preferred
 
 ### Pending Todos
 
@@ -65,5 +66,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-09
-Stopped at: ROADMAP.md + STATE.md + REQUIREMENTS traceability written; awaiting roadmap approval / plan-phase
+Stopped at: UI stack locked + roadmap 85/85 mapped; awaiting roadmap approval / `/gsd-plan-phase 1`
 Resume file: None
