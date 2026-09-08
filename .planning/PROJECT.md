@@ -105,7 +105,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | App DB: **SQLite + Postgres + MySQL** | Operator choice; one abstraction, three dialects | ✓ Good |
 | Git engine: **gitoxide preferred** | Pure Rust; `git` CLI fallback documented if compat fails | ✓ Good |
 | Email: **log sink / SMTP / Resend** | Safe default locally; real relays when configured | ✓ Good |
+| Git HTTPS: **PATs only** | No account password over git; create/revoke in UI | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking email adapters (log/SMTP/Resend)*
+*Last updated: 2026-09-08 after locking PAT-only git HTTPS auth*

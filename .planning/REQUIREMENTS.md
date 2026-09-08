@@ -37,7 +37,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 ### Git hosting
 
 - [ ] **GIT-01**: User can create a repository (public or private)
-- [ ] **GIT-02**: User can clone, fetch, and push over HTTPS with credentials
+- [ ] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
 - [ ] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
 - [ ] **GIT-04**: User can add, list, and revoke SSH public keys on their account
 - [ ] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
@@ -46,6 +46,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
 - [ ] **GIT-09**: Git operations are implemented primarily via gitoxide (pure Rust)
 - [ ] **GIT-10**: Architecture docs and code boundaries allow swapping to a `git` CLI backend if gitoxide cannot meet smart HTTP/SSH compatibility
+- [ ] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
 
 ### Organizations & permissions
 
