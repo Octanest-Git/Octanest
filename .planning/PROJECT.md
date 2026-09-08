@@ -23,6 +23,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Email/password signup, login, logout, and persistent sessions
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
 - [ ] Open signup on Octanest Cloud (no invite gate in v1)
+- [ ] Self-host admin bootstrap: env credentials if set, otherwise one-time setup wizard
 - [ ] Git hosting over SSH and HTTPS (clone, push, pull, browse)
 - [ ] Users, organizations, and repository permissions
 - [ ] Pull requests with review and merge
@@ -67,7 +68,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Compatibility:** Real git clients and remotes must work (`git@…:user/repo.git`)
 - **Runtime:** Docker Compose is the supported way to run Octanest (local, self-host, and cloud)
 - **Cloud host:** Container platform such as Railway (same images as local Compose)
-- **Project CI:** Docker Compose build + validation on every PR (the path that ships)
+- **Self-host bootstrap:** If `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set, create that admin on first boot. Otherwise show a one-time setup wizard to create the admin, then normal signup rules apply for the instance.
 
 ## Key Decisions
 
@@ -83,7 +84,9 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Dropped: **Vercel as forge runtime** | Stateful git needs containers; Docker is enough | ✓ Good |
 | Project CI: **Compose validation** | CI proves the path operators actually run | — Pending |
 | Auth v1: **email + password** | Ship sessions first; OAuth later | ✓ Good |
+| Cloud signup: **open + email verify** | Public competitor feel; verify before privileged actions | ✓ Good |
+| Self-host admin: **wizard, or env if set** | Compose-friendly override; safe default for empty installs | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking email/password auth and brand mark*
+*Last updated: 2026-09-08 after locking self-host admin bootstrap (env or wizard)*
