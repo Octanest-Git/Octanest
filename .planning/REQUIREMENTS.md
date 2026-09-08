@@ -126,9 +126,9 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 40 total (count checkboxes above)
+- v1 requirements: 46 total
 - Mapped to phases: 0
-- Unmapped: 40 — will map in roadmap
+- Unmapped: 46 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
