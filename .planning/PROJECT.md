@@ -23,6 +23,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Web UI built with OctaneJS
 - [ ] Backend services in Rust
 - [ ] Shared types: Rust is source of truth; TypeScript client/types via RPC codegen (rspc/specta-style) with watch-friendly regen in development
+- [ ] App data store supports SQLite, PostgreSQL, and MySQL (operator-selected via config)
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
 - [ ] Open signup on Octanest Cloud (no invite gate in v1)
 - [ ] Self-host admin bootstrap: env credentials if set, otherwise one-time setup wizard
@@ -74,6 +75,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **UI:** OctaneJS for the product web UI
 - **Backend:** Rust for forge/API/git-facing services
 - **Type safety:** Rust → TypeScript via RPC + codegen (rspc / specta-style); procedures and types stay in sync with watch-friendly regen in development
+- **App database:** SQLite, PostgreSQL, and MySQL all supported via one storage abstraction; instance chooses dialect through config/env
 - **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
 ## Key Decisions
@@ -95,7 +97,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | UI: **OctaneJS** | Stay in existing toolchain; brand is Octanest not Octane | ✓ Good |
 | Backend: **Rust** | Performance/correctness for git-heavy forge services | ✓ Good |
 | Types: **RPC + codegen (rspc/specta-style)** | End-to-end procedure + type safety; watch regen in dev | ✓ Good |
+| App DB: **SQLite + Postgres + MySQL** | Operator choice; one abstraction, three dialects | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking rspc/specta-style RPC type bridge*
+*Last updated: 2026-09-08 after locking multi-dialect app database support*
