@@ -47,6 +47,13 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-09**: Git operations are implemented primarily via gitoxide (pure Rust)
 - [ ] **GIT-10**: Architecture docs and code boundaries allow swapping to a `git` CLI backend if gitoxide cannot meet smart HTTP/SSH compatibility
 - [ ] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
+- [ ] **GIT-12**: User can push and fetch Git LFS objects for a repository
+- [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
+- [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
+- [ ] **GIT-15**: User can download release assets from the web UI
+- [ ] **GIT-16**: User with permission can rename a repository
+- [ ] **GIT-17**: User with permission can transfer a repository to another user or organization
+- [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
 ### Organizations & permissions
 
@@ -54,6 +61,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **ORG-02**: Org owner can assign member roles that control repo access
 - [ ] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
 - [ ] **ORG-04**: Unauthorized users cannot read private repos or push without permission
+- [ ] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
+- [ ] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
 
 ### Pull requests & review
 
@@ -64,6 +73,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
 - [ ] **PR-06**: User can close or reopen a PR
 - [ ] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
+- [ ] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
 
 ### Issues
 
@@ -71,6 +81,14 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **ISS-02**: User can comment on issues
 - [ ] **ISS-03**: User can assign labels and assignees to issues
 - [ ] **ISS-04**: User can link issues and PRs by reference
+
+### Notifications & webhooks
+
+- [ ] **NOTF-01**: Signed-in user receives in-app notifications for relevant issue and PR activity
+- [ ] **NOTF-02**: User can list and mark notifications as read
+- [ ] **HOOK-01**: Repo admin can create, edit, and delete outbound webhooks for repo events
+- [ ] **HOOK-02**: Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
+- [ ] **HOOK-03**: Repo admin can view recent webhook delivery attempts and response status
 
 ### Actions (CI for hosted repos)
 
@@ -117,6 +135,8 @@ Deferred; not in the current roadmap until promoted.
 - **COLLAB-V2-02**: Wiki per repository
 - **COLLAB-V2-03**: CODEOWNERS-enforced reviews
 - **COLLAB-V2-04**: Merge queues
+- **COLLAB-V2-05**: Instance-wide / cross-repo code search
+- **COLLAB-V2-06**: Email notification digests (beyond in-app)
 
 ### Platform
 
@@ -144,10 +164,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 62 total
+- v1 requirements: 65 total
 - Mapped to phases: 0
-- Unmapped: 62 — will map in roadmap
+- Unmapped: 65 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after OCI + npm + generic packages*
+*Last updated: 2026-09-08 after Actions runner image + 3rd-party protocol*
