@@ -34,7 +34,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Users, organizations, and repository permissions
 - [ ] Pull requests with review and merge
 - [ ] Issues and basic project collaboration
-- [ ] Actions-compatible CI (product feature for hosted repos)
+- [ ] Actions-compatible CI with official runner image; protocol open to Blacksmith-class providers (no managed cloud minutes in v1)
 - [ ] Packages / container registry (OCI + npm + generic/raw)
 - [ ] Public explore / social surface (stars, profiles, discovery)
 - [ ] Octanest Cloud hosted as the same Docker stack (e.g. Railway)
@@ -108,7 +108,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Git HTTPS: **PATs only** | No account password over git; create/revoke in UI | ✓ Good |
 | PR merges: **merge / squash / rebase** | All three strategies; per-repo enable/disable | ✓ Good |
 | Packages: **OCI + npm + generic/raw** | Full registry surface for common publish needs | ✓ Good |
+| Actions: **official runner image + 3rd-party protocol** | Operator-hosted compute; Blacksmith-class providers can integrate; no managed minutes in v1 | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking OCI + npm + generic packages*
+*Last updated: 2026-09-08 after locking Actions runner model*
