@@ -164,10 +164,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 65 total
+- v1 requirements: 80 total
 - Mapped to phases: 0
-- Unmapped: 65 — will map in roadmap
+- Unmapped: 80 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after Actions runner image + 3rd-party protocol*
+*Last updated: 2026-09-08 after A–G v1 product cuts*
