@@ -81,9 +81,11 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Packages & registry
 
-- [ ] **PKG-01**: User can publish and pull container images from an instance registry scoped to a repo or org
-- [ ] **PKG-02**: User can publish and pull at least one non-container package type (e.g. npm or generic) OR document container-only for v1 if scoped down at roadmap time
-- [ ] **PKG-03**: Registry packages respect the same auth/visibility rules as their owning repo/org
+- [ ] **PKG-01**: User can publish and pull OCI container images from an instance registry scoped to a repo or org
+- [ ] **PKG-02**: User can publish and pull npm packages from an instance registry scoped to a repo or org
+- [ ] **PKG-03**: User can publish and pull generic/raw packages from an instance registry scoped to a repo or org
+- [ ] **PKG-04**: Registry packages respect the same auth/visibility rules as their owning repo/org
+- [ ] **PKG-05**: User can list and delete package versions they are permitted to manage
 
 ### Social & explore
 
@@ -139,10 +141,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 59 total
+- v1 requirements: 60 total
 - Mapped to phases: 0
-- Unmapped: 59 — will map in roadmap
+- Unmapped: 60 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after PAT-only git HTTPS*
+*Last updated: 2026-09-08 after all three PR merge strategies*
