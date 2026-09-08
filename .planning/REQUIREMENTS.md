@@ -77,7 +77,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **ACT-01**: Repo can define workflows in a GitHub Actions–compatible YAML layout
 - [ ] **ACT-02**: Push and pull_request events can trigger workflow runs
 - [ ] **ACT-03**: User can view workflow run status and logs in the UI
-- [ ] **ACT-04**: Operator can register and run at least one Actions-compatible runner against an instance
+- [ ] **ACT-04**: Operator can register and run an official Octanest runner image against an instance
+- [ ] **ACT-05**: Docs cover bringing up the official runner (Compose sidecar or standalone)
+- [ ] **ACT-06**: Forge exposes an Actions-compatible runner registration and job-dispatch protocol so third-party runner providers (Blacksmith-class) can integrate; custom `runs-on` labels are supported
+- [ ] **ACT-07**: Workflow jobs only run on registered runners; Octanest Cloud does not sell managed runner minutes in v1
 
 ### Packages & registry
 
@@ -141,10 +144,10 @@ Filled during roadmap creation.
 | *(pending roadmap)* | — | Pending |
 
 **Coverage:**
-- v1 requirements: 60 total
+- v1 requirements: 62 total
 - Mapped to phases: 0
-- Unmapped: 60 — will map in roadmap
+- Unmapped: 62 — will map in roadmap
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-08 after all three PR merge strategies*
+*Last updated: 2026-09-08 after OCI + npm + generic packages*
