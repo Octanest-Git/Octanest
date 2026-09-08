@@ -27,9 +27,9 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Actions-compatible CI (product feature for hosted repos)
 - [ ] Packages / container registry
 - [ ] Public explore / social surface (stars, profiles, discovery)
-- [ ] Public Octanest Cloud on Vercel (linked project + preview deployments)
-- [ ] Self-host via Docker Compose (same app, compose-validated in CI)
-- [ ] Project CI: Vercel preview path and Docker Compose validation run in parallel
+- [ ] Octanest Cloud hosted as the same Docker stack (e.g. Railway)
+- [ ] Local / self-host via Docker Compose
+- [ ] Project CI validates Docker Compose (build + bring-up) on every PR
 
 ### Out of Scope
 
@@ -38,6 +38,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - Replacing git with a custom VCS — stay git-compatible so existing workflows work
 - Forking Gitea/Forgejo as the product identity — Octanest is its own brand and codebase direction
 - Separate cloud-only vs self-host-only feature forks — dual-mode means one product
+- Vercel as the forge app runtime — git/SSH/stateful services need containers; Docker is the unit of deploy
 
 ## Context
 
@@ -56,11 +57,11 @@ One forge you can trust in the cloud or on your own machines — without splitti
 ## Constraints
 
 - **Brand:** Keep the octa/octane connection; never ship as “GitHub clone” branding
-- **Distribution:** Cloud and self-host must share one codebase and release train
+- **Distribution:** Cloud and self-host must share one codebase and one Docker-based release train
 - **Compatibility:** Real git clients and remotes must work (`git@…:user/repo.git`)
-- **Cloud runtime:** Vercel linked project with preview deployments for PRs
-- **Self-host runtime:** Docker Compose as the supported local/self-host path
-- **Project CI:** Validate Vercel preview path and Docker Compose in parallel (not sequential gates that hide one path)
+- **Runtime:** Docker Compose is the supported way to run Octanest (local, self-host, and cloud)
+- **Cloud host:** Container platform such as Railway (same images as local Compose)
+- **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
 ## Key Decisions
 
@@ -71,9 +72,10 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | One brand for both modes | Avoid Codeberg/Forgejo-style brand split | ✓ Good |
 | GitHub remote: **Octanest-Git/Octanest** | Working source-control home while product brand is Octanest | ✓ Good |
 | v1 bar: **GitHub-shaped slice** | Thin forge + Actions CI + packages/registry + explore/social | — Pending |
-| Cloud: **Vercel** (linked + previews) | Regular Vercel project structure for cloud/PR previews | — Pending |
-| Self-host: **Docker Compose** | Supported install/run path for local and self-host | — Pending |
-| Project CI: **parallel Vercel + Compose** | Both paths validated every PR; neither is a silent afterthought | — Pending |
+| Runtime: **Docker Compose everywhere** | One container stack for local, self-host, and cloud | ✓ Good |
+| Cloud host: **Railway (or equiv.)** | Host the same Compose/images; not a second app architecture | — Pending |
+| Dropped: **Vercel as forge runtime** | Stateful git needs containers; Docker is enough | ✓ Good |
+| Project CI: **Compose validation** | CI proves the path operators actually run | — Pending |
 
 ---
-*Last updated: 2026-09-08 after locking Vercel + Docker Compose dual CI delivery*
+*Last updated: 2026-09-08 after locking Docker/Railway as the deploy unit*
