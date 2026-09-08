@@ -14,7 +14,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
-- [ ] **PLAT-06**: API/domain types are defined in Rust and generate TypeScript types; local development regenerates them on change (watch-friendly)
+- [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
 
 ### Authentication & accounts
 
