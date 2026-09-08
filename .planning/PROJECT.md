@@ -35,7 +35,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Pull requests with review and merge
 - [ ] Issues and basic project collaboration
 - [ ] Actions-compatible CI (product feature for hosted repos)
-- [ ] Packages / container registry
+- [ ] Packages / container registry (OCI + npm + generic/raw)
 - [ ] Public explore / social surface (stars, profiles, discovery)
 - [ ] Octanest Cloud hosted as the same Docker stack (e.g. Railway)
 - [ ] Local / self-host via Docker Compose
@@ -107,7 +107,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Email: **log sink / SMTP / Resend** | Safe default locally; real relays when configured | ✓ Good |
 | Git HTTPS: **PATs only** | No account password over git; create/revoke in UI | ✓ Good |
 | PR merges: **merge / squash / rebase** | All three strategies; per-repo enable/disable | ✓ Good |
+| Packages: **OCI + npm + generic/raw** | Full registry surface for common publish needs | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking all three PR merge strategies*
+*Last updated: 2026-09-08 after locking OCI + npm + generic packages*
