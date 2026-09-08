@@ -22,7 +22,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 - [ ] Web UI built with OctaneJS
 - [ ] Backend services in Rust
-- [ ] Shared types: Rust is source of truth; TypeScript types regenerated in development (watch-friendly)
+- [ ] Shared types: Rust is source of truth; TypeScript client/types via RPC codegen (rspc/specta-style) with watch-friendly regen in development
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
 - [ ] Open signup on Octanest Cloud (no invite gate in v1)
 - [ ] Self-host admin bootstrap: env credentials if set, otherwise one-time setup wizard
@@ -73,7 +73,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Self-host bootstrap:** If `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set, create that admin on first boot. Otherwise show a one-time setup wizard to create the admin, then normal signup rules apply for the instance.
 - **UI:** OctaneJS for the product web UI
 - **Backend:** Rust for forge/API/git-facing services
-- **Type safety:** Rust → TypeScript type generation with realtime (watch) updates during development
+- **Type safety:** Rust → TypeScript via RPC + codegen (rspc / specta-style); procedures and types stay in sync with watch-friendly regen in development
 - **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
 ## Key Decisions
@@ -94,8 +94,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Self-host admin: **wizard, or env if set** | Compose-friendly override; safe default for empty installs | ✓ Good |
 | UI: **OctaneJS** | Stay in existing toolchain; brand is Octanest not Octane | ✓ Good |
 | Backend: **Rust** | Performance/correctness for git-heavy forge services | ✓ Good |
-| Types: **Rust → TS, watch in dev** | True end-to-end type safety while developing | — Pending |
+| Types: **RPC + codegen (rspc/specta-style)** | End-to-end procedure + type safety; watch regen in dev | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
 
 ---
-*Last updated: 2026-09-08 after locking Rust backend + generated TS types*
+*Last updated: 2026-09-08 after locking rspc/specta-style RPC type bridge*
