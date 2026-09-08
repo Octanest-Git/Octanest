@@ -35,6 +35,8 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Pull requests with review and merge
 - [ ] Issues and basic project collaboration
 - [ ] Actions-compatible CI with official runner image; protocol open to Blacksmith-class providers (no managed cloud minutes in v1)
+- [ ] Git LFS, releases, rename/transfer, in-repo search
+- [ ] Branch protection, outbound webhooks, in-app notifications
 - [ ] Packages / container registry (OCI + npm + generic/raw)
 - [ ] Public explore / social surface (stars, profiles, discovery)
 - [ ] Octanest Cloud hosted as the same Docker stack (e.g. Railway)
