@@ -81,11 +81,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Theme defaults to the OS preference (system) until the user chooses light or dark
   5. User can set theme to light or dark and the preference persists across refresh
 **Plans**: 6 plans
-- [ ] `03-01-PLAN.md` — semantic token layer + CVA Button/Input/Select + shared squircle OctanestMark
-- [ ] `03-02-PLAN.md` — branded header/footer chrome, theme Select, pre-paint FOUC boot script
-- [ ] `03-03-PLAN.md` — four-band editorial landing refresh with three reduced-motion-aware motions
-- [ ] `03-04-PLAN.md` — branded `/status` hero states + `Status · Octanest` title
-- [ ] `03-05-PLAN.md` — favicon/app-icon set, Vite PWA manifest, assets-only service worker
+- [x] `03-01-PLAN.md` — semantic token layer + CVA Button/Input/Select + shared squircle OctanestMark
+- [x] `03-02-PLAN.md` — branded header/footer chrome, theme Select, pre-paint FOUC boot script
+- [x] `03-03-PLAN.md` — four-band editorial landing refresh with three reduced-motion-aware motions
+- [x] `03-04-PLAN.md` — branded `/status` hero states + `Status · Octanest` title
+- [x] `03-05-PLAN.md` — favicon/app-icon set, Vite PWA manifest, assets-only service worker
 - [ ] `03-06-PLAN.md` — phase-wide gates + human verification of light/dark, system default, persistence
 **UI hint**: yes
 
