@@ -15,7 +15,8 @@
     {"area": "D", "q": "Error envelope", "answer": "Typed app errors: stable code + message + optional data; typed error union in client"},
     {"area": "D", "q": "Procedure naming", "answer": "Dotted namespaces from day one: system.health, system.echo"},
     {"area": "D", "q": "WS Phase 1", "answer": "Transport only: same system.health / system.echo over /api/rpc/ws; no subscriptions yet"},
-    {"area": "D", "q": "API versioning", "answer": "Header protocol version (Octanest-RPC-Version: 1); server rejects mismatch; no multi-version routing in Phase 1; paths stay /api/rpc and /api/rpc/ws"}
+    {"area": "D", "q": "API versioning", "answer": "Header protocol version (Octanest-RPC-Version: 1); server rejects mismatch; no multi-version routing in Phase 1; paths stay /api/rpc and /api/rpc/ws"},
+    {"area": "D", "q": "Browser credentials", "answer": "Explicit CORS now for local + Compose; credentials supported for future session cookies"}
   ],
   "area_statuses": [
     {"area": "A", "status": "complete"},
@@ -24,5 +25,5 @@
     {"area": "D", "status": "in_progress"},
     {"area": "E", "status": "pending"}
   ],
-  "timestamp": "2026-09-09T10:31:00Z"
+  "timestamp": "2026-09-09T10:32:00Z"
 }
