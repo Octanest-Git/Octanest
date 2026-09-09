@@ -82,7 +82,7 @@ Each task was committed atomically:
 1. **Task 1: WorkOS AuthKit adapter + routes** - `20e507c` (feat)
 2. **Task 2: Generic OIDC adapter + routes** - `2bf2bcb` (feat)
 
-**Plan metadata:** see final docs commit below
+**Plan metadata:** `d96c83f` (docs: complete WorkOS/OIDC adapters plan)
 
 ## Files Created/Modified
 
