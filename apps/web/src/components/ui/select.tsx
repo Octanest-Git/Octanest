@@ -1,0 +1,51 @@
+import { Select } from "@base-ui/react/select";
+import type { ComponentProps } from "react";
+import { cn } from "@/lib/utils";
+
+export const SelectRoot = Select.Root;
+export const SelectValue = Select.Value;
+export const SelectPortal = Select.Portal;
+export const SelectPositioner = Select.Positioner;
+export const SelectList = Select.List;
+export const SelectItemText = Select.ItemText;
+export const SelectIcon = Select.Icon;
+export const SelectItemIndicator = Select.ItemIndicator;
+
+export function SelectTrigger({ className, ...props }: ComponentProps<typeof Select.Trigger>) {
+  return (
+    <Select.Trigger
+      data-slot="select-trigger"
+      className={cn(
+        "inline-flex h-11 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-[14px] font-normal text-foreground outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function SelectPopup({ className, ...props }: ComponentProps<typeof Select.Popup>) {
+  return (
+    <Select.Popup
+      data-slot="select-popup"
+      className={cn(
+        "min-w-[10rem] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function SelectItem({ className, ...props }: ComponentProps<typeof Select.Item>) {
+  return (
+    <Select.Item
+      data-slot="select-item"
+      className={cn(
+        "flex h-11 cursor-default select-none items-center gap-2 rounded-sm px-2 text-[14px] font-normal outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[selected]:text-primary",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
