@@ -86,7 +86,7 @@ Each task was committed atomically:
 1. **Task 1: Local provider + session-aware RPC dispatch** - `ada59cd` (feat)
 2. **Task 2: Admin seed, rpc-gen, integration tests AUTH-01/02/03** - `8906e42` (feat)
 
-**Plan metadata:** (docs commit after this summary)
+**Plan metadata:** `5725aa4` (docs: complete local auth RPC plan)
 
 ## Files Created/Modified
 
