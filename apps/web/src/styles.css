@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import "@fontsource-variable/sora";
+@import "@fontsource-variable/source-sans-3";
+
+@theme {
+  --font-display: "Sora Variable", "Sora", sans-serif;
+  --font-sans: "Source Sans 3 Variable", "Source Sans 3", sans-serif;
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-accent-cool: #1b6fe8;
+  --color-accent-warm: #f07818;
+  --color-text: #12141a;
+  --color-muted: #5c6570;
+  --color-border: #d8dee6;
+  --color-destructive: #d92d20;
+}
+
+html.dark {
+  --color-bg: #0b0c0e;
+  --color-surface: #16181d;
+  --color-accent-cool: #3b8cff;
+  --color-accent-warm: #ff8a2b;
+  --color-text: #f2f4f7;
+  --color-muted: #9aa3b2;
+  --color-border: #2a2f3a;
+  --color-destructive: #f97066;
+}
+
+html,
+body,
+#__app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  font-size: 16px;
+}

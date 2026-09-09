@@ -11,7 +11,9 @@ help:
 	@echo "  make smoke          - compose smoke script (plan 01-04)"
 
 dev:
-	@echo "TODO: make dev — wire API + web + rpc watch in plans 01-02/01-03"
+	 "Starting API + web (rpc-gen once)..."
+	(MAKE) rpc-gen
+	 "Run in two terminals: cargo run -p octanest-api   and   bun run --filter /web dev"
 
 rpc-gen:
 	cargo run -q -p octanest-api --bin rpc-gen
