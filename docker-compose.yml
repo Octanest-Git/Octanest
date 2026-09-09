@@ -1,0 +1,96 @@
+# Default stack: Traefik + web + api + postgres (D-06, D-09)
+# MySQL: docker compose -f docker-compose.yml -f docker-compose.mysql.yml --profile mysql up
+# SQLite: see README — no DB service; set DATABASE_URL on api only
+
+services:
+  traefik:
+    image: traefik:v3.3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --api.dashboard=false
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - octanest
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-octanest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-octanest}
+      POSTGRES_DB: ${POSTGRES_DB:-octanest}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-octanest} -d ${POSTGRES_DB:-octanest}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - octanest
+
+  api:
+    build:
+      context: .
+      dockerfile: crates/octanest-api/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://octanest:octanest@postgres:5432/octanest}
+      OCTANEST_ENV: ${OCTANEST_ENV:-compose}
+      OCTANEST_CORS_ORIGINS: ${OCTANEST_CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      API_BIND: 0.0.0.0:8080
+      OCTANEST_RPC_VERSION: ${OCTANEST_RPC_VERSION:-1}
+      RUST_LOG: ${RUST_LOG:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=octanest_octanest
+      - traefik.http.routers.api.rule=Host(`localhost`) && (PathPrefix(`/api`) || Path(`/healthz`))
+      - traefik.http.routers.api.entrypoints=web
+      - traefik.http.routers.api.priority=100
+      - traefik.http.services.api.loadbalancer.server.port=8080
+    networks:
+      - octanest
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      PORT: "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=octanest_octanest
+      - traefik.http.routers.web.rule=Host(`localhost`)
+      - traefik.http.routers.web.entrypoints=web
+      - traefik.http.routers.web.priority=1
+      - traefik.http.services.web.loadbalancer.server.port=3000
+    networks:
+      - octanest
+
+networks:
+  octanest:
+    name: octanest_octanest
+
+volumes:
+  postgres_data:

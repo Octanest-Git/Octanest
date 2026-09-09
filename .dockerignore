@@ -1,0 +1,19 @@
+# Ignore build artifacts and local secrets for faster/safer image builds
+.git
+.planning
+node_modules
+**/node_modules
+target
+**/target
+dist
+**/dist
+.turbo
+.env
+.env.local
+data
+coverage
+test-results
+playwright-report
+*.log
+.DS_Store
+apps/web/dist
