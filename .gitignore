@@ -11,3 +11,4 @@ var/
 coverage/
 test-results/
 playwright-report/
+.env.sqlite

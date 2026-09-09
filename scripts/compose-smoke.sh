@@ -18,21 +18,45 @@ echo "==> using docker: $(command -v docker)"
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 COMPOSE_FILES="${COMPOSE_FILES:--f $COMPOSE_FILE}"
+
+# COMPOSE_PROFILES doesn't reliably get picked up in this WSL setup,
+# so we translate it into explicit `--profile` flags.
+PROFILES_ARGS=()
+if [[ -n "${COMPOSE_PROFILES:-}" ]]; then
+  for p in $(echo "${COMPOSE_PROFILES}" | tr ',' ' '); do
+    [[ -n "$p" ]] || continue
+    PROFILES_ARGS+=(--profile "$p")
+  done
+fi
+
 EXPECT_DIALECT="${EXPECT_DIALECT:-postgres}"
+
+# docker.exe (Windows client) does not reliably inherit WSL-exported env vars for
+# Compose interpolation. Pass SQLite host dir via --env-file when set.
+ENV_FILE_ARGS=()
+if [[ -n "${OCTANEST_SQLITE_HOST_DIR:-}" ]]; then
+  SMOKE_ENV_FILE="$(mktemp)"
+  printf 'OCTANEST_SQLITE_HOST_DIR=%s\n' "$OCTANEST_SQLITE_HOST_DIR" > "$SMOKE_ENV_FILE"
+  ENV_FILE_ARGS=(--env-file "$SMOKE_ENV_FILE")
+fi
 
 cleanup() {
   # shellcheck disable=SC2086
-  docker compose $COMPOSE_FILES down --remove-orphans >/dev/null 2>&1 || true
+  docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES down --remove-orphans >/dev/null 2>&1 || true
 }
-trap cleanup EXIT
+cleanup_all() {
+  if [[ -n "${SMOKE_ENV_FILE:-}" ]]; then rm -f "$SMOKE_ENV_FILE"; fi
+  cleanup
+}
+trap cleanup_all EXIT
 
 echo "==> docker compose config"
 # shellcheck disable=SC2086
-docker compose $COMPOSE_FILES config >/dev/null
+docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES config >/dev/null
 
 echo "==> docker compose up --build -d --wait"
 # shellcheck disable=SC2086
-docker compose $COMPOSE_FILES up --build -d --wait
+docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up --build -d --wait
 
 echo "==> curl web /"
 curl -fsS -o /dev/null -w "web %{http_code}\n" "$BASE_URL/"

@@ -51,7 +51,9 @@ up-mysql:
 
 up-sqlite:
 	mkdir -p var
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.sqlite.yml up --build -d
+	@host="$$(./scripts/sqlite-host-dir.sh)"; \
+	printf 'OCTANEST_SQLITE_HOST_DIR=%s\n' "$$host" > .env.sqlite; \
+	$(COMPOSE) --env-file .env.sqlite -f docker-compose.yml -f docker-compose.sqlite.yml up --build -d
 
 down:
 	$(COMPOSE) -f $(COMPOSE_FILE) down --remove-orphans
@@ -77,7 +79,12 @@ smoke-mysql:
 
 smoke-sqlite:
 	mkdir -p var
-	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.sqlite.yml" EXPECT_DIALECT=sqlite ./scripts/compose-smoke.sh
+	@host="$$(./scripts/sqlite-host-dir.sh)"; \
+	OCTANEST_SQLITE_HOST_DIR="$$host" COMPOSE_FILES="-f docker-compose.yml -f docker-compose.sqlite.yml" EXPECT_DIALECT=sqlite ./scripts/compose-smoke.sh; \
+	if echo "$$host" | grep -Eq '^[A-Za-z]:/'; then \
+	  src="$$(wslpath "$$host")/octanest.db"; \
+	  if [ -f "$$src" ]; then cp -f "$$src" ./var/octanest.db; echo "==> mirrored $$src -> ./var/octanest.db"; fi; \
+	fi
 
 db-migrate:
 	cargo run -q -p octanest-db --bin migrate
