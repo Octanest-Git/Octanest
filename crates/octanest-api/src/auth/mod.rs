@@ -1,5 +1,6 @@
-//! Auth domain: password hashing, sessions, and (later) providers / RPC.
+//! Auth module: passwords, sessions, local provider.
 
+pub mod local;
 pub mod password;
 pub mod session;
 

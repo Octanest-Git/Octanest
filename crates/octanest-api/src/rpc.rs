@@ -1,10 +1,36 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use cookie::Cookie;
 use octanest_core::{
     AppError, EchoRequest, EchoResponse, HealthResponse, RpcRequest, RpcResponse, ECHO_MAX_BYTES,
     RPC_PROTOCOL_VERSION,
 };
 use octanest_db::Database;
 
+use crate::auth::local;
+use crate::auth::session::{ResolvedSession, SessionService};
+use crate::email::EmailSender;
+
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
+
+/// Cookie mutation requested by an RPC handler (attached as Set-Cookie on HTTP).
+#[derive(Debug)]
+pub enum CookieChange {
+    Set(Cookie<'static>),
+    Clear,
+}
+
+/// Session-aware RPC context (RESEARCH Pattern 1).
+pub struct RpcCtx {
+    pub db: Database,
+    pub email: Arc<dyn EmailSender>,
+    pub sessions: SessionService,
+    pub uploads_dir: PathBuf,
+    pub env_name: String,
+    pub session: Option<ResolvedSession>,
+    pub set_cookie: Option<CookieChange>,
+}
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
     match value {
@@ -20,10 +46,10 @@ pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
     }
 }
 
-pub async fn dispatch(db: &Database, req: RpcRequest) -> RpcResponse {
+pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
     match req.procedure.as_str() {
         "system.health" => {
-            let database = db.ping().await.to_string();
+            let database = ctx.db.ping().await.to_string();
             RpcResponse::ok(HealthResponse {
                 status: "ok".into(),
                 version: env!("CARGO_PKG_VERSION").into(),
@@ -50,7 +76,7 @@ pub async fn dispatch(db: &Database, req: RpcRequest) -> RpcResponse {
                 message: echo.message,
             })
         }
-        "system.db_probe" => match db.probe().await {
+        "system.db_probe" => match ctx.db.probe().await {
             Ok(result) => RpcResponse::ok(result),
             Err(e) if e == "database not configured" => RpcResponse::err(AppError::new(
                 "db.not_configured",
@@ -60,6 +86,30 @@ pub async fn dispatch(db: &Database, req: RpcRequest) -> RpcResponse {
                 tracing::error!("db probe failed: {e}");
                 RpcResponse::err(AppError::new("db.probe_failed", "database probe failed"))
             }
+        },
+        "auth.signup" => match local::signup(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.login" => match local::login(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.logout" => match local::logout(ctx).await {
+            Ok(()) => RpcResponse::ok(serde_json::json!({ "ok": true })),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.logout_all" => match local::logout_all(ctx).await {
+            Ok(()) => RpcResponse::ok(serde_json::json!({ "ok": true })),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.me" => match local::me(ctx).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.provider_config" => match local::provider_config(ctx).await {
+            Ok(cfg) => RpcResponse::ok(cfg),
+            Err(e) => RpcResponse::err(e),
         },
         other => RpcResponse::err(AppError::new(
             "rpc.unknown_procedure",

@@ -1,6 +1,9 @@
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::State;
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -10,15 +13,50 @@ use octanest_db::Database;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::rpc::{self, VERSION_HEADER};
+use crate::auth::local;
+use crate::auth::session::{SessionService, SESSION_COOKIE_NAME};
+use crate::email::{self, EmailSender};
+use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
+    pub email: Arc<dyn EmailSender>,
+    pub uploads_dir: PathBuf,
+    pub sessions: SessionService,
+    pub env_name: String,
 }
 
+impl AppState {
+    pub fn new(
+        db: Database,
+        email: Arc<dyn EmailSender>,
+        env_name: impl Into<String>,
+    ) -> Self {
+        let env_name = env_name.into();
+        Self {
+            db,
+            email,
+            uploads_dir: PathBuf::from("var/uploads"),
+            sessions: SessionService::new(env_name.clone()),
+            env_name,
+        }
+    }
+
+    pub fn with_uploads_dir(mut self, dir: PathBuf) -> Self {
+        self.uploads_dir = dir;
+        self
+    }
+}
+
+/// Build router with default email sender from ENV and `OCTANEST_ENV`.
 pub fn router(db: Database, cors: CorsLayer) -> Router {
-    let state = AppState { db };
+    let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
+    let email = email::build_email_sender_from_env();
+    router_with_state(AppState::new(db, email, env_name), cors)
+}
+
+pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
@@ -32,26 +70,90 @@ async fn health() -> Json<serde_json::Value> {
     Json(serde_json::json!({ "ok": true }))
 }
 
+fn session_token_from_headers(headers: &HeaderMap) -> Option<String> {
+    let cookie_header = headers.get(header::COOKIE)?.to_str().ok()?;
+    for part in cookie_header.split(';') {
+        let part = part.trim();
+        let prefix = format!("{SESSION_COOKIE_NAME}=");
+        if let Some(value) = part.strip_prefix(prefix.as_str()) {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
+    let session = match raw_token {
+        Some(token) => match state.sessions.resolve(&state.db, token).await {
+            Ok(s) => s,
+            Err(e) => {
+                tracing::warn!(error = %e, "session resolve failed");
+                None
+            }
+        },
+        None => None,
+    };
+    RpcCtx {
+        db: state.db.clone(),
+        email: state.email.clone(),
+        sessions: state.sessions.clone(),
+        uploads_dir: state.uploads_dir.clone(),
+        env_name: state.env_name.clone(),
+        session,
+        set_cookie: None,
+    }
+}
+
+fn attach_set_cookie(
+    mut response: axum::response::Response,
+    change: Option<CookieChange>,
+    env_name: &str,
+) -> axum::response::Response {
+    let Some(change) = change else {
+        return response;
+    };
+    let cookie = match change {
+        CookieChange::Set(c) => c,
+        CookieChange::Clear => local::clear_cookie_for_env(env_name),
+    };
+    let value = cookie.to_string();
+    if let Ok(hv) = HeaderValue::from_str(&value) {
+        response.headers_mut().append(header::SET_COOKIE, hv);
+    }
+    response
+}
+
+fn rpc_status(resp: &RpcResponse) -> StatusCode {
+    match resp {
+        RpcResponse::Ok { .. } => StatusCode::OK,
+        RpcResponse::Err { error, .. } if error.code == "rpc.unknown_procedure" => {
+            StatusCode::NOT_FOUND
+        }
+        RpcResponse::Err { error, .. } if error.code == "auth.unauthenticated" => {
+            StatusCode::UNAUTHORIZED
+        }
+        RpcResponse::Err { .. } => StatusCode::BAD_REQUEST,
+    }
+}
+
 async fn rpc_http(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(body): Json<RpcRequest>,
 ) -> impl IntoResponse {
-    let version = headers
-        .get(VERSION_HEADER)
-        .and_then(|v| v.to_str().ok());
+    let version = headers.get(VERSION_HEADER).and_then(|v| v.to_str().ok());
     if let Err(err) = rpc::check_version_header(version) {
-        return (StatusCode::BAD_REQUEST, Json(RpcResponse::err(err)));
+        return (StatusCode::BAD_REQUEST, Json(RpcResponse::err(err))).into_response();
     }
-    let resp = rpc::dispatch(&state.db, body).await;
-    let status = match &resp {
-        RpcResponse::Ok { .. } => StatusCode::OK,
-        RpcResponse::Err { error, .. } if error.code == "rpc.unknown_procedure" => {
-            StatusCode::NOT_FOUND
-        }
-        RpcResponse::Err { .. } => StatusCode::BAD_REQUEST,
-    };
-    (status, Json(resp))
+
+    let token = session_token_from_headers(&headers);
+    let mut ctx = build_rpc_ctx(&state, token.as_deref()).await;
+    let resp = rpc::dispatch(&mut ctx, body).await;
+    let status = rpc_status(&resp);
+    let set_cookie = ctx.set_cookie.take();
+    let env_name = ctx.env_name.clone();
+    let response = (status, Json(resp)).into_response();
+    attach_set_cookie(response, set_cookie, &env_name)
 }
 
 async fn rpc_ws(
@@ -59,20 +161,15 @@ async fn rpc_ws(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let version = headers
-        .get(VERSION_HEADER)
-        .and_then(|v| v.to_str().ok());
+    let version = headers.get(VERSION_HEADER).and_then(|v| v.to_str().ok());
     if let Err(err) = rpc::check_version_header(version) {
-        return (
-            StatusCode::BAD_REQUEST,
-            Json(RpcResponse::err(err)),
-        )
-            .into_response();
+        return (StatusCode::BAD_REQUEST, Json(RpcResponse::err(err))).into_response();
     }
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+    let token = session_token_from_headers(&headers);
+    ws.on_upgrade(move |socket| handle_socket(socket, state, token))
 }
 
-async fn handle_socket(socket: WebSocket, state: AppState) {
+async fn handle_socket(socket: WebSocket, state: AppState, token: Option<String>) {
     let (mut sender, mut receiver) = socket.split();
     while let Some(Ok(msg)) = receiver.next().await {
         let text = match msg {
@@ -81,7 +178,10 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
             _ => continue,
         };
         let resp = match serde_json::from_str::<RpcRequest>(&text) {
-            Ok(req) => rpc::dispatch(&state.db, req).await,
+            Ok(req) => {
+                let mut ctx = build_rpc_ctx(&state, token.as_deref()).await;
+                rpc::dispatch(&mut ctx, req).await
+            }
             Err(e) => RpcResponse::err(AppError::new(
                 "rpc.bad_input",
                 format!("invalid rpc frame: {e}"),
