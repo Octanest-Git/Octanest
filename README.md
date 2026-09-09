@@ -34,27 +34,21 @@ OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin
 bun run --filter @octanest/web dev
 ```
 
-### Docker Compose (PLAT-01)
+### Docker Compose (PLAT-01 / PLAT-07 / PLAT-08)
 
-Default stack: **Traefik** (`:80`) + **web** + **api** + **postgres**.
+Default stack: **Traefik** (`:80`) + **web** + **api** + **postgres**. MySQL and SQLite are first-class overlays.
 
 ```bash
 cp .env.example .env   # local-only password defaults: octanest
-make up                # or: docker compose up --build -d
-# open http://localhost/
-make smoke             # build, wait healthy, curl /, /health, RPC system.health, then down
+make up && make smoke           # Postgres
+make up-mysql && make smoke-mysql
+make up-sqlite && make smoke-sqlite
 make down
 ```
 
-Traefik routes `Host(localhost)` → web; `PathPrefix(/api)` and `/health` → api (WebSocket upgrades on `/api/rpc/ws`).
+Requires `docker` on PATH with a reachable engine. Traefik routes `Host(localhost)` → web; `PathPrefix(/api)` and `/health` → api (WebSocket upgrades on `/api/rpc/ws`).
 
-**MySQL profile (D-07):**
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.mysql.yml --profile mysql up --build
-```
-
-**SQLite (D-07):** no DB Compose service — set `DATABASE_URL=sqlite:./data/octanest.db` on the API only. Full SQLite dialect proof is Phase 2; Phase 1 `octanest-db` is Postgres-shaped.
+Canonical dialect docs: [`docs/database.md`](docs/database.md).
 
 Do not expose Compose ports to the public internet without auth (auth arrives in later phases).
 

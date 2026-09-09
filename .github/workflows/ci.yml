@@ -62,3 +62,50 @@ jobs:
         run: docker compose -f docker-compose.yml config
       - name: docker compose mysql overlay config
         run: docker compose -f docker-compose.yml -f docker-compose.mysql.yml --profile mysql config
+      - name: docker compose sqlite overlay config
+        run: docker compose -f docker-compose.yml -f docker-compose.sqlite.yml config
+
+  # Both Postgres and MySQL service containers boot on every matrix leg because
+  # GitHub Actions cannot condition `services:` on `matrix.*`. Accepted cost on the sqlite leg.
+  db-matrix:
+    name: db-${{ matrix.dialect }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dialect: postgres
+            database_url: postgres://octanest:octanest@localhost:5432/octanest
+          - dialect: mysql
+            database_url: mysql://octanest:octanest@127.0.0.1:3306/octanest
+          - dialect: sqlite
+            database_url: sqlite:./var/octanest.db
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: octanest
+          POSTGRES_PASSWORD: octanest
+          POSTGRES_DB: octanest
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U octanest" --health-interval=5s --health-timeout=5s --health-retries=10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_USER: octanest
+          MYSQL_PASSWORD: octanest
+          MYSQL_DATABASE: octanest
+          MYSQL_ROOT_PASSWORD: octanest
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poctanest" --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: migrate + probe (${{ matrix.dialect }})
+        env:
+          DATABASE_URL: ${{ matrix.database_url }}
+          OCTANEST_DB_DIALECT: ${{ matrix.dialect }}
+        run: cargo test -p octanest-db --test dialect_probe -- --nocapture
