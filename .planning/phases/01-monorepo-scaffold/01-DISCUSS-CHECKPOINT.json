@@ -1,24 +1,22 @@
 {
-  "phase": "1",
-  "phase_name": "Monorepo Scaffold",
-  "areas_completed": ["Workspace layout", "Package manager", "Compose topology"],
-  "areas_remaining": ["RPC transport", "Scaffold proof surface"],
-  "decisions": {
-    "Workspace layout": {
-      "top_level": "apps/web + crates/* + packages/api-client",
-      "rust_crates": "octanest-api + octanest-core + octanest-db (uniform Postgres/MySQL/SQLite adapter)",
-      "generated_client": "packages/api-client",
-      "orchestration": "Turborepo for JS; Cargo separate; Makefile wrappers at repo root"
-    },
-    "Package manager": {
-      "preference": "Bun via Corepack preferred; fall back to Corepack pnpm + Turborepo if Bun pin unreliable"
-    },
-    "Compose topology": {
-      "services": "web + api + postgres (default) + mysql via Compose profile + sqlite via env/file",
-      "db_crate": "octanest-db uniform adapter for Postgres, MySQL, SQLite",
-      "routing": "Traefik reverse proxy in Compose; Vite/TanStack Start proxy for local make dev",
-      "proxy": "Traefik"
-    }
-  },
-  "deferred": []
+  "phase": "01",
+  "status": "in_progress",
+  "areas": ["A", "B", "C", "D", "E"],
+  "current_area": "D",
+  "current_area_index": 3,
+  "answers": [
+    {"area": "A", "answer": "apps/web + crates/* + packages/api-client; crates: octanest-api, octanest-core, octanest-db"},
+    {"area": "B", "answer": "Bun via Corepack preferred; else Corepack pnpm + Turborepo"},
+    {"area": "C", "answer": "web+api+postgres default; MySQL profile; SQLite via env; Traefik reverse proxy; Vite proxy for make dev"},
+    {"area": "D", "q": "Transport", "answer": "HTTP + WebSocket"},
+    {"area": "D", "q": "Mount paths", "answer": "/api/rpc + /api/rpc/ws"}
+  ],
+  "area_statuses": [
+    {"area": "A", "status": "complete"},
+    {"area": "B", "status": "complete"},
+    {"area": "C", "status": "complete"},
+    {"area": "D", "status": "in_progress"},
+    {"area": "E", "status": "pending"}
+  ],
+  "timestamp": "2026-09-09T10:21:00Z"
 }
