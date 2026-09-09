@@ -1,6 +1,4 @@
-# syntax=docker/dockerfile:1
-
-FROM oven/bun:1.2-debian AS deps
+FROM oven/bun:1.4-debian AS deps
 WORKDIR /app
 COPY package.json bun.lock turbo.json ./
 COPY apps/web/package.json ./apps/web/
@@ -13,7 +11,7 @@ COPY apps/web ./apps/web
 COPY packages/api-client ./packages/api-client
 RUN bun run --filter @octanest/web build
 
-FROM oven/bun:1.2-debian AS runner
+FROM oven/bun:1.4-debian AS runner
 WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \

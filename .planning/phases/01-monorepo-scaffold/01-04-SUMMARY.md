@@ -1,7 +1,7 @@
 # Plan 01-04 Summary — Compose + Traefik
 
 **Completed:** 2026-09-09
-**Status:** code complete · smoke blocked without Docker Engine
+**Status:** complete (smoke green)
 
 ## What shipped
 - `docker-compose.yml`: Traefik v3.3 + web + api + postgres:16 (D-06, D-09)
@@ -16,7 +16,7 @@
 ## Verification
 - [x] `docker compose config` succeeds (via Docker Desktop CLI)
 - [x] Smoke script exists and is executable
-- [ ] Full `make smoke` / `up --wait` — **blocker:** Docker Engine not running (`dockerDesktopLinuxEngine` pipe missing). Script is green-path ready once Desktop is up.
+- [x] Full `./scripts/compose-smoke.sh` — Traefik `/` 200, `/healthz` 200, RPC `system.health` ok (database ok)
 
 ## Next
 Plan 01-05 CI + VALIDATION
