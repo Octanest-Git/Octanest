@@ -12,7 +12,7 @@ Octanest ships as a GitHub-shaped forge — one Rust + Octane TanStack Start cod
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Monorepo Scaffold** - Rust + `@octanejs/tanstack-start` + Compose + ShadCN/Base UI/Tailwind v4 + typed RPC codegen
+- [x] **Phase 1: Monorepo Scaffold** - Rust + `@octanejs/tanstack-start` + Compose + ShadCN/Base UI/Tailwind v4 + typed RPC codegen
 - [ ] **Phase 2: Multi-DB Storage** - SQLite, PostgreSQL, and MySQL via one storage abstraction
 - [ ] **Phase 3: Brand Shell & Theme** - Octanest mark, chrome, light/dark with system default
 - [ ] **Phase 4: Auth Sessions & Email** - Signup, login, logout, sessions, profile, email providers
@@ -48,11 +48,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Backend forge/API process is a Rust service reachable from the UI
   5. Changing a Rust RPC procedure regenerates the TypeScript client/types in watch-friendly local development
 **Plans**:
-- [ ] `01-01-PLAN.md` — Monorepo skeleton (Bun/Turborepo + Cargo + Makefile)
-- [ ] `01-02-PLAN.md` — Axum RPC + specta codegen + HTTP/WS tests
-- [ ] `01-03-PLAN.md` — Octane Start web + UI-SPEC landing/status
-- [ ] `01-04-PLAN.md` — Docker Compose + Traefik + smoke
-- [ ] `01-05-PLAN.md` — CI gates + VALIDATION nyquist
+- [x] `01-01-PLAN.md` — Monorepo skeleton (Bun/Turborepo + Cargo + Makefile)
+- [x] `01-02-PLAN.md` — Axum RPC + specta codegen + HTTP/WS tests
+- [x] `01-03-PLAN.md` — Octane Start web + UI-SPEC landing/status
+- [x] `01-04-PLAN.md` — Docker Compose + Traefik + smoke
+- [x] `01-05-PLAN.md` — CI gates + VALIDATION nyquist
 **UI hint**: yes
 
 ### Phase 2: Multi-DB Storage
