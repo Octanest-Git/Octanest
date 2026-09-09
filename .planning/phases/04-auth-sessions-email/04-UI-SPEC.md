@@ -159,6 +159,7 @@ UI mode comes from public `auth.provider_config` (mode: `local` \| `workos` \| `
 | Element | Contract |
 |---------|----------|
 | Replace Sign in/Sign up | **Account menu** trigger: squircle avatar **28×28** if set, else initials on muted disk; optional `@username` Label visible ≥ `md` |
+| Menu trigger a11y | When `@username` is hidden (`< md`), trigger MUST have `aria-label="Account menu"` (or `aria-label="Account — @{username}"` if username known). Visible `@username` text may serve as the accessible name at `md+`. |
 | Menu items | **Profile** → `/settings/profile`; **Dashboard** → `/dashboard`; if admin **Auth settings** → `/admin/auth`; separator; **Log out** (this device only) |
 | Menu component | ShadCN **Dropdown Menu** (Base UI path); trigger ≥ 44px height |
 | Theme Select | Unchanged position (before account group on desktop) |
@@ -313,7 +314,7 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 | Log out (header/menu) | Log out |
 | Log out all | Log out all devices |
 | Destructive confirmation | **Log out all devices:** Sign out everywhere? You’ll need to sign in again on each device. |
-| Confirm dialog actions | **Log out all devices** (destructive) / **Cancel** |
+| Confirm dialog actions | **Log out all devices** (destructive) / **Stay signed in** |
 | Admin title | Auth settings |
 | Admin support | Instance provider mode and email delivery. Secrets stay in environment variables. |
 | Provider mode label | Auth provider |
