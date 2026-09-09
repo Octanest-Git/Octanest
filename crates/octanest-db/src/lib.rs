@@ -1,54 +1,58 @@
-//! Uniform database adapter boundary (dialects proven in Phase 2).
+//! Uniform database adapter boundary — the only place dialect branching is allowed (D-08).
 
-use sqlx::postgres::PgPoolOptions;
-use sqlx::PgPool;
+pub mod dialect;
+pub mod pool;
+
+pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
+pub use pool::DbPool;
+
+use dialect::resolve_dialect_from_env as resolve_from_env;
+use pool::DbPool as Pool;
 
 #[derive(Clone)]
 pub struct Database {
-    pool: Option<PgPool>,
+    pool: Option<Pool>,
+    dialect: Option<Dialect>,
 }
 
 impl Database {
     pub fn skipped() -> Self {
-        Self { pool: None }
+        Self {
+            pool: None,
+            dialect: None,
+        }
     }
 
     /// Connect using `DATABASE_URL` when set; otherwise run without a pool (`skipped` ping).
     pub async fn from_env() -> Result<Self, String> {
         match std::env::var("DATABASE_URL") {
-            Ok(url) if !url.is_empty() => {
-                let pool = PgPoolOptions::new()
-                    .max_connections(5)
-                    .connect(&url)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                Ok(Self { pool: Some(pool) })
-            }
+            Ok(url) if !url.is_empty() => Self::connect(&url).await,
             _ => Ok(Self::skipped()),
         }
+    }
+
+    pub async fn connect(url: &str) -> Result<Self, String> {
+        let dialect = resolve_from_env(url)?;
+        let pool = Pool::connect(url, dialect).await?;
+        Ok(Self {
+            pool: Some(pool),
+            dialect: Some(dialect),
+        })
+    }
+
+    pub fn dialect(&self) -> Option<Dialect> {
+        self.dialect
     }
 
     pub async fn ping(&self) -> &'static str {
         let Some(pool) = &self.pool else {
             return "skipped";
         };
-        match sqlx::query("SELECT 1").execute(pool).await {
-            Ok(_) => "ok",
-            Err(_) => "error",
-        }
-    }
-}
-
-pub fn connect_stub() -> Result<(), String> {
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stub_connects() {
-        assert!(connect_stub().is_ok());
+        let ok = match pool {
+            Pool::Postgres(p) => sqlx::query("SELECT 1").execute(p).await.is_ok(),
+            Pool::MySql(p) => sqlx::query("SELECT 1").execute(p).await.is_ok(),
+            Pool::Sqlite(p) => sqlx::query("SELECT 1").execute(p).await.is_ok(),
+        };
+        if ok { "ok" } else { "error" }
     }
 }
