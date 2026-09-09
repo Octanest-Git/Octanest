@@ -66,7 +66,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**:
 - [x] `02-01-PLAN.md` — octanest-db connection layer (dialect resolution, redaction, `DbPool`/`Database` connect)
 - [x] `02-02-PLAN.md` — per-dialect migrations, `instances` probe, migrate CLI, integration tests
-- [ ] `02-03-PLAN.md` — API startup fail-fast + auto-migrate + `system.db_probe` RPC + generated client
+- [x] `02-03-PLAN.md` — API startup fail-fast + auto-migrate + `system.db_probe` RPC + generated client
 - [ ] `02-04-PLAN.md` — SQLite Compose overlay, Make targets, dialect-asserting smoke, dialect switch
 - [ ] `02-05-PLAN.md` — CI `db-matrix` (3 dialects) + operator docs + validation sign-off
 
