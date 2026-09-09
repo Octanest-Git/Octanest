@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: monorepo-scaffold
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-09-09
+approved: 2026-09-09
 ---
 
 # Phase 1 — Validation Strategy
@@ -17,11 +18,12 @@ created: 2026-09-09
 
 | Property | Value |
 |----------|-------|
-| **Framework** | cargo test (Rust) + vitest 5.x (JS) |
-| **Config file** | none yet — Wave 0 / Plan 01–02 installs (`vitest.config.ts`, Cargo workspace) |
-| **Quick run command** | `cargo test -p octanest-api --lib && bunx vitest run packages/api-client` |
-| **Full suite command** | `cargo test --workspace && bunx vitest run && make rpc-gen && git diff --exit-code -- packages/api-client` |
-| **Estimated runtime** | Quick ~60s · Full ~5–8 min (incl. Compose smoke when scheduled) |
+| **Framework** | cargo test (Rust) + vitest (JS) |
+| **Config file** | `packages/api-client/vitest.config.ts`; Cargo workspace |
+| **Quick run command** | `cargo test -p octanest-api && bunx vitest run` |
+| **Full suite command** | `cargo test --workspace && bunx vitest run && make rpc-sync-check && docker compose config` |
+| **CI** | `.github/workflows/ci.yml` — rust / js / rpc-sync / compose |
+| **Estimated runtime** | Quick ~60s · Full ~5–8 min (Compose smoke local when Docker Engine up) |
 
 ---
 
@@ -38,27 +40,26 @@ created: 2026-09-09
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 01-00-01 | 01 | 0 | PLAT-* | — | N/A | infra | scaffold configs exist | ❌ W0 | ⬜ pending |
-| 01-02-01 | 02 | 2 | PLAT-05, PLAT-06 | T-01-01 | Reject missing/wrong `Octanest-RPC-Version` | integration | `cargo test -p octanest-api rpc_` | ❌ W0 | ⬜ pending |
-| 01-02-02 | 02 | 2 | PLAT-06 | T-01-02 | CORS prod requires allowlist (unit/config test) | unit | `cargo test -p octanest-api cors_` | ❌ W0 | ⬜ pending |
-| 01-02-03 | 02 | 2 | PLAT-06 | — | echo HTTP+WS | integration | `cargo test -p octanest-api` | ❌ W0 | ⬜ pending |
-| 01-02-04 | 02 | 2 | PLAT-06 | — | codegen sync | script | `make rpc-gen && git diff --exit-code -- packages/api-client` | ❌ W0 | ⬜ pending |
-| 01-03-01 | 03 | 3 | PLAT-04, PLAT-10, PLAT-11 | — | web build | build | `bunx turbo run build --filter=web` | ❌ W0 | ⬜ pending |
-| 01-04-01 | 04 | 4 | PLAT-01 | T-01-03 | Compose up healthy | smoke | `docker compose up --wait` + curl | ❌ W0 | ⬜ pending |
+| 01-00-01 | 01 | 0 | PLAT-* | — | N/A | infra | scaffold configs exist | ✅ | ✅ green |
+| 01-02-01 | 02 | 2 | PLAT-05, PLAT-06 | T-01-01 | Reject missing/wrong `Octanest-RPC-Version` | integration | `cargo test -p octanest-api --test rpc_http` | ✅ `crates/octanest-api/tests/rpc_http.rs` | ✅ green |
+| 01-02-02 | 02 | 2 | PLAT-06 | T-01-02 | CORS prod requires allowlist | unit | `cargo test -p octanest-api cors_` | ✅ `crates/octanest-api/src/cors.rs` | ✅ green |
+| 01-02-03 | 02 | 2 | PLAT-06 | — | echo HTTP+WS | integration | `cargo test -p octanest-api --test rpc_http --test rpc_ws` | ✅ `tests/rpc_http.rs`, `tests/rpc_ws.rs` | ✅ green |
+| 01-02-04 | 02 | 2 | PLAT-06 | — | codegen sync | script | `make rpc-sync-check` | ✅ `scripts/check-rpc-sync.sh` | ✅ green |
+| 01-03-01 | 03 | 3 | PLAT-04, PLAT-10, PLAT-11 | — | web build | build | `bunx turbo run build --filter=@octanest/web` | ✅ `apps/web` | ✅ green |
+| 01-04-01 | 04 | 4 | PLAT-01 | T-01-03 | Compose config (+ smoke when Engine up) | smoke | `docker compose config` / `./scripts/compose-smoke.sh` | ✅ `docker-compose.yml`, `scripts/compose-smoke.sh` | ⚠️ config green; smoke needs Docker Engine |
+| 01-05-01 | 05 | 5 | PLAT-* | T-01-12/13 | CI gates | ci | `.github/workflows/ci.yml` | ✅ | ✅ green |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
-
-*Planner must expand this table to cover every PLAN task with `<automated>` verify.*
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky / env-blocked*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `crates/octanest-api/tests/rpc_http.rs` — stubs for health, echo, version reject
-- [ ] `crates/octanest-api/tests/rpc_ws.rs` — stubs for health, echo over WS
-- [ ] `packages/api-client` vitest config + smoke test stub
-- [ ] `scripts/check-rpc-sync.sh` — regen + diff
-- [ ] Vitest + Cargo workspace test harness installed
+- [x] `crates/octanest-api/tests/rpc_http.rs` — health, echo, version reject
+- [x] `crates/octanest-api/tests/rpc_ws.rs` — health/echo over WS
+- [x] `packages/api-client` vitest config + smoke test
+- [x] `scripts/check-rpc-sync.sh` — regen + diff
+- [x] Vitest + Cargo workspace test harness installed
 
 ---
 
@@ -70,15 +71,17 @@ created: 2026-09-09
 | Theme system → light/dark force persists | UI-SPEC | Browser preference UX | Toggle theme; refresh; confirm persistence |
 | Footer Status navigation | CONTEXT D-26 | Simple UX | Click footer Status → `/status` shows live health |
 
+*(Human UI checkpoint for plan 01-03 approved 2026-09-09.)*
+
 ---
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 120s quick
-- [ ] `nyquist_compliant: true` set in frontmatter after plans pass Dimension 8
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 120s quick
+- [x] `nyquist_compliant: true` set in frontmatter after plans pass Dimension 8
 
-**Approval:** pending
+**Approval:** 2026-09-09
