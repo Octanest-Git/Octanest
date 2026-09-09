@@ -34,3 +34,4 @@ http = "1"
 http-body-util = "0.1"
 tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.26"
+tempfile = "3"

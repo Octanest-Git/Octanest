@@ -50,6 +50,17 @@ pub async fn dispatch(db: &Database, req: RpcRequest) -> RpcResponse {
                 message: echo.message,
             })
         }
+        "system.db_probe" => match db.probe().await {
+            Ok(result) => RpcResponse::ok(result),
+            Err(e) if e == "database not configured" => RpcResponse::err(AppError::new(
+                "db.not_configured",
+                "no database configured for this instance",
+            )),
+            Err(e) => {
+                tracing::error!("db probe failed: {e}");
+                RpcResponse::err(AppError::new("db.probe_failed", "database probe failed"))
+            }
+        },
         other => RpcResponse::err(AppError::new(
             "rpc.unknown_procedure",
             format!("unknown procedure: {other}"),
