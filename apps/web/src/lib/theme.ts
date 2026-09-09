@@ -22,3 +22,13 @@ export function applyTheme(pref: ThemePreference) {
   document.documentElement.classList.toggle("dark", resolved === "dark");
   localStorage.setItem(THEME_STORAGE_KEY, pref);
 }
+
+export const THEME_OPTIONS: readonly ThemePreference[] = ["system", "light", "dark"];
+
+// Runs in <head> before first paint (D-12). Static literal — never interpolate
+// request data or storage values into this string (T-03-04).
+export const THEME_BOOT_SCRIPT =
+  '(function(){try{var v=localStorage.getItem("octanest-theme");' +
+  'var p=(v==="light"||v==="dark"||v==="system")?v:"system";' +
+  'var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);' +
+  'document.documentElement.classList.toggle("dark",d);}catch(e){}})();';

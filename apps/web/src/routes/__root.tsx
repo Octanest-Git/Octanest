@@ -8,6 +8,7 @@ import {
   createRootRoute,
 } from "@octanejs/tanstack-router";
 import { SiteFooter, SiteHeader } from "@/components/chrome";
+import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "@/styles.css";
 
 export const Route = createRootRoute({
@@ -22,6 +23,7 @@ function RootShell({ children }: { children?: unknown }) {
   return (
     <Html lang="en">
       <Head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <HeadContent />
