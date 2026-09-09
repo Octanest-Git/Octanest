@@ -4,11 +4,33 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+name = "octanest_api"
+path = "src/lib.rs"
+
 [[bin]]
 name = "octanest-api"
 path = "src/main.rs"
+
+[[bin]]
+name = "rpc-gen"
+path = "src/bin/rpc_gen.rs"
 
 [dependencies]
 octanest-core = { path = "../octanest-core" }
 octanest-db = { path = "../octanest-db" }
 tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+axum = { version = "0.8", features = ["ws"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tower = "0.5"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+futures-util = "0.3"
+http = "1"
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+tokio-tungstenite = "0.26"

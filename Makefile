@@ -14,8 +14,7 @@ dev:
 	@echo "TODO: make dev — wire API + web + rpc watch in plans 01-02/01-03"
 
 rpc-gen:
-	@echo "TODO: rpc-gen — implemented in plan 01-02"
-	@test -d packages/api-client
+	cargo run -q -p octanest-api --bin rpc-gen
 
 rpc-sync-check:
 	@./scripts/check-rpc-sync.sh

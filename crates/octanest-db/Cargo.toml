@@ -6,3 +6,4 @@ license.workspace = true
 
 [dependencies]
 octanest-core = { path = "../octanest-core" }
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres"] }
