@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-09-09T23:30:51.373Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-09-09T23:37:45.955Z"
 last_activity: 2026-09-09
 progress:
   total_phases: 22
   completed_phases: 3
   total_plans: 24
-  completed_plans: 19
-  percent: 79
+  completed_plans: 20
+  percent: 83
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 4 (auth-sessions-email) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-09-09
 
-Progress: Phases 1–3 complete; Phase 4 in progress (2/8 plans)
+Progress: Phases 1–3 complete; Phase 4 in progress (4/8 plans)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: Phases 1–3 complete; Phase 4 in progress (2/8 plans)
 | Phase 04-auth-sessions-email P01 | 7min | 3 tasks | 11 files |
 | Phase 04-auth-sessions-email P02 | 3min | 2 tasks | 8 files |
 | Phase 04-auth-sessions-email P03 | 3min | 2 tasks | 6 files |
+| Phase 04-auth-sessions-email P04 | 4min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 04]: ResendSender::with_base_url for wiremock; production URL https://api.resend.com/emails — Testable without live Resend
 - [Phase 04]: argon2 0.6 SaltString + hash_password_with_salt for PHC strings — Current argon2 crate API differs from RESEARCH 0.5-style OsRng example
 - [Phase 04]: Hex 32-byte session tokens; SHA-256 hex at rest; SessionService owns env Secure flag — Matches discretion locks; avoids Domain attribute / Vite proxy pitfall
+- [Phase 04]: auth.unauthenticated → HTTP 401; other auth errors → 400 — Prefer consistent JSON err with distinct unauthenticated status for clients
+- [Phase 04]: Welcome email failures logged only; signup still succeeds — Mail adapter outages must not block account creation (D-20)
+- [Phase 04]: Admin seed only when OCTANEST_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
 
 ### Pending Todos
 
@@ -95,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-09T23:30:51.371Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-09-09T23:37:35.565Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None

@@ -102,7 +102,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] `04-01-PLAN.md` — Auth schema, DTOs, and DB CRUD (users/sessions/identities/settings)
 - [x] `04-02-PLAN.md` — EmailSender log-sink + SMTP + Resend adapters
 - [x] `04-03-PLAN.md` — Argon2id passwords + opaque session cookies
-- [ ] `04-04-PLAN.md` — Local auth RPC, welcome email, admin seed, session tests
+- [x] `04-04-PLAN.md` — Local auth RPC, welcome email, admin seed, session tests
 - [ ] `04-05-PLAN.md` — WorkOS AuthKit + generic OIDC callbacks
 - [ ] `04-06-PLAN.md` — Profile/avatar API + admin.auth settings + rpc-gen
 - [ ] `04-07-PLAN.md` — Login/signup/dashboard UI + chrome account menu
