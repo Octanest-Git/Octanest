@@ -80,7 +80,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. UI renders correctly in light and dark modes
   4. Theme defaults to the OS preference (system) until the user chooses light or dark
   5. User can set theme to light or dark and the preference persists across refresh
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] `03-01-PLAN.md` — semantic token layer + CVA Button/Input/Select + shared squircle OctanestMark
+- [ ] `03-02-PLAN.md` — branded header/footer chrome, theme Select, pre-paint FOUC boot script
+- [ ] `03-03-PLAN.md` — four-band editorial landing refresh with three reduced-motion-aware motions
+- [ ] `03-04-PLAN.md` — branded `/status` hero states + `Status · Octanest` title
+- [ ] `03-05-PLAN.md` — favicon/app-icon set, Vite PWA manifest, assets-only service worker
+- [ ] `03-06-PLAN.md` — phase-wide gates + human verification of light/dark, system default, persistence
 **UI hint**: yes
 
 ### Phase 4: Auth Sessions & Email
@@ -301,7 +307,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 |-------|----------------|--------|-----------|
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
-| 3. Brand Shell & Theme | 0/TBD | Not started | - |
+| 3. Brand Shell & Theme | 0/6 | Planned | - |
 | 4. Auth Sessions & Email | 0/TBD | Not started | - |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
