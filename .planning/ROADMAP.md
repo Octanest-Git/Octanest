@@ -13,8 +13,8 @@ Octanest ships as a GitHub-shaped forge — one Rust + Octane TanStack Start cod
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Monorepo Scaffold** - Rust + `@octanejs/tanstack-start` + Compose + ShadCN/Base UI/Tailwind v4 + typed RPC codegen
-- [ ] **Phase 2: Multi-DB Storage** - SQLite, PostgreSQL, and MySQL via one storage abstraction
-- [ ] **Phase 3: Brand Shell & Theme** - Octanest mark, chrome, light/dark with system default
+- [x] **Phase 2: Multi-DB Storage** - SQLite, PostgreSQL, and MySQL via one storage abstraction
+- [x] **Phase 3: Brand Shell & Theme** - Octanest mark, chrome, light/dark with system default (completed 2026-09-09)
 - [ ] **Phase 4: Auth Sessions & Email** - Signup, login, logout, sessions, profile, email providers
 - [ ] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset
 - [ ] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard
@@ -86,7 +86,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] `03-03-PLAN.md` — four-band editorial landing refresh with three reduced-motion-aware motions
 - [x] `03-04-PLAN.md` — branded `/status` hero states + `Status · Octanest` title
 - [x] `03-05-PLAN.md` — favicon/app-icon set, Vite PWA manifest, assets-only service worker
-- [ ] `03-06-PLAN.md` — phase-wide gates + human verification of light/dark, system default, persistence
+- [x] `03-06-PLAN.md` — phase-wide gates + human verification of light/dark, system default, persistence
 **UI hint**: yes
 
 ### Phase 4: Auth Sessions & Email
@@ -307,7 +307,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 |-------|----------------|--------|-----------|
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
-| 3. Brand Shell & Theme | 0/6 | Planned | - |
+| 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 0/TBD | Not started | - |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |

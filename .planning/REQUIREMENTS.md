@@ -122,8 +122,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **BRAND-01**: Product UI uses the Octanest mark (`brand/octanest-mark.png`) and blue/orange brand direction
 - [x] **BRAND-02**: Product is named and presented as Octanest (not a “GitHub clone” or bare Octane)
 - [x] **BRAND-03**: UI supports light and dark color modes
-- [ ] **BRAND-04**: Theme preference defaults to the operating system (system)
-- [ ] **BRAND-05**: User can override theme preference to light or dark (and persist that choice)
+- [x] **BRAND-04**: Theme preference defaults to the operating system (system)
+- [x] **BRAND-05**: User can override theme preference to light or dark (and persist that choice)
 
 ## v2 Requirements
 
@@ -247,8 +247,8 @@ Deferred; not in the current roadmap until promoted.
 | BRAND-01 | Phase 3 | Complete |
 | BRAND-02 | Phase 3 | Complete |
 | BRAND-03 | Phase 3 | Complete |
-| BRAND-04 | Phase 3 | Pending |
-| BRAND-05 | Phase 3 | Pending |
+| BRAND-04 | Phase 3 | Complete |
+| BRAND-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 85 total

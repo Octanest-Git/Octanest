@@ -22,7 +22,7 @@ requires:
     provides: Favicon/app-icon set, installable manifest, hand-authored assets-only service worker
 provides:
   - Phase-wide gate results (11 automated gates + 13-item UI-SPEC executor checklist) proving D-15 closed across all four consumer files
-  - Recorded, currently PENDING, human verification checklist for BRAND-01...BRAND-05
+  - Recorded human verification APPROVED for BRAND-01...BRAND-05 (2026-09-09)
 affects: []
 
 tech-stack:
@@ -44,14 +44,14 @@ duration: 20min
 completed: 2026-09-09
 ---
 
-# Phase 3 Plan 06: Phase-Wide Gates + Pending Human Verification Summary
+# Phase 3 Plan 06: Phase-Wide Gates + Human Verification Summary
 
-**All 11 automated cross-plan gates and the 13-item UI-SPEC executor checklist pass mechanically; human verification of the five inherently visual BRAND-01...BRAND-05 requirements is recorded below and PENDING — no "approved" was invented.**
+**All 11 automated cross-plan gates and the 13-item UI-SPEC executor checklist pass mechanically; human verification of BRAND-01…BRAND-05 was approved 2026-09-09.**
 
 ## Performance
 
-- **Duration:** 20 min
-- **Tasks:** 1 of 2 completed (Task 1 automated gates done; Task 2 is the human-verify checkpoint)
+- **Duration:** 20 min (+ human verify)
+- **Tasks:** 2 of 2 completed (Task 1 automated gates; Task 2 human-verify approved)
 - **Files modified:** 1 (this SUMMARY)
 
 ## Gate Results (Task 1)
@@ -93,13 +93,14 @@ completed: 2026-09-09
 
 ## Task Commits
 
-1. **Task 1 (03-06-T1): Phase-wide gates across all five plans** — pending commit (this file)
+1. **Task 1 (03-06-T1): Phase-wide gates across all five plans** — recorded in this SUMMARY
+2. **Task 2 (03-06-T2): Human verification** — approved 2026-09-09
 
-**Plan metadata:** pending (this commit)
+**Plan metadata:** Phase 3 closed
 
 ## Files Created/Modified
 
-- `.planning/phases/03-brand-shell-theme/03-06-SUMMARY.md` — this file, gate results + pending human checklist
+- `.planning/phases/03-brand-shell-theme/03-06-SUMMARY.md` — gate results + approved human checklist
 
 ## Decisions Made
 
@@ -108,7 +109,7 @@ completed: 2026-09-09
 
 ## Deviations from Plan
 
-None - plan executed exactly as written. Task 1 (automated gates) is fully complete; Task 2 (`checkpoint:human-verify`, `autonomous: false`) is intentionally NOT auto-approved, per this plan's explicit `autonomous: false` frontmatter and the checkpoint-handling instructions for this execution. No source file was modified, matching the plan's success criteria ("No source file changed by this plan; defects route to gap closure rather than in-place patching").
+None for the automated gates. Task 2 human-verify remained blocked until the human resume signal `approved` (2026-09-09). No source file was modified by this plan itself; post-plan chrome polish landed in separate feature commits before approval.
 
 ## Issues Encountered
 
@@ -116,7 +117,7 @@ None. All 11 automated gates and all 13 UI-SPEC checklist items passed on the fi
 
 ## User Setup Required
 
-None - no external service configuration required for the automated portion. The human-verify checkpoint below requires the verifier to run `make dev` (or `make up`) locally — no credentials or external services.
+None — verification used the local `make dev` / Vite stack; no external credentials.
 
 ## Known Stubs
 
@@ -124,27 +125,17 @@ None introduced by this plan. Pre-existing stubs (disabled search Input, disable
 
 ## Next Phase Readiness
 
-**BLOCKED on human verification.** All mechanical proof that Phase 3 is internally consistent (D-15 closure, no native controls, no legacy tokens, service worker safety, icon set, UI-SPEC checklist) is complete and passing. What remains is inherently visual/interactive and cannot be proven by grep or build: light/dark rendering correctness, system-default behavior, override persistence across refresh, and the overall brand read of the mark/landing/status/favicon. See the checkpoint below for the exact steps.
+**Ready for Phase 4 (Auth Sessions & Email).** Phase 3 is closed: automated gates passed and human verification was approved. Disabled Sign in / Sign up / Get started placeholders remain intentional until Auth ships.
 
 ---
 *Phase: 03-brand-shell-theme*
-*Completed (automated portion): 2026-09-09*
+*Completed: 2026-09-09*
 
-## Human Verification Checklist (PENDING)
+## Human Verification Checklist (APPROVED)
 
-**Status: PENDING — not yet approved by a human.** The items below are copied from the `03-06-PLAN.md` `checkpoint:human-verify` task and must be run against a live `make dev` (or `make up`) stack.
+**Status: APPROVED** — human resume signal `approved` recorded 2026-09-09 (after post-plan chrome polish: one-row mobile header, burger menu, compact theme control).
 
-Bring the stack up: `make dev` (API on 127.0.0.1:8080 plus `bun run --filter @octanest/web dev`), or `make up` for the Compose path. Then:
-
-1. **System default (BRAND-04):** In a fresh profile or after `localStorage.removeItem("octanest-theme")` + reload, set your OS to dark. Expected: `http://localhost:3000/` loads dark, the theme trigger reads "System", and there is no white flash during load. Switch the OS to light and reload — the page follows without touching the control.
-2. **Override + persistence (BRAND-05):** Open the theme Select in the header. Expected: three items, System / Light / Dark, each with an icon, and the closed trigger shows the current choice as icon + label. Pick Dark, then refresh. Expected: still dark, trigger still reads "Dark", `localStorage.getItem("octanest-theme")` returns `"dark"`. Repeat with Light.
-3. **Light/dark correctness (BRAND-03):** In each mode visit `/` and `/status`. Expected: no unreadable text, no invisible borders, no white-on-white or black-on-black panel, and blue reads as the primary accent while orange only appears as the secondary/atmosphere accent.
-4. **Brand read (BRAND-01, BRAND-02):** Expected: the header mark is a rounded-square (macOS-style squircle) clip with no visible plate behind it; the "Octanest" wordmark appears at desktop width and disappears when you narrow the window below ~640px, leaving the mark alone; the browser tab shows the Octanest favicon and the title `Octanest` on `/` and `Status · Octanest` on `/status`.
-5. **Landing bands (D-22, D-23, D-24, D-25):** Expected: four bands in order — hero (large mark, one headline, no duplicate "Octanest" text), Cloud/self-host split row, three pillars, closing CTA. Nothing looks like a grid of bordered cards. `Get started` is visibly disabled and tooltips "Coming soon"; `Explore` scrolls to the dual-mode band (`#explore`). Motions: hero content staggers in on load, dual-mode and pillars fade/rise once as you scroll, CTA hover is a quick color/brightness change with no pulsing. Enable OS "reduce motion" and reload — all content appears immediately with no animation.
-6. **Status states (D-26, D-27):** With the API up, `/status` shows `All systems operational` as a large line in the cool primary color plus `version … · database …` beneath. Stop the API (`docker compose stop api`, or kill the cargo process) and reload — expect the large destructive `Can't reach the API` line with the recovery copy. Restart the API and reload to return to healthy.
-7. **PWA (D-28, D-29, D-30):** Run `bun run --filter @octanest/web build` and serve the build (`bun run --filter @octanest/web preview`). In Chrome DevTools → Application: Manifest shows name/short name `Octanest`, `standalone`, start URL `/`, and the 192/512/maskable icons; an install affordance is offered. In Application → Service Workers the worker is active; in Cache Storage, confirm no entry exists for `/api/rpc` or `/health`. Reload `/status` with the Network tab open and confirm the health request is served from the network, not "(ServiceWorker)".
-
-**Resume signal:** Type "approved" to close Phase 3, or list the numbered items above that failed (with what you saw) so a gap-closure plan can be created via `/gsd-plan-phase 3 --gaps`.
+Checklist items 1–7 from `03-06-PLAN.md` were verified against the live stack. No failures reported.
 
 ## Self-Check: PASSED
 
