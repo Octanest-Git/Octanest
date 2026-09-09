@@ -1,4 +1,5 @@
 import { createFileRoute } from "@octanejs/tanstack-router";
+import { useEffect } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { OctanestMark } from "@/components/octanest-mark";
 import { cn } from "@/lib/utils";
@@ -7,7 +8,31 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
+function useScrollReveal() {
+  useEffect(() => {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>(".oct-reveal"));
+    if (typeof IntersectionObserver === "undefined") {
+      nodes.forEach((n) => n.classList.add("oct-reveal-in"));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.classList.add("oct-reveal-in");
+          io.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.15 },
+    );
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, []);
+}
+
 function LandingPage() {
+  useScrollReveal();
+
   return (
     <>
       <section className="relative min-h-[calc(100vh-8rem)] overflow-hidden">
@@ -16,26 +41,33 @@ function LandingPage() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,color-mix(in_srgb,var(--primary)_32%,transparent),transparent_55%),radial-gradient(ellipse_at_80%_30%,color-mix(in_srgb,var(--secondary)_26%,transparent),transparent_50%),linear-gradient(180deg,var(--background),var(--card))]"
         />
         <div className="relative mx-auto flex min-h-[calc(100vh-8rem)] max-w-6xl flex-col justify-center px-4 py-16">
-          <OctanestMark size={96} />
-          <h1 className="mt-6 max-w-3xl font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-foreground">
+          <div className="oct-rise" style={{ animationDelay: "0ms" }}>
+            <OctanestMark size={96} />
+          </div>
+          <h1
+            className="oct-rise mt-6 max-w-3xl font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-foreground"
+            style={{ animationDelay: "80ms" }}
+          >
             Where repositories nest — cloud or yours
           </h1>
-          <p className="mt-4 max-w-2xl text-[16px] text-muted-foreground">
-            Social coding forge: host git, collaborate, and ship — one product
-            for Octanest Cloud and self-host
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button disabled title="Coming soon">
-              Get started
-            </Button>
-            <a href="#explore" className={cn(buttonVariants({ variant: "secondary" }))}>
-              Explore
-            </a>
+          <div className="oct-rise" style={{ animationDelay: "160ms" }}>
+            <p className="mt-4 max-w-2xl text-[16px] text-muted-foreground">
+              Social coding forge: host git, collaborate, and ship — one product
+              for Octanest Cloud and self-host
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button disabled title="Coming soon">
+                Get started
+              </Button>
+              <a href="#explore" className={cn(buttonVariants({ variant: "secondary" }))}>
+                Explore
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      <section id="explore" className="py-24">
+      <section id="explore" className="py-24 oct-reveal">
         <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-2">
           <div className="border-l-2 border-primary pl-6">
             <h2 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -56,7 +88,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section className="py-24">
+      <section className="py-24 oct-reveal">
         <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-3">
           <div>
             <h3 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -100,6 +132,20 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      <style>{`
+        @keyframes octRise {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .oct-rise { animation: octRise 320ms ease-out both; }
+        .oct-reveal { opacity: 0; transform: translateY(12px); transition: opacity 320ms ease-out, transform 320ms ease-out; }
+        .oct-reveal-in { opacity: 1; transform: translateY(0); }
+        @media (prefers-reduced-motion: reduce) {
+          .oct-rise { animation: none !important; }
+          .oct-reveal, .oct-reveal-in { opacity: 1 !important; transform: none !important; transition: none !important; }
+        }
+      `}</style>
     </>
   );
 }
