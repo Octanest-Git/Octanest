@@ -21,7 +21,8 @@
     {"area": "D", "q": "api-client surface", "answer": "Generated client + TanStack Query helpers (queryOptions/mutationOptions); no custom hooks package"},
     {"area": "E", "q": "Product shape", "answer": "Marketing landing at / with header (branding, public search, auth). Separate /status with status report + history (history deferred past Phase 1)"},
     {"area": "E", "q": "Phase 1 slice", "answer": "Landing + header chrome with Search/Auth placeholders; /status health-focused live system.health; no echo UI on status; no status history persistence in Phase 1"},
-    {"area": "E", "q": "Echo proof", "answer": "system.echo proven via tests/CI only (HTTP + WS); no echo UI"}
+    {"area": "E", "q": "Echo proof", "answer": "system.echo proven via tests/CI only (HTTP + WS); no echo UI"},
+    {"area": "E", "q": "/status access", "answer": "Public in Phase 1; auth gate + history later"}
   ],
   "area_statuses": [
     {"area": "A", "status": "complete"},
@@ -30,5 +31,5 @@
     {"area": "D", "status": "complete"},
     {"area": "E", "status": "in_progress"}
   ],
-  "timestamp": "2026-09-09T10:43:00Z"
+  "timestamp": "2026-09-09T10:44:00Z"
 }
