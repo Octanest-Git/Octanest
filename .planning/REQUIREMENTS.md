@@ -24,7 +24,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 ### Authentication & accounts
 
 - [ ] **AUTH-01**: User can sign up with email and password
-- [ ] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
+- [x] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
 - [ ] **AUTH-03**: User can log out from the web UI
 - [ ] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
 - [ ] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
@@ -176,7 +176,7 @@ Deferred; not in the current roadmap until promoted.
 | PLAT-10 | Phase 1 | Pending |
 | PLAT-11 | Phase 1 | Pending |
 | AUTH-01 | Phase 4 | Pending |
-| AUTH-02 | Phase 4 | Pending |
+| AUTH-02 | Phase 4 | Complete |
 | AUTH-03 | Phase 4 | Pending |
 | AUTH-04 | Phase 5 | Pending |
 | AUTH-05 | Phase 5 | Pending |
