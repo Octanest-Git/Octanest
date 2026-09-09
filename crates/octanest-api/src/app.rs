@@ -14,8 +14,10 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::auth::local;
+use crate::auth::pending::PendingAuthStore;
 use crate::auth::session::{SessionService, SESSION_COOKIE_NAME};
 use crate::email::{self, EmailSender};
+use crate::routes::auth_callbacks;
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
 #[derive(Clone)]
@@ -24,6 +26,7 @@ pub struct AppState {
     pub email: Arc<dyn EmailSender>,
     pub uploads_dir: PathBuf,
     pub sessions: SessionService,
+    pub pending: PendingAuthStore,
     pub env_name: String,
 }
 
@@ -39,6 +42,7 @@ impl AppState {
             email,
             uploads_dir: PathBuf::from("var/uploads"),
             sessions: SessionService::new(env_name.clone()),
+            pending: PendingAuthStore::new(),
             env_name,
         }
     }
@@ -61,6 +65,11 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
         .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
         .route("/api/rpc/ws", get(rpc_ws))
+        .route("/api/auth/workos/start", get(auth_callbacks::workos_start))
+        .route(
+            "/api/auth/workos/callback",
+            get(auth_callbacks::workos_callback),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

@@ -8,6 +8,7 @@ use octanest_core::{
 use octanest_db::UserRow;
 use uuid::Uuid;
 
+use crate::auth::external::is_placeholder_username;
 use crate::auth::password::{hash_password_str, verify_password, PasswordError, MIN_PASSWORD_LEN};
 use crate::auth::session::clear_session_cookie;
 use crate::email::OutboundEmail;
@@ -23,7 +24,7 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
         bio: row.bio.clone(),
         avatar_url: row.avatar_path.clone(),
         is_admin: row.is_admin,
-        profile_incomplete: false,
+        profile_incomplete: is_placeholder_username(&row.username),
     }
 }
 
