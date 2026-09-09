@@ -22,7 +22,8 @@
     {"area": "E", "q": "Product shape", "answer": "Marketing landing at / with header (branding, public search, auth). Separate /status with status report + history (history deferred past Phase 1)"},
     {"area": "E", "q": "Phase 1 slice", "answer": "Landing + header chrome with Search/Auth placeholders; /status health-focused live system.health; no echo UI on status; no status history persistence in Phase 1"},
     {"area": "E", "q": "Echo proof", "answer": "system.echo proven via tests/CI only (HTTP + WS); no echo UI"},
-    {"area": "E", "q": "/status access", "answer": "Public in Phase 1; auth gate + history later"}
+    {"area": "E", "q": "/status access", "answer": "Public in Phase 1; auth gate + history later"},
+    {"area": "E", "q": "Landing depth", "answer": "Credible marketing draft: real Octanest positioning copy + mark in header; polish deferred to brand phase"}
   ],
   "area_statuses": [
     {"area": "A", "status": "complete"},
@@ -31,5 +32,5 @@
     {"area": "D", "status": "complete"},
     {"area": "E", "status": "in_progress"}
   ],
-  "timestamp": "2026-09-09T10:44:00Z"
+  "timestamp": "2026-09-09T10:45:00Z"
 }
