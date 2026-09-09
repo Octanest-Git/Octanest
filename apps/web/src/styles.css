@@ -1,58 +1,147 @@
 @import "tailwindcss";
-@import "@fontsource-variable/sora";
-@import "@fontsource-variable/source-sans-3";
+
+/*
+  Preloaded latin faces from /fonts (see __root.tsx).
+  font-display: optional — never late-swap (that was the remaining jump).
+  Metric-adjusted local fallbacks cover the first paint when optional misses.
+*/
+@font-face {
+  font-family: "Sora Fallback";
+  src:
+    local("Segoe UI"),
+    local("Arial"),
+    local("Helvetica Neue"),
+    local("Helvetica"),
+    local("Liberation Sans"),
+    local("Nimbus Sans L"),
+    local("DejaVu Sans");
+  size-adjust: 88.95%;
+  ascent-override: 92%;
+  descent-override: 23%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Source Sans 3 Fallback";
+  src:
+    local("Segoe UI"),
+    local("Arial"),
+    local("Helvetica Neue"),
+    local("Helvetica"),
+    local("Liberation Sans"),
+    local("Nimbus Sans L"),
+    local("DejaVu Sans");
+  size-adjust: 90.97%;
+  ascent-override: 94%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Sora Variable";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 800;
+  src: url("/fonts/sora-latin.woff2") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Sora Variable";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 800;
+  src: url("/fonts/sora-latin-ext.woff2") format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Source Sans 3 Variable";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin.woff2") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Source Sans 3 Variable";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 200 900;
+  src: url("/fonts/source-sans-3-latin-ext.woff2") format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304,
+    U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+  Tokens retuned from mark samples (cool steel-cyan ↔ warm vermillion) for
+  clearer surface separation and WCAG-friendlier muted text. Still primary=cool,
+  secondary=warm per D-14.
+*/
 :root {
   --radius: 0.625rem;
 
-  --background: #f4f6f8;
-  --foreground: #12141a;
+  --background: #dfe8f0;
+  --foreground: #071018;
   --card: #ffffff;
-  --card-foreground: #12141a;
+  --card-foreground: #071018;
   --popover: #ffffff;
-  --popover-foreground: #12141a;
-  --primary: #1b6fe8;
+  --popover-foreground: #071018;
+  --primary: #0b6488;
   --primary-foreground: #ffffff;
-  --secondary: #f07818;
-  --secondary-foreground: #1a1206;
-  --muted: #e9edf2;
-  --muted-foreground: #5c6570;
-  --accent: #e9edf2;
-  --accent-foreground: #12141a;
-  --destructive: #d92d20;
+  --secondary: #c43d0f;
+  --secondary-foreground: #fff7f2;
+  --muted: #c5d0dc;
+  --muted-foreground: #2f3c4d;
+  --accent: #c5d0dc;
+  --accent-foreground: #071018;
+  --destructive: #b42318;
   --destructive-foreground: #ffffff;
-  --border: #d8dee6;
-  --input: #d8dee6;
-  --ring: #1b6fe8;
+  --border: #97a8ba;
+  --input: #97a8ba;
+  --ring: #0b6488;
 }
 
 .dark {
-  --background: #0b0c0e;
-  --foreground: #f2f4f7;
-  --card: #16181d;
-  --card-foreground: #f2f4f7;
-  --popover: #16181d;
-  --popover-foreground: #f2f4f7;
-  --primary: #3b8cff;
-  --primary-foreground: #06121f;
-  --secondary: #ff8a2b;
-  --secondary-foreground: #1a1206;
-  --muted: #1e2128;
-  --muted-foreground: #9aa3b2;
-  --accent: #1e2128;
-  --accent-foreground: #f2f4f7;
-  --destructive: #f97066;
+  --background: #07080a;
+  --foreground: #f4f6f9;
+  --card: #12151b;
+  --card-foreground: #f4f6f9;
+  --popover: #12151b;
+  --popover-foreground: #f4f6f9;
+  --primary: #4eb8d9;
+  --primary-foreground: #041018;
+  --secondary: #ff7a3d;
+  --secondary-foreground: #1a0a04;
+  --muted: #1a1f28;
+  --muted-foreground: #a9b4c4;
+  --accent: #1a1f28;
+  --accent-foreground: #f4f6f9;
+  --destructive: #ff6b6b;
   --destructive-foreground: #1a0b0a;
-  --border: #2a2f3a;
-  --input: #2a2f3a;
-  --ring: #3b8cff;
+  --border: #3a4454;
+  --input: #3a4454;
+  --ring: #4eb8d9;
 }
 
 @theme inline {
-  --font-display: "Sora Variable", "Sora", sans-serif;
-  --font-sans: "Source Sans 3 Variable", "Source Sans 3", sans-serif;
+  --font-display: "Sora Variable", "Sora Fallback", ui-sans-serif, sans-serif;
+  --font-sans:
+    "Source Sans 3 Variable", "Source Sans 3 Fallback", ui-sans-serif, sans-serif;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -80,7 +169,11 @@
 }
 
 @layer base {
-  html,
+  html {
+    min-height: 100%;
+    scroll-behavior: auto;
+  }
+
   body,
   #__app {
     min-height: 100%;
@@ -93,9 +186,17 @@
     line-height: 1.5;
     background-color: var(--background);
     color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Grain as a body background layer — NOT position:fixed (fixed overlays break
+       middle-button / autoscroll in Chromium). */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  }
+
+  .dark body {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
   }
 }
-
 @layer components {
   /* macOS app-icon squircle clip for the brand mark (D-02). Mask asset is generated
      by scripts/gen-squircle.mjs and reused for raster app icons in 03-05. */
@@ -106,5 +207,43 @@
     mask-image: url("/brand/squircle.svg");
     mask-size: 100% 100%;
     mask-repeat: no-repeat;
+  }
+
+  /* Named region for TanStack Router / View Transitions — header & footer stay put. */
+  .octanest-main {
+    view-transition-name: octanest-main;
+  }
+}
+
+@layer base {
+  @media (prefers-reduced-motion: no-preference) {
+    ::view-transition-old(octanest-main) {
+      animation: oct-vt-out 220ms ease-out both;
+    }
+    ::view-transition-new(octanest-main) {
+      animation: oct-vt-in 220ms ease-out both;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes oct-vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes oct-vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 }

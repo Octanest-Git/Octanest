@@ -11,7 +11,7 @@
     "build": "echo 'api-client: types-only package'"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "^5.0.0"
+    "@octanejs/tanstack-query": "^0.1.0"
   },
   "devDependencies": {
     "vitest": "^5.0.0"

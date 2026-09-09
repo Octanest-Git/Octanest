@@ -1,4 +1,4 @@
-import { Select } from "@base-ui/react/select";
+import { Select } from "@octanejs/base-ui/select";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export function SelectTrigger({ className, ...props }: ComponentProps<typeof Sel
     <Select.Trigger
       data-slot="select-trigger"
       className={cn(
-        "inline-flex h-11 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-[14px] font-normal text-foreground outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-ring",
+        "inline-flex h-11 items-center justify-between gap-2 rounded-md border border-input bg-card px-3 text-[14px] font-normal text-foreground outline-none transition-colors duration-150 hover:border-foreground/25 focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
       {...props}

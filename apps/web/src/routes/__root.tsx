@@ -32,13 +32,27 @@ function RootShell({ children }: { children?: unknown }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+          rel="preload"
+          href="/fonts/sora-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/source-sans-3-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <meta name="theme-color" content="#f4f6f8" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#dfe8f0" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#07080a" media="(prefers-color-scheme: dark)" />
         <meta name="apple-mobile-web-app-title" content="Octanest" />
         <HeadContent />
       </Head>
@@ -55,7 +69,7 @@ function RootComponent() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="flex-1">
+      <main className="octanest-main flex-1">
         <Outlet />
       </main>
       <SiteFooter />
