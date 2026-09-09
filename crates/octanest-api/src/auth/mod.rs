@@ -1,7 +1,8 @@
-//! Auth module: passwords, sessions, local + WorkOS providers.
+//! Auth module: passwords, sessions, local + WorkOS + OIDC providers.
 
 pub mod external;
 pub mod local;
+pub mod oidc;
 pub mod password;
 pub mod pending;
 pub mod session;

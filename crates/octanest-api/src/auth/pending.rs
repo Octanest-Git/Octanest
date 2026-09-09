@@ -15,6 +15,8 @@ pub struct PendingAuth {
     pub code_verifier: String,
     pub nonce: Option<String>,
     pub return_to: String,
+    /// Redirect URI registered at authorize time (required for OIDC token exchange).
+    pub redirect_uri: String,
     pub created_at: Instant,
 }
 
@@ -61,6 +63,7 @@ mod tests {
                 code_verifier: "v".into(),
                 nonce: None,
                 return_to: "/dashboard".into(),
+                redirect_uri: "http://localhost/cb".into(),
                 created_at: Instant::now(),
             },
         );

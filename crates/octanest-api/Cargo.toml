@@ -42,6 +42,7 @@ chrono = "0.4.45"
 cookie = "0.18.2"
 workos = "3.4"
 url = "2.5.8"
+openidconnect = { version = "4.0", features = ["reqwest"] }
 
 [dev-dependencies]
 http-body-util = "0.1"

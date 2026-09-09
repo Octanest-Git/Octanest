@@ -70,6 +70,11 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/api/auth/workos/callback",
             get(auth_callbacks::workos_callback),
         )
+        .route("/api/auth/oidc/start", get(auth_callbacks::oidc_start))
+        .route(
+            "/api/auth/oidc/callback",
+            get(auth_callbacks::oidc_callback),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

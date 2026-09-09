@@ -60,6 +60,7 @@ pub fn start(
             code_verifier: result.code_verifier,
             nonce: None,
             return_to: return_to.to_string(),
+            redirect_uri: redirect_uri.to_string(),
             created_at: Instant::now(),
         },
     );

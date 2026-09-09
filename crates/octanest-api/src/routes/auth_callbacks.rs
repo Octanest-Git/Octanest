@@ -1,4 +1,4 @@
-//! HTTP start/callback routes for WorkOS AuthKit (OIDC routes added in plan 04-05-T2).
+//! HTTP start/callback routes for WorkOS and OIDC (mint Octanest session cookie).
 
 use axum::extract::{Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::app::AppState;
 use crate::auth::external::{link_or_create_user, sanitize_return_to, ExternalAuthError};
 use crate::auth::session::SESSION_COOKIE_NAME;
-use crate::auth::workos;
+use crate::auth::{oidc, workos};
 
 #[derive(Debug, Deserialize)]
 pub struct StartQuery {
@@ -140,7 +140,81 @@ pub async fn workos_callback(
     mint_session_and_redirect(&state, &identity, &return_to).await
 }
 
-pub(crate) async fn mint_session_and_redirect(
+/// GET `/api/auth/oidc/start`
+pub async fn oidc_start(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(q): Query<StartQuery>,
+) -> Response {
+    let mode = match current_mode(&state).await {
+        Ok(m) => m,
+        Err(e) => {
+            log_sso_err(&e);
+            return sso_error_redirect();
+        }
+    };
+    if mode != "oidc" {
+        log_sso_err(&ExternalAuthError::ProviderMismatch);
+        return sso_error_redirect();
+    }
+
+    let Some(cfg) = oidc::OidcConfig::from_env() else {
+        tracing::warn!("OIDC env vars missing");
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            axum::Json(serde_json::json!({
+                "ok": false,
+                "error": {
+                    "code": "auth.not_configured",
+                    "message": "OIDC is not configured"
+                }
+            })),
+        )
+            .into_response();
+    };
+
+    let return_to = sanitize_return_to(q.return_to.as_deref());
+    let origin = public_origin(&headers);
+    let redirect_uri = format!("{origin}/api/auth/oidc/callback");
+
+    match oidc::start(&state.pending, &cfg, &redirect_uri, &return_to).await {
+        Ok(url) => Redirect::temporary(url.as_str()).into_response(),
+        Err(e) => {
+            log_sso_err(&e);
+            sso_error_redirect()
+        }
+    }
+}
+
+/// GET `/api/auth/oidc/callback`
+pub async fn oidc_callback(
+    State(state): State<AppState>,
+    Query(q): Query<CallbackQuery>,
+) -> Response {
+    if q.error.is_some() {
+        tracing::warn!(error = ?q.error, "OIDC IdP returned error");
+        return sso_error_redirect();
+    }
+    let (Some(code), Some(state_param)) = (q.code.as_deref(), q.state.as_deref()) else {
+        return sso_error_redirect();
+    };
+
+    let Some(cfg) = oidc::OidcConfig::from_env() else {
+        return sso_error_redirect();
+    };
+
+    let (identity, return_to) = match oidc::finish(&state.pending, &cfg, code, state_param).await {
+        Ok(v) => v,
+        Err(e) => {
+            log_sso_err(&e);
+            return sso_error_redirect();
+        }
+    };
+
+    mint_session_and_redirect(&state, &identity, &return_to).await
+}
+
+async fn mint_session_and_redirect(
     state: &AppState,
     identity: &crate::auth::external::ExternalIdentity,
     return_to: &str,
@@ -153,7 +227,7 @@ pub(crate) async fn mint_session_and_redirect(
         }
     };
 
-    // SSO sessions: remember_me=false (plan default). Never use WorkOS sealed cookies (T-04-17).
+    // SSO sessions: remember_me=false. Never use WorkOS sealed cookies (T-04-17).
     let (_token, cookie) = match state.sessions.create(&state.db, &user.id, false).await {
         Ok(v) => v,
         Err(e) => {
