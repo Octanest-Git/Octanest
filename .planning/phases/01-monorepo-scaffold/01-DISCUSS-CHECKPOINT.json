@@ -1,0 +1,24 @@
+{
+  "phase": "1",
+  "phase_name": "Monorepo Scaffold",
+  "areas_completed": ["Workspace layout", "Package manager", "Compose topology"],
+  "areas_remaining": ["RPC transport", "Scaffold proof surface"],
+  "decisions": {
+    "Workspace layout": {
+      "top_level": "apps/web + crates/* + packages/api-client",
+      "rust_crates": "octanest-api + octanest-core + octanest-db (uniform Postgres/MySQL/SQLite adapter)",
+      "generated_client": "packages/api-client",
+      "orchestration": "Turborepo for JS; Cargo separate; Makefile wrappers at repo root"
+    },
+    "Package manager": {
+      "preference": "Bun via Corepack preferred; fall back to Corepack pnpm + Turborepo if Bun pin unreliable"
+    },
+    "Compose topology": {
+      "services": "web + api + postgres (default) + mysql via Compose profile + sqlite via env/file",
+      "db_crate": "octanest-db uniform adapter for Postgres, MySQL, SQLite",
+      "routing": "Traefik reverse proxy in Compose; Vite/TanStack Start proxy for local make dev",
+      "proxy": "Traefik"
+    }
+  },
+  "deferred": []
+}
