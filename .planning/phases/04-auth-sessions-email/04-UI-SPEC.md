@@ -1,10 +1,11 @@
 ---
 phase: 4
 slug: auth-sessions-email
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-nova
 created: 2026-09-10
+reviewed_at: 2026-09-10T00:46:00Z
 ---
 
 # Phase 4 — UI Design Contract
