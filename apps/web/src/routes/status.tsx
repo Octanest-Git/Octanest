@@ -4,6 +4,7 @@ import { useEffect, useState } from "octane";
 
 export const Route = createFileRoute("/status")({
   component: StatusPage,
+  head: () => ({ meta: [{ title: "Status · Octanest" }] }),
 });
 
 const client = createClient({
@@ -60,39 +61,41 @@ function StatusPage() {
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold">
         System status
       </h1>
-      <div className="mt-8 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <div className="mt-8 rounded-lg border border-border bg-card p-6">
         {phase.kind === "loading" && (
-          <p className="text-[var(--color-muted)]">Checking Octanest services…</p>
+          <p className="text-[16px] text-muted-foreground">
+            Checking Octanest services…
+          </p>
         )}
         {phase.kind === "healthy" && (
           <div>
-            <p className="text-[20px] font-semibold text-[var(--color-accent-cool)]">
+            <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-primary">
               All systems operational
             </p>
-            <p className="mt-2 text-[var(--color-muted)]">
+            <p className="mt-2 text-[16px] text-muted-foreground">
               API health check succeeded. This page reflects live `system.health`
               — history arrives in a later release.
             </p>
-            <p className="mt-4 text-[14px] text-[var(--color-muted)]">
+            <p className="mt-4 text-[14px] text-muted-foreground">
               version {phase.version} · database {phase.database}
             </p>
           </div>
         )}
         {phase.kind === "unhealthy" && (
           <div>
-            <p className="text-[20px] font-semibold text-[var(--color-destructive)]">
+            <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-destructive">
               Degraded or failing
             </p>
-            <p className="mt-2 text-[var(--color-muted)]">{phase.message}</p>
+            <p className="mt-2 text-[16px] text-muted-foreground">{phase.message}</p>
           </div>
         )}
         {phase.kind === "unreachable" && (
           <div>
-            <p className="text-[20px] font-semibold text-[var(--color-destructive)]">
+            <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-destructive">
               Can’t reach the API
             </p>
-            <p className="mt-2 text-[var(--color-muted)]">{phase.message}</p>
-            <p className="mt-2 text-[14px] text-[var(--color-muted)]">
+            <p className="mt-2 text-[16px] text-muted-foreground">{phase.message}</p>
+            <p className="mt-2 text-[14px] text-muted-foreground">
               Something blocked this request. Refresh the page or verify the API is
               running.
             </p>
