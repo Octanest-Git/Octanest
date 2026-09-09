@@ -1,6 +1,7 @@
 //! Uniform database adapter boundary — the only place dialect branching is allowed (D-08).
 
 pub mod dialect;
+pub mod migrate;
 pub mod pool;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
@@ -54,5 +55,19 @@ impl Database {
             Pool::Sqlite(p) => sqlx::query("SELECT 1").execute(p).await.is_ok(),
         };
         if ok { "ok" } else { "error" }
+    }
+
+    pub async fn migrate(&self) -> Result<(), String> {
+        let Some(pool) = &self.pool else {
+            return Err("database not configured".into());
+        };
+        migrate::run_migrations(pool).await
+    }
+
+    pub async fn is_empty(&self) -> Result<bool, String> {
+        let Some(pool) = &self.pool else {
+            return Err("database not configured".into());
+        };
+        migrate::is_empty(pool).await
     }
 }
