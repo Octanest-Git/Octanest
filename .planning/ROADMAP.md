@@ -98,7 +98,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can log in and remain logged in across browser refresh, and can log out from the web UI
   3. User can view and edit their own profile (display name, avatar, bio)
   4. With no email provider configured, outbound mail appears in a log/dev sink; with SMTP or Resend configured, mail is sent through that provider
-**Plans**: TBD
+**Plans**: 8 plans
+- [ ] `04-01-PLAN.md` — Auth schema, DTOs, and DB CRUD (users/sessions/identities/settings)
+- [ ] `04-02-PLAN.md` — EmailSender log-sink + SMTP + Resend adapters
+- [ ] `04-03-PLAN.md` — Argon2id passwords + opaque session cookies
+- [ ] `04-04-PLAN.md` — Local auth RPC, welcome email, admin seed, session tests
+- [ ] `04-05-PLAN.md` — WorkOS AuthKit + generic OIDC callbacks
+- [ ] `04-06-PLAN.md` — Profile/avatar API + admin.auth settings + rpc-gen
+- [ ] `04-07-PLAN.md` — Login/signup/dashboard UI + chrome account menu
+- [ ] `04-08-PLAN.md` — Profile + admin auth UI + human UAT checkpoint
 **UI hint**: yes
 
 ### Phase 5: Cloud Verify & Reset
@@ -308,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
-| 4. Auth Sessions & Email | 0/TBD | Not started | - |
+| 4. Auth Sessions & Email | 0/8 | Planned | - |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
