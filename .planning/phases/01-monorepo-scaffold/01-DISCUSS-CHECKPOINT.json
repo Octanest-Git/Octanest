@@ -10,7 +10,8 @@
     {"area": "C", "answer": "web+api+postgres default; MySQL profile; SQLite via env; Traefik reverse proxy; Vite proxy for make dev"},
     {"area": "D", "q": "Transport", "answer": "HTTP + WebSocket"},
     {"area": "D", "q": "Mount paths", "answer": "/api/rpc + /api/rpc/ws"},
-    {"area": "D", "q": "Scaffold surface", "answer": "Health + echo (typed request/response codegen proof)"}
+    {"area": "D", "q": "Scaffold surface", "answer": "Health + echo (typed request/response codegen proof)"},
+    {"area": "D", "q": "Codegen sync", "answer": "Watch regen in make dev + explicit make/turbo regen; CI asserts generated client is in sync"}
   ],
   "area_statuses": [
     {"area": "A", "status": "complete"},
@@ -19,5 +20,5 @@
     {"area": "D", "status": "in_progress"},
     {"area": "E", "status": "pending"}
   ],
-  "timestamp": "2026-09-09T10:23:00Z"
+  "timestamp": "2026-09-09T10:24:00Z"
 }
