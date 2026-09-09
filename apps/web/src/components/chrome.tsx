@@ -1,59 +1,36 @@
 import { Link } from "@octanejs/tanstack-router";
+import { OctanestMark } from "@/components/octanest-mark";
+import { ThemeSelect } from "@/components/theme-select";
 import { Button } from "@/components/ui/button";
-import { applyTheme, readThemePreference, type ThemePreference } from "@/lib/theme";
-import { useEffect, useState } from "octane";
+import { Input } from "@/components/ui/input";
 
 export function SiteHeader() {
-  const [theme, setTheme] = useState<ThemePreference>("system");
-
-  useEffect(() => {
-    const pref = readThemePreference();
-    setTheme(pref);
-    applyTheme(pref);
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      if (readThemePreference() === "system") applyTheme("system");
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  function onThemeChange(next: ThemePreference) {
-    setTheme(next);
-    applyTheme(next);
-  }
-
   return (
-    <header className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+    <header className="border-b border-border bg-card">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
-        <Link to="/" className="flex items-center gap-2 font-[family-name:var(--font-display)] text-[24px] font-semibold text-[var(--color-text)] no-underline">
-          <img src="/octanest-mark.png" alt="" width={32} height={32} />
-          Octanest
+        <Link to="/" className="flex items-center gap-2 no-underline">
+          <OctanestMark size={32} />
+          <span className="hidden font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground sm:inline">
+            Octanest
+          </span>
         </Link>
         <div className="ml-auto flex flex-1 items-center justify-end gap-3">
-          <input
-            className="hidden h-11 w-full max-w-xs rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-[14px] text-[var(--color-muted)] sm:block"
+          <Input
+            className="hidden max-w-xs sm:block"
             placeholder="Search public code (soon)"
             disabled
             title="Coming soon"
+            aria-label="Search public code"
           />
-          <select
-            aria-label="Theme"
-            className="h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-[14px]"
-            value={theme}
-            onChange={(e) => onThemeChange((e.target as HTMLSelectElement).value as ThemePreference)}
-            onInput={(e) => onThemeChange((e.target as HTMLSelectElement).value as ThemePreference)}
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-          <Button variant="ghost" disabled title="Coming soon">
-            Sign in
-          </Button>
-          <Button variant="secondary" disabled title="Coming soon">
-            Sign up
-          </Button>
+          <ThemeSelect />
+          <div role="group" aria-label="Account" className="flex items-center gap-2">
+            <Button variant="ghost" disabled title="Coming soon">
+              Sign in
+            </Button>
+            <Button variant="secondary" disabled title="Coming soon">
+              Sign up
+            </Button>
+          </div>
         </div>
       </div>
     </header>
@@ -62,10 +39,13 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-[var(--color-border)] py-8 text-[14px] text-[var(--color-muted)]">
+    <footer className="border-t border-border py-8 text-[14px] text-muted-foreground">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4">
         <span>© Octanest</span>
-        <Link to="/status" className="text-[var(--color-text)] underline-offset-4 hover:underline">
+        <Link
+          to="/status"
+          className="text-foreground underline-offset-4 hover:underline"
+        >
           Status
         </Link>
       </div>
