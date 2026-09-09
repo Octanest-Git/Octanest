@@ -36,7 +36,8 @@ impl DbPool {
                     .map_err(|e| format!("{}: {e}", redact_url(url)))?
                     .create_if_missing(true)
                     .journal_mode(SqliteJournalMode::Wal)
-                    .foreign_keys(true);
+                    .foreign_keys(true)
+                    .busy_timeout(std::time::Duration::from_secs(5));
                 SqlitePoolOptions::new()
                     .max_connections(1)
                     .connect_with(opts)
