@@ -27,4 +27,27 @@ describe("api-client", () => {
     const headers = new Headers(calls[0]?.headers);
     expect(headers.get("Octanest-RPC-Version")).toBe("1");
   });
+
+  it("sends version header on dbProbe", async () => {
+    const calls: { url: string; init: RequestInit }[] = [];
+    const client = createClient({
+      baseUrl: "http://example.test",
+      fetch: async (url, init) => {
+        calls.push({ url: String(url), init: init ?? {} });
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            data: { dialect: "sqlite", probe_count: 1, probed_at: "2026-01-01T00:00:00Z" },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      },
+    });
+    const res = await client.system.dbProbe();
+    expect(res.ok).toBe(true);
+    const body = JSON.parse(String(calls[0]?.init.body));
+    expect(body.procedure).toBe("system.db_probe");
+    const headers = new Headers(calls[0]?.init.headers);
+    expect(headers.get("Octanest-RPC-Version")).toBe("1");
+  });
 });

@@ -23,6 +23,12 @@ export type EchoResponse = {
   message: string;
 };
 
+export type DbProbeResponse = {
+  dialect: string;
+  probe_count: number;
+  probed_at: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -57,6 +63,7 @@ export function createClient(opts: CreateClientOptions) {
     system: {
       health: () => rpcCall<HealthResponse>(opts, "system.health", {}),
       echo: (input: EchoRequest) => rpcCall<EchoResponse>(opts, "system.echo", input),
+      dbProbe: () => rpcCall<DbProbeResponse>(opts, "system.db_probe", {}),
     },
   };
 }
@@ -86,6 +93,20 @@ export function systemEchoMutationOptions(client: OctanestClient) {
   };
 }
 
+export function systemDbProbeQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["system", "dbProbe"] as const,
+    queryFn: async () => {
+      const res = await client.system.dbProbe();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 /** Alias helpers matching CONTEXT D-21 naming. */
-export const queryOptions = { systemHealth: systemHealthQueryOptions };
+export const queryOptions = {
+  systemHealth: systemHealthQueryOptions,
+  systemDbProbe: systemDbProbeQueryOptions,
+};
 export const mutationOptions = { systemEcho: systemEchoMutationOptions };
