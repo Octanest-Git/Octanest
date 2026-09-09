@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: All Phase 01 plans executed; compose smoke needs Docker Engine
+status: Phase 3 context gathered — ready to plan
 stopped_at: Phase 3 context gathered
 last_updated: "2026-09-09T19:10:05.701Z"
 last_activity: 2026-09-09 — 01-03 approved; 01-04/01-05 shipped
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 01 — monorepo-scaffold
+**Current focus:** Phase 03 — brand-shell-theme
 
 ## Current Position
 
-Phase: 02 (multi-db-storage) — PLANS WRITTEN (0 of 5 executed)
-Plan: 0 of 5
-Status: All Phase 01 plans executed; compose smoke needs Docker Engine
-Last activity: 2026-09-09 — 01-03 approved; 01-04/01-05 shipped
+Phase: 03 (brand-shell-theme) — CONTEXT GATHERED
+Plan: TBD
+Status: Phase 3 context gathered — ready to plan (UI phase)
+Last activity: 2026-09-09 — Phase 3 discuss complete
 
-Progress: [██████████] 100% (phase plans)
+Progress: Phases 1–2 complete; Phase 3 next
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Recent decisions affecting current work:
 - UI: `@octanejs/tanstack-start` + ShadCN + Base UI + Tailwind CSS v4 (CSS config)
 - Theme: system default; user can force light or dark
 - Stack: Rust backend, RPC codegen, multi-DB, gitoxide-preferred
+- Phase 3: squircle mark, ShadCN semantic tokens, Vite PWA assets-only SW
 
 ### Pending Todos
 
