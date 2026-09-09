@@ -2,8 +2,8 @@
   "phase": "01",
   "status": "in_progress",
   "areas": ["A", "B", "C", "D", "E"],
-  "current_area": "D",
-  "current_area_index": 3,
+  "current_area": "E",
+  "current_area_index": 4,
   "answers": [
     {"area": "A", "answer": "apps/web + crates/* + packages/api-client; crates: octanest-api, octanest-core, octanest-db"},
     {"area": "B", "answer": "Bun via Corepack preferred; else Corepack pnpm + Turborepo"},
@@ -24,8 +24,8 @@
     {"area": "A", "status": "complete"},
     {"area": "B", "status": "complete"},
     {"area": "C", "status": "complete"},
-    {"area": "D", "status": "in_progress"},
-    {"area": "E", "status": "pending"}
+    {"area": "D", "status": "complete"},
+    {"area": "E", "status": "in_progress"}
   ],
   "timestamp": "2026-09-09T10:37:00Z"
 }
