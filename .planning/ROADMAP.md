@@ -47,7 +47,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. UI uses ShadCN + Base UI components and Tailwind CSS v4 with CSS-based configuration
   4. Backend forge/API process is a Rust service reachable from the UI
   5. Changing a Rust RPC procedure regenerates the TypeScript client/types in watch-friendly local development
-**Plans**: TBD
+**Plans**:
+- [ ] `01-01-PLAN.md` — Monorepo skeleton (Bun/Turborepo + Cargo + Makefile)
+- [ ] `01-02-PLAN.md` — Axum RPC + specta codegen + HTTP/WS tests
+- [ ] `01-03-PLAN.md` — Octane Start web + UI-SPEC landing/status
+- [ ] `01-04-PLAN.md` — Docker Compose + Traefik + smoke
+- [ ] `01-05-PLAN.md` — CI gates + VALIDATION nyquist
 **UI hint**: yes
 
 ### Phase 2: Multi-DB Storage
