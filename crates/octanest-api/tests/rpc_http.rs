@@ -11,12 +11,12 @@ fn test_app() -> axum::Router {
 }
 
 #[tokio::test]
-async fn healthz_ok() {
+async fn health_ok() {
     let app = test_app();
     let res = app
         .oneshot(
             Request::builder()
-                .uri("/healthz")
+                .uri("/health")
                 .body(Body::empty())
                 .unwrap(),
         )

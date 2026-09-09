@@ -61,8 +61,8 @@ echo "==> docker compose up --build -d --wait"
 echo "==> curl web /"
 curl -fsS -o /dev/null -w "web %{http_code}\n" "$BASE_URL/"
 
-echo "==> curl /healthz via Traefik"
-curl -fsS -o /dev/null -w "healthz %{http_code}\n" "$BASE_URL/healthz"
+echo "==> curl /health via Traefik"
+curl -fsS -o /dev/null -w "health %{http_code}\n" "$BASE_URL/health"
 
 echo "==> RPC system.health"
 curl -fsS \

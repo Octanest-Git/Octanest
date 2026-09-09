@@ -20,7 +20,7 @@ pub struct AppState {
 pub fn router(db: Database, cors: CorsLayer) -> Router {
     let state = AppState { db };
     Router::new()
-        .route("/healthz", get(healthz))
+        .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
         .route("/api/rpc/ws", get(rpc_ws))
         .layer(cors)
@@ -28,7 +28,7 @@ pub fn router(db: Database, cors: CorsLayer) -> Router {
         .with_state(state)
 }
 
-async fn healthz() -> Json<serde_json::Value> {
+async fn health() -> Json<serde_json::Value> {
     Json(serde_json::json!({ "ok": true }))
 }
 

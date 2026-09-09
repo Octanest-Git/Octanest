@@ -24,7 +24,7 @@ make help
 
 ### Local (`make dev`)
 
-Vite proxies `/api/rpc`, `/api/rpc/ws`, and `/healthz` to the API on `:8080` (D-10).
+Vite proxies `/api/rpc`, `/api/rpc/ws`, and `/health` to the API on `:8080` (D-10).
 
 ```bash
 make rpc-gen
@@ -42,11 +42,11 @@ Default stack: **Traefik** (`:80`) + **web** + **api** + **postgres**.
 cp .env.example .env   # local-only password defaults: octanest
 make up                # or: docker compose up --build -d
 # open http://localhost/
-make smoke             # build, wait healthy, curl /, /healthz, RPC system.health, then down
+make smoke             # build, wait healthy, curl /, /health, RPC system.health, then down
 make down
 ```
 
-Traefik routes `Host(localhost)` → web; `PathPrefix(/api)` and `/healthz` → api (WebSocket upgrades on `/api/rpc/ws`).
+Traefik routes `Host(localhost)` → web; `PathPrefix(/api)` and `/health` → api (WebSocket upgrades on `/api/rpc/ws`).
 
 **MySQL profile (D-07):**
 
