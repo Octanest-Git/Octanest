@@ -39,6 +39,35 @@ export type DbProbeResponse = {
   probed_at: string;
 };
 
+export type ProviderMode = "local" | "workos" | "oidc";
+
+export type UserPublic = {
+  id: string;
+  email: string;
+  username: string;
+  display_name: string;
+  bio: string;
+  avatar_url?: string | null;
+  is_admin: boolean;
+  profile_incomplete: boolean;
+};
+
+export type SignupRequest = {
+  email: string;
+  username: string;
+  password: string;
+};
+
+export type LoginRequest = {
+  identifier: string;
+  password: string;
+  remember_me: boolean;
+};
+
+export type ProviderConfigPublic = {
+  mode: ProviderMode;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -74,6 +103,15 @@ export function createClient(opts: CreateClientOptions) {
       health: () => rpcCall<HealthResponse>(opts, "system.health", {}),
       echo: (input: EchoRequest) => rpcCall<EchoResponse>(opts, "system.echo", input),
       dbProbe: () => rpcCall<DbProbeResponse>(opts, "system.db_probe", {}),
+    },
+    auth: {
+      signup: (input: SignupRequest) => rpcCall<UserPublic>(opts, "auth.signup", input),
+      login: (input: LoginRequest) => rpcCall<UserPublic>(opts, "auth.login", input),
+      logout: () => rpcCall<{ ok: boolean }>(opts, "auth.logout", {}),
+      logoutAll: () => rpcCall<{ ok: boolean }>(opts, "auth.logout_all", {}),
+      me: () => rpcCall<UserPublic>(opts, "auth.me", {}),
+      providerConfig: () =>
+        rpcCall<ProviderConfigPublic>(opts, "auth.provider_config", {}),
     },
   };
 }
@@ -114,12 +152,86 @@ export function systemDbProbeQueryOptions(client: OctanestClient) {
   };
 }
 
+export function authMeQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["auth", "me"] as const,
+    queryFn: async () => {
+      const res = await client.auth.me();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function authProviderConfigQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["auth", "providerConfig"] as const,
+    queryFn: async () => {
+      const res = await client.auth.providerConfig();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function authSignupMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["auth", "signup"] as const,
+    mutationFn: async (input: SignupRequest) => {
+      const res = await client.auth.signup(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function authLoginMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["auth", "login"] as const,
+    mutationFn: async (input: LoginRequest) => {
+      const res = await client.auth.login(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function authLogoutMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["auth", "logout"] as const,
+    mutationFn: async () => {
+      const res = await client.auth.logout();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function authLogoutAllMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["auth", "logoutAll"] as const,
+    mutationFn: async () => {
+      const res = await client.auth.logoutAll();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 /** Alias helpers matching CONTEXT D-21 naming. */
 export const queryOptions = {
   systemHealth: systemHealthQueryOptions,
   systemDbProbe: systemDbProbeQueryOptions,
+  authMe: authMeQueryOptions,
+  authProviderConfig: authProviderConfigQueryOptions,
 };
-export const mutationOptions = { systemEcho: systemEchoMutationOptions };
+export const mutationOptions = {
+  systemEcho: systemEchoMutationOptions,
+  authSignup: authSignupMutationOptions,
+  authLogin: authLoginMutationOptions,
+  authLogout: authLogoutMutationOptions,
+  authLogoutAll: authLogoutAllMutationOptions,
+};
 "#;
 
     let path = out_dir.join("index.ts");

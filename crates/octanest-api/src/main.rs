@@ -1,6 +1,51 @@
+use octanest_api::auth::hash_password_str;
 use octanest_api::{build_cors, router};
 use octanest_db::Database;
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
+
+/// Create a single `is_admin` user when `OCTANEST_ADMIN_EMAIL` + `OCTANEST_ADMIN_PASSWORD`
+/// are both set and `count_users() == 0`. Username `admin` if free else `admin1`.
+async fn maybe_seed_admin(db: &Database) -> Result<(), String> {
+    let email = match std::env::var("OCTANEST_ADMIN_EMAIL") {
+        Ok(v) if !v.is_empty() => v.trim().to_ascii_lowercase(),
+        _ => return Ok(()),
+    };
+    let password = match std::env::var("OCTANEST_ADMIN_PASSWORD") {
+        Ok(v) if !v.is_empty() => v,
+        _ => return Ok(()),
+    };
+
+    let count = db.count_users().await?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    let username = match db.find_user_by_username("admin").await? {
+        None => "admin".to_string(),
+        Some(_) => "admin1".to_string(),
+    };
+
+    let password_hash = hash_password_str(&password).map_err(|e| e.to_string())?;
+    let id = Uuid::new_v4().to_string();
+    db.create_user(
+        &id,
+        &email,
+        &username,
+        Some(&password_hash),
+        &username,
+        "",
+        None,
+        true,
+    )
+    .await?;
+    tracing::info!(
+        username = %username,
+        email = %email,
+        "seeded initial admin user from OCTANEST_ADMIN_* (Phase 6 wizard owns interactive bootstrap)"
+    );
+    Ok(())
+}
 
 #[tokio::main]
 async fn main() {
@@ -57,6 +102,13 @@ async fn main() {
             tracing::info!(
                 "OCTANEST_AUTO_MIGRATE=false; run `make db-migrate` to apply migrations"
             );
+        }
+
+        // Optional first-admin seed (T-04-13). Phase 6 owns the interactive wizard —
+        // this path only runs when both env vars are set and the users table is empty.
+        if let Err(e) = maybe_seed_admin(&db).await {
+            eprintln!("admin seed failed: {e}");
+            std::process::exit(1);
         }
     }
 
