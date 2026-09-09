@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
-| 4. Auth Sessions & Email | 0/8 | Planned | - |
+| 4. Auth Sessions & Email | 1/8 | In Progress|  |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
