@@ -12,7 +12,8 @@
     {"area": "D", "q": "Mount paths", "answer": "/api/rpc + /api/rpc/ws"},
     {"area": "D", "q": "Scaffold surface", "answer": "Health + echo (typed request/response codegen proof)"},
     {"area": "D", "q": "Codegen sync", "answer": "Watch regen in make dev + explicit make/turbo regen; CI asserts generated client is in sync"},
-    {"area": "D", "q": "Error envelope", "answer": "Typed app errors: stable code + message + optional data; typed error union in client"}
+    {"area": "D", "q": "Error envelope", "answer": "Typed app errors: stable code + message + optional data; typed error union in client"},
+    {"area": "D", "q": "Procedure naming", "answer": "Dotted namespaces from day one: system.health, system.echo"}
   ],
   "area_statuses": [
     {"area": "A", "status": "complete"},
@@ -21,5 +22,5 @@
     {"area": "D", "status": "in_progress"},
     {"area": "E", "status": "pending"}
   ],
-  "timestamp": "2026-09-09T10:25:00Z"
+  "timestamp": "2026-09-09T10:26:00Z"
 }
