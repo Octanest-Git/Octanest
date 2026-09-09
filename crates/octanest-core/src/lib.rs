@@ -1,5 +1,9 @@
 //! Shared domain types for Octanest.
 
+pub mod auth_types;
+
+pub use auth_types::*;
+
 use serde::{Deserialize, Serialize};
 
 pub fn crate_name() -> &'static str {
