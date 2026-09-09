@@ -1,0 +1,15 @@
+{
+  "name": "@octanest/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'web scaffolding lands in plan 01-03'",
+    "build": "echo 'web scaffolding lands in plan 01-03'",
+    "test": "echo 'no web tests yet'",
+    "lint": "echo 'no web lint yet'"
+  },
+  "dependencies": {
+    "@octanest/api-client": "workspace:*"
+  }
+}
