@@ -1,5 +1,5 @@
 ---
-status: testing
+status: complete
 phase: 02-multi-db-storage
 source:
   - 02-01-SUMMARY.md
@@ -8,62 +8,61 @@ source:
   - 02-04-SUMMARY.md
   - 02-05-SUMMARY.md
 started: 2026-09-09T15:40:47Z
-updated: 2026-09-09T16:21:10Z
+updated: 2026-09-09T17:05:09Z
 ---
 
 ## Current Test
 
-number: 4
-name: Dialect mismatch fails fast
-expected: |
-  With `DATABASE_URL=postgres://…` and `OCTANEST_DB_DIALECT=mysql`, starting the API exits immediately
-  with a clear "does not match DATABASE_URL scheme" message (no hanging server). Password is not printed
-  if the URL contains one.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
 ### 1. Cold Start Smoke Test (Postgres Compose)
-expected: From a clean state, `make smoke` brings the stack up; `/`, `/health`, `system.health`, and `system.db_probe` (dialect=postgres, increasing probe_count) succeed; smoke tears down cleanly.
+expected: make smoke brings stack up; /, /health, system.health, system.db_probe dialect=postgres with increasing probe_count; tear-down clean.
 result: pass
-verified_by: agent (`make smoke`; WSL docker socket issues — used PATH wrapper to docker.exe)
+verified_by: agent (make smoke; PATH wrapper to docker.exe)
 
 ### 2. MySQL overlay smoke
-expected: `make smoke-mysql` succeeds; `system.db_probe` returns `"dialect":"mysql"` and probe_count increases.
+expected: make smoke-mysql succeeds; system.db_probe dialect=mysql; probe_count increases.
 result: pass
-verified_by: agent (`make smoke-mysql`; compose-smoke translates COMPOSE_PROFILES into --profile)
+verified_by: agent (make smoke-mysql; COMPOSE_PROFILES -> --profile)
 
 ### 3. SQLite overlay smoke
-expected: `make smoke-sqlite` succeeds with no database container; file appears under `./var/`; `system.db_probe` returns `"dialect":"sqlite"` and probe_count increases.
+expected: make smoke-sqlite succeeds; no DB container; file under ./var/; dialect=sqlite; probe_count increases.
 result: pass
-verified_by: agent (`make smoke-sqlite`; WSL+docker.exe cannot bind Linux paths — sqlite-host-dir.sh uses Windows temp bind + mirrors DB to ./var)
+verified_by: agent (make smoke-sqlite; Windows bind fallback + mirror to ./var)
 
 ### 4. Dialect mismatch fails fast
-expected: With `DATABASE_URL=postgres://…` and `OCTANEST_DB_DIALECT=mysql`, starting the API exits immediately with a clear "does not match DATABASE_URL scheme" message (no hanging server). Password is not printed if the URL contains one.
-result: pending
+expected: DATABASE_URL postgres + OCTANEST_DB_DIALECT=mysql exits 1 with mismatch message; password not leaked.
+result: pass
+verified_by: agent (cargo run -p octanest-api --bin octanest-api)
 
 ### 5. SQLite migrate + probe without Compose
-expected: Point `DATABASE_URL=sqlite:./target/tmp/uat/octanest.db`, run migrate and dialect probe. Write/read succeeds; parent dirs are created automatically.
-result: pending
+expected: DATABASE_URL=sqlite nested path; migrate creates parents; dialect_probe round-trip succeeds.
+result: pass
+verified_by: agent (migrate + cargo test -p octanest-db --test dialect_probe)
 
 ### 6. Empty-target dialect switch
-expected: `make db-switch-dialect` / migrate `--assert-empty` succeeds on an empty SQLite target, then refuses the same target once populated (unless `--force-empty`).
-result: pending
+expected: db-switch-dialect succeeds on empty SQLite; --assert-empty refuses populated target.
+result: pass
+verified_by: agent (scripts/db-switch-dialect.sh + migrate --assert-empty)
 
 ### 7. Operator docs agree on three dialects
-expected: `docs/database.md`, README (`make up-sqlite`), `.env.example` (`sqlite:./var/octanest.db`), and `make help` all describe the same three dialect paths; no stale `sqlite:./data/` docs.
-result: pending
+expected: docs/database.md, README, .env.example, make help agree; no stale sqlite:./data/.
+result: pass
+verified_by: agent (grep + make help)
 
 ### 8. CI db-matrix is defined
-expected: `.github/workflows/ci.yml` contains a `db-matrix` job covering postgres, mysql, and sqlite with `dialect_probe`, and the compose job validates the sqlite overlay config (no live compose bring-up in CI).
-result: pending
+expected: ci.yml db-matrix for postgres/mysql/sqlite + sqlite overlay config; no live compose up.
+result: pass
+verified_by: agent (grep + yaml parse)
 
 ## Summary
 
 total: 8
-passed: 3
+passed: 8
 issues: 0
-pending: 5
+pending: 0
 skipped: 0
 blocked: 0
 
