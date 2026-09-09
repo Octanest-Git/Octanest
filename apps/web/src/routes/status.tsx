@@ -58,6 +58,15 @@ function StatusPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
+      <style>
+        {`
+@keyframes octStatusIn { from { opacity: 0; } to { opacity: 1; } }
+.oct-status-resolve { animation: octStatusIn 200ms ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .oct-status-resolve { animation: none !important; opacity: 1 !important; }
+}
+`}
+      </style>
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold">
         System status
       </h1>
@@ -68,7 +77,7 @@ function StatusPage() {
           </p>
         )}
         {phase.kind === "healthy" && (
-          <div>
+          <div className="oct-status-resolve">
             <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-primary">
               All systems operational
             </p>
@@ -82,7 +91,7 @@ function StatusPage() {
           </div>
         )}
         {phase.kind === "unhealthy" && (
-          <div>
+          <div className="oct-status-resolve">
             <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-destructive">
               Degraded or failing
             </p>
@@ -90,7 +99,7 @@ function StatusPage() {
           </div>
         )}
         {phase.kind === "unreachable" && (
-          <div>
+          <div className="oct-status-resolve">
             <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-[1.15] text-destructive">
               Can’t reach the API
             </p>
