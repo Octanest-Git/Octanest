@@ -1,0 +1,14 @@
+# SQLite overlay (D-07, D-19): no DB container, file bind-mounted from ./var.
+#   docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up --build
+# Requires Docker Compose v2.24+ for the !reset tag.
+services:
+  postgres:
+    profiles: ["postgres"]
+
+  api:
+    depends_on: !reset null
+    environment:
+      DATABASE_URL: sqlite:/app/var/octanest.db
+      OCTANEST_DB_DIALECT: sqlite
+    volumes:
+      - ./var:/app/var

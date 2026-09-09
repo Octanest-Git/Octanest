@@ -24,6 +24,7 @@ services:
   api:
     environment:
       DATABASE_URL: ${MYSQL_DATABASE_URL:-mysql://octanest:octanest@mysql:3306/octanest}
+      OCTANEST_DB_DIALECT: mysql
     depends_on:
       mysql:
         condition: service_healthy
