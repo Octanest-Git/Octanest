@@ -8,3 +8,5 @@ dist/
 .DS_Store
 data/
 coverage/
+test-results/
+playwright-report/

@@ -1,7 +1,7 @@
 # Plan 01-03 Summary — Octane Start web + UI-SPEC
 
-**Completed:** 2026-09-09 (pending human UI checkpoint)
-**Status:** code complete · awaiting approval
+**Completed:** 2026-09-09
+**Status:** complete (human UI checkpoint approved)
 
 ## What shipped
 - `apps/web` on `@octanejs/tanstack-start` + `@octanejs/tanstack-router` + `octane`
@@ -11,11 +11,12 @@
 - Landing `/` with UI-SPEC copy + Get started / Explore Octanest
 - Header placeholders (Search / Sign in / Sign up) + footer **Status** → `/status`
 - `/status` live `system.health` via `systemHealthQueryOptions` from `@octanest/api-client`
+- Document shell via Octane `Html` / `Head` / `Body` + `shellComponent` (correct `#__app` hydration)
 - `components.json` + Tailwind-styled Button (Base UI package installed; full shadcn CLI catalog deferred)
 - `vite build` (client + SSR) succeeds
 
 ## Checkpoint
-Human visual verification required before marking plan fully done.
+Approved 2026-09-09 after Playwright verification: landing CTAs, theme persistence, `/status` healthy, no hydration mismatch.
 
 ## Next
-After approval → Plan 01-04 Compose
+Plan 01-04 Compose + Traefik

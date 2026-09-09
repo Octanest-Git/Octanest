@@ -41,7 +41,8 @@ export function SiteHeader() {
             aria-label="Theme"
             className="h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-[14px]"
             value={theme}
-            onChange={(e) => onThemeChange(e.target.value as ThemePreference)}
+            onChange={(e) => onThemeChange((e.target as HTMLSelectElement).value as ThemePreference)}
+            onInput={(e) => onThemeChange((e.target as HTMLSelectElement).value as ThemePreference)}
           >
             <option value="system">System</option>
             <option value="light">Light</option>
