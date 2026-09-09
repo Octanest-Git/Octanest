@@ -3,8 +3,10 @@
 pub mod dialect;
 pub mod migrate;
 pub mod pool;
+pub mod probe;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
+pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 
 use dialect::resolve_dialect_from_env as resolve_from_env;
@@ -69,5 +71,12 @@ impl Database {
             return Err("database not configured".into());
         };
         migrate::is_empty(pool).await
+    }
+
+    pub async fn probe(&self) -> Result<DbProbeResponse, String> {
+        let (Some(pool), Some(dialect)) = (&self.pool, self.dialect) else {
+            return Err("database not configured".into());
+        };
+        probe::probe(pool, dialect).await
     }
 }

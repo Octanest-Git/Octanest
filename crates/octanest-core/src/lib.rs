@@ -36,6 +36,13 @@ pub struct HealthResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DbProbeResponse {
+    pub dialect: String,
+    pub probe_count: i64,
+    pub probed_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EchoRequest {
     pub message: String,
 }
