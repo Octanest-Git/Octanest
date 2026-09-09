@@ -2,41 +2,109 @@
 @import "@fontsource-variable/sora";
 @import "@fontsource-variable/source-sans-3";
 
-@theme {
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.625rem;
+
+  --background: #f4f6f8;
+  --foreground: #12141a;
+  --card: #ffffff;
+  --card-foreground: #12141a;
+  --popover: #ffffff;
+  --popover-foreground: #12141a;
+  --primary: #1b6fe8;
+  --primary-foreground: #ffffff;
+  --secondary: #f07818;
+  --secondary-foreground: #1a1206;
+  --muted: #e9edf2;
+  --muted-foreground: #5c6570;
+  --accent: #e9edf2;
+  --accent-foreground: #12141a;
+  --destructive: #d92d20;
+  --destructive-foreground: #ffffff;
+  --border: #d8dee6;
+  --input: #d8dee6;
+  --ring: #1b6fe8;
+}
+
+.dark {
+  --background: #0b0c0e;
+  --foreground: #f2f4f7;
+  --card: #16181d;
+  --card-foreground: #f2f4f7;
+  --popover: #16181d;
+  --popover-foreground: #f2f4f7;
+  --primary: #3b8cff;
+  --primary-foreground: #06121f;
+  --secondary: #ff8a2b;
+  --secondary-foreground: #1a1206;
+  --muted: #1e2128;
+  --muted-foreground: #9aa3b2;
+  --accent: #1e2128;
+  --accent-foreground: #f2f4f7;
+  --destructive: #f97066;
+  --destructive-foreground: #1a0b0a;
+  --border: #2a2f3a;
+  --input: #2a2f3a;
+  --ring: #3b8cff;
+}
+
+@theme inline {
   --font-display: "Sora Variable", "Sora", sans-serif;
   --font-sans: "Source Sans 3 Variable", "Source Sans 3", sans-serif;
-  --color-bg: #f4f6f8;
-  --color-surface: #ffffff;
-  --color-accent-cool: #1b6fe8;
-  --color-accent-warm: #f07818;
-  --color-text: #12141a;
-  --color-muted: #5c6570;
-  --color-border: #d8dee6;
-  --color-destructive: #d92d20;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
 }
 
-html.dark {
-  --color-bg: #0b0c0e;
-  --color-surface: #16181d;
-  --color-accent-cool: #3b8cff;
-  --color-accent-warm: #ff8a2b;
-  --color-text: #f2f4f7;
-  --color-muted: #9aa3b2;
-  --color-border: #2a2f3a;
-  --color-destructive: #f97066;
+@layer base {
+  html,
+  body,
+  #__app {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    background-color: var(--background);
+    color: var(--foreground);
+  }
 }
 
-html,
-body,
-#__app {
-  min-height: 100%;
-}
-
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-text);
-  line-height: 1.5;
-  font-size: 16px;
+@layer components {
+  /* macOS app-icon squircle clip for the brand mark (D-02). Mask asset is generated
+     by scripts/gen-squircle.mjs and reused for raster app icons in 03-05. */
+  .octanest-squircle {
+    -webkit-mask-image: url("/brand/squircle.svg");
+    -webkit-mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-image: url("/brand/squircle.svg");
+    mask-size: 100% 100%;
+    mask-repeat: no-repeat;
+  }
 }
