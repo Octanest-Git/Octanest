@@ -64,10 +64,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Migrations apply cleanly on each supported dialect
   3. A core app write/read flow succeeds against each dialect in a local Compose setup
 **Plans**:
-- [ ] `02-01-PLAN.md` — octanest-db multi-dialect core (resolve, pools, migrations, `instances` probe, migrate CLI)
-- [ ] `02-02-PLAN.md` — API startup fail-fast + auto-migrate + `system.db_probe` RPC + generated client
-- [ ] `02-03-PLAN.md` — SQLite Compose overlay, Make targets, dialect-asserting smoke, dialect switch
-- [ ] `02-04-PLAN.md` — CI `db-matrix` (3 dialects) + operator docs + validation sign-off
+- [ ] `02-01-PLAN.md` — octanest-db connection layer (dialect resolution, redaction, `DbPool`/`Database` connect)
+- [ ] `02-02-PLAN.md` — per-dialect migrations, `instances` probe, migrate CLI, integration tests
+- [ ] `02-03-PLAN.md` — API startup fail-fast + auto-migrate + `system.db_probe` RPC + generated client
+- [ ] `02-04-PLAN.md` — SQLite Compose overlay, Make targets, dialect-asserting smoke, dialect switch
+- [ ] `02-05-PLAN.md` — CI `db-matrix` (3 dialects) + operator docs + validation sign-off
 
 ### Phase 3: Brand Shell & Theme
 **Goal**: The product UI reads as Octanest — mark, colors, naming — with light/dark themes defaulting to system and user override

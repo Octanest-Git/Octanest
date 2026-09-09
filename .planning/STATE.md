@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 ## Current Position
 
-Phase: 02 (multi-db-storage) — PLANS WRITTEN (0 of 4 executed)
-Plan: 0 of 4
+Phase: 02 (multi-db-storage) — PLANS WRITTEN (0 of 5 executed)
+Plan: 0 of 5
 Status: All Phase 01 plans executed; compose smoke needs Docker Engine
 Last activity: 2026-09-09 — 01-03 approved; 01-04/01-05 shipped
 
@@ -84,5 +84,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-09-09T13:39:13.108Z
-Stopped at: Phase 2 planned — 02-01 … 02-04 PLAN.md written, VALIDATION task map locked
+Stopped at: Phase 2 planned — 02-01 … 02-05 PLAN.md written (02-01 split into 02-01/02-02 for context budget), VALIDATION task map locked
 Resume file: .planning/phases/02-multi-db-storage/02-01-PLAN.md
