@@ -33,6 +33,13 @@ async-trait = "0.1.92"
 thiserror = "2"
 lettre = { version = "0.11.23", features = ["tokio1", "tokio1-rustls", "smtp-transport", "builder", "hostname", "rustls-native-certs", "aws-lc-rs"], default-features = false }
 reqwest = { version = "0.13.5", features = ["rustls", "json"] }
+argon2 = "0.6"
+password-hash = { version = "0.6", features = ["alloc", "phc", "getrandom"] }
+sha2 = "0.11.0"
+rand = "0.10.2"
+uuid = { version = "1.26.0", features = ["v4"] }
+chrono = "0.4.45"
+cookie = "0.18.2"
 
 [dev-dependencies]
 http-body-util = "0.1"
