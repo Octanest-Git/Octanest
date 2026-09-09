@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-09-09T23:37:45.955Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-09-09T23:48:02.811Z"
 last_activity: 2026-09-09
 progress:
   total_phases: 22
   completed_phases: 3
   total_plans: 24
-  completed_plans: 20
-  percent: 83
+  completed_plans: 21
+  percent: 88
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 4 (auth-sessions-email) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
 Last activity: 2026-09-09
 
@@ -58,6 +58,7 @@ Progress: Phases 1–3 complete; Phase 4 in progress (4/8 plans)
 | Phase 04-auth-sessions-email P02 | 3min | 2 tasks | 8 files |
 | Phase 04-auth-sessions-email P03 | 3min | 2 tasks | 6 files |
 | Phase 04-auth-sessions-email P04 | 4min | 2 tasks | 12 files |
+| Phase 04-auth-sessions-email P05 | 7min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 04]: auth.unauthenticated → HTTP 401; other auth errors → 400 — Prefer consistent JSON err with distinct unauthenticated status for clients
 - [Phase 04]: Welcome email failures logged only; signup still succeeds — Mail adapter outages must not block account creation (D-20)
 - [Phase 04]: Admin seed only when OCTANEST_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
+- [Phase 04]: WorkOS AuthKit PKCE + authenticate_with_code mints Octanest session (not sealed cookies) — D-07 / T-04-17
+- [Phase 04]: OIDC issuer SSRF: https-only; reject localhost/10/8/link-local/metadata — T-04-16 ASVS L1
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-09T23:37:35.565Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-09-09T23:48:02.809Z
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
