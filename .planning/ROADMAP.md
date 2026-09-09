@@ -63,7 +63,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Operator can configure the instance dialect to SQLite, PostgreSQL, or MySQL via config/env
   2. Migrations apply cleanly on each supported dialect
   3. A core app write/read flow succeeds against each dialect in a local Compose setup
-**Plans**: TBD
+**Plans**:
+- [ ] `02-01-PLAN.md` — octanest-db multi-dialect core (resolve, pools, migrations, `instances` probe, migrate CLI)
+- [ ] `02-02-PLAN.md` — API startup fail-fast + auto-migrate + `system.db_probe` RPC + generated client
+- [ ] `02-03-PLAN.md` — SQLite Compose overlay, Make targets, dialect-asserting smoke, dialect switch
+- [ ] `02-04-PLAN.md` — CI `db-matrix` (3 dialects) + operator docs + validation sign-off
 
 ### Phase 3: Brand Shell & Theme
 **Goal**: The product UI reads as Octanest — mark, colors, naming — with light/dark themes defaulting to system and user override
@@ -295,7 +299,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
-| 2. Multi-DB Storage | 0/TBD | Not started | - |
+| 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 0/TBD | Not started | - |
 | 4. Auth Sessions & Email | 0/TBD | Not started | - |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
