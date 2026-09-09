@@ -44,6 +44,9 @@ services:
       API_BIND: 0.0.0.0:8080
       OCTANEST_RPC_VERSION: ${OCTANEST_RPC_VERSION:-1}
       RUST_LOG: ${RUST_LOG:-info}
+    volumes:
+      # Avatar uploads (D-18) — api CWD is `/`, so bind to /var/uploads
+      - ./var/uploads:/var/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,7 +59,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=octanest_octanest
-      - traefik.http.routers.api.rule=Host(`localhost`) && (PathPrefix(`/api`) || Path(`/health`))
+      - traefik.http.routers.api.rule=Host(`localhost`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`) || Path(`/health`))
       - traefik.http.routers.api.entrypoints=web
       - traefik.http.routers.api.priority=100
       - traefik.http.services.api.loadbalancer.server.port=8080

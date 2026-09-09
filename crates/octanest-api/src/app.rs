@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use axum::extract::DefaultBodyLimit;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::State;
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
@@ -17,7 +18,7 @@ use crate::auth::local;
 use crate::auth::pending::PendingAuthStore;
 use crate::auth::session::{SessionService, SESSION_COOKIE_NAME};
 use crate::email::{self, EmailSender};
-use crate::routes::auth_callbacks;
+use crate::routes::{auth_callbacks, avatar};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
 #[derive(Clone)]
@@ -75,6 +76,11 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/api/auth/oidc/callback",
             get(auth_callbacks::oidc_callback),
         )
+        .route(
+            "/api/user/avatar",
+            post(avatar::upload_avatar).layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES)),
+        )
+        .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

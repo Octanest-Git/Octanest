@@ -5,6 +5,7 @@ pub mod local;
 pub mod oidc;
 pub mod password;
 pub mod pending;
+pub mod profile;
 pub mod session;
 pub mod workos;
 

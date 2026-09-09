@@ -9,6 +9,7 @@ use octanest_core::{
 use octanest_db::Database;
 
 use crate::auth::local;
+use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
 use crate::email::EmailSender;
 
@@ -109,6 +110,14 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "auth.provider_config" => match local::provider_config(ctx).await {
             Ok(cfg) => RpcResponse::ok(cfg),
+            Err(e) => RpcResponse::err(e),
+        },
+        "user.get_profile" => match profile::get_profile(ctx).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "user.update_profile" => match profile::update_profile(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
         other => RpcResponse::err(AppError::new(
