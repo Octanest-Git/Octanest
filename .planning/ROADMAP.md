@@ -99,8 +99,8 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can view and edit their own profile (display name, avatar, bio)
   4. With no email provider configured, outbound mail appears in a log/dev sink; with SMTP or Resend configured, mail is sent through that provider
 **Plans**: 8 plans
-- [ ] `04-01-PLAN.md` — Auth schema, DTOs, and DB CRUD (users/sessions/identities/settings)
-- [ ] `04-02-PLAN.md` — EmailSender log-sink + SMTP + Resend adapters
+- [x] `04-01-PLAN.md` — Auth schema, DTOs, and DB CRUD (users/sessions/identities/settings)
+- [x] `04-02-PLAN.md` — EmailSender log-sink + SMTP + Resend adapters
 - [ ] `04-03-PLAN.md` — Argon2id passwords + opaque session cookies
 - [ ] `04-04-PLAN.md` — Local auth RPC, welcome email, admin seed, session tests
 - [ ] `04-05-PLAN.md` — WorkOS AuthKit + generic OIDC callbacks
@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
-| 4. Auth Sessions & Email | 1/8 | In Progress|  |
+| 4. Auth Sessions & Email | 2/8 | In Progress|  |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
