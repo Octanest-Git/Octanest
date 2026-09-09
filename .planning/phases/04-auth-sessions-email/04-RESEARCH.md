@@ -599,18 +599,16 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
 | A6 | `sha2` for token hashing is appropriate (vs HMAC with server key) | Sessions | If threat model requires keyed MAC, switch to HMAC-SHA256 |
 | A7 | WorkOS AuthKit (`provider=authkit`) is the first vertical slice vs connection-scoped SSO only | WorkOS | Planner follows discretion; SSO-by-connection still supported later |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should SSO-only users (WorkOS/OIDC) get a username at first login?**
-   - What we know: Local signup requires username (D-01); external providers may only give email/sub.
-   - What's unclear: Auto-derive from email local-part vs forced username completion screen.
-   - Recommendation: Auto-suggest from email local-part with collision suffix; allow edit on profile; if invalid/reserved, force `/settings/profile` completion before dashboard. [ASSUMED]
+1. **Should SSO-only users (WorkOS/OIDC) get a username at first login?** — **RESOLVED**
+   - **Decision (plans 04-05 / 04-07):** Derive username from email local-part + collision suffix on first SSO login; if invalid/reserved, use a temp unique placeholder (e.g. `u{shortid}`) and set `profile_incomplete=true` so UI forces `/settings/profile` completion before treating the profile as done.
 
-2. **Public vs auth-gated avatar URLs?**
-   - Recommendation: Serve `/uploads/avatars/{user_id}-{hash}.webp` as publicly readable (GitHub-like); no secrets in path beyond unguessable hash optional. Simpler CDN-later story.
+2. **Public vs auth-gated avatar URLs?** — **RESOLVED**
+   - **Decision (plan 04-06):** Public hashed avatar URLs — serve `/uploads/avatars/{user_id}-{hash}.webp` (or equivalent) as publicly readable; no auth gate on avatar bytes for Phase 4.
 
-3. **Where do SMTP/Resend secrets live — ENV only vs DB?**
-   - Recommendation: **Secrets in ENV** (`OCTANEST_SMTP_URL`, `OCTANEST_RESEND_API_KEY`, `WORKOS_API_KEY`, OIDC client secret); admin UI toggles provider mode + non-secret fields and references “configured via ENV”. Persisting secrets in DB is Phase-later hardening.
+3. **Where do SMTP/Resend secrets live — ENV only vs DB?** — **RESOLVED**
+   - **Decision (plan 04-06):** ENV-only secrets for Phase 4 (`OCTANEST_SMTP_URL`, `OCTANEST_RESEND_API_KEY`, `WORKOS_API_KEY`, OIDC client secret); admin UI persists provider mode + non-secret fields only and surfaces “configured via ENV” for secrets.
 
 ## Environment Availability
 
