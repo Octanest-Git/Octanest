@@ -60,7 +60,7 @@ blocked: 0
 ## Gaps
 
 - truth: "HTTP probe path is /healthz for Compose/Traefik healthchecks"
-  status: failed
+  status: resolved
   reason: "User reported: I prefer if we use /health instead of /healthz"
   severity: major
   test: 1
@@ -73,3 +73,4 @@ blocked: 0
   missing:
     - "Rename GET /healthz → GET /health everywhere (API, Traefik, Compose healthcheck, Vite proxy, smoke, docs)"
   debug_session: "agent-self-verify"
+  resolution: "Renamed GET /healthz → GET /health across API, Compose, Traefik, Vite proxy, smoke, Dockerfile, docs"
