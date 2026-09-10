@@ -213,6 +213,26 @@
   .octanest-main {
     view-transition-name: octanest-main;
   }
+
+  /* Verify banner appear (Phase 5 UI-SPEC motion #2) — soft opacity 150–200ms. */
+  .oct-verify-banner {
+    animation: octVerifyBannerIn 175ms ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .oct-verify-banner {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes octVerifyBannerIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @layer base {

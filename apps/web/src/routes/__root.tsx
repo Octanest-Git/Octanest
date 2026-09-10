@@ -8,6 +8,7 @@ import {
   createRootRoute,
 } from "@octanejs/tanstack-router";
 import { SiteFooter, SiteHeader } from "@/components/chrome";
+import { VerifyBanner } from "@/components/verify-banner";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
 import "@/styles.css";
 
@@ -69,6 +70,7 @@ function RootComponent() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
+      <VerifyBanner />
       <main className="octanest-main flex-1">
         <Outlet />
       </main>
