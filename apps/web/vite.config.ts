@@ -25,6 +25,7 @@ export default defineConfig({
     proxy: {
       "/api/rpc/ws": { target: "ws://127.0.0.1:8080", ws: true },
       "/api/rpc": { target: "http://127.0.0.1:8080", changeOrigin: true },
+      "/api/auth": { target: "http://127.0.0.1:8080", changeOrigin: true },
       "/health": { target: "http://127.0.0.1:8080", changeOrigin: true },
     },
   },
