@@ -1,11 +1,12 @@
 -- logical: 0002_auth — users/sessions/identities/settings
+-- MySQL: TEXT/BLOB/JSON cannot carry DEFAULT — use VARCHAR where a default is required.
 CREATE TABLE IF NOT EXISTS users (
   id                CHAR(36)     PRIMARY KEY,
   email             VARCHAR(320) NOT NULL UNIQUE,
   username          VARCHAR(39)  NOT NULL UNIQUE,
   password_hash     TEXT         NULL,
-  display_name      TEXT         NOT NULL,
-  bio               TEXT         NOT NULL DEFAULT '',
+  display_name      VARCHAR(200) NOT NULL,
+  bio               VARCHAR(4000) NOT NULL DEFAULT '',
   avatar_path       TEXT         NULL,
   is_admin          BOOLEAN      NOT NULL DEFAULT FALSE,
   email_verified_at TIMESTAMP    NULL,
@@ -37,14 +38,14 @@ CREATE TABLE IF NOT EXISTS auth_identities (
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS instance_auth_settings (
-  id               INT       PRIMARY KEY,
-  provider_mode    TEXT      NOT NULL DEFAULT 'local',
-  email_provider   TEXT      NOT NULL DEFAULT 'log',
-  from_address     TEXT      NULL,
-  oidc_issuer      TEXT      NULL,
-  oidc_client_id   TEXT      NULL,
-  workos_client_id TEXT      NULL,
-  updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id               INT          PRIMARY KEY,
+  provider_mode    VARCHAR(32)  NOT NULL DEFAULT 'local',
+  email_provider   VARCHAR(32)  NOT NULL DEFAULT 'log',
+  from_address     VARCHAR(320) NULL,
+  oidc_issuer      VARCHAR(512) NULL,
+  oidc_client_id   VARCHAR(255) NULL,
+  workos_client_id VARCHAR(255) NULL,
+  updated_at       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT chk_instance_auth_settings_singleton CHECK (id = 1)
 ) ENGINE=InnoDB;
 
