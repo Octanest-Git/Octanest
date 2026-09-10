@@ -124,6 +124,8 @@ const RESERVED_USERNAMES: &[&str] = &[
     "profile",
     "robots",
     "favicon",
+    "verify",
+    "reset-password",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).
@@ -174,6 +176,15 @@ mod tests {
     fn validate_username_rejects_reserved() {
         let err = validate_username("admin").unwrap_err();
         assert!(err.contains("reserved"));
+    }
+
+    #[test]
+    fn validate_username_rejects_verify_and_reset_password() {
+        assert!(is_reserved_username("verify"));
+        assert!(is_reserved_username("Verify"));
+        assert!(is_reserved_username("reset-password"));
+        assert!(validate_username("verify").is_err());
+        assert!(validate_username("reset-password").is_err());
     }
 
     #[test]
