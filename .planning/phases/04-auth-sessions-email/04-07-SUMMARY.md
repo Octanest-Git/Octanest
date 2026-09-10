@@ -87,7 +87,7 @@ Each task was committed atomically:
 1. **Task 1: shadcn form primitives + auth pages** - `9027157` (feat)
 2. **Task 2: Chrome account menu + landing Get started** - `efa4343` (feat)
 
-**Plan metadata:** (docs commit follows)
+**Plan metadata:** `a28b718` (docs: complete plan)
 
 ## Files Created/Modified
 
