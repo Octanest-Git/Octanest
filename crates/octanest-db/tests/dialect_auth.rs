@@ -74,3 +74,73 @@ async fn migrate_auth_and_user_round_trip() {
         .expect("find after delete");
     assert!(gone.is_none());
 }
+
+#[tokio::test]
+async fn migrate_email_token_and_verified_helpers() {
+    let Some(url) = database_url() else {
+        eprintln!("skipping: DATABASE_URL unset");
+        return;
+    };
+    let _guard = SERIAL.lock().await;
+
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let user_id = "00000000-0000-4000-8000-000000000002";
+    db.create_user(
+        user_id,
+        "verify-helpers@example.com",
+        "verify-helpers",
+        Some("$argon2id$test"),
+        "Verify Helpers",
+        "",
+        None,
+        false,
+    )
+    .await
+    .expect("insert user");
+
+    let token_hash = "def0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
+    let otp_hash = "fed0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
+    let token = db
+        .upsert_email_token(
+            "00000000-0000-4000-8000-0000000000bb",
+            user_id,
+            "verify",
+            token_hash,
+            otp_hash,
+            "2099-06-01T12:00:00Z",
+        )
+        .await
+        .expect("upsert email token");
+    assert_eq!(token.purpose, "verify");
+    assert_eq!(token.user_id, user_id);
+    assert_eq!(token.attempt_count, 0);
+
+    let by_token = db
+        .find_email_token_by_token_hash(token_hash)
+        .await
+        .expect("find by token_hash")
+        .expect("token row present");
+    assert_eq!(by_token.id, token.id);
+    assert_eq!(by_token.otp_hash, otp_hash);
+
+    let by_otp = db
+        .find_email_token_by_otp_hash(otp_hash)
+        .await
+        .expect("find by otp_hash")
+        .expect("otp row present");
+    assert_eq!(by_otp.token_hash, token_hash);
+
+    let verified = db
+        .set_email_verified_at(user_id, "2099-06-01T12:30:00Z")
+        .await
+        .expect("set email_verified_at");
+    assert!(verified.email_verified_at.is_some());
+
+    let cleared = db
+        .clear_email_verified_at(user_id)
+        .await
+        .expect("clear email_verified_at");
+    assert!(cleared.email_verified_at.is_none());
+}
