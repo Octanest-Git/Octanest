@@ -137,6 +137,14 @@ function LoginPage() {
               }
               required
             />
+            <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+              <a
+                href="/reset-password"
+                className="font-normal text-foreground underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </a>
+            </p>
           </div>
           <div className="flex min-h-11 items-center gap-3">
             <Checkbox
