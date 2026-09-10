@@ -57,7 +57,7 @@ validated: 2026-09-10
 | 04-07-T2 | 07 | 6 | AUTH-03 | T-04-23 | Header logout this device | build | `cd apps/web && bun run build` | ✅ | ✅ green |
 | 04-08-T1 | 08 | 7 | AUTH-08 | T-04-19 | Profile + avatar UI | build | `cd apps/web && bun run build` | ✅ | ✅ green |
 | 04-08-T2 | 08 | 7 | AUTH-09/10/11 | T-04-25/26 | ENV badges only | build | `cd apps/web && bun run build` | ✅ | ✅ green |
-| 04-08-T3 | 08 | 7 | ALL | — | Human UAT success criteria | manual | checkpoint | n/a | ⬜ pending |
+| 04-08-T3 | 08 | 7 | ALL | — | Human UAT success criteria | manual | checkpoint | n/a | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -86,7 +86,7 @@ Wave 0 stubs were created inside execution plans (not a separate 04-00 plan):
 | `/login` and `/signup` render with Octanest chrome | AUTH-01/02 UI | Browser chrome / theme | Open routes in light and dark; confirm brand shell |
 | Post-login redirect to `/dashboard` or `returnTo` | AUTH-02 | Navigation UX | Sign in from landing vs deep link |
 | Live WorkOS / Resend / SMTP E2E | AUTH-10/11 + providers | Requires operator secrets | Only when keys configured; default CI uses mocks/log-sink |
-| Phase success criteria UAT | ALL | 04-08-T3 checkpoint | Follow checkpoint how-to-verify — still awaiting human **approved** |
+| Phase success criteria UAT | ALL | 04-08-T3 checkpoint | Follow checkpoint how-to-verify — human **approved** 2026-09-10 (no defects) |
 
 ---
 
@@ -99,7 +99,7 @@ Wave 0 stubs were created inside execution plans (not a separate 04-00 plan):
 - [x] Feedback latency < 30s
 - [x] `nyquist_compliant: true` — automated AUTH-01…03, 08…11 covered green (2026-09-10 audit)
 
-**Approval:** validated 2026-09-10 (automated); human UAT for 04-08-T3 still open
+**Approval:** validated 2026-09-10 (automated); human UAT for 04-08-T3 **approved** 2026-09-10
 
 ---
 
