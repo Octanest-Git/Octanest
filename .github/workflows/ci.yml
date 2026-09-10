@@ -1,0 +1,142 @@
+# Phase 1 quality gates — no production secrets (T-01-12).
+# Prefer Bun via oven-sh/setup-bun; pnpm+Corepack is a documented fallback if Bun setup fails.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api-rust:
+    name: api-rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest
+      - name: cargo nextest
+        run: cargo nextest run --workspace --profile ci
+
+  web-octane:
+    name: web-octane
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: Playwright Chromium (Vitest e2e)
+        run: bunx playwright install --with-deps chromium
+      - name: vitest (api-client + web unit/integration/e2e)
+        run: bun run test
+      - name: web build
+        run: bunx turbo run build --filter=@octanest/web
+
+  e2e-stack:
+    name: e2e-stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: Playwright Chromium (stack browser e2e)
+        run: bunx playwright install --with-deps chromium
+      - name: stack e2e (API + Mailpit/OIDC/stubs + web)
+        run: make test-e2e-stack
+      - name: upload e2e logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-stack-logs
+          path: var/e2e/
+          if-no-files-found: ignore
+
+  rpc-sync:
+    name: rpc-sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: check-rpc-sync
+        run: make rpc-sync-check
+
+  compose:
+    name: compose
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config
+        run: docker compose -f docker-compose.yml config
+      - name: docker compose mysql overlay config
+        run: docker compose -f docker-compose.yml -f docker-compose.mysql.yml --profile mysql config
+      - name: docker compose sqlite overlay config
+        run: docker compose -f docker-compose.yml -f docker-compose.sqlite.yml config
+      - name: docker compose dev-auth stubs config
+        run: docker compose -f docker-compose.dev-auth.yml --profile dev-auth config
+
+  # Both Postgres and MySQL service containers boot on every matrix leg because
+  # GitHub Actions cannot condition `services:` on `matrix.*`. Accepted cost on the sqlite leg.
+  db-matrix:
+    name: db-${{ matrix.dialect }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - dialect: postgres
+            database_url: postgres://octanest:octanest@localhost:5432/octanest
+          - dialect: mysql
+            database_url: mysql://octanest:octanest@127.0.0.1:3306/octanest
+          - dialect: sqlite
+            database_url: sqlite:./var/octanest.db
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: octanest
+          POSTGRES_PASSWORD: octanest
+          POSTGRES_DB: octanest
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U octanest" --health-interval=5s --health-timeout=5s --health-retries=10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_USER: octanest
+          MYSQL_PASSWORD: octanest
+          MYSQL_DATABASE: octanest
+          MYSQL_ROOT_PASSWORD: octanest
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poctanest" --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: migrate + probe (${{ matrix.dialect }})
+        env:
+          DATABASE_URL: ${{ matrix.database_url }}
+          OCTANEST_DB_DIALECT: ${{ matrix.dialect }}
+        run: cargo test -p octanest-db --test dialect_probe -- --nocapture

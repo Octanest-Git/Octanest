@@ -1,0 +1,192 @@
+<!-- generated-by: gsd-doc-writer -->
+# Development
+
+Guide for working on Octanest locally: Bun + Turborepo for the web app and packages, Cargo for the API and database crates, and Make targets for RPC codegen, Compose overlays, and tests.
+
+Related: [ARCHITECTURE.md](ARCHITECTURE.md), [CONFIGURATION.md](CONFIGURATION.md), [database.md](database.md), [dev-auth.md](dev-auth.md).
+
+## Local setup
+
+1. **Prerequisites** — [Bun](https://bun.sh) matching `packageManager` in root `package.json` (`bun@1.4.0`), Rust/`cargo` (stable), and Docker Compose for full-stack / overlay work. Optional: `cargo-nextest` (`cargo install cargo-nextest --locked`) so `make test` uses nextest instead of `cargo test`.
+2. **Clone and install**
+
+```bash
+git clone git@github.com:Octanest-Git/Octanest.git
+cd Octanest
+corepack enable
+bun install
+cargo metadata -q
+```
+
+3. **Environment** — Copy Compose/local defaults (never commit secrets):
+
+```bash
+cp .env.example .env
+```
+
+For host `make` / Vite development (API on `127.0.0.1:8080`, Vite on `:3000`), prefer the commented local block in `.env.example`: `OCTANEST_ENV=development`, a host-reachable `DATABASE_URL` (e.g. Postgres on `localhost:5432`), and optional `OCTANEST_CORS_ORIGINS=http://localhost:3000`. Full variable reference: [CONFIGURATION.md](CONFIGURATION.md).
+
+4. **RPC client once** — Before the first web run:
+
+```bash
+make rpc-gen
+```
+
+5. **Start local API + web** — `make dev` prints the two-terminal workflow (it also runs `rpc-gen`):
+
+```bash
+# terminal 1
+OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin octanest-api
+
+# terminal 2
+bun run --filter @octanest/web dev
+```
+
+Or bring up the Compose stack instead: `make up` (Traefik on `:80`). See [Compose overlays](#compose-overlays) below.
+
+## Local API + Vite proxy
+
+Without Traefik, the browser talks to Vite on port **3000**. `apps/web/vite.config.ts` proxies same-origin paths to the API so cookies and RPC stay on one origin:
+
+| Path | Target (default) |
+|------|------------------|
+| `/api/rpc/ws` | `ws://127.0.0.1:8080` (WebSocket) |
+| `/api/rpc`, `/api/auth`, `/api/user` | `http://127.0.0.1:8080` |
+| `/uploads`, `/health` | `http://127.0.0.1:8080` |
+
+Override the proxy upstream with `OCTANEST_E2E_API_ORIGIN` (trailing slash stripped) when running stack e2e against a non-default API origin.
+
+Session cookies use `octanest_session`. With `OCTANEST_ENV=development`/`dev`, the cookie is not marked `Secure`, which matches `http://localhost:3000`.
+
+## RPC codegen sync
+
+Rust procedure names and shared types (`crates/octanest-core`, `crates/octanest-api/src/rpc.rs`) are authoritative. `rpc-gen` regenerates `@octanest/api-client`:
+
+```bash
+make rpc-gen          # cargo run -q -p octanest-api --bin rpc-gen
+make rpc-sync-check   # regenerates then git diff --exit-code packages/api-client
+```
+
+- Binary: `crates/octanest-api/src/bin/rpc_gen.rs`
+- Output package: `packages/api-client` (treat generated client sources as codegen output; do not hand-edit as the source of truth)
+- Web import path: `apps/web/src/lib/api-client.ts` → `@octanest/api-client`
+- CI job `rpc-sync` in `.github/workflows/ci.yml` runs `make rpc-sync-check`
+
+After changing RPC handlers or shared DTOs, run `make rpc-gen` and commit the updated client with your change.
+
+## Compose overlays
+
+Root Compose files (validated in CI `compose` job):
+
+| Target | Files / notes |
+|--------|----------------|
+| `make up` | `docker-compose.yml` — Traefik `:80`, web, api, Postgres |
+| `make up-mysql` | `docker-compose.yml` + `docker-compose.mysql.yml` (`--profile mysql`) |
+| `make up-sqlite` | `docker-compose.yml` + `docker-compose.sqlite.yml`; writes `.env.sqlite` with `OCTANEST_SQLITE_HOST_DIR` |
+| `make up-dev-auth` | `docker-compose.dev-auth.yml` (`--profile dev-auth`) — Mailpit, OIDC mock, Resend/WorkOS stubs |
+| `make down` / `down-mysql` / `down-sqlite` / `down-dev-auth` | Matching teardown |
+| `make smoke` / `smoke-mysql` / `smoke-sqlite` | Bring-up smoke asserting dialect |
+| `make logs` | Follow Compose logs |
+
+Dev-auth quick path:
+
+```bash
+cp docs/dev-auth.env.example .env.dev-auth
+make up-dev-auth
+# Mailpit UI http://127.0.0.1:8025 — OIDC http://127.0.0.1:9090/default — stubs http://127.0.0.1:9092
+```
+
+Dialect ops (`db-migrate`, `db-switch-dialect`, `db-matrix`): [database.md](database.md). Auth stubs: [dev-auth.md](dev-auth.md).
+
+## Coding layout
+
+```
+octanest/
+├── apps/web/                 # @octanest/web — Octane / TanStack Start (Vite :3000)
+│   ├── src/routes/           # UI routes (incl. admin/, settings/)
+│   ├── src/components/       # UI + chrome
+│   ├── src/lib/              # api-client wrapper, helpers
+│   └── vite.config.ts        # Dev proxy to API
+├── packages/api-client/      # Generated TS RPC client (make rpc-gen)
+├── crates/
+│   ├── octanest-api/         # Axum API, auth, email, rpc-gen binary
+│   ├── octanest-core/        # Shared domain / RPC types (no I/O)
+│   └── octanest-db/          # Multi-dialect sqlx + migrations/
+├── scripts/                  # check-rpc-sync, compose-smoke, dev-auth e2e, db helpers
+├── docs/                     # Operator + architecture docs
+├── brand/                    # Product mark / brand assets
+├── deploy/                   # Optional Traefik extras
+├── var/                      # Runtime state (SQLite, uploads; gitignored)
+├── Makefile                  # Primary developer entrypoints
+├── package.json              # Bun workspaces: apps/*, packages/*
+├── turbo.json                # build / dev / test / lint pipeline
+└── Cargo.toml                # Rust workspace members under crates/
+```
+
+**Bun workspaces** — Root `workspaces`: `apps/*`, `packages/*`. Turborepo (`turbo run …`) orchestrates package scripts; `build` depends on `^build`, `dev` is persistent/uncached, `test` depends on `^build`.
+
+**Cargo workspace** — Members: `octanest-api`, `octanest-core`, `octanest-db`. Keep dialect branching inside `octanest-db` only.
+
+## Build commands
+
+### Root npm/Bun scripts (`package.json`)
+
+| Command | Description |
+|---------|-------------|
+| `bun run dev` | `turbo run dev` — workspace `dev` tasks (persistent) |
+| `bun run build` | `turbo run build` — builds packages with `dist/**` outputs |
+| `bun run test` | `turbo run test` — Vitest across workspaces (after `^build`) |
+| `bun run lint` | `turbo run lint` — workspace lint tasks |
+
+### Package-scoped (examples)
+
+| Command | Description |
+|---------|-------------|
+| `bun run --filter @octanest/web dev` | Vite dev server for the web app |
+| `bun run --filter @octanest/web build` | `vite build` |
+| `bun run --filter @octanest/web test` | Vitest (unit / integration / e2e projects) |
+| `bun run --filter @octanest/web test:e2e:stack` | Stack e2e Vitest projects |
+| `bun run --filter @octanest/api-client test` | api-client Vitest |
+
+### Make targets (preferred day-to-day)
+
+| Command | Description |
+|---------|-------------|
+| `make help` | List targets |
+| `make dev` | `rpc-gen` + print API/web two-terminal commands |
+| `make rpc-gen` / `make rpc-sync-check` | Regenerate / verify `@octanest/api-client` |
+| `make up` / `make down` / `make logs` | Default Compose stack |
+| `make up-mysql` / `up-sqlite` / `up-dev-auth` | Dialect and auth overlays |
+| `make test` | `cargo nextest` (or `cargo test`) + `bun run test` |
+| `make test-e2e-stack` | `./scripts/dev-auth/run-stack-e2e.sh` |
+| `make smoke` / `smoke-mysql` / `smoke-sqlite` | Compose bring-up smoke |
+| `make db-migrate` / `db-switch-dialect` / `db-matrix` | Migrations and dialect probe |
+
+Turbo task graph: `turbo.json` (`build`, `dev`, `test`, `lint`).
+
+## Code style
+
+- **JavaScript / TypeScript** — No ESLint, Prettier, or Biome config is checked into the repo yet. `@octanest/web` `lint` is currently a placeholder (`echo 'no web lint yet'`). Prefer existing patterns in `apps/web` (TypeScript, Octane/TanStack, Tailwind v4) and keep changes consistent with neighboring files.
+- **Rust** — Use standard `rustfmt` / `cargo fmt` and Clippy locally (`cargo clippy --workspace`). There is no committed `rustfmt.toml` / `clippy.toml`; CI currently gates on `cargo nextest`, not fmt/clippy.
+- **Generated client** — Do not reformat or hand-patch `packages/api-client` as a substitute for updating Rust + `make rpc-gen`.
+- **Env files** — Keep secrets out of git (`.env`, `.env.dev-auth`, `.env.sqlite`).
+
+## Branch conventions
+
+Default branch: `main` (CI runs on push to `main` and on all pull requests).
+
+No repository-documented branch naming convention (no `CONTRIBUTING.md` or PR template). Recent work uses descriptive prefixes such as `cursor/…` and conventional-commit style subjects (`feat(…)`, `fix(…)`, `docs(…)`, `ci:`, `test:`). Prefer short topic branches off `main` with a clear purpose.
+
+## PR process
+
+No `.github/PULL_REQUEST_TEMPLATE.md` or `CONTRIBUTING.md` is present. Practical checklist inferred from CI (`.github/workflows/ci.yml`):
+
+- Open a PR against `main`; all workflow jobs must pass.
+- **api-rust** — `cargo nextest run --workspace --profile ci`
+- **web-octane** — `bun install --frozen-lockfile`, Playwright Chromium, `bun run test`, `turbo run build --filter=@octanest/web`
+- **e2e-stack** — `make test-e2e-stack` (API + Mailpit/OIDC/stubs + web)
+- **rpc-sync** — `make rpc-sync-check` (commit regenerated `packages/api-client` if you changed RPC)
+- **compose** — `docker compose … config` for default, MySQL, SQLite, and dev-auth overlays
+- **db-matrix** — dialect probe for postgres / mysql / sqlite
+
+Locally before push: `make rpc-sync-check`, `make test`, and when touching auth/email paths `make test-e2e-stack` or the relevant Compose smoke target.

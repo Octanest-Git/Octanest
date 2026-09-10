@@ -1,0 +1,22 @@
+[package]
+name = "octanest-db"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+octanest-core = { path = "../octanest-core" }
+sqlx = { version = "0.8", default-features = false, features = [
+  "runtime-tokio",
+  "tls-rustls",
+  "postgres",
+  "mysql",
+  "sqlite",
+  "migrate",
+  "macros",
+  "chrono",
+] }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"
