@@ -1,0 +1,123 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v1.0",
+  "phases": [
+    {
+      "number": "1",
+      "name": "Monorepo Scaffold",
+      "status": "pending"
+    },
+    {
+      "number": "2",
+      "name": "Multi-DB Storage",
+      "status": "pending"
+    },
+    {
+      "number": "3",
+      "name": "Brand Shell & Theme",
+      "status": "complete"
+    },
+    {
+      "number": "4",
+      "name": "Auth Sessions & Email",
+      "status": "complete"
+    },
+    {
+      "number": "5",
+      "name": "Cloud Verify & Reset",
+      "status": "pending"
+    },
+    {
+      "number": "6",
+      "name": "Self-Host Admin Bootstrap",
+      "status": "pending"
+    },
+    {
+      "number": "7",
+      "name": "Git Repos & Browse",
+      "status": "pending"
+    },
+    {
+      "number": "8",
+      "name": "Git HTTPS & PATs",
+      "status": "pending"
+    },
+    {
+      "number": "9",
+      "name": "Git SSH",
+      "status": "pending"
+    },
+    {
+      "number": "10",
+      "name": "Orgs & Permissions",
+      "status": "pending"
+    },
+    {
+      "number": "11",
+      "name": "Issues",
+      "status": "pending"
+    },
+    {
+      "number": "12",
+      "name": "Pull Requests",
+      "status": "pending"
+    },
+    {
+      "number": "13",
+      "name": "Branch Protection",
+      "status": "pending"
+    },
+    {
+      "number": "14",
+      "name": "Git LFS",
+      "status": "pending"
+    },
+    {
+      "number": "15",
+      "name": "Releases & Transfer",
+      "status": "pending"
+    },
+    {
+      "number": "16",
+      "name": "In-Repo Search",
+      "status": "pending"
+    },
+    {
+      "number": "17",
+      "name": "Notifications",
+      "status": "pending"
+    },
+    {
+      "number": "18",
+      "name": "Webhooks",
+      "status": "pending"
+    },
+    {
+      "number": "19",
+      "name": "Actions & Runners",
+      "status": "pending"
+    },
+    {
+      "number": "20",
+      "name": "Packages Registry",
+      "status": "pending"
+    },
+    {
+      "number": "21",
+      "name": "Social & Explore",
+      "status": "pending"
+    },
+    {
+      "number": "22",
+      "name": "Compose CI & Cloud Deploy",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd:progress --next",
+    "label": "Advance to the next step (plan phase 5)",
+    "reason": "Phase 5 of 22 — needs a plan"
+  },
+  "updated_at": "2026-09-10T15:07:12.168Z"
+}
