@@ -88,7 +88,27 @@ function DashboardPage() {
         arrives.
       </p>
 
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-wrap items-start gap-3">
+        <div className="flex max-w-xs flex-col gap-2">
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title={
+              user.email_verified
+                ? "Repository creation arrives in a later phase."
+                : "Verify your email to create a repository."
+            }
+            className={cn(buttonVariants({ variant: "default" }))}
+          >
+            New repository
+          </button>
+          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+            {user.email_verified
+              ? "Repository creation arrives in a later phase."
+              : "Verify your email to create a repository."}
+          </p>
+        </div>
         <a
           href="/settings/profile"
           className={cn(buttonVariants({ variant: "secondary" }))}
