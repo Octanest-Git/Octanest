@@ -49,15 +49,29 @@ echo "==> starting dev-auth stubs (Mailpit, OIDC mock, HTTP stubs)"
 $COMPOSE -f docker-compose.dev-auth.yml --profile dev-auth up --build -d
 
 wait_http() {
+  # Prefer IPv4; also try localhost↔127.0.0.1 so Vite/services bound to only one still pass.
   local url="$1" name="$2" tries="${3:-60}"
+  local alt=""
+  if [[ "$url" == *://127.0.0.1* ]]; then
+    alt="${url//127.0.0.1/localhost}"
+  elif [[ "$url" == *://localhost* ]]; then
+    alt="${url//localhost/127.0.0.1}"
+  fi
   for ((i = 1; i <= tries; i++)); do
-    if curl -fsS "$url" >/dev/null 2>&1; then
+    if curl -4 -fsS "$url" >/dev/null 2>&1; then
       echo "==> $name ready ($url)"
+      return 0
+    fi
+    if [[ -n "$alt" ]] && curl -fsS "$alt" >/dev/null 2>&1; then
+      echo "==> $name ready ($alt)"
       return 0
     fi
     sleep 1
   done
   echo "error: timed out waiting for $name at $url" >&2
+  if [[ -n "$alt" ]]; then
+    echo "error: also tried $alt" >&2
+  fi
   exit 1
 }
 
@@ -99,7 +113,8 @@ echo "==> starting Vite web on :$WEB_PORT (proxies /api → API)"
   cd apps/web
   # Point Vite proxy at e2e API port
   export OCTANEST_E2E_API_ORIGIN="http://127.0.0.1:${API_PORT}"
-  bunx vite --port "$WEB_PORT" --strictPort >"$ROOT/var/e2e/web.log" 2>&1
+  # Bind IPv4 explicitly — default localhost can be ::1-only on CI, while we poll 127.0.0.1.
+  bunx vite --host 127.0.0.1 --port "$WEB_PORT" --strictPort >"$ROOT/var/e2e/web.log" 2>&1
 ) &
 WEB_PID=$!
 wait_http "http://127.0.0.1:${WEB_PORT}/" "web" 90
