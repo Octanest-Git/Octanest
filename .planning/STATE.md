@@ -4,15 +4,15 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: planning
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-09-10T20:57:38.771Z"
+stopped_at: Phase 5 plans approved
+last_updated: "2026-09-10T21:40:10.807Z"
 last_activity: 2026-09-10
-last_activity_desc: Phase 4 complete, transitioned to Phase 5
-state_head: e95fc5dbaf0a1ba6521b2361b54c8daec01e5792
+last_activity_desc: Phase 5 plan revision 1 — split tracer, serialize IdP, resolve RESEARCH Qs
+state_head: 0f8c2566ebbd4eadc9420c43e85b7584e459409a
 progress:
   total_phases: 22
   completed_phases: 0
-  total_plans: 24
+  total_plans: 31
   completed_plans: 24
 milestone_name: milestone
 ---
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 4 — auth-sessions-email
+**Current focus:** Phase 5 — cloud-verify-reset
 
 ## Current Position
 
-Phase: 5 — Cloud Verify & Reset
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-10 — `/gsd-docs-update` generated canonical docs + package READMEs (commit 2e6bafc)
+Phase: 5 (Cloud Verify & Reset) — READY TO EXECUTE
+Plan: 01–07 written (revision 1; not executed)
+Status: Plans revised after checker — awaiting re-check / execute
+Last activity: 2026-09-10 — Phase 5 PLAN revision 1 (7 plans, waves 1–7)
 
-Progress: Phases 1–3 complete; Phase 4 plans 8/8 executed — ready for verification
+Progress: Phases 1–4 complete; Phase 5 planned (7 plans)
 
 ## Performance Metrics
 
@@ -121,6 +121,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T20:57:38.736Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-cloud-verify-reset/05-UI-SPEC.md
+Last session: 2026-09-10T21:40:10.776Z
+Stopped at: Phase 5 plans approved
+Resume file: .planning/phases/05-cloud-verify-reset/05-01-PLAN.md
