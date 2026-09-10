@@ -116,7 +116,7 @@ Each task was committed atomically:
 2. **Task 2: rpc-gen + InputOtp + /verify page** — `caabb2f` (feat)
 3. **Task 3: Persistent VerifyBanner under header** — `0c5a7c1` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `4639d88` (docs: complete plan)
 
 ## Files Created/Modified
 

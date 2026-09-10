@@ -31,9 +31,9 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 5 (Cloud Verify & Reset) — EXECUTING
 Plan: 7 of 7
 Status: Ready to execute
-Last activity: 2026-09-10 — Completed 05-02 AUTH-04 verify gate tracer
+Last activity: 2026-09-10 — Completed 05-06 verify UI (rpc-gen, /verify, VerifyBanner)
 
-Progress: Phases 1–4 complete; Phase 5 in progress (2/7 plans)
+Progress: Phases 1–4 complete; Phase 5 in progress (6/7 plans)
 
 ## Performance Metrics
 
