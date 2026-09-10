@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use axum::extract::DefaultBodyLimit;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
@@ -24,7 +24,8 @@ use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 #[derive(Clone)]
 pub struct AppState {
     pub db: Database,
-    pub email: Arc<dyn EmailSender>,
+    /// Swappable email sender (rebuilt on admin.auth.update_settings).
+    pub email: Arc<RwLock<Arc<dyn EmailSender>>>,
     pub uploads_dir: PathBuf,
     pub sessions: SessionService,
     pub pending: PendingAuthStore,
@@ -40,7 +41,7 @@ impl AppState {
         let env_name = env_name.into();
         Self {
             db,
-            email,
+            email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
@@ -51,6 +52,13 @@ impl AppState {
     pub fn with_uploads_dir(mut self, dir: PathBuf) -> Self {
         self.uploads_dir = dir;
         self
+    }
+
+    pub fn current_email(&self) -> Arc<dyn EmailSender> {
+        self.email
+            .read()
+            .map(|g| g.clone())
+            .unwrap_or_else(|_| email::build_email_sender_from_env())
     }
 }
 
@@ -113,9 +121,11 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         },
         None => None,
     };
+    let email = state.current_email();
     RpcCtx {
         db: state.db.clone(),
-        email: state.email.clone(),
+        email,
+        email_slot: state.email.clone(),
         sessions: state.sessions.clone(),
         uploads_dir: state.uploads_dir.clone(),
         env_name: state.env_name.clone(),
@@ -151,6 +161,9 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
         }
         RpcResponse::Err { error, .. } if error.code == "auth.unauthenticated" => {
             StatusCode::UNAUTHORIZED
+        }
+        RpcResponse::Err { error, .. } if error.code == "admin.forbidden" => {
+            StatusCode::FORBIDDEN
         }
         RpcResponse::Err { .. } => StatusCode::BAD_REQUEST,
     }

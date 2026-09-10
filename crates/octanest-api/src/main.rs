@@ -1,5 +1,5 @@
 use octanest_api::auth::hash_password_str;
-use octanest_api::{build_cors, router};
+use octanest_api::build_cors;
 use octanest_db::Database;
 use tracing_subscriber::EnvFilter;
 use uuid::Uuid;
@@ -121,6 +121,18 @@ async fn main() {
         });
     tracing::info!("octanest-api listening on {bind}");
 
-    let app = router(db, cors);
+    let email = if database_url.is_some() {
+        match db.get_auth_settings().await {
+            Ok(settings) => octanest_api::email::build_email_sender_for_settings(&settings),
+            Err(e) => {
+                tracing::warn!(error = %e, "auth settings unavailable at boot; using ENV email sender");
+                octanest_api::email::build_email_sender_from_env()
+            }
+        }
+    } else {
+        octanest_api::email::build_email_sender_from_env()
+    };
+    let state = octanest_api::AppState::new(db, email, env_name);
+    let app = octanest_api::router_with_state(state, cors);
     axum::serve(listener, app).await.expect("server error");
 }

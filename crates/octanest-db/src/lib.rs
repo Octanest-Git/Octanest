@@ -13,6 +13,7 @@ pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use users::UserRow;
+pub use auth_settings::AuthSettingsRow;
 
 use dialect::resolve_dialect_from_env as resolve_from_env;
 use pool::DbPool as Pool;

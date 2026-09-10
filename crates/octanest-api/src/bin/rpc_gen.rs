@@ -41,6 +41,8 @@ export type DbProbeResponse = {
 
 export type ProviderMode = "local" | "workos" | "oidc";
 
+export type EmailProviderKind = "log" | "smtp" | "resend";
+
 export type UserPublic = {
   id: string;
   email: string;
@@ -66,6 +68,34 @@ export type LoginRequest = {
 
 export type ProviderConfigPublic = {
   mode: ProviderMode;
+};
+
+export type UpdateProfileRequest = {
+  display_name: string;
+  username: string;
+  bio: string;
+};
+
+export type AuthSettingsPublic = {
+  provider_mode: ProviderMode;
+  email_provider: EmailProviderKind;
+  from_address?: string | null;
+  workos_client_id?: string | null;
+  oidc_issuer?: string | null;
+  oidc_client_id?: string | null;
+  smtp_configured: boolean;
+  resend_configured: boolean;
+  workos_api_key_configured: boolean;
+  oidc_client_secret_configured: boolean;
+};
+
+export type UpdateAuthSettingsRequest = {
+  provider_mode: ProviderMode;
+  email_provider: EmailProviderKind;
+  from_address?: string | null;
+  oidc_issuer?: string | null;
+  oidc_client_id?: string | null;
+  workos_client_id?: string | null;
 };
 
 export type RpcOk<T> = { ok: true; data: T };
@@ -112,6 +142,19 @@ export function createClient(opts: CreateClientOptions) {
       me: () => rpcCall<UserPublic>(opts, "auth.me", {}),
       providerConfig: () =>
         rpcCall<ProviderConfigPublic>(opts, "auth.provider_config", {}),
+    },
+    user: {
+      getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
+      updateProfile: (input: UpdateProfileRequest) =>
+        rpcCall<UserPublic>(opts, "user.update_profile", input),
+    },
+    admin: {
+      auth: {
+        getSettings: () =>
+          rpcCall<AuthSettingsPublic>(opts, "admin.auth.get_settings", {}),
+        updateSettings: (input: UpdateAuthSettingsRequest) =>
+          rpcCall<AuthSettingsPublic>(opts, "admin.auth.update_settings", input),
+      },
     },
   };
 }
@@ -218,12 +261,58 @@ export function authLogoutAllMutationOptions(client: OctanestClient) {
   };
 }
 
+export function userGetProfileQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["user", "getProfile"] as const,
+    queryFn: async () => {
+      const res = await client.user.getProfile();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function userUpdateProfileMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["user", "updateProfile"] as const,
+    mutationFn: async (input: UpdateProfileRequest) => {
+      const res = await client.user.updateProfile(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function adminAuthGetSettingsQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["admin", "auth", "getSettings"] as const,
+    queryFn: async () => {
+      const res = await client.admin.auth.getSettings();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function adminAuthUpdateSettingsMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["admin", "auth", "updateSettings"] as const,
+    mutationFn: async (input: UpdateAuthSettingsRequest) => {
+      const res = await client.admin.auth.updateSettings(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 /** Alias helpers matching CONTEXT D-21 naming. */
 export const queryOptions = {
   systemHealth: systemHealthQueryOptions,
   systemDbProbe: systemDbProbeQueryOptions,
   authMe: authMeQueryOptions,
   authProviderConfig: authProviderConfigQueryOptions,
+  userGetProfile: userGetProfileQueryOptions,
+  adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
   systemEcho: systemEchoMutationOptions,
@@ -231,6 +320,8 @@ export const mutationOptions = {
   authLogin: authLoginMutationOptions,
   authLogout: authLogoutMutationOptions,
   authLogoutAll: authLogoutAllMutationOptions,
+  userUpdateProfile: userUpdateProfileMutationOptions,
+  adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };
 "#;
 

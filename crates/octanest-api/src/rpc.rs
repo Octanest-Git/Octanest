@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use cookie::Cookie;
 use octanest_core::{
@@ -8,6 +8,7 @@ use octanest_core::{
 };
 use octanest_db::Database;
 
+use crate::auth::admin;
 use crate::auth::local;
 use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
@@ -26,6 +27,8 @@ pub enum CookieChange {
 pub struct RpcCtx {
     pub db: Database,
     pub email: Arc<dyn EmailSender>,
+    /// Shared slot so `admin.auth.update_settings` can rebuild the sender for the process.
+    pub email_slot: Arc<RwLock<Arc<dyn EmailSender>>>,
     pub sessions: SessionService,
     pub uploads_dir: PathBuf,
     pub env_name: String,
@@ -118,6 +121,14 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "user.update_profile" => match profile::update_profile(ctx, req.input).await {
             Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.auth.get_settings" => match admin::get_settings(ctx).await {
+            Ok(settings) => RpcResponse::ok(settings),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.auth.update_settings" => match admin::update_settings(ctx, req.input).await {
+            Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
         },
         other => RpcResponse::err(AppError::new(

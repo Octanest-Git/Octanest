@@ -57,7 +57,7 @@ pub struct ProviderConfigPublic {
     pub mode: ProviderMode,
 }
 
-/// Profile update fields (D-18). Bio max length enforced in API later (160).
+/// Profile update fields (D-18). Bio max length enforced in API (160).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateProfileRequest {
     pub display_name: String,
@@ -65,17 +65,31 @@ pub struct UpdateProfileRequest {
     pub bio: String,
 }
 
-/// Instance auth settings for admin UI — secrets never returned; ENV badges only.
+/// Instance auth settings for admin UI — secrets never returned; ENV badges only (D-09, T-04-22).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthSettingsPublic {
     pub provider_mode: ProviderMode,
     pub email_provider: EmailProviderKind,
     pub from_address: Option<String>,
-    pub workos_client_id_configured: bool,
+    /// Non-secret WorkOS client id (display); may also come from ENV when DB empty.
+    pub workos_client_id: Option<String>,
     pub oidc_issuer: Option<String>,
     pub oidc_client_id: Option<String>,
     pub smtp_configured: bool,
     pub resend_configured: bool,
+    pub workos_api_key_configured: bool,
+    pub oidc_client_secret_configured: bool,
+}
+
+/// Admin update payload — non-secret fields only.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateAuthSettingsRequest {
+    pub provider_mode: ProviderMode,
+    pub email_provider: EmailProviderKind,
+    pub from_address: Option<String>,
+    pub oidc_issuer: Option<String>,
+    pub oidc_client_id: Option<String>,
+    pub workos_client_id: Option<String>,
 }
 
 const RESERVED_USERNAMES: &[&str] = &[

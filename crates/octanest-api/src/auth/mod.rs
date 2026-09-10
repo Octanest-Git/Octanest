@@ -1,5 +1,6 @@
 //! Auth module: passwords, sessions, local + WorkOS + OIDC providers.
 
+pub mod admin;
 pub mod external;
 pub mod local;
 pub mod oidc;
