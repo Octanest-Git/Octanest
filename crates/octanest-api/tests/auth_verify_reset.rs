@@ -1,4 +1,4 @@
-//! AUTH-04: verify issue/resend/rate-limit + magic/OTP consume.
+//! AUTH-04 / AUTH-12: verify + password-reset issue/consume.
 
 use std::sync::{Arc, Mutex};
 
@@ -440,4 +440,136 @@ async fn ten_failed_otp_attempts_invalidate() {
     let bytes = good.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(v["error"]["code"], "auth.invalid_token");
+}
+
+fn extract_otp_from_reset_email(text: &str) -> String {
+    let marker = "Or enter this 8-digit code:";
+    let after = text
+        .split_once(marker)
+        .unwrap_or_else(|| panic!("missing otp phrase in: {text}"))
+        .1;
+    let mut code = String::new();
+    for c in after.chars() {
+        if c.is_ascii_digit() {
+            code.push(c);
+            if code.len() == 8 {
+                return code;
+            }
+        } else if !code.is_empty() {
+            code.clear();
+        }
+    }
+    panic!("no 8-digit otp after marker in: {text}");
+}
+
+async fn rpc_json(app: &axum::Router, body: &str) -> (StatusCode, serde_json::Value) {
+    let res = app.clone().oneshot(rpc_req(body)).await.unwrap();
+    let status = res.status();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    (status, v)
+}
+
+/// AUTH-12 / D-28: unknown, local-password, and SSO-only share identical success payload.
+#[tokio::test]
+async fn request_password_reset_anti_enumeration_identical_success() {
+    std::env::set_var("OCTANEST_PUBLIC_ORIGIN", "https://app.example.com");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_req.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let (app, recorder) = test_app_with_recorder(db.clone()).await;
+
+    let (_cookie, _user_id, _) = signup_user(&app, "local@ex.com", "localuser").await;
+    recorder.sent.lock().expect("lock").clear();
+
+    // SSO-only: password_hash null
+    db.create_user(
+        "sso-user-id",
+        "sso@ex.com",
+        "ssouser",
+        None,
+        "ssouser",
+        "",
+        None,
+        false,
+    )
+    .await
+    .expect("create sso user");
+
+    let unknown_body =
+        r#"{"procedure":"auth.request_password_reset","input":{"email":"nobody@ex.com"}}"#;
+    let local_body =
+        r#"{"procedure":"auth.request_password_reset","input":{"email":"Local@ex.com"}}"#;
+    let sso_body = r#"{"procedure":"auth.request_password_reset","input":{"email":"sso@ex.com"}}"#;
+
+    let (st_u, v_u) = rpc_json(&app, unknown_body).await;
+    let (st_l, v_l) = rpc_json(&app, local_body).await;
+    let (st_s, v_s) = rpc_json(&app, sso_body).await;
+
+    assert_eq!(st_u, StatusCode::OK);
+    assert_eq!(st_l, StatusCode::OK);
+    assert_eq!(st_s, StatusCode::OK);
+    assert_eq!(v_u, v_l, "unknown vs local must match");
+    assert_eq!(v_u, v_s, "unknown vs sso-only must match");
+    assert_eq!(v_u["ok"], true);
+    assert_eq!(v_u["data"]["ok"], true);
+
+    let sent = recorder.sent.lock().expect("lock");
+    assert_eq!(sent.len(), 1, "only local-password account gets email");
+    assert_eq!(sent[0].subject, "Reset your Octanest password");
+    assert!(
+        sent[0]
+            .text
+            .contains("https://app.example.com/reset-password?token="),
+        "body: {}",
+        sent[0].text
+    );
+    assert!(
+        sent[0].text.contains("Or enter this 8-digit code:"),
+        "body: {}",
+        sent[0].text
+    );
+    let _otp = extract_otp_from_reset_email(&sent[0].text);
+    std::env::remove_var("OCTANEST_PUBLIC_ORIGIN");
+}
+
+/// Soft rate limit: second reset within 60s still returns anti-enumeration ok (no extra mail).
+#[tokio::test]
+async fn request_password_reset_rate_limit_swallows_into_ok() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_rl.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let (app, recorder) = test_app_with_recorder(db.clone()).await;
+
+    let (_cookie, user_id, _) = signup_user(&app, "rl@ex.com", "rluser").await;
+    recorder.sent.lock().expect("lock").clear();
+
+    let body = r#"{"procedure":"auth.request_password_reset","input":{"email":"rl@ex.com"}}"#;
+    let (st1, v1) = rpc_json(&app, body).await;
+    assert_eq!(st1, StatusCode::OK);
+    assert_eq!(v1["data"]["ok"], true);
+    assert_eq!(recorder.sent.lock().expect("lock").len(), 1);
+
+    // No backdate — within 60s min interval.
+    let (st2, v2) = rpc_json(&app, body).await;
+    assert_eq!(st2, StatusCode::OK);
+    assert_eq!(v2["data"]["ok"], true);
+    assert_eq!(
+        recorder.sent.lock().expect("lock").len(),
+        1,
+        "rate-limited issue must not send another email"
+    );
+
+    // After interval, another send is allowed.
+    let at = (chrono::Utc::now() - chrono::Duration::seconds(61))
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string();
+    db.set_email_token_created_at(&user_id, "reset", &at)
+        .await
+        .expect("backdate reset");
+    let (st3, _) = rpc_json(&app, body).await;
+    assert_eq!(st3, StatusCode::OK);
+    assert_eq!(recorder.sent.lock().expect("lock").len(), 2);
 }
