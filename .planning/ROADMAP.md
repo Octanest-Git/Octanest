@@ -150,13 +150,13 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 05-06-PLAN.md
 - [x] 05-07-PLAN.md
 
-- [ ] `05-01-PLAN.md` — Token schema/CRUD + UserPublic.email_verified field
-- [ ] `05-02-PLAN.md` — Tracer: OTP verify → require_verified / privileged_ping
-- [ ] `05-03-PLAN.md` — Verify issue/resend/rate limits, signup auto-send, admin seed, AUTH-05
-- [ ] `05-04-PLAN.md` — Password reset request/redeem RPCs (AUTH-12)
-- [ ] `05-05-PLAN.md` — IdP-trust verified marking + clear_email_verification helper
-- [ ] `05-06-PLAN.md` — rpc-gen, input-otp gate, `/verify`, VerifyBanner
-- [ ] `05-07-PLAN.md` — `/reset-password`, forgot link, disabled New repository CTA
+- [x] `05-01-PLAN.md` — Token schema/CRUD + UserPublic.email_verified field
+- [x] `05-02-PLAN.md` — Tracer: OTP verify → require_verified / privileged_ping
+- [x] `05-03-PLAN.md` — Verify issue/resend/rate limits, signup auto-send, admin seed, AUTH-05
+- [x] `05-04-PLAN.md` — Password reset request/redeem RPCs (AUTH-12)
+- [x] `05-05-PLAN.md` — IdP-trust verified marking + clear_email_verification helper
+- [x] `05-06-PLAN.md` — rpc-gen, input-otp gate, `/verify`, VerifyBanner
+- [x] `05-07-PLAN.md` — `/reset-password`, forgot link, disabled New repository CTA
 
 **UI hint**: yes
 
