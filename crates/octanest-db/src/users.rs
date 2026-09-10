@@ -420,3 +420,48 @@ WHERE id = ?1",
         .await?
         .ok_or_else(|| "clear email_verified_at failed: user not found".into())
 }
+
+/// Replace the user's password hash (password reset / change).
+pub async fn set_password_hash(
+    pool: &DbPool,
+    id: &str,
+    password_hash: &str,
+) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(password_hash)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set password_hash failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(password_hash)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set password_hash failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET password_hash = ?2,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(password_hash)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set password_hash failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "set password_hash failed: user not found".into())
+}

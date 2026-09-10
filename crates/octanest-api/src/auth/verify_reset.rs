@@ -8,8 +8,9 @@ use uuid::Uuid;
 
 use crate::auth::gate;
 use crate::auth::local::{normalize_email, user_to_public};
+use crate::auth::password::{hash_password_str, PasswordError, MIN_PASSWORD_LEN};
 use crate::email::OutboundEmail;
-use crate::rpc::RpcCtx;
+use crate::rpc::{CookieChange, RpcCtx};
 
 const PURPOSE_VERIFY: &str = "verify";
 const PURPOSE_RESET: &str = "reset";
@@ -108,6 +109,20 @@ fn invalid_token() -> AppError {
     AppError::new(
         "auth.invalid_token",
         "invalid or expired verification code",
+    )
+}
+
+fn invalid_reset_token() -> AppError {
+    AppError::new(
+        "auth.invalid_token",
+        "invalid or expired reset code",
+    )
+}
+
+fn sso_only() -> AppError {
+    AppError::new(
+        "auth.sso_only",
+        "This account signs in with SSO. Reset your password with your identity provider.",
     )
 }
 
@@ -447,4 +462,158 @@ pub async fn verify(ctx: &RpcCtx, input: serde_json::Value) -> Result<UserPublic
 pub async fn privileged_ping(ctx: &RpcCtx) -> Result<serde_json::Value, AppError> {
     let _user = gate::require_verified(ctx).await?;
     Ok(serde_json::json!({ "ok": true }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    #[serde(default)]
+    pub token: Option<String>,
+    #[serde(default)]
+    pub code: Option<String>,
+    pub password: String,
+}
+
+fn session_err(e: crate::auth::session::AuthError) -> AppError {
+    match e {
+        crate::auth::session::AuthError::NotConfigured => AppError::new(
+            "db.not_configured",
+            "no database configured for this instance",
+        ),
+        crate::auth::session::AuthError::Store(msg) => {
+            tracing::error!("session store error: {msg}");
+            AppError::new("auth.session_failed", "session operation failed")
+        }
+    }
+}
+
+/// Logged-out password reset redeem (D-26, D-27): set hash, revoke others, sign in.
+pub async fn reset_password(
+    ctx: &mut RpcCtx,
+    input: serde_json::Value,
+) -> Result<UserPublic, AppError> {
+    let req: ResetPasswordRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid reset_password input: {e}"))
+    })?;
+
+    let code = req
+        .code
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let token = req
+        .token
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+
+    if code.is_none() && token.is_none() {
+        return Err(AppError::new("rpc.bad_input", "provide token or code"));
+    }
+
+    let password_hash = hash_password_str(&req.password).map_err(|e| match e {
+        PasswordError::TooShort => AppError::new(
+            "auth.weak_password",
+            format!("password must be at least {MIN_PASSWORD_LEN} characters"),
+        ),
+        PasswordError::Hash(_) => {
+            tracing::error!("password hash failed");
+            AppError::new("auth.internal", "authentication failed")
+        }
+    })?;
+
+    // Resolve by token_hash or otp_hash (logged-out; no session scope — D-27).
+    let row = if let Some(token) = token {
+        ctx.db
+            .find_email_token_by_token_hash(&sha256_hex(token.as_bytes()))
+            .await
+            .map_err(db_err)?
+    } else if let Some(code) = code {
+        if code.len() != 8 || !code.chars().all(|c| c.is_ascii_digit()) {
+            return Err(invalid_reset_token());
+        }
+        ctx.db
+            .find_email_token_by_otp_hash(&sha256_hex(code.as_bytes()))
+            .await
+            .map_err(db_err)?
+    } else {
+        None
+    };
+
+    let Some(row) = row else {
+        return Err(invalid_reset_token());
+    };
+
+    if row.purpose != PURPOSE_RESET {
+        return Err(invalid_reset_token());
+    }
+
+    let expires_at = chrono::DateTime::parse_from_rfc3339(&row.expires_at)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(|_| invalid_reset_token())?;
+    if expires_at <= Utc::now() {
+        let _ = ctx.db.delete_email_token(&row.id).await;
+        return Err(invalid_reset_token());
+    }
+
+    // Re-check credential against row (defense in depth) + attempt cap on mismatch.
+    let matches = if let Some(code) = code {
+        sha256_hex(code.as_bytes()) == row.otp_hash
+    } else if let Some(token) = token {
+        sha256_hex(token.as_bytes()) == row.token_hash
+    } else {
+        false
+    };
+
+    if !matches {
+        let attempts = ctx
+            .db
+            .increment_email_token_attempts(&row.id)
+            .await
+            .map_err(db_err)?;
+        if attempts >= MAX_REDEEM_ATTEMPTS {
+            let _ = ctx.db.delete_email_token(&row.id).await;
+        }
+        return Err(invalid_reset_token());
+    }
+
+    let user = ctx
+        .db
+        .find_user_by_id(&row.user_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(invalid_reset_token)?;
+
+    if user.password_hash.is_none() {
+        let _ = ctx.db.delete_email_token(&row.id).await;
+        return Err(sso_only());
+    }
+
+    ctx.db
+        .set_password_hash(&user.id, &password_hash)
+        .await
+        .map_err(db_err)?;
+    ctx.db
+        .delete_email_token(&row.id)
+        .await
+        .map_err(db_err)?;
+
+    // D-27: revoke all existing sessions, then mint a fresh session on this device.
+    ctx.sessions
+        .revoke_all(&ctx.db, &user.id)
+        .await
+        .map_err(session_err)?;
+    let (_tok, cookie) = ctx
+        .sessions
+        .create(&ctx.db, &user.id, false)
+        .await
+        .map_err(session_err)?;
+    ctx.set_cookie = Some(CookieChange::Set(cookie));
+
+    let user = ctx
+        .db
+        .find_user_by_id(&user.id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("auth.internal", "authentication failed"))?;
+    Ok(user_to_public(&user))
 }

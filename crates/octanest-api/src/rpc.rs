@@ -134,6 +134,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
                 Err(e) => RpcResponse::err(e),
             }
         },
+        "auth.reset_password" => match verify_reset::reset_password(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
         "auth.dev.privileged_ping" => {
             if !verify_reset::privileged_ping_env_allowed(&ctx.env_name) {
                 RpcResponse::err(AppError::new(

@@ -641,7 +641,10 @@ async fn reset_password_token_revokes_others_and_signs_in() {
         ))
         .await
         .unwrap();
-    assert_eq!(login_old.status(), StatusCode::UNAUTHORIZED);
+    assert_eq!(login_old.status(), StatusCode::BAD_REQUEST);
+    let old_bytes = login_old.into_body().collect().await.unwrap().to_bytes();
+    let old_v: serde_json::Value = serde_json::from_slice(&old_bytes).unwrap();
+    assert_eq!(old_v["error"]["code"], "auth.invalid_credentials");
 
     let login_new = app
         .oneshot(rpc_req(

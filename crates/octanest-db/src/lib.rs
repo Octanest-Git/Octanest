@@ -168,6 +168,14 @@ impl Database {
         users::clear_email_verified_at(self.require_pool()?, id).await
     }
 
+    pub async fn set_password_hash(
+        &self,
+        id: &str,
+        password_hash: &str,
+    ) -> Result<UserRow, String> {
+        users::set_password_hash(self.require_pool()?, id, password_hash).await
+    }
+
     // --- email tokens ---
 
     pub async fn upsert_email_token(
