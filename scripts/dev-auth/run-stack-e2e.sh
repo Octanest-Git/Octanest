@@ -35,6 +35,15 @@ need_cmd() {
   }
 }
 
+# Prefer a credential-helper-free Docker config in CI/WSL when desktop helper is missing.
+if [[ -z "${DOCKER_CONFIG:-}" ]] && ! command -v docker-credential-desktop.exe >/dev/null 2>&1; then
+  if [[ -f "${HOME}/.docker/config.json" ]] && grep -q docker-credential-desktop "${HOME}/.docker/config.json" 2>/dev/null; then
+    export DOCKER_CONFIG="${ROOT}/var/e2e/docker-config"
+    mkdir -p "$DOCKER_CONFIG"
+    echo '{}' >"$DOCKER_CONFIG/config.json"
+  fi
+fi
+
 need_cmd cargo
 need_cmd bun
 if ! command -v docker >/dev/null 2>&1; then
@@ -127,6 +136,7 @@ export OCTANEST_E2E_STUBS_ORIGIN="http://127.0.0.1:9092"
 export OCTANEST_E2E_OIDC_ISSUER="http://127.0.0.1:9090/default"
 export OCTANEST_E2E_ADMIN_EMAIL="admin@octanest.local"
 export OCTANEST_E2E_ADMIN_PASSWORD="password1"
+export OCTANEST_E2E_DB_PATH="$DB_PATH"
 
 echo "==> running Vitest stack e2e"
 bun run --filter @octanest/web test:e2e:stack

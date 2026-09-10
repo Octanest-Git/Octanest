@@ -27,6 +27,9 @@ services:
     environment:
       SERVER_PORT: "8080"
       LOG_LEVEL: info
+      # Match grant_type (always in token body). Matching client_id fails when the
+      # OIDC client uses HTTP Basic and omits client_id from the form — mock then
+      # issues a JWT without `sub`, and openidconnect rejects the token response.
       JSON_CONFIG: |
         {
           "interactiveLogin": false,
@@ -37,8 +40,8 @@ services:
               "tokenExpiry": 120,
               "requestMappings": [
                 {
-                  "requestParam": "client_id",
-                  "match": ".*",
+                  "requestParam": "grant_type",
+                  "match": "authorization_code|.*",
                   "claims": {
                     "sub": "oidc-dev-user",
                     "aud": ["octanest-dev"],

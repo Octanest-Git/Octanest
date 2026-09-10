@@ -1,49 +1,55 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { page } from "vitest/browser";
-import { adminLogin, updateAuthSettings } from "../stack/client";
-import { requireStack, webOrigin } from "../stack/env";
+import { commands } from "vitest/browser";
+import { requireStack } from "../stack/env";
+
+declare module "vitest/browser" {
+  interface BrowserCommands {
+    ensureAuthSettings: (patch: {
+      provider_mode: "local" | "workos" | "oidc";
+      email_provider: "log" | "smtp" | "resend";
+      workos_client_id?: string | null;
+    }) => Promise<boolean>;
+    restoreLocalAuthCommand: () => Promise<boolean>;
+    signupThroughUi: (creds: {
+      email: string;
+      username: string;
+      password: string;
+    }) => Promise<boolean>;
+    expectWorkosCta: () => Promise<boolean>;
+  }
+}
 
 describe("stack browser e2e: local signup + login UI", () => {
-  beforeAll(async () => {
+  beforeAll(() => {
     requireStack();
-    const cookie = await adminLogin();
-    await updateAuthSettings(cookie, {
-      provider_mode: "local",
-      email_provider: "log",
-    });
   });
 
   it("signs up through the web UI and lands on dashboard", async () => {
+    await commands.ensureAuthSettings({
+      provider_mode: "local",
+      email_provider: "log",
+    });
+
     const suffix = Date.now();
-    const email = `ui.user.${suffix}@octanest.local`;
-    const username = `uiuser${suffix}`;
-
-    await page.goto(`${webOrigin()}/signup`);
-    await expect
-      .element(page.getByRole("heading", { name: "Create your account" }))
-      .toBeVisible();
-
-    await page.getByLabelText("Email").fill(email);
-    await page.getByLabelText("Username").fill(username);
-    await page.getByLabelText("Password", { exact: true }).fill("password1");
-    await page.getByLabelText(/confirm password/i).fill("password1");
-
-    await page.getByRole("button", { name: /create account|sign up/i }).click();
-
-    await expect.poll(() => new URL(page.url()).pathname).toBe("/dashboard");
+    const ok = await commands.signupThroughUi({
+      email: `ui.user.${suffix}@octanest.local`,
+      username: `uiuser${suffix}`,
+      password: "password1",
+    });
+    expect(ok).toBe(true);
   }, 60_000);
 
   it("shows WorkOS CTA when provider mode is workos", async () => {
-    const cookie = await adminLogin();
-    await updateAuthSettings(cookie, {
-      provider_mode: "workos",
-      email_provider: "log",
-      workos_client_id: "client_dev_local",
-    });
-
-    await page.goto(`${webOrigin()}/login`);
-    await expect
-      .element(page.getByRole("button", { name: /continue with workos/i }))
-      .toBeVisible();
+    try {
+      await commands.ensureAuthSettings({
+        provider_mode: "workos",
+        email_provider: "log",
+        workos_client_id: "client_dev_local",
+      });
+      const ok = await commands.expectWorkosCta();
+      expect(ok).toBe(true);
+    } finally {
+      await commands.restoreLocalAuthCommand();
+    }
   }, 45_000);
 });

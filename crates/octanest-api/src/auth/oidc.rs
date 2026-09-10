@@ -5,9 +5,9 @@ use std::time::Instant;
 
 use openidconnect::core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata};
 use openidconnect::{
-    AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet, EndpointNotSet,
-    EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
-    TokenResponse,
+    AuthType, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EndpointMaybeSet,
+    EndpointNotSet, EndpointSet, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier,
+    RedirectUrl, Scope, TokenResponse,
 };
 use openidconnect::reqwest;
 use url::Url;
@@ -153,6 +153,9 @@ async fn build_core_client(
             ClientId::new(cfg.client_id.clone()),
             Some(ClientSecret::new(cfg.client_secret.clone())),
         )
+        // Prefer form client_id/secret so IdP tokenCallbacks that key on body
+        // params (e.g. navikt mock-oauth2-server) still match.
+        .set_auth_type(AuthType::RequestBody)
         .set_redirect_uri(redirect),
     )
 }
@@ -172,7 +175,7 @@ pub async fn start(
             CsrfToken::new_random,
             Nonce::new_random,
         )
-        .add_scope(Scope::new("openid".into()))
+        // openid is implied by AuthorizationCode flow — do not add it again.
         .add_scope(Scope::new("email".into()))
         .add_scope(Scope::new("profile".into()))
         .set_pkce_challenge(pkce_challenge)

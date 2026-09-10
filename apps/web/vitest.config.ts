@@ -3,9 +3,44 @@ import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import {
+  ensureAuthSettings,
+  expectWorkosCta,
+  restoreLocalAuthCommand,
+  signupThroughUi,
+} from "./e2e/stack-browser/commands";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const stackEnabled = process.env.E2E_STACK === "1";
+
+/** Static `process.env.KEY` replacements so browser tests see harness env. */
+const stackEnvDefine = {
+  "process.env.E2E_STACK": JSON.stringify(process.env.E2E_STACK ?? ""),
+  "process.env.OCTANEST_E2E_API_ORIGIN": JSON.stringify(
+    process.env.OCTANEST_E2E_API_ORIGIN ?? "http://127.0.0.1:18080",
+  ),
+  "process.env.OCTANEST_E2E_WEB_ORIGIN": JSON.stringify(
+    process.env.OCTANEST_E2E_WEB_ORIGIN ?? "http://127.0.0.1:13000",
+  ),
+  "process.env.OCTANEST_E2E_MAILPIT_ORIGIN": JSON.stringify(
+    process.env.OCTANEST_E2E_MAILPIT_ORIGIN ?? "http://127.0.0.1:8025",
+  ),
+  "process.env.OCTANEST_E2E_STUBS_ORIGIN": JSON.stringify(
+    process.env.OCTANEST_E2E_STUBS_ORIGIN ?? "http://127.0.0.1:9092",
+  ),
+  "process.env.OCTANEST_E2E_ADMIN_EMAIL": JSON.stringify(
+    process.env.OCTANEST_E2E_ADMIN_EMAIL ?? "admin@octanest.local",
+  ),
+  "process.env.OCTANEST_E2E_ADMIN_PASSWORD": JSON.stringify(
+    process.env.OCTANEST_E2E_ADMIN_PASSWORD ?? "password1",
+  ),
+  "process.env.OCTANEST_E2E_OIDC_ISSUER": JSON.stringify(
+    process.env.OCTANEST_E2E_OIDC_ISSUER ?? "http://127.0.0.1:9090/default",
+  ),
+  "process.env.OCTANEST_E2E_DB_PATH": JSON.stringify(
+    process.env.OCTANEST_E2E_DB_PATH ?? "",
+  ),
+};
 
 /**
  * Vitest projects:
@@ -57,6 +92,7 @@ export default defineConfig({
         ? [
             {
               extends: true as const,
+              define: stackEnvDefine,
               test: {
                 name: "e2e-stack",
                 environment: "node" as const,
@@ -68,6 +104,7 @@ export default defineConfig({
             },
             {
               extends: true as const,
+              define: stackEnvDefine,
               test: {
                 name: "e2e-stack-browser",
                 include: ["e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}"],
@@ -79,6 +116,12 @@ export default defineConfig({
                   provider: playwright(),
                   headless: true,
                   instances: [{ browser: "chromium" as const }],
+                  commands: {
+                    ensureAuthSettings,
+                    restoreLocalAuthCommand,
+                    signupThroughUi,
+                    expectWorkosCta,
+                  },
                 },
               },
             },

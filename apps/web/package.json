@@ -11,7 +11,7 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e": "vitest run --project e2e-component",
-    "test:e2e:stack": "vitest run --project e2e-stack --project e2e-stack-browser",
+    "test:e2e:stack": "vitest run --project e2e-stack && vitest run --project e2e-stack-browser",
     "lint": "echo 'no web lint yet'"
   },
   "dependencies": {

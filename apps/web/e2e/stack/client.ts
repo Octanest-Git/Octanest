@@ -2,6 +2,7 @@ import {
   adminEmail,
   adminPassword,
   apiOrigin,
+  e2eDbPath,
 } from "./env";
 
 export type RpcResult = {
@@ -53,12 +54,54 @@ export async function rpc(
   };
 }
 
+/** Node-only: force local provider when a prior SSO test left mode ≠ local. */
+async function forceLocalProviderViaSqlite(): Promise<boolean> {
+  const dbPath = e2eDbPath();
+  if (!dbPath) return false;
+  try {
+    // Prefer node:sqlite (Vitest commands run in Node, not Bun).
+    const { DatabaseSync } = await import("node:sqlite");
+    const db = new DatabaseSync(dbPath);
+    db.exec(
+      `UPDATE instance_auth_settings
+       SET provider_mode = 'local', email_provider = 'log'
+       WHERE id = 1`,
+    );
+    db.close();
+    return true;
+  } catch {
+    try {
+      const { Database } = await import("bun:sqlite");
+      const db = new Database(dbPath);
+      db.run(
+        `UPDATE instance_auth_settings
+         SET provider_mode = 'local', email_provider = 'log'
+         WHERE id = 1`,
+      );
+      db.close();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
 export async function adminLogin(): Promise<string> {
-  const res = await rpc("auth.login", {
-    identifier: adminEmail(),
-    password: adminPassword(),
-    remember_me: false,
-  });
+  const attempt = async () =>
+    rpc("auth.login", {
+      identifier: adminEmail(),
+      password: adminPassword(),
+      remember_me: false,
+    });
+
+  let res = await attempt();
+  if (
+    !res.ok &&
+    res.error?.code === "auth.provider_mismatch" &&
+    (await forceLocalProviderViaSqlite())
+  ) {
+    res = await attempt();
+  }
   if (!res.ok || !res.cookieHeader) {
     throw new Error(
       `admin login failed: status=${res.status} error=${JSON.stringify(res.error)}`,
@@ -94,6 +137,29 @@ export async function updateAuthSettings(
     throw new Error(
       `update_settings failed: ${JSON.stringify(res.error ?? res)}`,
     );
+  }
+}
+
+export async function restoreLocalAuth(cookie: string): Promise<void> {
+  await updateAuthSettings(cookie, {
+    provider_mode: "local",
+    email_provider: "log",
+  });
+}
+
+/** Login as admin, run work, always restore local mode afterward. */
+export async function withAdminSession<T>(
+  fn: (cookie: string) => Promise<T>,
+): Promise<T> {
+  const cookie = await adminLogin();
+  try {
+    return await fn(cookie);
+  } finally {
+    try {
+      await restoreLocalAuth(cookie);
+    } catch {
+      // best-effort — next adminLogin may SQLite-reset
+    }
   }
 }
 

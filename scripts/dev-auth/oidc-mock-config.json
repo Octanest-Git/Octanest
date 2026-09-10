@@ -7,8 +7,8 @@
       "tokenExpiry": 120,
       "requestMappings": [
         {
-          "requestParam": "client_id",
-          "match": "octanest-dev|.*",
+          "requestParam": "grant_type",
+          "match": "authorization_code|.*",
           "claims": {
             "sub": "oidc-dev-user",
             "aud": ["octanest-dev"],
