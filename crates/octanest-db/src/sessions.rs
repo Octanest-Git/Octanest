@@ -1,0 +1,261 @@
+//! Session CRUD via `DbPool` match — opaque token hashes only (D-11, D-13).
+
+use sqlx::Row;
+
+use crate::pool::DbPool;
+
+#[derive(Debug, Clone)]
+pub struct SessionRow {
+    pub id: String,
+    pub user_id: String,
+    pub token_hash: String,
+    pub expires_at: String,
+    pub remember_me: bool,
+    pub created_at: String,
+    pub last_seen_at: String,
+}
+
+macro_rules! map_session {
+    ($row:expr) => {{
+        let row = $row;
+        let remember_me = row
+            .try_get::<bool, _>("remember_me")
+            .or_else(|_| {
+                row.try_get::<i64, _>("remember_me")
+                    .map(|v| v != 0)
+                    .or_else(|_| row.try_get::<i8, _>("remember_me").map(|v| v != 0))
+            })
+            .map_err(|e| format!("session row: {e}"))?;
+        SessionRow {
+            id: row.try_get("id").map_err(|e| format!("session row: {e}"))?,
+            user_id: row
+                .try_get("user_id")
+                .map_err(|e| format!("session row: {e}"))?,
+            token_hash: row
+                .try_get("token_hash")
+                .map_err(|e| format!("session row: {e}"))?,
+            expires_at: row
+                .try_get("expires_at")
+                .map_err(|e| format!("session row: {e}"))?,
+            remember_me,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("session row: {e}"))?,
+            last_seen_at: row
+                .try_get("last_seen_at")
+                .map_err(|e| format!("session row: {e}"))?,
+        }
+    }};
+}
+
+const SESSION_SELECT_PG: &str = "SELECT id, user_id, token_hash, remember_me,
+       to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS expires_at,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+       to_char(last_seen_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS last_seen_at
+FROM sessions";
+
+const SESSION_SELECT_MYSQL: &str = "SELECT id, user_id, token_hash, remember_me,
+       DATE_FORMAT(expires_at, '%Y-%m-%dT%H:%i:%sZ') AS expires_at,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+       DATE_FORMAT(last_seen_at, '%Y-%m-%dT%H:%i:%sZ') AS last_seen_at
+FROM sessions";
+
+const SESSION_SELECT_SQLITE: &str = "SELECT id, user_id, token_hash, remember_me,
+       strftime('%Y-%m-%dT%H:%M:%SZ', expires_at) AS expires_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', last_seen_at) AS last_seen_at
+FROM sessions";
+
+/// Create a session row. `id` is the session PK; `token_hash` is SHA-256 hex of the cookie value.
+pub async fn create(
+    pool: &DbPool,
+    id: &str,
+    user_id: &str,
+    token_hash: &str,
+    expires_at: &str,
+    remember_me: bool,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO sessions (id, user_id, token_hash, expires_at, remember_me)
+VALUES ($1, $2, $3, $4::timestamptz, $5)",
+            )
+            .bind(id)
+            .bind(user_id)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(remember_me)
+            .execute(p)
+            .await
+            .map_err(|e| format!("create session failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO sessions (id, user_id, token_hash, expires_at, remember_me)
+VALUES (?, ?, ?, ?, ?)",
+            )
+            .bind(id)
+            .bind(user_id)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(remember_me)
+            .execute(p)
+            .await
+            .map_err(|e| format!("create session failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO sessions (id, user_id, token_hash, expires_at, remember_me)
+VALUES (?1, ?2, ?3, ?4, ?5)",
+            )
+            .bind(id)
+            .bind(user_id)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(if remember_me { 1 } else { 0 })
+            .execute(p)
+            .await
+            .map_err(|e| format!("create session failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn find_by_token_hash(
+    pool: &DbPool,
+    token_hash: &str,
+) -> Result<Option<SessionRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let row = sqlx::query(&format!("{SESSION_SELECT_PG} WHERE token_hash = $1"))
+                .bind(token_hash)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find session failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_session!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query(&format!("{SESSION_SELECT_MYSQL} WHERE token_hash = ?"))
+                .bind(token_hash)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find session failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_session!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query(&format!("{SESSION_SELECT_SQLITE} WHERE token_hash = ?1"))
+                .bind(token_hash)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find session failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_session!(&r)),
+                None => None,
+            })
+        }
+    }
+}
+
+pub async fn touch(
+    pool: &DbPool,
+    id: &str,
+    expires_at: &str,
+    last_seen_at: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE sessions SET expires_at = $2::timestamptz, last_seen_at = $3::timestamptz
+WHERE id = $1",
+            )
+            .bind(id)
+            .bind(expires_at)
+            .bind(last_seen_at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("touch session failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE sessions SET expires_at = ?, last_seen_at = ? WHERE id = ?")
+                .bind(expires_at)
+                .bind(last_seen_at)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("touch session failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE sessions SET expires_at = ?2, last_seen_at = ?3 WHERE id = ?1")
+                .bind(id)
+                .bind(expires_at)
+                .bind(last_seen_at)
+                .execute(p)
+                .await
+                .map_err(|e| format!("touch session failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn delete(pool: &DbPool, id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM sessions WHERE id = $1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete session failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM sessions WHERE id = ?")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete session failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM sessions WHERE id = ?1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete session failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn delete_all_for_user(pool: &DbPool, user_id: &str) -> Result<u64, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let result = sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete sessions for user failed: {e}"))?;
+            Ok(result.rows_affected())
+        }
+        DbPool::MySql(p) => {
+            let result = sqlx::query("DELETE FROM sessions WHERE user_id = ?")
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete sessions for user failed: {e}"))?;
+            Ok(result.rows_affected())
+        }
+        DbPool::Sqlite(p) => {
+            let result = sqlx::query("DELETE FROM sessions WHERE user_id = ?1")
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete sessions for user failed: {e}"))?;
+            Ok(result.rows_affected())
+        }
+    }
+}

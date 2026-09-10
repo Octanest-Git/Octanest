@@ -23,17 +23,17 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Authentication & accounts
 
-- [ ] **AUTH-01**: User can sign up with email and password
-- [ ] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
-- [ ] **AUTH-03**: User can log out from the web UI
+- [x] **AUTH-01**: User can sign up with email and password
+- [x] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
+- [x] **AUTH-03**: User can log out from the web UI
 - [ ] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
 - [ ] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
 - [ ] **AUTH-06**: On self-host, if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
 - [ ] **AUTH-07**: On self-host, if those env vars are absent, empty instance shows a one-time setup wizard to create the admin
-- [ ] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
-- [ ] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
-- [ ] **AUTH-10**: Operator can configure SMTP as the email provider
-- [ ] **AUTH-11**: Operator can configure Resend as the email provider
+- [x] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
+- [x] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
+- [x] **AUTH-10**: Operator can configure SMTP as the email provider
+- [x] **AUTH-11**: Operator can configure Resend as the email provider
 - [ ] **AUTH-12**: User can reset password via email link when an email provider is configured
 
 ### Git hosting
@@ -119,11 +119,11 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Brand & experience
 
-- [ ] **BRAND-01**: Product UI uses the Octanest mark (`brand/octanest-mark.png`) and blue/orange brand direction
-- [ ] **BRAND-02**: Product is named and presented as Octanest (not a “GitHub clone” or bare Octane)
-- [ ] **BRAND-03**: UI supports light and dark color modes
-- [ ] **BRAND-04**: Theme preference defaults to the operating system (system)
-- [ ] **BRAND-05**: User can override theme preference to light or dark (and persist that choice)
+- [x] **BRAND-01**: Product UI uses the Octanest mark (`brand/octanest-mark.png`) and blue/orange brand direction
+- [x] **BRAND-02**: Product is named and presented as Octanest (not a “GitHub clone” or bare Octane)
+- [x] **BRAND-03**: UI supports light and dark color modes
+- [x] **BRAND-04**: Theme preference defaults to the operating system (system)
+- [x] **BRAND-05**: User can override theme preference to light or dark (and persist that choice)
 
 ## v2 Requirements
 
@@ -175,17 +175,17 @@ Deferred; not in the current roadmap until promoted.
 | PLAT-09 | Phase 22 | Pending |
 | PLAT-10 | Phase 1 | Pending |
 | PLAT-11 | Phase 1 | Pending |
-| AUTH-01 | Phase 4 | Pending |
-| AUTH-02 | Phase 4 | Pending |
-| AUTH-03 | Phase 4 | Pending |
+| AUTH-01 | Phase 4 | Complete |
+| AUTH-02 | Phase 4 | Complete |
+| AUTH-03 | Phase 4 | Complete |
 | AUTH-04 | Phase 5 | Pending |
 | AUTH-05 | Phase 5 | Pending |
 | AUTH-06 | Phase 6 | Pending |
 | AUTH-07 | Phase 6 | Pending |
-| AUTH-08 | Phase 4 | Pending |
-| AUTH-09 | Phase 4 | Pending |
-| AUTH-10 | Phase 4 | Pending |
-| AUTH-11 | Phase 4 | Pending |
+| AUTH-08 | Phase 4 | Complete |
+| AUTH-09 | Phase 4 | Complete |
+| AUTH-10 | Phase 4 | Complete |
+| AUTH-11 | Phase 4 | Complete |
 | AUTH-12 | Phase 5 | Pending |
 | GIT-01 | Phase 7 | Pending |
 | GIT-02 | Phase 8 | Pending |
@@ -244,11 +244,11 @@ Deferred; not in the current roadmap until promoted.
 | SOC-02 | Phase 21 | Pending |
 | SOC-03 | Phase 21 | Pending |
 | SOC-04 | Phase 21 | Pending |
-| BRAND-01 | Phase 3 | Pending |
-| BRAND-02 | Phase 3 | Pending |
-| BRAND-03 | Phase 3 | Pending |
-| BRAND-04 | Phase 3 | Pending |
-| BRAND-05 | Phase 3 | Pending |
+| BRAND-01 | Phase 3 | Complete |
+| BRAND-02 | Phase 3 | Complete |
+| BRAND-03 | Phase 3 | Complete |
+| BRAND-04 | Phase 3 | Complete |
+| BRAND-05 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 85 total

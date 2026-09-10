@@ -1,0 +1,17 @@
+node_modules/
+target/
+dist/
+.turbo/
+.env
+.env.local
+.env.dev-auth
+*.log
+.DS_Store
+data/
+var/
+coverage/
+test-results/
+playwright-report/
+.vitest/
+.env.sqlite
+dev-dist/

@@ -14,14 +14,14 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- ✓ Web UI brand shell: Octanest mark, chrome, landing/status, favicon/PWA — Phase 3
+- ✓ Theme: light + dark; system default; persisted light/dark override — Phase 3
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
 - [ ] Web UI: OctaneJS via `@octanejs/tanstack-start`, ShadCN + Base UI, Tailwind CSS v4 (CSS-based config)
-- [ ] Theme: light + dark modes; default follows system; user can force light or dark
 - [ ] Backend services in Rust
 - [ ] Shared types: Rust is source of truth; TypeScript client/types via RPC codegen (rspc/specta-style) with watch-friendly regen in development
 - [ ] App data store supports SQLite, PostgreSQL, and MySQL (operator-selected via config)
@@ -118,6 +118,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | v1 extras: **LFS, webhooks, notifs, search, releases, transfer, branch protection** | Full GitHub-shaped collaboration surface | ✓ Good |
 | Roadmap: **fine granularity (22 phases)** | Thin slices for parallel planning/execution | ✓ Good |
 | Logo: **brand/octanest-mark.png** | Current brand mark (blue/orange X) | ✓ Good |
+| Phase 3: **semantic tokens + PWA shell** | Squircle mark, system/light/dark, assets-only SW | ✓ Good |
 
 ---
-*Last updated: 2026-09-09 after UI stack + fine roadmap*
+*Last updated: 2026-09-09 after Phase 3*
