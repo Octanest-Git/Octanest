@@ -123,7 +123,7 @@ Each task was committed atomically:
 1. **Task 1: Request password reset (anti-enumeration)** - `01a74d1` (test) → `abb7d88` (feat)
 2. **Task 2: Redeem reset → password + revoke others + sign-in** - `892a376` (test) → `dae88f8` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `b672f7d` (docs: complete plan)
 
 _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
