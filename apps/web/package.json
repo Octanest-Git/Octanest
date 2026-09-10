@@ -23,6 +23,7 @@
     "@octanest/api-client": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "input-otp": "1.5.0",
     "octane": "^0.2.7",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

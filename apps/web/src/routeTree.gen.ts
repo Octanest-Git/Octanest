@@ -14,6 +14,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 
@@ -42,6 +43,11 @@ const StatusRoute = StatusRouteImport.update({
   path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifyRoute = VerifyRouteImport.update({
+  id: '/verify',
+  path: '/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/status'
+    | '/verify'
     | '/admin/auth'
     | '/settings/profile'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/status'
+    | '/verify'
     | '/admin/auth'
     | '/settings/profile'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/status'
+    | '/verify'
     | '/admin/auth'
     | '/settings/profile'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
+  VerifyRoute: typeof VerifyRoute
   AdminAuthRoute: typeof AdminAuthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
 }
@@ -158,6 +171,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verify': {
+      id: '/verify'
+      path: '/verify'
+      fullPath: '/verify'
+      preLoaderRoute: typeof VerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/auth': {
       id: '/admin/auth'
       path: '/admin/auth'
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
+  VerifyRoute: VerifyRoute,
   AdminAuthRoute: AdminAuthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
 }

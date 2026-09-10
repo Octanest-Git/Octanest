@@ -42,6 +42,7 @@ export type UserPublic = {
   avatar_url?: string | null;
   is_admin: boolean;
   profile_incomplete: boolean;
+  email_verified: boolean;
 };
 
 export type SignupRequest = {
@@ -54,6 +55,21 @@ export type LoginRequest = {
   identifier: string;
   password: string;
   remember_me: boolean;
+};
+
+export type VerifyRequest = {
+  token?: string | null;
+  code?: string | null;
+};
+
+export type RequestPasswordResetRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token?: string | null;
+  code?: string | null;
+  password: string;
 };
 
 export type ProviderConfigPublic = {
@@ -132,6 +148,15 @@ export function createClient(opts: CreateClientOptions) {
       me: () => rpcCall<UserPublic>(opts, "auth.me", {}),
       providerConfig: () =>
         rpcCall<ProviderConfigPublic>(opts, "auth.provider_config", {}),
+      verify: (input: VerifyRequest) => rpcCall<UserPublic>(opts, "auth.verify", input),
+      requestVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.request_verify", {}),
+      resendVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.resend_verify", {}),
+      requestPasswordReset: (input: RequestPasswordResetRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "auth.request_password_reset", input),
+      resetPassword: (input: ResetPasswordRequest) =>
+        rpcCall<UserPublic>(opts, "auth.reset_password", input),
+      privilegedPing: () =>
+        rpcCall<{ ok: boolean }>(opts, "auth.dev.privileged_ping", {}),
     },
     user: {
       getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
