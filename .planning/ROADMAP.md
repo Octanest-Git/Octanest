@@ -104,8 +104,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] `04-03-PLAN.md` — Argon2id passwords + opaque session cookies
 - [x] `04-04-PLAN.md` — Local auth RPC, welcome email, admin seed, session tests
 - [x] `04-05-PLAN.md` — WorkOS AuthKit + generic OIDC callbacks
-- [ ] `04-06-PLAN.md` — Profile/avatar API + admin.auth settings + rpc-gen
-- [ ] `04-07-PLAN.md` — Login/signup/dashboard UI + chrome account menu
+- [x] `04-06-PLAN.md` — Profile/avatar API + admin.auth settings + rpc-gen
+- [x] `04-07-PLAN.md` — Login/signup/dashboard UI + chrome account menu
 - [ ] `04-08-PLAN.md` — Profile + admin auth UI + human UAT checkpoint
 **UI hint**: yes
 
@@ -316,7 +316,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 1. Monorepo Scaffold | 0/TBD | Not started | - |
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
-| 4. Auth Sessions & Email | 5/8 | In Progress|  |
+| 4. Auth Sessions & Email | 7/8 | In Progress|  |
 | 5. Cloud Verify & Reset | 0/TBD | Not started | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |

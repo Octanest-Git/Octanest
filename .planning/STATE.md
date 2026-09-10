@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-09-10T00:01:24.420Z"
+stopped_at: Completed 04-07-PLAN.md
+last_updated: "2026-09-10T00:07:50.090Z"
 last_activity: 2026-09-10
 progress:
   total_phases: 22
   completed_phases: 3
   total_plans: 24
-  completed_plans: 22
-  percent: 92
+  completed_plans: 23
+  percent: 96
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 4 (auth-sessions-email) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-09-10
 
-Progress: Phases 1–3 complete; Phase 4 in progress (4/8 plans)
+Progress: Phases 1–3 complete; Phase 4 in progress (7/8 plans)
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: Phases 1–3 complete; Phase 4 in progress (4/8 plans)
 | Phase 04-auth-sessions-email P04 | 4min | 2 tasks | 12 files |
 | Phase 04-auth-sessions-email P05 | 7min | 2 tasks | 12 files |
 | Phase 04-auth-sessions-email P06 | 10min | 2 tasks | 17 files |
+| Phase 04-auth-sessions-email P07 | 4min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Recent decisions affecting current work:
 - [Phase 04]: Avatar public URL path /uploads/avatars/{user_id}.webp stored in users.avatar_path — UI consumes avatar_url directly; filesystem path stays under uploads_dir
 - [Phase 04]: AppState email is Arc<RwLock> for hot-rebuild on admin.auth.update_settings — D-09 email_provider changes must take effect without restart
 - [Phase 04]: AuthSettingsPublic returns workos_client_id display + ENV configured booleans — T-04-22 secrets never leave ENV; admin UI needs non-secret display fields
+- [Phase 04]: Hand-authored Base UI shadcn wrappers rather than CLI scaffold — Matches Phase 3 pattern so contracts stay stable for wave plans
+- [Phase 04]: Post-auth redirects via window.location.assign(safeReturnTo) — Supports untyped returnTo paths before profile/admin routes exist
+- [Phase 04]: Vite proxies /api/auth for WorkOS/OIDC start URLs — Local SSO CTAs must reach the API
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T00:01:24.418Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-09-10T00:07:50.088Z
+Stopped at: Completed 04-07-PLAN.md
 Resume file: None
