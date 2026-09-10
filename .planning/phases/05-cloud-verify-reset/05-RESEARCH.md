@@ -477,17 +477,19 @@ Add branch: `auth.email_unverified` → `FORBIDDEN`.
 | A2 | Combining SHA-256 OTP hash + attempt caps is adequate without Argon2/HMAC pepper for Phase 5 | Token storage | DB dump + online guessing still mitigated by TTL/rate limits; pepper optional later |
 | A3 | WorkOS stub fixtures may need `email_verified: true` for IdP-trust e2e | IdP-trust | Stub SSO users stay unverified until verify email |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Notify email after successful password reset?**
    - What we know: OWASP recommends notification; D-27 silent on it; UI-SPEC does not require.
    - What's unclear: Product desire for “your password was changed” mail.
    - Recommendation: Optional stretch — not required for AUTH-12; skip unless planner has spare capacity.
+   - RESOLVED: Skip notify-after-reset mail in Phase 5. AUTH-12 is satisfied by request/redeem only; D-27 and UI-SPEC do not require a “password was changed” message. Reset plan does not send post-reset notification.
 
 2. **Exact env allowlist for `auth.dev.privileged_ping` in Compose `OCTANEST_ENV=compose`?**
    - What we know: D-10 wants CI proof; Compose often uses `compose`.
    - What's unclear: Whether ping should exist in Compose e2e.
    - Recommendation: Allow `{development,dev,test,compose}`; never `production`.
+   - RESOLVED: Register `auth.dev.privileged_ping` when `OCTANEST_ENV` ∈ `{development,dev,test,compose}` or `cfg(test)`; never in `production`. Locked in the tracer plan (gate + privileged_ping).
 
 ## Environment Availability
 

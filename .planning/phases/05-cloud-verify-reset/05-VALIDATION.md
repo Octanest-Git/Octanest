@@ -11,6 +11,7 @@ created: "2026-09-10"
 
 > Per-phase validation contract for feedback sampling during execution.
 > Seeded from `05-RESEARCH.md` § Validation Architecture.
+> Per-Task Verification Map filled by planner (05-01…05-07; revision 1 split tracer).
 
 ---
 
@@ -28,8 +29,8 @@ created: "2026-09-10"
 
 ## Sampling Rate
 
-- **After every task commit:** Targeted `cargo test -p octanest-api --test …` / `bun run test:unit` for the touched area
-- **After every plan wave:** Workspace Rust tests + web unit (+ `make db-matrix` when migrations/token CRUD touched)
+- **After every task commit:** Targeted `cargo test -p octanest-api --test …` / `bun --cwd apps/web run build` for the touched area
+- **After every plan wave:** Workspace Rust tests + web build (+ dialect_auth when migrations/token CRUD touched)
 - **Before `$gsd-verify-work`:** Full suite green + human UAT per UI-SPEC (banner, verify/reset copy, anti-enumeration)
 - **Max feedback latency:** 60 seconds (quick path)
 
@@ -39,19 +40,22 @@ created: "2026-09-10"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 05-W0-* | 00/01 | 0 | AUTH-04/12 | — | Wave 0 stubs for verify/reset/gate | scaffold | (created in Wave 0 tasks) | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | AUTH-04 | T-05-* | Unverified → `auth.email_unverified` on privileged ping | integration | `cargo test -p octanest-api --test auth_verify_gate` | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | AUTH-04 | T-05-* | Local signup unverified; OTP/token consume sets verified | integration | `cargo test -p octanest-api --test auth_verify_reset` | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | AUTH-04 | T-05-* | IdP `email_verified=true` sets verified | unit/integration | workos/oidc + DB assert | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | AUTH-04 | T-05-* | Admin seed auto-verified | integration | seed path test | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | AUTH-05 | — | Signup without invite still succeeds | integration | extend `auth_signup` | ✅ extend | ⬜ pending |
-| TBD | TBD | 2 | AUTH-12 | T-05-* | Reset request always same ok; mail only local-password | integration | recording EmailSender | ❌ W0 | ⬜ pending |
-| TBD | TBD | 2 | AUTH-12 | T-05-* | Redeem sets password, revokes others, sets cookie | integration | multi-session pattern | ❌ W0 | ⬜ pending |
-| TBD | TBD | 2 | AUTH-12 | T-05-* | SSO-only no send / redeem error class | integration | password_hash null user | ❌ W0 | ⬜ pending |
-| TBD | TBD | 1 | PLAT-08 | — | Token migrate + CRUD on 3 dialects | integration | extend `dialect_auth` | ❌ W0 | ⬜ pending |
-| TBD | TBD | 3 | UI | — | OTP wrapper + verify/reset pages | component | vitest unit/integration | ❌ W0 | ⬜ pending |
-
-*Planner replaces TBD Task IDs / Plan / Wave / Threat Ref when PLAN.md files are written.*
+| 05-01-T1 | 01 | 1 | AUTH-04 | T-05-03 | 0003 tokens + CRUD + UserPublic.email_verified field | unit + parity | `cargo test -p octanest-core --lib && cargo test -p octanest-db --lib migration_parity` | ❌→T1 | ⬜ pending |
+| 05-01-T2 | 01 | 1 | AUTH-04 / PLAT-08 | — | Token migrate + CRUD + verified helpers on dialects | integration | `cargo test -p octanest-db --lib migration_parity && cargo test -p octanest-db --test dialect_auth` | ✅ extend | ⬜ pending |
+| 05-02-T1 | 02 | 2 | AUTH-04 | T-05-01…T-05-04 | Unverified → `auth.email_unverified`+403; OTP verify → me.email_verified + ping ok | integration | `cargo test -p octanest-api --test auth_verify_gate --test auth_verify_reset` | ❌ W0→T1 | ⬜ pending |
+| 05-02-T2 | 02 | 2 | AUTH-04 | T-05-04 | privileged_ping unknown outside allowlist | integration | `cargo test -p octanest-api --test auth_verify_gate` | ❌→T2 | ⬜ pending |
+| 05-03-T1 | 03 | 3 | AUTH-04 | T-05-05…T-05-08 | Issue/resend/rate-limit/magic+OTP; PUBLIC_ORIGIN links | integration | `cargo test -p octanest-api --test auth_verify_reset` | ❌→T1 | ⬜ pending |
+| 05-03-T2 | 03 | 3 | AUTH-04, AUTH-05 | T-05-08 | Signup auto-send verify; admin seed verified; open signup | integration | `cargo test -p octanest-api --test auth_signup --test auth_verify_reset` | ✅ extend | ⬜ pending |
+| 05-03-T3 | 03 | 3 | AUTH-04 | — | Reserved usernames `verify`, `reset-password` | unit | `cargo test -p octanest-core --lib` | ✅ | ⬜ pending |
+| 05-04-T1 | 04 | 4 | AUTH-12 | T-05-09, T-05-12 | Reset request anti-enumeration; mail only local-password | integration | `cargo test -p octanest-api --test auth_verify_reset` | ❌→T1 | ⬜ pending |
+| 05-04-T2 | 04 | 4 | AUTH-12 | T-05-10, T-05-11 | Redeem sets password, revokes others, Set-Cookie | integration | `cargo test -p octanest-api --test auth_verify_reset` | ❌→T2 | ⬜ pending |
+| 05-05-T1 | 05 | 5 | AUTH-04 | T-05-13 | IdP email_verified=true sets verified_at | unit/integration | `cargo test -p octanest-api --lib auth::external auth::workos auth::oidc && cargo test -p octanest-api --test auth_verify_gate` | ✅ extend | ⬜ pending |
+| 05-05-T2 | 05 | 5 | AUTH-04 | T-05-14 | clear_email_verification helper required + unit test | unit | `grep -q 'fn clear_email_verification' …/verify_reset.rs && cargo test -p octanest-api --lib clear_email_verification` | ❌→T2 | ⬜ pending |
+| 05-06-T1 | 06 | 6 | — | T-05-SC | Human confirm input-otp@1.5.0 before install | checkpoint | blocking-human | n/a | ⬜ pending |
+| 05-06-T2 | 06 | 6 | AUTH-04 | T-05-SC, T-05-15, T-05-16 | rpc-gen + InputOtp + /verify build | build | `cargo run -p octanest-api --bin rpc-gen && bun --cwd apps/web run build` | ❌→T2 | ⬜ pending |
+| 05-06-T3 | 06 | 6 | AUTH-04 | — | VerifyBanner under header for unverified | build + human-check | `bun --cwd apps/web run build` | ❌→T3 | ⬜ pending |
+| 05-07-T1 | 07 | 7 | AUTH-12, AUTH-05 | T-05-17, T-05-18, T-05-20 | /reset-password + forgot link; no invite UI | build + human-check | `bun --cwd apps/web run build` | ❌→T1 | ⬜ pending |
+| 05-07-T2 | 07 | 7 | AUTH-04 | T-05-19 | Disabled New repository CTA; phase regression | build + integration | `bun --cwd apps/web run build && cargo test -p octanest-api --test auth_verify_gate --test auth_verify_reset && cargo test -p octanest-api --test auth_signup` | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -59,11 +63,11 @@ created: "2026-09-10"
 
 ## Wave 0 Requirements
 
-- [ ] `crates/octanest-api/tests/auth_verify_reset.rs` — issue/consume/rate-limit/anti-enumeration
-- [ ] `crates/octanest-api/tests/auth_verify_gate.rs` — `require_verified` + env-gated privileged ping
-- [ ] Extend `crates/octanest-db/tests/dialect_auth.rs` (or sibling) for `0003` tokens + `set_email_verified`
-- [ ] Web: InputOtp + verify/reset route smoke tests
-- [ ] rpc-gen / api-client regeneration after `email_verified` DTO change
+- [x] Planned as part of 05-02-T1: `crates/octanest-api/tests/auth_verify_reset.rs`
+- [x] Planned as part of 05-02-T1: `crates/octanest-api/tests/auth_verify_gate.rs`
+- [x] Planned as part of 05-01-T2: extend `crates/octanest-db/tests/dialect_auth.rs` for `0003` tokens + verified helpers
+- [x] Web OTP/verify coverage via build + human-check in 05-06/05-07
+- [x] rpc-gen / api-client regeneration in 05-06-T2 after DTO/RPC surface complete
 
 ---
 
@@ -76,6 +80,7 @@ created: "2026-09-10"
 | Anti-enumeration success panel | AUTH-12 | Timing/UX judgment | Request reset for unknown email; same panel as known local account |
 | Live SMTP/Resend E2E | AUTH-12 | Requires operator secrets | Only when keys configured; default CI uses log-sink |
 | Phase success criteria UAT | ALL | Human checkpoint | Roadmap success criteria 1–3 |
+| UI backstops (overflow/long-text) | UI | Held-out visual | max-w-md wrap; banner wrap on narrow — insufficient_spec → human_needed if no evidence |
 
 ---
 

@@ -140,7 +140,16 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. On Octanest Cloud, unverified users cannot perform privileged actions (at minimum: create repository) until email is verified
   3. When an email provider is configured, user can reset password via an email link
 
-**Plans**: TBD
+**Plans**: 7 plans
+
+- [ ] `05-01-PLAN.md` — Token schema/CRUD + UserPublic.email_verified field
+- [ ] `05-02-PLAN.md` — Tracer: OTP verify → require_verified / privileged_ping
+- [ ] `05-03-PLAN.md` — Verify issue/resend/rate limits, signup auto-send, admin seed, AUTH-05
+- [ ] `05-04-PLAN.md` — Password reset request/redeem RPCs (AUTH-12)
+- [ ] `05-05-PLAN.md` — IdP-trust verified marking + clear_email_verification helper
+- [ ] `05-06-PLAN.md` — rpc-gen, input-otp gate, `/verify`, VerifyBanner
+- [ ] `05-07-PLAN.md` — `/reset-password`, forgot link, disabled New repository CTA
+
 **UI hint**: yes
 
 ### Phase 6: Self-Host Admin Bootstrap
@@ -391,7 +400,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
-| 5. Cloud Verify & Reset | 0/TBD | Not started | - |
+| 5. Cloud Verify & Reset | 0/7 | Planned | - |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
