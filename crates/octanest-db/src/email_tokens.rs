@@ -148,9 +148,60 @@ ON CONFLICT (user_id, purpose) DO UPDATE SET
             .map_err(|e| format!("upsert email token failed: {e}"))?;
         }
     }
-    find_by_token_hash(pool, token_hash)
+    find_by_user_purpose(pool, user_id, purpose)
         .await?
         .ok_or_else(|| "upsert email token failed: row missing after upsert".into())
+}
+
+pub async fn find_by_user_purpose(
+    pool: &DbPool,
+    user_id: &str,
+    purpose: &str,
+) -> Result<Option<EmailTokenRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let row = sqlx::query(&format!(
+                "{TOKEN_SELECT_PG} WHERE user_id = $1 AND purpose = $2"
+            ))
+            .bind(user_id)
+            .bind(purpose)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_email_token!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query(&format!(
+                "{TOKEN_SELECT_MYSQL} WHERE user_id = ? AND purpose = ?"
+            ))
+            .bind(user_id)
+            .bind(purpose)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_email_token!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query(&format!(
+                "{TOKEN_SELECT_SQLITE} WHERE user_id = ?1 AND purpose = ?2"
+            ))
+            .bind(user_id)
+            .bind(purpose)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_email_token!(&r)),
+                None => None,
+            })
+        }
+    }
 }
 
 pub async fn find_by_token_hash(

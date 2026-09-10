@@ -205,6 +205,14 @@ impl Database {
         email_tokens::find_by_otp_hash(self.require_pool()?, otp_hash).await
     }
 
+    pub async fn find_email_token_by_user_purpose(
+        &self,
+        user_id: &str,
+        purpose: &str,
+    ) -> Result<Option<email_tokens::EmailTokenRow>, String> {
+        email_tokens::find_by_user_purpose(self.require_pool()?, user_id, purpose).await
+    }
+
     pub async fn increment_email_token_attempts(&self, id: &str) -> Result<i32, String> {
         email_tokens::increment_attempts(self.require_pool()?, id).await
     }
