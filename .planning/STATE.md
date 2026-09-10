@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: executing
-stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-09-10T22:34:44.453Z"
+stopped_at: Completed 05-06-PLAN.md
+last_updated: "2026-09-10T22:47:52.220Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 5 execution started
-state_head: 2d49a5d9fd51a988d03c280f6f8cf90eaea045bb
+state_head: 0c5a7c12d477d9587098e9357be48e8c1372ff72
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 31
-  completed_plans: 29
+  completed_plans: 30
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 (Cloud Verify & Reset) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: Ready to execute
 Last activity: 2026-09-10 — Completed 05-02 AUTH-04 verify gate tracer
 
@@ -75,6 +75,7 @@ Progress: Phases 1–4 complete; Phase 5 in progress (2/7 plans)
 | Phase 05-cloud-verify-reset P03 | 9 min | 3 tasks | 15 files |
 | Phase 05 P04 | 6 min | 2 tasks | 6 files |
 | Phase 05 P05 | 5 min | 2 tasks | 5 files |
+| Phase 05 P06 | 4min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,8 @@ Recent decisions affecting current work:
 - [Phase 05]: auth.sso_only on reset redeem only; request never reveals SSO-only — D-26/D-28 + UI-SPEC SSO copy
 - [Phase 05]: Re-apply IdP-trust on existing SSO identity link path when provider asserts verified email — Returning users with newly verified IdP email should not stay stuck unverified
 - [Phase 05]: OIDC trusts email_verified only when claim is Some(true); false/absent uses local verify — D-03/D-15 IdP-trust must not treat missing claim as verified
+- [Phase 5]: Human approved input-otp@1.5.0 legitimacy gate before install (05-06-T1)
+- [Phase 5]: Token auto-consume invalid_token while signed-in maps to wrong-user copy on /verify
 
 ### Pending Todos
 
@@ -136,6 +139,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:34:33.408Z
-Stopped at: Completed 05-05-PLAN.md
+Last session: 2026-09-10T22:47:52.187Z
+Stopped at: Completed 05-06-PLAN.md
 Resume file: None
