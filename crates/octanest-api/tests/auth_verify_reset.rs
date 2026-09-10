@@ -188,11 +188,13 @@ async fn request_verify_sends_magic_and_otp_email() {
     let url = format!("sqlite:{}", dir.path().join("req_verify.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
-    let (app, recorder) = test_app_with_recorder(db).await;
+    let (app, recorder) = test_app_with_recorder(db.clone()).await;
 
-    let (cookie, _, _) = signup_user(&app, "v@ex.com", "verifyme").await;
-    // Clear welcome (and any signup auto-verify) so we assert request_verify alone.
+    let (cookie, user_id, _) = signup_user(&app, "v@ex.com", "verifyme").await;
+    // Clear welcome + signup auto-verify so we assert request_verify alone.
     recorder.sent.lock().expect("lock").clear();
+    // Signup already issued a verify token — backdate so request_verify is not rate-limited.
+    backdate_verify_created_at(&db, &user_id, 61).await;
 
     let res = app
         .clone()
@@ -293,6 +295,7 @@ async fn resend_replaces_prior_and_rate_limits_within_60s() {
 
     let (cookie, user_id, _) = signup_user(&app, "r@ex.com", "resender").await;
     recorder.sent.lock().expect("lock").clear();
+    backdate_verify_created_at(&db, &user_id, 61).await;
 
     let first = app
         .clone()
@@ -363,8 +366,10 @@ async fn sixth_issue_within_hour_rate_limited() {
     let app = test_app(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "h@ex.com", "hourly").await;
+    // Signup consumed issue #1 — backdate and count the next four + sixth.
+    backdate_verify_created_at(&db, &user_id, 61).await;
 
-    for i in 0..5 {
+    for i in 0..4 {
         if i > 0 {
             backdate_verify_created_at(&db, &user_id, 61).await;
         }

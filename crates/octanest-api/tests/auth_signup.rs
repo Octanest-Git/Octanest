@@ -74,10 +74,18 @@ async fn signup_sets_cookie_and_sends_welcome() {
     assert_eq!(v["data"]["username"], "ada");
 
     let sent = recorder.sent.lock().expect("lock");
-    assert_eq!(sent.len(), 1);
-    assert_eq!(sent[0].subject, "Welcome to Octanest");
-    assert!(sent[0].text.contains("ada"));
-    assert_eq!(sent[0].to, "ada@example.com");
+    assert_eq!(sent.len(), 2, "welcome + verify emails");
+    assert!(
+        sent.iter().any(|m| m.subject == "Welcome to Octanest"),
+        "missing welcome"
+    );
+    let verify = sent
+        .iter()
+        .find(|m| m.subject == "Verify your Octanest email")
+        .expect("verify email");
+    assert!(verify.text.contains("Or enter this 8-digit code:"));
+    assert!(verify.text.contains("/verify?token="));
+    assert_eq!(verify.to, "ada@example.com");
 }
 
 #[tokio::test]
@@ -148,4 +156,62 @@ async fn signup_works_with_log_sink_default_router() {
         .await
         .unwrap();
     assert_eq!(res.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn signup_open_without_invite_fields_auth05() {
+    // AUTH-05 / D-08: signup succeeds with only email/username/password — no invite schema.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("open.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let (app, _) = app_with_recorder(db).await;
+
+    let body = r#"{"procedure":"auth.signup","input":{"email":"open@ex.com","username":"opener","password":"password1"}}"#;
+    assert!(
+        !body.contains("invite"),
+        "signup request must not carry invite fields"
+    );
+    let res = app.oneshot(rpc_req(body)).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true);
+    assert_eq!(v["data"]["email_verified"], false);
+}
+
+#[tokio::test]
+async fn seeded_admin_is_auto_verified() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("admin_seed.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "Admin@Example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("seed");
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+
+    let user = db
+        .find_user_by_email("admin@example.com")
+        .await
+        .expect("find")
+        .expect("seeded user");
+    assert!(user.is_admin);
+    assert!(
+        user.email_verified_at.is_some(),
+        "D-04: seeded admin must be auto-verified"
+    );
+    // Second seed is a no-op when users exist.
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "other@example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("second seed");
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+    assert_eq!(db.count_users().await.expect("count"), 1);
 }

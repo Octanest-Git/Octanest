@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::auth::external::is_placeholder_username;
 use crate::auth::password::{hash_password_str, verify_password, PasswordError, MIN_PASSWORD_LEN};
 use crate::auth::session::clear_session_cookie;
+use crate::auth::verify_reset;
 use crate::email::OutboundEmail;
 use crate::rpc::{CookieChange, RpcCtx};
 
@@ -203,6 +204,11 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
     };
     if let Err(e) = ctx.email.send(welcome).await {
         tracing::error!(error = %e, "welcome email failed");
+    }
+
+    // Auto-send verify email on local signup (D-23); mail/issue errors must not fail signup (T-05-08).
+    if let Err(e) = verify_reset::issue_and_send_verify(ctx, &row.id, &email, &username).await {
+        tracing::error!(code = %e.code, "signup verify email issue failed");
     }
 
     Ok(user_to_public(&row))

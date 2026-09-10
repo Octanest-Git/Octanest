@@ -8,6 +8,7 @@ pub mod oidc;
 pub mod password;
 pub mod pending;
 pub mod profile;
+pub mod seed;
 pub mod session;
 pub mod verify_reset;
 pub mod workos;
