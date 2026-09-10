@@ -336,3 +336,87 @@ pub async fn count_users(pool: &DbPool) -> Result<i64, String> {
             .map_err(|e| format!("count users failed: {e}")),
     }
 }
+
+/// Set `email_verified_at` to the given RFC3339 / dialect timestamp string.
+pub async fn set_email_verified_at(
+    pool: &DbPool,
+    id: &str,
+    at: &str,
+) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = $2::timestamptz, updated_at = now()
+WHERE id = $1",
+            )
+            .bind(id)
+            .bind(at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set email_verified_at failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = ?, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set email_verified_at failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = ?2,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set email_verified_at failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "set email_verified_at failed: user not found".into())
+}
+
+/// Clear `email_verified_at` (e.g. email change — D-05).
+pub async fn clear_email_verified_at(pool: &DbPool, id: &str) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = NULL, updated_at = now() WHERE id = $1",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("clear email_verified_at failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = NULL, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("clear email_verified_at failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET email_verified_at = NULL,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("clear email_verified_at failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "clear email_verified_at failed: user not found".into())
+}

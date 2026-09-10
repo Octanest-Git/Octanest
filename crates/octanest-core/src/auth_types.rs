@@ -33,6 +33,8 @@ pub struct UserPublic {
     pub is_admin: bool,
     /// True when username needs completion (e.g. after SSO with placeholder handle).
     pub profile_incomplete: bool,
+    /// True when the account email has been verified (D-13); wired in `user_to_public` in 05-02.
+    pub email_verified: bool,
 }
 
 /// Local signup input (D-01).

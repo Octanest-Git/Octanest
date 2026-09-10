@@ -3,6 +3,7 @@
 pub mod auth_identities;
 pub mod auth_settings;
 pub mod dialect;
+pub mod email_tokens;
 pub mod migrate;
 pub mod pool;
 pub mod probe;
@@ -153,6 +154,63 @@ impl Database {
 
     pub async fn count_users(&self) -> Result<i64, String> {
         users::count_users(self.require_pool()?).await
+    }
+
+    pub async fn set_email_verified_at(
+        &self,
+        id: &str,
+        at: &str,
+    ) -> Result<UserRow, String> {
+        users::set_email_verified_at(self.require_pool()?, id, at).await
+    }
+
+    pub async fn clear_email_verified_at(&self, id: &str) -> Result<UserRow, String> {
+        users::clear_email_verified_at(self.require_pool()?, id).await
+    }
+
+    // --- email tokens ---
+
+    pub async fn upsert_email_token(
+        &self,
+        id: &str,
+        user_id: &str,
+        purpose: &str,
+        token_hash: &str,
+        otp_hash: &str,
+        expires_at: &str,
+    ) -> Result<email_tokens::EmailTokenRow, String> {
+        email_tokens::upsert_by_user_purpose(
+            self.require_pool()?,
+            id,
+            user_id,
+            purpose,
+            token_hash,
+            otp_hash,
+            expires_at,
+        )
+        .await
+    }
+
+    pub async fn find_email_token_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<email_tokens::EmailTokenRow>, String> {
+        email_tokens::find_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_email_token_by_otp_hash(
+        &self,
+        otp_hash: &str,
+    ) -> Result<Option<email_tokens::EmailTokenRow>, String> {
+        email_tokens::find_by_otp_hash(self.require_pool()?, otp_hash).await
+    }
+
+    pub async fn increment_email_token_attempts(&self, id: &str) -> Result<i32, String> {
+        email_tokens::increment_attempts(self.require_pool()?, id).await
+    }
+
+    pub async fn delete_email_token(&self, id: &str) -> Result<(), String> {
+        email_tokens::delete(self.require_pool()?, id).await
     }
 
     // --- sessions ---
