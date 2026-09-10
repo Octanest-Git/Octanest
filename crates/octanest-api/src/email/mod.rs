@@ -58,7 +58,7 @@ pub fn build_email_sender_for_settings(settings: &AuthSettingsRow) -> Arc<dyn Em
         "resend" => {
             if let Ok(api_key) = std::env::var("OCTANEST_RESEND_API_KEY") {
                 if !api_key.is_empty() {
-                    return Arc::new(ResendSender::new(api_key, from));
+                    return Arc::new(resend_sender(api_key, from));
                 }
             }
             tracing::warn!(
@@ -92,6 +92,16 @@ pub fn build_email_sender_for_settings(settings: &AuthSettingsRow) -> Arc<dyn Em
     }
 }
 
+fn resend_sender(api_key: String, from: String) -> ResendSender {
+    // Optional override for local stubs (`docs/dev-auth.md`); production leaves unset.
+    match std::env::var("OCTANEST_RESEND_BASE_URL") {
+        Ok(base) if !base.trim().is_empty() => {
+            ResendSender::with_base_url(api_key, from, base.trim())
+        }
+        _ => ResendSender::new(api_key, from),
+    }
+}
+
 /// Build the configured email sender from environment (boot before settings load).
 ///
 /// Selection order: Resend (`OCTANEST_RESEND_API_KEY`) → SMTP (`OCTANEST_SMTP_URL`) → LogSink.
@@ -101,7 +111,7 @@ pub fn build_email_sender_from_env() -> Arc<dyn EmailSender> {
 
     if let Ok(api_key) = std::env::var("OCTANEST_RESEND_API_KEY") {
         if !api_key.is_empty() {
-            return Arc::new(ResendSender::new(api_key, from));
+            return Arc::new(resend_sender(api_key, from));
         }
     }
 

@@ -7,6 +7,8 @@
 
 Complete these items for live SMTP/Resend delivery, optional first-admin bootstrap, and live WorkOS/OIDC E2E. Claude automated adapters, auth RPC, SSO routes, and tests; CI uses the log sink, wiremock, and unit mocks. These items require operator credentials.
 
+**Local development without cloud secrets:** use [`docs/dev-auth.md`](../../../docs/dev-auth.md) (`make up-dev-auth`) — Mailpit SMTP, OIDC mock, and Resend/WorkOS HTTP stubs with throwaway ENV from `docs/dev-auth.env.example`.
+
 ## Environment Variables
 
 | Status | Variable | Source | Add to |

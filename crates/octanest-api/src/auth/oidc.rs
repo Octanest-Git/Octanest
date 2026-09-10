@@ -57,23 +57,33 @@ impl OidcConfig {
 }
 
 /// SSRF mitigation for OIDC issuer discovery (T-04-16).
+///
+/// Local mock IdPs (`docs/dev-auth.md`) may set `OCTANEST_OIDC_ALLOW_INSECURE=1` when
+/// `OCTANEST_ENV` is `development` / `dev` / `compose` so http:// and loopback issuers work.
 pub fn validate_issuer_url(issuer: &str) -> Result<Url, ExternalAuthError> {
     let url = Url::parse(issuer.trim()).map_err(|e| {
         ExternalAuthError::Failed(format!("invalid issuer URL: {e}"))
     })?;
-    if url.scheme() != "https" {
+    let allow_insecure = oidc_allow_insecure_issuer();
+    if !allow_insecure && url.scheme() != "https" {
         return Err(ExternalAuthError::Failed(
             "OIDC issuer must use https://".into(),
+        ));
+    }
+    if allow_insecure && url.scheme() != "https" && url.scheme() != "http" {
+        return Err(ExternalAuthError::Failed(
+            "OIDC issuer must use http:// or https://".into(),
         ));
     }
     let host = url
         .host_str()
         .ok_or_else(|| ExternalAuthError::Failed("OIDC issuer missing host".into()))?;
     let host_l = host.to_ascii_lowercase();
-    if host_l == "localhost"
-        || host_l == "metadata"
-        || host_l.ends_with(".localhost")
-        || host_l == "metadata.google.internal"
+    if !allow_insecure
+        && (host_l == "localhost"
+            || host_l == "metadata"
+            || host_l.ends_with(".localhost")
+            || host_l == "metadata.google.internal")
     {
         return Err(ExternalAuthError::Failed(
             "OIDC issuer host is not allowed".into(),
@@ -84,21 +94,37 @@ pub fn validate_issuer_url(issuer: &str) -> Result<Url, ExternalAuthError> {
             IpAddr::V4(v4) => {
                 let o = v4.octets();
                 // Reject loopback, link-local (169.254/16), and 10/8 per T-04-16.
-                if o[0] == 127 || o[0] == 10 || (o[0] == 169 && o[1] == 254) {
+                if !allow_insecure && (o[0] == 127 || o[0] == 10 || (o[0] == 169 && o[1] == 254)) {
                     return Err(ExternalAuthError::Failed(
                         "OIDC issuer host is not allowed".into(),
                     ));
                 }
             }
             IpAddr::V6(v6) if v6.is_loopback() || v6.is_unicast_link_local() => {
-                return Err(ExternalAuthError::Failed(
-                    "OIDC issuer host is not allowed".into(),
-                ));
+                if !allow_insecure {
+                    return Err(ExternalAuthError::Failed(
+                        "OIDC issuer host is not allowed".into(),
+                    ));
+                }
             }
             _ => {}
         }
     }
     Ok(url)
+}
+
+fn oidc_allow_insecure_issuer() -> bool {
+    let flag = std::env::var("OCTANEST_OIDC_ALLOW_INSECURE")
+        .map(|v| matches!(v.trim(), "1" | "true" | "yes"))
+        .unwrap_or(false);
+    if !flag {
+        return false;
+    }
+    let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
+    matches!(
+        env_name.as_str(),
+        "development" | "dev" | "compose"
+    )
 }
 
 fn http_client() -> Result<reqwest::Client, ExternalAuthError> {
@@ -268,6 +294,20 @@ mod tests {
     #[test]
     fn allows_public_https_issuer() {
         assert!(validate_issuer_url("https://accounts.example.com").is_ok());
+    }
+
+    #[test]
+    fn allow_insecure_flag_permits_loopback_http() {
+        // SAFETY: test-only env mutation; single-threaded test binary for this module.
+        unsafe {
+            std::env::set_var("OCTANEST_ENV", "development");
+            std::env::set_var("OCTANEST_OIDC_ALLOW_INSECURE", "1");
+        }
+        let ok = validate_issuer_url("http://127.0.0.1:9090/default");
+        unsafe {
+            std::env::remove_var("OCTANEST_OIDC_ALLOW_INSECURE");
+        }
+        assert!(ok.is_ok(), "{ok:?}");
     }
 
     #[test]

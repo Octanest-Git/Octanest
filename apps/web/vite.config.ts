@@ -12,6 +12,9 @@ import tailwindcss from "@tailwindcss/vite";
 // static files in apps/web/public/ instead (manifest.webmanifest, sw.js).
 // See .planning/phases/03-brand-shell-theme/03-05-SUMMARY.md for details.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const apiProxyTarget =
+  process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+  "http://127.0.0.1:8080";
 
 export default defineConfig({
   plugins: [tanstackStart(), tailwindcss()],
@@ -23,12 +26,12 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      "/api/rpc/ws": { target: "ws://127.0.0.1:8080", ws: true },
-      "/api/rpc": { target: "http://127.0.0.1:8080", changeOrigin: true },
-      "/api/auth": { target: "http://127.0.0.1:8080", changeOrigin: true },
-      "/api/user": { target: "http://127.0.0.1:8080", changeOrigin: true },
-      "/uploads": { target: "http://127.0.0.1:8080", changeOrigin: true },
-      "/health": { target: "http://127.0.0.1:8080", changeOrigin: true },
+      "/api/rpc/ws": { target: apiProxyTarget.replace(/^http/, "ws"), ws: true },
+      "/api/rpc": { target: apiProxyTarget, changeOrigin: true },
+      "/api/auth": { target: apiProxyTarget, changeOrigin: true },
+      "/api/user": { target: apiProxyTarget, changeOrigin: true },
+      "/uploads": { target: apiProxyTarget, changeOrigin: true },
+      "/health": { target: apiProxyTarget, changeOrigin: true },
     },
   },
 });

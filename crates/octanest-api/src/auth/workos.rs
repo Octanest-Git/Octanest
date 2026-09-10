@@ -16,6 +16,11 @@ pub const PROVIDER: &str = "workos";
 pub struct WorkOsConfig {
     pub api_key: String,
     pub client_id: String,
+    /// Server-side API base (defaults to WorkOS cloud). Local stubs: `OCTANEST_WORKOS_BASE_URL`.
+    pub base_url: Option<String>,
+    /// Browser-facing authorize base when it differs from [`Self::base_url`]
+    /// (`OCTANEST_WORKOS_AUTHORIZE_BASE_URL`).
+    pub authorize_base_url: Option<String>,
 }
 
 impl WorkOsConfig {
@@ -25,15 +30,43 @@ impl WorkOsConfig {
         if api_key.is_empty() || client_id.is_empty() {
             return None;
         }
-        Some(Self { api_key, client_id })
+        let base_url = std::env::var("OCTANEST_WORKOS_BASE_URL")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        let authorize_base_url = std::env::var("OCTANEST_WORKOS_AUTHORIZE_BASE_URL")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        Some(Self {
+            api_key,
+            client_id,
+            base_url,
+            authorize_base_url,
+        })
     }
 }
 
-fn client(cfg: &WorkOsConfig) -> Client {
-    Client::builder()
+fn client_with_base(cfg: &WorkOsConfig, base_url: Option<&str>) -> Client {
+    let mut builder = Client::builder()
         .api_key(&cfg.api_key)
-        .client_id(&cfg.client_id)
-        .build()
+        .client_id(&cfg.client_id);
+    if let Some(url) = base_url {
+        builder = builder.base_url(url);
+    }
+    builder.build()
+}
+
+fn api_client(cfg: &WorkOsConfig) -> Client {
+    client_with_base(cfg, cfg.base_url.as_deref())
+}
+
+fn authorize_client(cfg: &WorkOsConfig) -> Client {
+    let base = cfg
+        .authorize_base_url
+        .as_deref()
+        .or(cfg.base_url.as_deref());
+    client_with_base(cfg, base)
 }
 
 /// Build AuthKit authorization URL with `provider=authkit` + PKCE; stash verifier/state.
@@ -43,7 +76,7 @@ pub fn start(
     redirect_uri: &str,
     return_to: &str,
 ) -> Result<Url, ExternalAuthError> {
-    let c = client(cfg);
+    let c = authorize_client(cfg);
     let result = c
         .authkit()
         .pkce_authorization_url(AuthKitAuthorizationUrlParams {
@@ -80,7 +113,7 @@ pub async fn finish(
         .filter(|p| p.provider == PROVIDER)
         .ok_or(ExternalAuthError::InvalidState)?;
 
-    let c = client(cfg);
+    let c = api_client(cfg);
     let params = AuthenticateWithCodeParams {
         code: code.to_string(),
         code_verifier: Some(pending_auth.code_verifier),
@@ -128,6 +161,8 @@ mod tests {
         assert!(WorkOsConfig {
             api_key: String::new(),
             client_id: String::new(),
+            base_url: None,
+            authorize_base_url: None,
         }
         .api_key
         .is_empty());
@@ -139,6 +174,8 @@ mod tests {
         let cfg = WorkOsConfig {
             api_key: "sk_test_example".into(),
             client_id: "client_test_example".into(),
+            base_url: None,
+            authorize_base_url: None,
         };
         let url = start(
             &pending,
@@ -160,11 +197,36 @@ mod tests {
     }
 
     #[test]
+    fn start_honors_authorize_base_url_override() {
+        let pending = PendingAuthStore::new();
+        let cfg = WorkOsConfig {
+            api_key: "sk_dev".into(),
+            client_id: "client_dev".into(),
+            base_url: Some("http://127.0.0.1:9092".into()),
+            authorize_base_url: Some("http://127.0.0.1:9092".into()),
+        };
+        let url = start(
+            &pending,
+            &cfg,
+            "http://localhost:3000/api/auth/workos/callback",
+            "/dashboard",
+        )
+        .expect("start");
+        let s = url.as_str();
+        assert!(
+            s.starts_with("http://127.0.0.1:9092/user_management/authorize"),
+            "expected local authorize base in {s}"
+        );
+    }
+
+    #[test]
     fn finish_rejects_unknown_state() {
         let pending = PendingAuthStore::new();
         let cfg = WorkOsConfig {
             api_key: "sk_test".into(),
             client_id: "client_test".into(),
+            base_url: None,
+            authorize_base_url: None,
         };
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()

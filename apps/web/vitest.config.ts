@@ -5,14 +5,12 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const stackEnabled = process.env.E2E_STACK === "1";
 
 /**
  * Vitest projects:
- * - unit: pure Node (libs, helpers)
- * - integration: happy-dom + Testing Library (component contracts)
- * - e2e: real Chromium via @vitest/browser-playwright (browser flows)
- *
- * Deliberately omits @octanejs/tanstack-start so the test Vite graph stays light.
+ * - unit / integration / e2e-component: always on in `bun run test`
+ * - e2e-stack (+ browser): only when E2E_STACK=1 (`make test-e2e-stack`)
  */
 export default defineConfig({
   plugins: [react()],
@@ -44,9 +42,9 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: "e2e",
-          include: ["e2e/**/*.e2e.test.{ts,tsx}"],
-          setupFiles: ["./e2e/setup.ts"],
+          name: "e2e-component",
+          include: ["e2e/component/**/*.e2e.test.{ts,tsx}"],
+          setupFiles: ["./e2e/component/setup.ts"],
           browser: {
             enabled: true,
             provider: playwright(),
@@ -55,6 +53,37 @@ export default defineConfig({
           },
         },
       },
+      ...(stackEnabled
+        ? [
+            {
+              extends: true as const,
+              test: {
+                name: "e2e-stack",
+                environment: "node" as const,
+                include: ["e2e/stack/**/*.stack.test.ts"],
+                fileParallelism: false,
+                setupFiles: ["./e2e/stack/setup.ts"],
+                testTimeout: 60_000,
+              },
+            },
+            {
+              extends: true as const,
+              test: {
+                name: "e2e-stack-browser",
+                include: ["e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}"],
+                setupFiles: ["./e2e/stack-browser/setup.ts"],
+                fileParallelism: false,
+                testTimeout: 60_000,
+                browser: {
+                  enabled: true,
+                  provider: playwright(),
+                  headless: true,
+                  instances: [{ browser: "chromium" as const }],
+                },
+              },
+            },
+          ]
+        : []),
     ],
   },
 });
