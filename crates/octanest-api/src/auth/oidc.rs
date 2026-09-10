@@ -18,10 +18,8 @@ use crate::auth::pending::{PendingAuth, PendingAuthStore};
 pub const PROVIDER: &str = "oidc";
 
 /// Map OIDC `email_verified` claim — only `Some(true)` is trusted (D-03, D-15).
-/// RED stub: always false until GREEN implements Some(true) check.
 pub(crate) fn map_oidc_email_verified(claim: Option<bool>) -> bool {
-    let _ = claim;
-    false
+    claim == Some(true)
 }
 
 /// Client after discovery: auth URL set; token/userinfo maybe set from metadata.
@@ -272,8 +270,7 @@ pub async fn finish(
             provider_subject: claims.subject().as_str().to_string(),
             email,
             display_name,
-            // Mapped in GREEN (05-05): claims.email_verified() == Some(true)
-            email_verified: false,
+            email_verified: map_oidc_email_verified(claims.email_verified()),
         },
         pending_auth.return_to,
     ))

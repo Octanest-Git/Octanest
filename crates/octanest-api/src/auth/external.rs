@@ -153,6 +153,7 @@ pub async fn allocate_username(
 
 /// Find existing identity or create user + link `auth_identities`.
 /// No welcome email (D-20 — local signup only).
+/// When `identity.email_verified`, sets `email_verified_at` (D-03, D-15 IdP-trust).
 pub async fn link_or_create_user(
     db: &Database,
     identity: &ExternalIdentity,
@@ -183,6 +184,7 @@ pub async fn link_or_create_user(
             .await
             .map_err(ExternalAuthError::from_db)?;
         let incomplete = is_placeholder_username(&user.username);
+        let user = apply_idp_email_verified(db, user, identity.email_verified).await?;
         return Ok((user, incomplete));
     }
 
@@ -228,7 +230,23 @@ pub async fn link_or_create_user(
     .await
     .map_err(ExternalAuthError::from_db)?;
 
+    let user = apply_idp_email_verified(db, user, identity.email_verified).await?;
     Ok((user, incomplete))
+}
+
+/// IdP-trust: mark verified when the provider asserts a verified email (D-03, D-15).
+async fn apply_idp_email_verified(
+    db: &Database,
+    user: UserRow,
+    email_verified: bool,
+) -> Result<UserRow, ExternalAuthError> {
+    if !email_verified || user.email_verified_at.is_some() {
+        return Ok(user);
+    }
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user.id, &now)
+        .await
+        .map_err(ExternalAuthError::from_db)
 }
 
 /// Safe relative return path (D-15). Reject open redirects.

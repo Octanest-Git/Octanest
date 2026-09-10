@@ -13,10 +13,8 @@ use crate::auth::pending::{PendingAuth, PendingAuthStore};
 pub const PROVIDER: &str = "workos";
 
 /// Map WorkOS `User.email_verified` into IdP-trust flag (D-03).
-/// RED stub: always false until GREEN implements passthrough.
 pub(crate) fn map_workos_email_verified(email_verified: bool) -> bool {
-    let _ = email_verified;
-    false
+    email_verified
 }
 
 #[derive(Debug, Clone)]
@@ -152,8 +150,7 @@ pub async fn finish(
             provider_subject: user.id,
             email: user.email,
             display_name,
-            // Mapped in GREEN (05-05): user.email_verified
-            email_verified: false,
+            email_verified: map_workos_email_verified(user.email_verified),
         },
         pending_auth.return_to,
     ))
