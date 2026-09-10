@@ -110,7 +110,7 @@ Each task was committed atomically:
 1. **Task 1: E2E verify OTP → email_verified → privileged_ping** - `9e00337` (feat)
 2. **Task 2: Confirm env-gated ping unknown outside allowlist** - `8de6cb3` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `5b056d7` (docs: complete plan)
 
 ## Files Created/Modified
 
