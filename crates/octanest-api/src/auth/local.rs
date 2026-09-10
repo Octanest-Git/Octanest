@@ -25,6 +25,7 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
         avatar_url: row.avatar_path.clone(),
         is_admin: row.is_admin,
         profile_incomplete: is_placeholder_username(&row.username),
+        email_verified: row.email_verified_at.is_some(),
     }
 }
 

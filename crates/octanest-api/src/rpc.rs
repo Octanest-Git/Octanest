@@ -12,6 +12,7 @@ use crate::auth::admin;
 use crate::auth::local;
 use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
+use crate::auth::verify_reset;
 use crate::email::EmailSender;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
@@ -115,6 +116,23 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(cfg) => RpcResponse::ok(cfg),
             Err(e) => RpcResponse::err(e),
         },
+        "auth.verify" => match verify_reset::verify(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.dev.privileged_ping" => {
+            if !verify_reset::privileged_ping_env_allowed(&ctx.env_name) {
+                RpcResponse::err(AppError::new(
+                    "rpc.unknown_procedure",
+                    format!("unknown procedure: {}", req.procedure),
+                ))
+            } else {
+                match verify_reset::privileged_ping(ctx).await {
+                    Ok(v) => RpcResponse::ok(v),
+                    Err(e) => RpcResponse::err(e),
+                }
+            }
+        }
         "user.get_profile" => match profile::get_profile(ctx).await {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),

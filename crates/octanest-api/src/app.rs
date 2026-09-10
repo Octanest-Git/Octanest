@@ -165,6 +165,9 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
         RpcResponse::Err { error, .. } if error.code == "admin.forbidden" => {
             StatusCode::FORBIDDEN
         }
+        RpcResponse::Err { error, .. } if error.code == "auth.email_unverified" => {
+            StatusCode::FORBIDDEN
+        }
         RpcResponse::Err { .. } => StatusCode::BAD_REQUEST,
     }
 }
