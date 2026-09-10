@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
-status: executing
-stopped_at: Completed 05-06-PLAN.md
-last_updated: "2026-09-10T22:47:52.220Z"
+status: verifying
+stopped_at: Completed 05-07-PLAN.md
+last_updated: "2026-09-10T22:54:29.658Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 5 execution started
-state_head: 0c5a7c12d477d9587098e9357be48e8c1372ff72
+state_head: e1453a25ee8e623e2d7b4038214e347896f1e2a3
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 31
-  completed_plans: 30
+  completed_plans: 31
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 5 (Cloud Verify & Reset) — EXECUTING
 Plan: 7 of 7
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-10 — Completed 05-06 verify UI (rpc-gen, /verify, VerifyBanner)
 
 Progress: Phases 1–4 complete; Phase 5 in progress (6/7 plans)
@@ -76,6 +76,7 @@ Progress: Phases 1–4 complete; Phase 5 in progress (6/7 plans)
 | Phase 05 P04 | 6 min | 2 tasks | 6 files |
 | Phase 05 P05 | 5 min | 2 tasks | 5 files |
 | Phase 05 P06 | 4min | 3 tasks | 10 files |
+| Phase 05 P07 | 4 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -120,6 +121,8 @@ Recent decisions affecting current work:
 - [Phase 05]: OIDC trusts email_verified only when claim is Some(true); false/absent uses local verify — D-03/D-15 IdP-trust must not treat missing claim as verified
 - [Phase 5]: Human approved input-otp@1.5.0 legitimacy gate before install (05-06-T1)
 - [Phase 5]: Token auto-consume invalid_token while signed-in maps to wrong-user copy on /verify
+- [Phase 05]: After anti-enumeration success, Enter reset code advances to redeem without magic link
+- [Phase 05]: Dashboard New repository always disabled in Phase 5; hint differs by email_verified (D-12)
 
 ### Pending Todos
 
@@ -139,6 +142,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:47:52.187Z
-Stopped at: Completed 05-06-PLAN.md
+Last session: 2026-09-10T22:54:29.622Z
+Stopped at: Completed 05-07-PLAN.md
 Resume file: None

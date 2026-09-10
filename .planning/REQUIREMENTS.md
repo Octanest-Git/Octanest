@@ -26,15 +26,15 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **AUTH-01**: User can sign up with email and password
 - [x] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
 - [x] **AUTH-03**: User can log out from the web UI
-- [ ] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
-- [ ] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
+- [x] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
+- [x] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
 - [ ] **AUTH-06**: On self-host, if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
 - [ ] **AUTH-07**: On self-host, if those env vars are absent, empty instance shows a one-time setup wizard to create the admin
 - [x] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
 - [x] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
 - [x] **AUTH-10**: Operator can configure SMTP as the email provider
 - [x] **AUTH-11**: Operator can configure Resend as the email provider
-- [ ] **AUTH-12**: User can reset password via email link when an email provider is configured
+- [x] **AUTH-12**: User can reset password via email link when an email provider is configured
 
 ### Git hosting
 
@@ -178,15 +178,15 @@ Deferred; not in the current roadmap until promoted.
 | AUTH-01 | Phase 4 | Complete |
 | AUTH-02 | Phase 4 | Complete |
 | AUTH-03 | Phase 4 | Complete |
-| AUTH-04 | Phase 5 | Pending |
-| AUTH-05 | Phase 5 | Pending |
+| AUTH-04 | Phase 5 | Complete |
+| AUTH-05 | Phase 5 | Complete |
 | AUTH-06 | Phase 6 | Pending |
 | AUTH-07 | Phase 6 | Pending |
 | AUTH-08 | Phase 4 | Complete |
 | AUTH-09 | Phase 4 | Complete |
 | AUTH-10 | Phase 4 | Complete |
 | AUTH-11 | Phase 4 | Complete |
-| AUTH-12 | Phase 5 | Pending |
+| AUTH-12 | Phase 5 | Complete |
 | GIT-01 | Phase 7 | Pending |
 | GIT-02 | Phase 8 | Pending |
 | GIT-03 | Phase 9 | Pending |
@@ -251,6 +251,7 @@ Deferred; not in the current roadmap until promoted.
 | BRAND-05 | Phase 3 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 85 total
 - Mapped to phases: 85
 - Unmapped: 0
