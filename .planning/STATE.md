@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
-status: planning
-stopped_at: Phase 5 plans approved
-last_updated: "2026-09-10T21:40:10.807Z"
+status: executing
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-09-10T22:02:56.475Z"
 last_activity: 2026-09-10
-last_activity_desc: Phase 5 plan revision 1 — split tracer, serialize IdP, resolve RESEARCH Qs
-state_head: 0f8c2566ebbd4eadc9420c43e85b7584e459409a
+last_activity_desc: Phase 5 execution started
+state_head: 6957f08c69b18c3b716ea7f46a8787caf6bff9f9
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 31
-  completed_plans: 24
+  completed_plans: 25
 milestone_name: milestone
 ---
 
@@ -24,14 +24,14 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 5 — cloud-verify-reset
+**Current focus:** Phase 5 — Cloud Verify & Reset
 
 ## Current Position
 
-Phase: 5 (Cloud Verify & Reset) — READY TO EXECUTE
-Plan: 01–07 written (revision 1; not executed)
+Phase: 5 (Cloud Verify & Reset) — EXECUTING
+Plan: 2 of 7
 Status: Ready to execute
-Last activity: 2026-09-10 — Phase 5 PLAN revision 1 (7 plans, waves 1–7)
+Last activity: 2026-09-10 — Phase 5 execution started
 
 Progress: Phases 1–4 complete; Phase 5 planned (7 plans)
 
@@ -70,6 +70,7 @@ Progress: Phases 1–4 complete; Phase 5 planned (7 plans)
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 04-auth-sessions-email P08 | 5min | 3 tasks | 5 files |
+| Phase 05 P01 | 6 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Vite proxies /api/auth for WorkOS/OIDC start URLs — Local SSO CTAs must reach the API
 - [Phase 4]: Vite proxies /api/user and /uploads so avatar POST/preview work in local Vite dev
 - [Phase 4]: Human UAT checkpoint approved with no defects — no post-UAT code changes
+- [Phase 05]: Upsert re-fetches by (user_id, purpose) after ON CONFLICT for stable row return
+- [Phase 05]: UserPublic.email_verified field added without wiring user_to_public (deferred to 05-02)
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T21:40:10.776Z
-Stopped at: Phase 5 plans approved
-Resume file: .planning/phases/05-cloud-verify-reset/05-01-PLAN.md
+Last session: 2026-09-10T22:02:56.445Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
