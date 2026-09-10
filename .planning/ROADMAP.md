@@ -140,10 +140,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. On Octanest Cloud, unverified users cannot perform privileged actions (at minimum: create repository) until email is verified
   3. When an email provider is configured, user can reset password via an email link
 
-**Plans**: 1/7 plans executed
+**Plans**: 2/7 plans executed
 
 - [x] 05-01-PLAN.md
-- [ ] 05-02-PLAN.md
+- [x] 05-02-PLAN.md
 - [ ] 05-03-PLAN.md
 - [ ] 05-04-PLAN.md
 - [ ] 05-05-PLAN.md
@@ -408,7 +408,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 2. Multi-DB Storage | 0/4 | Planned | - |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
-| 5. Cloud Verify & Reset | 1/7 | In Progress|  |
+| 5. Cloud Verify & Reset | 2/7 | In Progress|  |
 | 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
