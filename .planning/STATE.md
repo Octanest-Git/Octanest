@@ -5,10 +5,10 @@ current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: executing
 stopped_at: Completed 05-05-PLAN.md
-last_updated: "2026-09-10T22:34:33.440Z"
+last_updated: "2026-09-10T22:34:44.453Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 5 execution started
-state_head: 904737552eaab7b8092f3bea4c3732891fc18611
+state_head: 2d49a5d9fd51a988d03c280f6f8cf90eaea045bb
 progress:
   total_phases: 22
   completed_phases: 0
@@ -115,6 +115,8 @@ Recent decisions affecting current work:
 - [Phase 05]: Session-scoped verify redeem for attempt capping — Wrong OTP via find_by_otp_hash cannot increment attempts
 - [Phase 05]: Swallow rate_limit into ok on password reset request (D-28 anti-enumeration) — Surfacing auth.rate_limited only for known emails would enumerate accounts
 - [Phase 05]: auth.sso_only on reset redeem only; request never reveals SSO-only — D-26/D-28 + UI-SPEC SSO copy
+- [Phase 05]: Re-apply IdP-trust on existing SSO identity link path when provider asserts verified email — Returning users with newly verified IdP email should not stay stuck unverified
+- [Phase 05]: OIDC trusts email_verified only when claim is Some(true); false/absent uses local verify — D-03/D-15 IdP-trust must not treat missing claim as verified
 
 ### Pending Todos
 

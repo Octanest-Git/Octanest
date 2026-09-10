@@ -118,7 +118,7 @@ Each task was committed atomically:
 1. **Task 1: IdP-trust mark verified on SSO success** - `040d37f` (test) → `f72dc49` (feat)
 2. **Task 2: clear_email_verification helper for D-05** - `9047375` (feat)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `2d49a5d` (docs: complete plan)
 
 _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
