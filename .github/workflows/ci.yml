@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  rust:
-    name: rust
+  api-rust:
+    name: api-rust
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,8 +23,8 @@ jobs:
       - name: cargo test
         run: cargo test --workspace
 
-  js:
-    name: js
+  web-octane:
+    name: web-octane
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
