@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-09-10T22:07:34.412Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-09-10T22:19:19.966Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 5 execution started
-state_head: 8de6cb3f67c50a5657d58e99a3333636883ce326
+state_head: 344de19b56aaf539696bb61863f0e566c1b14ed7
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 31
-  completed_plans: 26
+  completed_plans: 27
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 (Cloud Verify & Reset) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-09-10 — Completed 05-02 AUTH-04 verify gate tracer
 
@@ -72,6 +72,7 @@ Progress: Phases 1–4 complete; Phase 5 in progress (2/7 plans)
 | Phase 04-auth-sessions-email P08 | 5min | 3 tasks | 5 files |
 | Phase 05 P01 | 6 min | 2 tasks | 8 files |
 | Phase 05-cloud-verify-reset P02 | 3 min | 2 tasks | 8 files |
+| Phase 05-cloud-verify-reset P03 | 9 min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 05]: UserPublic.email_verified field added without wiring user_to_public (deferred to 05-02)
 - [Phase 05]: privileged_ping allowlist is {development,dev,test,compose} per Open Q2 RESOLVED
 - [Phase 05]: issue_verify is a library helper for tests; full resend/email RPC deferred to 05-03
+- [Phase 05]: issue_count via 0004 migration for soft hourly rate limits — UNIQUE replace-on-resend cannot count issues from created_at alone
+- [Phase 05]: Session-scoped verify redeem for attempt capping — Wrong OTP via find_by_otp_hash cannot increment attempts
 
 ### Pending Todos
 
@@ -127,6 +130,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:07:34.378Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-09-10T22:19:19.935Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
