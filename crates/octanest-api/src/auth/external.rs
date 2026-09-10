@@ -12,6 +12,8 @@ pub struct ExternalIdentity {
     pub provider_subject: String,
     pub email: String,
     pub display_name: Option<String>,
+    /// IdP-trust: when true, mark `users.email_verified_at` on link/create (D-03, D-15).
+    pub email_verified: bool,
 }
 
 #[derive(Debug, Error)]
@@ -248,6 +250,15 @@ pub fn sanitize_return_to(raw: Option<&str>) -> String {
 mod tests {
     use super::*;
 
+    async fn test_db() -> Database {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!("sqlite:{}", dir.path().join("external.db").display());
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+        db
+    }
+
     #[test]
     fn sanitize_rejects_open_redirect() {
         assert_eq!(sanitize_return_to(Some("https://evil.example")), "/dashboard");
@@ -266,5 +277,45 @@ mod tests {
     #[test]
     fn candidate_sanitizes_local_part() {
         assert_eq!(candidate_from_email("Alice.Bob_tag@ex.com"), "alice-bob-tag");
+    }
+
+    /// D-03/D-15: IdP-asserted verified email marks users.email_verified_at on SSO link/create.
+    #[tokio::test]
+    async fn link_or_create_marks_verified_when_idp_asserts() {
+        let db = test_db().await;
+        let identity = ExternalIdentity {
+            provider: "workos".into(),
+            provider_subject: "user_verified_1".into(),
+            email: "verified-sso@ex.com".into(),
+            display_name: Some("Verified SSO".into()),
+            email_verified: true,
+        };
+        let (user, _) = link_or_create_user(&db, &identity)
+            .await
+            .expect("link_or_create");
+        assert!(
+            user.email_verified_at.is_some(),
+            "IdP email_verified=true must set email_verified_at"
+        );
+    }
+
+    /// D-15 edge: absent/false IdP verification leaves local verify flows required.
+    #[tokio::test]
+    async fn link_or_create_leaves_unverified_when_idp_does_not_assert() {
+        let db = test_db().await;
+        let identity = ExternalIdentity {
+            provider: "oidc".into(),
+            provider_subject: "sub_unverified_1".into(),
+            email: "unverified-sso@ex.com".into(),
+            display_name: None,
+            email_verified: false,
+        };
+        let (user, _) = link_or_create_user(&db, &identity)
+            .await
+            .expect("link_or_create");
+        assert!(
+            user.email_verified_at.is_none(),
+            "IdP email_verified=false must leave email_verified_at null"
+        );
     }
 }

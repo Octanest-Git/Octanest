@@ -17,6 +17,13 @@ use crate::auth::pending::{PendingAuth, PendingAuthStore};
 
 pub const PROVIDER: &str = "oidc";
 
+/// Map OIDC `email_verified` claim — only `Some(true)` is trusted (D-03, D-15).
+/// RED stub: always false until GREEN implements Some(true) check.
+pub(crate) fn map_oidc_email_verified(claim: Option<bool>) -> bool {
+    let _ = claim;
+    false
+}
+
 /// Client after discovery: auth URL set; token/userinfo maybe set from metadata.
 type DiscoveredClient = CoreClient<
     EndpointSet,
@@ -265,6 +272,8 @@ pub async fn finish(
             provider_subject: claims.subject().as_str().to_string(),
             email,
             display_name,
+            // Mapped in GREEN (05-05): claims.email_verified() == Some(true)
+            email_verified: false,
         },
         pending_auth.return_to,
     ))
@@ -337,5 +346,13 @@ mod tests {
         let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
         assert!(!challenge.as_str().is_empty());
         assert!(!verifier.secret().is_empty());
+    }
+
+    /// D-03/D-15: OIDC email_verified claim trusts only Some(true).
+    #[test]
+    fn maps_oidc_email_verified_claim_some_true_only() {
+        assert!(map_oidc_email_verified(Some(true)));
+        assert!(!map_oidc_email_verified(Some(false)));
+        assert!(!map_oidc_email_verified(None));
     }
 }

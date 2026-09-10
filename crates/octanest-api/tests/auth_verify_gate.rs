@@ -155,3 +155,64 @@ async fn privileged_ping_unknown_outside_env_allowlist() {
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(v["error"]["code"], "rpc.unknown_procedure");
 }
+
+/// D-03/D-15: SSO IdP email_verified=true → me.email_verified and privileged_ping without local OTP.
+#[tokio::test]
+async fn idp_trust_verified_sso_user_privileged_ping_ok() {
+    use octanest_api::auth::external::{link_or_create_user, ExternalIdentity};
+    use octanest_api::auth::session::SessionService;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("verify_gate_idp.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db.clone(), "development").await;
+
+    let identity = ExternalIdentity {
+        provider: "workos".into(),
+        provider_subject: "user_idp_trust".into(),
+        email: "idp-trust@ex.com".into(),
+        display_name: Some("IdP Trust".into()),
+        email_verified: true,
+    };
+    let (user, _) = link_or_create_user(&db, &identity)
+        .await
+        .expect("link_or_create");
+    assert!(
+        user.email_verified_at.is_some(),
+        "IdP-trust must set email_verified_at"
+    );
+
+    let sessions = SessionService::new("development");
+    let (_token, cookie) = sessions
+        .create(&db, &user.id, false)
+        .await
+        .expect("session");
+    let cookie_header = cookie.to_string();
+    let cookie_pair = cookie_header.split(';').next().unwrap().trim();
+
+    let me = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"auth.me","input":{}}"#,
+            cookie_pair,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(me.status(), StatusCode::OK);
+    let me_bytes = me.into_body().collect().await.unwrap().to_bytes();
+    let me_v: serde_json::Value = serde_json::from_slice(&me_bytes).unwrap();
+    assert_eq!(me_v["data"]["email_verified"], true);
+
+    let ping = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"auth.dev.privileged_ping","input":{}}"#,
+            cookie_pair,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(ping.status(), StatusCode::OK);
+    let ping_bytes = ping.into_body().collect().await.unwrap().to_bytes();
+    let ping_v: serde_json::Value = serde_json::from_slice(&ping_bytes).unwrap();
+    assert_eq!(ping_v["data"]["ok"], true);
+}

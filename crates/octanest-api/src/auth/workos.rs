@@ -12,6 +12,13 @@ use crate::auth::pending::{PendingAuth, PendingAuthStore};
 
 pub const PROVIDER: &str = "workos";
 
+/// Map WorkOS `User.email_verified` into IdP-trust flag (D-03).
+/// RED stub: always false until GREEN implements passthrough.
+pub(crate) fn map_workos_email_verified(email_verified: bool) -> bool {
+    let _ = email_verified;
+    false
+}
+
 #[derive(Debug, Clone)]
 pub struct WorkOsConfig {
     pub api_key: String,
@@ -145,6 +152,8 @@ pub async fn finish(
             provider_subject: user.id,
             email: user.email,
             display_name,
+            // Mapped in GREEN (05-05): user.email_verified
+            email_verified: false,
         },
         pending_auth.return_to,
     ))
@@ -245,5 +254,12 @@ mod tests {
             ExternalAuthError::NotConfigured.code(),
             "auth.not_configured"
         );
+    }
+
+    /// D-03: WorkOS User.email_verified maps into ExternalIdentity (IdP-trust).
+    #[test]
+    fn maps_workos_email_verified_into_identity_flag() {
+        assert!(map_workos_email_verified(true));
+        assert!(!map_workos_email_verified(false));
     }
 }
