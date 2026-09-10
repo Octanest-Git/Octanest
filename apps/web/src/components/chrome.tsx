@@ -1,19 +1,182 @@
 import { Menu, X } from "@octanejs/lucide";
-import { Link } from "@octanejs/tanstack-router";
+import { Link, useNavigate } from "@octanejs/tanstack-router";
+import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useEffectEvent, useState } from "octane";
 import { GlobalSearch } from "@/components/global-search";
 import { OctanestMark } from "@/components/octanest-mark";
 import { ThemeSelect } from "@/components/theme-select";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
+
+function initialsFor(user: UserPublic): string {
+  const source = user.display_name?.trim() || user.username || "?";
+  const parts = source.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+  }
+  return source.slice(0, 2).toUpperCase();
+}
+
+function AccountAvatar({ user }: { user: UserPublic }) {
+  if (user.avatar_url) {
+    return (
+      <img
+        src={user.avatar_url}
+        alt=""
+        width={28}
+        height={28}
+        className="octanest-squircle size-7 shrink-0 object-cover"
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="octanest-squircle inline-flex size-7 shrink-0 items-center justify-center bg-muted text-[11px] font-semibold text-foreground"
+    >
+      {initialsFor(user)}
+    </span>
+  );
+}
+
+function AccountMenu({
+  user,
+  stacked = false,
+  onNavigated,
+}: {
+  user: UserPublic;
+  stacked?: boolean;
+  onNavigated?: () => void;
+}) {
+  const navigate = useNavigate();
+
+  async function logout() {
+    try {
+      await apiClient.auth.logout();
+    } catch {
+      /* still clear local chrome */
+    }
+    onNavigated?.();
+    window.location.assign("/");
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "inline-flex h-11 items-center gap-2 rounded-md px-2 text-[14px] font-normal text-foreground outline-none",
+          "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+          stacked && "w-full justify-center",
+        )}
+        aria-label="Account menu"
+      >
+        <AccountAvatar user={user} />
+        <span className={cn("text-muted-foreground", stacked ? "inline" : "hidden md:inline")}>
+          @{user.username}
+        </span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={stacked ? "center" : "end"} className="min-w-48">
+        <DropdownMenuItem
+          onClick={() => {
+            onNavigated?.();
+            window.location.assign("/settings/profile");
+          }}
+        >
+          Profile
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            onNavigated?.();
+            void navigate({ to: "/dashboard" });
+          }}
+        >
+          Dashboard
+        </DropdownMenuItem>
+        {user.is_admin ? (
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigated?.();
+              window.location.assign("/admin/auth");
+            }}
+          >
+            Auth settings
+          </DropdownMenuItem>
+        ) : null}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => void logout()}>Log out</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function AccountActions({
   className,
   stacked = false,
+  onNavigated,
 }: {
   className?: string;
   stacked?: boolean;
+  onNavigated?: () => void;
 }) {
+  const [user, setUser] = useState<UserPublic | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiClient.auth.me();
+        if (cancelled) return;
+        setUser(res.ok ? res.data : null);
+      } catch {
+        if (cancelled) return;
+        setUser(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (user === undefined) {
+    return (
+      <div
+        role="group"
+        aria-label="Account"
+        className={cn(
+          stacked ? "flex flex-col gap-2" : "flex items-center gap-2",
+          className,
+        )}
+      >
+        <span className="inline-flex h-11 min-w-20 items-center justify-center text-[14px] text-muted-foreground">
+          …
+        </span>
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div
+        role="group"
+        aria-label="Account"
+        className={cn(
+          stacked ? "flex flex-col gap-2" : "flex items-center gap-2",
+          className,
+        )}
+      >
+        <AccountMenu user={user} stacked={stacked} onNavigated={onNavigated} />
+      </div>
+    );
+  }
+
   return (
     <div
       role="group"
@@ -23,22 +186,28 @@ function AccountActions({
         className,
       )}
     >
-      <Button
-        variant="ghost"
-        className={stacked ? "h-11 w-full justify-center" : "h-11 px-3"}
-        disabled
-        title="Coming soon"
+      <Link
+        to="/login"
+        preload="intent"
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          stacked ? "h-11 w-full justify-center" : "h-11 px-3",
+        )}
+        onClick={onNavigated}
       >
         Sign in
-      </Button>
-      <Button
-        variant="secondary"
-        className={stacked ? "h-11 w-full justify-center" : "h-11 px-3"}
-        disabled
-        title="Coming soon"
+      </Link>
+      <Link
+        to="/signup"
+        preload="intent"
+        className={cn(
+          buttonVariants({ variant: "secondary" }),
+          stacked ? "h-11 w-full justify-center" : "h-11 px-3",
+        )}
+        onClick={onNavigated}
       >
         Sign up
-      </Button>
+      </Link>
     </div>
   );
 }
@@ -122,8 +291,8 @@ export function SiteHeader() {
           className="border-t border-border bg-card md:hidden"
         >
           <div className="mx-auto flex max-w-6xl flex-col gap-4 px-3 py-3 sm:px-4">
-            <ThemeSelect layout="panel" />
-            <AccountActions stacked />
+            <ThemeSelect layout="panel" onChosen={closeMenu} />
+            <AccountActions stacked onNavigated={closeMenu} />
             <Link
               to="/status"
               preload="intent"

@@ -1,6 +1,6 @@
-import { createFileRoute } from "@octanejs/tanstack-router";
+import { createFileRoute, Link } from "@octanejs/tanstack-router";
 import { useEffect } from "octane";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { OctanestMark } from "@/components/octanest-mark";
 import { cn } from "@/lib/utils";
 
@@ -72,9 +72,9 @@ function LandingPage() {
               for Octanest Cloud and self-host
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button disabled title="Coming soon">
+              <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
                 Get started
-              </Button>
+              </Link>
               <a
                 href="#explore"
                 className={cn(buttonVariants({ variant: "secondary" }))}
@@ -143,9 +143,9 @@ function LandingPage() {
             One forge. Cloud or yours.
           </h2>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button disabled title="Coming soon">
+            <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
               Get started
-            </Button>
+            </Link>
             <a
               href="#explore"
               className={cn(buttonVariants({ variant: "secondary" }))}
