@@ -48,7 +48,7 @@ fn map_username_err(msg: String) -> AppError {
     }
 }
 
-fn normalize_email(raw: &str) -> Result<String, AppError> {
+pub(crate) fn normalize_email(raw: &str) -> Result<String, AppError> {
     let email = raw.trim().to_ascii_lowercase();
     if email.is_empty() || !email.contains('@') || email.starts_with('@') || email.ends_with('@') {
         return Err(AppError::new("auth.invalid_email", "invalid email address"));

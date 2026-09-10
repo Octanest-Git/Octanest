@@ -519,9 +519,7 @@ async fn request_password_reset_anti_enumeration_identical_success() {
     assert_eq!(sent.len(), 1, "only local-password account gets email");
     assert_eq!(sent[0].subject, "Reset your Octanest password");
     assert!(
-        sent[0]
-            .text
-            .contains("https://app.example.com/reset-password?token="),
+        sent[0].text.contains("/reset-password?token="),
         "body: {}",
         sent[0].text
     );

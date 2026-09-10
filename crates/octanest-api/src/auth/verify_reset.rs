@@ -1,4 +1,4 @@
-//! Email verify (and later reset) token issue/consume — magic+OTP, resend, rate limits.
+//! Email verify + password-reset token issue/consume — magic+OTP, resend, rate limits.
 
 use chrono::Utc;
 use octanest_core::{AppError, UserPublic};
@@ -7,11 +7,12 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::auth::gate;
-use crate::auth::local::user_to_public;
+use crate::auth::local::{normalize_email, user_to_public};
 use crate::email::OutboundEmail;
 use crate::rpc::RpcCtx;
 
 const PURPOSE_VERIFY: &str = "verify";
+const PURPOSE_RESET: &str = "reset";
 const TOKEN_BYTES: usize = 32;
 const OTP_DIGITS: u32 = 100_000_000; // 8-digit numeric
 const TTL_SECS: i64 = 30 * 60;
@@ -19,6 +20,7 @@ const MIN_ISSUE_INTERVAL_SECS: i64 = 60;
 const MAX_ISSUES_PER_HOUR: i32 = 5;
 const MAX_REDEEM_ATTEMPTS: i32 = 10;
 const VERIFY_SUBJECT: &str = "Verify your Octanest email";
+const RESET_SUBJECT: &str = "Reset your Octanest password";
 
 /// Env allowlist for `auth.dev.privileged_ping` (D-10 / Open Q2 RESOLVED).
 pub fn privileged_ping_env_allowed(env_name: &str) -> bool {
@@ -98,7 +100,7 @@ fn parse_created_at(raw: &str) -> Result<chrono::DateTime<Utc>, AppError> {
 fn rate_limited() -> AppError {
     AppError::new(
         "auth.rate_limited",
-        "too many verification emails; try again later",
+        "too many emails; try again later",
     )
 }
 
@@ -107,6 +109,11 @@ fn invalid_token() -> AppError {
         "auth.invalid_token",
         "invalid or expired verification code",
     )
+}
+
+/// Identical anti-enumeration success payload (D-28).
+fn reset_request_ok() -> serde_json::Value {
+    serde_json::json!({ "ok": true })
 }
 
 /// Issued secrets returned only to callers that need plaintext (tests / email senders).
@@ -155,6 +162,24 @@ If you did not create an Octanest account, you can ignore this email.\n"
     }
 }
 
+fn build_reset_email(to: &str, username: &str, magic: &str, otp: &str) -> OutboundEmail {
+    let origin = public_origin();
+    let link = format!("{origin}/reset-password?token={magic}");
+    let text = format!(
+        "Hi {username},\n\n\
+Reset your Octanest password with this link:\n{link}\n\n\
+Or enter this 8-digit code:\n{otp}\n\n\
+This link and code expire in 30 minutes.\n\
+If you did not request a password reset, you can ignore this email.\n"
+    );
+    OutboundEmail {
+        to: to.to_string(),
+        subject: RESET_SUBJECT.into(),
+        text,
+        html: None,
+    }
+}
+
 /// Issue (or replace) a verify token row for `user_id`. Returns plaintext magic + OTP.
 ///
 /// Applies soft rate limits when `enforce_rate_limit` is true (RPC paths).
@@ -164,8 +189,17 @@ pub async fn issue_verify_inner(
     user_id: &str,
     enforce_rate_limit: bool,
 ) -> Result<IssuedVerifySecrets, AppError> {
+    issue_token_inner(db, user_id, PURPOSE_VERIFY, enforce_rate_limit).await
+}
+
+async fn issue_token_inner(
+    db: &octanest_db::Database,
+    user_id: &str,
+    purpose: &str,
+    enforce_rate_limit: bool,
+) -> Result<IssuedVerifySecrets, AppError> {
     let existing = db
-        .find_email_token_by_user_purpose(user_id, PURPOSE_VERIFY)
+        .find_email_token_by_user_purpose(user_id, purpose)
         .await
         .map_err(db_err)?;
     let issue_count = if enforce_rate_limit {
@@ -187,7 +221,7 @@ pub async fn issue_verify_inner(
     db.upsert_email_token(
         &id,
         user_id,
-        PURPOSE_VERIFY,
+        purpose,
         &token_hash,
         &otp_hash,
         &expires_at,
@@ -206,6 +240,14 @@ pub async fn issue_verify(
     issue_verify_inner(db, user_id, false).await
 }
 
+/// Issue reset token without rate limit (tests / planted SSO redeem cases).
+pub async fn issue_reset(
+    db: &octanest_db::Database,
+    user_id: &str,
+) -> Result<IssuedVerifySecrets, AppError> {
+    issue_token_inner(db, user_id, PURPOSE_RESET, false).await
+}
+
 /// Issue + send verify email with rate limits (request/resend/signup auto-send).
 pub async fn issue_and_send_verify(
     ctx: &RpcCtx,
@@ -220,6 +262,58 @@ pub async fn issue_and_send_verify(
         tracing::error!(error = %e, "verify email send failed");
     }
     Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RequestPasswordResetRequest {
+    pub email: String,
+}
+
+/// Anonymous anti-enumeration reset request (D-24…D-28).
+///
+/// Always returns the same success shape. Sends mail only for local-password users.
+/// Soft rate limits reuse verify policy; when limited, still return success (D-28)
+/// and skip send so the response cannot enumerate accounts.
+pub async fn request_password_reset(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<serde_json::Value, AppError> {
+    let req: RequestPasswordResetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid request_password_reset input: {e}"),
+        )
+    })?;
+    let email = normalize_email(&req.email)?;
+
+    let user = ctx
+        .db
+        .find_user_by_email(&email)
+        .await
+        .map_err(db_err)?;
+
+    if let Some(user) = user {
+        if user.password_hash.is_some() {
+            match issue_token_inner(&ctx.db, &user.id, PURPOSE_RESET, true).await {
+                Ok(secrets) => {
+                    let msg =
+                        build_reset_email(&user.email, &user.username, &secrets.magic, &secrets.otp);
+                    if let Err(e) = ctx.email.send(msg).await {
+                        tracing::error!(error = %e, "reset email send failed");
+                    }
+                }
+                Err(e) if e.code == "auth.rate_limited" => {
+                    // Swallow into identical success (T-05-09 / D-28).
+                    tracing::debug!("password reset rate limited; returning ok");
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        // SSO-only (password_hash null): no mail, same success.
+    }
+    // Unknown email: no mail, same success.
+
+    Ok(reset_request_ok())
 }
 
 async fn require_session_user(ctx: &RpcCtx) -> Result<octanest_db::UserRow, AppError> {
