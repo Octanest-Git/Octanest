@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: executing
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-09-10T22:19:19.966Z"
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-09-10T22:27:16.663Z"
 last_activity: 2026-09-10
 last_activity_desc: Phase 5 execution started
-state_head: 344de19b56aaf539696bb61863f0e566c1b14ed7
+state_head: dae88f84c483481c64329df33224c3026e5b52bc
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 31
-  completed_plans: 27
+  completed_plans: 28
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 (Cloud Verify & Reset) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-09-10 — Completed 05-02 AUTH-04 verify gate tracer
 
@@ -73,6 +73,7 @@ Progress: Phases 1–4 complete; Phase 5 in progress (2/7 plans)
 | Phase 05 P01 | 6 min | 2 tasks | 8 files |
 | Phase 05-cloud-verify-reset P02 | 3 min | 2 tasks | 8 files |
 | Phase 05-cloud-verify-reset P03 | 9 min | 3 tasks | 15 files |
+| Phase 05 P04 | 6 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 05]: issue_verify is a library helper for tests; full resend/email RPC deferred to 05-03
 - [Phase 05]: issue_count via 0004 migration for soft hourly rate limits — UNIQUE replace-on-resend cannot count issues from created_at alone
 - [Phase 05]: Session-scoped verify redeem for attempt capping — Wrong OTP via find_by_otp_hash cannot increment attempts
+- [Phase 05]: Swallow rate_limit into ok on password reset request (D-28 anti-enumeration) — Surfacing auth.rate_limited only for known emails would enumerate accounts
+- [Phase 05]: auth.sso_only on reset redeem only; request never reveals SSO-only — D-26/D-28 + UI-SPEC SSO copy
 
 ### Pending Todos
 
@@ -130,6 +133,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-10T22:19:19.935Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-09-10T22:27:16.632Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
