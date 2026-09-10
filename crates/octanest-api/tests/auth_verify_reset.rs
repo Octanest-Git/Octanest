@@ -571,3 +571,185 @@ async fn request_password_reset_rate_limit_swallows_into_ok() {
     assert_eq!(st3, StatusCode::OK);
     assert_eq!(recorder.sent.lock().expect("lock").len(), 2);
 }
+
+/// AUTH-12 / D-27: redeem sets password, revokes other sessions, signs in this device.
+#[tokio::test]
+async fn reset_password_token_revokes_others_and_signs_in() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_redeem.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db.clone()).await;
+
+    let (cookie_a, user_id, _) = signup_user(&app, "reset@ex.com", "resetme").await;
+    let login_b = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"reset@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login_b.status(), StatusCode::OK);
+    let cookie_b = session_cookie_from_response(&login_b);
+    assert_ne!(cookie_a, cookie_b);
+
+    let secrets = verify_reset::issue_reset(&db, &user_id)
+        .await
+        .expect("issue_reset");
+
+    let reset_body = format!(
+        r#"{{"procedure":"auth.reset_password","input":{{"token":"{}","password":"newpass99"}}}}"#,
+        secrets.magic
+    );
+    let reset = app.clone().oneshot(rpc_req(&reset_body)).await.unwrap();
+    assert_eq!(reset.status(), StatusCode::OK);
+    let new_cookie = session_cookie_from_response(&reset);
+    let bytes = reset.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true);
+    assert_eq!(v["data"]["email"], "reset@ex.com");
+
+    for cookie in [&cookie_a, &cookie_b] {
+        let me = app
+            .clone()
+            .oneshot(rpc_req_with_cookie(
+                r#"{"procedure":"auth.me","input":{}}"#,
+                cookie,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(me.status(), StatusCode::UNAUTHORIZED);
+        let me_bytes = me.into_body().collect().await.unwrap().to_bytes();
+        let me_v: serde_json::Value = serde_json::from_slice(&me_bytes).unwrap();
+        assert_eq!(me_v["error"]["code"], "auth.unauthenticated");
+    }
+
+    let me_new = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"auth.me","input":{}}"#,
+            &new_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(me_new.status(), StatusCode::OK);
+
+    let login_old = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"reset@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login_old.status(), StatusCode::UNAUTHORIZED);
+
+    let login_new = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"reset@ex.com","password":"newpass99","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login_new.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn reset_password_otp_consume() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_otp.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db.clone()).await;
+
+    let (_cookie, user_id, _) = signup_user(&app, "otp@ex.com", "otpreset").await;
+    let secrets = verify_reset::issue_reset(&db, &user_id)
+        .await
+        .expect("issue_reset");
+
+    let reset_body = format!(
+        r#"{{"procedure":"auth.reset_password","input":{{"code":"{}","password":"newpass99"}}}}"#,
+        secrets.otp
+    );
+    let reset = app.oneshot(rpc_req(&reset_body)).await.unwrap();
+    assert_eq!(reset.status(), StatusCode::OK);
+    let _cookie = session_cookie_from_response(&reset);
+}
+
+#[tokio::test]
+async fn reset_password_sso_only_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_sso.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db.clone()).await;
+
+    db.create_user(
+        "sso-reset-id",
+        "ssoreset@ex.com",
+        "ssoreset",
+        None,
+        "ssoreset",
+        "",
+        None,
+        false,
+    )
+    .await
+    .expect("sso user");
+    let secrets = verify_reset::issue_reset(&db, "sso-reset-id")
+        .await
+        .expect("plant token");
+
+    let reset_body = format!(
+        r#"{{"procedure":"auth.reset_password","input":{{"token":"{}","password":"newpass99"}}}}"#,
+        secrets.magic
+    );
+    let reset = app.oneshot(rpc_req(&reset_body)).await.unwrap();
+    assert_eq!(reset.status(), StatusCode::BAD_REQUEST);
+    let bytes = reset.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["error"]["code"], "auth.sso_only");
+}
+
+#[tokio::test]
+async fn reset_password_invalid_token_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_bad.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db).await;
+
+    let (_cookie, _, _) = signup_user(&app, "bad@ex.com", "badreset").await;
+    let reset = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.reset_password","input":{"token":"deadbeef","password":"newpass99"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(reset.status(), StatusCode::BAD_REQUEST);
+    let bytes = reset.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["error"]["code"], "auth.invalid_token");
+}
+
+#[tokio::test]
+async fn reset_password_weak_password_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reset_weak.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let app = test_app(db.clone()).await;
+
+    let (_cookie, user_id, _) = signup_user(&app, "weak@ex.com", "weakreset").await;
+    let secrets = verify_reset::issue_reset(&db, &user_id)
+        .await
+        .expect("issue");
+
+    let reset_body = format!(
+        r#"{{"procedure":"auth.reset_password","input":{{"token":"{}","password":"short"}}}}"#,
+        secrets.magic
+    );
+    let reset = app.oneshot(rpc_req(&reset_body)).await.unwrap();
+    assert_eq!(reset.status(), StatusCode::BAD_REQUEST);
+    let bytes = reset.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["error"]["code"], "auth.weak_password");
+}
