@@ -101,7 +101,7 @@ Each task was committed atomically:
 2. **Task 2: Admin auth settings page** - `bb9a5d8` (feat)
 3. **Task 3: Human verify Phase 4 success criteria** - no code commit (checkpoint: **approved**)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `46628e1` (docs: complete plan)
 
 ## Files Created/Modified
 
