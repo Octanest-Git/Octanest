@@ -155,7 +155,7 @@ Each task was committed atomically:
 2. **Task 2: Signup auto-send verify + admin seed verified** - `4b0acb3` (feat)
 3. **Task 3: Reserve verify/reset-password usernames** - `344de19` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `806a457` (docs: complete plan)
 
 ## Files Created/Modified
 
