@@ -1,30 +1,41 @@
+<!-- generated-by: gsd-doc-writer -->
 # Octanest
 
 <p align="center">
   <img src="brand/octanest-mark.png" alt="Octanest" width="128" height="128" />
 </p>
 
-A GitHub competitor you can also self-host.
+A self-hostable GitHub-style social coding platform (git hosting, pull requests, and issues) that runs the same product in the cloud or on your own machines.
 
-**Octanest Cloud** and **self-hosted Octanest** are the same product — social coding, git hosting, pull requests, and issues — run in the cloud or on your own machines (Docker Compose / Railway).
+**Octanest Cloud** and **self-hosted Octanest** are one codebase: Bun workspaces for the web app and TypeScript packages, plus a Rust Cargo workspace for the API and database layer.
 
-## Development
+## Installation
 
-- **JS package manager:** [Bun](https://bun.sh) via Corepack (`packageManager` in root `package.json`). Fallback: Corepack **pnpm** + Turborepo if Bun is unsuitable.
-- **Rust:** Cargo workspace under `crates/` (`octanest-api`, `octanest-core`, `octanest-db`).
-- **Web:** `apps/web` (Octane TanStack Start).
-- **Generated client:** `packages/api-client`.
+Prerequisites: [Bun](https://bun.sh) (see `packageManager` in root `package.json`), Rust/`cargo`, and Docker Compose for the full stack.
 
 ```bash
 corepack enable
 bun install
 cargo metadata -q
-make help
 ```
 
-### Local (`make dev`)
+Copy environment defaults for Compose:
 
-Vite proxies `/api/rpc`, `/api/rpc/ws`, and `/health` to the API on `:8080` (D-10).
+```bash
+cp .env.example .env
+```
+
+## Quick start
+
+1. Install dependencies (`bun install` / `cargo metadata` as above).
+2. Bring up the default stack (Traefik on `:80`, web, API, Postgres):
+
+```bash
+make up
+make smoke
+```
+
+3. Or develop locally with Vite + API (see `make dev` for the two-terminal commands):
 
 ```bash
 make rpc-gen
@@ -34,22 +45,54 @@ OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin
 bun run --filter @octanest/web dev
 ```
 
-### Docker Compose (PLAT-01 / PLAT-07 / PLAT-08)
+List all Make targets anytime with `make help`.
 
-Default stack: **Traefik** (`:80`) + **web** + **api** + **postgres**. MySQL and SQLite are first-class overlays.
+## Usage examples
+
+### Docker Compose databases
+
+Default stack uses **PostgreSQL**. MySQL and SQLite are first-class overlays:
 
 ```bash
-cp .env.example .env   # local-only password defaults: octanest
-make up && make smoke           # Postgres
-make up-mysql && make smoke-mysql
-make up-sqlite && make smoke-sqlite
+make up && make smoke                 # Postgres
+make up-mysql && make smoke-mysql     # MySQL profile
+make up-sqlite && make smoke-sqlite   # SQLite file under ./var
 make down
 ```
 
-Requires `docker` on PATH with a reachable engine. Traefik routes `Host(localhost)` → web; `PathPrefix(/api)` and `/health` → api (WebSocket upgrades on `/api/rpc/ws`).
+Dialect details, migrations, and switching: [`docs/database.md`](docs/database.md).
 
-Canonical dialect docs: [`docs/database.md`](docs/database.md).
+### Local auth & email stubs
 
-Do not expose Compose ports to the public internet without auth (auth arrives in later phases).
+Exercise SMTP, Resend, WorkOS, and OIDC without cloud secrets:
 
-Planning lives in [`.planning/PROJECT.md`](.planning/PROJECT.md).
+```bash
+cp docs/dev-auth.env.example .env.dev-auth
+make up-dev-auth
+```
+
+Tear down with `make down-dev-auth`. Full walkthrough: [`docs/dev-auth.md`](docs/dev-auth.md).
+
+### Tests
+
+```bash
+make test              # cargo nextest (or cargo test) + bun Vitest
+make test-e2e-stack    # Vitest e2e against API + Mailpit/OIDC/stubs
+```
+
+## Monorepo layout
+
+| Path | Role |
+|------|------|
+| `apps/web` | Octane / TanStack Start web app (`@octanest/web`) |
+| `packages/api-client` | Generated TypeScript RPC client (`make rpc-gen`) |
+| `crates/octanest-api` | Rust API + `rpc-gen` binary |
+| `crates/octanest-core` | Shared Rust domain logic |
+| `crates/octanest-db` | SQL migrations and DB tooling |
+
+Root tooling: Bun workspaces (`apps/*`, `packages/*`) + Turborepo scripts; Cargo workspace under `crates/`.
+
+## Docs
+
+- [`docs/database.md`](docs/database.md) — Postgres / MySQL / SQLite, migrations, dialect switching
+- [`docs/dev-auth.md`](docs/dev-auth.md) — Mailpit, OIDC mock, Resend/WorkOS stubs (`make up-dev-auth`)
