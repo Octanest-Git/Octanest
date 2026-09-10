@@ -84,7 +84,7 @@ Each task was committed atomically:
 1. **Task 1: Profile RPC + avatar upload/serve** - `3c34d40` (feat)
 2. **Task 2: admin.auth settings + rpc-gen** - `8409834` (feat)
 
-**Plan metadata:** (docs commit follows)
+**Plan metadata:** `f9701e5` (docs: complete plan)
 
 ## Files Created/Modified
 
