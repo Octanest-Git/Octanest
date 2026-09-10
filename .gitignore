@@ -11,5 +11,6 @@ var/
 coverage/
 test-results/
 playwright-report/
+.vitest/
 .env.sqlite
 dev-dist/

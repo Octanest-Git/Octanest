@@ -17,7 +17,7 @@ help:
 	@echo "  make down-mysql     - docker compose down (mysql overlay)"
 	@echo "  make down-sqlite    - docker compose down (sqlite overlay)"
 	@echo "  make logs           - follow compose logs"
-	@echo "  make test           - cargo + JS tests"
+	@echo "  make test           - cargo nextest + JS Vitest (unit/integration/e2e)"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
@@ -68,7 +68,12 @@ logs:
 	$(COMPOSE) -f $(COMPOSE_FILE) logs -f
 
 test:
-	cargo test --workspace
+	@if command -v cargo-nextest >/dev/null 2>&1; then \
+		cargo nextest run --workspace; \
+	else \
+		echo "cargo-nextest not found; falling back to cargo test (install: cargo install cargo-nextest --locked)"; \
+		cargo test --workspace; \
+	fi
 	bun run test
 
 smoke:
