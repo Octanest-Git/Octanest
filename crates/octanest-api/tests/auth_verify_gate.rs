@@ -123,3 +123,35 @@ async fn unverified_privileged_ping_forbidden_then_ok_after_otp() {
     let ok_v: serde_json::Value = serde_json::from_slice(&ok_bytes).unwrap();
     assert_eq!(ok_v["data"]["ok"], true);
 }
+
+#[tokio::test]
+async fn privileged_ping_unknown_outside_env_allowlist() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("verify_gate_prod.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    // Production is outside {development,dev,test,compose}; procedure must not exist.
+    let app = test_app(db, "production").await;
+
+    let signup = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"user@ex.com","username":"user1","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(signup.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&signup);
+
+    let ping = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"auth.dev.privileged_ping","input":{}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(ping.status(), StatusCode::NOT_FOUND);
+    let bytes = ping.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["error"]["code"], "rpc.unknown_procedure");
+}
