@@ -178,6 +178,7 @@ impl Database {
         token_hash: &str,
         otp_hash: &str,
         expires_at: &str,
+        issue_count: i32,
     ) -> Result<email_tokens::EmailTokenRow, String> {
         email_tokens::upsert_by_user_purpose(
             self.require_pool()?,
@@ -187,6 +188,7 @@ impl Database {
             token_hash,
             otp_hash,
             expires_at,
+            issue_count,
         )
         .await
     }
@@ -219,6 +221,16 @@ impl Database {
 
     pub async fn delete_email_token(&self, id: &str) -> Result<(), String> {
         email_tokens::delete(self.require_pool()?, id).await
+    }
+
+    /// Test helper: rewrite token `created_at` for rate-limit simulations.
+    pub async fn set_email_token_created_at(
+        &self,
+        user_id: &str,
+        purpose: &str,
+        created_at: &str,
+    ) -> Result<(), String> {
+        email_tokens::set_created_at(self.require_pool()?, user_id, purpose, created_at).await
     }
 
     // --- sessions ---

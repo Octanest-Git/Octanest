@@ -110,12 +110,14 @@ async fn migrate_email_token_and_verified_helpers() {
             token_hash,
             otp_hash,
             "2099-06-01T12:00:00Z",
+            1,
         )
         .await
         .expect("upsert email token");
     assert_eq!(token.purpose, "verify");
     assert_eq!(token.user_id, user_id);
     assert_eq!(token.attempt_count, 0);
+    assert_eq!(token.issue_count, 1);
 
     let by_token = db
         .find_email_token_by_token_hash(token_hash)

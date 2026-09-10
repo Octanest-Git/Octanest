@@ -120,6 +120,14 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
+        "auth.request_verify" => match verify_reset::request_verify(ctx).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.resend_verify" => match verify_reset::resend_verify(ctx).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "auth.dev.privileged_ping" => {
             if !verify_reset::privileged_ping_env_allowed(&ctx.env_name) {
                 RpcResponse::err(AppError::new(
