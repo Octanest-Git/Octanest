@@ -2,6 +2,7 @@
 
 use chrono::Utc;
 use octanest_core::{AppError, UserPublic};
+use octanest_db::{Database, UserRow};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
@@ -464,6 +465,15 @@ pub async fn privileged_ping(ctx: &RpcCtx) -> Result<serde_json::Value, AppError
     Ok(serde_json::json!({ "ok": true }))
 }
 
+/// Clear `users.email_verified_at` for a user (D-05).
+///
+/// Call this when an email-change path lands: after updating the address, clear
+/// verification and issue a new verify email via the existing verify channel.
+/// Internal/db helper only this phase — not registered as a public RPC (T-05-14).
+pub async fn clear_email_verification(db: &Database, user_id: &str) -> Result<UserRow, AppError> {
+    db.clear_email_verified_at(user_id).await.map_err(db_err)
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ResetPasswordRequest {
     #[serde(default)]
@@ -616,4 +626,85 @@ pub async fn reset_password(
         .map_err(db_err)?
         .ok_or_else(|| AppError::new("auth.internal", "authentication failed"))?;
     Ok(user_to_public(&user))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::auth::session::{ResolvedSession, SessionService};
+    use crate::email::LogSink;
+    use crate::rpc::RpcCtx;
+    use chrono::Duration;
+    use std::path::PathBuf;
+    use std::sync::{Arc, RwLock};
+
+    async fn test_db() -> Database {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!("sqlite:{}", dir.path().join("verify_reset_clear.db").display());
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+        db
+    }
+
+    fn rpc_ctx(db: Database, user_id: &str) -> RpcCtx {
+        let email: Arc<dyn crate::email::EmailSender> = Arc::new(LogSink);
+        RpcCtx {
+            db,
+            email: email.clone(),
+            email_slot: Arc::new(RwLock::new(email)),
+            sessions: SessionService::new("development"),
+            uploads_dir: PathBuf::from("/tmp/octanest-test-uploads"),
+            env_name: "development".into(),
+            session: Some(ResolvedSession {
+                session_id: "sess-test".into(),
+                user_id: user_id.to_string(),
+                remember_me: false,
+                expires_at: Utc::now() + Duration::hours(1),
+            }),
+            set_cookie: None,
+        }
+    }
+
+    /// D-05: clearing verification makes require_verified fail (T-05-14 helper).
+    #[tokio::test]
+    async fn clear_email_verification_clears_verified_flag() {
+        let db = test_db().await;
+        let id = Uuid::new_v4().to_string();
+        db.create_user(
+            &id,
+            "clear-me@ex.com",
+            "clearmetest",
+            Some("$argon2id$test"),
+            "Clear Me",
+            "",
+            None,
+            false,
+        )
+        .await
+        .expect("create_user");
+
+        let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        db.set_email_verified_at(&id, &now)
+            .await
+            .expect("set verified");
+
+        let ctx = rpc_ctx(db.clone(), &id);
+        gate::require_verified(&ctx)
+            .await
+            .expect("require_verified should pass while verified");
+
+        let cleared = clear_email_verification(&db, &id)
+            .await
+            .expect("clear_email_verification");
+        assert!(
+            cleared.email_verified_at.is_none(),
+            "clear must null email_verified_at"
+        );
+
+        let err = gate::require_verified(&ctx)
+            .await
+            .expect_err("require_verified must fail after clear");
+        assert_eq!(err.code, "auth.email_unverified");
+    }
 }
