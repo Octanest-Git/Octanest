@@ -1,5 +1,7 @@
 //! AUTH-01: local signup with Set-Cookie, uniqueness, reserved username, welcome email.
 
+mod support;
+
 use std::sync::{Arc, Mutex};
 
 use axum::body::Body;
@@ -46,6 +48,7 @@ async fn signup_sets_cookie_and_sends_welcome() {
     let url = format!("sqlite:{}", dir.path().join("signup.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, recorder) = app_with_recorder(db).await;
 
     let res = app
@@ -94,6 +97,7 @@ async fn signup_duplicate_returns_taken() {
     let url = format!("sqlite:{}", dir.path().join("dup.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, _) = app_with_recorder(db).await;
 
     let res1 = app
@@ -124,6 +128,7 @@ async fn signup_reserved_username() {
     let url = format!("sqlite:{}", dir.path().join("reserved.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, _) = app_with_recorder(db).await;
 
     let res = app
@@ -145,6 +150,7 @@ async fn signup_works_with_log_sink_default_router() {
     let url = format!("sqlite:{}", dir.path().join("logsink.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let state = AppState::new(db, Arc::new(LogSink) as Arc<dyn EmailSender>, "development");
     let cors = build_cors("development", None).expect("cors");
     let app = router_with_state(state, cors);
@@ -165,6 +171,7 @@ async fn signup_open_without_invite_fields_auth05() {
     let url = format!("sqlite:{}", dir.path().join("open.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, _) = app_with_recorder(db).await;
 
     let body = r#"{"procedure":"auth.signup","input":{"email":"open@ex.com","username":"opener","password":"password1"}}"#;
@@ -182,6 +189,7 @@ async fn signup_open_without_invite_fields_auth05() {
 
 #[tokio::test]
 async fn seeded_admin_is_auto_verified() {
+    let _env = support::lock_admin_env();
     let dir = tempfile::tempdir().expect("tempdir");
     let url = format!("sqlite:{}", dir.path().join("admin_seed.db").display());
     let db = Database::connect(&url).await.expect("connect");
@@ -200,11 +208,29 @@ async fn seeded_admin_is_auto_verified() {
         .await
         .expect("find")
         .expect("seeded user");
-    assert!(user.is_admin);
+    assert_eq!(user.role, octanest_core::Role::SysAdmin);
     assert!(
         user.email_verified_at.is_some(),
         "D-04: seeded admin must be auto-verified"
     );
+    // Wave 0 (AUTH-06 / D-07): fixed username until 06-02 rewrites seed.
+    assert_eq!(
+        user.username, "system-administrator",
+        "ENV seed must use username system-administrator"
+    );
+    // Wave 0 (D-16): column lands in 06-01 — intentional RED until then.
+    let must_change_credentials = false;
+    assert!(
+        must_change_credentials,
+        "ENV-seeded system-administrator must have must_change_credentials=true (D-16)"
+    );
+    // Wave 0 (D-08/D-15): OCTANEST_ALLOW_SIGNUP default false.
+    let allow_signup_default = true; // replace with settings.allow_signup after 0006
+    assert!(
+        !allow_signup_default,
+        "OCTANEST_ALLOW_SIGNUP unset must leave allow_signup=false"
+    );
+
     // Second seed is a no-op when users exist.
     std::env::set_var("OCTANEST_ADMIN_EMAIL", "other@example.com");
     std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
@@ -214,4 +240,30 @@ async fn seeded_admin_is_auto_verified() {
     std::env::remove_var("OCTANEST_ADMIN_EMAIL");
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
     assert_eq!(db.count_users().await.expect("count"), 1);
+}
+
+/// Wave 0: OCTANEST_ALLOW_SIGNUP=true/1 must persist open signup on ENV seed (D-15).
+#[tokio::test]
+async fn seeded_admin_parses_allow_signup_true() {
+    let _env = support::lock_admin_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("admin_allow.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "admin@example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
+    std::env::set_var("OCTANEST_ALLOW_SIGNUP", "true");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("seed");
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+    std::env::remove_var("OCTANEST_ALLOW_SIGNUP");
+
+    let allow_signup = false; // replace with get_auth_settings().allow_signup (06-01/06-02)
+    assert!(
+        allow_signup,
+        "OCTANEST_ALLOW_SIGNUP=true must set allow_signup on instance settings"
+    );
 }
