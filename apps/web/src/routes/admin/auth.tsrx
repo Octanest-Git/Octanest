@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/admin/auth")({
   component: AdminAuthPage,
@@ -114,6 +115,7 @@ function ModeSelect<T extends string>({
 export function AdminAuthPage() {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [providerMode, setProviderMode] = useState<ProviderMode>("local");
+  const [allowSignup, setAllowSignup] = useState(false);
   const [emailProvider, setEmailProvider] = useState<EmailProviderKind>("log");
   const [fromAddress, setFromAddress] = useState("");
   const [workosClientId, setWorkosClientId] = useState("");
@@ -131,6 +133,7 @@ export function AdminAuthPage() {
 
   function applySettings(settings: AuthSettingsPublic) {
     setProviderMode(settings.provider_mode);
+    setAllowSignup(settings.allow_signup === true);
     setEmailProvider(settings.email_provider);
     setFromAddress(settings.from_address ?? "");
     setWorkosClientId(settings.workos_client_id ?? "");
@@ -197,6 +200,7 @@ export function AdminAuthPage() {
         oidc_issuer: providerMode === "oidc" ? oidcIssuer.trim() || null : null,
         oidc_client_id:
           providerMode === "oidc" ? oidcClientId.trim() || null : null,
+        allow_signup: allowSignup,
       });
       if (!res.ok) {
         setFormError(res.error.message || "Could not save auth settings.");
@@ -266,6 +270,21 @@ export function AdminAuthPage() {
           options={PROVIDER_OPTIONS}
           onChange={setProviderMode}
         />
+
+        <div className="flex flex-col gap-2">
+          <div className="flex min-h-11 items-center gap-2">
+            <Switch
+              id="admin-allow-signup"
+              checked={allowSignup}
+              onCheckedChange={(checked) => setAllowSignup(checked === true)}
+            />
+            <Label htmlFor="admin-allow-signup">Allow open signup</Label>
+          </div>
+          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+            When off, new accounts can’t self-register. You can change this later in
+            Auth settings.
+          </p>
+        </div>
 
         {providerMode === "workos" ? (
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">
