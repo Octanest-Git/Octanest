@@ -1,6 +1,6 @@
 ---
 phase: 05-cloud-verify-reset
-verified: 2026-09-11T16:41:59Z
+verified: 2026-09-11T16:45:52Z
 status: passed
 score: 10/10 must-haves verified
 covered_files:
@@ -65,7 +65,7 @@ covered_files:
   - crates/octanest-db/tests/dialect_auth.rs
   - packages/api-client/src/index.ts
 
-covered_digest: "v1:sha256:df8a3705d239630e875f9928088cdb63f4cec83bf0d8c1b6027eb5214dd0f022"
+covered_digest: "v1:sha256:4a3a49df1d7b2e88fe41b540434a39258cfc692219cab96f9bdab1c48723cc59"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -77,6 +77,7 @@ re_verification:
   previous_score: 10/10
   gaps_closed:
     - "Covered-file fingerprint refreshed after .tsx → .tsrx rename; digest matches live artifacts"
+    - "SUMMARY path citations updated to concrete migrations / .tsrx / phase .evidence path"
   gaps_remaining: []
   regressions: []
 deferred:
@@ -90,7 +91,7 @@ human_verification: []
 # Phase 5: Cloud Verify & Reset Verification Report
 
 **Phase Goal:** Octanest Cloud feels open to the public while requiring email verification before privileged actions and supporting password reset
-**Verified:** 2026-09-11T16:41:59Z
+**Verified:** 2026-09-11T16:45:52Z
 **Status:** passed
 **Re-verification:** Yes — fingerprint refresh after Octane `.tsx` → `.tsrx` rename (prior report `covered_digest` stale)
 
@@ -217,5 +218,5 @@ No automated gaps. All roadmap success criteria and merged must-have truths are 
 
 ---
 
-_Verified: 2026-09-11T16:41:59Z_
+_Verified: 2026-09-11T16:45:52Z_
 _Verifier: execute-phase regenerate (fingerprint refresh)_

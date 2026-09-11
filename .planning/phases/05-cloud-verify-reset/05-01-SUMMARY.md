@@ -121,7 +121,9 @@ _Note: TDD Task 2 produced RED + GREEN commits; no REFACTOR needed._
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql` — dialect-parity token table
+- `crates/octanest-db/migrations/postgres/0003_email_tokens.sql` — dialect-parity token table
+- `crates/octanest-db/migrations/mysql/0003_email_tokens.sql` — dialect-parity token table
+- `crates/octanest-db/migrations/sqlite/0003_email_tokens.sql` — dialect-parity token table
 - `crates/octanest-db/src/email_tokens.rs` — hash-at-rest token CRUD
 - `crates/octanest-db/src/users.rs` — set/clear email_verified_at
 - `crates/octanest-db/src/lib.rs` — Database facades

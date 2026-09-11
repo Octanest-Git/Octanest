@@ -33,10 +33,11 @@ tech-stack:
 
 key-files:
   created:
-    - apps/web/src/routes/reset-password.tsx
+    - apps/web/src/routes/reset-password.tsrx
   modified:
-    - apps/web/src/routes/login.tsx
-    - apps/web/src/routes/dashboard.tsx
+    - apps/web/src/routes/login.tsrx
+    - apps/web/src/components/signed-in-home.tsrx
+    - apps/web/src/routes/dashboard.tsrx
     - apps/web/src/routeTree.gen.ts
 
 key-decisions:
@@ -66,7 +67,7 @@ coverage:
     requirement: AUTH-12
     verification:
       - kind: other
-        ref: "grep Forgot password apps/web/src/routes/login.tsx"
+        ref: "grep Forgot password apps/web/src/routes/login.tsrx"
         status: pass
     human_judgment: true
     rationale: "Local-only visibility vs WorkOS/OIDC panels needs human-check"
@@ -104,7 +105,7 @@ status: complete
 
 - Shipped `/reset-password` (AuthShell + request anti-enumeration + redeem OTP/password + SSO IdP panel + Referrer-Policy)
 - Added local-only **Forgot password?** on `/login` before Remember me
-- Dashboard **New repository** always disabled with verify vs later-phase hints (D-12); no create RPC
+- Signed-in home **New repository** always disabled with verify vs later-phase hints (D-12); no create RPC (`/dashboard` soft-redirects to `/`)
 
 ## Task Commits
 
@@ -115,9 +116,10 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `apps/web/src/routes/reset-password.tsx` — request + redeem + SSO mode per UI-SPEC
-- `apps/web/src/routes/login.tsx` — Forgot password? → `/reset-password` (local only)
-- `apps/web/src/routes/dashboard.tsx` — disabled New repository + hints
+- `apps/web/src/routes/reset-password.tsrx` — request + redeem + SSO mode per UI-SPEC
+- `apps/web/src/routes/login.tsrx` — Forgot password? → `/reset-password` (local only)
+- `apps/web/src/components/signed-in-home.tsrx` — disabled New repository + hints
+- `apps/web/src/routes/dashboard.tsrx` — legacy `/dashboard` → `/` redirect
 - `apps/web/src/routeTree.gen.ts` — `/reset-password` registration
 
 ## Decisions Made

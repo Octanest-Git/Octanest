@@ -107,7 +107,7 @@ status: complete
 
 ## TDD Gate Compliance
 
-- **RED:** `test(05-05)` `040d37f` — `link_or_create_marks_verified_when_idp_asserts` failed on assertion (`email_verified_at` None); evidence `RED_EVIDENCE_OK` in `.evidence/05-05-t1-red.json`
+- **RED:** `test(05-05)` `040d37f` — `link_or_create_marks_verified_when_idp_asserts` failed on assertion (`email_verified_at` None); evidence `RED_EVIDENCE_OK` in `.planning/phases/05-cloud-verify-reset/.evidence/05-05-t1-red.json`
 - **GREEN:** `feat(05-05)` `f72dc49` — mapping helpers + `apply_idp_email_verified`; all IdP-trust tests pass
 - **REFACTOR:** skipped (no cleanup needed)
 

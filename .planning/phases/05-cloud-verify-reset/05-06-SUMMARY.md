@@ -31,14 +31,14 @@ tech-stack:
 
 key-files:
   created:
-    - apps/web/src/components/ui/input-otp.tsx
-    - apps/web/src/routes/verify.tsx
-    - apps/web/src/components/verify-banner.tsx
+    - apps/web/src/components/ui/input-otp.tsrx
+    - apps/web/src/routes/verify.tsrx
+    - apps/web/src/components/verify-banner.tsrx
   modified:
     - crates/octanest-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - apps/web/package.json
-    - apps/web/src/routes/__root.tsx
+    - apps/web/src/routes/__root.tsrx
     - apps/web/src/styles.css
     - apps/web/src/routeTree.gen.ts
 
@@ -123,10 +123,10 @@ Each task was committed atomically:
 - `crates/octanest-api/src/bin/rpc_gen.rs` — UserPublic.email_verified + verify/reset/privilegedPing client surface
 - `packages/api-client/src/index.ts` — regenerated (do not hand-edit)
 - `apps/web/package.json` / `bun.lock` — `input-otp@1.5.0`
-- `apps/web/src/components/ui/input-otp.tsx` — thin OTP wrapper (8 numeric slots)
-- `apps/web/src/routes/verify.tsx` — `/verify` page per UI-SPEC
-- `apps/web/src/components/verify-banner.tsx` — chrome verify strip
-- `apps/web/src/routes/__root.tsx` — mount VerifyBanner between header and main
+- `apps/web/src/components/ui/input-otp.tsrx` — thin OTP wrapper (8 numeric slots)
+- `apps/web/src/routes/verify.tsrx` — `/verify` page per UI-SPEC
+- `apps/web/src/components/verify-banner.tsrx` — chrome verify strip
+- `apps/web/src/routes/__root.tsrx` — mount VerifyBanner between header and main
 - `apps/web/src/styles.css` — banner appear motion
 - `apps/web/src/routeTree.gen.ts` — `/verify` route registration
 

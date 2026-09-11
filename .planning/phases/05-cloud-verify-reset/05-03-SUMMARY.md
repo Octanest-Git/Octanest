@@ -163,7 +163,9 @@ Each task was committed atomically:
 - `crates/octanest-api/src/auth/seed.rs` — `maybe_seed_admin` with D-04 verify
 - `crates/octanest-api/src/auth/local.rs` — signup auto-issue verify
 - `crates/octanest-api/src/rpc.rs` — request/resend procedures
-- `crates/octanest-db/.../0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/octanest-db/migrations/postgres/0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/octanest-db/migrations/mysql/0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/octanest-db/migrations/sqlite/0004_email_token_issue_count.sql` — `issue_count` column
 - `crates/octanest-core/src/auth_types.rs` — reserved `verify`, `reset-password`
 - Tests: `auth_verify_reset.rs`, `auth_signup.rs`
 
