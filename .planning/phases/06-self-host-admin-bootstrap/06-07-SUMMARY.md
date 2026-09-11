@@ -20,7 +20,7 @@ affects:
 actuals:
   tokens: 4820
   tasks: 2
-  commits: 2
+  commits: 4
 
 plan_head_before: 79287d55c4906cda8ed67342e8f2eccd6c3ef04f
 
@@ -122,7 +122,7 @@ Each task was committed atomically:
 1. **Task 1: Docs + REQUIREMENTS reframe + COVERAGE** - `e4565ef` (docs)
 2. **Task 2: rpc-gen + flicker todo close + phase smoke** - `85fe356` (chore)
 
-**Plan metadata:** _(final docs commit below)_
+**Plan metadata:** `8b0cd03` (docs: complete plan)
 
 ## Files Created/Modified
 
