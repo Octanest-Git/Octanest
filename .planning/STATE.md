@@ -4,15 +4,15 @@ milestone: v1.0
 current_phase: 6
 current_phase_name: Self-Host Admin Bootstrap
 status: planned
-stopped_at: Phase 6 plans written — ready to execute
-last_updated: "2026-09-11T19:30:00.000Z"
+stopped_at: Phase 6 plans revised — checker blockers cleared
+last_updated: "2026-09-11T21:30:00.000Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 6 PLAN.md set written (8 plans, tracer-first)
+last_activity_desc: Phase 6 plan revision (0006 migration, RESEARCH RESOLVED, 06-08 split, VALIDATION map)
 state_head: b513eae3268bbda768cf201b1bec7d736d4a9521
 progress:
   total_phases: 22
   completed_phases: 1
-  total_plans: 39
+  total_plans: 40
   completed_plans: 31
 milestone_name: milestone
 ---
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 6 — Self-Host Admin Bootstrap
 Plan: 00 (Wave 0) next
-Status: Planned — 8 plans ready to execute
-Last activity: 2026-09-11 — Phase 6 PLAN.md files written
+Status: Planned — 9 plans ready to execute (revised)
+Last activity: 2026-09-11 — Phase 6 plans revised for checker blockers
 
-Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-07)
+Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-08, docs as 06-07 wave 8)
 
 ## Performance Metrics
 

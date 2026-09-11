@@ -362,17 +362,17 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 
 **If this table is empty:** — not empty; confirm A2 with planner if preferred to hang `allow_signup` on `BootstrapStatus` instead.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Should `auth.login` be allowed while `must_change_credentials` is set?**
+1. **Should `auth.login` be allowed while `must_change_credentials` is set?** — **RESOLVED**
    - What we know: UI-SPEC gates all app UI to `/setup/credentials` after session exists.
-   - What's unclear: Whether login itself may mint session then redirect (recommended: yes — login succeeds, SSR/client force credentials route).
-   - Recommendation: Allow login; block other app RPCs optionally or rely on SSR/UI gate + RPC that rejects privileged actions until cleared. Prefer **login OK + hard UI/SSR gate**; optionally reject non-credentials RPCs for flagged users.
+   - Resolution (assumed by 06-02 / 06-05 / 06-06): **Login may mint a session** while `must_change_credentials` is set; SSR/UI hard-gates `/setup/credentials` (D-16/D-17). Optional extra RPC allowlisting for flagged users is out of scope unless a later plan adds it.
+   - Rationale: Matches UI-SPEC first-login flow; avoids blocking session issue needed to call `auth.confirm_admin_credentials`.
 
-2. **Compose/cloud default for `OCTANEST_ALLOW_SIGNUP`**
+2. **Compose/cloud default for `OCTANEST_ALLOW_SIGNUP`** — **RESOLVED**
    - What we know: Default false (D-07); cloud previously “open signup” (AUTH-05).
-   - What's unclear: Whether Octanest Cloud deploy manifests must set `OCTANEST_ALLOW_SIGNUP=true`.
-   - Recommendation: Document that cloud Compose/Railway sets `true` at seed; code default remains false (one product path).
+   - Resolution (assumed by 06-04 / 06-07): **Code default remains false** (one product path). Cloud Compose/Railway (and docs) set `OCTANEST_ALLOW_SIGNUP=true` when open signup is desired — documentation-only; no Compose file change required unless ADMIN env is already listed.
+   - Rationale: D-03/D-04 forbid deployment-mode forks; ENV at deploy covers cloud AUTH-05 without branching code.
 
 ## Environment Availability
 
