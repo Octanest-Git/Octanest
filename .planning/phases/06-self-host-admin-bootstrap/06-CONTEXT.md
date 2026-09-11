@@ -35,9 +35,9 @@ Empty installs get a first `sys-admin` via `OCTANEST_ADMIN_EMAIL` + `OCTANEST_AD
 
 ### B — Post-bootstrap signup (`allow_signup`)
 - **D-05:** After bootstrap, **`allow_signup`** governs local signup (revises Phase 5 D-08 / AUTH-05 “always open” for this product rule)
-- **D-06:** When `allow_signup` is off: **hard block** `/signup` and `auth.signup` (UI → sign-in / contact admin) — **no invite codes in this phase**
+- **D-06:** When `allow_signup` is off: **`/signup` returns 404**; logged-out UI **omits all Sign-up references** (no AuthShell soft page; no invite codes) — **Reversibility:** costly — routing + chrome contract
 - **D-07:** Default when ENV unset: **`allow_signup = false`** (`OCTANEST_ALLOW_SIGNUP`)
-- **D-08:** **ENV seed** applies `OCTANEST_ALLOW_SIGNUP` at seed time; **wizard** exposes the same control — **Reversibility:** costly — persisted instance setting + ENV contract
+- **D-08:** **ENV seed** applies `OCTANEST_ALLOW_SIGNUP` at seed time; **wizard** exposes the same control (**Switch**) — **Reversibility:** costly — persisted instance setting + ENV contract
 
 ### C — Empty-instance lock
 - **D-09:** **Hard SSR/server gate** to `/setup` before paint while `needs_setup`; signup/SSO blocked until bootstrap completes
@@ -49,7 +49,7 @@ Empty installs get a first `sys-admin` via `OCTANEST_ADMIN_EMAIL` + `OCTANEST_AD
 - **D-13:** If **either or both** `OCTANEST_ADMIN_*` unset → treat as unset; wizard creates sys-admin
 - **D-14:** If both set but **seed fails** → **fail boot** (surface error; do not serve the app) — **Reversibility:** one-way — operators rely on fail-closed boot
 - **D-15:** ENV-seeded username: **`system-administrator`** (not `admin`/`admin1`)
-- **D-16:** ENV seed **creates** the account; **first login forces email + password change** UI (not the empty-DB wizard)
+- **D-16:** ENV seed **creates** the account; first visit gates **`/setup/credentials`** — must change **default** values (username `system-administrator`); **ENV email/password may be kept** (Keep current password Switch)
 - **D-17:** Forced credential change applies to **ENV-seeded admins only** — wizard-created credentials are already chosen
 
 ### E — Signed-in home SSR (folded flicker fix)
