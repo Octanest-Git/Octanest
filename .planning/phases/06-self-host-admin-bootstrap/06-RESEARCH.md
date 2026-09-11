@@ -426,6 +426,7 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 - [ ] New API tests — forced credential change RPC; signup blocked when `allow_signup=false`
 - [ ] Web: `/setup` Switch + `/setup/credentials` form integration tests
 - [ ] Web: signup/chrome omit + dashboard notFound tests
+- [ ] Web: `apps/web/src/routes/index.integration.test.ts` — D-18/D-20 home SSR tree gate (needs_setup vs SignedInHome vs marketing)
 - [ ] Migration `0006` dialect triple + `dialect_auth` coverage for new columns
 
 ## Security Domain

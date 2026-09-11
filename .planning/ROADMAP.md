@@ -170,7 +170,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. On self-host, when `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
   2. On self-host, when those env vars are absent, an empty instance shows a one-time wizard to create the admin, then continues with normal signup rules
 
-**Plans**: 9 plans
+**Plans**: 10 plans
 
 Plans:
 - [ ] 06-00-PLAN.md — Wave 0 Nyquist stubs (API/web/dialect + index SSR gate)
@@ -178,8 +178,9 @@ Plans:
 - [ ] 06-02-PLAN.md — Tracer AUTH-06 ENV seed + confirm credentials (D-14 gate)
 - [ ] 06-03-PLAN.md — AUTH-07 wizard + strict RPC allowlist + SSO reject
 - [ ] 06-04-PLAN.md — allow_signup RPC/admin/provider_config enforcement
-- [ ] 06-05-PLAN.md — SSR Cookie-forward gates + `/dashboard` 404
+- [ ] 06-05-PLAN.md — SSR Cookie-forward + shared root access gate + `/` tree
 - [ ] 06-06-PLAN.md — `/setup`, `/setup/credentials`, Switch
+- [ ] 06-09-PLAN.md — `/dashboard` notFound + closed `/signup` SSR gate
 - [ ] 06-08-PLAN.md — chrome omit + admin allow_signup Switch
 - [ ] 06-07-PLAN.md — Docs, REQUIREMENTS reframe, rpc-gen, COVERAGE
 

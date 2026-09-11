@@ -51,11 +51,13 @@ created: "2026-09-11"
 | 06-03-T2 | 03 | 3 | AUTH-07 | T-06 D-11 | Strict RPC allowlist + SSO reject | integration | `cargo nextest run -p octanest-api -E 'test(bootstrap) \| test(seeded_admin) \| test(signup)'` | ⚠️ extend | ⬜ pending |
 | 06-04-T1 | 04 | 4 | AUTH-05/07 | — | provider_config.allow_signup + signup reject | integration | `cargo nextest run -p octanest-api -E 'test(signup) \| test(bootstrap) \| test(seeded_admin)'` | ⚠️ extend | ⬜ pending |
 | 06-04-T2 | 04 | 4 | AUTH-05 | — | admin.auth allow_signup round-trip | integration | `cargo nextest run -p octanest-api -E 'test(admin_auth) \| test(signup)'` | ⚠️ extend | ⬜ pending |
-| 06-05-T1 | 05 | 5 | AUTH-06/07 | T-06-11 | ssr-auth Cookie-forward | build | `bun --cwd apps/web run build` | ❌ new | ⬜ pending |
-| 06-05-T2 | 05 | 5 | AUTH-06 | T-06 D-18/20 | `/` SSR tree selection (marketing vs home vs /setup) | integration | `bun --cwd apps/web exec vitest run src/routes/index.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
-| 06-05-T3 | 05 | 5 | AUTH-06 | T-06 D-19 | `/dashboard` notFound + setup/signup gates | integration | `bun --cwd apps/web exec vitest run src/routes/dashboard.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
+| 06-05-T1 | 05 | 5 | AUTH-06/07 | T-06-11 | ssr-auth Cookie-forward + resolveAppAccessRedirect | build | `bun --cwd apps/web run build` | ❌ new | ⬜ pending |
+| 06-05-T2 | 05 | 5 | AUTH-06/07 | T-06-15 | Shared root SSR gate (needs_setup + must_change) path matrix | unit | `bun --cwd apps/web exec vitest run src/lib/ssr-auth.gate.test.ts && bun --cwd apps/web run build` | ❌ new | ⬜ pending |
+| 06-05-T3 | 05 | 5 | AUTH-06 | T-06 D-18/20 | `/` SSR tree selection (marketing vs SignedInHome) | integration | `bun --cwd apps/web exec vitest run src/routes/index.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
 | 06-06-T1 | 06 | 6 | AUTH-07 | — | Switch + /setup wizard | integration | `bun --cwd apps/web exec vitest run src/routes/setup.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
 | 06-06-T2 | 06 | 6 | AUTH-06 | T-06-14 | /setup/credentials forced change | integration | `bun --cwd apps/web exec vitest run src/routes/setup.credentials.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
+| 06-09-T1 | 09 | 6 | AUTH-06 | T-06-16 | `/dashboard` notFound | integration | `bun --cwd apps/web exec vitest run src/routes/dashboard.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
+| 06-09-T2 | 09 | 6 | AUTH-06/07 | — | `/signup` allow_signup false → notFound | build | `bun --cwd apps/web run build` | ⚠️ extend | ⬜ pending |
 | 06-08-T1 | 08 | 7 | AUTH-05/07 | T-06-13 | Closed signup chrome/landing/login omit | integration | `bun --cwd apps/web exec vitest run src/components/chrome.integration.test.ts && bun --cwd apps/web run build` | ❌ W0 | ⬜ pending |
 | 06-08-T2 | 08 | 7 | AUTH-05 | — | admin/auth Allow open signup Switch | build | `bun --cwd apps/web run build` | ⚠️ extend | ⬜ pending |
 | 06-07-T1 | 07 | 8 | AUTH-06/07 | — | Docs + REQUIREMENTS reframe + COVERAGE | grep | `rg -n 'OCTANEST_ALLOW_SIGNUP\|empty.instance\|system-administrator' docs/CONFIGURATION.md .env.example .planning/REQUIREMENTS.md` | ⚠️ extend | ⬜ pending |

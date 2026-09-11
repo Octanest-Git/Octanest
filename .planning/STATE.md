@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 6
 current_phase_name: Self-Host Admin Bootstrap
 status: planned
-stopped_at: Phase 6 plans revised — checker blockers cleared
-last_updated: "2026-09-11T21:30:00.000Z"
+stopped_at: Phase 6 plans revised — D-09/D-10 shared root gate + 06-09 split
+last_updated: "2026-09-11T21:35:00.000Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 6 plan revision (0006 migration, RESEARCH RESOLVED, 06-08 split, VALIDATION map)
+last_activity_desc: Phase 6 revision iteration 2 (shared SSR gate, must_change, 06-09)
 state_head: b513eae3268bbda768cf201b1bec7d736d4a9521
 progress:
   total_phases: 22
