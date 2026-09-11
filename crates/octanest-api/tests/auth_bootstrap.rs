@@ -1,5 +1,5 @@
 //! AUTH-07 bootstrap + D-13 partial ENV (AUTH-06 adjacency).
-//! Strict RPC allowlist remains Wave 0 RED until 06-03-T2.
+//! Strict RPC allowlist (D-11) covered here; SSO start reject is in auth_callbacks.
 
 mod support;
 
@@ -95,7 +95,7 @@ async fn bootstrap_partial_env_password_only_needs_setup() {
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
 }
 
-/// D-11: while needs_setup, non-allowlisted RPC (auth.login) fails; allowlisted procs succeed.
+/// D-11: while needs_setup, non-allowlisted RPC fails; allowlisted procs succeed.
 #[tokio::test]
 async fn bootstrap_strict_rpc_allowlist_while_needs_setup() {
     let _env = support::lock_admin_env();
@@ -110,13 +110,33 @@ async fn bootstrap_strict_rpc_allowlist_while_needs_setup() {
     let app = test_app(db.clone()).await;
     let login = rpc_json(
         app,
-        r#"{"procedure":"auth.login","input":{"identifier":"x@ex.com","password":"password1"}}"#,
+        r#"{"procedure":"auth.login","input":{"identifier":"x@ex.com","password":"password1","remember_me":false}}"#,
     )
     .await;
     assert_eq!(login["ok"], false);
     assert_eq!(
         login["error"]["code"], "auth.setup_required",
         "D-11: auth.login blocked while needs_setup"
+    );
+
+    let app_me = test_app(db.clone()).await;
+    let me = rpc_json(app_me, r#"{"procedure":"auth.me","input":{}}"#).await;
+    assert_eq!(me["ok"], false);
+    assert_eq!(
+        me["error"]["code"], "auth.setup_required",
+        "D-11: auth.me blocked while needs_setup"
+    );
+
+    let app_su = test_app(db.clone()).await;
+    let signup = rpc_json(
+        app_su,
+        r#"{"procedure":"auth.signup","input":{"email":"ada@example.com","username":"ada","password":"password1"}}"#,
+    )
+    .await;
+    assert_eq!(signup["ok"], false);
+    assert_eq!(
+        signup["error"]["code"], "auth.setup_required",
+        "D-11: auth.signup blocked while needs_setup"
     );
 
     let app2 = test_app(db.clone()).await;
