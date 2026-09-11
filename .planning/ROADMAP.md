@@ -173,15 +173,38 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 10 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 06-00-PLAN.md — Wave 0 Nyquist stubs (API/web/dialect + index SSR gate)
 - [ ] 06-01-PLAN.md — 0006 bootstrap flags schema + DTOs
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-02-PLAN.md — Tracer AUTH-06 ENV seed + confirm credentials (D-14 gate)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 06-03-PLAN.md — AUTH-07 wizard + strict RPC allowlist + SSO reject
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 06-04-PLAN.md — allow_signup RPC/admin/provider_config enforcement
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 06-05-PLAN.md — SSR Cookie-forward + shared root access gate + `/` tree
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 06-06-PLAN.md — `/setup`, `/setup/credentials`, Switch
 - [ ] 06-09-PLAN.md — `/dashboard` notFound + closed `/signup` SSR gate
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 06-08-PLAN.md — chrome omit + admin allow_signup Switch
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 06-07-PLAN.md — Docs, REQUIREMENTS reframe, rpc-gen, COVERAGE
 
 **UI hint**: yes
