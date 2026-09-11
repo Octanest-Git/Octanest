@@ -1,23 +1,72 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-describe("/setup/credentials Wave 0 (AUTH-06 UI-SPEC)", () => {
-  it("Keep current password Switch + rejects default system-administrator username copy", () => {
-    // Route module `setup.credentials` lands in 06-06 — do not static-import here
-    // (Vite fails the suite at transform time when the file is absent).
-    const uiSpec = {
-      keepPasswordLabel: "Keep current password",
-      usernameError:
-        "Choose a username other than the default system-administrator.",
-      routeModule: "apps/web/src/routes/setup.credentials.tsrx",
-    };
+const confirmAdminCredentials = vi.fn();
+const me = vi.fn(async () => ({
+  ok: true,
+  data: {
+    id: "u1",
+    email: "admin@example.com",
+    username: "system-administrator",
+    display_name: "system-administrator",
+    bio: "",
+    role: "sys-admin",
+    profile_incomplete: false,
+    email_verified: true,
+    must_change_credentials: true,
+  },
+}));
 
-    expect(uiSpec.keepPasswordLabel).toBe("Keep current password");
-    expect(uiSpec.usernameError).toMatch(/system-administrator/);
+vi.mock("@/lib/api-client", () => ({
+  apiClient: {
+    auth: {
+      me,
+      confirmAdminCredentials,
+    },
+  },
+}));
 
-    // Intentional RED until CredentialsPage + Switch ship.
+vi.mock("@/lib/ssr-auth", () => ({
+  fetchSessionMe: vi.fn(async () => ({
+    ok: true,
+    data: { must_change_credentials: true },
+  })),
+}));
+
+afterEach(() => {
+  cleanup();
+  confirmAdminCredentials.mockReset();
+  me.mockClear();
+});
+
+describe("/setup/credentials (AUTH-06 UI-SPEC)", () => {
+  it("exports CredentialsPage with Keep current password Switch and rejects default username", async () => {
+    const mod = await import("./setup.credentials");
     expect(
-      false,
-      `${uiSpec.routeModule} must export CredentialsPage with Keep current password Switch (UI-SPEC)`,
-    ).toBe(true);
+      mod,
+      "CredentialsPage must be exported for integration tests (06-06)",
+    ).toHaveProperty("CredentialsPage");
+
+    const { CredentialsPage } = mod as { CredentialsPage: unknown };
+    render(CredentialsPage as never);
+
+    await waitFor(() => {
+      expect(screen.getByText("Confirm admin account")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Keep current password")).toBeInTheDocument();
+
+    const username = screen.getByLabelText("Username") as HTMLInputElement;
+    expect(username.value.toLowerCase()).toBe("system-administrator");
+
+    fireEvent.submit(username.closest("form")!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /Choose a username other than the default system-administrator/i,
+        ),
+      ).toBeInTheDocument();
+    });
+    expect(confirmAdminCredentials).not.toHaveBeenCalled();
   });
 });

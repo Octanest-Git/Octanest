@@ -19,6 +19,7 @@ import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,30 +71,37 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupCredentialsRoute = SetupCredentialsRouteImport.update({
+  id: '/credentials',
+  path: '/credentials',
+  getParentRoute: () => SetupRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/setup': typeof SetupRoute
+  '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/setup/credentials': typeof SetupCredentialsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/setup': typeof SetupRoute
+  '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/setup/credentials': typeof SetupCredentialsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,12 +109,13 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/setup': typeof SetupRoute
+  '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/setup/credentials': typeof SetupCredentialsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
+    | '/setup/credentials'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
+    | '/setup/credentials'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
+    | '/setup/credentials'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,7 +164,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SetupRoute: typeof SetupRoute
+  SetupRoute: typeof SetupRouteWithChildren
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
   VerifyRoute: typeof VerifyRoute
@@ -232,15 +244,32 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setup/credentials': {
+      id: '/setup/credentials'
+      path: '/credentials'
+      fullPath: '/setup/credentials'
+      preLoaderRoute: typeof SetupCredentialsRouteImport
+      parentRoute: typeof SetupRoute
+    }
   }
 }
+
+interface SetupRouteChildren {
+  SetupCredentialsRoute: typeof SetupCredentialsRoute
+}
+
+const SetupRouteChildren: SetupRouteChildren = {
+  SetupCredentialsRoute: SetupCredentialsRoute,
+}
+
+const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SetupRoute: SetupRoute,
+  SetupRoute: SetupRouteWithChildren,
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
   VerifyRoute: VerifyRoute,
