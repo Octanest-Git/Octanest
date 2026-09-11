@@ -10,6 +10,9 @@ files:
   - apps/web/src/lib/session-hint.ts
   - apps/web/src/components/page-skeletons.tsrx
   - apps/web/src/components/signed-in-home.tsrx
+status: completed
+completed: 2026-09-11
+resolved_by: 06-05 SSR home + 06-08 chrome omit + 06-09 dashboard/signup gates
 ---
 
 ## Problem
@@ -28,3 +31,8 @@ Sketch:
 4. Soft redirects / client `auth.me` gates are a fallback only; they are what causes the flicker today.
 
 Also re-check view-transition on `.octanest-main` if any residual swap remains after SSR routing is correct.
+
+## Resolution
+
+Completed in Phase 06: SSR session gate on `/` (06-05), chrome omit while `needs_setup` (06-08), `/dashboard` 404 and closed `/signup` (06-09). Folded from CONTEXT; closed by 06-07 docs/closeout.
+
