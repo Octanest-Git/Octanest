@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-09-PLAN.md
-last_updated: "2026-09-11T21:21:23.736Z"
+stopped_at: Completed 06-08-PLAN.md
+last_updated: "2026-09-11T21:35:19.334Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: 325ea3b7dcad65aa6be8a7f38faa799eace4200c
+state_head: 1091f6f12d6901d5753b0d5521ef83f94eab4ebc
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 39
+  completed_plans: 40
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 9 of 10
+Plan: 10 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -86,6 +86,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 06 P05 | 8min | 3 tasks | 9 files |
 | Phase 06-self-host-admin-bootstrap P06 | 8min | 2 tasks | 10 files |
 | Phase 06-self-host-admin-bootstrap P09 | 7min | 2 tasks | 6 files |
+| Phase 06-self-host-admin-bootstrap P08 | 13min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -154,6 +155,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Land dashboard/signup on .tsrx (Octane rename in flight) — plan .tsx paths reconciled
 - [Phase 06]: throw notFound() (not soft redirect / AuthShell) for /dashboard and closed /signup
 - [Phase 06]: Signup API-unreachable: do not 404; API allow_signup remains authority
+- [Phase 06]: [Phase 06]: Land chrome/admin edits on .tsrx (Octane rename in flight)
+- [Phase 06]: [Phase 06]: needs_setup omits account CTAs; Sign up fail-closed until allow_signup===true
 
 ### Pending Todos
 
@@ -173,6 +176,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T21:21:23.693Z
-Stopped at: Completed 06-09-PLAN.md
+Last session: 2026-09-11T21:35:19.296Z
+Stopped at: Completed 06-08-PLAN.md
 Resume file: None
