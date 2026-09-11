@@ -19,6 +19,7 @@ import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 
 const IndexRoute = IndexRouteImport.update({
@@ -71,6 +72,11 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupIndexRoute = SetupIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SetupRoute,
+} as any)
 const SetupCredentialsRoute = SetupCredentialsRouteImport.update({
   id: '/credentials',
   path: '/credentials',
@@ -89,19 +95,20 @@ export interface FileRoutesByFullPath {
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
+  '/setup/': typeof SetupIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
+  '/setup': typeof SetupIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +123,7 @@ export interface FileRoutesById {
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
+  '/setup/': typeof SetupIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,19 +139,20 @@ export interface FileRouteTypes {
     | '/admin/auth'
     | '/settings/profile'
     | '/setup/credentials'
+    | '/setup/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/login'
     | '/reset-password'
-    | '/setup'
     | '/signup'
     | '/status'
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
     | '/setup/credentials'
+    | '/setup'
   id:
     | '__root__'
     | '/'
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/admin/auth'
     | '/settings/profile'
     | '/setup/credentials'
+    | '/setup/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -244,6 +254,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setup/': {
+      id: '/setup/'
+      path: '/'
+      fullPath: '/setup/'
+      preLoaderRoute: typeof SetupIndexRouteImport
+      parentRoute: typeof SetupRoute
+    }
     '/setup/credentials': {
       id: '/setup/credentials'
       path: '/credentials'
@@ -256,10 +273,12 @@ declare module '@octanejs/tanstack-router' {
 
 interface SetupRouteChildren {
   SetupCredentialsRoute: typeof SetupCredentialsRoute
+  SetupIndexRoute: typeof SetupIndexRoute
 }
 
 const SetupRouteChildren: SetupRouteChildren = {
   SetupCredentialsRoute: SetupCredentialsRoute,
+  SetupIndexRoute: SetupIndexRoute,
 }
 
 const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)

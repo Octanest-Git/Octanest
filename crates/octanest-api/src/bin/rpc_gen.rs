@@ -69,6 +69,13 @@ export type BootstrapSetupRequest = {
   allow_signup?: boolean;
 };
 
+export type ConfirmAdminCredentialsRequest = {
+  username: string;
+  email?: string | null;
+  password?: string | null;
+  keep_password?: boolean;
+};
+
 export type SignupRequest = {
   email: string;
   username: string;
@@ -179,6 +186,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<BootstrapStatus>(opts, "auth.bootstrap_status", {}),
       bootstrapSetup: (input: BootstrapSetupRequest) =>
         rpcCall<UserPublic>(opts, "auth.bootstrap_setup", input),
+      confirmAdminCredentials: (input: ConfirmAdminCredentialsRequest) =>
+        rpcCall<UserPublic>(opts, "auth.confirm_admin_credentials", input),
       verify: (input: VerifyRequest) => rpcCall<UserPublic>(opts, "auth.verify", input),
       requestVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.request_verify", {}),
       resendVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.resend_verify", {}),
