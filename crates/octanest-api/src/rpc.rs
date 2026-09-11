@@ -53,6 +53,25 @@ pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
 }
 
 pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
+    // D-11 / T-06-06: empty-instance lock — only bootstrap_* + health until setup completes.
+    // confirm_admin_credentials stays off the list (ENV path already has users).
+    match bootstrap::needs_setup(&ctx.db).await {
+        Ok(true) => {
+            let allowed = matches!(
+                req.procedure.as_str(),
+                "auth.bootstrap_status" | "auth.bootstrap_setup" | "system.health"
+            );
+            if !allowed {
+                return RpcResponse::err(AppError::new(
+                    "auth.setup_required",
+                    "Complete instance setup before continuing.",
+                ));
+            }
+        }
+        Ok(false) => {}
+        Err(e) => return RpcResponse::err(e),
+    }
+
     match req.procedure.as_str() {
         "system.health" => {
             let database = ctx.db.ping().await.to_string();
