@@ -66,6 +66,7 @@ export type BootstrapSetupRequest = {
   email: string;
   username: string;
   password: string;
+  allow_signup?: boolean;
 };
 
 export type SignupRequest = {

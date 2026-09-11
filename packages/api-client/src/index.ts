@@ -56,6 +56,8 @@ export type BootstrapSetupRequest = {
   email: string;
   username: string;
   password: string;
+  /** Post-bootstrap local signup policy (D-05/D-07); omit/false = closed. */
+  allow_signup?: boolean;
 };
 
 export type SignupRequest = {
