@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 6
 current_phase_name: Self-Host Admin Bootstrap
-status: planning
-stopped_at: Phase 6 RESEARCH complete
-last_updated: "2026-09-11T19:15:00.000Z"
+status: planned
+stopped_at: Phase 6 plans written — ready to execute
+last_updated: "2026-09-11T19:30:00.000Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 6 RESEARCH.md written — ready to plan
+last_activity_desc: Phase 6 PLAN.md set written (8 plans, tracer-first)
 state_head: b513eae3268bbda768cf201b1bec7d736d4a9521
 progress:
   total_phases: 22
   completed_phases: 1
-  total_plans: 31
+  total_plans: 39
   completed_plans: 31
 milestone_name: milestone
 ---
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 5 — Cloud Verify & Reset
+**Current focus:** Phase 6 — Self-Host Admin Bootstrap
 
 ## Current Position
 
 Phase: 6 — Self-Host Admin Bootstrap
-Plan: Not started
-Status: Research complete — ready to plan
-Last activity: 2026-09-11 — Phase 6 RESEARCH.md complete
+Plan: 00 (Wave 0) next
+Status: Planned — 8 plans ready to execute
+Last activity: 2026-09-11 — Phase 6 PLAN.md files written
 
-Progress: Phases 1–5 complete; Phase 6 context + UI-SPEC + research ready for planning
+Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-07)
 
 ## Performance Metrics
 

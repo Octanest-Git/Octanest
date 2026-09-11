@@ -170,7 +170,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. On self-host, when `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
   2. On self-host, when those env vars are absent, an empty instance shows a one-time wizard to create the admin, then continues with normal signup rules
 
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 06-00-PLAN.md — Wave 0 Nyquist stubs (API/web/dialect)
+- [ ] 06-01-PLAN.md — 0005 bootstrap flags schema + DTOs
+- [ ] 06-02-PLAN.md — Tracer AUTH-06 ENV seed + confirm credentials (D-14 gate)
+- [ ] 06-03-PLAN.md — AUTH-07 wizard + strict RPC allowlist + SSO reject
+- [ ] 06-04-PLAN.md — allow_signup RPC/admin/provider_config enforcement
+- [ ] 06-05-PLAN.md — SSR Cookie-forward gates + `/dashboard` 404
+- [ ] 06-06-PLAN.md — `/setup`, `/setup/credentials`, Switch, chrome omit
+- [ ] 06-07-PLAN.md — Docs, REQUIREMENTS reframe, rpc-gen, COVERAGE
+
 **UI hint**: yes
 
 ### Phase 7: Git Repos & Browse
@@ -409,7 +420,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
-| 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
+| 6. Self-Host Admin Bootstrap | 0/8 | Planned | - |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
