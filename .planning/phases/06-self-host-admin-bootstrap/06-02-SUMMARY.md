@@ -19,7 +19,7 @@ affects:
 actuals:
   tokens: 6627
   tasks: 3
-  commits: 2
+  commits: 3
 
 plan_head_before: e7be77e2ca3732e811c9bc627dfc1bbd04b5a4f7
 
@@ -106,7 +106,7 @@ status: complete
 2. **Task 2: E2E ENV seed → must_change → confirm credentials** — `93c33ea` (feat)
 3. **Task 3: Partial ENV + seed idempotency expansion** — `ad568bb` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:**  (docs: complete plan)
 
 ## Decisions Made
 
