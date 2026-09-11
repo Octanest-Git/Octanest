@@ -310,6 +310,154 @@ async fn seed_partial_env_empty_string_password_does_not_seed() {
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
 }
 
+/// D-05/D-07: after users exist with allow_signup false, auth.signup is rejected server-side.
+#[tokio::test]
+async fn signup_rejects_when_allow_signup_false() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("closed_signup.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    // Bootstrap with a sys-admin but leave allow_signup at default false (do not unlock_signup).
+    let id = uuid::Uuid::new_v4().to_string();
+    let hash = octanest_api::auth::hash_password_str("password1").expect("hash");
+    db.create_user(
+        &id,
+        "admin@ex.com",
+        "adminuser",
+        Some(&hash),
+        "Admin",
+        "",
+        None,
+        octanest_core::Role::SysAdmin,
+    )
+    .await
+    .expect("create admin");
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert!(
+        !settings.allow_signup,
+        "default instance settings must fail closed"
+    );
+
+    let (app, _) = app_with_recorder(db).await;
+    let res = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"ada@ex.com","username":"ada","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false);
+    assert_eq!(
+        v["error"]["code"], "auth.signup_closed",
+        "closed signup must reject with auth.signup_closed (not invite)"
+    );
+}
+
+/// D-05: allow_signup true → signup succeeds (welcome/verify retained).
+#[tokio::test]
+async fn signup_succeeds_when_allow_signup_true() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("open_signup.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert!(settings.allow_signup, "unlock_signup must open registration");
+
+    let (app, recorder) = app_with_recorder(db).await;
+    let res = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"open2@ex.com","username":"opener2","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true);
+    let sent = recorder.sent.lock().expect("lock");
+    assert!(
+        sent.iter().any(|m| m.subject == "Welcome to Octanest"),
+        "open signup must retain welcome email"
+    );
+}
+
+/// Empty instance: needs_setup still blocks signup before bootstrap (AUTH-07).
+#[tokio::test]
+async fn signup_setup_required_before_bootstrap() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("needs_setup.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    assert_eq!(db.count_users().await.expect("count"), 0);
+
+    let (app, _) = app_with_recorder(db).await;
+    let res = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"early@ex.com","username":"early","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["error"]["code"], "auth.setup_required");
+}
+
+/// D-06/D-07: auth.provider_config exposes allow_signup for public chrome (fail closed).
+#[tokio::test]
+async fn provider_config_includes_allow_signup() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("provider_cfg.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    // Post-bootstrap, leave allow_signup at default false (do not unlock_signup).
+    let id = uuid::Uuid::new_v4().to_string();
+    let hash = octanest_api::auth::hash_password_str("password1").expect("hash");
+    db.create_user(
+        &id,
+        "admin@ex.com",
+        "adminuser",
+        Some(&hash),
+        "Admin",
+        "",
+        None,
+        octanest_core::Role::SysAdmin,
+    )
+    .await
+    .expect("create admin");
+
+    let (app, _) = app_with_recorder(db.clone()).await;
+    let res = app
+        .oneshot(rpc_req(r#"{"procedure":"auth.provider_config","input":{}}"#))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true);
+    assert_eq!(
+        v["data"]["allow_signup"], false,
+        "provider_config must expose allow_signup=false by default"
+    );
+    assert!(v["data"]["mode"].is_string());
+
+    // After opening signup, public config reflects true.
+    support::unlock_signup(&db).await;
+    let (app2, _) = app_with_recorder(db).await;
+    let res2 = app2
+        .oneshot(rpc_req(r#"{"procedure":"auth.provider_config","input":{}}"#))
+        .await
+        .unwrap();
+    let bytes2 = res2.into_body().collect().await.unwrap().to_bytes();
+    let v2: serde_json::Value = serde_json::from_slice(&bytes2).unwrap();
+    assert_eq!(v2["data"]["allow_signup"], true);
+}
+
 /// AUTH-06 ordering / AUTH-07 adjacency: second seed with users present is a no-op.
 #[tokio::test]
 async fn seed_second_run_idempotent_when_users_exist() {
