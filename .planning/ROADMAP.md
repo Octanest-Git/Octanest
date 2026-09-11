@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Brand Shell & Theme** - Octanest mark, chrome, light/dark with system default (completed 2026-09-09)
 - [x] **Phase 4: Auth Sessions & Email** - Signup, login, logout, sessions, profile, email providers (completed 2026-09-10)
 - [x] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset (completed 2026-09-11)
-- [ ] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard
+- [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
 - [ ] **Phase 7: Git Repos & Browse** - gitoxide filesystem repos, create, browse, branches, archives
 - [ ] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens
 - [ ] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
@@ -445,7 +445,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
-| 6. Self-Host Admin Bootstrap | 10/10 | In Progress|  |
+| 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
