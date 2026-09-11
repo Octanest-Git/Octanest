@@ -213,21 +213,17 @@ async fn seeded_admin_is_auto_verified() {
         user.email_verified_at.is_some(),
         "D-04: seeded admin must be auto-verified"
     );
-    // Wave 0 (AUTH-06 / D-07): fixed username until 06-02 rewrites seed.
     assert_eq!(
         user.username, "system-administrator",
         "ENV seed must use username system-administrator"
     );
-    // Wave 0 (D-16): column lands in 06-01 — intentional RED until then.
-    let must_change_credentials = false;
     assert!(
-        must_change_credentials,
+        user.must_change_credentials,
         "ENV-seeded system-administrator must have must_change_credentials=true (D-16)"
     );
-    // Wave 0 (D-08/D-15): OCTANEST_ALLOW_SIGNUP default false.
-    let allow_signup_default = true; // replace with settings.allow_signup after 0006
+    let settings = db.get_auth_settings().await.expect("settings");
     assert!(
-        !allow_signup_default,
+        !settings.allow_signup,
         "OCTANEST_ALLOW_SIGNUP unset must leave allow_signup=false"
     );
 
@@ -261,9 +257,9 @@ async fn seeded_admin_parses_allow_signup_true() {
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
     std::env::remove_var("OCTANEST_ALLOW_SIGNUP");
 
-    let allow_signup = false; // replace with get_auth_settings().allow_signup (06-01/06-02)
+    let settings = db.get_auth_settings().await.expect("settings");
     assert!(
-        allow_signup,
+        settings.allow_signup,
         "OCTANEST_ALLOW_SIGNUP=true must set allow_signup on instance settings"
     );
 }

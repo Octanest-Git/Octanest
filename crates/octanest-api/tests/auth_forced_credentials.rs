@@ -1,5 +1,4 @@
-//! Wave 0 (06-00): AUTH-06 forced credential confirm stubs (D-16/D-17).
-//! Intentionally RED until 06-02 implements `auth.confirm_admin_credentials`.
+//! AUTH-06 forced credential confirm (D-16/D-17).
 
 mod support;
 
@@ -50,11 +49,11 @@ async fn seed_env_admin(db: &Database) {
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
 }
 
-/// Try login; return Set-Cookie value when present (Wave 0 may lack session until seed username lands).
+/// Login ENV-seeded admin; return Set-Cookie value.
 async fn try_admin_cookie(app: axum::Router) -> Option<String> {
     let res = app
         .oneshot(rpc_req(
-            r#"{"procedure":"auth.login","input":{"identifier":"admin@example.com","password":"adminpass1"}}"#,
+            r#"{"procedure":"auth.login","input":{"identifier":"admin@example.com","password":"adminpass1","remember_me":false}}"#,
         ))
         .await
         .unwrap();
@@ -75,19 +74,17 @@ async fn confirm_admin_rejects_default_system_administrator_username() {
     seed_env_admin(&db).await;
 
     let app = test_app(db.clone()).await;
-    let cookie = try_admin_cookie(app).await.unwrap_or_default();
+    let cookie = try_admin_cookie(app)
+        .await
+        .expect("ENV-seeded admin must be able to log in");
     let app2 = test_app(db).await;
-    let req = if cookie.is_empty() {
-        rpc_req(
-            r#"{"procedure":"auth.confirm_admin_credentials","input":{"username":"system-administrator","keep_password":true}}"#,
-        )
-    } else {
-        rpc_req_cookie(
+    let res = app2
+        .oneshot(rpc_req_cookie(
             r#"{"procedure":"auth.confirm_admin_credentials","input":{"username":"system-administrator","keep_password":true}}"#,
             &cookie,
-        )
-    };
-    let res = app2.oneshot(req).await.unwrap();
+        ))
+        .await
+        .unwrap();
     let bytes = res.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(v["ok"], false);
@@ -108,19 +105,17 @@ async fn confirm_admin_keep_password_ok_with_new_username() {
     seed_env_admin(&db).await;
 
     let app = test_app(db.clone()).await;
-    let cookie = try_admin_cookie(app).await.unwrap_or_default();
+    let cookie = try_admin_cookie(app)
+        .await
+        .expect("ENV-seeded admin must be able to log in");
     let app2 = test_app(db.clone()).await;
-    let req = if cookie.is_empty() {
-        rpc_req(
-            r#"{"procedure":"auth.confirm_admin_credentials","input":{"username":"forge-admin","keep_password":true}}"#,
-        )
-    } else {
-        rpc_req_cookie(
+    let res = app2
+        .oneshot(rpc_req_cookie(
             r#"{"procedure":"auth.confirm_admin_credentials","input":{"username":"forge-admin","keep_password":true}}"#,
             &cookie,
-        )
-    };
-    let res = app2.oneshot(req).await.unwrap();
+        ))
+        .await
+        .unwrap();
     let bytes = res.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(
@@ -128,17 +123,16 @@ async fn confirm_admin_keep_password_ok_with_new_username() {
         "keep_password=true with non-default username must succeed"
     );
     assert_eq!(v["data"]["username"], "forge-admin");
+    assert_eq!(v["data"]["must_change_credentials"], false);
 
     let user = db
         .find_user_by_email("admin@example.com")
         .await
         .expect("find")
         .expect("user");
-    // Wave 0 RED until 06-01/06-02: must_change_credentials cleared on confirm.
-    let must_change = true;
-    let _ = user;
     assert!(
-        !must_change,
+        !user.must_change_credentials,
         "successful confirm must clear must_change_credentials"
     );
+    assert_eq!(user.username, "forge-admin");
 }

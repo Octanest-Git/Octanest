@@ -9,6 +9,7 @@ use octanest_core::{
 use octanest_db::Database;
 
 use crate::auth::admin;
+use crate::auth::bootstrap;
 use crate::auth::local;
 use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
@@ -116,6 +117,20 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(cfg) => RpcResponse::ok(cfg),
             Err(e) => RpcResponse::err(e),
         },
+        "auth.bootstrap_status" => match bootstrap::bootstrap_status(ctx).await {
+            Ok(status) => RpcResponse::ok(status),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.bootstrap_setup" => match bootstrap::bootstrap_setup(ctx, req.input).await {
+            Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "auth.confirm_admin_credentials" => {
+            match bootstrap::confirm_admin_credentials(ctx, req.input).await {
+                Ok(user) => RpcResponse::ok(user),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
         "auth.verify" => match verify_reset::verify(ctx, req.input).await {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),

@@ -96,6 +96,21 @@ pub struct BootstrapSetupRequest {
     pub allow_signup: bool,
 }
 
+/// Forced credential confirm for ENV-seeded admins (AUTH-06, D-16/D-17).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConfirmAdminCredentialsRequest {
+    pub username: String,
+    /// Optional; omit or empty keeps the current (ENV) email.
+    #[serde(default)]
+    pub email: Option<String>,
+    /// Required when `keep_password` is false.
+    #[serde(default)]
+    pub password: Option<String>,
+    /// When true, leave the existing password hash unchanged (D-17 Keep Switch).
+    #[serde(default)]
+    pub keep_password: bool,
+}
+
 /// Local signup input (D-01).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignupRequest {
