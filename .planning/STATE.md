@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-09-11T20:30:58.528Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-09-11T20:42:22.746Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: eedd5c0cd75b91271ad52cc6b159d2c2f3908d75
+state_head: ad568bb4402194b6b97371b8d453219618fd4d42
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 33
+  completed_plans: 34
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -80,6 +80,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 05 P07 | 4 min | 2 tasks | 4 files |
 | Phase 06-self-host-admin-bootstrap P00 | 8min | 2 tasks | 10 files |
 | Phase 06-self-host-admin-bootstrap P01 | 6min | 2 tasks | 10 files |
+| Phase 06 P02 | 4min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,9 @@ Recent decisions affecting current work:
 - [Phase 06]: BootstrapSetupRequest/UpdateAuthSettingsRequest allow_signup serde-default false (fail closed)
 - [Phase 06]: provider_config exposes allow_signup; DB error fails closed to false
 - [Phase 06]: No instance_flags table — columns on instance_auth_settings + users
+- [Phase 06]: D-14 fail_closed: keep exit(1) when both ADMIN ENV set and maybe_seed_admin returns Err (do not serve wizard fallback)
+- [Phase 06]: D-14 fail_closed confirmed: exit(1) on ENV seed Err; no serve_wizard_fallback
+- [Phase 06]: Landed untracked bootstrap.rs as tracked module with auth.confirm_admin_credentials
 
 ### Pending Todos
 
@@ -151,6 +155,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:30:58.491Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-09-11T20:42:22.706Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
