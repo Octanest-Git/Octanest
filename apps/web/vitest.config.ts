@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import react from "@vitejs/plugin-react";
+import { octane } from "@octanejs/vite-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
@@ -48,7 +48,7 @@ const stackEnvDefine = {
  * - e2e-stack (+ browser): only when E2E_STACK=1 (`make test-e2e-stack`)
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [octane()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
@@ -62,7 +62,7 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.unit.test.ts"],
+          include: ["src/**/*.unit.test.ts", "src/**/*.gate.test.ts"],
         },
       },
       {
