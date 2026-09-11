@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: verifying
-stopped_at: Phase 5 human UAT needed
-last_updated: "2026-09-10T23:00:29.781Z"
-last_activity: 2026-09-10
-last_activity_desc: Phase 5 execution started
+stopped_at: Phase 5 UAT — tests 1–2 passed; awaiting test 3 (reset anti-enumeration)
+last_updated: "2026-09-11T00:30:00.000Z"
+last_activity: 2026-09-11
+last_activity_desc: Phase 5 UAT test 2 (/verify OTP) passed; chrome nav overlay polish
 state_head: 18e4fad2507d714a0048aae014ce19dd9da5176c
 progress:
   total_phases: 22
