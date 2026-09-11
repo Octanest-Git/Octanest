@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-09-11T20:42:22.746Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-09-11T20:48:26.993Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: ad568bb4402194b6b97371b8d453219618fd4d42
+state_head: 9c502aca191b0e5d261d41f011cfe8bf2c433f56
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 34
+  completed_plans: 35
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 4 of 10
+Plan: 5 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -81,6 +81,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 06-self-host-admin-bootstrap P00 | 8min | 2 tasks | 10 files |
 | Phase 06-self-host-admin-bootstrap P01 | 6min | 2 tasks | 10 files |
 | Phase 06 P02 | 4min | 3 tasks | 7 files |
+| Phase 06-self-host-admin-bootstrap P03 | 3min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,8 @@ Recent decisions affecting current work:
 - [Phase 06]: D-14 fail_closed: keep exit(1) when both ADMIN ENV set and maybe_seed_admin returns Err (do not serve wizard fallback)
 - [Phase 06]: D-14 fail_closed confirmed: exit(1) on ENV seed Err; no serve_wizard_fallback
 - [Phase 06]: Landed untracked bootstrap.rs as tracked module with auth.confirm_admin_credentials
+- [Phase 06]: allow_signup false persistence proven by pre-opening settings then wizard close
+- [Phase 06]: SSO reject_if_setup_required already present — no auth_callbacks change in 06-03
 
 ### Pending Todos
 
@@ -155,6 +158,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:42:22.706Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-09-11T20:48:26.957Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
