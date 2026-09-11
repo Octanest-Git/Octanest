@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-04-PLAN.md
-last_updated: "2026-09-11T20:55:03.260Z"
+stopped_at: Completed 06-05-PLAN.md
+last_updated: "2026-09-11T21:04:45.369Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: f2e0a464aa21fc1de1f64d1b788182a1c036ec9c
+state_head: 983bc81bb85a3f56a705044d0d93cb2c0ed94c22
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 36
+  completed_plans: 37
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 6 of 10
+Plan: 7 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -83,6 +83,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 06 P02 | 4min | 3 tasks | 7 files |
 | Phase 06-self-host-admin-bootstrap P03 | 3min | 2 tasks | 5 files |
 | Phase 06-self-host-admin-bootstrap P04 | 5min | 2 tasks | 5 files |
+| Phase 06 P05 | 8min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -142,6 +143,9 @@ Recent decisions affecting current work:
 - [Phase 06]: SSO reject_if_setup_required already present — no auth_callbacks change in 06-03
 - [Phase 06]: Signup/provider_config enforcement already landed in 06-03 — 06-04 locks RPC contracts + rpc_gen DTOs
 - [Phase 06]: provider_config tested post-bootstrap (needs_setup allowlist blocks it on empty instance)
+- [Phase 06]: Land route edits on .tsrx (in-flight Octane rename) instead of restoring deleted .tsx
+- [Phase 06]: UserPublic.must_change_credentials added to api-client + rpc_gen for SSR gate
+- [Phase 06]: Client redirectIfNeedsSetup demoted to PE after shared root SSR gate landed
 
 ### Pending Todos
 
@@ -161,6 +165,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:55:03.223Z
-Stopped at: Completed 06-04-PLAN.md
+Last session: 2026-09-11T21:04:45.328Z
+Stopped at: Completed 06-05-PLAN.md
 Resume file: None
