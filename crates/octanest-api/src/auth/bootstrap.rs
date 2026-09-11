@@ -57,12 +57,19 @@ pub fn admin_env_configured() -> bool {
 }
 
 /// `needs_setup` when the users table is empty and ENV seed is not configured.
+///
+/// Skipped / unconfigured databases are not empty-instance wizard targets — return
+/// `false` so health/echo smoke paths and `Database::skipped()` test routers keep
+/// working. Real empty SQLite/Postgres/MySQL pools still report `true` (D-11).
 pub async fn needs_setup(db: &Database) -> Result<bool, AppError> {
     if admin_env_configured() {
         return Ok(false);
     }
-    let count = db.count_users().await.map_err(db_err)?;
-    Ok(count == 0)
+    match db.count_users().await {
+        Ok(count) => Ok(count == 0),
+        Err(e) if e.contains("not configured") => Ok(false),
+        Err(e) => Err(db_err(e)),
+    }
 }
 
 /// Public bootstrap status for the SPA gate.

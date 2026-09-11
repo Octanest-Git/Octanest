@@ -1,3 +1,5 @@
+mod support;
+
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
@@ -59,6 +61,9 @@ async fn db_probe_round_trip_sqlite() {
 
     let db = Database::connect(&url).await.expect("connect sqlite");
     db.migrate().await.expect("migrate sqlite");
+    // Empty migrated DB is needs_setup=true; D-11 blocks system.db_probe until
+    // an admin exists. Seed a sys-admin so this Phase-1 smoke stays post-bootstrap.
+    support::unlock_signup(&db).await;
     let app = app_with(db);
 
     let req = |body: &'static str| {
