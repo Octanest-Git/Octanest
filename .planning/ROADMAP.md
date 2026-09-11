@@ -170,13 +170,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. On self-host, when `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
   2. On self-host, when those env vars are absent, an empty instance shows a one-time wizard to create the admin, then continues with normal signup rules
 
-**Plans**: 1/10 plans executed
+**Plans**: 2/10 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 06-00-PLAN.md — Wave 0 Nyquist stubs (API/web/dialect + index SSR gate)
-- [ ] 06-01-PLAN.md — 0006 bootstrap flags schema + DTOs
+- [x] 06-01-PLAN.md — 0006 bootstrap flags schema + DTOs
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -445,7 +445,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
-| 6. Self-Host Admin Bootstrap | 1/10 | In Progress|  |
+| 6. Self-Host Admin Bootstrap | 2/10 | In Progress|  |
 | 7. Git Repos & Browse | 0/TBD | Not started | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |

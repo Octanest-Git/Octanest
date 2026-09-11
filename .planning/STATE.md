@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-00-PLAN.md
-last_updated: "2026-09-11T20:23:00.012Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-09-11T20:30:58.528Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: d0213cff9ecdef598770503667b65ff5a461390a
+state_head: eedd5c0cd75b91271ad52cc6b159d2c2f3908d75
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 32
+  completed_plans: 33
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -79,6 +79,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 05 P06 | 4min | 3 tasks | 10 files |
 | Phase 05 P07 | 4 min | 2 tasks | 4 files |
 | Phase 06-self-host-admin-bootstrap P00 | 8min | 2 tasks | 10 files |
+| Phase 06-self-host-admin-bootstrap P01 | 6min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,9 @@ Recent decisions affecting current work:
 - [Phase 06]: Wave 0 is RED-only — no GREEN/REFACTOR; later 06-xx plans turn stubs green
 - [Phase 06]: support::lock_admin_env owns the ENV mutex (does not import untracked bootstrap.rs)
 - [Phase 06]: setup.credentials stub documents UI-SPEC without static-importing the missing route module
+- [Phase 06]: BootstrapSetupRequest/UpdateAuthSettingsRequest allow_signup serde-default false (fail closed)
+- [Phase 06]: provider_config exposes allow_signup; DB error fails closed to false
+- [Phase 06]: No instance_flags table — columns on instance_auth_settings + users
 
 ### Pending Todos
 
@@ -147,6 +151,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:22:59.975Z
-Stopped at: Completed 06-00-PLAN.md
+Last session: 2026-09-11T20:30:58.491Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
