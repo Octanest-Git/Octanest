@@ -1,0 +1,117 @@
+import {
+  Body,
+  Head,
+  HeadContent,
+  Html,
+  Outlet,
+  Scripts,
+  createRootRoute,
+  redirect,
+} from "@octanejs/tanstack-router";
+import { SiteFooter, SiteHeader } from "@/components/chrome";
+import { AppToaster } from "@/components/ui/toaster";
+import { VerifyBanner } from "@/components/verify-banner";
+import {
+  fetchBootstrapStatus,
+  fetchSessionMe,
+  resolveAppAccessRedirect,
+} from "@/lib/ssr-auth";
+import { THEME_BOOT_SCRIPT, FONT_WARM_SCRIPT } from "@/lib/theme";
+import "@/styles.css";
+
+// Static literal, no interpolation (T-03-19) — registers the hand-authored
+// assets-only service worker (see apps/web/public/sw.js, 03-05-SUMMARY.md).
+const SW_REGISTER_SCRIPT =
+  '(function(){if("serviceWorker" in navigator){window.addEventListener("load",' +
+  'function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}})();';
+
+export const Route = createRootRoute({
+  component: RootComponent,
+  shellComponent: RootShell,
+  head: () => ({
+    meta: [{ title: "Octanest" }],
+  }),
+  beforeLoad: async ({ location }) => {
+    // Shared SSR app-access gate (D-09/D-10 + UI-SPEC must_change) — first paint.
+    let needsSetup = false;
+    try {
+      const status = await fetchBootstrapStatus();
+      needsSetup = Boolean(status.ok && status.data.needs_setup);
+    } catch {
+      /* API unreachable — do not lock the tree */
+    }
+
+    let mustChangeCredentials = false;
+    if (!needsSetup) {
+      try {
+        const me = await fetchSessionMe();
+        mustChangeCredentials = Boolean(
+          me.ok && me.data.must_change_credentials,
+        );
+      } catch {
+        /* anonymous / network */
+      }
+    }
+
+    const target = resolveAppAccessRedirect({
+      pathname: location.pathname,
+      needsSetup,
+      mustChangeCredentials,
+    });
+    if (target) {
+      throw redirect({ href: target });
+    }
+  },
+});
+
+function RootShell({ children }: { children?: unknown }) @{
+  <Html lang="en">
+    <Head>
+      <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      <script dangerouslySetInnerHTML={{ __html: FONT_WARM_SCRIPT }} />
+      <meta charSet="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link
+        rel="preload"
+        href="/fonts/sora-latin.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin="anonymous"
+      />
+      <link
+        rel="preload"
+        href="/fonts/source-sans-3-latin.woff2"
+        as="font"
+        type="font/woff2"
+        crossOrigin="anonymous"
+      />
+      <link rel="icon" href="/favicon.ico" sizes="any" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+      <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      <link rel="manifest" href="/manifest.webmanifest" />
+      <meta name="theme-color" content="#dfe8f0" media="(prefers-color-scheme: light)" />
+      <meta name="theme-color" content="#07080a" media="(prefers-color-scheme: dark)" />
+      <meta name="apple-mobile-web-app-title" content="Octanest" />
+      <HeadContent />
+    </Head>
+    <Body>
+      {children}
+      <Scripts />
+      <script dangerouslySetInnerHTML={{ __html: SW_REGISTER_SCRIPT }} />
+    </Body>
+  </Html>
+}
+
+function RootComponent() @{
+  <AppToaster>
+    <div className="flex min-h-screen flex-col">
+      <SiteHeader />
+      <main className="octanest-main flex-1">
+        <Outlet />
+      </main>
+      <SiteFooter />
+      <VerifyBanner />
+    </div>
+  </AppToaster>
+}
