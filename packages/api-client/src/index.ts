@@ -45,6 +45,7 @@ export type UserPublic = {
   role: UserRole;
   profile_incomplete: boolean;
   email_verified: boolean;
+  must_change_credentials: boolean;
 };
 
 export type BootstrapStatus = {
