@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 5
 current_phase_name: Cloud Verify & Reset
 status: verifying
-stopped_at: Phase 5 UAT — tests 1–2 passed; awaiting test 3 (reset anti-enumeration)
-last_updated: "2026-09-11T00:30:00.000Z"
+stopped_at: Phase 5 UAT resumed complete; seal blocked on stale verification
+last_updated: "2026-09-11T16:38:21.000Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 5 UAT test 2 (/verify OTP) passed; chrome nav overlay polish
+last_activity_desc: Phase 5 verify-work resume — UAT 4/4 still complete; verification stale
 state_head: 18e4fad2507d714a0048aae014ce19dd9da5176c
 progress:
   total_phases: 22
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 5 (Cloud Verify & Reset) — EXECUTING
+Phase: 5 (Cloud Verify & Reset) — UAT COMPLETE
 Plan: 7 of 7
-Status: Human verification needed — run $gsd-verify-work 5
-Last activity: 2026-09-10 — Completed 05-06 verify UI (rpc-gen, /verify, VerifyBanner)
+Status: Human UAT 4/4 passed; phase seal blocked (verification stale after post-UAT code changes; SECURITY.md missing)
+Last activity: 2026-09-11 — Phase 5 UAT complete
 
-Progress: Phases 1–4 complete; Phase 5 in progress (6/7 plans)
+Progress: Phases 1–4 complete; Phase 5 executed + UAT passed; awaiting seal gates before Phase 6
 
 ## Performance Metrics
 
@@ -126,7 +126,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- [ ] Fix signed-in home flicker on load (ui / minor) — `.planning/todos/pending/2026-09-11-fix-signed-in-home-flicker-on-load.md`
 
 ### Blockers/Concerns
 
