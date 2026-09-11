@@ -103,7 +103,7 @@ status: complete
 1. **Task 1: provider_config.allow_signup + signup reject when closed** - `51977aa` (test)
 2. **Task 2: admin.auth settings allow_signup round-trip** - `96c4640` (test), `f2e0a46` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `107bd59` (docs: complete plan)
 
 _Note: Signup gate + provider_config + admin persistence already implemented in 06-03 / 06-01; this plan added contract tests and TS DTO surface._
 
