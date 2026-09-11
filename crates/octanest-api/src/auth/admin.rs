@@ -129,6 +129,7 @@ pub fn settings_to_public(row: &AuthSettingsRow) -> Result<AuthSettingsPublic, A
         resend_configured: env_nonempty("OCTANEST_RESEND_API_KEY"),
         workos_api_key_configured: env_nonempty("WORKOS_API_KEY"),
         oidc_client_secret_configured: env_nonempty("OCTANEST_OIDC_CLIENT_SECRET"),
+        allow_signup: row.allow_signup,
     })
 }
 
@@ -150,8 +151,7 @@ pub async fn update_settings(
         )
     })?;
 
-    // Preserve allow_signup until UpdateAuthSettingsRequest gains the field (06-01-T2).
-    let current = ctx.db.get_auth_settings().await.map_err(db_err)?;
+    // Persist allow_signup from admin update request (06-01 DTOs).
     let row = ctx
         .db
         .update_auth_settings(
@@ -161,7 +161,7 @@ pub async fn update_settings(
             req.oidc_issuer.as_deref(),
             req.oidc_client_id.as_deref(),
             req.workos_client_id.as_deref(),
-            current.allow_signup,
+            req.allow_signup,
         )
         .await
         .map_err(db_err)?;

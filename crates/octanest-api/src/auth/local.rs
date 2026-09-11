@@ -2,8 +2,8 @@
 
 use cookie::Cookie;
 use octanest_core::{
-    is_reserved_username, validate_username, AppError, LoginRequest, ProviderMode, SignupRequest,
-    UserPublic,
+    is_reserved_username, validate_username, AppError, LoginRequest, ProviderMode, Role,
+    SignupRequest, UserPublic,
 };
 use octanest_db::UserRow;
 use uuid::Uuid;
@@ -24,9 +24,10 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
         display_name: row.display_name.clone(),
         bio: row.bio.clone(),
         avatar_url: row.avatar_path.clone(),
-        is_admin: row.is_admin,
+        role: row.role,
         profile_incomplete: is_placeholder_username(&row.username),
         email_verified: row.email_verified_at.is_some(),
+        must_change_credentials: row.must_change_credentials,
     }
 }
 
@@ -111,7 +112,7 @@ fn session_err(e: crate::auth::session::AuthError) -> AppError {
     }
 }
 
-async fn issue_session(
+pub(crate) async fn issue_session(
     ctx: &mut RpcCtx,
     user_id: &str,
     remember_me: bool,
@@ -128,6 +129,14 @@ async fn issue_session(
 pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPublic, AppError> {
     let mode = resolve_provider_mode(ctx).await?;
     require_local(mode)?;
+
+    // Empty instance without ENV seed must use `/setup` (AUTH-07) — never open signup.
+    if crate::auth::bootstrap::needs_setup(&ctx.db).await? {
+        return Err(AppError::new(
+            "auth.setup_required",
+            "Complete instance setup before signing up.",
+        ));
+    }
 
     let req: SignupRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid signup input: {e}"))
@@ -186,7 +195,7 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
             &display_name,
             "",
             None,
-            false,
+            Role::User,
         )
         .await
         .map_err(db_err)?;
@@ -321,7 +330,15 @@ pub async fn me(ctx: &RpcCtx) -> Result<UserPublic, AppError> {
 /// Public provider mode for UI (D-14–D-16); no auth required.
 pub async fn provider_config(ctx: &RpcCtx) -> Result<octanest_core::ProviderConfigPublic, AppError> {
     let mode = resolve_provider_mode(ctx).await.unwrap_or(ProviderMode::Local);
-    Ok(octanest_core::ProviderConfigPublic { mode })
+    // Fail closed: missing/error settings → allow_signup false (D-07 / T-06-01).
+    let allow_signup = match ctx.db.get_auth_settings().await {
+        Ok(s) => s.allow_signup,
+        Err(_) => false,
+    };
+    Ok(octanest_core::ProviderConfigPublic {
+        mode,
+        allow_signup,
+    })
 }
 
 /// Clear-cookie helper for HTTP layer when CookieChange::Clear is set.

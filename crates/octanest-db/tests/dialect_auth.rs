@@ -148,8 +148,7 @@ async fn migrate_email_token_and_verified_helpers() {
     assert!(cleared.email_verified_at.is_none());
 }
 
-/// Wave 0 (06-00): `0006_bootstrap_flags` must add `allow_signup` + `must_change_credentials`.
-/// RED until 06-01 lands the migration triple + DTO fields.
+/// Wave 0 / 06-01: `0006_bootstrap_flags` columns round-trip after migrate.
 #[tokio::test]
 async fn migrate_0006_bootstrap_flags_columns() {
     let migration_path = concat!(
@@ -175,13 +174,59 @@ async fn migrate_0006_bootstrap_flags_columns() {
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
 
-    // Wave 0: fields land with 06-01 — intentional RED until AuthSettingsRow/UserRow expose them.
     let settings = db.get_auth_settings().await.expect("settings");
-    let _ = &settings.provider_mode;
-    let allow_signup: Option<bool> = None;
-    assert_eq!(
-        allow_signup,
-        Some(false),
+    assert!(
+        !settings.allow_signup,
         "after migrate, allow_signup default false must be readable"
     );
+
+    let updated = db
+        .update_auth_settings(
+            &settings.provider_mode,
+            &settings.email_provider,
+            settings.from_address.as_deref(),
+            settings.oidc_issuer.as_deref(),
+            settings.oidc_client_id.as_deref(),
+            settings.workos_client_id.as_deref(),
+            true,
+        )
+        .await
+        .expect("set allow_signup");
+    assert!(updated.allow_signup);
+
+    let user = db
+        .create_user(
+            "u-bootstrap-flags",
+            "flags@example.com",
+            "flaguser",
+            Some("hash"),
+            "Flag User",
+            "",
+            None,
+            octanest_core::Role::User,
+        )
+        .await
+        .expect("insert user");
+    assert!(
+        !user.must_change_credentials,
+        "must_change_credentials defaults false"
+    );
+
+    let flagged = db
+        .set_must_change_credentials(&user.id, true)
+        .await
+        .expect("set must_change");
+    assert!(flagged.must_change_credentials);
+
+    let cleared = db
+        .clear_must_change_credentials(&user.id)
+        .await
+        .expect("clear must_change");
+    assert!(!cleared.must_change_credentials);
+
+    let renamed = db
+        .update_user_email(&user.id, "flags-renamed@example.com")
+        .await
+        .expect("update email");
+    assert_eq!(renamed.email, "flags-renamed@example.com");
 }

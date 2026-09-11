@@ -74,6 +74,8 @@ pub struct UserPublic {
     pub profile_incomplete: bool,
     /// True when the account email has been verified (D-13); wired in `user_to_public` in 05-02.
     pub email_verified: bool,
+    /// True when ENV-seeded admin must confirm credentials before normal use (AUTH-06).
+    pub must_change_credentials: bool,
 }
 
 /// Empty-instance bootstrap status (AUTH-07).
@@ -89,6 +91,9 @@ pub struct BootstrapSetupRequest {
     pub email: String,
     pub username: String,
     pub password: String,
+    /// Post-bootstrap local signup policy (D-05/D-07); defaults false when omitted.
+    #[serde(default)]
+    pub allow_signup: bool,
 }
 
 /// Local signup input (D-01).
@@ -111,6 +116,8 @@ pub struct LoginRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProviderConfigPublic {
     pub mode: ProviderMode,
+    /// When false, local signup is closed (D-05/D-06); fail closed if unset at read.
+    pub allow_signup: bool,
 }
 
 /// Profile update fields (D-18). Bio max length enforced in API (160).
@@ -135,6 +142,7 @@ pub struct AuthSettingsPublic {
     pub resend_configured: bool,
     pub workos_api_key_configured: bool,
     pub oidc_client_secret_configured: bool,
+    pub allow_signup: bool,
 }
 
 /// Admin update payload — non-secret fields only.
@@ -146,6 +154,8 @@ pub struct UpdateAuthSettingsRequest {
     pub oidc_issuer: Option<String>,
     pub oidc_client_id: Option<String>,
     pub workos_client_id: Option<String>,
+    #[serde(default)]
+    pub allow_signup: bool,
 }
 
 const RESERVED_USERNAMES: &[&str] = &[
@@ -181,6 +191,7 @@ const RESERVED_USERNAMES: &[&str] = &[
     "verify",
     "reset-password",
     "setup",
+    "system-administrator",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).
