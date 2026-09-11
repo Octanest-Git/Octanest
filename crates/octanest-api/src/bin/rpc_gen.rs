@@ -43,6 +43,8 @@ export type ProviderMode = "local" | "workos" | "oidc";
 
 export type EmailProviderKind = "log" | "smtp" | "resend";
 
+export type UserRole = "user" | "admin" | "sys-admin";
+
 export type UserPublic = {
   id: string;
   email: string;
@@ -50,9 +52,19 @@ export type UserPublic = {
   display_name: string;
   bio: string;
   avatar_url?: string | null;
-  is_admin: boolean;
+  role: UserRole;
   profile_incomplete: boolean;
   email_verified: boolean;
+};
+
+export type BootstrapStatus = {
+  needs_setup: boolean;
+};
+
+export type BootstrapSetupRequest = {
+  email: string;
+  username: string;
+  password: string;
 };
 
 export type SignupRequest = {
@@ -84,6 +96,7 @@ export type ResetPasswordRequest = {
 
 export type ProviderConfigPublic = {
   mode: ProviderMode;
+  allow_signup: boolean;
 };
 
 export type UpdateProfileRequest = {
@@ -103,6 +116,7 @@ export type AuthSettingsPublic = {
   resend_configured: boolean;
   workos_api_key_configured: boolean;
   oidc_client_secret_configured: boolean;
+  allow_signup: boolean;
 };
 
 export type UpdateAuthSettingsRequest = {
@@ -112,6 +126,7 @@ export type UpdateAuthSettingsRequest = {
   oidc_issuer?: string | null;
   oidc_client_id?: string | null;
   workos_client_id?: string | null;
+  allow_signup?: boolean;
 };
 
 export type RpcOk<T> = { ok: true; data: T };
@@ -158,6 +173,10 @@ export function createClient(opts: CreateClientOptions) {
       me: () => rpcCall<UserPublic>(opts, "auth.me", {}),
       providerConfig: () =>
         rpcCall<ProviderConfigPublic>(opts, "auth.provider_config", {}),
+      bootstrapStatus: () =>
+        rpcCall<BootstrapStatus>(opts, "auth.bootstrap_status", {}),
+      bootstrapSetup: (input: BootstrapSetupRequest) =>
+        rpcCall<UserPublic>(opts, "auth.bootstrap_setup", input),
       verify: (input: VerifyRequest) => rpcCall<UserPublic>(opts, "auth.verify", input),
       requestVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.request_verify", {}),
       resendVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.resend_verify", {}),

@@ -195,10 +195,12 @@ mod tests {
         let pub_ = settings_to_public(&row).expect("map");
         assert_eq!(pub_.provider_mode, ProviderMode::Local);
         assert_eq!(pub_.workos_client_id.as_deref(), Some("client_abc"));
+        assert!(!pub_.allow_signup, "D-07 fail-closed default on row");
         let json = serde_json::to_string(&pub_).unwrap();
         assert!(json.contains("workos_api_key_configured"));
         assert!(json.contains("smtp_configured"));
         assert!(json.contains("oidc_client_secret_configured"));
+        assert!(json.contains("\"allow_signup\":false"));
         // Boolean badge only — no actual secret value fields.
         assert!(!json.contains("\"api_key\":"));
         assert!(!json.contains("\"client_secret\":"));
