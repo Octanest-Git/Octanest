@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
-status: planned
-stopped_at: Phase 6 plans revised — D-09/D-10 shared root gate + 06-09 split
-last_updated: "2026-09-11T19:40:41.362Z"
+status: executing
+stopped_at: Completed 06-00-PLAN.md
+last_updated: "2026-09-11T20:23:00.012Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 6 revision iteration 2 (shared SSR gate, must_change, 06-09)
-state_head: 23f71b99f35d8c96489252ce380efc58b0aba484
+last_activity_desc: Phase 06 execution started
+state_head: d0213cff9ecdef598770503667b65ff5a461390a
 progress:
   total_phases: 22
-  completed_phases: 1
+  completed_phases: 0
   total_plans: 41
-  completed_plans: 31
+  completed_plans: 32
 milestone_name: milestone
 ---
 
@@ -24,14 +24,14 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 6 — Self-Host Admin Bootstrap
+**Current focus:** Phase 06 — Self-Host Admin Bootstrap
 
 ## Current Position
 
-Phase: 06 (Self-Host Admin Bootstrap) — READY TO EXECUTE
-Plan: 00 (Wave 0) next
-Status: Planned — 10 plans ready to execute (revised)
-Last activity: 2026-09-11 — Phase 6 revision iteration 2 (shared root SSR gate)
+Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
+Plan: 2 of 10
+Status: Ready to execute
+Last activity: 2026-09-11 — Phase 06 execution started
 
 Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 wave 8)
 
@@ -78,6 +78,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 05 P05 | 5 min | 2 tasks | 5 files |
 | Phase 05 P06 | 4min | 3 tasks | 10 files |
 | Phase 05 P07 | 4 min | 2 tasks | 4 files |
+| Phase 06-self-host-admin-bootstrap P00 | 8min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,9 @@ Recent decisions affecting current work:
 - [Phase 5]: Token auto-consume invalid_token while signed-in maps to wrong-user copy on /verify
 - [Phase 05]: After anti-enumeration success, Enter reset code advances to redeem without magic link
 - [Phase 05]: Dashboard New repository always disabled in Phase 5; hint differs by email_verified (D-12)
+- [Phase 06]: Wave 0 is RED-only — no GREEN/REFACTOR; later 06-xx plans turn stubs green
+- [Phase 06]: support::lock_admin_env owns the ENV mutex (does not import untracked bootstrap.rs)
+- [Phase 06]: setup.credentials stub documents UI-SPEC without static-importing the missing route module
 
 ### Pending Todos
 
@@ -143,6 +147,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T19:15:00.000Z
-Stopped at: Phase 6 RESEARCH complete
-Resume file: .planning/phases/06-self-host-admin-bootstrap/06-RESEARCH.md
+Last session: 2026-09-11T20:22:59.975Z
+Stopped at: Completed 06-00-PLAN.md
+Resume file: None
