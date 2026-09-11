@@ -107,7 +107,7 @@ Each task was committed atomically (TDD RED → GREEN):
 3. **Task 2 RED:** failing signup closed-signup beforeLoad assertions — `85457e7` (test)
 4. **Task 2 GREEN:** SSR-404 closed `/signup` via allow_signup beforeLoad — `325ea3b` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `7a7b1a4` (docs: complete plan)
 
 ## TDD Gate Compliance
 
