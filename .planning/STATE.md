@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
 status: executing
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-09-11T20:48:26.993Z"
+stopped_at: Completed 06-04-PLAN.md
+last_updated: "2026-09-11T20:55:03.260Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: 9c502aca191b0e5d261d41f011cfe8bf2c433f56
+state_head: f2e0a464aa21fc1de1f64d1b788182a1c036ec9c
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 35
+  completed_plans: 36
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 Status: Ready to execute
 Last activity: 2026-09-11 — Phase 06 execution started
 
@@ -82,6 +82,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 06-self-host-admin-bootstrap P01 | 6min | 2 tasks | 10 files |
 | Phase 06 P02 | 4min | 3 tasks | 7 files |
 | Phase 06-self-host-admin-bootstrap P03 | 3min | 2 tasks | 5 files |
+| Phase 06-self-host-admin-bootstrap P04 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,8 @@ Recent decisions affecting current work:
 - [Phase 06]: Landed untracked bootstrap.rs as tracked module with auth.confirm_admin_credentials
 - [Phase 06]: allow_signup false persistence proven by pre-opening settings then wizard close
 - [Phase 06]: SSO reject_if_setup_required already present — no auth_callbacks change in 06-03
+- [Phase 06]: Signup/provider_config enforcement already landed in 06-03 — 06-04 locks RPC contracts + rpc_gen DTOs
+- [Phase 06]: provider_config tested post-bootstrap (needs_setup allowlist blocks it on empty instance)
 
 ### Pending Todos
 
@@ -158,6 +161,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T20:48:26.957Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-09-11T20:55:03.223Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None
