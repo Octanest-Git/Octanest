@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 06
 current_phase_name: Self-Host Admin Bootstrap
-status: executing
-stopped_at: Completed 06-08-PLAN.md
-last_updated: "2026-09-11T21:35:19.334Z"
+status: verifying
+stopped_at: Completed 06-07-PLAN.md
+last_updated: "2026-09-11T21:38:47.469Z"
 last_activity: 2026-09-11
 last_activity_desc: Phase 06 execution started
-state_head: 1091f6f12d6901d5753b0d5521ef83f94eab4ebc
+state_head: 85fe35673d551931169c9c9b46474960c30dd317
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 41
-  completed_plans: 40
+  completed_plans: 41
 milestone_name: milestone
 ---
 
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 06 (Self-Host Admin Bootstrap) — EXECUTING
 Plan: 10 of 10
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-11 — Phase 06 execution started
 
-Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 wave 8)
+Progress: Phases 1–5 complete; Phase 6 plans 06-00…06-09 complete — ready for verification
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ Progress: Phases 1–5 complete; Phase 6 planned (06-00…06-09, docs as 06-07 w
 | Phase 06-self-host-admin-bootstrap P06 | 8min | 2 tasks | 10 files |
 | Phase 06-self-host-admin-bootstrap P09 | 7min | 2 tasks | 6 files |
 | Phase 06-self-host-admin-bootstrap P08 | 13min | 2 tasks | 8 files |
+| Phase 06 P07 | 2min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -157,10 +158,12 @@ Recent decisions affecting current work:
 - [Phase 06]: Signup API-unreachable: do not 404; API allow_signup remains authority
 - [Phase 06]: [Phase 06]: Land chrome/admin edits on .tsrx (Octane rename in flight)
 - [Phase 06]: [Phase 06]: needs_setup omits account CTAs; Sign up fail-closed until allow_signup===true
+- [Phase 06]: AUTH-05 keeps checkbox; v1 note clarifies allow_signup supersedes always-open cloud signup
+- [Phase 06]: Document cloud OCTANEST_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
 
 ### Pending Todos
 
-- [ ] Fix signed-in home flicker on load (ui / minor) — `.planning/todos/pending/2026-09-11-fix-signed-in-home-flicker-on-load.md`
+- *(none)* — signed-in home flicker todo completed (moved to `.planning/todos/completed/`)
 
 ### Blockers/Concerns
 
@@ -176,6 +179,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T21:35:19.296Z
-Stopped at: Completed 06-08-PLAN.md
+Last session: 2026-09-11T21:38:47.432Z
+Stopped at: Completed 06-07-PLAN.md
 Resume file: None
