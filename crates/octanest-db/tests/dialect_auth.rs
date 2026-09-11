@@ -37,12 +37,13 @@ async fn migrate_auth_and_user_round_trip() {
             "Round Trip",
             "",
             None,
-            false,
+            octanest_core::Role::User,
         )
         .await
         .expect("insert user");
     assert_eq!(user.email, "roundtrip@example.com");
     assert_eq!(user.password_hash.as_deref(), Some("$argon2id$test"));
+    assert_eq!(user.role, octanest_core::Role::User);
 
     let token_hash = "abc0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
     db.create_session(
@@ -95,7 +96,7 @@ async fn migrate_email_token_and_verified_helpers() {
         "Verify Helpers",
         "",
         None,
-        false,
+        octanest_core::Role::User,
     )
     .await
     .expect("insert user");
@@ -145,4 +146,42 @@ async fn migrate_email_token_and_verified_helpers() {
         .await
         .expect("clear email_verified_at");
     assert!(cleared.email_verified_at.is_none());
+}
+
+/// Wave 0 (06-00): `0006_bootstrap_flags` must add `allow_signup` + `must_change_credentials`.
+/// RED until 06-01 lands the migration triple + DTO fields.
+#[tokio::test]
+async fn migrate_0006_bootstrap_flags_columns() {
+    let migration_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/migrations/sqlite/0006_bootstrap_flags.sql"
+    );
+    let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
+    assert!(
+        !sql.is_empty(),
+        "0006_bootstrap_flags.sql must exist (allow_signup + must_change_credentials)"
+    );
+    assert!(
+        sql.contains("allow_signup"),
+        "0006 must add instance_auth_settings.allow_signup"
+    );
+    assert!(
+        sql.contains("must_change_credentials"),
+        "0006 must add users.must_change_credentials"
+    );
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("bootstrap_flags.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    // Wave 0: fields land with 06-01 — intentional RED until AuthSettingsRow/UserRow expose them.
+    let settings = db.get_auth_settings().await.expect("settings");
+    let _ = &settings.provider_mode;
+    let allow_signup: Option<bool> = None;
+    assert_eq!(
+        allow_signup,
+        Some(false),
+        "after migrate, allow_signup default false must be readable"
+    );
 }
