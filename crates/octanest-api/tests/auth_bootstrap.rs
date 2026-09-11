@@ -1,5 +1,5 @@
 //! AUTH-07 bootstrap + D-13 partial ENV (AUTH-06 adjacency).
-//! Wizard allow_signup persistence + strict RPC allowlist remain Wave 0 RED until 06-03.
+//! Strict RPC allowlist remains Wave 0 RED until 06-03-T2.
 
 mod support;
 
@@ -190,6 +190,20 @@ async fn bootstrap_allow_signup_false_blocks_signup() {
     std::env::remove_var("OCTANEST_ADMIN_EMAIL");
     std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
 
+    // Pre-open so default-false cannot mask a missing wizard write (D-08).
+    let open = db.get_auth_settings().await.expect("settings");
+    db.update_auth_settings(
+        &open.provider_mode,
+        &open.email_provider,
+        open.from_address.as_deref(),
+        open.oidc_issuer.as_deref(),
+        open.oidc_client_id.as_deref(),
+        open.workos_client_id.as_deref(),
+        true,
+    )
+    .await
+    .expect("pre-open signup");
+
     let app = test_app(db.clone()).await;
     let setup = rpc_json(
         app,
@@ -197,14 +211,14 @@ async fn bootstrap_allow_signup_false_blocks_signup() {
     )
     .await;
     assert_eq!(setup["ok"], true);
-
-    // Wave 0 RED until 06-01: read allow_signup from settings once 0006 lands.
-    let settings = db.get_auth_settings().await.expect("settings");
-    let _ = &settings.provider_mode;
-    let allow_signup_persisted: Option<bool> = None;
     assert_eq!(
-        allow_signup_persisted,
-        Some(false),
+        setup["data"]["must_change_credentials"], false,
+        "D-17: wizard-chosen credentials must not force credential change"
+    );
+
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert!(
+        !settings.allow_signup,
         "wizard allow_signup=false must persist on instance_auth_settings"
     );
 
@@ -241,10 +255,9 @@ async fn bootstrap_allow_signup_true_persists() {
     .await;
     assert_eq!(setup["ok"], true);
 
-    // Wave 0: column lands in 06-01 — intentional RED until then.
-    let allow_signup_persisted = false;
+    let settings = db.get_auth_settings().await.expect("settings");
     assert!(
-        allow_signup_persisted,
-        "wizard allow_signup=true must persist (0006 instance_auth_settings.allow_signup)"
+        settings.allow_signup,
+        "wizard allow_signup=true must persist on instance_auth_settings"
     );
 }
