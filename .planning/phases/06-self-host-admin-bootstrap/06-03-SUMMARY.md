@@ -105,7 +105,7 @@ status: complete
 3. **Task 2 RED: expand allowlist coverage** — `06c9ac8` (test)
 4. **Task 2 GREEN: RPC needs_setup allowlist** — `9c502ac` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `0529bb0` (docs: complete plan)
 
 ## Decisions Made
 
