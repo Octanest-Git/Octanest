@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 6
 current_phase_name: Self-Host Admin Bootstrap
 status: planning
-stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-09-11T18:57:14.695Z"
+stopped_at: Phase 6 RESEARCH complete
+last_updated: "2026-09-11T19:15:00.000Z"
 last_activity: 2026-09-11
-last_activity_desc: Phase 5 complete, transitioned to Phase 6
+last_activity_desc: Phase 6 RESEARCH.md written — ready to plan
 state_head: b513eae3268bbda768cf201b1bec7d736d4a9521
 progress:
   total_phases: 22
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 6 — Self-Host Admin Bootstrap
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-11 — Phase 5 complete, transitioned to Phase 6
+Status: Research complete — ready to plan
+Last activity: 2026-09-11 — Phase 6 RESEARCH.md complete
 
-Progress: Phases 1–4 complete; Phase 5 executed + UAT passed; awaiting seal gates before Phase 6
+Progress: Phases 1–5 complete; Phase 6 context + UI-SPEC + research ready for planning
 
 ## Performance Metrics
 
@@ -143,6 +143,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-09-11T18:57:14.656Z
-Stopped at: Phase 6 UI-SPEC approved
-Resume file: .planning/phases/06-self-host-admin-bootstrap/06-UI-SPEC.md
+Last session: 2026-09-11T19:15:00.000Z
+Stopped at: Phase 6 RESEARCH complete
+Resume file: .planning/phases/06-self-host-admin-bootstrap/06-RESEARCH.md
