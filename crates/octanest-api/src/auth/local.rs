@@ -138,6 +138,18 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
         ));
     }
 
+    // Post-bootstrap: allow_signup governs local registration (D-05/D-07); fail closed.
+    let allow_signup = match ctx.db.get_auth_settings().await {
+        Ok(s) => s.allow_signup,
+        Err(_) => false,
+    };
+    if !allow_signup {
+        return Err(AppError::new(
+            "auth.signup_closed",
+            "Sign-up is closed for this instance.",
+        ));
+    }
+
     let req: SignupRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid signup input: {e}"))
     })?;

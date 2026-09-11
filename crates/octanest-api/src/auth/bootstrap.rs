@@ -151,12 +151,28 @@ pub async fn bootstrap_setup(
         .await
         .map_err(db_err)?;
 
+    // Persist wizard allow_signup (D-08); preserve other instance_auth_settings fields.
+    let settings = ctx.db.get_auth_settings().await.map_err(db_err)?;
+    ctx.db
+        .update_auth_settings(
+            &settings.provider_mode,
+            &settings.email_provider,
+            settings.from_address.as_deref(),
+            settings.oidc_issuer.as_deref(),
+            settings.oidc_client_id.as_deref(),
+            settings.workos_client_id.as_deref(),
+            req.allow_signup,
+        )
+        .await
+        .map_err(db_err)?;
+
     let cookie = issue_session(ctx, &row.id, false).await?;
     ctx.set_cookie = Some(CookieChange::Set(cookie));
 
     tracing::info!(
         username = %username,
         email = %email,
+        allow_signup = req.allow_signup,
         "created initial sys-admin via /setup wizard (AUTH-07)"
     );
 
