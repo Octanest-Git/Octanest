@@ -110,6 +110,8 @@ status: complete
 2. **Task 2 RED: credentials UI-SPEC assertions** - `e43f153` (test)
 3. **Task 2 GREEN: credentials UI + login must_change** - `4ba7398` (feat)
 
+**Plan metadata:** `1263313` (docs: complete plan)
+
 ## Files Created/Modified
 
 - `apps/web/src/components/ui/switch.tsrx` — Base UI Switch wrapper
