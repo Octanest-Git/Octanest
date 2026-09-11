@@ -27,9 +27,9 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
 - [x] **AUTH-03**: User can log out from the web UI
 - [x] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
-- [x] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
-- [x] **AUTH-06**: On self-host, if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
-- [x] **AUTH-07**: On self-host, if those env vars are absent, empty instance shows a one-time setup wizard to create the admin
+- [x] **AUTH-05**: On Octanest Cloud, signup is open (no invite required) — *v1 note: after empty-instance bootstrap, local signup is governed by instance `allow_signup` (ENV `OCTANEST_ALLOW_SIGNUP`, default false). Cloud deploys that want open signup set it true; no invite codes in v1.*
+- [x] **AUTH-06**: Empty instance: if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account (`system-administrator`, forced credential change on first visit)
+- [x] **AUTH-07**: Empty instance: if those env vars are absent (either/both unset), the instance shows a one-time setup wizard to create the admin
 - [x] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
 - [x] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
 - [x] **AUTH-10**: Operator can configure SMTP as the email provider
@@ -158,7 +158,7 @@ Deferred; not in the current roadmap until promoted.
 | Separate cloud-only vs self-host feature forks | One product, one release train |
 | Vercel as forge app runtime | Stateful git needs containers; Docker is the unit |
 | OAuth in v1 | Explicitly deferred after email/password |
-| Invite-only cloud gate in v1 | Cloud is open signup + email verify |
+| Invite-only cloud gate in v1 | Signup openness is `allow_signup` after bootstrap (cloud sets `OCTANEST_ALLOW_SIGNUP=true` when open signup desired); invite codes deferred |
 
 ## Traceability
 

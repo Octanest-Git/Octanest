@@ -60,16 +60,19 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `system.health` | Status, API crate version, DB ping string | No |
 | `system.echo` | Echo `message` (max 8192 bytes) | No |
 | `system.db_probe` | Dialect probe / `instances` counter | No |
-| `auth.signup` | Local signup; sets session cookie | No (local mode) |
-| `auth.login` | Local login; sets session cookie | No (local mode) |
+| `auth.signup` | Local signup; sets session cookie. Rejected with `auth.setup_required` while empty-instance setup is needed; rejected when instance `allow_signup` is false | No (local mode) |
+| `auth.login` | Local login; sets session cookie. ENV-seeded admins with `must_change_credentials` are redirected to `/setup/credentials` in the SPA | No (local mode) |
 | `auth.logout` | Revoke current session; clear cookie | Session |
 | `auth.logout_all` | Revoke all sessions for user; clear cookie | Session |
-| `auth.me` | Current user public profile | Session |
-| `auth.provider_config` | Public `{ mode }` for UI | No |
+| `auth.me` | Current user public profile (`must_change_credentials` included) | Session |
+| `auth.provider_config` | Public `{ mode, allow_signup }` for UI (fail-closed when unset/error) | No (blocked while `needs_setup`) |
+| `auth.bootstrap_status` | `{ needs_setup }` — empty users table and incomplete `OCTANEST_ADMIN_*` ENV | No |
+| `auth.bootstrap_setup` | One-time `/setup` wizard; creates verified `sys-admin` + session; persists `allow_signup` | No (empty instance only) |
+| `auth.confirm_admin_credentials` | Forced credential change for ENV-seeded admins (`system-administrator` must be changed; email/password may be kept) | Session (seeded admin) |
 | `user.get_profile` | Current user profile | Session |
 | `user.update_profile` | Update `display_name`, `username`, `bio` | Session |
-| `admin.auth.get_settings` | Auth/email settings (no secrets) | Admin session |
-| `admin.auth.update_settings` | Update provider/email settings; rebuild email sender | Admin session |
+| `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
+| `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -153,7 +156,7 @@ curl -sS http://127.0.0.1:8080/api/rpc \
 { "identifier": "alice", "password": "…", "remember_me": false }
 ```
 
-`identifier` is email or username. Password minimum length: **8**. Response data is `UserPublic` (`id`, `email`, `username`, `display_name`, `bio`, `avatar_url`, `is_admin`, `profile_incomplete`).
+`identifier` is email or username. Password minimum length: **8**. Response data is `UserPublic` (`id`, `email`, `username`, `display_name`, `bio`, `avatar_url`, `role` (`user` \| `admin` \| `sys-admin`), `profile_incomplete`, `email_verified`).
 
 ### Profile
 
@@ -231,6 +234,8 @@ Common `error.code` values:
 | `auth.unauthenticated` | No valid session |
 | `auth.provider_mismatch` | Local auth disabled for current mode |
 | `auth.taken` / `auth.invalid_*` / `auth.weak_password` / `auth.reserved_username` | Signup/profile validation |
+| `auth.setup_required` | Empty instance must complete `/setup` before signup/SSO |
+| `auth.setup_unavailable` | `/setup` already completed (users exist or ENV seed path) |
 | `auth.not_configured` | WorkOS/OIDC ENV missing (SSO start) |
 | `admin.forbidden` | Authenticated but not admin |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |

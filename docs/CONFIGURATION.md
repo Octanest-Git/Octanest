@@ -17,9 +17,11 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `API_BIND` | Optional | `0.0.0.0:8080` | Listen address for `octanest-api`. Host `make` workflows often use `127.0.0.1:8080`. |
 | `OCTANEST_RPC_VERSION` | Optional | `1` (Compose) | Documented / passed through Compose. The generated TS client embeds `RPC_VERSION = 1` and sends header `Octanest-RPC-Version`. |
 | `RUST_LOG` | Optional | `info` (Compose) | `tracing` / `EnvFilter` log directives. |
-| `OCTANEST_PUBLIC_ORIGIN` | Optional | Derived from `X-Forwarded-*` / `Host` | Browser-facing origin for SSO redirect URIs (`…/api/auth/workos/callback`, `…/api/auth/oidc/callback`). Trailing slash is stripped. |
-| `OCTANEST_ADMIN_EMAIL` | Optional | _(unset)_ | With `OCTANEST_ADMIN_PASSWORD`, seeds one `is_admin` user when the users table is empty. |
-| `OCTANEST_ADMIN_PASSWORD` | Optional | _(unset)_ | Paired with `OCTANEST_ADMIN_EMAIL` for empty-DB admin seed. |
+| `OCTANEST_PUBLIC_ORIGIN` | Optional | `http://localhost:8080` (API fallback when unset) | Browser-facing origin for **verify/reset magic links** and SSO redirect URIs. Trailing slash is stripped. Compose defaults to `http://localhost` via `OCTANEST_COMPOSE_PUBLIC_ORIGIN` so a host Vite value (`http://localhost:3000`) in `.env` does not poison container mail. |
+| `OCTANEST_COMPOSE_PUBLIC_ORIGIN` | Optional (Compose) | `http://localhost` | Sets `OCTANEST_PUBLIC_ORIGIN` inside the API container (`make up` / `make up-with-dev-auth`). |
+| `OCTANEST_ADMIN_EMAIL` | Optional | _(unset)_ | With `OCTANEST_ADMIN_PASSWORD`, seeds one `sys-admin` on an **empty instance** (username `system-administrator`, `must_change_credentials` until `/setup/credentials`). Set both **before first boot**. If either/both unset and users is empty, the SPA `/setup` wizard creates the first `sys-admin` instead. Same path for cloud and self-host — no deployment-mode fork. Seed failure with both set → **fail boot** (exit 1). |
+| `OCTANEST_ADMIN_PASSWORD` | Optional | _(unset)_ | Paired with `OCTANEST_ADMIN_EMAIL` for empty-instance `sys-admin` seed. Placeholders only in examples — never commit real passwords. |
+| `OCTANEST_ALLOW_SIGNUP` | Optional | `false` | When `true`/`1`, ENV seed (and wizard default control) opens local signup (`allow_signup`). Default **false** (fail closed). After bootstrap, operators can change it via Admin → Auth. Cloud deploys that want open signup should set `true` in manifests. |
 | `OCTANEST_RESEND_API_KEY` | Optional | _(unset)_ | Resend API key. Prefer this over SMTP when set (ENV boot selection). |
 | `OCTANEST_RESEND_BASE_URL` | Optional | `https://api.resend.com` | Override Resend HTTP API base (local stubs). Leave unset in production. |
 | `OCTANEST_SMTP_URL` | Optional | _(unset)_ | SMTP URL for lettre (e.g. `smtp://127.0.0.1:1025`). Used when Resend key is unset / provider is smtp. |
@@ -67,7 +69,17 @@ API_BIND=0.0.0.0:8080
 OCTANEST_RPC_VERSION=1
 ```
 
-Auth settings that are **not** secrets (provider mode, from-address preference) are stored in the database and edited via Admin → Auth. Secrets stay ENV-only.
+Auth settings that are **not** secrets (provider mode, from-address preference) are stored in the database and edited via Admin → Auth (`sys-admin` only). Secrets stay ENV-only.
+
+### Recovering a DB with users but no `sys-admin`
+
+ENV seed only runs when `users` is empty. If you already signed up during setup and need Auth settings access:
+
+```sql
+UPDATE users SET role = 'sys-admin' WHERE email = 'your@email';
+```
+
+Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/setup` wizard (empty DB only). Do **not** auto-promote on upgrade.
 
 ## Required vs optional settings
 
@@ -79,9 +91,10 @@ Auth settings that are **not** secrets (provider mode, from-address preference) 
 | Invalid origin string in CORS list | `invalid CORS origin …` |
 | `DATABASE_URL` set with unknown scheme | `unrecognized DATABASE_URL scheme: …` |
 | `OCTANEST_DB_DIALECT` disagrees with URL | `OCTANEST_DB_DIALECT=… does not match DATABASE_URL scheme (detected …)` |
-| DB connect / migrate / admin seed failure | Printed to stderr; process exits |
+| DB connect / migrate failure | Printed to stderr; process exits |
+| Both `OCTANEST_ADMIN_*` set and empty-instance seed returns error | Fail closed: printed to stderr; process exits (no wizard fallback) |
 
-**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (skipped unless both set).
+**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false).
 
 ## Defaults
 
@@ -90,6 +103,7 @@ Auth settings that are **not** secrets (provider mode, from-address preference) 
 | `OCTANEST_ENV` | `development` | `crates/octanest-api/src/main.rs` |
 | `API_BIND` | `0.0.0.0:8080` | `main.rs` |
 | `OCTANEST_AUTO_MIGRATE` | `true` (any value other than `true`/`1` disables) | `main.rs` |
+| `OCTANEST_ALLOW_SIGNUP` | `false` (only `true`/`1` opens signup at seed) | `crates/octanest-api/src/auth/seed.rs` / bootstrap |
 | `OCTANEST_MAIL_FROM` | `Octanest <noreply@localhost>` | `crates/octanest-api/src/email/mod.rs` |
 | Resend API base | `https://api.resend.com` | `crates/octanest-api/src/email/resend.rs` |
 | Compose `DATABASE_URL` | `postgres://octanest:octanest@postgres:5432/octanest` | `docker-compose.yml` |

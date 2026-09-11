@@ -60,7 +60,10 @@ OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and
 - Server store in dialect-specific `sessions` tables via `octanest-db`; never store the raw token.
 - Procedures: `auth.signup`, `auth.login`, `auth.logout`, `auth.logout_all`, `auth.me`, `auth.provider_config`.
 - Provider mode from instance settings: `local` | `workos` | `oidc` (`admin.auth.*` for admins).
-- Optional bootstrap: when `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set and `users` is empty, `main` seeds an admin user.
+- Empty-instance bootstrap (same path for cloud and self-host — no deployment-mode fork):
+  - When both `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set and `users` is empty, `main` seeds a `sys-admin` with username `system-administrator`, applies `OCTANEST_ALLOW_SIGNUP` (default false) to instance `allow_signup`, and marks `must_change_credentials` until `/setup/credentials` (`auth.confirm_admin_credentials`). Seed error → fail boot (exit 1).
+  - When either/both admin ENV vars are unset and `users` is empty, `auth.bootstrap_status.needs_setup` is true; SSR/UI gates to `/setup`. While `needs_setup`, RPC allowlists only bootstrap/health procedures. `auth.bootstrap_setup` creates the first `sys-admin` + session and persists wizard `allow_signup`.
+  - After bootstrap, `allow_signup` governs local signup (`auth.signup`, `/signup`, chrome CTAs); Admin → Auth can toggle it.
 
 ### Email adapters
 
