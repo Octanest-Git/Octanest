@@ -22,6 +22,7 @@ const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again
 
 function LoginPage() @{
   const [mode, setMode] = useState<ProviderMode | null>(null);
+  const [allowSignup, setAllowSignup] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -53,13 +54,16 @@ function LoginPage() @{
         if (!cfg.ok) {
           setLoadError(NETWORK_ERROR);
           setMode("local");
+          setAllowSignup(false);
           return;
         }
         setMode(cfg.data.mode);
+        setAllowSignup(cfg.data.allow_signup === true);
       } catch {
         if (cancelled) return;
         setLoadError(NETWORK_ERROR);
         setMode("local");
+        setAllowSignup(false);
       }
     })();
     return () => {
@@ -192,7 +196,7 @@ function LoginPage() @{
       </Button>
     }
 
-    @if (mode) {
+    @if (mode && allowSignup) {
       <p className="text-[14px] text-muted-foreground">
         New to Octanest?{" "}
         <a

@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { OctanestMark } from "@/components/octanest-mark";
 import { SignedInHomeSkeleton } from "@/components/page-skeletons";
 import { SignedInHome } from "@/components/signed-in-home";
+import { apiClient } from "@/lib/api-client";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 import {
   hasSessionPresenceHint,
@@ -119,6 +120,25 @@ function HomePage() {
 }
 
 function AnonLanding() @{
+  const [allowSignup, setAllowSignup] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const cfg = await apiClient.auth.providerConfig();
+        if (cancelled) return;
+        setAllowSignup(cfg.ok === true && cfg.data.allow_signup === true);
+      } catch {
+        if (cancelled) return;
+        setAllowSignup(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   <>
     <section className="relative min-h-[32rem] overflow-hidden md:min-h-[36rem] lg:min-h-[40rem]">
       <div
@@ -141,9 +161,11 @@ function AnonLanding() @{
             for Octanest Cloud and self-host
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
-              Get started
-            </Link>
+            @if (allowSignup) {
+              <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
+                Get started
+              </Link>
+            }
             <a
               href="#explore"
               className={cn(buttonVariants({ variant: "secondary" }))}
@@ -212,9 +234,11 @@ function AnonLanding() @{
           One forge. Cloud or yours.
         </h2>
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
-            Get started
-          </Link>
+          @if (allowSignup) {
+            <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
+              Get started
+            </Link>
+          }
           <a
             href="#explore"
             className={cn(buttonVariants({ variant: "secondary" }))}
