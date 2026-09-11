@@ -20,6 +20,45 @@ pub enum EmailProviderKind {
     Resend,
 }
 
+/// Instance-level user role. Serialized as kebab-case: `user` | `admin` | `sys-admin`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum Role {
+    #[default]
+    User,
+    Admin,
+    SysAdmin,
+}
+
+impl Role {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::User => "user",
+            Self::Admin => "admin",
+            Self::SysAdmin => "sys-admin",
+        }
+    }
+
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.trim() {
+            "user" => Ok(Self::User),
+            "admin" => Ok(Self::Admin),
+            "sys-admin" => Ok(Self::SysAdmin),
+            other => Err(format!("invalid role: {other}")),
+        }
+    }
+
+    /// Instance Auth settings / `admin.auth.*`.
+    pub const fn is_sys_admin(self) -> bool {
+        matches!(self, Self::SysAdmin)
+    }
+
+    /// Elevated staff (admin or sys-admin).
+    pub const fn is_staff(self) -> bool {
+        matches!(self, Self::Admin | Self::SysAdmin)
+    }
+}
+
 /// Public user profile returned over RPC (no password hash).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserPublic {
@@ -30,11 +69,26 @@ pub struct UserPublic {
     pub bio: String,
     /// Public URL path (e.g. `/uploads/avatars/{id}.webp`), not a filesystem path.
     pub avatar_url: Option<String>,
-    pub is_admin: bool,
+    pub role: Role,
     /// True when username needs completion (e.g. after SSO with placeholder handle).
     pub profile_incomplete: bool,
     /// True when the account email has been verified (D-13); wired in `user_to_public` in 05-02.
     pub email_verified: bool,
+}
+
+/// Empty-instance bootstrap status (AUTH-07).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapStatus {
+    /// True when `users` is empty and `OCTANEST_ADMIN_*` ENV seed is not configured.
+    pub needs_setup: bool,
+}
+
+/// One-time setup wizard input — creates the first `sys-admin` (AUTH-07).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BootstrapSetupRequest {
+    pub email: String,
+    pub username: String,
+    pub password: String,
 }
 
 /// Local signup input (D-01).
@@ -126,6 +180,7 @@ const RESERVED_USERNAMES: &[&str] = &[
     "favicon",
     "verify",
     "reset-password",
+    "setup",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).
@@ -199,5 +254,81 @@ mod tests {
         assert_eq!(json, "\"local\"");
         let mode: ProviderMode = serde_json::from_str("\"workos\"").unwrap();
         assert_eq!(mode, ProviderMode::Workos);
+    }
+
+    /// Wave 06-01: ENV seed username must stay reserved for signup (Pitfall 5 / A4).
+    #[test]
+    fn system_administrator_is_reserved() {
+        assert!(is_reserved_username("system-administrator"));
+        assert!(is_reserved_username("System-Administrator"));
+        assert!(validate_username("system-administrator").is_err());
+    }
+
+    #[test]
+    fn user_public_json_includes_must_change_credentials() {
+        let json = serde_json::json!({
+            "id": "1",
+            "email": "a@b.co",
+            "username": "u",
+            "display_name": "d",
+            "bio": "",
+            "avatar_url": null,
+            "role": "user",
+            "profile_incomplete": false,
+            "email_verified": false,
+            "must_change_credentials": true
+        });
+        let user: UserPublic = serde_json::from_value(json).unwrap();
+        let back = serde_json::to_value(&user).unwrap();
+        assert_eq!(back["must_change_credentials"], true);
+    }
+
+    #[test]
+    fn provider_config_and_bootstrap_setup_include_allow_signup() {
+        let cfg_json = serde_json::json!({ "mode": "local", "allow_signup": true });
+        let cfg: ProviderConfigPublic = serde_json::from_value(cfg_json).unwrap();
+        let cfg_back = serde_json::to_value(&cfg).unwrap();
+        assert_eq!(cfg_back["allow_signup"], true);
+
+        let setup_json = serde_json::json!({
+            "email": "a@b.co",
+            "username": "alice",
+            "password": "password1",
+            "allow_signup": true
+        });
+        let setup: BootstrapSetupRequest = serde_json::from_value(setup_json).unwrap();
+        let setup_back = serde_json::to_value(&setup).unwrap();
+        assert_eq!(setup_back["allow_signup"], true);
+    }
+
+    #[test]
+    fn auth_settings_dtos_include_allow_signup() {
+        let pub_json = serde_json::json!({
+            "provider_mode": "local",
+            "email_provider": "log",
+            "from_address": null,
+            "workos_client_id": null,
+            "oidc_issuer": null,
+            "oidc_client_id": null,
+            "smtp_configured": false,
+            "resend_configured": false,
+            "workos_api_key_configured": false,
+            "oidc_client_secret_configured": false,
+            "allow_signup": true
+        });
+        let settings: AuthSettingsPublic = serde_json::from_value(pub_json).unwrap();
+        assert_eq!(serde_json::to_value(&settings).unwrap()["allow_signup"], true);
+
+        let upd_json = serde_json::json!({
+            "provider_mode": "local",
+            "email_provider": "log",
+            "from_address": null,
+            "oidc_issuer": null,
+            "oidc_client_id": null,
+            "workos_client_id": null,
+            "allow_signup": false
+        });
+        let upd: UpdateAuthSettingsRequest = serde_json::from_value(upd_json).unwrap();
+        assert_eq!(serde_json::to_value(&upd).unwrap()["allow_signup"], false);
     }
 }
