@@ -263,3 +263,90 @@ async fn seeded_admin_parses_allow_signup_true() {
         "OCTANEST_ALLOW_SIGNUP=true must set allow_signup on instance settings"
     );
 }
+
+/// D-13: empty-string ADMIN ENV is treated as absent (same as unset).
+#[tokio::test]
+async fn seed_partial_env_empty_string_email_does_not_seed() {
+    let _env = support::lock_admin_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("empty_email.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "   ");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("empty email must not error");
+    assert_eq!(
+        db.count_users().await.expect("count"),
+        0,
+        "whitespace/empty OCTANEST_ADMIN_EMAIL must not seed"
+    );
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+}
+
+/// D-13: empty-string password is treated as absent.
+#[tokio::test]
+async fn seed_partial_env_empty_string_password_does_not_seed() {
+    let _env = support::lock_admin_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("empty_pw.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "admin@example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("empty password must not error");
+    assert_eq!(
+        db.count_users().await.expect("count"),
+        0,
+        "empty OCTANEST_ADMIN_PASSWORD must not seed"
+    );
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+}
+
+/// AUTH-06 ordering / AUTH-07 adjacency: second seed with users present is a no-op.
+#[tokio::test]
+async fn seed_second_run_idempotent_when_users_exist() {
+    let _env = support::lock_admin_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("seed_idem.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "admin@example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "adminpass1");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("first seed");
+    assert_eq!(db.count_users().await.expect("count"), 1);
+
+    std::env::set_var("OCTANEST_ADMIN_EMAIL", "other@example.com");
+    std::env::set_var("OCTANEST_ADMIN_PASSWORD", "differentpass1");
+    std::env::set_var("OCTANEST_ALLOW_SIGNUP", "true");
+    octanest_api::auth::seed::maybe_seed_admin(&db)
+        .await
+        .expect("second seed");
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+    std::env::remove_var("OCTANEST_ALLOW_SIGNUP");
+
+    assert_eq!(db.count_users().await.expect("count"), 1);
+    let user = db
+        .find_user_by_email("admin@example.com")
+        .await
+        .expect("find")
+        .expect("original seeded user");
+    assert_eq!(user.username, "system-administrator");
+    // Second run must not rewrite allow_signup after users exist.
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert!(
+        !settings.allow_signup,
+        "idempotent seed must not apply OCTANEST_ALLOW_SIGNUP when users already exist"
+    );
+}

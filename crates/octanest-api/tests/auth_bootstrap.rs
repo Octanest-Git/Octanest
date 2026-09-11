@@ -1,5 +1,5 @@
-//! Wave 0 (06-00): AUTH-07 bootstrap stubs — partial ENV, allowlist, allow_signup, idempotency.
-//! Intentionally RED until later Phase 06 plans turn assertions green.
+//! AUTH-07 bootstrap + D-13 partial ENV (AUTH-06 adjacency).
+//! Wizard allow_signup persistence + strict RPC allowlist remain Wave 0 RED until 06-03.
 
 mod support;
 
