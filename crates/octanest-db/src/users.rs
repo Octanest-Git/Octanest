@@ -1,5 +1,6 @@
 //! User CRUD via `DbPool` match — dialect branching stays in this crate.
 
+use octanest_core::Role;
 use sqlx::Row;
 
 use crate::pool::DbPool;
@@ -13,7 +14,8 @@ pub struct UserRow {
     pub display_name: String,
     pub bio: String,
     pub avatar_path: Option<String>,
-    pub is_admin: bool,
+    pub role: Role,
+    pub must_change_credentials: bool,
     pub email_verified_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -22,12 +24,19 @@ pub struct UserRow {
 macro_rules! map_user {
     ($row:expr) => {{
         let row = $row;
-        let is_admin = row
-            .try_get::<bool, _>("is_admin")
+        let role_raw: String = row
+            .try_get("role")
+            .map_err(|e| format!("user row: {e}"))?;
+        let role = Role::parse(&role_raw).map_err(|e| format!("user row: {e}"))?;
+        let must_change_credentials = row
+            .try_get::<bool, _>("must_change_credentials")
             .or_else(|_| {
-                row.try_get::<i64, _>("is_admin")
+                row.try_get::<i64, _>("must_change_credentials")
                     .map(|v| v != 0)
-                    .or_else(|_| row.try_get::<i8, _>("is_admin").map(|v| v != 0))
+                    .or_else(|_| {
+                        row.try_get::<i8, _>("must_change_credentials")
+                            .map(|v| v != 0)
+                    })
             })
             .map_err(|e| format!("user row: {e}"))?;
         UserRow {
@@ -44,7 +53,8 @@ macro_rules! map_user {
             avatar_path: row
                 .try_get("avatar_path")
                 .map_err(|e| format!("user row: {e}"))?,
-            is_admin,
+            role,
+            must_change_credentials,
             email_verified_at: row
                 .try_get("email_verified_at")
                 .map_err(|e| format!("user row: {e}"))?,
@@ -58,21 +68,21 @@ macro_rules! map_user {
     }};
 }
 
-const USER_SELECT_PG: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, is_admin,
+const USER_SELECT_PG: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE to_char(email_verified_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS email_verified_at,
        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
        to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
 FROM users";
 
-const USER_SELECT_MYSQL: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, is_admin,
+const USER_SELECT_MYSQL: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE DATE_FORMAT(email_verified_at, '%Y-%m-%dT%H:%i:%sZ') END AS email_verified_at,
        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
        DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
 FROM users";
 
-const USER_SELECT_SQLITE: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, is_admin,
+const USER_SELECT_SQLITE: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE strftime('%Y-%m-%dT%H:%M:%SZ', email_verified_at) END AS email_verified_at,
        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
@@ -88,12 +98,13 @@ pub async fn insert_user(
     display_name: &str,
     bio: &str,
     avatar_path: Option<&str>,
-    is_admin: bool,
+    role: Role,
 ) -> Result<UserRow, String> {
+    let role_s = role.as_str();
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
-                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, is_admin)
+                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, role)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             )
             .bind(id)
@@ -103,14 +114,14 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             .bind(display_name)
             .bind(bio)
             .bind(avatar_path)
-            .bind(is_admin)
+            .bind(role_s)
             .execute(p)
             .await
             .map_err(|e| format!("insert user failed: {e}"))?;
         }
         DbPool::MySql(p) => {
             sqlx::query(
-                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, is_admin)
+                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, role)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(id)
@@ -120,14 +131,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             .bind(display_name)
             .bind(bio)
             .bind(avatar_path)
-            .bind(is_admin)
+            .bind(role_s)
             .execute(p)
             .await
             .map_err(|e| format!("insert user failed: {e}"))?;
         }
         DbPool::Sqlite(p) => {
             sqlx::query(
-                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, is_admin)
+                "INSERT INTO users (id, email, username, password_hash, display_name, bio, avatar_path, role)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             )
             .bind(id)
@@ -137,7 +148,7 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             .bind(display_name)
             .bind(bio)
             .bind(avatar_path)
-            .bind(if is_admin { 1 } else { 0 })
+            .bind(role_s)
             .execute(p)
             .await
             .map_err(|e| format!("insert user failed: {e}"))?;
@@ -337,6 +348,30 @@ pub async fn count_users(pool: &DbPool) -> Result<i64, String> {
     }
 }
 
+/// Count users with `role = sys-admin`.
+pub async fn count_sys_admins(pool: &DbPool) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users WHERE role = 'sys-admin'")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("count sys-admins failed: {e}"))
+        }
+        DbPool::MySql(p) => {
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users WHERE role = 'sys-admin'")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("count sys-admins failed: {e}"))
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users WHERE role = 'sys-admin'")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("count sys-admins failed: {e}"))
+        }
+    }
+}
+
 /// Set `email_verified_at` to the given RFC3339 / dialect timestamp string.
 pub async fn set_email_verified_at(
     pool: &DbPool,
@@ -464,4 +499,91 @@ WHERE id = ?1",
     find_by_id(pool, id)
         .await?
         .ok_or_else(|| "set password_hash failed: user not found".into())
+}
+
+/// Update the user's email (forced credential confirm / profile change).
+pub async fn update_user_email(pool: &DbPool, id: &str, email: &str) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE users SET email = $2, updated_at = now() WHERE id = $1")
+                .bind(id)
+                .bind(email)
+                .execute(p)
+                .await
+                .map_err(|e| format!("update user email failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE users SET email = ?, updated_at = NOW() WHERE id = ?")
+                .bind(email)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("update user email failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET email = ?2,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(email)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update user email failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update user email failed: user not found".into())
+}
+
+/// Set or clear `must_change_credentials` (ENV seed sets true; confirm clears).
+pub async fn set_must_change_credentials(
+    pool: &DbPool,
+    id: &str,
+    must_change: bool,
+) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE users SET must_change_credentials = $2, updated_at = now() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(must_change)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set must_change_credentials failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE users SET must_change_credentials = ?, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(must_change)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set must_change_credentials failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET must_change_credentials = ?2,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(must_change)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set must_change_credentials failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "set must_change_credentials failed: user not found".into())
+}
+
+/// Clear the forced-credentials flag after successful confirm.
+pub async fn clear_must_change_credentials(pool: &DbPool, id: &str) -> Result<UserRow, String> {
+    set_must_change_credentials(pool, id, false).await
 }

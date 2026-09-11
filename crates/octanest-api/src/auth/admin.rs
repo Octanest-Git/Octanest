@@ -81,10 +81,10 @@ async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
         .await
         .map_err(db_err)?
         .ok_or_else(|| AppError::new("auth.unauthenticated", "not authenticated"))?;
-    if !user.is_admin {
+    if !user.role.is_sys_admin() {
         return Err(AppError::new(
             "admin.forbidden",
-            "You need admin access to manage auth settings.",
+            "You need system admin access to manage auth settings.",
         ));
     }
     Ok(())
@@ -150,6 +150,8 @@ pub async fn update_settings(
         )
     })?;
 
+    // Preserve allow_signup until UpdateAuthSettingsRequest gains the field (06-01-T2).
+    let current = ctx.db.get_auth_settings().await.map_err(db_err)?;
     let row = ctx
         .db
         .update_auth_settings(
@@ -159,6 +161,7 @@ pub async fn update_settings(
             req.oidc_issuer.as_deref(),
             req.oidc_client_id.as_deref(),
             req.workos_client_id.as_deref(),
+            current.allow_signup,
         )
         .await
         .map_err(db_err)?;
@@ -186,6 +189,7 @@ mod tests {
             oidc_issuer: None,
             oidc_client_id: None,
             workos_client_id: Some("client_abc".into()),
+            allow_signup: false,
             updated_at: "2026-01-01T00:00:00Z".into(),
         };
         let pub_ = settings_to_public(&row).expect("map");

@@ -104,7 +104,7 @@ impl Database {
         display_name: &str,
         bio: &str,
         avatar_path: Option<&str>,
-        is_admin: bool,
+        role: octanest_core::Role,
     ) -> Result<UserRow, String> {
         let pool = self.require_pool()?;
         users::insert_user(
@@ -116,7 +116,7 @@ impl Database {
             display_name,
             bio,
             avatar_path,
-            is_admin,
+            role,
         )
         .await
     }
@@ -156,6 +156,10 @@ impl Database {
         users::count_users(self.require_pool()?).await
     }
 
+    pub async fn count_sys_admins(&self) -> Result<i64, String> {
+        users::count_sys_admins(self.require_pool()?).await
+    }
+
     pub async fn set_email_verified_at(
         &self,
         id: &str,
@@ -174,6 +178,22 @@ impl Database {
         password_hash: &str,
     ) -> Result<UserRow, String> {
         users::set_password_hash(self.require_pool()?, id, password_hash).await
+    }
+
+    pub async fn update_user_email(&self, id: &str, email: &str) -> Result<UserRow, String> {
+        users::update_user_email(self.require_pool()?, id, email).await
+    }
+
+    pub async fn set_must_change_credentials(
+        &self,
+        id: &str,
+        must_change: bool,
+    ) -> Result<UserRow, String> {
+        users::set_must_change_credentials(self.require_pool()?, id, must_change).await
+    }
+
+    pub async fn clear_must_change_credentials(&self, id: &str) -> Result<UserRow, String> {
+        users::clear_must_change_credentials(self.require_pool()?, id).await
     }
 
     // --- email tokens ---
@@ -329,6 +349,7 @@ impl Database {
         oidc_issuer: Option<&str>,
         oidc_client_id: Option<&str>,
         workos_client_id: Option<&str>,
+        allow_signup: bool,
     ) -> Result<auth_settings::AuthSettingsRow, String> {
         auth_settings::update(
             self.require_pool()?,
@@ -338,6 +359,7 @@ impl Database {
             oidc_issuer,
             oidc_client_id,
             workos_client_id,
+            allow_signup,
         )
         .await
     }
