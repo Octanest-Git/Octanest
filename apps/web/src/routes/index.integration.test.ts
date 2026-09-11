@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { Route } from "./index";
+import { Route, selectHomeTree } from "./index";
 
 /**
- * Wave 0 (D-18/D-20): home SSR/tree gate priority.
- * Later 06-05 wires beforeLoad/loader; stubs fail until the correct tree is selected.
+ * Home SSR/tree gate priority (D-18/D-20).
+ * Shared root owns needs_setup redirect; selectHomeTree documents D-20 priority
+ * and index loader picks SignedInHome vs marketing after the root gate clears.
  */
-describe("index/home SSR tree gate Wave 0 (D-18/D-20)", () => {
+describe("index/home SSR tree gate (D-18/D-20)", () => {
   it("registers beforeLoad/loader for needs_setup → /setup vs session → SignedInHome vs marketing", () => {
     const hasGate =
       typeof Route.options.beforeLoad === "function" ||
@@ -17,14 +18,6 @@ describe("index/home SSR tree gate Wave 0 (D-18/D-20)", () => {
   });
 
   it("needs_setup priority selects /setup over marketing and SignedInHome", () => {
-    type Input = { needs_setup: boolean; hasSession: boolean };
-    type Tree = "setup" | "signed-in" | "marketing";
-
-    function selectHomeTree(_input: Input): Tree {
-      // Placeholder — wrong on purpose so Wave 0 stays RED until 06-05.
-      return "marketing";
-    }
-
     expect(selectHomeTree({ needs_setup: true, hasSession: false })).toBe(
       "setup",
     );
@@ -43,5 +36,14 @@ describe("index/home SSR tree gate Wave 0 (D-18/D-20)", () => {
       Route.options.component,
       "index route component must exist for tree selection",
     ).toBeTruthy();
+  });
+
+  it("loader uses fetchSessionMe tree selection without client setup lock as boundary", () => {
+    expect(typeof Route.options.loader).toBe("function");
+    const src = Route.options.loader?.toString() ?? "";
+    expect(
+      /redirectIfNeedsSetup/.test(src),
+      "index loader must not reintroduce client redirectIfNeedsSetup as the boundary",
+    ).toBe(false);
   });
 });
