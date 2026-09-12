@@ -11,8 +11,15 @@ export function sortTreeEntries(entries: RepoTreeEntry[]): RepoTreeEntry[] {
   });
 }
 
-/** Parse `/tree/{ref}/…` or `/blob/{ref}/…` splat into ref + relative path (D-17). */
-export function parseRefAndPath(splat: string | undefined | null): {
+/** Parse `/tree/{ref}/…` or `/blob/{ref}/…` splat into ref + relative path (D-17 / WR-03).
+ *
+ * When `knownRefs` is provided (short branch/tag names), pick the longest matching
+ * prefix of splat segments; otherwise fall back to first-segment split.
+ */
+export function parseRefAndPath(
+  splat: string | undefined | null,
+  knownRefs?: readonly string[] | null,
+): {
   ref: string;
   path: string;
 } {
@@ -21,6 +28,28 @@ export function parseRefAndPath(splat: string | undefined | null): {
     .map((p) => p.trim())
     .filter(Boolean);
   if (parts.length === 0) return { ref: "", path: "" };
+
+  const known = (knownRefs ?? [])
+    .map((r) => r.trim())
+    .filter(Boolean);
+  if (known.length > 0) {
+    const knownSet = new Set(known);
+    let best: { ref: string; pathSegs: number } | null = null;
+    for (let i = parts.length; i >= 1; i--) {
+      const candidate = parts.slice(0, i).join("/");
+      if (knownSet.has(candidate)) {
+        best = { ref: candidate, pathSegs: i };
+        break; // longest first
+      }
+    }
+    if (best) {
+      return {
+        ref: best.ref,
+        path: parts.slice(best.pathSegs).join("/"),
+      };
+    }
+  }
+
   return { ref: parts[0]!, path: parts.slice(1).join("/") };
 }
 

@@ -54,7 +54,7 @@ export function RepoBlobPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const parsed = parseRefAndPath(params._splat);
+  const splat = params._splat;
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
 
   useEffect(() => {
@@ -76,20 +76,22 @@ export function RepoBlobPage() @{
           return;
         }
         const repo = got.data;
+        const refsRes = await apiClient.repo.refs({ owner, name: repoName });
+        if (cancelled) return;
+        const refs = refsRes.ok ? refsRes.data.refs : [];
+        const knownRefs = refs.map((r) => shortRefName(r.name));
+        const parsed = parseRefAndPath(splat, knownRefs);
         const refName = parsed.ref || repo.default_branch || "main";
         if (!parsed.path) {
           setPhase({ kind: "not_found" });
           return;
         }
-        const [blobRes, refsRes] = await Promise.all([
-          apiClient.repo.blob({
-            owner,
-            name: repoName,
-            ref: refName,
-            path: parsed.path,
-          }),
-          apiClient.repo.refs({ owner, name: repoName }),
-        ]);
+        const blobRes = await apiClient.repo.blob({
+          owner,
+          name: repoName,
+          ref: refName,
+          path: parsed.path,
+        });
         if (cancelled) return;
         if (!blobRes.ok) {
           setPhase(
@@ -109,7 +111,7 @@ export function RepoBlobPage() @{
           refName: shortRefName(blobRes.data.ref) || refName,
           path: blobRes.data.path || parsed.path,
           blob: blobRes.data,
-          refs: refsRes.ok ? refsRes.data.refs : [],
+          refs,
         });
       } catch {
         if (cancelled) return;
@@ -122,7 +124,7 @@ export function RepoBlobPage() @{
     return () => {
       cancelled = true;
     };
-  }, [owner, repoName, parsed.ref, parsed.path]);
+  }, [owner, repoName, splat]);
 
   @if (phase.kind === "not_found") {
     <RepoNotFound />

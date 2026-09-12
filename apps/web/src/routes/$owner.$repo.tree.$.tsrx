@@ -55,7 +55,7 @@ export function RepoTreePage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const parsed = parseRefAndPath(params._splat);
+  const splat = params._splat;
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
 
   useEffect(() => {
@@ -77,16 +77,18 @@ export function RepoTreePage() @{
           return;
         }
         const repo = got.data;
+        const refsRes = await apiClient.repo.refs({ owner, name: repoName });
+        if (cancelled) return;
+        const refs = refsRes.ok ? refsRes.data.refs : [];
+        const knownRefs = refs.map((r) => shortRefName(r.name));
+        const parsed = parseRefAndPath(splat, knownRefs);
         const refName = parsed.ref || repo.default_branch || "main";
-        const [treeRes, refsRes] = await Promise.all([
-          apiClient.repo.tree({
-            owner,
-            name: repoName,
-            ref: refName,
-            path: parsed.path || "",
-          }),
-          apiClient.repo.refs({ owner, name: repoName }),
-        ]);
+        const treeRes = await apiClient.repo.tree({
+          owner,
+          name: repoName,
+          ref: refName,
+          path: parsed.path || "",
+        });
         if (cancelled) return;
         if (!treeRes.ok) {
           setPhase(
@@ -105,7 +107,7 @@ export function RepoTreePage() @{
           refName: shortRefName(treeRes.data.ref) || refName,
           path: treeRes.data.path || parsed.path,
           entries: treeRes.data.entries,
-          refs: refsRes.ok ? refsRes.data.refs : [],
+          refs,
         });
       } catch {
         if (cancelled) return;
@@ -118,7 +120,7 @@ export function RepoTreePage() @{
     return () => {
       cancelled = true;
     };
-  }, [owner, repoName, parsed.ref, parsed.path]);
+  }, [owner, repoName, splat]);
 
   @if (phase.kind === "not_found") {
     <RepoNotFound />

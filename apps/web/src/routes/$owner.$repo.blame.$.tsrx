@@ -12,7 +12,7 @@ import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { commitHref, parseRefAndPath } from "@/lib/repo-browse";
+import { commitHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import { formatRelativeUpdated } from "@/lib/relative-time";
 
 export const Route = createFileRoute("/$owner/$repo/blame/$")({
@@ -57,7 +57,7 @@ export function RepoBlamePage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const parsed = parseRefAndPath(params._splat);
+  const splat = params._splat;
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
 
   useEffect(() => {
@@ -79,6 +79,12 @@ export function RepoBlamePage() @{
           return;
         }
         const repo = got.data;
+        const refsRes = await apiClient.repo.refs({ owner, name: repoName });
+        if (cancelled) return;
+        const knownRefs = refsRes.ok
+          ? refsRes.data.refs.map((r) => shortRefName(r.name))
+          : [];
+        const parsed = parseRefAndPath(splat, knownRefs);
         const refName = parsed.ref || repo.default_branch || "main";
         if (!parsed.path) {
           setPhase({ kind: "not_found" });
@@ -121,7 +127,7 @@ export function RepoBlamePage() @{
     return () => {
       cancelled = true;
     };
-  }, [owner, repoName, parsed.ref, parsed.path]);
+  }, [owner, repoName, splat]);
 
   @if (phase.kind === "not_found") {
     <RepoNotFound />
