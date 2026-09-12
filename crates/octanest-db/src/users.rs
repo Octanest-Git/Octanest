@@ -16,6 +16,8 @@ pub struct UserRow {
     pub avatar_path: Option<String>,
     pub role: Role,
     pub must_change_credentials: bool,
+    /// Account default branch for new repos (D-09); defaults to `main`.
+    pub default_branch: String,
     pub email_verified_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -55,6 +57,9 @@ macro_rules! map_user {
                 .map_err(|e| format!("user row: {e}"))?,
             role,
             must_change_credentials,
+            default_branch: row
+                .try_get("default_branch")
+                .map_err(|e| format!("user row: {e}"))?,
             email_verified_at: row
                 .try_get("email_verified_at")
                 .map_err(|e| format!("user row: {e}"))?,
@@ -68,21 +73,21 @@ macro_rules! map_user {
     }};
 }
 
-const USER_SELECT_PG: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
+const USER_SELECT_PG: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials, default_branch,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE to_char(email_verified_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS email_verified_at,
        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
        to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
 FROM users";
 
-const USER_SELECT_MYSQL: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
+const USER_SELECT_MYSQL: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials, default_branch,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE DATE_FORMAT(email_verified_at, '%Y-%m-%dT%H:%i:%sZ') END AS email_verified_at,
        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
        DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
 FROM users";
 
-const USER_SELECT_SQLITE: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials,
+const USER_SELECT_SQLITE: &str = "SELECT id, email, username, password_hash, display_name, bio, avatar_path, role, must_change_credentials, default_branch,
        CASE WHEN email_verified_at IS NULL THEN NULL
             ELSE strftime('%Y-%m-%dT%H:%M:%SZ', email_verified_at) END AS email_verified_at,
        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,

@@ -1,6 +1,8 @@
-//! Repository DTOs and name validation (D-06). Separate from username rules.
+//! Repository name validation and DTOs (D-06). Separate from username rules.
 
 use serde::{Deserialize, Serialize};
+
+use crate::auth_types::is_reserved_username;
 
 /// Repo visibility. Serialized lowercase: `public` | `private`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -49,15 +51,39 @@ pub struct RepoPublic {
     pub updated_at: String,
 }
 
-/// GitHub-ish repo name rules (D-06): letters, digits, hyphen, underscore, period;
-/// reject empty and reserved path segments. Stub until GREEN implements.
-pub fn validate_repo_name(_raw: &str) -> Result<(), String> {
-    Err("repository name validation not implemented".into())
+/// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
+/// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
+pub fn validate_repo_name(raw: &str) -> Result<(), String> {
+    let name = raw.trim();
+    if name.is_empty() || name.len() > 100 {
+        return Err("repository name must be 1–100 characters".into());
+    }
+    if name == "." || name == ".." {
+        return Err("repository name is invalid".into());
+    }
+    if name.starts_with('-')
+        || name.ends_with('-')
+        || name.starts_with('.')
+        || name.ends_with('.')
+    {
+        return Err("repository name cannot start or end with a hyphen or period".into());
+    }
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+    {
+        return Err("repository name must be alphanumeric, hyphen, underscore, or period".into());
+    }
+    if is_reserved_username(name) {
+        return Err("repository name is reserved".into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::auth_types::is_reserved_username;
 
     #[test]
     fn validate_repo_name_accepts_my_app() {
@@ -82,10 +108,9 @@ mod tests {
     fn validate_repo_name_rejects_reserved() {
         let err = validate_repo_name("login").unwrap_err();
         assert!(
-            err.contains("reserved") || err.contains("not implemented"),
+            err.contains("reserved"),
             "expected reserved rejection, got: {err}"
         );
-        // After GREEN: reserved path segments must be rejected for repo names too.
-        let _ = is_reserved_username("login");
+        assert!(is_reserved_username("login"));
     }
 }

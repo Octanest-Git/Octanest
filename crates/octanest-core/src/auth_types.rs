@@ -231,6 +231,16 @@ const RESERVED_USERNAMES: &[&str] = &[
     "reset-password",
     "setup",
     "system-administrator",
+    // Phase 7 flat routes (D-14) — must not collide with /{owner}/{repo}
+    "new",
+    "commits",
+    "branches",
+    "tags",
+    "compare",
+    "blame",
+    "tree",
+    "blob",
+    "raw",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).

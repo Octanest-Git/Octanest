@@ -7,12 +7,14 @@ pub mod email_tokens;
 pub mod migrate;
 pub mod pool;
 pub mod probe;
+pub mod repositories;
 pub mod sessions;
 pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
+pub use repositories::RepositoryRow;
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
 
@@ -91,6 +93,41 @@ impl Database {
             return Err("database not configured".into());
         };
         probe::probe(pool, dialect).await
+    }
+
+    // --- repositories ---
+
+    pub async fn insert_repository(
+        &self,
+        id: &str,
+        owner_id: &str,
+        name: &str,
+        visibility: &str,
+        description: &str,
+        default_branch: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::insert_repository(
+            self.require_pool()?,
+            id,
+            owner_id,
+            name,
+            visibility,
+            description,
+            default_branch,
+        )
+        .await
+    }
+
+    pub async fn find_repository_by_owner_name(
+        &self,
+        owner_id: &str,
+        name: &str,
+    ) -> Result<Option<RepositoryRow>, String> {
+        repositories::find_by_owner_and_name(self.require_pool()?, owner_id, name).await
+    }
+
+    pub async fn find_repository_by_id(&self, id: &str) -> Result<Option<RepositoryRow>, String> {
+        repositories::find_by_id(self.require_pool()?, id).await
     }
 
     // --- users ---

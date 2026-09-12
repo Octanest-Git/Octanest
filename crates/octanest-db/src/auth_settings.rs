@@ -13,6 +13,8 @@ pub struct AuthSettingsRow {
     pub oidc_client_id: Option<String>,
     pub workos_client_id: Option<String>,
     pub allow_signup: bool,
+    /// Instance default visibility for new repos (D-08); defaults to `public`.
+    pub default_visibility: String,
     pub updated_at: String,
 }
 
@@ -47,6 +49,9 @@ macro_rules! map_settings {
                 .try_get("workos_client_id")
                 .map_err(|e| format!("auth settings row: {e}"))?,
             allow_signup,
+            default_visibility: row
+                .try_get("default_visibility")
+                .map_err(|e| format!("auth settings row: {e}"))?,
             updated_at: row
                 .try_get("updated_at")
                 .map_err(|e| format!("auth settings row: {e}"))?,
@@ -54,15 +59,15 @@ macro_rules! map_settings {
     }};
 }
 
-const SETTINGS_SELECT_PG: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup,
+const SETTINGS_SELECT_PG: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup, default_visibility,
        to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
 FROM instance_auth_settings WHERE id = 1";
 
-const SETTINGS_SELECT_MYSQL: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup,
+const SETTINGS_SELECT_MYSQL: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup, default_visibility,
        DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
 FROM instance_auth_settings WHERE id = 1";
 
-const SETTINGS_SELECT_SQLITE: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup,
+const SETTINGS_SELECT_SQLITE: &str = "SELECT provider_mode, email_provider, from_address, oidc_issuer, oidc_client_id, workos_client_id, allow_signup, default_visibility,
        strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
 FROM instance_auth_settings WHERE id = 1";
 

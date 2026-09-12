@@ -1,6 +1,4 @@
 //! 07-02: `0007_repositories` + default_branch / default_visibility + insert/get API.
-//!
-//! RED until tri-dialect migration + Database repositories helpers land.
 
 use octanest_core::Role;
 use octanest_db::Database;
@@ -40,6 +38,12 @@ async fn migrate_0007_repositories_schema_presence() {
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
 
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert_eq!(
+        settings.default_visibility, "public",
+        "instance default_visibility defaults to public (D-08)"
+    );
+
     let owner = db
         .create_user(
             "u-repo-owner",
@@ -53,13 +57,41 @@ async fn migrate_0007_repositories_schema_presence() {
         )
         .await
         .expect("create owner");
-
-    // RED: insert_repository / find_repository_by_owner_name land in GREEN.
-    assert!(
-        false,
-        "Wave 0→GREEN: insert_repository + get by owner+name for non-deleted rows (owner={})",
-        owner.id
+    assert_eq!(
+        owner.default_branch, "main",
+        "user default_branch defaults to main (D-09)"
     );
+
+    let inserted = db
+        .insert_repository(
+            "r-demo",
+            &owner.id,
+            "my_app",
+            "public",
+            "demo repo",
+            &owner.default_branch,
+        )
+        .await
+        .expect("insert_repository");
+    assert_eq!(inserted.name, "my_app");
+    assert!(inserted.deleted_at.is_none());
+
+    let found = db
+        .find_repository_by_owner_name(&owner.id, "my_app")
+        .await
+        .expect("find")
+        .expect("row present");
+    assert_eq!(found.id, "r-demo");
+    assert_eq!(found.visibility, "public");
+    assert_eq!(found.description, "demo repo");
+
+    // Case-insensitive name lookup among non-deleted
+    let found_ci = db
+        .find_repository_by_owner_name(&owner.id, "My_App")
+        .await
+        .expect("find ci")
+        .expect("row present case-insensitive");
+    assert_eq!(found_ci.id, "r-demo");
 }
 
 /// Tri-dialect parity: postgres and mysql siblings must exist alongside sqlite.
