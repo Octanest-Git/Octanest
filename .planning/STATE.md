@@ -190,6 +190,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T15:25:20.847Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-git-repos-browse/07-CONTEXT.md
+Last session: 2026-09-12T15:35:00.000Z
+Stopped at: Phase 7 UI-SPEC drafted
+Resume file: .planning/phases/07-git-repos-browse/07-UI-SPEC.md
