@@ -5,7 +5,10 @@ use std::process::Stdio;
 
 use tokio::process::Command;
 
-use crate::backend::{GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind};
+use crate::backend::{
+    BlameFile, CommitDetail, CommitSummary, DiffResult, GitBackend, GitError, GitRef, TreeEntry,
+    TreeEntryKind,
+};
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
 #[derive(Debug, Default, Clone)]
@@ -346,6 +349,61 @@ impl GitBackend for CliGitBackend {
         }
         Ok(refs)
     }
+
+    // RED stubs — return empty so unit tests fail on assertions until GREEN.
+    async fn log(
+        &self,
+        _repo: &Path,
+        _refname: &str,
+        _skip: u32,
+        _limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError> {
+        Ok(Vec::new())
+    }
+
+    async fn show_commit(&self, _repo: &Path, sha: &str) -> Result<CommitDetail, GitError> {
+        Ok(CommitDetail {
+            sha: sha.to_string(),
+            short_sha: sha.chars().take(7).collect(),
+            subject: String::new(),
+            body: String::new(),
+            author_name: String::new(),
+            author_email: String::new(),
+            authored_at: String::new(),
+            parents: Vec::new(),
+            files: Vec::new(),
+            truncated: false,
+        })
+    }
+
+    async fn diff(
+        &self,
+        _repo: &Path,
+        base: &str,
+        head: &str,
+    ) -> Result<DiffResult, GitError> {
+        Ok(DiffResult {
+            base: base.to_string(),
+            head: head.to_string(),
+            files: Vec::new(),
+            empty: false,
+            truncated: false,
+        })
+    }
+
+    async fn blame(
+        &self,
+        _repo: &Path,
+        refname: &str,
+        path: &str,
+    ) -> Result<BlameFile, GitError> {
+        Ok(BlameFile {
+            path: path.to_string(),
+            ref_name: refname.to_string(),
+            lines: Vec::new(),
+            truncated: false,
+        })
+    }
 }
 
 /// Reject absolute paths and `..` components (T-07-09).
@@ -465,5 +523,145 @@ mod tests {
         git.init_bare(&bare, "main").await.unwrap();
         let entries = git.ls_tree(&bare, "main", "").await.unwrap();
         assert!(entries.is_empty());
+    }
+
+    #[tokio::test]
+    async fn log_returns_paged_commit_summaries_for_ref() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("log.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "first commit",
+            &[("a.txt".into(), b"one\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Second commit via clone + push.
+        let wt = tempfile::tempdir().unwrap();
+        let wt_s = wt.path().to_str().unwrap();
+        let bare_s = bare.to_str().unwrap();
+        run_git(&["clone", bare_s, wt_s]).await.unwrap();
+        tokio::fs::write(wt.path().join("a.txt"), b"two\n")
+            .await
+            .unwrap();
+        run_git(&["-C", wt_s, "add", "a.txt"]).await.unwrap();
+        run_git(&["-C", wt_s, "commit", "-m", "second commit"])
+            .await
+            .unwrap();
+        run_git(&["-C", wt_s, "push", "origin", "HEAD:main"])
+            .await
+            .unwrap();
+
+        let page = git.log(&bare, "main", 0, 10).await.expect("log");
+        assert!(
+            page.len() >= 2,
+            "expected at least 2 commits, got {}",
+            page.len()
+        );
+        assert_eq!(page[0].subject, "second commit");
+        assert!(!page[0].sha.is_empty());
+        assert!(!page[0].short_sha.is_empty());
+        assert!(!page[0].author_name.is_empty());
+        assert!(!page[0].authored_at.is_empty());
+
+        let skipped = git.log(&bare, "main", 1, 1).await.expect("log skip");
+        assert_eq!(skipped.len(), 1);
+        assert_eq!(skipped[0].subject, "first commit");
+    }
+
+    #[tokio::test]
+    async fn show_commit_returns_files_and_unified_patch() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("show.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed subject",
+            &[("hello.txt".into(), b"hello\nworld\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let bare_s = bare.to_str().unwrap();
+        let sha_bytes = run_git_stdout(&["-C", bare_s, "rev-parse", "main"])
+            .await
+            .unwrap();
+        let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
+
+        let detail = git.show_commit(&bare, &sha).await.expect("show_commit");
+        assert_eq!(detail.sha, sha);
+        assert_eq!(detail.subject, "seed subject");
+        assert!(
+            !detail.files.is_empty(),
+            "expected at least one file in commit"
+        );
+        let hello = detail
+            .files
+            .iter()
+            .find(|f| f.path == "hello.txt")
+            .expect("hello.txt");
+        assert!(
+            hello.patch.contains("hello") || hello.patch.contains("+++"),
+            "expected unified patch content, got: {}",
+            hello.patch
+        );
+    }
+
+    #[tokio::test]
+    async fn diff_identical_refs_returns_empty_not_error() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("diff.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "only",
+            &[("x.txt".into(), b"x\n".to_vec())],
+        )
+        .await
+        .unwrap();
+
+        let result = git
+            .diff(&bare, "main", "main")
+            .await
+            .expect("diff identical must not 500");
+        assert!(result.empty, "identical refs should be empty");
+        assert!(result.files.is_empty());
+    }
+
+    #[tokio::test]
+    async fn blame_returns_per_line_meta_for_text_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("blame.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "blame me",
+            &[("lines.txt".into(), b"alpha\nbeta\n".to_vec())],
+        )
+        .await
+        .unwrap();
+
+        let blame = git
+            .blame(&bare, "main", "lines.txt")
+            .await
+            .expect("blame");
+        assert_eq!(blame.path, "lines.txt");
+        assert!(
+            blame.lines.len() >= 2,
+            "expected >=2 blame lines, got {}",
+            blame.lines.len()
+        );
+        assert!(!blame.lines[0].sha.is_empty());
+        assert!(!blame.lines[0].author_name.is_empty());
+        assert_eq!(blame.lines[0].line_number, 1);
+        assert!(blame.lines[0].content.contains("alpha"));
     }
 }

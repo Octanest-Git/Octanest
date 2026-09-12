@@ -67,6 +67,78 @@ pub struct GitRef {
     pub oid: String,
 }
 
+/// One commit from `git log` (paged history).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommitSummary {
+    pub sha: String,
+    pub short_sha: String,
+    pub subject: String,
+    pub author_name: String,
+    pub author_email: String,
+    /// Author date as ISO-8601 (`%aI`).
+    pub authored_at: String,
+}
+
+/// One file in a commit or compare diff.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DiffFile {
+    pub path: String,
+    /// `added` | `modified` | `deleted` | `renamed` | `copied` | `unknown`
+    pub status: String,
+    /// Unified diff hunk text (may be truncated by soft caps).
+    pub patch: String,
+}
+
+/// Full commit detail for `/commit/{sha}`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommitDetail {
+    pub sha: String,
+    pub short_sha: String,
+    pub subject: String,
+    pub body: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub authored_at: String,
+    pub parents: Vec<String>,
+    pub files: Vec<DiffFile>,
+    /// True when patch payload was soft-capped (D-20 / T-07-18).
+    pub truncated: bool,
+}
+
+/// Compare `base...head` (or empty when identical).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DiffResult {
+    pub base: String,
+    pub head: String,
+    pub files: Vec<DiffFile>,
+    pub empty: bool,
+    pub truncated: bool,
+}
+
+/// One blame line (text files).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlameLine {
+    pub sha: String,
+    pub author_name: String,
+    pub authored_at: String,
+    pub line_number: u32,
+    pub content: String,
+}
+
+/// Blame for a path at a ref.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BlameFile {
+    pub path: String,
+    pub ref_name: String,
+    pub lines: Vec<BlameLine>,
+    pub truncated: bool,
+}
+
+/// Soft cap for unified patch bytes in show/diff responses (D-20 / T-07-18).
+pub const DIFF_SOFT_MAX_BYTES: usize = 1_048_576;
+/// Soft cap for blame line count (D-20).
+pub const BLAME_SOFT_MAX_LINES: usize = 10_000;
+
 /// Async forge git operations. API/RPC never shell out directly.
 #[async_trait::async_trait]
 pub trait GitBackend: Send + Sync {
@@ -103,4 +175,32 @@ pub trait GitBackend: Send + Sync {
 
     /// List refs under `refs/heads` and `refs/tags` (name + oid). Empty → `Ok(vec![])`.
     async fn list_refs(&self, repo: &Path) -> Result<Vec<GitRef>, GitError>;
+
+    /// Paged `git log` for `refname` (`skip` / `limit`). Empty history → `Ok(vec![])`.
+    async fn log(
+        &self,
+        repo: &Path,
+        refname: &str,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError>;
+
+    /// Commit metadata + per-file unified patches (`git show`).
+    async fn show_commit(&self, repo: &Path, sha: &str) -> Result<CommitDetail, GitError>;
+
+    /// Unified diff `base...head`. Identical trees → `empty: true` (not an error).
+    async fn diff(
+        &self,
+        repo: &Path,
+        base: &str,
+        head: &str,
+    ) -> Result<DiffResult, GitError>;
+
+    /// Per-line blame for a text file (`git blame --line-porcelain`).
+    async fn blame(
+        &self,
+        repo: &Path,
+        refname: &str,
+        path: &str,
+    ) -> Result<BlameFile, GitError>;
 }
