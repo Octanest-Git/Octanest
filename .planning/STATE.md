@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-12-PLAN.md
-last_updated: "2026-09-12T17:11:19.272Z"
+stopped_at: Completed 07-17-PLAN.md
+last_updated: "2026-09-12T17:14:00.804Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: f10d98b3dcb89202d256ac9b85bf94b58182ab3e
+state_head: 3cd14a482bbc8faff5aee305e645cf7e71522cf6
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 46
+  completed_plans: 47
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 6 of 19
+Plan: 7 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -96,6 +96,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07 P01 | 1min | 3 tasks | 3 files |
 | Phase 07-git-repos-browse P02 | 6min | 2 tasks | 12 files |
 | Phase 07-git-repos-browse P12 | 4min | 1 tasks | 18 files |
+| Phase 07-git-repos-browse P17 | 1min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -186,6 +187,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Duplicate create returns stable repo.name_taken for inline /new UI (D-12)
 - [Phase 07]: CreateRepoRequest.visibility optional — omit uses instance default_visibility else public (D-08)
 - [Phase 07]: Fail-boot git gate + Dockerfile/Compose left to 07-17 (D-33)
+- [Phase 07]: Fail boot with eprintln + exit(1) when git missing or < 2.5.0 (D-33)
+- [Phase 07]: Install distro git in API image; bind ./var/repos without overriding default OCTANEST_REPOS_DIR
 
 ### Pending Todos
 
@@ -207,6 +210,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T17:11:19.223Z
-Stopped at: Completed 07-12-PLAN.md
+Last session: 2026-09-12T17:14:00.755Z
+Stopped at: Completed 07-17-PLAN.md
 Resume file: None

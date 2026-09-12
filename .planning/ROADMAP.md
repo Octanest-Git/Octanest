@@ -221,7 +221,7 @@ Plans:
   3. User can create, rename, and delete branches from the web UI where permitted
   4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: 5/19 plans executed
+**Plans**: 6/19 plans executed
 Plans:
 **Wave 1**
 
@@ -236,7 +236,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 07-12-PLAN.md — Tracer: GitBackend CLI create → bare disk
-- [ ] 07-17-PLAN.md — Fail-boot git gate + Dockerfile/Compose repos volume
+- [x] 07-17-PLAN.md — Fail-boot git gate + Dockerfile/Compose repos volume
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -511,7 +511,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
-| 7. Git Repos & Browse | 5/19 | In Progress|  |
+| 7. Git Repos & Browse | 6/19 | In Progress|  |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
