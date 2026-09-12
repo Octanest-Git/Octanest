@@ -100,6 +100,34 @@ fn map_git_err(e: octanest_git::GitError) -> AppError {
     }
 }
 
+/// WR-01: after insert + git failure, soft-delete the row and best-effort remove partial disk path.
+async fn compensate_failed_create(ctx: &RpcCtx, repo_id: &str, path: &std::path::Path) {
+    if let Err(e) = ctx.db.soft_delete_repository(repo_id).await {
+        tracing::error!(
+            error = %e,
+            repo_id,
+            "soft_delete_repository failed during create compensate"
+        );
+    }
+    match tokio::fs::remove_dir_all(path).await {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => {
+            // Blocking file (not a dir) or other leftover — try remove_file.
+            if let Err(e2) = tokio::fs::remove_file(path).await {
+                if e2.kind() != std::io::ErrorKind::NotFound {
+                    tracing::warn!(
+                        error = %e,
+                        remove_file = %e2,
+                        path = %path.display(),
+                        "best-effort remove of partial bare path failed"
+                    );
+                }
+            }
+        }
+    }
+}
+
 fn looks_binary(bytes: &[u8]) -> bool {
     bytes.iter().take(8000).any(|&b| b == 0)
 }
@@ -694,6 +722,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
             path = %path.display(),
             "init_bare failed after DB insert"
         );
+        // WR-01: compensate so the name is not permanently occupied.
+        compensate_failed_create(ctx, &row.id, &path).await;
         return Err(AppError::new(
             "repo.git_init_failed",
             "failed to initialize repository storage",
@@ -716,6 +746,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
                 path = %path.display(),
                 "seed_commit failed after init_bare"
             );
+            compensate_failed_create(ctx, &row.id, &path).await;
             return Err(AppError::new(
                 "repo.git_seed_failed",
                 "failed to seed initial commit from templates",

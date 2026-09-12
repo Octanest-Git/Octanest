@@ -381,8 +381,12 @@ async fn repo_create_git_failure_soft_deletes_row_allows_recreate() {
         "WR-01: failed create must not leave a live name-blocking row — found {live:?}"
     );
 
-    // Clear blocker so a retry can succeed on disk.
-    std::fs::remove_file(&blocked).expect("remove blocker");
+    // Clear blocker if still present so a retry can succeed on disk
+    // (compensate may already have removed the path).
+    let _ = std::fs::remove_file(&blocked);
+    if blocked.exists() {
+        let _ = std::fs::remove_dir_all(&blocked);
+    }
 
     let retry = app
         .oneshot(rpc_req_with_cookie(
