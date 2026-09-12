@@ -35,7 +35,7 @@ function user(overrides: Partial<UserPublic> = {}): UserPublic {
   };
 }
 
-describe("SignedInHome New repository CTA (AUTH-04 / Phase 5)", () => {
+describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
   it("unverified: disabled CTA + verify-email hint", () => {
     render(SignedInHome, { props: { user: user({ email_verified: false }) } });
 
@@ -49,26 +49,19 @@ describe("SignedInHome New repository CTA (AUTH-04 / Phase 5)", () => {
     expect(
       screen.getByText("Verify your email to create a repository."),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText("Repository creation arrives in a later phase."),
-    ).not.toBeInTheDocument();
   });
 
-  it("verified: disabled CTA + later-phase hint", () => {
+  it("verified: enabled New repository navigates to /new", () => {
     render(SignedInHome, { props: { user: user({ email_verified: true }) } });
 
-    const cta = screen.getByRole("button", { name: "New repository" });
-    expect(cta).toBeDisabled();
-    expect(cta).toHaveAttribute("aria-disabled", "true");
-    expect(cta).toHaveAttribute(
-      "title",
-      "Repository creation arrives in a later phase.",
-    );
-    expect(
-      screen.getByText("Repository creation arrives in a later phase."),
-    ).toBeInTheDocument();
+    const cta = screen.getByRole("link", { name: "New repository" });
+    expect(cta).toHaveAttribute("href", "/new");
+    expect(cta).not.toHaveAttribute("aria-disabled", "true");
     expect(
       screen.queryByText("Verify your email to create a repository."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Repository creation arrives in a later phase."),
     ).not.toBeInTheDocument();
   });
 });
