@@ -110,7 +110,7 @@ Each task was committed atomically (TDD = test → feat):
 1. **Task 1 RED: failing sanitize + grammar tests** - `114bc5b` (test)
 2. **Task 1 GREEN: markdown/highlight libs + grammars** - `8355524` (feat)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `d7c1875` (docs: complete plan)
 
 ## Files Created/Modified
 
