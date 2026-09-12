@@ -108,7 +108,7 @@ status: complete
 2. **Task 1 RED: failing validators + schema tests** — `ed91eb0` (test)
 3. **Task 1 GREEN: migrations + validators + DB API** — `2920eea` (feat)
 
-**Plan metadata:** (docs commit after this SUMMARY)
+**Plan metadata:** `b1017f9` (docs: complete plan)
 
 ## TDD Gate Compliance
 
