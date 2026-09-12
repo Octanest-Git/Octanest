@@ -156,7 +156,7 @@ bun add shiki unified remark-parse remark-gfm remark-rehype rehype-sanitize rehy
 **Version verification (2026-09-12):** `npm view` as tabled above; `git version 2.55.0` on research host; legitimacy gate OK for all recommended npm packages except removed/flagged alternatives.
 
 **Discretion recommendations (locked into research for planner):**
-1. **Highlighting:** Shiki + in-repo minimal TextMate grammars (or aliases) for `tsrx` / `ripple`.
+1. **Highlighting:** Shiki + in-repo minimal TextMate grammars for `tsrx` / `ripple` (D-19 — no TS/JS alias gap).
 2. **SPDX:** `spdx-license-list/full` for text; picker uses IDs + “None”.
 3. **gitignore catalog:** Vendor a curated subset of [github/gitignore](https://github.com/github/gitignore) as static JSON/files under `apps/web` or `crates/octanest-api` assets — do **not** call gitignore.io at request time.
 4. **GitBackend:** Async trait in new crate `octanest-git`; only `CliGitBackend` shipped; stub module docs for future `GixGitBackend`.
@@ -471,7 +471,7 @@ const highlighter = await createHighlighter({
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | Vendoring `github/gitignore` subset is preferred over live gitignore.io API | Standard Stack | Need network/API key design if user wanted live catalog |
-| A2 | Minimal custom TextMate grammars for `.tsrx`/`.ripple` are feasible (or alias to TS/JS initially with honest gap) | Discretion / Shiki | May ship weaker highlighting until grammars exist |
+| A2 | In-repo minimal TextMate grammars for `.tsrx`/`.ripple` are required for D-19 (no TS-alias gap escape) | Discretion / Shiki | Extra grammar authoring effort if TextMate scope mapping is fiddly |
 | A3 | Background orphan purge + gc can live in-process with simple interval first | D-36/D-37 | May need separate worker if load grows |
 | A4 | Soft-delete retention ~7–30 days is acceptable default until user sets policy | D-35 discretion | Disk pressure if too long |
 | A5 | `async-trait` (or RPITIT) acceptable for `GitBackend` | Pattern 1 | Edition/MSRV clippy prefs |
@@ -479,27 +479,31 @@ const highlighter = await createHighlighter({
 
 **If this table is empty:** N/A — assumptions listed above need confirmation only where marked discretion.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact soft-delete retention / purge cadence**
+1. **Exact soft-delete retention / purge cadence** — RESOLVED
    - What we know: D-35/D-36 require soft-delete + periodic orphan reconcile; details are discretion.
    - What's unclear: Default days and whether sys-admin UI lands in Phase 7 or settings stub.
    - Recommendation: Default 14-day purge job + sys-admin frequency in instance settings; document in CONFIGURATION.
+   - **Resolution:** Adopt recommendation — default **14-day** soft-delete retention + orphan reconcile job; sys-admin configures cleanup frequency in instance settings / CONFIGURATION (plans 07-09/07-10, A4).
 
-2. **Initial commit for templates**
+2. **Initial commit for templates** — RESOLVED
    - What we know: D-02 wants stack/license/gitignore files; empty repos show first-push guide (D-10).
    - What's unclear: Always create initial commit vs leave empty when all pickers are None.
    - Recommendation: If any template content selected → single initial commit on default branch via temp worktree or plumbing; if all None → bare empty + first-push guide.
+   - **Resolution:** Adopt recommendation — any selected template content → single initial commit on default branch; all None → bare empty + Quick setup (plan 07-03 ASSUME Q2).
 
-3. **TanStack file-route shape for `/{owner}/{repo}/…`**
+3. **TanStack file-route shape for `/{owner}/{repo}/…`** — RESOLVED
    - What we know: Flat reserved routes exist; no `$owner` routes yet [VERIFIED: apps/web/src/routes/ listing].
    - What's unclear: Single splat vs many explicit routes.
    - Recommendation: Explicit routes matching UI-SPEC paths for clarity and SSR loaders.
+   - **Resolution:** Adopt recommendation — explicit Octane/`$owner.$repo.*` routes matching UI-SPEC paths (D-14/D-16/D-17); no catch-all splat for browse IA.
 
-4. **Compare/blame depth in Phase 7**
+4. **Compare/blame depth in Phase 7** — RESOLVED
    - What we know: D-16 includes compare + blame; discretion on UX details.
    - What's unclear: Pagination limits, binary blame behavior.
    - Recommendation: Ship functional unified diff + blame with soft file-size caps (D-20).
+   - **Resolution:** Adopt recommendation — functional unified diff + blame with soft caps / Load more (plan 07-06 ASSUME Q4); binary blame follows D-20 cannot-preview path.
 
 ## Environment Availability
 

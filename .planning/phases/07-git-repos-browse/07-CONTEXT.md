@@ -8,7 +8,7 @@
 
 Users can create filesystem-backed git repositories and browse history in the UI: create public/private repos, browse files/commits/branches/tags (GitHub-like), branch CRUD where permitted, download source archives, and store objects on a volume-backed path. Backend git operations use the **system `git` CLI (2.5+)** behind an abstraction, with a **documented future path to gitoxide** when it covers required operations.
 
-**Requirements:** GIT-01, GIT-05, GIT-06, GIT-07, GIT-08, GIT-09 (amended — see D-40), GIT-10
+**Requirements:** GIT-01, GIT-05, GIT-06, GIT-07, GIT-08, GIT-09 (amended — see D-32), GIT-10
 
 **Success criteria (from ROADMAP, clarified in discussion):**
 1. Authenticated (and verified) user can create a public or private repository
