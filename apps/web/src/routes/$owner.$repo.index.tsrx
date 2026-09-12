@@ -9,6 +9,7 @@ import type {
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
+import { CloneBox } from "@/components/repo/clone-box";
 import { QuickSetup } from "@/components/repo/quick-setup";
 import { ReadmePanel } from "@/components/repo/readme-panel";
 import { RefSelect } from "@/components/repo/ref-select";
@@ -163,7 +164,17 @@ export function RepoCodeHome() @{
           <>
             <RepoChrome repo={phase.repo} active="code" />
             @if (phase.kind === "empty") {
-              <QuickSetup owner={owner} repo={repoName} />
+              <>
+                <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+                  <CloneBox
+                    owner={owner}
+                    repo={repoName}
+                    refName={phase.repo.default_branch || "main"}
+                    empty={true}
+                  />
+                </div>
+                <QuickSetup owner={owner} repo={repoName} />
+              </>
             } @else {
               <>
                 <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -174,9 +185,14 @@ export function RepoCodeHome() @{
                     value={phase.refName}
                     mode="home"
                   />
-                  <span className="text-[14px] text-muted-foreground">
-                    Clone / Download arrives in a later phase.
-                  </span>
+                  <div className="ml-auto">
+                    <CloneBox
+                      owner={owner}
+                      repo={repoName}
+                      refName={phase.refName}
+                      empty={false}
+                    />
+                  </div>
                 </div>
                 <FileTree
                   owner={owner}
