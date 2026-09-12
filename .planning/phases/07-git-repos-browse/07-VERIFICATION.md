@@ -1,8 +1,9 @@
 ---
 phase: 07-git-repos-browse
-verified: 2026-09-12T19:25:00Z
-status: gaps_found
-score: 6/7 must-haves verified
+verified: 2026-09-12T20:01:51Z
+status: human_needed
+score: 7/7 must-haves verified
+next_action: "Human verification required. Complete the manual tests in the phase's *-UAT.md, then re-run the verify step until status is passed."
 covered_files:
   - .planning/REQUIREMENTS.md
   - .planning/phases/07-git-repos-browse/07-00-PLAN.md
@@ -43,11 +44,19 @@ covered_files:
   - .planning/phases/07-git-repos-browse/07-17-SUMMARY.md
   - .planning/phases/07-git-repos-browse/07-18-PLAN.md
   - .planning/phases/07-git-repos-browse/07-18-SUMMARY.md
+  - .planning/phases/07-git-repos-browse/07-19-PLAN.md
+  - .planning/phases/07-git-repos-browse/07-19-SUMMARY.md
+  - .planning/phases/07-git-repos-browse/07-20-PLAN.md
+  - .planning/phases/07-git-repos-browse/07-20-SUMMARY.md
+  - .planning/phases/07-git-repos-browse/07-21-PLAN.md
+  - .planning/phases/07-git-repos-browse/07-21-SUMMARY.md
   - .planning/phases/07-git-repos-browse/07-REVIEW.md
   - apps/web/src/components/repo/clone-box.tsrx
   - apps/web/src/lib/highlight.ts
   - apps/web/src/lib/markdown.ts
   - apps/web/src/lib/repo-browse.ts
+  - apps/web/src/lib/repo-browse.unit.test.ts
+  - apps/web/src/routes/$owner.$repo.blame.$.tsrx
   - apps/web/src/routes/$owner.$repo.blob.$.tsrx
   - apps/web/src/routes/$owner.$repo.branches.tsrx
   - apps/web/src/routes/$owner.$repo.index.tsrx
@@ -62,6 +71,9 @@ covered_files:
   - crates/octanest-api/src/repo/templates.rs
   - crates/octanest-api/src/routes/repo_raw.rs
   - crates/octanest-api/src/rpc.rs
+  - crates/octanest-api/tests/repo_archive.rs
+  - crates/octanest-api/tests/repo_branch_soft_protect.rs
+  - crates/octanest-api/tests/repo_create.rs
   - crates/octanest-core/src/repo_types.rs
   - crates/octanest-db/migrations/mysql/0007_repositories.sql
   - crates/octanest-db/migrations/postgres/0007_repositories.sql
@@ -73,38 +85,25 @@ covered_files:
   - crates/octanest-git/src/version.rs
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
-covered_digest: "v1:sha256:59c3cc1d8ad96646151b0714c6a5deea0b258271c92ebb7c036bc5d16524bc44"
+covered_digest: "v1:sha256:c949dba2bda73010d9cb3528d41b5a95e2bd4e2083560653e45fc4b444661a4d"
 behavior_unverified: 3
 overrides_applied: 0
 decision_coverage:
   honored: 38
   total: 38
   not_honored: []
-gaps:
-  - truth: "User can create, rename, and delete branches from the web UI where permitted (soft-protect default branch — D-28 / GIT-06)"
-    status: failed
-    reason: "07-REVIEW CR-02 unfixed: validate_treeish does not reject leading '-', and branch_create runs `git branch <name> <start>` without `--`. Owner can call repo.branchCreate with branch=\"-D\" and start=default branch to force-delete the protected default branch, bypassing soft-protect on branchDelete/branchRename. Reproduced with system git; code at cli.rs:58-72 and cli.rs:849-859 still matches REVIEW."
-    artifacts:
-      - path: crates/octanest-git/src/cli.rs
-        issue: "validate_treeish allows option-like refs; branch_create/rename/delete lack end-of-options `--`"
-      - path: crates/octanest-api/src/repo/mod.rs
-        issue: "branch_create does not reject reserved option tokens (-d/-D/-m/-M/-f)"
-    missing:
-      - "Reject treeish/branch names starting with `-` (and reserved git option tokens) in validate_treeish + API validators"
-      - "Pass `--` before name/start in branch_create, before from/to in branch_rename, before name in branch_delete"
-      - "Integration test: repo.branchCreate with branch=\"-D\" must fail and leave default branch intact"
-  - truth: "Archive/treeish argv is safe — refs validated so git cannot interpret user input as CLI options (GIT-07 / ASSUME refs validated before argv)"
-    status: failed
-    reason: "07-REVIEW CR-01 unfixed: validate_treeish / validate_archive_treeish accept leading `-`; archive argv places treeish after --format/--prefix without `--`. Public-repo archive URL with treeish `--output=<path>` creates/truncates files as the API process user. Reproduced: empty file created via `git archive ... --output=<path>` option-like treeish."
-    artifacts:
-      - path: crates/octanest-git/src/cli.rs
-        issue: "archive() does not reject leading `-` or insert `--` before treeish"
-      - path: crates/octanest-api/src/routes/repo_raw.rs
-        issue: "validate_archive_treeish still allows option-like treeish"
-    missing:
-      - "Reject starts_with('-') in validate_treeish and validate_archive_treeish / validate_ref"
-      - "Use `git archive ... -- <treeish>` (and same pattern for other revision argv)"
-      - "Regression test for archive/--output injection rejection"
+re_verification:
+  previous_status: gaps_found
+  previous_score: 6/7
+  gaps_closed:
+    - "User can create, rename, and delete branches from the web UI where permitted (CR-02 / soft-protect integrity) — closed by 07-19"
+    - "Archive/treeish argv cannot be interpreted as git CLI options (CR-01) — closed by 07-20"
+    - "WR-01 create compensate soft-delete — closed by 07-21"
+    - "WR-02 raw slash parity — closed by 07-20"
+    - "WR-03 hierarchical parseRefAndPath — closed by 07-21"
+  gaps_remaining: []
+  regressions: []
+advisory: []
 behavior_unverified_items:
   - truth: "Syntax highlighting visual fidelity for .tsrx/.ripple held for human UAT (07-00 backstop)"
     test: "Open a seeded blob for .tsrx and .ripple in the Code UI"
@@ -118,75 +117,115 @@ behavior_unverified_items:
     test: "Browse a deep/long file path in tree/blob chrome"
     expected: "Ellipsis or wrap per UI-SPEC; layout remains usable"
     why_human: "verification: backstop — visual layout only"
+human_verification:
+  - test: "Open a seeded blob for .tsrx and .ripple in the Code UI"
+    expected: "Tokens highlight via in-repo grammars (not plain TS/JS alias look)"
+    why_human: "verification: backstop — presence of grammars/tests does not prove visual fidelity"
+  - test: "Paste a long unbroken description on /new"
+    expected: "Text wraps; no horizontal page overflow"
+    why_human: "verification: backstop — layout cannot be proven by grep"
+  - test: "Browse a deep/long file path in tree/blob chrome"
+    expected: "Ellipsis or wrap per UI-SPEC; layout remains usable"
+    why_human: "verification: backstop — visual layout only"
+  - test: "On Code tab, confirm HTTPS shown, SSH placeholder, archive menu items present (07-08)"
+    expected: "Clone box shows HTTPS + SSH placeholder + archive download items"
+    why_human: "Harvested <human-check> from 07-08-PLAN — visual chrome"
+  - test: "Open a seeded repo blob for .ts / .tsrx; confirm highlight + README sanitize (script attempt stripped) (07-15)"
+    expected: "Highlight works; script tags stripped from README render"
+    why_human: "Harvested <human-check> from 07-15-PLAN — visual + sanitize behavior in browser"
 ---
 
 # Phase 7: Git Repos & Browse Verification Report
 
 **Phase Goal:** Users can create filesystem-backed repos and browse history in the UI via system `git` CLI behind a `GitBackend` seam, with a documented future gitoxide path
 
-**Verified:** 2026-09-12T19:25:00Z  
-**Status:** gaps_found  
-**Re-verification:** No — initial verification
+**Verified:** 2026-09-12T20:01:51Z  
+**Status:** human_needed  
+**Re-verification:** Yes — after gap closure (07-19, 07-20, 07-21)  
+**Next action:** Human verification required. Complete the manual tests in the phase's `*-UAT.md`, then re-run the verify step until status is passed.
 
 ## Goal Achievement
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
-| --- | --- | --- | --- |
-| 1 | Authenticated (and verified, on cloud) user can create a public or private repository | ✓ VERIFIED | `repo.create` in `rpc.rs`/`repo/mod.rs`; `/new` calls `apiClient.repo.create`; verify wall + `auth.email_unverified`; tests `repo_create_*` present |
-| 2 | User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref | ✓ VERIFIED | Routes tree/blob/commits/branches/tags wired; `clone-box` archive URLs; `repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref` **PASS**. **Note:** CR-01 security hole is a separate failed truth (#7-adjacent gap) |
-| 3 | User can create, rename, and delete branches from the web UI where permitted | ✗ FAILED | Happy-path API/UI + soft-protect on rename/delete exist (`repo_branch_soft_protect_blocks_default_rename_and_delete` **PASS**), but **CR-02** lets `branchCreate(branch="-D")` force-delete the default branch — soft-protect / D-28 / “where permitted” broken |
-| 4 | Repository objects live on the local filesystem (volume-backed), and git ops use system `git` CLI with docs allowing future gitoxide swap | ✓ VERIFIED | `OCTANEST_REPOS_DIR` + Compose `./var/repos:/var/repos`; `CliGitBackend` on `AppState`; `assert_git_version` fail-boot; `docs/ARCHITECTURE.md` Cli now / Gix later; no `GixGitBackend` body |
-| 5 | Private/non-access returns identical `repo.not_found` (D-23–D-25) | ✓ VERIFIED | `resolve_repo_for_read` + `repo_private_404_*` tests |
-| 6 | Default-branch rename/delete via intended APIs returns soft-protect error | ✓ VERIFIED | Soft-protect checks in `branch_rename`/`branch_delete`; named test **PASS** — undermined by gap #1 bypass path |
-| 7 | Archive/treeish argv cannot be interpreted as git CLI options | ✗ FAILED | `validate_treeish` lacks `starts_with('-')`; `archive` omits `--`; CR-01 reproducible |
+| --- | ------- | ---------- | -------------- |
+| 1 | Authenticated (and verified, on cloud) user can create a public or private repository | ✓ VERIFIED | `repo.create` + `/new`; WR-01 compensate: `compensate_failed_create` + `repo_create_git_failure_soft_deletes_row_allows_recreate` **PASS** |
+| 2 | User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref | ✓ VERIFIED | Routes tree/blob/commits/branches/tags; `clone-box` archives; `repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref` **PASS**; WR-03 longest-prefix parse wired in tree/blob/blame |
+| 3 | User can create, rename, and delete branches from the web UI where permitted | ✓ VERIFIED | Soft-protect + CR-02 closed: `reject_option_like_branch`, `validate_treeish` leading-`-`, `branch_*` argv `--`; `repo_branch_create_rejects_option_like_name_leaves_default_intact` **PASS**; `repo_branch_soft_protect_blocks_default_rename_and_delete` **PASS** |
+| 4 | Repository objects live on the local filesystem (volume-backed), and git ops use system `git` CLI with docs allowing future gitoxide swap | ✓ VERIFIED | `OCTANEST_REPOS_DIR` + Compose volume; `CliGitBackend`; `assert_git_version` fail-boot; `docs/ARCHITECTURE.md` Cli now / Gix later; no `GixGitBackend` impl body |
+| 5 | Private/non-access returns identical `repo.not_found` (D-23–D-25) | ✓ VERIFIED | `resolve_repo_for_read` + `repo_private_404_*` tests present |
+| 6 | Default-branch rename/delete via intended APIs returns soft-protect error | ✓ VERIFIED | Soft-protect checks + named test **PASS**; CR-02 bypass path closed (injection regression also **PASS**) |
+| 7 | Archive/treeish argv cannot be interpreted as git CLI options | ✓ VERIFIED | `validate_treeish` / `validate_archive_treeish` / `validate_ref` reject leading `-`; `archive` uses `--` before treeish; `repo_archive_rejects_option_like_treeish_no_output_file` **PASS** |
 
-**Score:** 6/7 truths verified (0 present behavior-unverified in score set; 3 backstop items below)
+**Score:** 7/7 truths verified (3 backstop items present, behavior-unverified — see Human Verification)
+
+### Deferred Items
+
+None.
+
+### Advisory (New Scope, Unevidenced)
+
+None — re-verification Step 7 found no new-scope unevidenced blockers. Prior WR-01/WR-02/WR-03 advisories were closed by 07-20/07-21.
+
+### Gap Closure Status (prior CR/WR)
+
+| ID | Prior | Now | Evidence |
+| ---- | ----- | --- | -------- |
+| CR-02 | FAILED (branchCreate `-D` bypass) | **CLOSED** | 07-19; injection test **PASS**; `--` on create/rename/delete |
+| CR-01 | FAILED (`--output=` archive write) | **CLOSED** | 07-20; injection test **PASS**; archive `--` + HTTP leading-`-` |
+| WR-01 | Advisory (orphan name lock) | **CLOSED** | 07-21; recreate test **PASS**; `compensate_failed_create` |
+| WR-02 | Advisory (raw `/` ban) | **CLOSED** | 07-20; `validate_ref` allows `/`, rejects leading `-`; unit tests in `repo_raw.rs` |
+| WR-03 | Advisory (first-segment-only parse) | **CLOSED** | 07-21; longest-prefix + vitest 6/6; knownRefs in tree/blob/blame |
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
-| -------- | -------- | ------ | ------- |
-| `crates/octanest-git/src/cli.rs` | CliGitBackend | ✓ VERIFIED | Substantive (~1267 lines); wired via `AppState.git` — **unsafe argv validation** (gaps) |
+| -------- | ----------- | ------ | ------- |
+| `crates/octanest-git/src/cli.rs` | CliGitBackend + safe argv | ✓ VERIFIED | Leading-`-` in `validate_treeish`; `--` on branch_* and archive |
 | `crates/octanest-git/src/backend.rs` | GitBackend trait | ✓ VERIFIED | Trait + future Gix docs |
 | `crates/octanest-git/src/version.rs` | assert_git_version ≥2.5 | ✓ VERIFIED | Called from `main.rs` → exit(1) |
 | `crates/octanest-db/migrations/*/0007_repositories.sql` | repos schema | ✓ VERIFIED | sqlite/postgres/mysql present |
-| `crates/octanest-api/src/repo/mod.rs` | repo.create + browse/branch | ✓ VERIFIED | Wired to `ctx.git` |
-| `crates/octanest-api/src/routes/repo_raw.rs` | raw + archive HTTP | ✓ VERIFIED | Mounted in `app.rs` — archive validation gap |
+| `crates/octanest-api/src/repo/mod.rs` | create + branch + compensate | ✓ VERIFIED | `reject_option_like_branch`; `compensate_failed_create` |
+| `crates/octanest-api/src/routes/repo_raw.rs` | raw + archive HTTP | ✓ VERIFIED | Leading-`-` reject; slashy refs allowed (WR-02) |
+| `apps/web/src/lib/repo-browse.ts` | hierarchical parse | ✓ VERIFIED | `parseRefAndPath(splat, knownRefs?)` longest-prefix |
+| `apps/web/src/lib/repo-browse.unit.test.ts` | WR-03 unit coverage | ✓ VERIFIED | 6 tests **PASS** |
 | `apps/web/src/routes/new.tsrx` | create UI | ✓ VERIFIED | rpc-gen client create |
-| `apps/web/src/routes/$owner.$repo.{tree,blob,branches,tags,settings}*` | browse UI | ✓ VERIFIED | Routes exist; branches call branchCreate/Rename/Delete |
+| `apps/web/src/routes/$owner.$repo.{tree,blob,blame,branches,tags,settings}*` | browse UI | ✓ VERIFIED | knownRefs wired on tree/blob/blame |
 | `docs/ARCHITECTURE.md` | GitBackend docs | ✓ VERIFIED | CliGitBackend / GixGitBackend section |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
-| `repo/mod.rs` | `CliGitBackend` / trait | `ctx.git.init_bare` / `ls_tree` / `branch_*` | ✓ WIRED | Dyn trait on RpcCtx — gsd-tools path grep false-negative on `cli.rs` literal |
-| `main.rs` | `version.rs` | `assert_git_version` | ✓ WIRED | Import + boot call |
+| `repo/mod.rs` | `CliGitBackend` | `ctx.git.branch_*` / `init_bare` | ✓ WIRED | Dyn trait on RpcCtx |
+| `repo/mod.rs` | `soft_delete_repository` | `compensate_failed_create` | ✓ WIRED | WR-01 on init/seed Err |
+| `main.rs` | `version.rs` | `assert_git_version` | ✓ WIRED | Boot call |
 | `new.tsrx` | `repo.create` | apiClient | ✓ WIRED | |
 | `branches.tsrx` | `repo.branch_*` | apiClient | ✓ WIRED | |
 | `clone-box.tsrx` | archive HTTP | `/api/repos/.../archive/` | ✓ WIRED | |
-| `blob.$.tsrx` | `highlight.ts` | Shiki | ✓ WIRED | grammars for tsrx/ripple |
-| index README | `markdown.ts` | rehype-sanitize | ✓ WIRED | |
+| `repo_raw.rs` | `git.archive` | `serve_archive` | ✓ WIRED | CR-01 hardened |
+| `tree/blob/blame.$.tsrx` | `repo-browse.ts` | `parseRefAndPath(..., knownRefs)` | ✓ WIRED | WR-03 / D-17 |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | -------- | ------------- | ------ | ------------------ | ------ |
-| Tree/blob UI | tree entries / blob bytes | `repo.tree` / `repo.blob` → `git.ls_tree` / `cat_blob` | Yes (CLI) | ✓ FLOWING |
-| Archive download | zip/tar.gz bytes | `serve_archive` → `git.archive` | Yes | ✓ FLOWING (unsafe argv) |
+| Tree/blob UI | tree entries / blob bytes | `repo.tree` / `repo.blob` → CLI | Yes | ✓ FLOWING |
+| Archive download | zip/tar.gz bytes | `serve_archive` → `git.archive` | Yes (safe argv) | ✓ FLOWING |
 | Branch list | refs | `list_refs` | Yes | ✓ FLOWING |
-| /new create | repo row + bare dir | DB insert + `init_bare` | Yes | ✓ FLOWING |
+| /new create | repo row + bare dir | DB insert + `init_bare` (+ compensate) | Yes | ✓ FLOWING |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
+| CR-02 injection closed | `cargo test -p octanest-api --test repo_branch_soft_protect repo_branch_create_rejects_option_like_name_leaves_default_intact -- --exact` | 1 passed | ✓ PASS |
 | Soft-protect default rename/delete | `cargo test -p octanest-api --test repo_branch_soft_protect repo_branch_soft_protect_blocks_default_rename_and_delete -- --exact` | 1 passed | ✓ PASS |
+| CR-01 `--output=` rejected | `cargo test -p octanest-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact` | 1 passed | ✓ PASS |
 | Archive zip/tar.gz nonempty | `cargo test -p octanest-api --test repo_archive repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref -- --exact` | 1 passed | ✓ PASS |
-| CR-02 force-delete via `git branch -D` | Host git: `git branch -D main` as name/start pattern | Deleted branch main | ✗ FAIL (injection works) |
-| CR-01 `--output=` archive | Host git archive with option-like argv | Empty file created | ✗ FAIL (injection works) |
+| WR-01 create compensate | `cargo test -p octanest-api --test repo_create repo_create_git_failure_soft_deletes_row_allows_recreate -- --exact` | 1 passed | ✓ PASS |
+| WR-03 parseRefAndPath | `bunx vitest run src/lib/repo-browse.unit.test.ts` (apps/web) | 6 passed | ✓ PASS |
 
 ### Probe Execution
 
@@ -198,10 +237,10 @@ behavior_unverified_items:
 
 | Requirement | Source Plan | Description | Status | Evidence |
 | ----------- | ---------- | ----------- | ------ | -------- |
-| GIT-01 | 00,02,03,04,09,12,13,16 | Create public/private repo | ✓ SATISFIED | create RPC + /new + migrations |
-| GIT-05 | 00,05,06,07,14,15,18 | Browse files/commits/branches/tags | ✓ SATISFIED | browse APIs + Octane routes (WR-03 slashy-ref URL parse is a warning) |
-| GIT-06 | 00,07,18 | Branch create/rename/delete where permitted | ✗ BLOCKED | Soft-protect bypass CR-02 |
-| GIT-07 | 00,08 | Download source archive | ⚠️ PARTIAL | Happy-path works; CR-01 option injection unfixed |
+| GIT-01 | 00,02,03,04,09,12,13,16,21 | Create public/private repo | ✓ SATISFIED | create RPC + /new + WR-01 compensate |
+| GIT-05 | 00,05,06,07,14,15,18,20,21 | Browse files/commits/branches/tags | ✓ SATISFIED | browse APIs + routes + WR-02/WR-03 |
+| GIT-06 | 00,07,18,19 | Branch create/rename/delete where permitted | ✓ SATISFIED | Soft-protect + CR-02 injection closed |
+| GIT-07 | 00,08,20 | Download source archive | ✓ SATISFIED | Happy-path + CR-01 injection closed |
 | GIT-08 | 00,02,05,09,10,12,17 | Filesystem / volume-backed objects | ✓ SATISFIED | repos_dir + Compose volume + bare layout |
 | GIT-09 | 00,01,11,12,17 | System git CLI ≥2.5 + CliGitBackend | ✓ SATISFIED | version gate + Cli adapter |
 | GIT-10 | 00,01,11,12 | Swappable GitBackend; Gix future docs | ✓ SATISFIED | ARCHITECTURE + trait seam; no gix primary |
@@ -212,35 +251,35 @@ Orphaned phase requirements: none (GIT-02..04 are Phase 8/9 — not Phase 7).
 
 | File | Line | Pattern | Severity | Impact |
 | ---- | ---- | ------- | -------- | ------ |
-| `crates/octanest-git/src/cli.rs` | 58–72, 849–903 | Missing leading-`-` reject / missing `--` before refs | 🛑 BLOCKER | CR-01/CR-02 from 07-REVIEW — unfixed; reproducible |
-| `crates/octanest-api/src/routes/repo_raw.rs` | 42–76 | `validate_archive_treeish` allows option-like refs; raw `validate_ref` rejects `/` | 🛑 BLOCKER / ⚠️ WARNING | CR-01; WR-02 inconsistency |
-| `apps/web/src/lib/repo-browse.ts` | 14–25 | `parseRefAndPath` first-segment-only | ⚠️ WARNING | WR-03 hierarchical branch URLs (D-17) |
-| `crates/octanest-api/src/repo/mod.rs` | ~662–709 | DB row left if git init/seed fails | ⚠️ WARNING | WR-01 — name stuck until manual cleanup |
+| — | — | No unreferenced `TBD`/`FIXME`/`XXX` in gap-closure paths | — | — |
+| — | — | Prior CR-01/CR-02 / WR-01..03 patterns **resolved** | — | Closed by 07-19..21 |
 
-No unreferenced `TBD`/`FIXME`/`XXX` debt markers found in core phase git/repo paths scanned.
+No self-evidencing debt markers; no new-scope unevidenced blockers (advisory list empty).
 
 ### Test Quality Audit
 
 | Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
 |-----------|-----------|--------|---------|----------|-----------------|---------|
-| `repo_branch_soft_protect.rs` | GIT-06 | yes | none found | no | Behavioral | OK for intended paths; **missing** `-D` injection case |
-| `repo_archive.rs` | GIT-07 | yes | none found | no | Behavioral | OK happy-path; **missing** `--output` injection case |
-| `repo_create.rs` / `repo_private_404.rs` | GIT-01/05 | listed | — | no | Behavioral | OK |
-| `highlight.test.ts` | GIT-05/D-19 | yes | — | no | Value | OK for grammar id presence |
+| `repo_branch_soft_protect.rs` | GIT-06 | yes | none | no | Behavioral | OK — includes CR-02 injection case |
+| `repo_archive.rs` | GIT-07 | yes | none | no | Behavioral | OK — includes CR-01 `--output` case |
+| `repo_create.rs` | GIT-01 | yes | none | no | Behavioral | OK — includes WR-01 compensate |
+| `repo-browse.unit.test.ts` | GIT-05 | yes | none | no | Value | OK — hierarchical + fallback |
+| `repo_raw.rs` validate_ref_tests | GIT-05 | yes | none | no | Value | OK — WR-02 slash + leading `-` |
 
 **Disabled tests on requirements:** 0  
 **Circular patterns detected:** 0  
-**Insufficient assertions:** injection cases absent → WARNING (feeds gaps)
+**Insufficient assertions:** 0 (injection regressions now present)
 
 ### Decision Coverage
 
 All trackable CONTEXT.md decisions are honored by shipped artifacts. (38/38 honored; non-blocking)
 
-### Prohibitions (judgment-tier)
+### Prohibitions
 
 | Prohibition | Status | Notes |
 | ----------- | ------ | ----- |
-| Must not allow delete/rename of default branch from Phase 7 API | ⚠️ unverified-prohibition — human review recommended | Violated via CR-02 `branchCreate("-D")` |
+| Must not allow delete/rename of default branch from Phase 7 API | ✓ held | Soft-protect + CR-02 injection regression **PASS** |
+| Must not allow user treeish as git CLI options | ✓ held | CR-01 archive injection regression **PASS** |
 | Must not shell via `sh -c` | ✓ held | argv `Command` arrays only |
 | Must not implement GixGitBackend body | ✓ held | docs only |
 | Must not return archive bytes via JSON RPC | ✓ held | HTTP streaming |
@@ -248,19 +287,43 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts. (38/38 hono
 
 ### Human Verification Required
 
-Status is `gaps_found` (security blockers). After gap closure, still run:
+Automated must-haves are green. Complete these before marking the phase fully passed:
 
-1. **Clone/download box (07-08)** — Code tab: HTTPS + SSH placeholder + archive items  
-2. **Highlight + README sanitize (07-15)** — .ts/.tsrx blob + script-stripped README  
-3. **Backstop visual** — .tsrx/.ripple fidelity; /new textarea wrap; long path ellipsis  
+### 1. Syntax highlighting fidelity (07-00 backstop)
+
+**Test:** Open a seeded blob for `.tsrx` and `.ripple` in the Code UI  
+**Expected:** Tokens highlight via in-repo grammars (not plain TS/JS alias look)  
+**Why human:** `verification: backstop` — grammar presence ≠ visual fidelity
+
+### 2. /new description wrap (07-03 backstop)
+
+**Test:** Paste a long unbroken description on `/new`  
+**Expected:** Text wraps; no horizontal page overflow  
+**Why human:** Layout cannot be proven by grep
+
+### 3. Long path ellipsis (07-15 backstop)
+
+**Test:** Browse a deep/long file path in tree/blob chrome  
+**Expected:** Ellipsis or wrap per UI-SPEC; layout remains usable  
+**Why human:** Visual layout only
+
+### 4. Clone/download box (07-08)
+
+**Test:** On Code tab, confirm HTTPS shown, SSH placeholder, archive menu items present  
+**Expected:** Clone box shows HTTPS + SSH placeholder + archive items  
+**Why human:** Harvested planner human-check — visual chrome
+
+### 5. Highlight + README sanitize (07-15)
+
+**Test:** Open a seeded repo blob for `.ts` / `.tsrx`; confirm highlight + README sanitize (script attempt stripped)  
+**Expected:** Highlight works; script tags stripped from README render  
+**Why human:** Harvested planner human-check — browser behavior
 
 ### Gaps Summary
 
-Feature surface for Phase 7 largely ships (create, browse, archives, branch UI, FS + CliGitBackend + docs). **Goal is blocked** by unfixed **07-REVIEW critical findings CR-01 and CR-02**: git option injection through unvalidated treeish/branch argv. Soft-protect and safe archive invariants fail closed. Warnings WR-01–WR-03 remain advisory relative to those blockers but should be fixed in the same gap-closure pass where practical.
-
-Structured `gaps:` in frontmatter for `/gsd-plan-phase --gaps`.
+Prior **CR-01** and **CR-02** blockers are closed with green injection regressions (07-19, 07-20). Advisory **WR-01**, **WR-02**, and **WR-03** are closed (07-20, 07-21). All seven roadmap/must-have truths verify in code and named tests. Phase status is **human_needed** solely for end-of-phase visual/backstop UAT — not for security or feature gaps.
 
 ---
 
-_Verified: 2026-09-12T19:25:00Z_  
+_Verified: 2026-09-12T20:01:51Z_  
 _Verifier: Claude (gsd-verifier)_
