@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 5
 waived_count: 0
 fixed_count: 0
-total_count: 2
-last_updated: 2026-09-12T17:13:59.869Z
+total_count: 5
+last_updated: 2026-09-12T17:20:43.358Z
 ---
 
 # Broken Windows Ledger
@@ -17,6 +17,9 @@ last_updated: 2026-09-12T17:13:59.869Z
 |----|-------|------|------|------|-------------|--------|--------|-------------|-------------|
 | 1 | 06 | unrun-verify | crates/octanest-api/tests/auth_bootstrap.rs |  | Plan 06-02 full test(bootstrap) filter deferred: allowlist/allow_signup Wave 0 RED owned by 06-03 | open |  | 2026-09-11T20:42:23.023Z |  |
 | 2 | 07 | stub | crates/octanest-git/src/version.rs | 43 | git_archive_formats_zip_and_tar_gz still Wave 0 assert!(false) — archive plan owns | open |  | 2026-09-12T17:13:59.869Z |  |
+| 3 | 07 | stub | apps/web/src/routes/new.tsrx | 206 | Stack/License/.gitignore None placeholders until 07-03 | open |  | 2026-09-12T17:20:43.199Z |  |
+| 4 | 07 | stub | apps/web/src/routes/$owner.$repo.index.tsrx |  | Empty Quick setup only; tree/README deferred to 07-15 | open |  | 2026-09-12T17:20:43.278Z |  |
+| 5 | 07 | deviation | apps/web/src/routes/$owner.$repo.tsrx |  | Added Outlet layout parent required for $owner.$repo.index route | open |  | 2026-09-12T17:20:43.358Z |  |
 
 ````json
 [
@@ -42,6 +45,42 @@ last_updated: 2026-09-12T17:13:59.869Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T17:13:59.869Z",
+    "resolved_at": null
+  },
+  {
+    "id": 3,
+    "kind": "stub",
+    "phase": "07",
+    "file": "apps/web/src/routes/new.tsrx",
+    "line": 206,
+    "description": "Stack/License/.gitignore None placeholders until 07-03",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T17:20:43.199Z",
+    "resolved_at": null
+  },
+  {
+    "id": 4,
+    "kind": "stub",
+    "phase": "07",
+    "file": "apps/web/src/routes/$owner.$repo.index.tsrx",
+    "line": null,
+    "description": "Empty Quick setup only; tree/README deferred to 07-15",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T17:20:43.278Z",
+    "resolved_at": null
+  },
+  {
+    "id": 5,
+    "kind": "deviation",
+    "phase": "07",
+    "file": "apps/web/src/routes/$owner.$repo.tsrx",
+    "line": null,
+    "description": "Added Outlet layout parent required for $owner.$repo.index route",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T17:20:43.358Z",
     "resolved_at": null
   }
 ]
