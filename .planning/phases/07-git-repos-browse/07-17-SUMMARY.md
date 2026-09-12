@@ -15,7 +15,7 @@ affects: [07-10, 07-11, compose-ops]
 actuals:
   tokens: 1440
   tasks: 1
-  commits: 1
+  commits: 3
 
 plan_head_before: c6f7cd3a35691cc9313e22cffa06ae6e1f599cc6
 
@@ -91,7 +91,7 @@ Each task was committed atomically:
 
 1. **Task 1: Fail-boot git gate + Dockerfile/Compose repos volume** - `3cd14a4` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `4f49b61` (docs: complete plan)
 
 ## Files Created/Modified
 
