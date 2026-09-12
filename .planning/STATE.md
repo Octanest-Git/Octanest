@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-09-PLAN.md
-last_updated: "2026-09-12T18:50:42.935Z"
+stopped_at: Completed 07-10-PLAN.md
+last_updated: "2026-09-12T19:02:10.794Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: 4f3cfbba9d690290ac04ea5c8bdda9a6b3f31ddb
+state_head: caf38a0a1565e5f5e69524090eed25873c02d4c3
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 58
+  completed_plans: 59
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 18 of 19
+Plan: 19 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -108,6 +108,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07 P08 | 7min | 2 tasks | 10 files |
 | Phase 07-git-repos-browse P18 | 5min | 1 tasks | 6 files |
 | Phase 07 P09 | 6min | 2 tasks | 13 files |
+| Phase 07-git-repos-browse P10 | 10min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -225,6 +226,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Tags UI list+download only; tip SHA shown without per-ref updated timestamps
 - [Phase 07]: RPC camelCase repo.updateVisibility / repo.softDelete; soft-delete confirmName server-side; disk purge deferred to 07-10
 - [Phase 07]: Settings visibility UI reuses /new Public/Private buttons (no new radio-group)
+- [Phase 07]: Cleanup frequency/retention via ENV (not new DB columns) to avoid schema migration in Phase 7
+- [Phase 07]: orphan_reconcile keeps soft-deleted dirs until retention; ENV knobs for interval/gc
 
 ### Pending Todos
 
@@ -246,6 +249,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T18:50:42.885Z
-Stopped at: Completed 07-09-PLAN.md
+Last session: 2026-09-12T19:02:10.742Z
+Stopped at: Completed 07-10-PLAN.md
 Resume file: None
