@@ -1,143 +1,122 @@
 ---
 phase: 07-git-repos-browse
-reviewed: 2026-09-12T19:15:00Z
+reviewed: 2026-09-12T20:03:32Z
 depth: standard
-files_reviewed: 42
+files_reviewed: 11
 files_reviewed_list:
   - crates/octanest-git/src/cli.rs
-  - crates/octanest-git/src/backend.rs
-  - crates/octanest-git/src/lib.rs
-  - crates/octanest-git/src/version.rs
-  - crates/octanest-api/src/repo/acl.rs
   - crates/octanest-api/src/repo/mod.rs
-  - crates/octanest-api/src/repo/templates.rs
   - crates/octanest-api/src/routes/repo_raw.rs
-  - crates/octanest-api/src/git/mod.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/main.rs
-  - crates/octanest-api/src/auth/admin.rs
-  - crates/octanest-api/src/jobs/mod.rs
-  - crates/octanest-api/src/jobs/reconcile.rs
-  - crates/octanest-api/src/jobs/schedule.rs
-  - crates/octanest-db/src/repositories.rs
-  - crates/octanest-db/migrations/sqlite/0007_repositories.sql
-  - crates/octanest-db/migrations/postgres/0007_repositories.sql
-  - crates/octanest-db/migrations/mysql/0007_repositories.sql
-  - crates/octanest-core/src/repo_types.rs
-  - apps/web/src/lib/markdown.ts
-  - apps/web/src/lib/markdown.test.ts
-  - apps/web/src/lib/highlight.ts
+  - crates/octanest-api/tests/repo_branch_soft_protect.rs
+  - crates/octanest-api/tests/repo_archive.rs
+  - crates/octanest-api/tests/repo_create.rs
   - apps/web/src/lib/repo-browse.ts
-  - apps/web/src/components/repo/blob-viewer.tsrx
-  - apps/web/src/components/repo/readme-panel.tsrx
-  - apps/web/src/components/repo/repo-chrome.tsrx
-  - apps/web/src/components/repo/clone-box.tsrx
-  - apps/web/src/components/repo/file-tree.tsrx
-  - apps/web/src/components/repo/repo-not-found.tsrx
-  - apps/web/src/routes/$owner.$repo.settings.tsrx
-  - apps/web/src/routes/new.tsrx
-  - apps/web/src/routes/$owner.$repo.tsrx
+  - apps/web/src/lib/repo-browse.unit.test.ts
   - apps/web/src/routes/$owner.$repo.tree.$.tsrx
   - apps/web/src/routes/$owner.$repo.blob.$.tsrx
-  - crates/octanest-api/tests/repo_private_404.rs
-  - crates/octanest-api/tests/repo_branch_soft_protect.rs
-  - crates/octanest-api/tests/repo_settings_visibility_delete.rs
-  - crates/octanest-api/tests/repo_archive.rs
-  - packages/api-client/src/index.ts
-  - Cargo.toml
+  - apps/web/src/routes/$owner.$repo.blame.$.tsrx
 findings:
-  critical: 2
-  warning: 3
-  info: 2
+  critical: 0
+  warning: 4
+  info: 3
   total: 7
 status: issues_found
 ---
 
 # Phase 07: Code Review Report
 
-**Reviewed:** 2026-09-12T19:15:00Z
+**Reviewed:** 2026-09-12T20:03:32Z
 **Depth:** standard
-**Files Reviewed:** 42
+**Files Reviewed:** 11
 **Status:** issues_found
 
 ## Summary
 
-Phase 07 ACL (`resolve_repo_for_read` / owner mutate → identical `repo.not_found`), soft-delete SQL filters, markdown `rehype-sanitize`, and RPC auth gating for mutate/admin paths look sound. Two **critical** git argv issues remain: `validate_treeish` / archive treeish validation does not reject leading `-`, enabling option injection — including **arbitrary file create/truncate via `git archive --output=`** on public repos (anonymous), and **default-branch force-delete via `repo.branchCreate` with `branch="-D"`**.
+Gap-closure plans **07-19 / 07-20 / 07-21** close the prior **CR-01** (archive `--output=`), **CR-02** (`branchCreate(-D)`), **WR-01** (create compensate), **WR-02** (raw `/` parity), and **WR-03** (longest-prefix `parseRefAndPath`) issues from the earlier phase review. Defense-in-depth is real: leading-`-` rejects at CLI + HTTP/API, and `"--"` precedes user operands on archive and branch mutate. Residual **warnings** are incomplete API reject on rename/delete, silent hierarchical-parse fallback when `repo.refs` fails, soft_delete errors swallowed in compensate, and a too-loose injection regression assertion.
 
-## Critical Issues
-
-### CR-01: Archive treeish option injection writes/truncates arbitrary files
-
-**File:** `crates/octanest-git/src/cli.rs:885-903` (caller: `crates/octanest-api/src/routes/repo_raw.rs:54-76`, `239-272`)
-**Issue:** `archive` passes user `treeish` as a trailing argv after `--format` / `--prefix`. Values starting with `-` are accepted by `validate_treeish` / `validate_archive_treeish`. Git treats `--output=/path` as an option and **creates/truncates that path** (verified: empty file created even when the command then fails for missing tree-ish). Any caller who can hit `GET /api/repos/{owner}/{repo}/archive/--output=<path>.zip` on a readable (e.g. public) repo can write as the API process user — disk wipe/truncate risk outside the repos root.
-**Fix:** Reject option-like refs and force end-of-options before the revision:
-
-```rust
-fn validate_treeish(treeish: &str) -> Result<&str, GitError> {
-    let t = treeish.trim();
-    if t.is_empty() || t.starts_with('-') || t.contains('\0') || t.contains("..") {
-        return Err(GitError::InvalidArg(format!("invalid treeish: {treeish}")));
-    }
-    // ... existing metacharacter checks ...
-    Ok(t)
-}
-
-// In archive / all git calls that take a revision:
-run_git_stdout(&["-C", repo_s, "archive", format_arg, prefix_arg, "--", treeish])
-```
-
-Apply the same `starts_with('-')` + `"--"` pattern in `repo_raw::validate_archive_treeish` / `validate_ref`.
-
-### CR-02: `repo.branchCreate` with `branch="-D"` force-deletes the start ref (bypasses soft-protect)
-
-**File:** `crates/octanest-git/src/cli.rs:849-859` (caller: `crates/octanest-api/src/repo/mod.rs:466-495`)
-**Issue:** `branch_create` runs `git branch <name> <start>`. If `name` is `-D` (or `-d` / `-M` / …) and `start` is `main`, this becomes `git branch -D main`, **force-deleting the default branch** without going through `branch_delete` soft-protect (`repo.default_branch_protected`). Confirmed with system git. Owner-only, but destroys protected refs and violates D-28.
-**Fix:** Reject leading `-` in branch/ref validators (same as CR-01) and insert `"--"` before name/start:
-
-```rust
-run_git(&["-C", repo_s, "branch", "--", name, start]).await?;
-// similarly for branch_rename / branch_delete
-```
-
-Also reject reserved option tokens (`-d`, `-D`, `-m`, `-M`, `-f`, …) explicitly in API input validation.
+## Narrative Findings (AI reviewer)
 
 ## Warnings
 
-### WR-01: `repo.create` leaves DB row if `init_bare` / `seed_commit` fails
+### WR-01: `branch_rename` / `branch_delete` skip API `reject_option_like_branch`
 
-**File:** `crates/octanest-api/src/repo/mod.rs:662-709`
-**Issue:** After a successful `insert_repository`, git failures return `repo.git_init_failed` / `repo.git_seed_failed` without rolling back or soft-deleting the row. The name remains taken (`deleted_at IS NULL`), so the owner cannot recreate; reconcile will not purge it (row is “known”).
-**Fix:** On git failure after insert, soft-delete or hard-delete the row (and remove any partial bare dir under `repos_dir`), or wrap create in a compensating transaction pattern.
+**File:** `crates/octanest-api/src/repo/mod.rs:543-610` (contrast create at `521-528`)
+**Issue:** `repo.branchCreate` rejects leading-`-` names at the API before git. Rename/delete rely only on CLI `validate_treeish` + `"--"`. Not exploitable today (CLI blocks), but defense-in-depth is inconsistent with the CR-02 pattern and a future CLI bypass would hit rename/delete first.
+**Fix:** Call `reject_option_like_branch` on `from`/`to` (rename) and `branch` (delete) the same way as create:
 
-### WR-02: Raw HTTP refs reject `/` while archive/RPC allow slashy branch names
+```rust
+reject_option_like_branch(from)?;
+reject_option_like_branch(to)?;
+// ...
+reject_option_like_branch(branch)?;
+```
 
-**File:** `crates/octanest-api/src/routes/repo_raw.rs:42-51` vs `54-76`
-**Issue:** `validate_ref` for raw blobs rejects `/`, so branches like `feature/x` cannot be downloaded via `/raw/...`, while `validate_archive_treeish` and CLI `validate_treeish` allow `/`. Inconsistent browse vs archive/raw behavior.
-**Fix:** Align raw ref validation with archive (allow `/`, still reject `..`, NUL, metacharacters, and leading `-`).
+### WR-02: Hierarchical browse silently regresses when `repo.refs` fails
 
-### WR-03: UI `parseRefAndPath` cannot represent refs containing `/`
+**File:** `apps/web/src/routes/$owner.$repo.tree.$.tsrx:80-84` (same pattern in blob `79-83`, blame `84-87`)
+**Issue:** On `refsRes.ok === false`, routes set `knownRefs = []` and still call `parseRefAndPath(splat, knownRefs)`. Empty known refs forces first-segment split, so `feature/foo/src` becomes ref=`feature`, path=`foo/src` — WR-03 / D-17 breaks without a user-visible refs error.
+**Fix:** If refs fail after a successful `repo.get`, surface an error phase (or retry) instead of parsing with an empty known-ref list; only fall back to first-segment when refs intentionally empty (new empty repo).
 
-**File:** `apps/web/src/lib/repo-browse.ts:14-25`
-**Issue:** Only the first splat segment is treated as `ref`; `feature/foo/path` is parsed as ref=`feature`, path=`foo/path`. Breaks tree/blob/blame URLs for hierarchical branch names (D-17).
-**Fix:** Resolve ref against `repo.refs` (longest prefix match) before splitting path, or use a delimiter that cannot appear in refs.
+```typescript
+if (!refsRes.ok) {
+  setPhase({ kind: "error", message: refsRes.error.message || "Could not load refs." });
+  return;
+}
+const knownRefs = refsRes.data.refs.map((r) => shortRefName(r.name));
+```
+
+### WR-03: `compensate_failed_create` ignores soft-delete failure
+
+**File:** `crates/octanest-api/src/repo/mod.rs:104-111` (callers `726`, `749`)
+**Issue:** If `soft_delete_repository` fails, compensate only logs and create still returns `repo.git_init_failed` / `repo.git_seed_failed`. The live row remains (`deleted_at IS NULL`), so the name stays blocked — the WR-01 failure mode the compensate path was meant to eliminate.
+**Fix:** Propagate soft-delete failure (or retry once) and return a distinct error so the client/ops know the row was not cleared; do not claim a clean git-only failure:
+
+```rust
+async fn compensate_failed_create(...) -> Result<(), AppError> {
+    ctx.db.soft_delete_repository(repo_id).await.map_err(|e| {
+        tracing::error!(error = %e, repo_id, "soft_delete_repository failed during create compensate");
+        AppError::new("repo.create_compensate_failed", "failed to clean up after repository create error")
+    })?;
+    // best-effort path remove...
+    Ok(())
+}
+```
+
+### WR-04: Option-injection regression assertion accepts any `repo.*` code
+
+**File:** `crates/octanest-api/tests/repo_branch_soft_protect.rs:251-255`
+**Issue:** The CR-02 test allows `code.starts_with("repo.")`, so a mis-routed `repo.git_failed` / unrelated `repo.*` error would still pass while soft-protect on `main` might coincidentally hold. Weakens the regression harness for the exact fail-closed contract (`repo.invalid_ref`).
+**Fix:** Assert the specific code (and optionally message shape) produced by `reject_option_like_branch`:
+
+```rust
+assert_eq!(
+    create["error"]["code"], "repo.invalid_ref",
+    "option-like branchCreate must be invalid_ref — {create}"
+);
+```
 
 ## Info
 
-### IN-01: Markdown XSS path is correctly sanitized
+### IN-01: `head()` still first-segment-only for hierarchical refs
 
-**File:** `apps/web/src/lib/markdown.ts:12-20`
-**Issue:** None — `rehype-sanitize` is last; tests assert script/onerror stripping. README `dangerouslySetInnerHTML` is acceptable given sanitize.
-**Fix:** N/A (keep sanitize last; avoid `allowDangerousHtml: true` on `remarkRehype`).
+**File:** `apps/web/src/routes/$owner.$repo.tree.$.tsrx:22-25` (blob `22-25`, blame `20-23`)
+**Issue:** Document titles can show the wrong path segment for slashy branches because `head()` calls `parseRefAndPath(splat)` without `knownRefs` (intentional per 07-21). Page body parse is correct after refs load.
+**Fix:** Optional later: load refs in a route loader before `head`, or omit path from title until body resolves.
 
-### IN-02: Highlight HTML injects `data-language` without escaping
+### IN-02: Duplicated HTTP ref validators risk drift
 
-**File:** `apps/web/src/lib/highlight.ts:130-135`
-**Issue:** `lang` is interpolated into HTML. Currently constrained to loaded language ids / `plaintext`, so not exploitable today.
-**Fix:** Escape `lang` (or only allow `[a-z0-9-]+`) before interpolation.
+**File:** `crates/octanest-api/src/routes/repo_raw.rs:42-90`
+**Issue:** `validate_ref` and `validate_archive_treeish` are identical. Future hardening on one path can miss the other (as happened historically with `/` bans).
+**Fix:** Extract a shared `validate_http_treeish` used by both raw and archive.
+
+### IN-03: Non-branch/archive git calls still omit `"--"` before revisions
+
+**File:** `crates/octanest-git/src/cli.rs` (`ls_tree` ~445, `log` ~614, `show` ~641, `blame` ~812, `diff` ~737)
+**Issue:** Those commands place user treeish after flags without an end-of-options marker. Leading-`-` is already rejected by `validate_treeish` (07-19), so CR-01-class injection is blocked; `"--"` would be extra belt-and-suspenders only.
+**Fix:** Optionally insert `"--"` before revision operands for consistency with archive/branch.
 
 ---
 
-_Reviewed: 2026-09-12T19:15:00Z_
+_Reviewed: 2026-09-12T20:03:32Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
