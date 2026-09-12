@@ -260,3 +260,77 @@ async fn repo_archive_empty_repo_structured_failure() {
         "structured error code required — {v}"
     );
 }
+
+/// CR-01 / GIT-07: option-like archive treeish must not create/truncate files via git --output=.
+#[tokio::test]
+async fn repo_archive_rejects_option_like_treeish_no_output_file() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let monitored = dir.path().join("cr01_pwned_output.zip");
+    assert!(
+        !monitored.exists(),
+        "monitored path must not exist before request"
+    );
+
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_archive_cr01.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "cr01@ex.com", "cr01owner").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"cr01pub","visibility":"public","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    assert_eq!(create_v["ok"], true, "create — {create_v}");
+
+    // Treeish path segment: --output=<monitored> — encode `/` so it stays one path segment.
+    let treeish = format!("--output={}", monitored.display());
+    let encoded = treeish.replace('/', "%2F");
+    let archive_uri = format!("/api/repos/cr01owner/cr01pub/archive/{encoded}.zip");
+
+    let res = app
+        .clone()
+        .oneshot(archive_req(&archive_uri, Some(&cookie)))
+        .await
+        .unwrap();
+    assert!(
+        res.status().is_client_error(),
+        "option-like treeish must be 4xx, got {}",
+        res.status()
+    );
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false, "must fail — {v}");
+    assert_eq!(
+        v["error"]["code"], "repo.invalid_ref",
+        "option-like treeish must be invalid_ref — {v}"
+    );
+    // HTTP-boundary reject (validate_archive_treeish), not only CLI validate_treeish (CR-01 defense-in-depth).
+    assert_eq!(
+        v["error"]["message"].as_str(),
+        Some("invalid ref"),
+        "must reject at HTTP validate_archive_treeish — {v}"
+    );
+    assert!(
+        !monitored.exists(),
+        "CR-01: monitored --output path must not exist after request"
+    );
+}
