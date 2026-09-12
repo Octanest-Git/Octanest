@@ -108,7 +108,7 @@ Each task was committed atomically:
 1. **Task 1: ARCHITECTURE GitBackend + CONFIGURATION cross-check** - `99bb6e4` (docs)
 2. **Task 2: VALIDATION map refresh + rpc-gen smoke** - `3d38b02` (docs)
 
-**Plan metadata:** _(pending final docs commit)_
+**Plan metadata:** `431e938` (docs: complete plan)
 
 ## Files Created/Modified
 
