@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-09-12T15:25:20.936Z"
+stopped_at: Phase 7 UI-SPEC drafted
+last_updated: "2026-09-12T15:35:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 7 discuss complete — 07-CONTEXT.md captured (git CLI primary, GitHub-like browse)
-state_head: 904fae2c8611c49a101917a082811314369886cc
+last_activity_desc: Phase 7 UI-SPEC drafted — GitHub-like browse/create contract extending Phase 3–6 tokens
+state_head: 3394bbb
 progress:
   total_phases: 22
   completed_phases: 6
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
-Status: Context gathered — ready to plan
-Last activity: 2026-09-12 — Discuss-phase complete; CONTEXT locks create/browse/visibility/branches/storage (git CLI 2.5+, gitoxide later)
+Status: UI-SPEC draft ready for checker — then plan
+Last activity: 2026-09-12 — 07-UI-SPEC.md written (extends Phase 3–6; create/browse/home/factory-reset)
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 context ready — Nyquist compliant for closed phases
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC draft — Nyquist compliant for closed phases
 
-See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
+See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/07-git-repos-browse/07-UI-SPEC.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
 
 ## Performance Metrics
 
