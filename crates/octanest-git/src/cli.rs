@@ -864,7 +864,8 @@ impl GitBackend for CliGitBackend {
         let from = validate_treeish(from)?;
         let to = validate_treeish(to)?;
         let repo_s = repo_str(repo)?;
-        run_git(&["-C", repo_s, "branch", "-m", from, to]).await?;
+        // Known flag -m, then end-of-options before user operands (CR-02).
+        run_git(&["-C", repo_s, "branch", "-m", "--", from, to]).await?;
         Ok(())
     }
 
@@ -872,7 +873,8 @@ impl GitBackend for CliGitBackend {
         let name = validate_treeish(name)?;
         let repo_s = repo_str(repo)?;
         // Force delete: forge UI confirms; bare repos have no "unmerged" worktree concept.
-        run_git(&["-C", repo_s, "branch", "-D", name]).await?;
+        // Known flag -D, then end-of-options before user operand (CR-02).
+        run_git(&["-C", repo_s, "branch", "-D", "--", name]).await?;
         Ok(())
     }
 
