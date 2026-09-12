@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-20-PLAN.md
-last_updated: "2026-09-12T19:53:21.495Z"
+stopped_at: Completed 07-21-PLAN.md
+last_updated: "2026-09-12T19:59:06.249Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: fcb8e14ad040094fd918018dcce674cea114fdee
+state_head: 809005287a95d108dad4d9ad26b8ff08f5de29a9
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 63
-  completed_plans: 62
+  completed_plans: 63
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 21 of 22 (next: 07-21 gap closure)
+Plan: 22 of 22 (next: 07-21 gap closure)
 Status: Ready to execute
 Last activity: 2026-09-12 — Completed 07-20 CR-01 / WR-02 gap closure
 
@@ -112,6 +112,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07-git-repos-browse P11 | 3min | 2 tasks | 3 files |
 | Phase 07-git-repos-browse P19 | 2 min | 2 tasks | 4 files |
 | Phase 07 P20 | 2 min | 2 tasks | 5 files |
+| Phase 07-git-repos-browse P21 | 4 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -238,6 +239,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Known flags -m/-D stay before --; user from/to/name always after end-of-options — Defense in depth so operands cannot slide into option position (CR-02)
 - [Phase 07]: RED for archive CR-01 asserts HTTP-boundary invalid ref message so intentional fail remains after 07-19 CLI validate_treeish — Bare 4xx+no-file would unexpected-GREEN after plan 19
 - [Phase 07]: validate_ref allows slashy hierarchical refs and rejects leading hyphen like archive — WR-02 / GIT-05 browse parity with CR-01 defense-in-depth
+- [Phase 07]: compensate_failed_create soft-deletes then remove_dir_all with remove_file fallback for blocking non-dir paths — WR-01 recreate must clear both DB name lock and stuck bare path
+- [Phase 07]: Route bodies fetch repo.refs before parseRefAndPath; document.head() keeps first-segment-only — Refs unavailable in head hook; page load re-parses for WR-03/D-17
 
 ### Pending Todos
 
@@ -259,6 +262,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T19:53:21.438Z
-Stopped at: Completed 07-20-PLAN.md
+Last session: 2026-09-12T19:59:06.197Z
+Stopped at: Completed 07-21-PLAN.md
 Resume file: None
