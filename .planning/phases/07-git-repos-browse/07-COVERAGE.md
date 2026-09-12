@@ -1,7 +1,7 @@
 # API Coverage — system `git` CLI
 
 > Full coverage by default. Opt-outs are explicit, reasoned decisions.
-> Phase 7 integrates the host/container `git` binary (≥2.5) behind `GitBackend` / `CliGitBackend` (D-32, D-33). Not a network SaaS API — same gate applies to external tool capability surfaces.
+> Phase 7 integrates the host/container `git` binary (≥2.5) behind the **`GitBackend`** identity noun (`CliGitBackend` shipped adapter; `GixGitBackend` future adapter) — D-32, D-33. Not a network SaaS API — same gate applies to external tool capability surfaces.
 
 | capability | decision | reason |
 |---|---|---|

@@ -25,7 +25,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - [ ] Backend services in Rust
 - [ ] Shared types: Rust is source of truth; TypeScript client/types via RPC codegen (rspc/specta-style) with watch-friendly regen in development
 - [ ] App data store supports SQLite, PostgreSQL, and MySQL (operator-selected via config)
-- [ ] Git object layer prefers pure Rust (gitoxide) on filesystem storage; real `git` CLI documented as fallback if needed
+- [ ] Git object layer uses system `git` CLI (≥2.5) behind a `GitBackend` seam on filesystem storage; future gitoxide/`gix` adapter documented when coverage allows
 - [ ] Email/password signup, login, logout, and persistent sessions
 - [ ] Email delivery: log/dev sink when unconfigured; SMTP and Resend when configured
 - [ ] Email verification required before privileged cloud actions (e.g. create repos)
@@ -83,7 +83,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 - **Backend:** Rust for forge/API/git-facing services
 - **Type safety:** Rust → TypeScript via RPC + codegen (rspc / specta-style); procedures and types stay in sync with watch-friendly regen in development
 - **App database:** SQLite, PostgreSQL, and MySQL all supported via one storage abstraction; instance chooses dialect through config/env
-- **Git engine:** Prefer **gitoxide** (pure Rust) with repos on filesystem volumes; keep **`git` CLI + filesystem** as an explicit fallback path if protocol/compat gaps block progress
+- **Git engine:** **System `git` CLI (≥2.5)** via **`GitBackend` / `CliGitBackend`** with repos on filesystem volumes; document a future **gitoxide/`gix` (`GixGitBackend`)** adapter when feature coverage allows
 - **Email:** Unconfigured → log/dev sink; configured → **SMTP** and **Resend** adapters
 - **Project CI:** Docker Compose build + validation on every PR (the path that ships)
 
@@ -109,7 +109,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Backend: **Rust** | Performance/correctness for git-heavy forge services | ✓ Good |
 | Types: **RPC + codegen (rspc/specta-style)** | End-to-end procedure + type safety; watch regen in dev | ✓ Good |
 | App DB: **SQLite + Postgres + MySQL** | Operator choice; one abstraction, three dialects | ✓ Good |
-| Git engine: **gitoxide preferred** | Pure Rust; `git` CLI fallback documented if compat fails | ✓ Good |
+| Git engine: **CLI-primary + GitBackend** | System `git` now (`CliGitBackend`); future `GixGitBackend` when coverage allows (D-32) | ✓ Good |
 | Email: **log sink / SMTP / Resend** | Safe default locally; real relays when configured | ✓ Good |
 | Git HTTPS: **PATs only** | No account password over git; create/revoke in UI | ✓ Good |
 | PR merges: **merge / squash / rebase** | All three strategies; per-repo enable/disable | ✓ Good |
@@ -121,4 +121,4 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Phase 3: **semantic tokens + PWA shell** | Squircle mark, system/light/dark, assets-only SW | ✓ Good |
 
 ---
-*Last updated: 2026-09-09 after Phase 3*
+*Last updated: 2026-09-12 after Phase 7 D-32 git engine amend*
