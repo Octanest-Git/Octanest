@@ -209,6 +209,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.listMine" => match repo::list_mine(ctx).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.createDefaults" => match repo::create_defaults(ctx).await {
             Ok(defaults) => RpcResponse::ok(defaults),
             Err(e) => RpcResponse::err(e),

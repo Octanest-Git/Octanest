@@ -78,6 +78,12 @@ pub struct RepoPublic {
     pub updated_at: String,
 }
 
+/// `repo.listMine` — caller's non-deleted repos, recently updated first (GIT-01 / D-13).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoListMineResponse {
+    pub repos: Vec<RepoPublic>,
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {

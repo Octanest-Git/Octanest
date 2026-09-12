@@ -32,7 +32,16 @@ export type HomeLoaderData = {
 
 export const Route = createFileRoute("/")({
   component: HomePage,
-  head: () => ({ meta: [{ title: "Octanest" }] }),
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title:
+          (loaderData as HomeLoaderData | undefined)?.tree === "signed-in"
+            ? "Repositories · Octanest"
+            : "Octanest",
+      },
+    ],
+  }),
   loader: async (): Promise<HomeLoaderData> => {
     // needs_setup / must_change are owned by root beforeLoad — do not re-lock here.
     let user: UserPublic | null = null;

@@ -130,6 +130,13 @@ impl Database {
         repositories::find_by_id(self.require_pool()?, id).await
     }
 
+    pub async fn list_repositories_by_owner(
+        &self,
+        owner_id: &str,
+    ) -> Result<Vec<RepositoryRow>, String> {
+        repositories::list_by_owner(self.require_pool()?, owner_id).await
+    }
+
     // --- users ---
 
     pub async fn create_user(

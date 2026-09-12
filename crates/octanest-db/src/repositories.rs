@@ -182,6 +182,45 @@ pub async fn find_by_owner_and_name(
     }
 }
 
+/// List non-deleted repos for an owner, most recently updated first (GIT-01 / D-13).
+pub async fn list_by_owner(
+    pool: &DbPool,
+    owner_id: &str,
+) -> Result<Vec<RepositoryRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{REPO_SELECT_PG} WHERE owner_id = $1 AND deleted_at IS NULL ORDER BY updated_at DESC"
+            ))
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repositories failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(&format!(
+                "{REPO_SELECT_MYSQL} WHERE owner_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC"
+            ))
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repositories failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(&format!(
+                "{REPO_SELECT_SQLITE} WHERE owner_id = ?1 AND deleted_at IS NULL ORDER BY updated_at DESC"
+            ))
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repositories failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+    }
+}
+
 pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<RepositoryRow>, String> {
     match pool {
         DbPool::Postgres(p) => {

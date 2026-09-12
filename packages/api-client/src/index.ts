@@ -175,6 +175,10 @@ export type RepoPublic = {
   updated_at: string;
 };
 
+export type RepoListMineResponse = {
+  repos: RepoPublic[];
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -241,6 +245,7 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<UserPublic>(opts, "user.update_profile", input),
     },
     repo: {
+      listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
@@ -382,6 +387,17 @@ export function userUpdateProfileMutationOptions(client: OctanestClient) {
   };
 }
 
+export function repoListMineQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["repo", "listMine"] as const,
+    queryFn: async () => {
+      const res = await client.repo.listMine();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function repoCreateMutationOptions(client: OctanestClient) {
   return {
     mutationKey: ["repo", "create"] as const,
@@ -422,6 +438,7 @@ export const queryOptions = {
   authMe: authMeQueryOptions,
   authProviderConfig: authProviderConfigQueryOptions,
   userGetProfile: userGetProfileQueryOptions,
+  repoListMine: repoListMineQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {

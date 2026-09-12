@@ -72,14 +72,22 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Create your first repository" }),
+      ).toBeInTheDocument();
+    });
 
-    const cta = screen.getByRole("button", { name: "New repository" });
-    expect(cta).toBeDisabled();
-    expect(cta).toHaveAttribute("aria-disabled", "true");
-    expect(cta).toHaveAttribute(
-      "title",
-      "Verify your email to create a repository.",
-    );
+    const ctas = screen.getAllByRole("button", { name: "New repository" });
+    expect(ctas.length).toBeGreaterThanOrEqual(1);
+    for (const cta of ctas) {
+      expect(cta).toBeDisabled();
+      expect(cta).toHaveAttribute("aria-disabled", "true");
+      expect(cta).toHaveAttribute(
+        "title",
+        "Verify your email to create a repository.",
+      );
+    }
     expect(
       screen.getByText("Verify your email to create a repository."),
     ).toBeInTheDocument();
@@ -91,10 +99,18 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Create your first repository" }),
+      ).toBeInTheDocument();
+    });
 
-    const cta = screen.getByRole("link", { name: "New repository" });
-    expect(cta).toHaveAttribute("href", "/new");
-    expect(cta).not.toHaveAttribute("aria-disabled", "true");
+    const ctas = screen.getAllByRole("link", { name: "New repository" });
+    expect(ctas.length).toBeGreaterThanOrEqual(1);
+    for (const cta of ctas) {
+      expect(cta).toHaveAttribute("href", "/new");
+      expect(cta).not.toHaveAttribute("aria-disabled", "true");
+    }
     expect(
       screen.queryByText("Verify your email to create a repository."),
     ).not.toBeInTheDocument();

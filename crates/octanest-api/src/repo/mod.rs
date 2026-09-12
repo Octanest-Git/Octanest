@@ -3,8 +3,8 @@
 mod templates;
 
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoCreateDefaults, RepoPublic,
-    RepoVisibility,
+    validate_repo_name, AppError, CreateRepoRequest, RepoCreateDefaults, RepoListMineResponse,
+    RepoPublic, RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -49,6 +49,50 @@ async fn resolve_visibility(
             Ok(RepoVisibility::Public)
         }
     }
+}
+
+fn require_session_user(
+    ctx: &RpcCtx,
+) -> Result<&crate::auth::session::ResolvedSession, AppError> {
+    ctx.session.as_ref().ok_or_else(|| {
+        AppError::new("auth.unauthenticated", "not authenticated")
+    })
+}
+
+/// `repo.listMine` — caller's non-deleted repos sorted by updated_at desc (GIT-01 / D-13).
+pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
+    let session = require_session_user(ctx)?;
+    let user = ctx
+        .db
+        .find_user_by_id(&session.user_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "not authenticated"))?;
+
+    let rows = ctx
+        .db
+        .list_repositories_by_owner(&user.id)
+        .await
+        .map_err(db_err)?;
+
+    let repos = rows
+        .into_iter()
+        .map(|row| {
+            let visibility = RepoVisibility::parse(&row.visibility).unwrap_or(RepoVisibility::Public);
+            RepoPublic {
+                id: row.id,
+                owner_id: row.owner_id,
+                owner_username: user.username.clone(),
+                name: row.name,
+                description: row.description,
+                visibility,
+                default_branch: row.default_branch,
+                updated_at: row.updated_at,
+            }
+        })
+        .collect();
+
+    Ok(RepoListMineResponse { repos })
 }
 
 /// `repo.createDefaults` — visibility default + stack/gitignore catalogs for `/new`.
