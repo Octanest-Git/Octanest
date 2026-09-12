@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Auth Sessions & Email** - Signup, login, logout, sessions, profile, email providers (completed 2026-09-10)
 - [x] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset (completed 2026-09-11)
 - [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
-- [ ] **Phase 7: Git Repos & Browse** - gitoxide filesystem repos, create, browse, branches, archives
+- [ ] **Phase 7: Git Repos & Browse** - system git CLI filesystem repos, create, browse, branches, archives
 - [ ] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens
 - [ ] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
 - [ ] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement
@@ -211,7 +211,7 @@ Plans:
 
 ### Phase 7: Git Repos & Browse
 
-**Goal**: Users can create filesystem-backed repos and browse history in the UI, powered primarily by gitoxide with a documented CLI fallback boundary
+**Goal**: Users can create filesystem-backed repos and browse history in the UI via system `git` CLI behind a `GitBackend` seam, with a documented future gitoxide path
 **Depends on**: Phase 5, Phase 6
 **Requirements**: GIT-01, GIT-05, GIT-06, GIT-07, GIT-08, GIT-09, GIT-10
 **Success Criteria** (what must be TRUE):
@@ -219,9 +219,22 @@ Plans:
   1. Authenticated (and verified, on cloud) user can create a public or private repository
   2. User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref
   3. User can create, rename, and delete branches from the web UI where permitted
-  4. Repository objects live on the local filesystem (volume-backed), and git operations use gitoxide with architecture docs allowing a `git` CLI backend swap
+  4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: TBD
+**Plans**: 12 plans
+Plans:
+- [ ] 07-00-PLAN.md — Wave 0 Nyquist stubs (git crate, repo_*, /new + home CTA)
+- [ ] 07-01-PLAN.md — One-way gates D-14/D-33 + REQUIREMENTS/ROADMAP amend + COVERAGE
+- [ ] 07-02-PLAN.md — Tracer: empty public create → bare disk → Quick setup
+- [ ] 07-03-PLAN.md — Create templates, SPDX/gitignore, duplicate inline error
+- [ ] 07-04-PLAN.md — Dashboard home + default branch/visibility settings
+- [ ] 07-05-PLAN.md — Code tree/blob/raw + ACL 404 + Markdown/Shiki
+- [ ] 07-06-PLAN.md — Commits, commit detail, compare, blame
+- [ ] 07-07-PLAN.md — Branch CRUD soft-protect + tags list
+- [ ] 07-08-PLAN.md — Archives zip/tar.gz + clone box
+- [ ] 07-09-PLAN.md — Repo settings visibility + soft-delete
+- [ ] 07-10-PLAN.md — Factory reset scope + orphan reconcile + gc + CONFIGURATION
+- [ ] 07-11-PLAN.md — ARCHITECTURE GitBackend docs + VALIDATION + rpc-gen smoke
 **UI hint**: yes
 
 ### Phase 8: Git HTTPS & PATs
@@ -446,7 +459,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
-| 7. Git Repos & Browse | 0/TBD | Not started | - |
+| 7. Git Repos & Browse | 0/12 | Planned | - |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
