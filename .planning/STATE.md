@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 7 UI-SPEC drafted
-last_updated: "2026-09-12T15:35:00.000Z"
+stopped_at: Phase 7 UI-SPEC revised (copywriting)
+last_updated: "2026-09-12T17:35:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 7 UI-SPEC drafted — GitHub-like browse/create contract extending Phase 3–6 tokens
+last_activity_desc: Phase 7 UI-SPEC revised — verb+noun CTAs (Save default branch; Download file; Copy HTTPS URL)
 state_head: 3394bbb
 progress:
   total_phases: 22
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
-Status: UI-SPEC draft ready for checker — then plan
-Last activity: 2026-09-12 — 07-UI-SPEC.md written (extends Phase 3–6; create/browse/home/factory-reset)
+Status: UI-SPEC revised after checker Dimension 1 — ready for re-check
+Last activity: 2026-09-12 — 07-UI-SPEC.md copywriting revision (Save default branch + large-file / clone labels)
 
 Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC draft — Nyquist compliant for closed phases
 
@@ -190,6 +190,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T15:35:00.000Z
-Stopped at: Phase 7 UI-SPEC drafted
+Last session: 2026-09-12T17:35:00.000Z
+Stopped at: Phase 7 UI-SPEC revised (copywriting)
 Resume file: .planning/phases/07-git-repos-browse/07-UI-SPEC.md
