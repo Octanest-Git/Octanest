@@ -113,11 +113,25 @@ pub struct BootstrapSetupRequest {
     pub workos_client_id: Option<String>,
 }
 
+/// Factory reset disk/DB scope (D-34). Default keeps repository files on disk.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum FactoryResetScope {
+    /// Wipe users/sessions/auth; keep bare repos under `OCTANEST_REPOS_DIR`.
+    #[default]
+    DatabaseOnly,
+    /// Wipe DB and delete repo files under `OCTANEST_REPOS_DIR`.
+    DatabaseAndRepositories,
+}
+
 /// Sys-admin factory reset — wipe users/sessions and restore empty-instance setup.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FactoryResetRequest {
     /// Must equal `RESET` (case-sensitive) to proceed.
     pub confirmation: String,
+    /// Reset scope; omit → [`FactoryResetScope::DatabaseOnly`] (D-34).
+    #[serde(default)]
+    pub scope: FactoryResetScope,
 }
 
 /// Result of a successful factory reset.

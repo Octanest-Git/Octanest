@@ -2,9 +2,11 @@
 
 use std::sync::Arc;
 
+use std::path::Path;
+
 use octanest_core::{
     AppError, AuthSettingsPublic, EmailProviderKind, FactoryResetRequest, FactoryResetResponse,
-    ProviderMode, RepoVisibility, UpdateAuthSettingsRequest,
+    FactoryResetScope, ProviderMode, RepoVisibility, UpdateAuthSettingsRequest,
 };
 use octanest_db::AuthSettingsRow;
 
@@ -182,6 +184,9 @@ pub async fn update_settings(
 }
 
 /// Wipe all users/sessions and restore empty-instance setup (sys-admin only).
+///
+/// Scope (D-34): `database_only` (default) keeps bare repos on disk;
+/// `database_and_repositories` also deletes children under `repos_dir`.
 pub async fn factory_reset(
     ctx: &mut RpcCtx,
     input: serde_json::Value,
@@ -201,19 +206,163 @@ pub async fn factory_reset(
     }
 
     ctx.db.factory_reset_instance().await.map_err(db_err)?;
+
+    if matches!(req.scope, FactoryResetScope::DatabaseAndRepositories) {
+        wipe_repos_dir_contents(&ctx.repos_dir).await?;
+    }
+
     ctx.set_cookie = Some(CookieChange::Clear);
 
     let needs = bootstrap::needs_setup(&ctx.db).await?;
-    tracing::warn!(needs_setup = needs, "instance factory reset completed");
+    tracing::warn!(
+        needs_setup = needs,
+        scope = ?req.scope,
+        "instance factory reset completed"
+    );
     Ok(FactoryResetResponse {
         ok: true,
         needs_setup: needs,
     })
 }
 
+/// Delete all entries under `repos_dir` after canonicalizing (T-07-26).
+/// Refuses paths that escape the repos root. Leaves the root directory itself
+/// (volume mount point) in place.
+pub async fn wipe_repos_dir_contents(repos_dir: &Path) -> Result<(), AppError> {
+    if !repos_dir.exists() {
+        return Ok(());
+    }
+    let root = tokio::fs::canonicalize(repos_dir).await.map_err(|e| {
+        tracing::error!(error = %e, path = %repos_dir.display(), "canonicalize repos_dir failed");
+        AppError::new(
+            "admin.factory_reset_repos",
+            "Failed to resolve repository storage path.",
+        )
+    })?;
+
+    let mut entries = tokio::fs::read_dir(&root).await.map_err(|e| {
+        tracing::error!(error = %e, path = %root.display(), "read_dir repos_dir failed");
+        AppError::new(
+            "admin.factory_reset_repos",
+            "Failed to list repository storage.",
+        )
+    })?;
+
+    while let Some(entry) = entries.next_entry().await.map_err(|e| {
+        tracing::error!(error = %e, "repos_dir entry read failed");
+        AppError::new(
+            "admin.factory_reset_repos",
+            "Failed to read repository storage entry.",
+        )
+    })? {
+        let path = entry.path();
+        let canon = match tokio::fs::canonicalize(&path).await {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::error!(error = %e, path = %path.display(), "canonicalize child failed");
+                return Err(AppError::new(
+                    "admin.factory_reset_repos",
+                    "Failed to resolve a repository path.",
+                ));
+            }
+        };
+        if !path_is_under(&canon, &root) {
+            tracing::error!(
+                path = %canon.display(),
+                root = %root.display(),
+                "refusing to delete path outside repos_dir"
+            );
+            return Err(AppError::new(
+                "admin.factory_reset_repos",
+                "Refusing to delete a path outside repository storage.",
+            ));
+        }
+        let ft = entry.file_type().await.map_err(|e| {
+            tracing::error!(error = %e, path = %canon.display(), "file_type failed");
+            AppError::new(
+                "admin.factory_reset_repos",
+                "Failed to inspect repository storage entry.",
+            )
+        })?;
+        if ft.is_dir() {
+            tokio::fs::remove_dir_all(&canon).await.map_err(|e| {
+                tracing::error!(error = %e, path = %canon.display(), "remove_dir_all failed");
+                AppError::new(
+                    "admin.factory_reset_repos",
+                    "Failed to delete repository directories.",
+                )
+            })?;
+        } else {
+            tokio::fs::remove_file(&canon).await.map_err(|e| {
+                tracing::error!(error = %e, path = %canon.display(), "remove_file failed");
+                AppError::new(
+                    "admin.factory_reset_repos",
+                    "Failed to delete a file under repository storage.",
+                )
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn path_is_under(path: &Path, root: &Path) -> bool {
+    path.strip_prefix(root).is_ok()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn factory_reset_scope_defaults_database_only() {
+        let req: FactoryResetRequest =
+            serde_json::from_str(r#"{"confirmation":"RESET"}"#).expect("parse");
+        assert_eq!(req.scope, FactoryResetScope::DatabaseOnly);
+        let both: FactoryResetRequest = serde_json::from_str(
+            r#"{"confirmation":"RESET","scope":"database_and_repositories"}"#,
+        )
+        .expect("parse");
+        assert_eq!(both.scope, FactoryResetScope::DatabaseAndRepositories);
+    }
+
+    #[tokio::test]
+    async fn wipe_repos_dir_removes_children_keeps_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("repos");
+        tokio::fs::create_dir_all(root.join("owner").join("a.git"))
+            .await
+            .unwrap();
+        tokio::fs::write(root.join("stray.txt"), b"x").await.unwrap();
+        wipe_repos_dir_contents(&root).await.expect("wipe");
+        assert!(root.exists(), "root mount dir must remain");
+        assert!(
+            tokio::fs::read_dir(&root)
+                .await
+                .unwrap()
+                .next_entry()
+                .await
+                .unwrap()
+                .is_none(),
+            "children must be gone"
+        );
+    }
+
+    #[test]
+    fn path_is_under_rejects_sibling_prefix() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("repos");
+        let sibling = tmp.path().join("repos-evil");
+        std::fs::create_dir_all(&root).unwrap();
+        std::fs::create_dir_all(&sibling).unwrap();
+        let root_c = root.canonicalize().unwrap();
+        let sib_c = sibling.canonicalize().unwrap();
+        assert!(!path_is_under(&sib_c, &root_c));
+        assert!(path_is_under(&root_c.join("owner"), &root_c) || {
+            // join may not exist — create then check
+            std::fs::create_dir_all(root.join("owner")).unwrap();
+            path_is_under(&root.join("owner").canonicalize().unwrap(), &root_c)
+        });
+    }
 
     #[test]
     fn public_settings_exposes_client_id_not_secrets() {

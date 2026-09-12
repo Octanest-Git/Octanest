@@ -76,6 +76,8 @@ export type BootstrapSetupRequest = {
 
 export type FactoryResetRequest = {
   confirmation: string;
+  /** Omit → database_only (D-34). */
+  scope?: "database_only" | "database_and_repositories";
 };
 
 export type FactoryResetResponse = {

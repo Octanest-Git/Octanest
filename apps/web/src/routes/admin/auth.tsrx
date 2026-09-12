@@ -18,8 +18,17 @@ import {
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { AdminAuthSkeleton } from "@/components/page-skeletons";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   SelectIcon,
   SelectItem,
@@ -430,9 +439,19 @@ export function AdminAuthPage() @{
 
 function FactoryResetSection() @{
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [scope, setScope] = useState<"database_only" | "database_and_repositories">(
+    "database_only",
+  );
   const [phrase, setPhrase] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  function resetForm() {
+    setScope("database_only");
+    setPhrase("");
+    setError("");
+  }
 
   async function runReset() {
     setError("");
@@ -440,6 +459,7 @@ function FactoryResetSection() @{
     try {
       const res = await apiClient.admin.auth.factoryReset({
         confirmation: phrase.trim(),
+        scope,
       });
       if (!res.ok) {
         setError(res.error.message || "Factory reset failed.");
@@ -460,33 +480,114 @@ function FactoryResetSection() @{
       Danger zone
     </h2>
     <p className="text-[14px] leading-[1.4] text-muted-foreground">
-      Wipe all users, sessions, and auth identities, then return this instance to
-      the empty setup wizard. This cannot be undone. Type{" "}
-      <span className="font-medium text-foreground">RESET</span> to confirm.
+      Wipe this instance back to the empty setup wizard. Choose whether repository
+      files on disk are kept or deleted. This cannot be undone.
     </p>
-    @if (error) {
-      <p role="alert" className="text-[14px] text-destructive">
-        {error as string}
-      </p>
-    }
-    <div className="flex flex-col gap-2">
-      <Label htmlFor="factory-reset-confirm">Confirmation</Label>
-      <Input
-        id="factory-reset-confirm"
-        value={phrase}
-        onInput={(e) => setPhrase((e.currentTarget as HTMLInputElement).value)}
-        autoComplete="off"
-        placeholder="RESET"
-      />
-    </div>
     <Button
       type="button"
       variant="destructive"
-      disabled={pending || phrase.trim() !== "RESET"}
-      onClick={() => void runReset()}
       className="w-full sm:w-auto"
+      onClick={() => {
+        resetForm();
+        setOpen(true);
+      }}
     >
-      {(pending ? "Resetting…" : "Reset instance database") as string}
+      Reset this instance
     </Button>
+
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (pending) return;
+        setOpen(next);
+        if (!next) resetForm();
+      }}
+    >
+      <DialogContent showCloseButton={!pending}>
+        <DialogHeader>
+          <DialogTitle>Reset this instance</DialogTitle>
+          <DialogDescription>
+            Irreversible. Type RESET to confirm. Scope controls whether bare
+            repositories under storage are deleted.
+          </DialogDescription>
+        </DialogHeader>
+
+        <RadioGroup
+          value={scope}
+          onValueChange={(v) => {
+            if (v === "database_only" || v === "database_and_repositories") {
+              setScope(v);
+            }
+          }}
+          disabled={pending}
+          className="gap-4"
+        >
+          <label className="flex cursor-pointer items-start gap-3">
+            <RadioGroupItem value="database_only" className="mt-0.5" />
+            <span className="flex flex-col gap-1">
+              <span className="text-[14px] font-medium text-foreground">
+                Database only
+              </span>
+              <span className="text-[14px] leading-[1.4] text-muted-foreground">
+                Wipe users, sessions, and auth. Keep repository files on disk.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3">
+            <RadioGroupItem value="database_and_repositories" className="mt-0.5" />
+            <span className="flex flex-col gap-1">
+              <span className="text-[14px] font-medium text-foreground">
+                Database and repositories
+              </span>
+              <span className="text-[14px] leading-[1.4] text-muted-foreground">
+                Wipe the database and delete repository files under storage.
+              </span>
+            </span>
+          </label>
+        </RadioGroup>
+
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="factory-reset-confirm">Confirmation</Label>
+          <Input
+            id="factory-reset-confirm"
+            value={phrase}
+            onInput={(e) =>
+              setPhrase((e.currentTarget as HTMLInputElement).value)
+            }
+            autoComplete="off"
+            placeholder="RESET"
+            disabled={pending}
+          />
+        </div>
+
+        @if (error) {
+          <p role="alert" className="text-[14px] text-destructive">
+            {error as string}
+          </p>
+        }
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={pending}
+            onClick={() => {
+              setOpen(false);
+              resetForm();
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending || phrase.trim() !== "RESET"}
+            onClick={() => void runReset()}
+          >
+            {(pending ? "Resetting…" : "Reset instance") as string}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 }
