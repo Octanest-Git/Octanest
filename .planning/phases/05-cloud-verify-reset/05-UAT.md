@@ -1,20 +1,15 @@
 ---
-status: testing
+status: complete
 phase: 05-cloud-verify-reset
 source:
   - 05-VERIFICATION.md
 started: 2026-09-10T23:00:12Z
-updated: 2026-09-11T16:19:00Z
+updated: 2026-09-11T16:21:00Z
 ---
 
 ## Current Test
 
-number: 4
-name: Disabled New repository CTA + no-invite signup
-expected: |
-  Unverified → disabled CTA + verify hint; verified → disabled + later-phase hint;
-  signup has no invite fields
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -34,19 +29,17 @@ note: |
 
 ### 4. Disabled New repository CTA + no-invite signup
 expected: Unverified → disabled CTA + verify hint; verified → disabled + later-phase hint; signup has no invite fields
-result: pending
+result: pass
 note: |
-  Automated proof added 2026-09-11:
-  - Web: signed-in-home.integration.test.ts (unverified verify-hint + verified later-phase)
-  - Web: signup.integration.test.ts (no invite UI)
-  - API: signup_open_without_invite_fields_auth05
+  Automated proof: signed-in-home.integration.test.ts + signup.integration.test.ts +
+  signup_open_without_invite_fields_auth05
 
 ## Summary
 
 total: 4
-passed: 3
+passed: 4
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 

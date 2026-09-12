@@ -5,7 +5,10 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
   ensureAuthSettings,
+  expectAuthMeDedupedOnHome,
+  expectStatusHealthy,
   expectWorkosCta,
+  loginThroughOidc,
   restoreLocalAuthCommand,
   signupThroughUi,
 } from "./e2e/stack-browser/commands";
@@ -121,6 +124,9 @@ export default defineConfig({
                     restoreLocalAuthCommand,
                     signupThroughUi,
                     expectWorkosCta,
+                    loginThroughOidc,
+                    expectStatusHealthy,
+                    expectAuthMeDedupedOnHome,
                   },
                 },
               },

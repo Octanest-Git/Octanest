@@ -67,6 +67,19 @@ export type BootstrapSetupRequest = {
   username: string;
   password: string;
   allow_signup?: boolean;
+  provider_mode?: ProviderMode;
+  oidc_issuer?: string | null;
+  oidc_client_id?: string | null;
+  workos_client_id?: string | null;
+};
+
+export type FactoryResetRequest = {
+  confirmation: string;
+};
+
+export type FactoryResetResponse = {
+  ok: boolean;
+  needs_setup: boolean;
 };
 
 export type ConfirmAdminCredentialsRequest = {
@@ -209,6 +222,8 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<AuthSettingsPublic>(opts, "admin.auth.get_settings", {}),
         updateSettings: (input: UpdateAuthSettingsRequest) =>
           rpcCall<AuthSettingsPublic>(opts, "admin.auth.update_settings", input),
+        factoryReset: (input: FactoryResetRequest) =>
+          rpcCall<FactoryResetResponse>(opts, "admin.instance.factory_reset", input),
       },
     },
   };

@@ -3,12 +3,14 @@
 use std::sync::Arc;
 
 use octanest_core::{
-    AppError, AuthSettingsPublic, EmailProviderKind, ProviderMode, UpdateAuthSettingsRequest,
+    AppError, AuthSettingsPublic, EmailProviderKind, FactoryResetRequest, FactoryResetResponse,
+    ProviderMode, UpdateAuthSettingsRequest,
 };
 use octanest_db::AuthSettingsRow;
 
+use crate::auth::bootstrap;
 use crate::email::{self, EmailSender};
-use crate::rpc::RpcCtx;
+use crate::rpc::{CookieChange, RpcCtx};
 
 fn env_nonempty(key: &str) -> bool {
     std::env::var(key)
@@ -174,6 +176,36 @@ pub async fn update_settings(
     ctx.email = rebuilt;
 
     settings_to_public(&row)
+}
+
+/// Wipe all users/sessions and restore empty-instance setup (sys-admin only).
+pub async fn factory_reset(
+    ctx: &mut RpcCtx,
+    input: serde_json::Value,
+) -> Result<FactoryResetResponse, AppError> {
+    require_admin(ctx).await?;
+    let req: FactoryResetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid factory_reset input: {e}"),
+        )
+    })?;
+    if req.confirmation.trim() != "RESET" {
+        return Err(AppError::new(
+            "admin.factory_reset_confirm",
+            "Type RESET to confirm wiping this instance.",
+        ));
+    }
+
+    ctx.db.factory_reset_instance().await.map_err(db_err)?;
+    ctx.set_cookie = Some(CookieChange::Clear);
+
+    let needs = bootstrap::needs_setup(&ctx.db).await?;
+    tracing::warn!(needs_setup = needs, "instance factory reset completed");
+    Ok(FactoryResetResponse {
+        ok: true,
+        needs_setup: needs,
+    })
 }
 
 #[cfg(test)]

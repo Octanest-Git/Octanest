@@ -26,12 +26,12 @@
     {
       "number": "5",
       "name": "Cloud Verify & Reset",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "6",
       "name": "Self-Host Admin Bootstrap",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "7",
@@ -115,9 +115,9 @@
     }
   ],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 5 of 22 · ready to verify"
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step (plan phase 7)",
+    "reason": "Phase 7 of 22 — needs a plan; post-06 Query/OIDC/factory-reset polish captured in deferred-items + STATE"
   },
-  "updated_at": "2026-09-10T22:54:28.967Z"
+  "updated_at": "2026-09-12T00:29:00.000Z"
 }

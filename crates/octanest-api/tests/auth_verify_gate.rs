@@ -1,5 +1,7 @@
 //! AUTH-04 tracer: require_verified + auth.dev.privileged_ping.
 
+
+mod support;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -57,6 +59,7 @@ async fn unverified_privileged_ping_forbidden_then_ok_after_otp() {
     let url = format!("sqlite:{}", dir.path().join("verify_gate.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone(), "development").await;
 
     // Login while unverified must succeed (D-06).
@@ -130,6 +133,7 @@ async fn privileged_ping_unknown_outside_env_allowlist() {
     let url = format!("sqlite:{}", dir.path().join("verify_gate_prod.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     // Production is outside {development,dev,test,compose}; procedure must not exist.
     let app = test_app(db, "production").await;
 
@@ -166,6 +170,7 @@ async fn idp_trust_verified_sso_user_privileged_ping_ok() {
     let url = format!("sqlite:{}", dir.path().join("verify_gate_idp.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone(), "development").await;
 
     let identity = ExternalIdentity {

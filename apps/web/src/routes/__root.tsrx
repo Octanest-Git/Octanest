@@ -8,9 +8,11 @@ import {
   createRootRoute,
   redirect,
 } from "@octanejs/tanstack-router";
+import { QueryClientProvider } from "@octanejs/tanstack-query";
 import { SiteFooter, SiteHeader } from "@/components/chrome";
 import { AppToaster } from "@/components/ui/toaster";
 import { VerifyBanner } from "@/components/verify-banner";
+import { getQueryClient } from "@/lib/query-client";
 import {
   fetchBootstrapStatus,
   fetchSessionMe,
@@ -104,14 +106,18 @@ function RootShell({ children }: { children?: unknown }) @{
 }
 
 function RootComponent() @{
-  <AppToaster>
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader />
-      <main className="octanest-main flex-1">
-        <Outlet />
-      </main>
-      <SiteFooter />
-      <VerifyBanner />
-    </div>
-  </AppToaster>
+  const queryClient = getQueryClient();
+
+  <QueryClientProvider client={queryClient}>
+    <AppToaster>
+      <div className="flex min-h-screen flex-col">
+        <SiteHeader />
+        <main className="octanest-main flex-1">
+          <Outlet />
+        </main>
+        <SiteFooter />
+        <VerifyBanner />
+      </div>
+    </AppToaster>
+  </QueryClientProvider>
 }

@@ -32,3 +32,14 @@ export const THEME_BOOT_SCRIPT =
   'var p=(v==="light"||v==="dark"||v==="system")?v:"system";' +
   'var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);' +
   'document.documentElement.classList.toggle("dark",d);}catch(e){}})();';
+
+/**
+ * Warm webfonts into `document.fonts` so View Transitions / soft navigations
+ * do not paint a long stretch of metric fallbacks after CSS re-applies.
+ * Static literal — no interpolation (same threat model as theme boot).
+ */
+export const FONT_WARM_SCRIPT =
+  '(function(){try{if(!document.fonts||!document.fonts.load)return;' +
+  'document.fonts.load(\'600 24px "Sora Variable"\');' +
+  'document.fonts.load(\'400 16px "Source Sans 3 Variable"\');' +
+  '}catch(e){}})();';

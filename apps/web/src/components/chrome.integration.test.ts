@@ -1,6 +1,7 @@
 import { createElement } from "octane";
-import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
+import { cleanup, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithQueryClient } from "@/test/render-with-query";
 
 vi.mock("@octanejs/tanstack-router", () => ({
   Link: (props: {
@@ -62,7 +63,7 @@ beforeEach(() => {
 
 describe("chrome Wave 0 (D-06 omit Sign up)", () => {
   it("omits Sign up when allow_signup is false", async () => {
-    render(SiteHeader);
+    renderWithQueryClient(SiteHeader);
 
     await waitFor(() => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
@@ -79,7 +80,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       data: { mode: "local" },
     } as never);
 
-    render(SiteHeader);
+    renderWithQueryClient(SiteHeader);
 
     await waitFor(() => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
@@ -96,7 +97,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       data: { needs_setup: true },
     } as never);
 
-    render(SiteHeader);
+    renderWithQueryClient(SiteHeader);
 
     await waitFor(() => {
       expect(screen.queryByLabelText(/^Account$/i)).toBeTruthy();
@@ -116,12 +117,26 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       data: { mode: "local", allow_signup: true },
     } as never);
 
-    render(SiteHeader);
+    renderWithQueryClient(SiteHeader);
 
     await waitFor(() => {
       expect(screen.getByRole("link", { name: /^sign up$/i })).toBeInTheDocument();
     });
 
     expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
+  });
+
+  it("uses a shared QueryClient path for auth.me (not N independent effects)", async () => {
+    renderWithQueryClient(SiteHeader);
+
+    await waitFor(() => {
+      expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
+    });
+
+    // Desktop header only mounts AccountActions once. Allow ≤2 for act/strict remount;
+    // the pre-Query chrome pattern still used one effect per mount (also ≤2 under act).
+    expect(apiClient.auth.me.mock.calls.length).toBeLessThanOrEqual(2);
+    expect(apiClient.auth.bootstrapStatus.mock.calls.length).toBeLessThanOrEqual(2);
+    expect(apiClient.auth.providerConfig.mock.calls.length).toBeLessThanOrEqual(2);
   });
 });

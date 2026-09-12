@@ -2,8 +2,9 @@
 
 /*
   Preloaded latin faces from /fonts (see __root.tsx).
-  font-display: optional — never late-swap (that was the remaining jump).
-  Metric-adjusted local fallbacks cover the first paint when optional misses.
+  font-display: swap — optional was dropping webfonts on View Transitions /
+  full navigations (short optional window → fallback stuck for the document).
+  Metric-adjusted local fallbacks keep metrics stable during the brief swap.
 */
 @font-face {
   font-family: "Sora Fallback";
@@ -40,7 +41,7 @@
 @font-face {
   font-family: "Sora Variable";
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 100 800;
   src: url("/fonts/sora-latin.woff2") format("woff2-variations");
   unicode-range:
@@ -52,7 +53,7 @@
 @font-face {
   font-family: "Sora Variable";
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 100 800;
   src: url("/fonts/sora-latin-ext.woff2") format("woff2-variations");
   unicode-range:
@@ -64,7 +65,7 @@
 @font-face {
   font-family: "Source Sans 3 Variable";
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 200 900;
   src: url("/fonts/source-sans-3-latin.woff2") format("woff2-variations");
   unicode-range:
@@ -76,7 +77,7 @@
 @font-face {
   font-family: "Source Sans 3 Variable";
   font-style: normal;
-  font-display: optional;
+  font-display: swap;
   font-weight: 200 900;
   src: url("/fonts/source-sans-3-latin-ext.woff2") format("woff2-variations");
   unicode-range:
@@ -214,15 +215,56 @@
     view-transition-name: octanest-main;
   }
 
-  /* Verify banner appear (Phase 5 UI-SPEC motion #2) — soft opacity 150–200ms. */
-  .oct-verify-banner {
+  /* Marketing landing reveal (home `/`). */
+  .oct-rise {
+    animation: octRise 320ms ease-out both;
+  }
+  .oct-reveal {
+    transition:
+      opacity 320ms ease-out,
+      transform 320ms ease-out;
+  }
+  .oct-reveal:not(.oct-reveal-in) {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .oct-reveal-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Verify callout appear (Phase 5) — soft opacity 150–200ms; overlay, not flow. */
+  .oct-verify-callout {
     animation: octVerifyBannerIn 175ms ease-out both;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .oct-verify-banner {
+    .oct-verify-callout {
       animation: none !important;
     }
+    .oct-skeleton {
+      animation: none !important;
+    }
+    .oct-rise {
+      animation: none !important;
+    }
+    .oct-reveal,
+    .oct-reveal-in {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@keyframes octRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

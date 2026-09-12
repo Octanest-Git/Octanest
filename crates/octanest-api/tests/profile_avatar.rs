@@ -1,5 +1,7 @@
 //! AUTH-08: profile update + avatar multipart round-trip + traversal/size rejects.
 
+
+mod support;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -83,6 +85,7 @@ async fn profile_update_and_avatar_round_trip() {
     let url = format!("sqlite:{}", dir.path().join("profile.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db, &uploads).await;
 
     let signup = app
@@ -183,6 +186,7 @@ async fn avatar_rejects_oversized_upload() {
     let url = format!("sqlite:{}", dir.path().join("big.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db, &uploads).await;
 
     let signup = app
@@ -227,6 +231,7 @@ async fn avatar_serve_rejects_path_traversal() {
     let url = format!("sqlite:{}", dir.path().join("trav.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db, &uploads).await;
 
     for uri in [

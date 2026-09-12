@@ -158,16 +158,39 @@ pub async fn bootstrap_setup(
         .await
         .map_err(db_err)?;
 
-    // Persist wizard allow_signup (D-08); preserve other instance_auth_settings fields.
+    // Persist wizard auth stack + allow_signup; keep email_provider/from_address.
     let settings = ctx.db.get_auth_settings().await.map_err(db_err)?;
+    let provider_mode = match req.provider_mode {
+        octanest_core::ProviderMode::Local => "local",
+        octanest_core::ProviderMode::Workos => "workos",
+        octanest_core::ProviderMode::Oidc => "oidc",
+    };
+    let oidc_issuer = req
+        .oidc_issuer
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .or(settings.oidc_issuer.as_deref());
+    let oidc_client_id = req
+        .oidc_client_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .or(settings.oidc_client_id.as_deref());
+    let workos_client_id = req
+        .workos_client_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .or(settings.workos_client_id.as_deref());
     ctx.db
         .update_auth_settings(
-            &settings.provider_mode,
+            provider_mode,
             &settings.email_provider,
             settings.from_address.as_deref(),
-            settings.oidc_issuer.as_deref(),
-            settings.oidc_client_id.as_deref(),
-            settings.workos_client_id.as_deref(),
+            oidc_issuer,
+            oidc_client_id,
+            workos_client_id,
             req.allow_signup,
         )
         .await
@@ -180,6 +203,7 @@ pub async fn bootstrap_setup(
         username = %username,
         email = %email,
         allow_signup = req.allow_signup,
+        provider_mode = %provider_mode,
         "created initial sys-admin via /setup wizard (AUTH-07)"
     );
 

@@ -363,4 +363,118 @@ impl Database {
         )
         .await
     }
+
+    /// Wipe auth data so the instance returns to empty-setup (`needs_setup`).
+    /// Deletes sessions, identities, email tokens, and users; resets auth settings
+    /// to local/log defaults with signup closed.
+    pub async fn factory_reset_instance(&self) -> Result<(), String> {
+        let pool = self.require_pool()?;
+        match pool {
+            Pool::Postgres(p) => {
+                sqlx::query("DELETE FROM auth_email_tokens")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM sessions")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM auth_identities")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM users")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query(
+                    "UPDATE instance_auth_settings SET
+                      provider_mode = 'local',
+                      email_provider = 'log',
+                      from_address = NULL,
+                      oidc_issuer = NULL,
+                      oidc_client_id = NULL,
+                      workos_client_id = NULL,
+                      allow_signup = false,
+                      updated_at = now()
+                     WHERE id = 1",
+                )
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+            Pool::MySql(p) => {
+                sqlx::query("DELETE FROM auth_email_tokens")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM sessions")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM auth_identities")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM users")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query(
+                    "UPDATE instance_auth_settings SET
+                      provider_mode = 'local',
+                      email_provider = 'log',
+                      from_address = NULL,
+                      oidc_issuer = NULL,
+                      oidc_client_id = NULL,
+                      workos_client_id = NULL,
+                      allow_signup = 0,
+                      updated_at = NOW()
+                     WHERE id = 1",
+                )
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+            Pool::Sqlite(p) => {
+                // Ensure FK cascades / order are honored.
+                sqlx::query("PRAGMA foreign_keys = ON")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM auth_email_tokens")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM sessions")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM auth_identities")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM users")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query(
+                    "UPDATE instance_auth_settings SET
+                      provider_mode = 'local',
+                      email_provider = 'log',
+                      from_address = NULL,
+                      oidc_issuer = NULL,
+                      oidc_client_id = NULL,
+                      workos_client_id = NULL,
+                      allow_signup = 0,
+                      updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+                     WHERE id = 1",
+                )
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            }
+        }
+        Ok(())
+    }
 }

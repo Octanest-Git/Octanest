@@ -679,7 +679,7 @@ mod tests {
             "Clear Me",
             "",
             None,
-            false,
+            octanest_core::Role::User,
         )
         .await
         .expect("create_user");

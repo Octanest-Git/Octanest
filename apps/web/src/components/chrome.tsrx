@@ -1,5 +1,6 @@
 import { Menu, X } from "@octanejs/lucide";
 import { Link, useNavigate } from "@octanejs/tanstack-router";
+import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useEffectEvent, useState } from "octane";
 import { GlobalSearch } from "@/components/global-search";
@@ -14,7 +15,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from "@/lib/api-client";
+import { clearSessionQueries } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
+import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -68,6 +71,8 @@ function AccountMenu({
   user: UserPublic;
   onNavigated?: () => void;
 }) @{
+  const queryClient = useQueryClient();
+
   async function logout() {
     try {
       await apiClient.auth.logout();
@@ -75,6 +80,7 @@ function AccountMenu({
       /* still clear local chrome */
     }
     syncSessionPresenceHint(false);
+    clearSessionQueries(queryClient);
     onNavigated?.();
     window.location.assign("/");
   }
@@ -117,14 +123,6 @@ function AccountMenu({
   </DropdownMenu>
 }
 
-/** Fail-closed: only `true` shows Sign up (D-06 / UI Considerations). */
-function resolveAllowSignup(cfg: {
-  ok: boolean;
-  data?: { allow_signup?: boolean };
-}): boolean {
-  return cfg.ok === true && cfg.data?.allow_signup === true;
-}
-
 function AccountActions({
   className,
   onNavigated,
@@ -132,29 +130,9 @@ function AccountActions({
   className?: string;
   onNavigated?: () => void;
 }) {
-  const [user, setUser] = useState<UserPublic | null | undefined>(undefined);
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
-  const [allowSignup, setAllowSignup] = useState(false);
+  const { pending, user, needsSetup, allowSignup } = useChromeAccountState();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [meRes, statusRes, cfgRes] = await Promise.all([
-        apiClient.auth.me().catch(() => null),
-        apiClient.auth.bootstrapStatus().catch(() => null),
-        apiClient.auth.providerConfig().catch(() => null),
-      ]);
-      if (cancelled) return;
-      setUser(meRes?.ok ? meRes.data : null);
-      setNeedsSetup(statusRes?.ok === true && statusRes.data.needs_setup === true);
-      setAllowSignup(cfgRes ? resolveAllowSignup(cfgRes) : false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (user === undefined || needsSetup === null) {
+  if (pending || user === undefined || needsSetup === null) {
     return (
       <div
         role="group"
@@ -236,27 +214,8 @@ const mobileNavItemClass =
 
 function MobileNavSheet({ onClose }: { onClose: () => void }) @{
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserPublic | null | undefined>(undefined);
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
-  const [allowSignup, setAllowSignup] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [meRes, statusRes, cfgRes] = await Promise.all([
-        apiClient.auth.me().catch(() => null),
-        apiClient.auth.bootstrapStatus().catch(() => null),
-        apiClient.auth.providerConfig().catch(() => null),
-      ]);
-      if (cancelled) return;
-      setUser(meRes?.ok ? meRes.data : null);
-      setNeedsSetup(statusRes?.ok === true && statusRes.data.needs_setup === true);
-      setAllowSignup(cfgRes ? resolveAllowSignup(cfgRes) : false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const queryClient = useQueryClient();
+  const { pending, user, needsSetup, allowSignup } = useChromeAccountState();
 
   async function logout() {
     try {
@@ -265,6 +224,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
       /* still clear */
     }
     syncSessionPresenceHint(false);
+    clearSessionQueries(queryClient);
     onClose();
     window.location.assign("/");
   }
@@ -280,7 +240,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
     <div className="mx-auto flex max-w-6xl flex-col gap-3 px-3 py-3 sm:px-4">
       <ThemeSelect layout="panel" />
 
-      @if (user === undefined || needsSetup === null) {
+      @if (pending || user === undefined || needsSetup === null) {
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Account">
           <div className="flex items-center gap-3 px-3 py-2">
             <Skeleton className="size-9 rounded-md" />

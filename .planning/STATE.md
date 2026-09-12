@@ -4,14 +4,14 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 06 complete, ready to plan Phase 7
-last_updated: "2026-09-11T22:09:27.991Z"
+stopped_at: Ready to plan Phase 7 (post-06 auth/Query polish captured)
+last_updated: "2026-09-12T00:29:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 06 complete, transitioned to Phase 7
+last_activity_desc: Synced STATE after post-06 Query/OIDC/factory-reset polish; Phase 7 still unplanned
 state_head: ad679131a31575bbef9d1436cc795838100cc3aa
 progress:
   total_phases: 22
-  completed_phases: 1
+  completed_phases: 6
   total_plans: 41
   completed_plans: 41
 milestone_name: milestone
@@ -24,16 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 06 — Self-Host Admin Bootstrap
+**Current focus:** Phase 07 — Git Repos & Browse
 
 ## Current Position
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-12 — Phase 06 complete, transitioned to Phase 7
+Last activity: 2026-09-12 — Post-06 polish documented (Query session cache, setup auth stack, factory reset, OIDC harden); Phase 7 still ready to plan
 
-Progress: Phases 1–5 complete; Phase 6 plans 06-00…06-09 complete — Nyquist compliant
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 not started — Nyquist compliant for closed phases
+
+See also: `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
 
 ## Performance Metrics
 
@@ -161,6 +163,10 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06]: needs_setup omits account CTAs; Sign up fail-closed until allow_signup===true
 - [Phase 06]: AUTH-05 keeps checkbox; v1 note clarifies allow_signup supersedes always-open cloud signup
 - [Phase 06]: Document cloud OCTANEST_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
+- [Post-06]: Client server-state via `@octanejs/tanstack-query` (not Zustand) — shared `auth.me` / bootstrap / providerConfig / admin settings; forms stay local `useState`
+- [Post-06]: Author UI in Octane `.tsrx` with `@{` / `@if` / `@else` / `@for`; do not mix React-style `return (` components with Rivet directives (breaks Vite import-protection HMR)
+- [Post-06]: OIDC reqwest connect/request timeouts; mock-oauth2-server healthcheck + compose issuer pointing at reachable host
+- [Post-06]: Setup wizard can choose auth stack (local/WorkOS/OIDC public fields); sys-admin factory reset wipes instance back to needs_setup
 
 ### Pending Todos
 
@@ -168,7 +174,7 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-None yet.
+None yet. Phase 7 planning should assume Query session cache + Octane `.tsrx` authoring (see Phase 06 deferred-items post-close addendum).
 
 ## Deferred Items
 
@@ -178,8 +184,10 @@ Items acknowledged and carried forward from previous milestone close:
 |----------|------|--------|-------------|
 | *(none)* | | | |
 
+Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum.
+
 ## Session Continuity
 
-Last session: 2026-09-11T22:05:07.342Z
-Stopped at: Phase 06 complete, ready to plan Phase 7
+Last session: 2026-09-12
+Stopped at: Ready to plan Phase 7 (GSD docs synced for Query/OIDC/factory-reset polish)
 Resume file: None

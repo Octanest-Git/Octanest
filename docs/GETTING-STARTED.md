@@ -91,6 +91,9 @@ List all Make targets with `make help`.
 
 ## Next steps
 
+- [../CONTRIBUTING.md](../CONTRIBUTING.md) — how to contribute (humans + agents)
+- [CODE_PRACTICES.md](CODE_PRACTICES.md) — coding conventions
+- [../AGENTS.md](../AGENTS.md) — agent orientation (Octane ≠ React)
 - [DEVELOPMENT.md](DEVELOPMENT.md) — day-to-day builds, lint, and contributor workflow
 - [TESTING.md](TESTING.md) — unit, integration, and e2e commands
 - [CONFIGURATION.md](CONFIGURATION.md) — environment variables and Compose overlays

@@ -187,7 +187,7 @@ mod tests {
             &pending,
             &cfg,
             "http://localhost:8080/api/auth/workos/callback",
-            "/dashboard",
+            "/",
         )
         .expect("start");
         let s = url.as_str();
@@ -215,7 +215,7 @@ mod tests {
             &pending,
             &cfg,
             "http://localhost:3000/api/auth/workos/callback",
-            "/dashboard",
+            "/",
         )
         .expect("start");
         let s = url.as_str();

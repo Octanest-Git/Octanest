@@ -30,6 +30,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **AUTH-05**: On Octanest Cloud, signup is open (no invite required) — *v1 note: after empty-instance bootstrap, local signup is governed by instance `allow_signup` (ENV `OCTANEST_ALLOW_SIGNUP`, default false). Cloud deploys that want open signup set it true; no invite codes in v1.*
 - [x] **AUTH-06**: Empty instance: if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account (`system-administrator`, forced credential change on first visit)
 - [x] **AUTH-07**: Empty instance: if those env vars are absent (either/both unset), the instance shows a one-time setup wizard to create the admin
+- [x] **AUTH-07a**: Setup wizard can choose instance auth stack (local / WorkOS / OIDC public fields); secrets remain ENV-only — *landed post-Phase 06 close (2026-09-12)*
+- [x] **AUTH-07b**: Sys-admin can factory-reset the instance database (confirm phrase) back to empty setup — *landed post-Phase 06 close (2026-09-12)*
 - [x] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
 - [x] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
 - [x] **AUTH-10**: Operator can configure SMTP as the email provider
@@ -182,6 +184,8 @@ Deferred; not in the current roadmap until promoted.
 | AUTH-05 | Phase 5 | Complete |
 | AUTH-06 | Phase 6 | Complete |
 | AUTH-07 | Phase 6 | Complete |
+| AUTH-07a | Phase 6 (post-close) | Complete |
+| AUTH-07b | Phase 6 (post-close) | Complete |
 | AUTH-08 | Phase 4 | Complete |
 | AUTH-09 | Phase 4 | Complete |
 | AUTH-10 | Phase 4 | Complete |

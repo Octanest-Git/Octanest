@@ -1,0 +1,94 @@
+import {
+  queryOptions,
+  type QueryClient,
+} from "@octanejs/tanstack-query";
+import type {
+  AuthSettingsPublic,
+  BootstrapStatus,
+  ProviderConfigPublic,
+  UserPublic,
+} from "@octanest/api-client";
+import { apiClient } from "@/lib/api-client";
+
+export const authMeQueryKey = ["auth", "me"] as const;
+export const authBootstrapQueryKey = ["auth", "bootstrapStatus"] as const;
+export const authProviderConfigQueryKey = ["auth", "providerConfig"] as const;
+export const adminAuthSettingsQueryKey = ["admin", "auth", "getSettings"] as const;
+
+/** Soft session read — unauthenticated → `null` (shared chrome / banner cache). */
+export function authSessionQueryOptions() {
+  return queryOptions({
+    queryKey: authMeQueryKey,
+    queryFn: async (): Promise<UserPublic | null> => {
+      const res = await apiClient.auth.me();
+      if (!res.ok) {
+        if (res.error.code === "auth.unauthenticated") return null;
+        throw new Error(`${res.error.code}: ${res.error.message}`);
+      }
+      return res.data;
+    },
+  });
+}
+
+export function authBootstrapQueryOptions() {
+  return queryOptions({
+    queryKey: authBootstrapQueryKey,
+    queryFn: async (): Promise<BootstrapStatus> => {
+      const res = await apiClient.auth.bootstrapStatus();
+      if (!res.ok) {
+        throw new Error(`${res.error.code}: ${res.error.message}`);
+      }
+      return res.data;
+    },
+  });
+}
+
+export function authProviderConfigQueryOptions() {
+  return queryOptions({
+    queryKey: authProviderConfigQueryKey,
+    queryFn: async (): Promise<ProviderConfigPublic> => {
+      const res = await apiClient.auth.providerConfig();
+      if (!res.ok) {
+        throw new Error(`${res.error.code}: ${res.error.message}`);
+      }
+      return res.data;
+    },
+  });
+}
+
+export function adminAuthSettingsQueryOptions() {
+  return queryOptions({
+    queryKey: adminAuthSettingsQueryKey,
+    queryFn: async (): Promise<AuthSettingsPublic> => {
+      const res = await apiClient.admin.auth.getSettings();
+      if (!res.ok) {
+        const err = new Error(
+          `${res.error.code}: ${res.error.message}`,
+        ) as Error & { code: string };
+        err.code = res.error.code;
+        throw err;
+      }
+      return res.data;
+    },
+  });
+}
+
+/** After logout / factory reset — drop session and related auth caches. */
+export function clearSessionQueries(qc: QueryClient) {
+  qc.setQueryData(authMeQueryKey, null);
+  void qc.invalidateQueries({ queryKey: ["auth"] });
+  void qc.invalidateQueries({ queryKey: ["admin"] });
+}
+
+/** Keep chrome in sync after profile/avatar updates without a full reload. */
+export function setAuthMeCache(qc: QueryClient, user: UserPublic | null) {
+  qc.setQueryData(authMeQueryKey, user);
+}
+
+export function setAdminAuthSettingsCache(
+  qc: QueryClient,
+  settings: AuthSettingsPublic,
+) {
+  qc.setQueryData(adminAuthSettingsQueryKey, settings);
+  void qc.invalidateQueries({ queryKey: authProviderConfigQueryKey });
+}

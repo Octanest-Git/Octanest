@@ -3,9 +3,10 @@
 use serde::{Deserialize, Serialize};
 
 /// Auth provider mode (D-05, D-06). Serialized as lowercase: `local` | `workos` | `oidc`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ProviderMode {
+    #[default]
     Local,
     Workos,
     Oidc,
@@ -94,6 +95,29 @@ pub struct BootstrapSetupRequest {
     /// Post-bootstrap local signup policy (D-05/D-07); defaults false when omitted.
     #[serde(default)]
     pub allow_signup: bool,
+    /// Auth stack for this instance (defaults to local).
+    #[serde(default)]
+    pub provider_mode: ProviderMode,
+    #[serde(default)]
+    pub oidc_issuer: Option<String>,
+    #[serde(default)]
+    pub oidc_client_id: Option<String>,
+    #[serde(default)]
+    pub workos_client_id: Option<String>,
+}
+
+/// Sys-admin factory reset — wipe users/sessions and restore empty-instance setup.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FactoryResetRequest {
+    /// Must equal `RESET` (case-sensitive) to proceed.
+    pub confirmation: String,
+}
+
+/// Result of a successful factory reset.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FactoryResetResponse {
+    pub ok: bool,
+    pub needs_setup: bool,
 }
 
 /// Forced credential confirm for ENV-seeded admins (AUTH-06, D-16/D-17).

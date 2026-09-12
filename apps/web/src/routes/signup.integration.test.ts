@@ -24,7 +24,19 @@ vi.mock("@/lib/api-client", () => ({
 
 vi.mock("@/lib/ssr-auth", () => ({
   fetchProviderConfig: vi.fn(),
+  fetchSessionMe: vi.fn(async () => ({
+    ok: false,
+    error: { code: "auth.unauthenticated", message: "n" },
+  })),
 }));
+
+vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  return {
+    ...actual,
+    useLoaderData: () => ({ mode: "local", loadError: "" }),
+  };
+});
 
 import { fetchProviderConfig } from "@/lib/ssr-auth";
 import { Route, SignupPage } from "./signup";

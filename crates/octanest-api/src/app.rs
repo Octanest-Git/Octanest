@@ -14,9 +14,11 @@ use octanest_db::Database;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::auth::local;
 use crate::auth::pending::PendingAuthStore;
-use crate::auth::session::{SessionService, SESSION_COOKIE_NAME};
+use crate::auth::session::{
+    build_session_presence_cookie, clear_session_cookie, clear_session_presence_cookie,
+    SessionService, SESSION_COOKIE_NAME, SESSION_IDLE,
+};
 use crate::email::{self, EmailSender};
 use crate::routes::{auth_callbacks, avatar};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
@@ -134,6 +136,13 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
     }
 }
 
+fn append_set_cookie(response: &mut axum::response::Response, cookie: &cookie::Cookie<'_>) {
+    let value = cookie.to_string();
+    if let Ok(hv) = HeaderValue::from_str(&value) {
+        response.headers_mut().append(header::SET_COOKIE, hv);
+    }
+}
+
 fn attach_set_cookie(
     mut response: axum::response::Response,
     change: Option<CookieChange>,
@@ -142,13 +151,22 @@ fn attach_set_cookie(
     let Some(change) = change else {
         return response;
     };
-    let cookie = match change {
-        CookieChange::Set(c) => c,
-        CookieChange::Clear => local::clear_cookie_for_env(env_name),
-    };
-    let value = cookie.to_string();
-    if let Ok(hv) = HeaderValue::from_str(&value) {
-        response.headers_mut().append(header::SET_COOKIE, hv);
+    match change {
+        CookieChange::Set(c) => {
+            let ttl = c
+                .max_age()
+                .map(|d| std::time::Duration::from_secs(d.whole_seconds().max(0) as u64))
+                .unwrap_or(SESSION_IDLE);
+            append_set_cookie(&mut response, &c);
+            append_set_cookie(
+                &mut response,
+                &build_session_presence_cookie(ttl, env_name),
+            );
+        }
+        CookieChange::Clear => {
+            append_set_cookie(&mut response, &clear_session_cookie(env_name));
+            append_set_cookie(&mut response, &clear_session_presence_cookie(env_name));
+        }
     }
     response
 }

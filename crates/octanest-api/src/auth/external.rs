@@ -212,7 +212,7 @@ pub async fn link_or_create_user(
                 &display,
                 "",
                 None,
-                false,
+                octanest_core::Role::User,
             )
             .await
             .map_err(ExternalAuthError::from_db)?;
@@ -250,16 +250,16 @@ async fn apply_idp_email_verified(
 }
 
 /// Safe relative return path (D-15). Reject open redirects.
+/// Default home is `/` (signed-in shell lives there). Legacy `/dashboard` → `/`.
 pub fn sanitize_return_to(raw: Option<&str>) -> String {
     let Some(s) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
-        return "/dashboard".into();
+        return "/".into();
     };
     if !s.starts_with('/') || s.starts_with("//") || s.contains('\\') || s.contains('\n') {
-        return "/dashboard".into();
+        return "/".into();
     }
-    // Homepage → dashboard
-    if s == "/" {
-        return "/dashboard".into();
+    if s == "/dashboard" || s.starts_with("/dashboard?") {
+        return "/".into();
     }
     s.to_string()
 }
@@ -279,10 +279,12 @@ mod tests {
 
     #[test]
     fn sanitize_rejects_open_redirect() {
-        assert_eq!(sanitize_return_to(Some("https://evil.example")), "/dashboard");
-        assert_eq!(sanitize_return_to(Some("//evil.example")), "/dashboard");
+        assert_eq!(sanitize_return_to(Some("https://evil.example")), "/");
+        assert_eq!(sanitize_return_to(Some("//evil.example")), "/");
         assert_eq!(sanitize_return_to(Some("/settings/profile")), "/settings/profile");
-        assert_eq!(sanitize_return_to(Some("/")), "/dashboard");
+        assert_eq!(sanitize_return_to(Some("/")), "/");
+        assert_eq!(sanitize_return_to(Some("/dashboard")), "/");
+        assert_eq!(sanitize_return_to(None), "/");
     }
 
     #[test]

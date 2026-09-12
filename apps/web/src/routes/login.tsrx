@@ -1,75 +1,72 @@
-import { createFileRoute } from "@octanejs/tanstack-router";
+import {
+  createFileRoute,
+  redirect,
+  useLoaderData,
+} from "@octanejs/tanstack-router";
 import type { ProviderMode } from "@octanest/api-client";
-import { useEffect, useState } from "octane";
+import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
-import { AuthFormSkeleton } from "@/components/page-skeletons";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { redirectIfNeedsSetup } from "@/lib/bootstrap";
 import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
+import { fetchProviderConfig, fetchSessionMe } from "@/lib/ssr-auth";
 
-export const Route = createFileRoute("/login")({
-  component: LoginPage,
-  head: () => ({ meta: [{ title: "Sign in · Octanest" }] }),
-});
+export type LoginLoaderData = {
+  mode: ProviderMode;
+  allow_signup: boolean;
+  loadError: string;
+};
 
 const LOGIN_ERROR =
   "Incorrect email/username or password. Check your details and try again.";
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
+export const Route = createFileRoute("/login")({
+  component: LoginPage,
+  head: () => ({ meta: [{ title: "Sign in · Octanest" }] }),
+  loader: async (): Promise<LoginLoaderData> => {
+    try {
+      const me = await fetchSessionMe();
+      if (me.ok) {
+        const dest = me.data.must_change_credentials
+          ? "/setup/credentials"
+          : "/";
+        throw redirect({ href: dest });
+      }
+    } catch (e) {
+      if (e && typeof e === "object" && "href" in e) throw e;
+      /* anonymous */
+    }
+
+    try {
+      const cfg = await fetchProviderConfig();
+      if (!cfg.ok) {
+        return { mode: "local", allow_signup: false, loadError: NETWORK_ERROR };
+      }
+      return {
+        mode: cfg.data.mode,
+        allow_signup: cfg.data.allow_signup === true,
+        loadError: "",
+      };
+    } catch {
+      return { mode: "local", allow_signup: false, loadError: NETWORK_ERROR };
+    }
+  },
+});
+
 function LoginPage() @{
-  const [mode, setMode] = useState<ProviderMode | null>(null);
-  const [allowSignup, setAllowSignup] = useState(false);
-  const [loadError, setLoadError] = useState("");
+  const data = useLoaderData({ from: "/login" }) as LoginLoaderData;
+  const mode = data.mode;
+  const allowSignup = data.allow_signup;
+  const loadError = data.loadError;
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (await redirectIfNeedsSetup()) return;
-      if (cancelled) return;
-      try {
-        const me = await apiClient.auth.me();
-        if (cancelled) return;
-        if (me.ok) {
-          const dest = me.data.must_change_credentials
-            ? `/setup/credentials?returnTo=${encodeURIComponent(readReturnToFromLocation())}`
-            : safeReturnTo(readReturnToFromLocation());
-          window.location.assign(dest);
-          return;
-        }
-      } catch {
-        /* anonymous */
-      }
-      try {
-        const cfg = await apiClient.auth.providerConfig();
-        if (cancelled) return;
-        if (!cfg.ok) {
-          setLoadError(NETWORK_ERROR);
-          setMode("local");
-          setAllowSignup(false);
-          return;
-        }
-        setMode(cfg.data.mode);
-        setAllowSignup(cfg.data.allow_signup === true);
-      } catch {
-        if (cancelled) return;
-        setLoadError(NETWORK_ERROR);
-        setMode("local");
-        setAllowSignup(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const returnTo = readReturnToFromLocation();
   const signupHref = `/signup?returnTo=${encodeURIComponent(returnTo)}`;
@@ -111,10 +108,7 @@ function LoginPage() @{
         ? "Continue with your organization’s SSO to access this instance."
         : "Use your email or username to continue.";
 
-  <AuthShell
-    title="Sign in"
-    support={mode ? support : "Preparing sign-in…"}
-  >
+  <AuthShell title="Sign in" support={support}>
     @if (loadError) {
       <AuthErrorBanner message={loadError} />
     }
@@ -122,13 +116,11 @@ function LoginPage() @{
       <AuthErrorBanner message={error} />
     }
 
-    @if (!mode) {
-      <AuthFormSkeleton fields={2} />
-    }
-
     @if (mode === "local") {
       <form
         className="flex flex-col gap-4"
+        method="post"
+        action="#"
         onSubmit={(e) => {
           e.preventDefault();
           void submitLocal();
@@ -178,7 +170,12 @@ function LoginPage() @{
           />
           <Label htmlFor="login-remember">Remember me</Label>
         </div>
-        <Button type="submit" className="w-full" disabled={pending}>
+        <Button
+          type="button"
+          className="w-full"
+          disabled={pending}
+          onClick={() => void submitLocal()}
+        >
           {(pending ? "Working…" : "Sign in") as string}
         </Button>
       </form>
@@ -196,7 +193,7 @@ function LoginPage() @{
       </Button>
     }
 
-    @if (mode && allowSignup) {
+    @if (allowSignup) {
       <p className="text-[14px] text-muted-foreground">
         New to Octanest?{" "}
         <a

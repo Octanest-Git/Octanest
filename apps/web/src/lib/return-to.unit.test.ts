@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { safeReturnTo } from "./return-to";
 
 describe("safeReturnTo", () => {
-  it("defaults empty and homepage to /dashboard", () => {
-    expect(safeReturnTo(null)).toBe("/dashboard");
-    expect(safeReturnTo("")).toBe("/dashboard");
-    expect(safeReturnTo("/")).toBe("/dashboard");
+  it("defaults empty to home /", () => {
+    expect(safeReturnTo(null)).toBe("/");
+    expect(safeReturnTo("")).toBe("/");
+    expect(safeReturnTo("/")).toBe("/");
   });
 
   it("allows same-origin relative paths", () => {
@@ -13,11 +13,16 @@ describe("safeReturnTo", () => {
     expect(safeReturnTo("/admin/auth?tab=1")).toBe("/admin/auth?tab=1");
   });
 
-  it("rejects open redirects and schemes", () => {
-    expect(safeReturnTo("//evil.example")).toBe("/dashboard");
-    expect(safeReturnTo("https://evil.example")).toBe("/dashboard");
-    expect(safeReturnTo("javascript:alert(1)")).toBe("/dashboard");
-    expect(safeReturnTo("data:text/html,hi")).toBe("/dashboard");
-    expect(safeReturnTo("settings")).toBe("/dashboard");
+  it("maps legacy /dashboard to /", () => {
+    expect(safeReturnTo("/dashboard")).toBe("/");
+    expect(safeReturnTo("/dashboard?x=1")).toBe("/");
+  });
+
+  it("rejects open redirects and non-paths", () => {
+    expect(safeReturnTo("//evil.example")).toBe("/");
+    expect(safeReturnTo("https://evil.example")).toBe("/");
+    expect(safeReturnTo("javascript:alert(1)")).toBe("/");
+    expect(safeReturnTo("data:text/html,hi")).toBe("/");
+    expect(safeReturnTo("settings")).toBe("/");
   });
 });

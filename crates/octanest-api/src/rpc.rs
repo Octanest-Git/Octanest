@@ -201,6 +201,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
         },
+        "admin.instance.factory_reset" => match admin::factory_reset(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         other => RpcResponse::err(AppError::new(
             "rpc.unknown_procedure",
             format!("unknown procedure: {other}"),

@@ -8,7 +8,7 @@
 // or /health (T-03-16, HIGH), and drop stale caches on activate so a new
 // deploy replaces the shell instead of pinning clients to an old bundle
 // (T-03-18).
-const CACHE_NAME = "octanest-shell-v1";
+const CACHE_NAME = "octanest-shell-v2";
 
 const PRECACHE_URLS = [
   "/favicon.ico",
@@ -19,6 +19,8 @@ const PRECACHE_URLS = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/icon-512-maskable.png",
+  "/fonts/sora-latin.woff2",
+  "/fonts/source-sans-3-latin.woff2",
 ];
 
 self.addEventListener("install", (event) => {

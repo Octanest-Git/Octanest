@@ -1,5 +1,7 @@
 //! AUTH-04 / AUTH-12: verify + password-reset issue/consume.
 
+
+mod support;
 use std::sync::{Arc, Mutex};
 
 use axum::body::Body;
@@ -130,6 +132,7 @@ async fn issue_otp_consume_sets_email_verified_on_me() {
     let url = format!("sqlite:{}", dir.path().join("verify_reset.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (cookie, user_id, signup_v) = signup_user(&app, "user@ex.com", "user1").await;
@@ -188,6 +191,7 @@ async fn request_verify_sends_magic_and_otp_email() {
     let url = format!("sqlite:{}", dir.path().join("req_verify.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, recorder) = test_app_with_recorder(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "v@ex.com", "verifyme").await;
@@ -236,6 +240,7 @@ async fn magic_token_consume_sets_verified() {
     let url = format!("sqlite:{}", dir.path().join("magic.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "magic@ex.com", "magicuser").await;
@@ -263,6 +268,7 @@ async fn verify_wrong_session_user_rejected() {
     let url = format!("sqlite:{}", dir.path().join("wrong_user.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (_c1, user1, _) = signup_user(&app, "a@ex.com", "usera").await;
@@ -291,6 +297,7 @@ async fn resend_replaces_prior_and_rate_limits_within_60s() {
     let url = format!("sqlite:{}", dir.path().join("resend.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, recorder) = test_app_with_recorder(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "r@ex.com", "resender").await;
@@ -363,6 +370,7 @@ async fn sixth_issue_within_hour_rate_limited() {
     let url = format!("sqlite:{}", dir.path().join("hourly.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "h@ex.com", "hourly").await;
@@ -404,6 +412,7 @@ async fn ten_failed_otp_attempts_invalidate() {
     let url = format!("sqlite:{}", dir.path().join("attempts.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (cookie, user_id, _) = signup_user(&app, "t@ex.com", "tryhard").await;
@@ -478,6 +487,7 @@ async fn request_password_reset_anti_enumeration_identical_success() {
     let url = format!("sqlite:{}", dir.path().join("reset_req.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, recorder) = test_app_with_recorder(db.clone()).await;
 
     let (_cookie, _user_id, _) = signup_user(&app, "local@ex.com", "localuser").await;
@@ -492,7 +502,7 @@ async fn request_password_reset_anti_enumeration_identical_success() {
         "ssouser",
         "",
         None,
-        false,
+        octanest_core::Role::User,
     )
     .await
     .expect("create sso user");
@@ -539,6 +549,7 @@ async fn request_password_reset_rate_limit_swallows_into_ok() {
     let url = format!("sqlite:{}", dir.path().join("reset_rl.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let (app, recorder) = test_app_with_recorder(db.clone()).await;
 
     let (_cookie, user_id, _) = signup_user(&app, "rl@ex.com", "rluser").await;
@@ -579,6 +590,7 @@ async fn reset_password_token_revokes_others_and_signs_in() {
     let url = format!("sqlite:{}", dir.path().join("reset_redeem.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (cookie_a, user_id, _) = signup_user(&app, "reset@ex.com", "resetme").await;
@@ -661,6 +673,7 @@ async fn reset_password_otp_consume() {
     let url = format!("sqlite:{}", dir.path().join("reset_otp.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (_cookie, user_id, _) = signup_user(&app, "otp@ex.com", "otpreset").await;
@@ -683,6 +696,7 @@ async fn reset_password_sso_only_rejected() {
     let url = format!("sqlite:{}", dir.path().join("reset_sso.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     db.create_user(
@@ -693,7 +707,7 @@ async fn reset_password_sso_only_rejected() {
         "ssoreset",
         "",
         None,
-        false,
+        octanest_core::Role::User,
     )
     .await
     .expect("sso user");
@@ -718,6 +732,7 @@ async fn reset_password_invalid_token_rejected() {
     let url = format!("sqlite:{}", dir.path().join("reset_bad.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db).await;
 
     let (_cookie, _, _) = signup_user(&app, "bad@ex.com", "badreset").await;
@@ -739,6 +754,7 @@ async fn reset_password_weak_password_rejected() {
     let url = format!("sqlite:{}", dir.path().join("reset_weak.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db.clone()).await;
 
     let (_cookie, user_id, _) = signup_user(&app, "weak@ex.com", "weakreset").await;

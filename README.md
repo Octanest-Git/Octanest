@@ -5,6 +5,12 @@
   <img src="brand/octanest-mark.png" alt="Octanest" width="128" height="128" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/Octanest-Git/Octanest/actions/workflows/ci.yml"><img src="https://github.com/Octanest-Git/Octanest/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+  <a href="Cargo.toml"><img src="https://img.shields.io/badge/version-0.1.0-informational.svg" alt="Version 0.1.0" /></a>
+</p>
+
 A self-hostable GitHub-style social coding platform (git hosting, pull requests, and issues) that runs the same product in the cloud or on your own machines.
 
 **Octanest Cloud** and **self-hosted Octanest** are one codebase: Bun workspaces for the web app and TypeScript packages, plus a Rust Cargo workspace for the API and database layer.
@@ -82,17 +88,33 @@ make test-e2e-stack    # Vitest e2e against API + Mailpit/OIDC/stubs
 
 ## Monorepo layout
 
-| Path | Role |
-|------|------|
-| `apps/web` | Octane / TanStack Start web app (`@octanest/web`) |
-| `packages/api-client` | Generated TypeScript RPC client (`make rpc-gen`) |
-| `crates/octanest-api` | Rust API + `rpc-gen` binary |
-| `crates/octanest-core` | Shared Rust domain logic |
-| `crates/octanest-db` | SQL migrations and DB tooling |
+| Path | Role | README |
+|------|------|--------|
+| `apps/web` | Octane / TanStack Start web app (`@octanest/web`) | [apps/web/README.md](apps/web/README.md) |
+| `packages/api-client` | Generated TypeScript RPC client (`make rpc-gen`) | [packages/api-client/README.md](packages/api-client/README.md) |
+| `crates/octanest-api` | Rust API + `rpc-gen` binary | [crates/octanest-api/README.md](crates/octanest-api/README.md) |
+| `crates/octanest-core` | Shared Rust domain types | [crates/octanest-core/README.md](crates/octanest-core/README.md) |
+| `crates/octanest-db` | SQL migrations and DB tooling | [crates/octanest-db/README.md](crates/octanest-db/README.md) |
 
 Root tooling: Bun workspaces (`apps/*`, `packages/*`) + Turborepo scripts; Cargo workspace under `crates/`.
+
+## Contributing
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, PRs, expectations
+- [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md) — conventions for humans and agents
+- [AGENTS.md](AGENTS.md) — short agent orientation (Octane ≠ React)
 
 ## Docs
 
 - [`docs/database.md`](docs/database.md) — Postgres / MySQL / SQLite, migrations, dialect switching
 - [`docs/dev-auth.md`](docs/dev-auth.md) — Mailpit, OIDC mock, Resend/WorkOS stubs (`make up-dev-auth`)
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — local API + Vite, RPC sync, Compose
+- [`docs/TESTING.md`](docs/TESTING.md) — nextest + Vitest projects
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview
+- [`docs/API.md`](docs/API.md) — RPC surface
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — environment variables
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Compose / ops
+
+## License
+
+[MIT](LICENSE) © Octanest contributors

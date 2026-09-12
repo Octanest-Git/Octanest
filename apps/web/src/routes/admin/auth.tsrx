@@ -1,13 +1,20 @@
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { createFileRoute } from "@octanejs/tanstack-router";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type {
   AuthSettingsPublic,
   EmailProviderKind,
   ProviderMode,
-  UserPublic,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
+import {
+  adminAuthSettingsQueryOptions,
+  authSessionQueryOptions,
+  clearSessionQueries,
+  setAdminAuthSettingsCache,
+} from "@/lib/session-queries";
+import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { AdminAuthSkeleton } from "@/components/page-skeletons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,19 +54,12 @@ const EMAIL_OPTIONS: { value: EmailProviderKind; label: string }[] = [
   { value: "resend", label: "Resend" },
 ];
 
-type Phase =
-  | { kind: "loading" }
-  | { kind: "forbidden" }
-  | { kind: "ready"; user: UserPublic; settings: AuthSettingsPublic }
-  | { kind: "error"; message: string };
-
-function EnvBadge({ show }: { show: boolean }) {
-  if (!show) return null;
-  return (
+function EnvBadge({ show }: { show: boolean }) @{
+  @if (show) {
     <span className="inline-flex h-11 items-center rounded-md border border-border bg-muted/40 px-3 text-[14px] text-muted-foreground">
       Configured via ENV
     </span>
-  );
+  }
 }
 
 function ModeSelect<T extends string>({
@@ -112,8 +112,15 @@ function ModeSelect<T extends string>({
 }
 
 /** Exported for D-08 integration tests (Allow open signup Switch). */
-export function AdminAuthPage() {
-  const [phase, setPhase] = useState<Phase>({ kind: "loading" });
+export function AdminAuthPage() @{
+  const queryClient = useQueryClient();
+  const me = useQuery(authSessionQueryOptions());
+  const isSysAdmin = me.isSuccess && me.data?.role === "sys-admin";
+  const settings = useQuery({
+    ...adminAuthSettingsQueryOptions(),
+    enabled: isSysAdmin,
+  });
+
   const [providerMode, setProviderMode] = useState<ProviderMode>("local");
   const [allowSignup, setAllowSignup] = useState(false);
   const [emailProvider, setEmailProvider] = useState<EmailProviderKind>("log");
@@ -130,61 +137,38 @@ export function AdminAuthPage() {
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
+  const [draftReady, setDraftReady] = useState(false);
 
-  function applySettings(settings: AuthSettingsPublic) {
-    setProviderMode(settings.provider_mode);
-    setAllowSignup(settings.allow_signup === true);
-    setEmailProvider(settings.email_provider);
-    setFromAddress(settings.from_address ?? "");
-    setWorkosClientId(settings.workos_client_id ?? "");
-    setOidcIssuer(settings.oidc_issuer ?? "");
-    setOidcClientId(settings.oidc_client_id ?? "");
+  function applySettings(next: AuthSettingsPublic) {
+    setProviderMode(next.provider_mode);
+    setAllowSignup(next.allow_signup === true);
+    setEmailProvider(next.email_provider);
+    setFromAddress(next.from_address ?? "");
+    setWorkosClientId(next.workos_client_id ?? "");
+    setOidcIssuer(next.oidc_issuer ?? "");
+    setOidcClientId(next.oidc_client_id ?? "");
     setFlags({
-      smtp_configured: settings.smtp_configured,
-      resend_configured: settings.resend_configured,
-      workos_api_key_configured: settings.workos_api_key_configured,
-      oidc_client_secret_configured: settings.oidc_client_secret_configured,
+      smtp_configured: next.smtp_configured,
+      resend_configured: next.resend_configured,
+      workos_api_key_configured: next.workos_api_key_configured,
+      oidc_client_secret_configured: next.oidc_client_secret_configured,
     });
+    setDraftReady(true);
   }
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const me = await apiClient.auth.me();
-        if (cancelled) return;
-        if (!me.ok) {
-          window.location.assign("/login?returnTo=/admin/auth");
-          return;
-        }
-        if (me.data.role !== "sys-admin") {
-          setPhase({ kind: "forbidden" });
-          return;
-        }
-        const settingsRes = await apiClient.admin.auth.getSettings();
-        if (cancelled) return;
-        if (!settingsRes.ok) {
-          if (settingsRes.error.code === "admin.forbidden") {
-            setPhase({ kind: "forbidden" });
-            return;
-          }
-          setPhase({
-            kind: "error",
-            message: settingsRes.error.message || NETWORK_ERROR,
-          });
-          return;
-        }
-        applySettings(settingsRes.data);
-        setPhase({ kind: "ready", user: me.data, settings: settingsRes.data });
-      } catch {
-        if (cancelled) return;
-        setPhase({ kind: "error", message: NETWORK_ERROR });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (me.isPending) return;
+    if (me.isError) return;
+    if (me.data === null) {
+      window.location.assign("/login?returnTo=/admin/auth");
+    }
+  }, [me.isPending, me.isError, me.data]);
+
+  useEffect(() => {
+    if (settings.isSuccess && settings.data) {
+      applySettings(settings.data);
+    }
+  }, [settings.isSuccess, settings.dataUpdatedAt]);
 
   async function saveSettings() {
     setFormError("");
@@ -208,11 +192,7 @@ export function AdminAuthPage() {
         return;
       }
       applySettings(res.data);
-      setPhase((prev) =>
-        prev.kind === "ready"
-          ? { kind: "ready", user: prev.user, settings: res.data }
-          : prev,
-      );
+      setAdminAuthSettingsCache(queryClient, res.data);
       setSuccess("Auth settings saved.");
       setPending(false);
     } catch {
@@ -221,27 +201,40 @@ export function AdminAuthPage() {
     }
   }
 
-  if (phase.kind === "loading") {
-    return <AdminAuthSkeleton />;
-  }
+  const settingsErrorCode =
+    settings.isError && settings.error && typeof settings.error === "object"
+      ? (settings.error as { code?: string }).code
+      : undefined;
 
-  if (phase.kind === "forbidden") {
-    return (
+  const loading =
+    me.isPending ||
+    (isSysAdmin && settings.isPending) ||
+    (isSysAdmin && settings.isSuccess && !draftReady);
+
+  const forbidden =
+    (!me.isPending &&
+      me.isSuccess &&
+      me.data !== null &&
+      me.data.role !== "sys-admin") ||
+    settingsErrorCode === "admin.forbidden";
+
+  const loadError =
+    me.isError ||
+    (settings.isError && settingsErrorCode !== "admin.forbidden");
+
+  @if (loading) {
+    <AdminAuthSkeleton />
+  } @else {
+    @if (forbidden) {
       <div className="mx-auto max-w-2xl px-4 py-16">
         <p className="text-[16px] text-muted-foreground">{FORBIDDEN}</p>
       </div>
-    );
-  }
-
-  if (phase.kind === "error") {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-16">
-        <p className="text-[16px] text-destructive">{phase.message as string}</p>
-      </div>
-    );
-  }
-
-  return (
+    } @else {
+      @if (loadError) {
+        <div className="mx-auto max-w-2xl px-4 py-16">
+          <p className="text-[16px] text-destructive">{NETWORK_ERROR}</p>
+        </div>
+      } @else {
     <div className="mx-auto max-w-2xl px-4 py-16">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Auth settings
@@ -252,16 +245,16 @@ export function AdminAuthPage() {
       </p>
 
       <div className="mt-8 flex flex-col gap-6">
-        {formError ? (
+        @if (formError) {
           <p role="alert" className="text-[14px] text-destructive">
             {formError as string}
           </p>
-        ) : null}
-        {success ? (
+        }
+        @if (success) {
           <p role="status" className="text-[14px] text-foreground">
             {success as string}
           </p>
-        ) : null}
+        }
 
         <ModeSelect
           id="auth-provider"
@@ -286,7 +279,7 @@ export function AdminAuthPage() {
           </p>
         </div>
 
-        {providerMode === "workos" ? (
+        @if (providerMode === "workos") {
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="workos-client-id">WorkOS client ID</Label>
@@ -302,16 +295,16 @@ export function AdminAuthPage() {
             <div className="flex flex-col gap-2">
               <Label>WorkOS API key</Label>
               <EnvBadge show={flags.workos_api_key_configured} />
-              {!flags.workos_api_key_configured ? (
+              @if (!flags.workos_api_key_configured) {
                 <p className="text-[14px] text-muted-foreground">
                   Not set — configure WORKOS_API_KEY in the environment.
                 </p>
-              ) : null}
+              }
             </div>
           </div>
-        ) : null}
+        }
 
-        {providerMode === "oidc" ? (
+        @if (providerMode === "oidc") {
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="oidc-issuer">OIDC issuer</Label>
@@ -338,15 +331,15 @@ export function AdminAuthPage() {
             <div className="flex flex-col gap-2">
               <Label>OIDC client secret</Label>
               <EnvBadge show={flags.oidc_client_secret_configured} />
-              {!flags.oidc_client_secret_configured ? (
+              @if (!flags.oidc_client_secret_configured) {
                 <p className="text-[14px] text-muted-foreground">
                   Not set — configure OCTANEST_OIDC_CLIENT_SECRET in the
                   environment.
                 </p>
-              ) : null}
+              }
             </div>
           </div>
-        ) : null}
+        }
 
         <ModeSelect
           id="email-delivery"
@@ -369,29 +362,29 @@ export function AdminAuthPage() {
               autoComplete="off"
             />
           </div>
-          {emailProvider === "smtp" ? (
+          @if (emailProvider === "smtp") {
             <div className="flex flex-col gap-2">
               <Label>SMTP credentials</Label>
               <EnvBadge show={flags.smtp_configured} />
-              {!flags.smtp_configured ? (
+              @if (!flags.smtp_configured) {
                 <p className="text-[14px] text-muted-foreground">
                   Not set — configure OCTANEST_SMTP_URL in the environment.
                 </p>
-              ) : null}
+              }
             </div>
-          ) : null}
-          {emailProvider === "resend" ? (
+          }
+          @if (emailProvider === "resend") {
             <div className="flex flex-col gap-2">
               <Label>Resend API key</Label>
               <EnvBadge show={flags.resend_configured} />
-              {!flags.resend_configured ? (
+              @if (!flags.resend_configured) {
                 <p className="text-[14px] text-muted-foreground">
                   Not set — configure OCTANEST_RESEND_API_KEY in the
                   environment.
                 </p>
-              ) : null}
+              }
             </div>
-          ) : null}
+          }
         </div>
 
         <Button
@@ -402,7 +395,74 @@ export function AdminAuthPage() {
         >
           {(pending ? "Working…" : "Save auth settings") as string}
         </Button>
+
+        <FactoryResetSection />
       </div>
     </div>
-  );
+      }
+    }
+  }
+}
+
+function FactoryResetSection() @{
+  const queryClient = useQueryClient();
+  const [phrase, setPhrase] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function runReset() {
+    setError("");
+    setPending(true);
+    try {
+      const res = await apiClient.admin.auth.factoryReset({
+        confirmation: phrase.trim(),
+      });
+      if (!res.ok) {
+        setError(res.error.message || "Factory reset failed.");
+        setPending(false);
+        return;
+      }
+      syncSessionPresenceHint(false);
+      clearSessionQueries(queryClient);
+      window.location.assign("/setup");
+    } catch {
+      setError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  <div className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4">
+    <h2 className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-destructive">
+      Danger zone
+    </h2>
+    <p className="text-[14px] leading-[1.4] text-muted-foreground">
+      Wipe all users, sessions, and auth identities, then return this instance to
+      the empty setup wizard. This cannot be undone. Type{" "}
+      <span className="font-medium text-foreground">RESET</span> to confirm.
+    </p>
+    @if (error) {
+      <p role="alert" className="text-[14px] text-destructive">
+        {error as string}
+      </p>
+    }
+    <div className="flex flex-col gap-2">
+      <Label htmlFor="factory-reset-confirm">Confirmation</Label>
+      <Input
+        id="factory-reset-confirm"
+        value={phrase}
+        onInput={(e) => setPhrase((e.currentTarget as HTMLInputElement).value)}
+        autoComplete="off"
+        placeholder="RESET"
+      />
+    </div>
+    <Button
+      type="button"
+      variant="destructive"
+      disabled={pending || phrase.trim() !== "RESET"}
+      onClick={() => void runReset()}
+      className="w-full sm:w-auto"
+    >
+      {(pending ? "Resetting…" : "Reset instance database") as string}
+    </Button>
+  </div>
 }

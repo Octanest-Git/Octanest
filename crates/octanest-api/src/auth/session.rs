@@ -15,6 +15,10 @@ use uuid::Uuid;
 /// Cookie name for the opaque session id (discretion lock).
 pub const SESSION_COOKIE_NAME: &str = "octanest_session";
 
+/// Non-HttpOnly presence flag so the SPA can pick signed-in vs landing chrome
+/// before `auth.me` resolves. Value is always `1` — never a secret.
+pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
+
 /// Default idle session TTL (24h). Refresh `expires_at` on resolve for non-remember sessions.
 pub const SESSION_IDLE: Duration = Duration::from_secs(24 * 3600);
 
@@ -180,6 +184,29 @@ pub fn clear_session_cookie(env_name: &str) -> Cookie<'static> {
         .build()
 }
 
+/// Readable companion cookie: same Path/SameSite/Secure/Max-Age as the session.
+pub fn build_session_presence_cookie(ttl: Duration, env_name: &str) -> Cookie<'static> {
+    let max_age = cookie::time::Duration::seconds(ttl.as_secs() as i64);
+    Cookie::build((SESSION_PRESENCE_COOKIE_NAME, "1"))
+        .http_only(false)
+        .path("/")
+        .same_site(SameSite::Lax)
+        .max_age(max_age)
+        .secure(secure_cookies(env_name))
+        .build()
+}
+
+/// Clear the SPA presence hint (pair with [`clear_session_cookie`]).
+pub fn clear_session_presence_cookie(env_name: &str) -> Cookie<'static> {
+    Cookie::build((SESSION_PRESENCE_COOKIE_NAME, ""))
+        .http_only(false)
+        .path("/")
+        .same_site(SameSite::Lax)
+        .max_age(cookie::time::Duration::ZERO)
+        .secure(secure_cookies(env_name))
+        .build()
+}
+
 fn build_session_cookie(raw_token: &str, ttl: Duration, env_name: &str) -> Cookie<'static> {
     let max_age = cookie::time::Duration::seconds(ttl.as_secs() as i64);
     Cookie::build((SESSION_COOKIE_NAME, raw_token.to_owned()))
@@ -236,7 +263,7 @@ mod tests {
             "Session Tester",
             "",
             None,
-            false,
+            octanest_core::Role::User,
         )
         .await
         .expect("create user");
@@ -316,5 +343,19 @@ mod tests {
         assert_eq!(c.max_age(), Some(CookieDuration::ZERO));
         assert!(c.http_only().unwrap_or(false));
         assert_eq!(c.same_site(), Some(SameSite::Lax));
+    }
+
+    #[test]
+    fn presence_cookie_is_readable_and_pairs_with_clear() {
+        let set = build_session_presence_cookie(SESSION_IDLE, "development");
+        assert_eq!(set.name(), SESSION_PRESENCE_COOKIE_NAME);
+        assert_eq!(set.value(), "1");
+        assert!(!set.http_only().unwrap_or(true));
+        assert_eq!(set.path(), Some("/"));
+        assert!(!set.secure().unwrap_or(true));
+
+        let clear = clear_session_presence_cookie("development");
+        assert_eq!(clear.name(), SESSION_PRESENCE_COOKIE_NAME);
+        assert_eq!(clear.max_age(), Some(CookieDuration::ZERO));
     }
 }

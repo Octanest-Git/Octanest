@@ -16,6 +16,9 @@ declare module "vitest/browser" {
       password: string;
     }) => Promise<boolean>;
     expectWorkosCta: () => Promise<boolean>;
+    loginThroughOidc: () => Promise<boolean>;
+    expectStatusHealthy: () => Promise<boolean>;
+    expectAuthMeDedupedOnHome: () => Promise<boolean>;
   }
 }
 
@@ -52,4 +55,27 @@ describe("stack browser e2e: local signup + login UI", () => {
       await commands.restoreLocalAuthCommand();
     }
   }, 45_000);
+
+  it("completes OIDC SSO via mock without login skeleton", async () => {
+    try {
+      const ok = await commands.loginThroughOidc();
+      expect(ok).toBe(true);
+    } finally {
+      await commands.restoreLocalAuthCommand();
+    }
+  }, 60_000);
+
+  it("renders /status from system.health Query", async () => {
+    const ok = await commands.expectStatusHealthy();
+    expect(ok).toBe(true);
+  }, 45_000);
+
+  it("dedupes auth.me on signed-in home (chrome + banner share cache)", async () => {
+    await commands.ensureAuthSettings({
+      provider_mode: "local",
+      email_provider: "log",
+    });
+    const ok = await commands.expectAuthMeDedupedOnHome();
+    expect(ok).toBe(true);
+  }, 60_000);
 });

@@ -13,6 +13,14 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  return {
+    ...actual,
+    useLoaderData: () => ({ loadError: "" }),
+  };
+});
+
 afterEach(cleanup);
 
 describe("/setup Wave 0 (AUTH-07 UI-SPEC)", () => {

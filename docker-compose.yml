@@ -41,6 +41,10 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://octanest:octanest@postgres:5432/octanest}
       OCTANEST_ENV: ${OCTANEST_ENV:-compose}
       OCTANEST_CORS_ORIGINS: ${OCTANEST_CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      # Browser-facing origin for magic links + SSO (Traefik :80). Prefer
+      # OCTANEST_COMPOSE_PUBLIC_ORIGIN so a host `make dev` value of
+      # OCTANEST_PUBLIC_ORIGIN=http://localhost:3000 in `.env` does not leak in.
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
       API_BIND: 0.0.0.0:8080
       OCTANEST_RPC_VERSION: ${OCTANEST_RPC_VERSION:-1}
       RUST_LOG: ${RUST_LOG:-info}

@@ -133,8 +133,12 @@ fn oidc_allow_insecure_issuer() -> bool {
 }
 
 fn http_client() -> Result<reqwest::Client, ExternalAuthError> {
+    use std::time::Duration;
     reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none())
+        // Fail fast when the IdP/mock is down or mis-routed (Compose 127.0.0.1 trap).
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
         .build()
         .map_err(|e| ExternalAuthError::Failed(e.to_string()))
 }

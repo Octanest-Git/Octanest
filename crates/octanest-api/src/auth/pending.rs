@@ -62,7 +62,7 @@ mod tests {
                 provider: "workos".into(),
                 code_verifier: "v".into(),
                 nonce: None,
-                return_to: "/dashboard".into(),
+                return_to: "/".into(),
                 redirect_uri: "http://localhost/cb".into(),
                 created_at: Instant::now(),
             },
