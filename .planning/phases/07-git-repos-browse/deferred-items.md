@@ -1,0 +1,1 @@
+- [ ] Pre-existing Wave 0 stub `git_archive_formats_zip_and_tar_gz` fails `cargo nextest run -p octanest-git --lib` until archive lands (out of scope for 07-05).

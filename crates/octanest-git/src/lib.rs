@@ -10,7 +10,7 @@ pub mod backend;
 pub mod cli;
 pub mod version;
 
-pub use backend::{GitBackend, GitError};
+pub use backend::{GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind};
 pub use cli::CliGitBackend;
 pub use version::{assert_git_version, parse_git_version};
 

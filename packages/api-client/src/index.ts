@@ -183,6 +183,59 @@ export type RepoListMineResponse = {
   repos: RepoPublic[];
 };
 
+export type RepoGetRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoTreeRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path?: string | null;
+};
+
+export type RepoTreeEntry = {
+  mode: string;
+  kind: string;
+  oid: string;
+  name: string;
+};
+
+export type RepoTreeResponse = {
+  empty: boolean;
+  ref: string;
+  path: string;
+  entries: RepoTreeEntry[];
+};
+
+export type RepoBlobRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path: string;
+};
+
+export type RepoBlobResponse = {
+  path: string;
+  ref: string;
+  size: number;
+  truncated: boolean;
+  is_binary: boolean;
+  encoding: string;
+  content?: string | null;
+  soft_max_bytes: number;
+};
+
+export type RepoRefEntry = {
+  name: string;
+  oid: string;
+};
+
+export type RepoRefsResponse = {
+  refs: RepoRefEntry[];
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -253,6 +306,10 @@ export function createClient(opts: CreateClientOptions) {
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
+      get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
+      tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
+      blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
+      refs: (input: RepoGetRequest) => rpcCall<RepoRefsResponse>(opts, "repo.refs", input),
     },
     admin: {
       auth: {

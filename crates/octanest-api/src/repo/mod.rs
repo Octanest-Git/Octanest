@@ -1,10 +1,18 @@
-//! Repository RPC handlers (`repo.create` + templates — GIT-01 / D-02–D-12 / D-30–D-32).
+//! Repository RPC handlers (`repo.create` + browse ACL — GIT-01 / GIT-05 / D-23–D-25).
 
+mod acl;
 mod templates;
 
+pub use acl::{resolve_repo_for_read, AccessibleRepo};
+
+/// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
+/// 1 MiB matches GitHub-like soft preview limits.
+pub const BLOB_SOFT_MAX_BYTES: usize = 1_048_576;
+
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoCreateDefaults, RepoListMineResponse,
-    RepoPublic, RepoVisibility,
+    validate_repo_name, AppError, CreateRepoRequest, RepoBlobRequest, RepoBlobResponse,
+    RepoCreateDefaults, RepoGetRequest, RepoListMineResponse, RepoPublic, RepoRefEntry,
+    RepoRefsResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse, RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -33,6 +41,20 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
     v.as_str()
 }
 
+fn to_public(repo: &AccessibleRepo) -> RepoPublic {
+    let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
+    RepoPublic {
+        id: repo.row.id.clone(),
+        owner_id: repo.row.owner_id.clone(),
+        owner_username: repo.owner_username.clone(),
+        name: repo.row.name.clone(),
+        description: repo.row.description.clone(),
+        visibility,
+        default_branch: repo.row.default_branch.clone(),
+        updated_at: repo.row.updated_at.clone(),
+    }
+}
+
 async fn resolve_visibility(
     ctx: &RpcCtx,
     requested: Option<RepoVisibility>,
@@ -57,6 +79,48 @@ fn require_session_user(
     ctx.session.as_ref().ok_or_else(|| {
         AppError::new("auth.unauthenticated", "not authenticated")
     })
+}
+
+fn map_git_err(e: octanest_git::GitError) -> AppError {
+    match e {
+        octanest_git::GitError::NotFound(msg) => AppError::new("repo.path_not_found", msg),
+        octanest_git::GitError::InvalidArg(msg) => AppError::new("repo.invalid_ref", msg),
+        other => {
+            tracing::error!(error = %other, "git backend error");
+            AppError::new("repo.git_failed", "git operation failed")
+        }
+    }
+}
+
+fn looks_binary(bytes: &[u8]) -> bool {
+    bytes.iter().take(8000).any(|&b| b == 0)
+}
+
+fn base64_encode(bytes: &[u8]) -> String {
+    const TABLE: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for chunk in bytes.chunks(3) {
+        let mut n = (chunk[0] as u32) << 16;
+        if chunk.len() > 1 {
+            n |= (chunk[1] as u32) << 8;
+        }
+        if chunk.len() > 2 {
+            n |= chunk[2] as u32;
+        }
+        out.push(TABLE[((n >> 18) & 63) as usize] as char);
+        out.push(TABLE[((n >> 12) & 63) as usize] as char);
+        out.push(if chunk.len() > 1 {
+            TABLE[((n >> 6) & 63) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            TABLE[(n & 63) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
 }
 
 /// `repo.listMine` — caller's non-deleted repos sorted by updated_at desc (GIT-01 / D-13).
@@ -103,6 +167,121 @@ pub async fn create_defaults(ctx: &RpcCtx) -> Result<RepoCreateDefaults, AppErro
         default_visibility,
         stacks: templates::list_stacks()?,
         gitignores: templates::list_gitignores()?,
+    })
+}
+
+/// `repo.get` — ACL-safe metadata (D-23–D-25). Anonymous OK for public.
+pub async fn get(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let req: RepoGetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.get input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    Ok(to_public(&accessible))
+}
+
+/// `repo.tree` — `ls_tree` behind ACL; empty repo → `{ empty: true, entries: [] }`.
+pub async fn tree(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoTreeResponse, AppError> {
+    let req: RepoTreeRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.tree input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let rel = req.path.unwrap_or_default();
+    let entries = ctx
+        .git
+        .ls_tree(&path, &ref_name, &rel)
+        .await
+        .map_err(map_git_err)?;
+
+    let refs = ctx.git.list_refs(&path).await.map_err(map_git_err)?;
+    let empty = refs.is_empty() && entries.is_empty();
+
+    Ok(RepoTreeResponse {
+        empty,
+        ref_name,
+        path: rel.trim_start_matches('/').to_string(),
+        entries: entries
+            .into_iter()
+            .map(|e| RepoTreeEntry {
+                mode: e.mode,
+                kind: e.kind.as_str().to_string(),
+                oid: e.oid,
+                name: e.name,
+            })
+            .collect(),
+    })
+}
+
+/// `repo.blob` — blob metadata + soft-capped content (D-20).
+pub async fn blob(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoBlobResponse, AppError> {
+    let req: RepoBlobRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.blob input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let file_path = req.path.trim_start_matches('/').to_string();
+    let bytes = ctx
+        .git
+        .cat_blob(&path, &ref_name, &file_path)
+        .await
+        .map_err(map_git_err)?;
+
+    let size = bytes.len() as u64;
+    let binary = looks_binary(&bytes);
+    let truncated = bytes.len() > BLOB_SOFT_MAX_BYTES;
+    let preview = if truncated {
+        &bytes[..BLOB_SOFT_MAX_BYTES]
+    } else {
+        &bytes[..]
+    };
+
+    let (encoding, content) = if binary {
+        ("base64".to_string(), Some(base64_encode(preview)))
+    } else {
+        match std::str::from_utf8(preview) {
+            Ok(s) => ("utf-8".to_string(), Some(s.to_string())),
+            Err(_) => ("base64".to_string(), Some(base64_encode(preview))),
+        }
+    };
+
+    Ok(RepoBlobResponse {
+        path: file_path,
+        ref_name,
+        size,
+        truncated,
+        is_binary: binary,
+        encoding,
+        content,
+        soft_max_bytes: BLOB_SOFT_MAX_BYTES as u64,
+    })
+}
+
+/// `repo.refs` — branches + tags (ACL-safe).
+pub async fn refs(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoRefsResponse, AppError> {
+    let req: RepoGetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.refs input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let list = ctx.git.list_refs(&path).await.map_err(map_git_err)?;
+    Ok(RepoRefsResponse {
+        refs: list
+            .into_iter()
+            .map(|r| RepoRefEntry {
+                name: r.name,
+                oid: r.oid,
+            })
+            .collect(),
     })
 }
 

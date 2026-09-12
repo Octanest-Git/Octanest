@@ -22,7 +22,7 @@ use crate::auth::session::{
     SessionService, SESSION_COOKIE_NAME, SESSION_IDLE,
 };
 use crate::email::{self, EmailSender};
-use crate::routes::{auth_callbacks, avatar};
+use crate::routes::{auth_callbacks, avatar, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
 #[derive(Clone)]
@@ -112,6 +112,10 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             post(avatar::upload_avatar).layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES)),
         )
         .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
+        .route(
+            "/api/repos/{owner}/{repo}/raw/{ref}/{*path}",
+            get(repo_raw::serve_raw),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -208,6 +212,10 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
         }
         RpcResponse::Err { error, .. } if error.code == "auth.email_unverified" => {
             StatusCode::FORBIDDEN
+        }
+        RpcResponse::Err { error, .. } if error.code == "repo.not_found" => StatusCode::NOT_FOUND,
+        RpcResponse::Err { error, .. } if error.code == "repo.path_not_found" => {
+            StatusCode::NOT_FOUND
         }
         RpcResponse::Err { .. } => StatusCode::BAD_REQUEST,
     }

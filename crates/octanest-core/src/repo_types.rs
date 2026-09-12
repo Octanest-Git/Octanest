@@ -84,6 +84,82 @@ pub struct RepoListMineResponse {
     pub repos: Vec<RepoPublic>,
 }
 
+/// `repo.get` / `repo.refs` input — owner + name (GIT-05).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoGetRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+/// `repo.tree` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTreeRequest {
+    pub owner: String,
+    pub name: String,
+    /// Branch/tag/sha. Serialized as `ref` for API ergonomics.
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    #[serde(default)]
+    pub path: Option<String>,
+}
+
+/// One `ls-tree` entry for RPC.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTreeEntry {
+    pub mode: String,
+    pub kind: String,
+    pub oid: String,
+    pub name: String,
+}
+
+/// `repo.tree` response — empty repo sets `empty: true` without 500.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTreeResponse {
+    pub empty: bool,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub path: String,
+    pub entries: Vec<RepoTreeEntry>,
+}
+
+/// `repo.blob` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBlobRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub path: String,
+}
+
+/// Soft-capped blob payload for UI (D-20).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBlobResponse {
+    pub path: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub size: u64,
+    pub truncated: bool,
+    pub is_binary: bool,
+    pub encoding: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
+    pub soft_max_bytes: u64,
+}
+
+/// One ref from `repo.refs`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoRefEntry {
+    pub name: String,
+    pub oid: String,
+}
+
+/// `repo.refs` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoRefsResponse {
+    pub refs: Vec<RepoRefEntry>,
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {
