@@ -38,11 +38,35 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_DATABASE` / `MYSQL_ROOT_PASSWORD` | MySQL profile | `octanest` | MySQL container credentials (`docker-compose.mysql.yml`). |
 | `MYSQL_DATABASE_URL` | MySQL profile | `mysql://octanest:octanest@mysql:3306/octanest` | Overrides API `DATABASE_URL` when using the MySQL Compose overlay. |
 | `OCTANEST_SQLITE_HOST_DIR` | SQLite overlay | `./var` | Host path bind-mounted to `/app/var` for SQLite file storage. |
+| `OCTANEST_REPOS_DIR` | Optional | `var/repos` | Root for bare git repositories (`{owner}/{name}.git`). Compose binds `./var/repos:/var/repos`; with API CWD `/` the default resolves to `/var/repos` without overriding the env var. |
+| `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | Optional | `86400` (24h) | In-process orphan reconcile interval. Removes bare dirs with no DB row and purges soft-deleted repos past retention. Set `0` to disable. |
+| `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | Optional | `14` | Days to keep soft-deleted repository rows/files before orphan reconcile hard-deletes them. |
+| `OCTANEST_GIT_GC_INTERVAL_SECS` | Optional | `604800` (7d) | In-process scheduled `git gc --auto` across active repos. Set `0` to disable. Sys-admins can also trigger `admin.repos.gc` manually. |
 
 \* Strongly recommended for any real instance; without it the API runs with a skipped DB pool.  
 † Required only when the corresponding auth provider mode is enabled (Admin → Auth / ENV bootstrap).
 
 Dev-auth Compose port overrides (see `docker-compose.dev-auth.yml`): `OCTANEST_MAILPIT_SMTP_PORT` (1025), `OCTANEST_MAILPIT_UI_PORT` (8025), `OCTANEST_OIDC_MOCK_PORT` (9090), `OCTANEST_STUBS_PORT` (9092).
+
+## Git repositories & disk lifecycle
+
+Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTANEST_REPOS_DIR}/{owner}/{name}.git`.
+
+**Git version floor (D-33):** The API **fails boot** (exit 1) if the `git` binary is missing or older than **2.5.0**. The API container image installs distro `git`; host `make` workflows require a local git ≥ 2.5 on `PATH`.
+
+**Compose volume (D-30 / D-31):** Default stack mounts `./var/repos:/var/repos` on the API service so repository objects survive container recreation. Do not point `OCTANEST_REPOS_DIR` outside that volume unless you also update the bind mount.
+
+**Ownership (D-38):** Repository files are owned by the **API process user**. On Compose, ensure the bind-mounted `./var/repos` is writable by that user. If you run the API as a non-root UID/GID (for example via `user:` or a custom image), set host directory ownership to match (`chown UID:GID ./var/repos`) so create/gc/orphan purge can write. Avoid mounting the volume as root-owned when the process cannot write.
+
+**Cleanup knobs (D-36 / D-37):**
+
+| Knob | Default | Effect |
+|------|---------|--------|
+| `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | 86400 | Periodic scan: delete orphan bare dirs; purge soft-deletes past retention |
+| `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | 14 | Soft-delete grace period before disk + row removal |
+| `OCTANEST_GIT_GC_INTERVAL_SECS` | 604800 | Scheduled `git gc --auto` on active repos |
+
+Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`).
 
 ## Config file format
 
@@ -93,8 +117,9 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | `OCTANEST_DB_DIALECT` disagrees with URL | `OCTANEST_DB_DIALECT=… does not match DATABASE_URL scheme (detected …)` |
 | DB connect / migrate failure | Printed to stderr; process exits |
 | Both `OCTANEST_ADMIN_*` set and empty-instance seed returns error | Fail closed: printed to stderr; process exits (no wizard fallback) |
+| `git` missing or version &lt; 2.5.0 | `git version gate failed: …`; process exits (D-33) |
 
-**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false).
+**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false), `OCTANEST_REPOS_DIR` (defaults `var/repos`), orphan/gc interval vars (use documented defaults; `0` disables that job).
 
 ## Defaults
 
@@ -110,6 +135,10 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | Compose `OCTANEST_ENV` | `compose` | `docker-compose.yml` |
 | Compose CORS | `http://localhost,http://127.0.0.1` | `docker-compose.yml` |
 | Dialect | Inferred from `DATABASE_URL` scheme | `crates/octanest-db/src/dialect.rs` |
+| `OCTANEST_REPOS_DIR` | `var/repos` | `crates/octanest-api/src/app.rs` |
+| Orphan reconcile interval | 86400s | `crates/octanest-api/src/jobs/schedule.rs` |
+| Soft-delete retention | 14 days | `crates/octanest-api/src/jobs/reconcile.rs` |
+| Git gc interval | 604800s | `crates/octanest-api/src/jobs/schedule.rs` |
 
 Email sender selection when building from ENV: Resend key → SMTP URL → log sink.
 
