@@ -1,8 +1,22 @@
 import {
   createFileRoute,
-  Link,
   useParams,
 } from "@octanejs/tanstack-router";
+import type {
+  RepoPublic,
+  RepoRefEntry,
+  RepoTreeEntry,
+} from "@octanest/api-client";
+import { useEffect, useState } from "octane";
+import { FileTree } from "@/components/repo/file-tree";
+import { QuickSetup } from "@/components/repo/quick-setup";
+import { ReadmePanel } from "@/components/repo/readme-panel";
+import { RefSelect } from "@/components/repo/ref-select";
+import { RepoChrome } from "@/components/repo/repo-chrome";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/lib/api-client";
+import { findReadmeName, shortRefName } from "@/lib/repo-browse";
 
 export const Route = createFileRoute("/$owner/$repo/")({
   component: RepoCodeHome,
@@ -15,97 +29,173 @@ export const Route = createFileRoute("/$owner/$repo/")({
   }),
 });
 
-/** Empty Code home — Quick setup first-push guide (D-10, D-15). Full tree in 07-15. */
+type BrowsePhase =
+  | { kind: "loading" }
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "empty";
+      repo: RepoPublic;
+    }
+  | {
+      kind: "ready";
+      repo: RepoPublic;
+      refName: string;
+      entries: RepoTreeEntry[];
+      refs: RepoRefEntry[];
+      readme: { name: string; markdown: string } | null;
+    };
+
+/** Code home — Quick setup when empty; tree + README when populated (D-15). */
 export function RepoCodeHome() @{
   const params = useParams({ from: "/$owner/$repo/" }) as {
     owner: string;
     repo: string;
   };
   const owner = params.owner ?? "";
-  const repo = params.repo ?? "";
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const httpsUrl = `${origin}/${owner}/${repo}.git`;
-  const remoteCmd = `git remote add origin ${httpsUrl}`;
-  const pushCmd = `git push -u origin HEAD`;
-  const title = `${owner} / ${repo}`;
-  const setupScript = `echo "# ${repo}" >> README.md
-git init
-git add README.md
-git commit -m "first commit"
-${remoteCmd}
-${pushCmd}`;
+  const repoName = params.repo ?? "";
+  const [phase, setPhase] = useState<BrowsePhase>({ kind: "loading" });
 
-  <div className="mx-auto max-w-5xl px-4 py-10">
-    <header className="mb-6">
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        {title as string}
-      </h1>
-    </header>
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setPhase({ kind: "loading" });
+      try {
+        const got = await apiClient.repo.get({ owner, name: repoName });
+        if (cancelled) return;
+        if (!got.ok) {
+          if (got.error.code === "repo.not_found") {
+            setPhase({ kind: "not_found" });
+            return;
+          }
+          setPhase({
+            kind: "error",
+            message: got.error.message || "Could not load repository.",
+          });
+          return;
+        }
+        const repo = got.data;
+        const refName = repo.default_branch || "main";
+        const [treeRes, refsRes] = await Promise.all([
+          apiClient.repo.tree({
+            owner,
+            name: repoName,
+            ref: refName,
+            path: "",
+          }),
+          apiClient.repo.refs({ owner, name: repoName }),
+        ]);
+        if (cancelled) return;
+        if (!treeRes.ok) {
+          if (treeRes.error.code === "repo.not_found") {
+            setPhase({ kind: "not_found" });
+            return;
+          }
+          setPhase({
+            kind: "error",
+            message: treeRes.error.message || "Could not load tree.",
+          });
+          return;
+        }
+        const refs = refsRes.ok ? refsRes.data.refs : [];
+        if (treeRes.data.empty) {
+          setPhase({ kind: "empty", repo });
+          return;
+        }
+        const entries = treeRes.data.entries;
+        const readmeName = findReadmeName(entries);
+        let readme: { name: string; markdown: string } | null = null;
+        if (readmeName) {
+          const blobRes = await apiClient.repo.blob({
+            owner,
+            name: repoName,
+            ref: refName,
+            path: readmeName,
+          });
+          if (
+            !cancelled &&
+            blobRes.ok &&
+            !blobRes.data.is_binary &&
+            blobRes.data.encoding === "utf-8" &&
+            blobRes.data.content
+          ) {
+            readme = { name: readmeName, markdown: blobRes.data.content };
+          }
+        }
+        if (cancelled) return;
+        setPhase({
+          kind: "ready",
+          repo,
+          refName: shortRefName(treeRes.data.ref) || refName,
+          entries,
+          refs,
+          readme,
+        });
+      } catch {
+        if (cancelled) return;
+        setPhase({
+          kind: "error",
+          message: "Can't reach Octanest. Check your connection and try again.",
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, repoName]);
 
-    <nav
-      className="mb-8 flex flex-wrap gap-4 border-b border-border pb-0"
-      aria-label="Repository"
-    >
-      <span className="border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground">
-        Code
-      </span>
-      <span className="pb-2 text-[14px] font-normal text-muted-foreground">
-        Commits
-      </span>
-      <span className="pb-2 text-[14px] font-normal text-muted-foreground">
-        Branches
-      </span>
-      <span className="pb-2 text-[14px] font-normal text-muted-foreground">
-        Tags
-      </span>
-    </nav>
-
-    <section
-      className="rounded-md border border-border bg-card/30 px-6 py-8"
-      aria-labelledby="quick-setup-heading"
-    >
-      <h2
-        id="quick-setup-heading"
-        className="font-[family-name:var(--font-display)] text-[20px] font-semibold leading-[1.3] text-foreground"
-      >
-        Quick setup
-      </h2>
-      <p className="mt-2 text-[16px] text-muted-foreground">
-        This repository is empty. Create a local git repo, then push over HTTPS
-        (authentication arrives in a later phase).
-      </p>
-
-      <div className="mt-6 flex flex-col gap-4">
-        <div className="flex flex-col gap-2">
-          <p className="text-[14px] font-normal text-muted-foreground">
-            HTTPS clone URL
-          </p>
-          <code className="block overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[13px] text-foreground">
-            {httpsUrl as string}
-          </code>
+  @if (phase.kind === "not_found") {
+    <RepoNotFound />
+  } @else {
+    <div className="mx-auto max-w-6xl px-4 py-10">
+      @if (phase.kind === "loading") {
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-48 w-full" />
         </div>
-
-        <div className="flex flex-col gap-2">
-          <p className="text-[14px] font-normal text-muted-foreground">
-            …or create a new repository on the command line
+      } @else {
+        @if (phase.kind === "error") {
+          <p role="alert" className="text-[16px] text-destructive">
+            {phase.message as string}
           </p>
-          <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-3 font-mono text-[13px] leading-[1.5] text-foreground whitespace-pre-wrap">
-            {setupScript as string}
-          </pre>
-        </div>
-
-        <p className="text-[14px] text-muted-foreground">
-          Prefer starting from the form?{" "}
-          <Link
-            to="/new"
-            preload="intent"
-            className="font-semibold text-primary underline-offset-4 hover:underline"
-          >
-            Create another repository
-          </Link>
-        </p>
-      </div>
-    </section>
-  </div>
+        } @else {
+          <>
+            <RepoChrome repo={phase.repo} active="code" />
+            @if (phase.kind === "empty") {
+              <QuickSetup owner={owner} repo={repoName} />
+            } @else {
+              <>
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <RefSelect
+                    owner={owner}
+                    repo={repoName}
+                    refs={phase.refs}
+                    value={phase.refName}
+                    mode="home"
+                  />
+                  <span className="text-[14px] text-muted-foreground">
+                    Clone / Download arrives in a later phase.
+                  </span>
+                </div>
+                <FileTree
+                  owner={owner}
+                  repo={repoName}
+                  refName={phase.refName}
+                  basePath=""
+                  entries={phase.entries}
+                />
+                @if (phase.readme) {
+                  <ReadmePanel
+                    markdown={phase.readme.markdown}
+                    fileName={phase.readme.name}
+                  />
+                }
+              </>
+            }
+          </>
+        }
+      }
+    </div>
+  }
 }

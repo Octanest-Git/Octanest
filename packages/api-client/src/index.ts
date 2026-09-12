@@ -492,6 +492,76 @@ export function adminAuthUpdateSettingsMutationOptions(client: OctanestClient) {
   };
 }
 
+export function repoGetQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "get", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoTreeQueryOptions(
+  client: OctanestClient,
+  input: RepoTreeRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "tree",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.tree(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoBlobQueryOptions(
+  client: OctanestClient,
+  input: RepoBlobRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "blob",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.blob(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoRefsQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "refs", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.refs(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 /** Alias helpers matching CONTEXT D-21 naming. */
 export const queryOptions = {
   systemHealth: systemHealthQueryOptions,
@@ -500,6 +570,10 @@ export const queryOptions = {
   authProviderConfig: authProviderConfigQueryOptions,
   userGetProfile: userGetProfileQueryOptions,
   repoListMine: repoListMineQueryOptions,
+  repoGet: repoGetQueryOptions,
+  repoTree: repoTreeQueryOptions,
+  repoBlob: repoBlobQueryOptions,
+  repoRefs: repoRefsQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {

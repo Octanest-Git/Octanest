@@ -30,6 +30,7 @@ export default defineConfig({
       "/api/rpc": { target: apiProxyTarget, changeOrigin: true },
       "/api/auth": { target: apiProxyTarget, changeOrigin: true },
       "/api/user": { target: apiProxyTarget, changeOrigin: true },
+      "/api/repos": { target: apiProxyTarget, changeOrigin: true },
       "/uploads": { target: apiProxyTarget, changeOrigin: true },
       "/health": { target: apiProxyTarget, changeOrigin: true },
     },

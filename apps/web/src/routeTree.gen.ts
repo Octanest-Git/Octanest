@@ -24,6 +24,8 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
+import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.blob.$'
+import { Route as OwnerRepoTreeSplatRouteImport } from './routes/$owner.$repo.tree.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +102,16 @@ const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoBlobSplatRoute = OwnerRepoBlobSplatRouteImport.update({
+  id: '/blob/$',
+  path: '/blob/$',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoTreeSplatRoute = OwnerRepoTreeSplatRouteImport.update({
+  id: '/tree/$',
+  path: '/tree/$',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,6 +146,8 @@ export interface FileRoutesByTo {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,6 +166,8 @@ export interface FileRoutesById {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,6 +187,8 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/'
+    | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/tree/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -184,6 +204,8 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup'
     | '/$owner/$repo'
+    | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/tree/$'
   id:
     | '__root__'
     | '/'
@@ -201,6 +223,8 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/'
+    | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/tree/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -325,6 +349,20 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoIndexRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/blob/$': {
+      id: '/$owner/$repo/blob/$'
+      path: '/blob/$'
+      fullPath: '/$owner/$repo/blob/$'
+      preLoaderRoute: typeof OwnerRepoBlobSplatRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/tree/$': {
+      id: '/$owner/$repo/tree/$'
+      path: '/tree/$'
+      fullPath: '/$owner/$repo/tree/$'
+      preLoaderRoute: typeof OwnerRepoTreeSplatRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
   }
 }
 
@@ -342,10 +380,14 @@ const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
 interface OwnerRepoRouteChildren {
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
+  OwnerRepoBlobSplatRoute: typeof OwnerRepoBlobSplatRoute
+  OwnerRepoTreeSplatRoute: typeof OwnerRepoTreeSplatRoute
 }
 
 const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
+  OwnerRepoBlobSplatRoute: OwnerRepoBlobSplatRoute,
+  OwnerRepoTreeSplatRoute: OwnerRepoTreeSplatRoute,
 }
 
 const OwnerRepoRouteWithChildren = OwnerRepoRoute._addFileChildren(
