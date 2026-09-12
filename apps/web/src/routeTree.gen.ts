@@ -12,15 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NewRouteImport } from './routes/new'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
+import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
+import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,6 +38,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewRoute = NewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -62,6 +70,11 @@ const VerifyRoute = VerifyRouteImport.update({
   path: '/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerRepoRoute = OwnerRepoRouteImport.update({
+  id: '/$owner/$repo',
+  path: '/$owner/$repo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
@@ -82,25 +95,34 @@ const SetupCredentialsRoute = SetupCredentialsRouteImport.update({
   path: '/credentials',
   getParentRoute: () => SetupRoute,
 } as any)
+const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
+  '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
+  '/$owner/$repo/': typeof OwnerRepoIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
@@ -109,21 +131,25 @@ export interface FileRoutesByTo {
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
+  '/$owner/$repo': typeof OwnerRepoIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/new': typeof NewRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
+  '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
+  '/$owner/$repo/': typeof OwnerRepoIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,20 +157,24 @@ export interface FileRouteTypes {
     | '/'
     | '/dashboard'
     | '/login'
+    | '/new'
     | '/reset-password'
     | '/setup'
     | '/signup'
     | '/status'
     | '/verify'
+    | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
     | '/setup/credentials'
     | '/setup/'
+    | '/$owner/$repo/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/login'
+    | '/new'
     | '/reset-password'
     | '/signup'
     | '/status'
@@ -153,31 +183,37 @@ export interface FileRouteTypes {
     | '/settings/profile'
     | '/setup/credentials'
     | '/setup'
+    | '/$owner/$repo'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
     | '/login'
+    | '/new'
     | '/reset-password'
     | '/setup'
     | '/signup'
     | '/status'
     | '/verify'
+    | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
     | '/setup/credentials'
     | '/setup/'
+    | '/$owner/$repo/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  NewRoute: typeof NewRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRouteWithChildren
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
   VerifyRoute: typeof VerifyRoute
+  OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
 }
@@ -203,6 +239,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new': {
+      id: '/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof NewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -240,6 +283,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof VerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$owner/$repo': {
+      id: '/$owner/$repo'
+      path: '/$owner/$repo'
+      fullPath: '/$owner/$repo'
+      preLoaderRoute: typeof OwnerRepoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/auth': {
       id: '/admin/auth'
       path: '/admin/auth'
@@ -268,6 +318,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof SetupCredentialsRouteImport
       parentRoute: typeof SetupRoute
     }
+    '/$owner/$repo/': {
+      id: '/$owner/$repo/'
+      path: '/'
+      fullPath: '/$owner/$repo/'
+      preLoaderRoute: typeof OwnerRepoIndexRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
   }
 }
 
@@ -283,15 +340,29 @@ const SetupRouteChildren: SetupRouteChildren = {
 
 const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
+interface OwnerRepoRouteChildren {
+  OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
+}
+
+const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
+  OwnerRepoIndexRoute: OwnerRepoIndexRoute,
+}
+
+const OwnerRepoRouteWithChildren = OwnerRepoRoute._addFileChildren(
+  OwnerRepoRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  NewRoute: NewRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRouteWithChildren,
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
   VerifyRoute: VerifyRoute,
+  OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
 }
