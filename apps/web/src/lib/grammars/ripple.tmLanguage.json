@@ -1,0 +1,48 @@
+{
+  "name": "ripple",
+  "scopeName": "source.ripple",
+  "fileTypes": ["ripple"],
+  "patterns": [
+    {
+      "name": "keyword.control.directive.ripple",
+      "match": "@(if|else|for|html|component|props)\\b"
+    },
+    {
+      "name": "punctuation.section.embedded.ripple",
+      "match": "@[{}]"
+    },
+    {
+      "name": "comment.line.double-slash.ripple",
+      "match": "//.*$"
+    },
+    {
+      "name": "comment.block.ripple",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "string.quoted.double.ripple",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.ripple", "match": "\\\\." }
+      ]
+    },
+    {
+      "name": "string.quoted.single.ripple",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        { "name": "constant.character.escape.ripple", "match": "\\\\." }
+      ]
+    },
+    {
+      "name": "constant.numeric.ripple",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    {
+      "name": "keyword.control.ripple",
+      "match": "\\b(if|else|for|while|return|import|export|from|const|let|var|function|component)\\b"
+    }
+  ]
+}

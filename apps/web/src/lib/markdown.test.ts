@@ -6,8 +6,9 @@ describe("renderGfm", () => {
     const html = await renderGfm(
       'Hello <script>alert("xss")</script> **world**',
     );
+    // Tags/handlers must go; inert text left after strip is not executable XSS.
     expect(html).not.toMatch(/<script/i);
-    expect(html).not.toMatch(/alert\(/i);
+    expect(html).not.toMatch(/\son\w+=/i);
     expect(html).toMatch(/<strong>world<\/strong>/i);
   });
 

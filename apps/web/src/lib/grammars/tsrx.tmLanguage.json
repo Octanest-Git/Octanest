@@ -1,0 +1,61 @@
+{
+  "name": "tsrx",
+  "scopeName": "source.tsrx",
+  "fileTypes": ["tsrx"],
+  "patterns": [
+    {
+      "name": "keyword.control.directive.tsrx",
+      "match": "@(if|else|for|html|const|let|debug)\\b"
+    },
+    {
+      "name": "punctuation.section.embedded.tsrx",
+      "match": "@[{}]"
+    },
+    {
+      "name": "comment.line.double-slash.tsrx",
+      "match": "//.*$"
+    },
+    {
+      "name": "comment.block.tsrx",
+      "begin": "/\\*",
+      "end": "\\*/"
+    },
+    {
+      "name": "string.quoted.double.tsrx",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.tsrx", "match": "\\\\." }
+      ]
+    },
+    {
+      "name": "string.quoted.single.tsrx",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        { "name": "constant.character.escape.tsrx", "match": "\\\\." }
+      ]
+    },
+    {
+      "name": "string.quoted.template.tsrx",
+      "begin": "`",
+      "end": "`",
+      "patterns": [
+        { "name": "constant.character.escape.tsrx", "match": "\\\\." },
+        {
+          "name": "meta.embedded.expression.tsrx",
+          "begin": "\\$\\{",
+          "end": "\\}"
+        }
+      ]
+    },
+    {
+      "name": "constant.numeric.tsrx",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    {
+      "name": "keyword.control.tsrx",
+      "match": "\\b(if|else|for|while|return|import|export|from|const|let|var|function|class|type|interface|async|await)\\b"
+    }
+  ]
+}
