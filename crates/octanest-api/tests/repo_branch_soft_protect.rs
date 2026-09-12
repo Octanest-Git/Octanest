@@ -222,6 +222,59 @@ async fn repo_branch_soft_protect_allows_non_default_crud() {
     );
 }
 
+/// CR-02 / D-28: option-like branchCreate(-D) must not force-delete the default.
+#[tokio::test]
+async fn repo_branch_create_rejects_option_like_name_leaves_default_intact() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("branch_option_inject.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let cookie = seed_owner_repo(&app, &db, "inject@ex.com", "injectown", "injecty").await;
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"injectown","name":"injecty","branch":"-D","start":"main"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(
+        create["ok"], false,
+        "option-like branchCreate must fail — {create}"
+    );
+    let code = create["error"]["code"].as_str().unwrap_or("");
+    assert!(
+        code == "repo.invalid_ref" || code == "rpc.bad_input" || code.starts_with("repo."),
+        "expected invalid-ref style error, got {code} — {create}"
+    );
+    assert_ne!(
+        code, "ok",
+        "must not succeed — {create}"
+    );
+
+    // Soft-protect still observes the default: delete of main must return protected.
+    let delete = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchDelete","input":{"owner":"injectown","name":"injecty","branch":"main"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(
+        delete["ok"], false,
+        "default must still exist for soft-protect — {delete}"
+    );
+    assert_eq!(
+        delete["error"]["code"], "repo.default_branch_protected",
+        "default intact + soft-protect path — {delete}"
+    );
+}
+
 /// Non-owner must not mutate branches (D-27) — identical not_found (no leak).
 #[tokio::test]
 async fn repo_branch_soft_protect_non_owner_mutate_not_found() {
