@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-09-12T16:55:29.251Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-09-12T17:04:53.171Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: d3e3c23450630fa4b21e2e1e1a71c3ec2a2c0ad5
+state_head: 2920eeaa06195828f69bc8200fa97e3706c8628e
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 44
+  completed_plans: 45
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 4 of 19
+Plan: 5 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -94,6 +94,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07-git-repos-browse P00 | 3 min | 1 tasks | 10 files |
 | Phase 07-git-repos-browse P16 | 2 min | 1 tasks | 2 files |
 | Phase 07 P01 | 1min | 3 tasks | 3 files |
+| Phase 07-git-repos-browse P02 | 6min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -179,6 +180,8 @@ Recent decisions affecting current work:
 - [Phase 07]: D-14: owner_repo_path — public URLs /{owner}/{repo} with reserved-name denylist
 - [Phase 07]: D-33: fail_boot_git — refuse API boot if git missing or < 2.5
 - [Phase 07]: D-32: CLI-primary GitBackend; promote GitBackend noun; CliGitBackend now, GixGitBackend later
+- [Phase 07]: 07-02: proceed_locked for D-14 owner_repo_path + D-33 fail_boot_git
+- [Phase 07]: 07-02: MySQL soft-delete uniqueness via generated active_name column
 
 ### Pending Todos
 
@@ -200,6 +203,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T16:55:29.205Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-09-12T17:04:53.125Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
