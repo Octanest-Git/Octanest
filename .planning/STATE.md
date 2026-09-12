@@ -4,14 +4,14 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 7 plans revised (07-00..07-15)
-last_updated: "2026-09-12T18:30:00.000Z"
+stopped_at: Phase 7 plans revised (07-00..07-18)
+last_updated: "2026-09-12T18:45:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 7 plan revision — split 02/05, resolve RESEARCH OQs, D-19 grammars, Nyquist verifies
+last_activity_desc: Phase 7 revision 2 — VALIDATION 00-18, file-budget splits 16/17/18, Dockerfile xref 07-17
 progress:
   total_phases: 22
   completed_phases: 0
-  total_plans: 57
+  total_plans: 60
   completed_plans: 41
 milestone_name: milestone
 ---
@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 7 — Git Repos & Browse
 Plan: 07-00 (Wave 0) next
 Status: PLANNING complete — ready for `/gsd-execute-phase 07`
-Last activity: 2026-09-12 — 16 plans (07-00..07-15); checker revision split create/browse; RESEARCH Open Questions RESOLVED; D-19 in-repo grammars required
+Last activity: 2026-09-12 — 19 plans (07-00..07-18); revision 2 closed file-budget warnings + VALIDATION coverage
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 planned (16 plans: stubs → schema → create tracer → browse → ops/docs)
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 planned (19 plans: stubs → schema → create tracer → browse → ops/docs)
 
 See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
 

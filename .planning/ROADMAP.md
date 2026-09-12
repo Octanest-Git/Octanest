@@ -221,12 +221,14 @@ Plans:
   3. User can create, rename, and delete branches from the web UI where permitted
   4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: 16 plans
+**Plans**: 19 plans
 Plans:
-- [ ] 07-00-PLAN.md — Wave 0 Nyquist stubs (git crate, repo_*, /new + home CTA)
+- [ ] 07-00-PLAN.md — Wave 0 Nyquist Rust stubs (git crate, repo_*, dialect)
+- [ ] 07-16-PLAN.md — Wave 0 web stubs (/new + home CTA)
 - [ ] 07-01-PLAN.md — One-way gates D-14/D-33 + REQUIREMENTS/ROADMAP amend + COVERAGE
 - [ ] 07-02-PLAN.md — Schema 0007 + validators + proceed gate
 - [ ] 07-12-PLAN.md — Tracer: GitBackend CLI create → bare disk
+- [ ] 07-17-PLAN.md — Fail-boot git gate + Dockerfile/Compose repos volume
 - [ ] 07-13-PLAN.md — Minimal /new + empty Code Quick setup
 - [ ] 07-03-PLAN.md — Create templates, SPDX/gitignore, duplicate inline error
 - [ ] 07-04-PLAN.md — Dashboard home + default branch/visibility settings
@@ -234,7 +236,8 @@ Plans:
 - [ ] 07-14-PLAN.md — Markdown sanitize + Shiki + tsrx/ripple grammars
 - [ ] 07-15-PLAN.md — Code/tree/blob Octane routes + integration tests
 - [ ] 07-06-PLAN.md — Commits, commit detail, compare, blame
-- [ ] 07-07-PLAN.md — Branch CRUD soft-protect + tags list
+- [ ] 07-07-PLAN.md — Branch CRUD soft-protect API
+- [ ] 07-18-PLAN.md — Branches/Tags UI + dialogs
 - [ ] 07-08-PLAN.md — Archives zip/tar.gz + clone box
 - [ ] 07-09-PLAN.md — Repo settings visibility + soft-delete
 - [ ] 07-10-PLAN.md — Factory reset scope + orphan reconcile + gc + CONFIGURATION
