@@ -65,7 +65,13 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.unit.test.ts", "src/**/*.gate.test.ts"],
+          include: [
+            "src/**/*.unit.test.ts",
+            "src/**/*.gate.test.ts",
+            // Plan 07-14: markdown/highlight libs use *.test.ts (not *.unit.test.ts)
+            "src/lib/markdown.test.ts",
+            "src/lib/highlight.test.ts",
+          ],
         },
       },
       {
