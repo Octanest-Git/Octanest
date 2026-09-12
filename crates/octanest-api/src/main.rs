@@ -97,6 +97,13 @@ async fn main() {
         octanest_api::email::build_email_sender_from_env()
     };
     let state = octanest_api::AppState::new(db, email, env_name);
+    let job_cfg = octanest_api::jobs::JobConfig::from_env();
+    octanest_api::jobs::spawn_background_jobs(
+        state.db.clone(),
+        state.git.clone(),
+        state.repos_dir.clone(),
+        job_cfg,
+    );
     let app = octanest_api::router_with_state(state, cors);
     axum::serve(listener, app).await.expect("server error");
 }

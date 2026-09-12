@@ -329,6 +329,127 @@ WHERE id = ?1 AND deleted_at IS NULL",
     Ok(())
 }
 
+/// On-disk identity for a repository row (active or soft-deleted).
+#[derive(Debug, Clone)]
+pub struct RepoDiskRef {
+    pub id: String,
+    pub owner_username: String,
+    pub name: String,
+    pub deleted_at: Option<String>,
+}
+
+/// All repository rows that still own a disk path (active + soft-deleted).
+pub async fn list_repo_disk_refs(pool: &DbPool) -> Result<Vec<RepoDiskRef>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT r.id, u.username AS owner_username, r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE to_char(r.deleted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS deleted_at
+FROM repositories r
+JOIN users u ON u.id = r.owner_id",
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(RepoDiskRef {
+                        id: row.try_get("id").map_err(|e| format!("repo disk ref: {e}"))?,
+                        owner_username: row
+                            .try_get("owner_username")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                        name: row.try_get("name").map_err(|e| format!("repo disk ref: {e}"))?,
+                        deleted_at: row
+                            .try_get("deleted_at")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT r.id, u.username AS owner_username, r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE DATE_FORMAT(r.deleted_at, '%Y-%m-%dT%H:%i:%sZ') END AS deleted_at
+FROM repositories r
+JOIN users u ON u.id = r.owner_id",
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(RepoDiskRef {
+                        id: row.try_get("id").map_err(|e| format!("repo disk ref: {e}"))?,
+                        owner_username: row
+                            .try_get("owner_username")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                        name: row.try_get("name").map_err(|e| format!("repo disk ref: {e}"))?,
+                        deleted_at: row
+                            .try_get("deleted_at")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT r.id, u.username AS owner_username, r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE strftime('%Y-%m-%dT%H:%M:%SZ', r.deleted_at) END AS deleted_at
+FROM repositories r
+JOIN users u ON u.id = r.owner_id",
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(RepoDiskRef {
+                        id: row.try_get("id").map_err(|e| format!("repo disk ref: {e}"))?,
+                        owner_username: row
+                            .try_get("owner_username")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                        name: row.try_get("name").map_err(|e| format!("repo disk ref: {e}"))?,
+                        deleted_at: row
+                            .try_get("deleted_at")
+                            .map_err(|e| format!("repo disk ref: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+    }
+}
+
+/// Hard-delete a repository row (after disk purge — D-35/D-36).
+pub async fn hard_delete(pool: &DbPool, id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM repositories WHERE id = $1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hard-delete repository failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM repositories WHERE id = ?")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hard-delete repository failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM repositories WHERE id = ?1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hard-delete repository failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
 pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<RepositoryRow>, String> {
     match pool {
         DbPool::Postgres(p) => {

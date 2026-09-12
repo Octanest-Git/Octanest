@@ -3,6 +3,7 @@ pub mod auth;
 pub mod cors;
 pub mod email;
 pub mod git;
+pub mod jobs;
 pub mod repo;
 pub mod routes;
 pub mod rpc;

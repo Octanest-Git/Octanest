@@ -926,6 +926,12 @@ impl GitBackend for CliGitBackend {
             Err(e) => Err(e),
         }
     }
+
+    async fn gc(&self, repo: &Path) -> Result<(), GitError> {
+        let repo_s = repo_str(repo)?;
+        run_git(&["-C", repo_s, "gc", "--auto"]).await?;
+        Ok(())
+    }
 }
 
 /// Reject absolute paths and `..` components (T-07-09).
@@ -1240,5 +1246,22 @@ mod tests {
             GitError::NotFound(_) => {}
             other => panic!("expected NotFound for empty archive, got {other}"),
         }
+    }
+
+    #[tokio::test]
+    async fn gc_runs_on_bare_repo() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("gc.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "gc seed",
+            &[("a.txt".into(), b"a\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        git.gc(&bare).await.expect("gc");
     }
 }

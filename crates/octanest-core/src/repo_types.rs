@@ -364,6 +364,23 @@ pub fn validate_repo_name(raw: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Sys-admin manual `git gc` (D-37). Omit owner+name to GC all active repos.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoGcRequest {
+    #[serde(default)]
+    pub owner: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+}
+
+/// Result of a manual or scheduled GC pass.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoGcResponse {
+    pub ok: bool,
+    pub gc_count: u32,
+    pub error_count: u32,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

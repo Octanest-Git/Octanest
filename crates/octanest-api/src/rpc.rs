@@ -209,6 +209,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "admin.repos.gc" => match admin::repo_gc(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.listMine" => match repo::list_mine(ctx).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),

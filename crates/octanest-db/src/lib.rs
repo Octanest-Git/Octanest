@@ -14,7 +14,7 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
-pub use repositories::RepositoryRow;
+pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
 
@@ -33,6 +33,11 @@ impl Database {
             pool: None,
             dialect: None,
         }
+    }
+
+    /// True when no database pool is configured.
+    pub fn is_skipped(&self) -> bool {
+        self.pool.is_none()
     }
 
     /// Connect using `DATABASE_URL` when set; otherwise run without a pool (`skipped` ping).
@@ -147,6 +152,14 @@ impl Database {
 
     pub async fn soft_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::soft_delete(self.require_pool()?, id).await
+    }
+
+    pub async fn list_repo_disk_refs(&self) -> Result<Vec<repositories::RepoDiskRef>, String> {
+        repositories::list_repo_disk_refs(self.require_pool()?).await
+    }
+
+    pub async fn hard_delete_repository(&self, id: &str) -> Result<(), String> {
+        repositories::hard_delete(self.require_pool()?, id).await
     }
 
     // --- users ---

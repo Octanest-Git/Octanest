@@ -260,4 +260,7 @@ pub trait GitBackend: Send + Sync {
         format: ArchiveFormat,
         prefix: &str,
     ) -> Result<Vec<u8>, GitError>;
+
+    /// Run `git gc` on a bare (or worktree) repository (D-37).
+    async fn gc(&self, repo: &Path) -> Result<(), GitError>;
 }

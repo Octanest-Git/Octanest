@@ -225,6 +225,55 @@ pub async fn factory_reset(
     })
 }
 
+/// Sys-admin manual `git gc` for one repo or all active repos (D-37).
+pub async fn repo_gc(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoGcResponse, AppError> {
+    require_admin(ctx).await?;
+    let req: octanest_core::RepoGcRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo_gc input: {e}"))
+    })?;
+
+    let owner = req.owner.as_deref().map(str::trim).filter(|s| !s.is_empty());
+    let name = req.name.as_deref().map(str::trim).filter(|s| !s.is_empty());
+
+    match (owner, name) {
+        (Some(owner), Some(name)) => {
+            let path = crate::git::bare_repo_path(&ctx.repos_dir, owner, name)?;
+            crate::jobs::run_gc_one(ctx.git.as_ref(), &ctx.repos_dir, &path)
+                .await
+                .map_err(|e| {
+                    tracing::warn!(error = %e, "manual gc failed");
+                    AppError::new("admin.repo_gc_failed", "git gc failed for repository")
+                })?;
+            Ok(octanest_core::RepoGcResponse {
+                ok: true,
+                gc_count: 1,
+                error_count: 0,
+            })
+        }
+        (None, None) => {
+            let (ok, err) =
+                crate::jobs::run_gc_all(&ctx.db, ctx.git.as_ref(), &ctx.repos_dir)
+                    .await
+                    .map_err(|e| {
+                        tracing::error!(error = %e, "manual gc-all failed");
+                        AppError::new("admin.repo_gc_failed", "git gc failed")
+                    })?;
+            Ok(octanest_core::RepoGcResponse {
+                ok: err == 0,
+                gc_count: ok,
+                error_count: err,
+            })
+        }
+        _ => Err(AppError::new(
+            "rpc.bad_input",
+            "Provide both owner and name, or omit both to gc all repositories.",
+        )),
+    }
+}
+
 /// Delete all entries under `repos_dir` after canonicalizing (T-07-26).
 /// Refuses paths that escape the repos root. Leaves the root directory itself
 /// (volume mount point) in place.

@@ -85,6 +85,17 @@ export type FactoryResetResponse = {
   needs_setup: boolean;
 };
 
+export type RepoGcRequest = {
+  owner?: string | null;
+  name?: string | null;
+};
+
+export type RepoGcResponse = {
+  ok: boolean;
+  gc_count: number;
+  error_count: number;
+};
+
 export type ConfirmAdminCredentialsRequest = {
   username: string;
   email?: string | null;
@@ -474,6 +485,10 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<AuthSettingsPublic>(opts, "admin.auth.update_settings", input),
         factoryReset: (input: FactoryResetRequest) =>
           rpcCall<FactoryResetResponse>(opts, "admin.instance.factory_reset", input),
+      },
+      repos: {
+        gc: (input: RepoGcRequest) =>
+          rpcCall<RepoGcResponse>(opts, "admin.repos.gc", input),
       },
     },
   };
