@@ -88,8 +88,8 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | `/commits/{ref}`, `/commit/{sha}` | History + single commit diffs | Commit list or commit header + diff |
 | `/branches`, `/tags` | Branch/tag management | List + owner actions (create/rename/delete) |
 | `/compare/{base}...{head}` | Compare two refs | Ref pickers + commit/file diff summary |
-| Repo settings (visibility) | Owner toggles public/private (D-26) | Visibility Switch + Save |
-| Account settings (default branch) | Override default branch name for new repos (D-09) | Default branch Input/Select |
+| Repo settings (visibility) | Owner toggles public/private (D-26) | Visibility Switch + Save visibility |
+| Account settings (default branch) | Override default branch name for new repos (D-09) | Default branch Input/Select + Save default branch |
 | `/admin/auth` danger zone | Factory reset scope radios (D-34) | Destructive panel + modal with radios + RESET phrase |
 
 **Out of scope UI:** PAT manager; SSH key manager; org create/invite; marketplace for presets; full activity feed content; full branch-protection rules product; Issues/PRs tabs (may show disabled/coming-later nav only if needed to avoid dead chrome — **default: omit** Issues/PRs/Actions nav until those phases).
@@ -141,7 +141,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Description | Body muted under title when set |
 | Secondary nav | Link row: **Code** (active), **Commits**, **Branches**, **Tags** — Label 600 active / 400 inactive; underline or primary bottom border for active |
 | Toolbar | Ref Select (branch/tag) + **Clone / Download** Dropdown |
-| Clone box | HTTPS URL (copy button); SSH row muted placeholder “SSH coming in a later phase”; archive items **Download ZIP**, **Download tar.gz** for current ref |
+| Clone box | HTTPS URL + copy control (**Copy HTTPS URL** aria-label / accessible name); SSH row muted placeholder “SSH coming in a later phase”; archive items **Download ZIP**, **Download tar.gz** for current ref |
 | Default Code body | File tree (directories first) + README rendered below when present |
 | Empty repo | First-push guide panel (forge-familiar): Heading **Quick setup** + Body instructions for `git remote add` / push using HTTPS URL; no fake files |
 | Anonymous | Public repos readable; private / no-access → **404** page (same as missing) — no “private” leak copy |
@@ -154,7 +154,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Path | Breadcrumb or Label-size path segments; each segment links to tree |
 | Tree rows | Icon + name; click directory → tree; file → blob |
 | Blob | Syntax-highlighted source; line numbers; permalink `#L10` / `#L10-L20` highlight range |
-| Large files | Soft limit: show truncated notice + **Download** / **View raw** (GitHub-like) |
+| Large files | Soft limit: show truncated notice + **Download file** / **View raw file** (GitHub-like) |
 | Binary | Images inline when safe; else Body “This file can’t be previewed.” + download |
 | Raw | Browser download / plain text response — minimal chrome OK |
 | Blame | Line gutter with short SHA + author + relative date; click SHA → commit |
@@ -193,7 +193,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |---------|----------|
 | Placement | Profile/account settings section **Default branch name** |
 | Control | Input default `main`; helper applies to **new** repositories |
-| CTA | **Save** |
+| CTA | **Save default branch** |
 
 ### Factory reset modal (D-34) — extend `/admin/auth`
 
@@ -298,7 +298,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 ### Accent reserved for (Phase 7)
 
 **Primary (cool) reserved for:**
-1. **New repository**, **Create repository**, **Save visibility**, **Save** (default branch)
+1. **New repository**, **Create repository**, **Save visibility**, **Save default branch**
 2. Active Code/Commits/Branches/Tags nav indicator
 3. Focus rings on inputs, selects, dialogs
 4. In-file permalink / selected line highlight (subtle primary/10 wash — not solid fill)
@@ -350,6 +350,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | Clone SSH placeholder | SSH cloning arrives in a later phase. |
 | Download ZIP | Download ZIP |
 | Download tar.gz | Download tar.gz |
+| Copy HTTPS URL (clone box) | **Copy HTTPS URL** (visible text or `aria-label` on icon button) |
 | Copy URL success | Copied |
 | Code nav | Code |
 | Commits nav | Commits |
@@ -363,10 +364,13 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | Compare empty | Nothing to compare for these refs. |
 | Binary preview | This file can’t be previewed. Download it instead. |
 | Large file notice | This file is too large to display. View raw or download. |
+| Large file Download CTA | **Download file** |
+| Large file View raw CTA | **View raw file** |
 | Visibility save | **Save visibility** |
 | Visibility saved | Visibility updated. |
 | Default branch label | Default branch name |
 | Default branch helper | Used when you create a new repository. |
+| Default branch CTA | **Save default branch** |
 | Private/missing 404 title | Page not found |
 | Private/missing 404 body | We couldn’t find that page. |
 | Network error | Can’t reach Octanest. Check your connection and try again. |
