@@ -221,8 +221,14 @@ Plans:
   3. User can create, rename, and delete branches from the web UI where permitted
   4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: 19/19 plans executed
+**Plans**: 19/19 executed + 3 gap-closure planned (07-19..07-21)
 Plans:
+**Wave 16 (gap closure)** *(blocked on verification gaps CR-01/CR-02)*
+
+- [ ] 07-19-PLAN.md — CR-02 branch argv injection + soft-protect integrity
+- [ ] 07-20-PLAN.md — CR-01 archive/--output injection + WR-02 raw slash parity
+- [ ] 07-21-PLAN.md — WR-01 create compensate + WR-03 hierarchical ref parse
+
 **Wave 1**
 
 - [x] 07-00-PLAN.md — Wave 0 Nyquist Rust stubs (git crate, repo_*, dialect)
