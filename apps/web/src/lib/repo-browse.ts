@@ -147,3 +147,33 @@ export function findReadmeName(entries: RepoTreeEntry[]): string | null {
   }
   return names.find((n) => /^readme(\.|$)/i.test(n)) ?? null;
 }
+
+/** Short tip SHA for branch/tag lists (first 7 hex chars). */
+export function shortOid(oid: string): string {
+  const s = oid.trim();
+  return s.length > 7 ? s.slice(0, 7) : s;
+}
+
+export function isBranchRef(fullName: string): boolean {
+  return fullName.startsWith("refs/heads/");
+}
+
+export function isTagRef(fullName: string): boolean {
+  return fullName.startsWith("refs/tags/");
+}
+
+export function archiveZipUrl(
+  owner: string,
+  repo: string,
+  refName: string,
+): string {
+  return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.zip`;
+}
+
+export function archiveTarGzUrl(
+  owner: string,
+  repo: string,
+  refName: string,
+): string {
+  return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.tar.gz`;
+}
