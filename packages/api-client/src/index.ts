@@ -141,6 +141,25 @@ export type UpdateAuthSettingsRequest = {
   allow_signup?: boolean;
 };
 
+export type RepoVisibility = "public" | "private";
+
+export type CreateRepoRequest = {
+  name: string;
+  description?: string | null;
+  visibility?: RepoVisibility | null;
+};
+
+export type RepoPublic = {
+  id: string;
+  owner_id: string;
+  owner_username: string;
+  name: string;
+  description: string;
+  visibility: RepoVisibility;
+  default_branch: string;
+  updated_at: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -205,6 +224,9 @@ export function createClient(opts: CreateClientOptions) {
       getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
       updateProfile: (input: UpdateProfileRequest) =>
         rpcCall<UserPublic>(opts, "user.update_profile", input),
+    },
+    repo: {
+      create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
     },
     admin: {
       auth: {
@@ -343,6 +365,17 @@ export function userUpdateProfileMutationOptions(client: OctanestClient) {
   };
 }
 
+export function repoCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "create"] as const,
+    mutationFn: async (input: CreateRepoRequest) => {
+      const res = await client.repo.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function adminAuthGetSettingsQueryOptions(client: OctanestClient) {
   return {
     queryKey: ["admin", "auth", "getSettings"] as const,
@@ -381,5 +414,6 @@ export const mutationOptions = {
   authLogout: authLogoutMutationOptions,
   authLogoutAll: authLogoutAllMutationOptions,
   userUpdateProfile: userUpdateProfileMutationOptions,
+  repoCreate: repoCreateMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };

@@ -14,6 +14,8 @@ use octanest_db::Database;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
+use octanest_git::{CliGitBackend, GitBackend};
+
 use crate::auth::pending::PendingAuthStore;
 use crate::auth::session::{
     build_session_presence_cookie, clear_session_cookie, clear_session_presence_cookie,
@@ -29,6 +31,10 @@ pub struct AppState {
     /// Swappable email sender (rebuilt on admin.auth.update_settings).
     pub email: Arc<RwLock<Arc<dyn EmailSender>>>,
     pub uploads_dir: PathBuf,
+    /// Bare repos root (`OCTANEST_REPOS_DIR`, default `var/repos`) — D-30 / D-31.
+    pub repos_dir: PathBuf,
+    /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
+    pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
     pub pending: PendingAuthStore,
     pub env_name: String,
@@ -41,10 +47,15 @@ impl AppState {
         env_name: impl Into<String>,
     ) -> Self {
         let env_name = env_name.into();
+        let repos_dir = std::env::var("OCTANEST_REPOS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/repos"));
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
+            repos_dir,
+            git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
             env_name,
@@ -53,6 +64,16 @@ impl AppState {
 
     pub fn with_uploads_dir(mut self, dir: PathBuf) -> Self {
         self.uploads_dir = dir;
+        self
+    }
+
+    pub fn with_repos_dir(mut self, dir: PathBuf) -> Self {
+        self.repos_dir = dir;
+        self
+    }
+
+    pub fn with_git(mut self, git: Arc<dyn GitBackend>) -> Self {
+        self.git = git;
         self
     }
 
@@ -130,6 +151,8 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         email_slot: state.email.clone(),
         sessions: state.sessions.clone(),
         uploads_dir: state.uploads_dir.clone(),
+        repos_dir: state.repos_dir.clone(),
+        git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,
         set_cookie: None,

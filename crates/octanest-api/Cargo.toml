@@ -19,6 +19,7 @@ path = "src/bin/rpc_gen.rs"
 [dependencies]
 octanest-core = { path = "../octanest-core" }
 octanest-db = { path = "../octanest-db" }
+octanest-git = { path = "../octanest-git" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

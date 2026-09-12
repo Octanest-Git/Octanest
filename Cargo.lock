@@ -2386,6 +2386,7 @@ dependencies = [
  "lettre",
  "octanest-core",
  "octanest-db",
+ "octanest-git",
  "openidconnect",
  "password-hash",
  "rand 0.10.2",
@@ -2428,6 +2429,12 @@ dependencies = [
 [[package]]
 name = "octanest-git"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "tempfile",
+ "thiserror 2.0.20",
+ "tokio",
+]
 
 [[package]]
 name = "once_cell"

@@ -1,14 +1,17 @@
 //! Octanest git forge backend.
 //!
-//! Phase 7 ships [`CliGitBackend`](crate) via the system `git` CLI (2.5+).
+//! Phase 7 ships [`CliGitBackend`] via the system `git` CLI (2.5+).
 //! A future `GixGitBackend` (gitoxide) is intentionally deferred — keep the
-//! `GitBackend` abstraction as the swap seam (GIT-09 / GIT-10 / D-32).
+//! [`GitBackend`] abstraction as the swap seam (GIT-09 / GIT-10 / D-32).
 //!
-//! Wave 0: version gate + archive format stubs only. Full trait + CLI runner
-//! land in later plans.
+//! Boot version gate (`assert_git_version`) greens in plan 07-17.
 
+pub mod backend;
+pub mod cli;
 pub mod version;
 
+pub use backend::{GitBackend, GitError};
+pub use cli::CliGitBackend;
 pub use version::{assert_git_version, parse_git_version};
 
 pub fn crate_name() -> &'static str {

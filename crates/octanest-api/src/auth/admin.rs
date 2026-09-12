@@ -222,6 +222,7 @@ mod tests {
             oidc_client_id: None,
             workos_client_id: Some("client_abc".into()),
             allow_signup: false,
+            default_visibility: "public".into(),
             updated_at: "2026-01-01T00:00:00Z".into(),
         };
         let pub_ = settings_to_public(&row).expect("map");

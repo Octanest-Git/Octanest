@@ -2,6 +2,8 @@ pub mod app;
 pub mod auth;
 pub mod cors;
 pub mod email;
+pub mod git;
+pub mod repo;
 pub mod routes;
 pub mod rpc;
 

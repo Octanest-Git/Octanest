@@ -35,7 +35,9 @@ pub struct CreateRepoRequest {
     pub name: String,
     #[serde(default)]
     pub description: Option<String>,
-    pub visibility: RepoVisibility,
+    /// When omitted, API uses instance `default_visibility` (else public) — D-08.
+    #[serde(default)]
+    pub visibility: Option<RepoVisibility>,
 }
 
 /// Public repository metadata returned over RPC.

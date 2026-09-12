@@ -6,5 +6,9 @@ license.workspace = true
 description = "Git forge backend (CLI primary; gitoxide path deferred)"
 
 [dependencies]
-# Wave 0 scaffold — CliGitBackend + async trait land in later Phase 07 plans.
+async-trait = "0.1.92"
+thiserror = "2"
+tokio = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3"

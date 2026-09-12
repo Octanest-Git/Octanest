@@ -7,6 +7,7 @@ use octanest_core::{
     RPC_PROTOCOL_VERSION,
 };
 use octanest_db::Database;
+use octanest_git::GitBackend;
 
 use crate::auth::admin;
 use crate::auth::bootstrap;
@@ -15,6 +16,7 @@ use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
 use crate::auth::verify_reset;
 use crate::email::EmailSender;
+use crate::repo;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
 
@@ -33,6 +35,8 @@ pub struct RpcCtx {
     pub email_slot: Arc<RwLock<Arc<dyn EmailSender>>>,
     pub sessions: SessionService,
     pub uploads_dir: PathBuf,
+    pub repos_dir: PathBuf,
+    pub git: Arc<dyn GitBackend>,
     pub env_name: String,
     pub session: Option<ResolvedSession>,
     pub set_cookie: Option<CookieChange>,
@@ -203,6 +207,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "admin.instance.factory_reset" => match admin::factory_reset(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.create" => match repo::create(ctx, req.input).await {
+            Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
         },
         other => RpcResponse::err(AppError::new(
