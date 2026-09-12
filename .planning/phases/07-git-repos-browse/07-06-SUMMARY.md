@@ -135,7 +135,7 @@ Each task was committed atomically:
 2. **Task 1 GREEN: log/show_commit/diff/blame RPC** - `0840f5b` (feat)
 3. **Task 2: commits/commit/compare/blame UI** - `3f68732` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `02b3c6b` (docs: complete plan)
 
 _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
