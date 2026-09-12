@@ -346,6 +346,22 @@ export type RepoBranchMutationResponse = {
   branch: string;
 };
 
+export type RepoUpdateVisibilityRequest = {
+  owner: string;
+  name: string;
+  visibility: RepoVisibility;
+};
+
+export type RepoSoftDeleteRequest = {
+  owner: string;
+  name: string;
+  confirmName: string;
+};
+
+export type RepoSoftDeleteResponse = {
+  name: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -433,6 +449,10 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoBranchMutationResponse>(opts, "repo.branchRename", input),
       branchDelete: (input: RepoBranchDeleteRequest) =>
         rpcCall<RepoBranchMutationResponse>(opts, "repo.branchDelete", input),
+      updateVisibility: (input: RepoUpdateVisibilityRequest) =>
+        rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
+      softDelete: (input: RepoSoftDeleteRequest) =>
+        rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
     },
     admin: {
       auth: {

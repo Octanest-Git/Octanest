@@ -137,6 +137,18 @@ impl Database {
         repositories::list_by_owner(self.require_pool()?, owner_id).await
     }
 
+    pub async fn update_repository_visibility(
+        &self,
+        id: &str,
+        visibility: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_visibility(self.require_pool()?, id, visibility).await
+    }
+
+    pub async fn soft_delete_repository(&self, id: &str) -> Result<(), String> {
+        repositories::soft_delete(self.require_pool()?, id).await
+    }
+
     // --- users ---
 
     pub async fn create_user(

@@ -312,6 +312,29 @@ pub struct RepoBranchMutationResponse {
     pub branch: String,
 }
 
+/// `repo.updateVisibility` input (D-26).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoUpdateVisibilityRequest {
+    pub owner: String,
+    pub name: String,
+    pub visibility: RepoVisibility,
+}
+
+/// `repo.softDelete` input — typed confirm name required (D-35 / T-07-24).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSoftDeleteRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "confirmName", alias = "confirm_name")]
+    pub confirm_name: String,
+}
+
+/// Soft-delete acknowledgement (DB row marked; disk purge deferred).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSoftDeleteResponse {
+    pub name: String,
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {

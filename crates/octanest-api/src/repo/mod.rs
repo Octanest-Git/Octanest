@@ -18,8 +18,9 @@ use octanest_core::{
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
     RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
-    RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse, RepoTreeEntry,
-    RepoTreeRequest, RepoTreeResponse, RepoVisibility,
+    RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse, RepoSoftDeleteRequest,
+    RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
+    RepoUpdateVisibilityRequest, RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -564,6 +565,57 @@ pub async fn branch_delete(
         .map_err(map_git_err)?;
     Ok(RepoBranchMutationResponse {
         branch: branch.to_string(),
+    })
+}
+
+/// `repo.updateVisibility` — owner toggles public/private (D-26). Non-owner → not_found.
+pub async fn update_visibility(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoPublic, AppError> {
+    let req: RepoUpdateVisibilityRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.updateVisibility input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let row = ctx
+        .db
+        .update_repository_visibility(&accessible.row.id, map_visibility(req.visibility))
+        .await
+        .map_err(db_err)?;
+    Ok(to_public(&AccessibleRepo {
+        row,
+        owner_username: accessible.owner_username,
+    }))
+}
+
+/// `repo.softDelete` — owner soft-deletes after typed name confirm (D-35). Disk purge deferred.
+pub async fn soft_delete(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoSoftDeleteResponse, AppError> {
+    let req: RepoSoftDeleteRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.softDelete input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let confirm = req.confirm_name.trim();
+    if confirm != accessible.row.name.as_str() {
+        return Err(AppError::new(
+            "repo.confirm_mismatch",
+            "Type the repository name exactly to confirm deletion.",
+        ));
+    }
+    ctx.db
+        .soft_delete_repository(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    Ok(RepoSoftDeleteResponse {
+        name: accessible.row.name,
     })
 }
 

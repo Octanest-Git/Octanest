@@ -221,6 +221,114 @@ pub async fn list_by_owner(
     }
 }
 
+/// Update visibility for a non-deleted repository (D-26).
+pub async fn update_visibility(
+    pool: &DbPool,
+    id: &str,
+    visibility: &str,
+) -> Result<RepositoryRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET visibility = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(visibility)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository visibility failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET visibility = ?, updated_at = NOW()
+WHERE id = ? AND deleted_at IS NULL",
+            )
+            .bind(visibility)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository visibility failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET visibility = ?2, updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(visibility)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository visibility failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "repository not found after visibility update".into())
+}
+
+/// Soft-delete: set `deleted_at` (disk purge deferred — D-35).
+pub async fn soft_delete(pool: &DbPool, id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET deleted_at = now(), updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("soft-delete repository failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET deleted_at = NOW(), updated_at = NOW()
+WHERE id = ? AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("soft-delete repository failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET deleted_at = strftime('%Y-%m-%d %H:%M:%S','now'),
+updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("soft-delete repository failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+    }
+    Ok(())
+}
+
 pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<RepositoryRow>, String> {
     match pool {
         DbPool::Postgres(p) => {
