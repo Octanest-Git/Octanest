@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-09-12T15:45:17.460Z"
+stopped_at: Phase 7 research complete
+last_updated: "2026-09-12T18:00:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 7 UI-SPEC revised — verb+noun CTAs (Save default branch; Download file; Copy HTTPS URL)
+last_activity_desc: Phase 7 RESEARCH.md written — git CLI backend, GitBackend seam, validation architecture
 state_head: 2f32a4b644df15e29cf57806989ed76f826305b6
 progress:
   total_phases: 22
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
-Status: UI-SPEC approved (7/7 dimensions + UI Considerations probe)
-Last activity: 2026-09-12 — 07-UI-SPEC.md approved; GitHub parity checklist + probe coverage written
+Status: RESEARCH complete — ready for `/gsd-plan-phase` planning
+Last activity: 2026-09-12 — 07-RESEARCH.md (CLI git backend per D-32/D-33; amends ROADMAP gitoxide-first)
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC approved — ready to plan
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC + RESEARCH ready to plan
 
-See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/07-git-repos-browse/07-UI-SPEC.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
+See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/07-git-repos-browse/07-UI-SPEC.md` · `phases/07-git-repos-browse/07-RESEARCH.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
 
 ## Performance Metrics
 
