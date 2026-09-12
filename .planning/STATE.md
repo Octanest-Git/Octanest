@@ -7,11 +7,11 @@ status: planning
 stopped_at: Phase 7 context gathered
 last_updated: "2026-09-12T15:25:20.936Z"
 last_activity: 2026-09-12
-last_activity_desc: Synced STATE after post-06 Query/OIDC/factory-reset polish; Phase 7 still unplanned
+last_activity_desc: Phase 7 discuss complete — 07-CONTEXT.md captured (git CLI primary, GitHub-like browse)
 state_head: 904fae2c8611c49a101917a082811314369886cc
 progress:
   total_phases: 22
-  completed_phases: 0
+  completed_phases: 6
   total_plans: 41
   completed_plans: 41
 milestone_name: milestone
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-12 — Post-06 polish documented (Query session cache, setup auth stack, factory reset, OIDC harden); Phase 7 still ready to plan
+Status: Context gathered — ready to plan
+Last activity: 2026-09-12 — Discuss-phase complete; CONTEXT locks create/browse/visibility/branches/storage (git CLI 2.5+, gitoxide later)
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 not started — Nyquist compliant for closed phases
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 context ready — Nyquist compliant for closed phases
 
-See also: `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
+See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
 
 ## Performance Metrics
 
@@ -167,6 +167,8 @@ Recent decisions affecting current work:
 - [Post-06]: Author UI in Octane `.tsrx` with `@{` / `@if` / `@else` / `@for`; do not mix React-style `return (` components with Rivet directives (breaks Vite import-protection HMR)
 - [Post-06]: OIDC reqwest connect/request timeouts; mock-oauth2-server healthcheck + compose issuer pointing at reachable host
 - [Post-06]: Setup wizard can choose auth stack (local/WorkOS/OIDC public fields); sys-admin factory reset wipes instance back to needs_setup
+- [Phase 07]: Git backend is system `git` CLI 2.5+ (fail boot if missing); gitoxide deferred until feature-complete; keep GitBackend abstraction (amends GIT-09)
+- [Phase 07]: GitHub-like browse IA (`/{owner}/{repo}`, tree/blob/raw/blame/compare); private=owner-only until Phase 10; create via `/new` with full templates
 
 ### Pending Todos
 
@@ -174,7 +176,7 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-None yet. Phase 7 planning should assume Query session cache + Octane `.tsrx` authoring (see Phase 06 deferred-items post-close addendum).
+None. Phase 7 planning should assume Query session cache + Octane `.tsrx` + decisions in `07-CONTEXT.md` (including GIT-09 amendment).
 
 ## Deferred Items
 
