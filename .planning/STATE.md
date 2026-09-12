@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-14-PLAN.md
-last_updated: "2026-09-12T17:50:48.951Z"
+stopped_at: Completed 07-05-PLAN.md
+last_updated: "2026-09-12T17:59:58.020Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: 8355524c38d2ac142dc1012065a481dc39910bc4
+state_head: 038ac5f9af07322c2a971c0cf1e27118bc0edf07
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 51
+  completed_plans: 52
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 11 of 19
+Plan: 12 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -101,6 +101,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07-git-repos-browse P03 | 10min | 3 tasks | 101 files |
 | Phase 07 P04 | 11min | 2 tasks | 27 files |
 | Phase 07-git-repos-browse P14 | 4min | 1 tasks | 8 files |
+| Phase 07 P05 | 7min | 1 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -204,6 +205,8 @@ Recent decisions affecting current work:
 - [Phase 07]: D-18: remark-gfm → rehype-sanitize last for README XSS safety
 - [Phase 07]: D-19: in-repo TextMate grammars for tsrx/ripple (not TS/JS alias)
 - [Phase 07]: Shiki cool-biased themes: github-light + github-dark singleton
+- [Phase 07]: Private ACL stub is owner-only until Phase 10; identical repo.not_found (D-23–D-25)
+- [Phase 07]: Blob soft limit 1 MiB for RPC preview and raw truncation headers (D-20)
 
 ### Pending Todos
 
@@ -225,6 +228,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T17:50:48.901Z
-Stopped at: Completed 07-14-PLAN.md
+Last session: 2026-09-12T17:59:57.962Z
+Stopped at: Completed 07-05-PLAN.md
 Resume file: None

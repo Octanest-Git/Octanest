@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 5
+open_count: 6
 waived_count: 0
 fixed_count: 0
-total_count: 5
-last_updated: 2026-09-12T17:20:43.358Z
+total_count: 6
+last_updated: 2026-09-12T17:59:04.501Z
 ---
 
 # Broken Windows Ledger
@@ -20,6 +20,7 @@ last_updated: 2026-09-12T17:20:43.358Z
 | 3 | 07 | stub | apps/web/src/routes/new.tsrx | 206 | Stack/License/.gitignore None placeholders until 07-03 | open |  | 2026-09-12T17:20:43.199Z |  |
 | 4 | 07 | stub | apps/web/src/routes/$owner.$repo.index.tsrx |  | Empty Quick setup only; tree/README deferred to 07-15 | open |  | 2026-09-12T17:20:43.278Z |  |
 | 5 | 07 | deviation | apps/web/src/routes/$owner.$repo.tsrx |  | Added Outlet layout parent required for $owner.$repo.index route | open |  | 2026-09-12T17:20:43.358Z |  |
+| 6 | 07 | unrun-verify | crates/octanest-git/src/version.rs | 73 | Wave 0 git_archive_formats stub fails full octanest-git --lib until archive plan; 07-05 verified with not test(git_archive) | open |  | 2026-09-12T17:59:04.501Z |  |
 
 ````json
 [
@@ -81,6 +82,18 @@ last_updated: 2026-09-12T17:20:43.358Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T17:20:43.358Z",
+    "resolved_at": null
+  },
+  {
+    "id": 6,
+    "kind": "unrun-verify",
+    "phase": "07",
+    "file": "crates/octanest-git/src/version.rs",
+    "line": 73,
+    "description": "Wave 0 git_archive_formats stub fails full octanest-git --lib until archive plan; 07-05 verified with not test(git_archive)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T17:59:04.501Z",
     "resolved_at": null
   }
 ]
