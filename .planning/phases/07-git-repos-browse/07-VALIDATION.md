@@ -5,13 +5,16 @@ slug: "git-repos-browse"
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
 status: draft
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-09-12"
+updated: "2026-09-12"
 ---
 
 # Phase 07 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
+> Plan IDs below match every `07-*-PLAN.md` in this phase (07-00 … 07-18).
+> `nyquist_compliant` stays **false** until `/gsd-validate-phase` signs off.
 
 ---
 
@@ -40,29 +43,66 @@ created: "2026-09-12"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 07-W0 | 00 | 0 | GIT-* | — | N/A | stubs | Wave 0 scaffolding | ❌ W0 | ⬜ pending |
-| GIT-01 | TBD | TBD | GIT-01 | T-07-auth | verified-only create; duplicate inline error | integration | `cargo nextest run -p octanest-api -- repo_create` | ❌ W0 | ⬜ pending |
-| GIT-05 | TBD | TBD | GIT-05 | T-07-acl | private non-owner → not_found | unit/integration | `cargo nextest run -p octanest-git` / `repo_private_404` | ❌ W0 | ⬜ pending |
-| GIT-06 | TBD | TBD | GIT-06 | T-07-branch | owner CRUD; default soft-protect | integration | `cargo nextest run -p octanest-api -- repo_branch_soft_protect` | ❌ W0 | ⬜ pending |
-| GIT-07 | TBD | TBD | GIT-07 | — | zip + tar.gz for ref | unit | `cargo nextest run -p octanest-git -- git_archive_formats` | ❌ W0 | ⬜ pending |
-| GIT-08 | TBD | TBD | GIT-08 | T-07-path | files under repos_dir owner/name.git | integration | `cargo nextest run -p octanest-api -- repo_fs_layout` | ❌ W0 | ⬜ pending |
-| GIT-09/10 | TBD | TBD | GIT-09, GIT-10 | — | CliGitBackend + trait/docs | unit | `cargo test -p octanest-git` | ❌ W0 | ⬜ pending |
-| D-33 | TBD | TBD | GIT-09 | — | boot rejects missing/old git | unit | `cargo nextest run -p octanest-git -- git_version_gate` | ❌ W0 | ⬜ pending |
-| UI | TBD | TBD | GIT-01 | — | `/new` wall; home CTA | integration | `bun --cwd apps/web run test:integration` | ❌ W0 | ⬜ pending |
+| 07-00-T1 | 07-00 | 0 | GIT-* | — | Nyquist stub paths discoverable | stubs | `cargo check -p octanest-git` + nextest list `repo_*` | ✅ | ✅ green |
+| 07-01-T1 | 07-01 | 1 | GIT-09, GIT-10 | T-07-03 | CLI-primary docs; no gitoxide-first | docs | `rg CliGitBackend/GitBackend` REQUIREMENTS/ROADMAP/COVERAGE | ✅ | ✅ green |
+| 07-02-T1 | 07-02 | 2 | GIT-08 | — | repositories schema + validate_repo_name | unit/integration | `cargo test -p octanest-db --test dialect_repositories` | ✅ | ✅ green |
+| 07-16-T1 | 07-16 | 0 | GIT-01 | — | Wave 0 `/new` wall + home CTA stubs | integration | `vitest … new.integration + signed-in-home` | ✅ | ✅ green |
+| 07-17-T1 | 07-17 | 3 | GIT-09 | T-07 / D-33 | Boot rejects missing/old git; Compose volume | unit + ops | `nextest … git_version_gate` + Dockerfile/Compose rg | ✅ | ✅ green |
+| 07-12-T1 | 07-12 | 4 | GIT-01, GIT-08 | — | Verified create + bare `{owner}/{name}.git` | integration | `nextest -p octanest-api -E 'test(repo_create)\|test(repo_fs)'` | ✅ | ✅ green |
+| 07-13-T1 | 07-13 | 5 | GIT-01 | — | `/new` + empty Code Quick setup reachable | integration | `vitest … new.integration.test.ts` + web build | ✅ | ✅ green |
+| 07-03-T* | 07-03 | 6 | GIT-01 | — | Templates/SPDX/gitignore + duplicate inline | integration | `nextest … test(repo_create)` + `/new` vitest | ✅ | ✅ green |
+| 07-04-T* | 07-04 | 7 | GIT-01 | — | Signed-in home list + defaults | integration | `vitest … signed-in-home` + `repo_create`/`profile` | ✅ | ✅ green |
+| 07-05-T1 | 07-05 | 8 | GIT-05 | T-07-acl | Private non-owner → identical `repo.not_found` | unit/integration | `nextest … test(repo_private)\|test(repo_create)` + git `--lib` | ✅ | ✅ green |
+| 07-14-T1 | 07-14 | 8 | GIT-05 | T-07-14 | Sanitize last; tsrx/ripple grammars | unit | `vitest … markdown.test + highlight.test` | ✅ | ✅ green |
+| 07-15-T1 | 07-15 | 9 | GIT-05 | D-25 | Code/tree/blob UI + private 404 | integration | `vitest … $owner.$repo.integration.test.ts` | ✅ | ✅ green |
+| 07-06-T* | 07-06 | 10 | GIT-05 | T-07-18 | Commits/compare/blame soft caps | unit/integration | `nextest -p octanest-git --lib` + `test(repo_)` | ✅ | ✅ green |
+| 07-07-T1 | 07-07 | 11 | GIT-06 | T-07-branch | Owner branch CRUD; default soft-protect | integration | `nextest … test(repo_branch)` | ✅ | ✅ green |
+| 07-18-T1 | 07-18 | 12 | GIT-06 | — | Branches/Tags UI + Dialog/AlertDialog | build | `bun --cwd apps/web run build` | ✅ | ✅ green |
+| 07-08-T* | 07-08 | 13 | GIT-07 | T-07-SC | zip + tar.gz archive HTTP + clone box | unit/integration | `nextest … test(repo_archive)\|test(git_archive)` | ✅ | ✅ green |
+| 07-09-T* | 07-09 | 14 | GIT-01 | — | Visibility toggle + soft-delete | integration | `nextest … test(repo_)` + web build | ✅ | ✅ green |
+| 07-10-T* | 07-10 | 14 | GIT-08 | D-36–38 | Orphan reconcile, gc, factory-reset scope | integration + docs | `nextest … orphan\|gc\|factory_reset` + CONFIGURATION rg | ✅ | ✅ green |
+| 07-11-T1 | 07-11 | 15 | GIT-09, GIT-10 | T-07-03 | ARCHITECTURE CliGitBackend + future Gix | docs | `rg GitBackend\|CliGitBackend\|GixGitBackend` docs | ✅ | ✅ green |
+| 07-11-T2 | 07-11 | 15 | GIT-09, GIT-10 | T-07-SC | VALIDATION map + rpc-gen client sync | smoke | `rpc-gen` + web build + `test(repo_)` + git `--lib` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+
+### Plan index (every `07-*-PLAN.md`)
+
+| Plan | Title (objective) | SUMMARY |
+|------|-------------------|---------|
+| 07-00 | Wave 0 Rust Nyquist stubs | ✅ |
+| 07-01 | CLI-first contracts + COVERAGE | ✅ |
+| 07-02 | Repositories schema + validators | ✅ |
+| 07-03 | Templates / SPDX / create expansion | ✅ |
+| 07-04 | Dashboard home + account defaults | ✅ |
+| 07-05 | ACL-safe tree/blob/raw APIs | ✅ |
+| 07-06 | History browse (commits/compare/blame) | ✅ |
+| 07-07 | Branch CRUD + soft-protect API | ✅ |
+| 07-08 | Git archive + clone box | ✅ |
+| 07-09 | Visibility + soft-delete settings | ✅ |
+| 07-10 | Ops lifecycle (orphan/gc/reset docs) | ✅ |
+| 07-11 | ARCHITECTURE / VALIDATION / rpc-gen | ✅ |
+| 07-12 | Create tracer (CliGitBackend E2E) | ✅ |
+| 07-13 | `/new` + Quick setup UI | ✅ |
+| 07-14 | Markdown sanitize + Shiki grammars | ✅ |
+| 07-15 | Code / tree / blob Octane routes | ✅ |
+| 07-16 | Wave 0 web integration stubs | ✅ |
+| 07-17 | Git version gate + Compose volume | ✅ |
+| 07-18 | Branches / Tags UI | ✅ |
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `crates/octanest-git` crate + version gate unit tests
-- [ ] `crates/octanest-api/tests/repo_*.rs` integration harness (temp repos_dir + DB)
-- [ ] Tri-dialect migration `0007_repositories` (+ account default_branch / instance default_visibility as needed)
-- [ ] Web integration tests for SignedInHome CTA → `/new` and unverified wall
-- [ ] Dockerfile installs `git`; Compose volume for `var/repos`
-- [ ] Extend reserved username list with `"new"` (and other flat routes)
-- [ ] Docs: amend GIT-09 wording; ARCHITECTURE GitBackend section
+Conceptual checklist after Phase 7 execution history (stubs turned green by later plans):
+
+- [x] `crates/octanest-git` crate + version gate unit tests
+- [x] `crates/octanest-api/tests/repo_*.rs` integration harness (temp repos_dir + DB)
+- [x] Tri-dialect migration `0007_repositories` (+ account default_branch / instance default_visibility as needed)
+- [x] Web integration tests for SignedInHome CTA → `/new` and unverified wall
+- [x] Dockerfile installs `git`; Compose volume for `var/repos`
+- [x] Extend reserved username list with `"new"` (and other flat routes)
+- [x] Docs: amend GIT-09 wording; ARCHITECTURE GitBackend section
 
 ---
 
@@ -78,11 +118,11 @@ created: "2026-09-12"
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 120s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 120s
+- [ ] `nyquist_compliant: true` set in frontmatter *(deferred to `/gsd-validate-phase`)*
 
-**Approval:** pending
+**Approval:** pending validate-phase
