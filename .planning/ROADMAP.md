@@ -221,7 +221,7 @@ Plans:
   3. User can create, rename, and delete branches from the web UI where permitted
   4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: 9/19 plans executed
+**Plans**: 10/19 plans executed
 Plans:
 **Wave 1**
 
@@ -256,7 +256,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 07-14-PLAN.md — Markdown sanitize + Shiki + tsrx/ripple grammars
+- [x] 07-14-PLAN.md — Markdown sanitize + Shiki + tsrx/ripple grammars
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -511,7 +511,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
-| 7. Git Repos & Browse | 9/19 | In Progress|  |
+| 7. Git Repos & Browse | 10/19 | In Progress|  |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |

@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-04-PLAN.md
-last_updated: "2026-09-12T17:45:18.085Z"
+stopped_at: Completed 07-14-PLAN.md
+last_updated: "2026-09-12T17:50:48.951Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: 881f056d9f20686f630fbeb3354adfeee35eabe1
+state_head: 8355524c38d2ac142dc1012065a481dc39910bc4
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 50
+  completed_plans: 51
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 10 of 19
+Plan: 11 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -100,6 +100,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07 P13 | 5min | 1 tasks | 5 files |
 | Phase 07-git-repos-browse P03 | 10min | 3 tasks | 101 files |
 | Phase 07 P04 | 11min | 2 tasks | 27 files |
+| Phase 07-git-repos-browse P14 | 4min | 1 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -200,6 +201,9 @@ Recent decisions affecting current work:
 - [Phase 07]: repo.createDefaults RPC supplies default_visibility + stack/gitignore catalogs
 - [Phase 07]: listMine requires session only (not email verified)
 - [Phase 07]: default_branch via optional UpdateProfileRequest + dedicated Save default branch UI
+- [Phase 07]: D-18: remark-gfm → rehype-sanitize last for README XSS safety
+- [Phase 07]: D-19: in-repo TextMate grammars for tsrx/ripple (not TS/JS alias)
+- [Phase 07]: Shiki cool-biased themes: github-light + github-dark singleton
 
 ### Pending Todos
 
@@ -221,6 +225,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T17:45:18.033Z
-Stopped at: Completed 07-04-PLAN.md
+Last session: 2026-09-12T17:50:48.901Z
+Stopped at: Completed 07-14-PLAN.md
 Resume file: None
