@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 7
+open_count: 9
 waived_count: 0
 fixed_count: 0
-total_count: 7
-last_updated: 2026-09-12T18:11:31.663Z
+total_count: 9
+last_updated: 2026-09-12T18:23:10.268Z
 ---
 
 # Broken Windows Ledger
@@ -22,6 +22,8 @@ last_updated: 2026-09-12T18:11:31.663Z
 | 5 | 07 | deviation | apps/web/src/routes/$owner.$repo.tsrx |  | Added Outlet layout parent required for $owner.$repo.index route | open |  | 2026-09-12T17:20:43.358Z |  |
 | 6 | 07 | unrun-verify | crates/octanest-git/src/version.rs | 73 | Wave 0 git_archive_formats stub fails full octanest-git --lib until archive plan; 07-05 verified with not test(git_archive) | open |  | 2026-09-12T17:59:04.501Z |  |
 | 7 | 07 | stub | apps/web/src/routes/$owner.$repo.index.tsrx |  | Clone/Download toolbar stub until 07-08 | open |  | 2026-09-12T18:11:31.663Z |  |
+| 8 | 07 | skipped-test | crates/octanest-git/src/version.rs |  | Pre-existing git_archive_formats_zip_and_tar_gz Wave 0 stub fails nextest | open |  | 2026-09-12T18:23:10.183Z |  |
+| 9 | 07 | skipped-test | crates/octanest-api/tests/repo_branch_soft_protect.rs |  | Wave 0 soft-protect stubs owned by 07-07 | open |  | 2026-09-12T18:23:10.268Z |  |
 
 ````json
 [
@@ -107,6 +109,30 @@ last_updated: 2026-09-12T18:11:31.663Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T18:11:31.663Z",
+    "resolved_at": null
+  },
+  {
+    "id": 8,
+    "kind": "skipped-test",
+    "phase": "07",
+    "file": "crates/octanest-git/src/version.rs",
+    "line": null,
+    "description": "Pre-existing git_archive_formats_zip_and_tar_gz Wave 0 stub fails nextest",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T18:23:10.183Z",
+    "resolved_at": null
+  },
+  {
+    "id": 9,
+    "kind": "skipped-test",
+    "phase": "07",
+    "file": "crates/octanest-api/tests/repo_branch_soft_protect.rs",
+    "line": null,
+    "description": "Wave 0 soft-protect stubs owned by 07-07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-12T18:23:10.268Z",
     "resolved_at": null
   }
 ]

@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-15-PLAN.md
-last_updated: "2026-09-12T18:11:32.445Z"
+stopped_at: Completed 07-06-PLAN.md
+last_updated: "2026-09-12T18:23:09.886Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: 2ebd4f69d870ab97ad375fd952557862f2f3543c
+state_head: 3f687328e351c565a0a94901c2191a0995542595
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 53
+  completed_plans: 54
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 13 of 19
+Plan: 14 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -103,6 +103,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07-git-repos-browse P14 | 4min | 1 tasks | 8 files |
 | Phase 07 P05 | 7min | 1 tasks | 15 files |
 | Phase 07-git-repos-browse P15 | 10min | 1 tasks | 15 files |
+| Phase 07 P06 | 10min | 2 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -209,6 +210,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Private ACL stub is owner-only until Phase 10; identical repo.not_found (D-23–D-25)
 - [Phase 07]: Blob soft limit 1 MiB for RPC preview and raw truncation headers (D-20)
 - [Phase 07]: Soft RepoNotFound for repo.not_found (identical D-25 copy); Clone/Download stub until 07-08
+- [Phase 07]: History RPC names: repo.commits/commit/compare/blame with soft patch/blame caps
+- [Phase 07]: Compare empty UI copy: Nothing to compare for these refs.
 
 ### Pending Todos
 
@@ -230,6 +233,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T18:11:32.392Z
-Stopped at: Completed 07-15-PLAN.md
+Last session: 2026-09-12T18:23:09.837Z
+Stopped at: Completed 07-06-PLAN.md
 Resume file: None
