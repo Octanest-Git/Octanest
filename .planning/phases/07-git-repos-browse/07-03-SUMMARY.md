@@ -114,7 +114,7 @@ status: complete
 2. **Task 2: /new pickers + SPDX + duplicate inline error** - `cb7d4c8` (feat)
 3. **Task 3: Stack presets contribution guide** - `6c746ba` + `2405d3e` (docs)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `1c5eaae` (docs: complete plan)
 
 ## Files Created/Modified
 
