@@ -63,6 +63,36 @@ export function blobHref(
     .join("/")}`;
 }
 
+export function commitsHref(owner: string, repo: string, ref: string): string {
+  return `/${owner}/${repo}/commits/${encodeURIComponent(ref)}`;
+}
+
+export function commitHref(owner: string, repo: string, sha: string): string {
+  return `/${owner}/${repo}/commit/${encodeURIComponent(sha)}`;
+}
+
+export function compareHref(
+  owner: string,
+  repo: string,
+  base: string,
+  head: string,
+): string {
+  return `/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`;
+}
+
+export function blameHref(
+  owner: string,
+  repo: string,
+  ref: string,
+  path: string,
+): string {
+  const rel = path.replace(/^\/+/, "");
+  return `/${owner}/${repo}/blame/${encodeURIComponent(ref)}/${rel
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/")}`;
+}
+
 export function rawBlobUrl(
   owner: string,
   repo: string,

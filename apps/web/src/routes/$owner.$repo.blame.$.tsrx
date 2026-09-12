@@ -3,32 +3,28 @@ import {
   useParams,
 } from "@octanejs/tanstack-router";
 import type {
-  RepoBlobResponse,
+  RepoBlameResponse,
   RepoPublic,
-  RepoRefEntry,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { BlobViewer } from "@/components/repo/blob-viewer";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
-import { RefSelect } from "@/components/repo/ref-select";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { blameHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
+import { commitHref, parseRefAndPath } from "@/lib/repo-browse";
+import { formatRelativeUpdated } from "@/lib/relative-time";
 
-export const Route = createFileRoute("/$owner/$repo/blob/$")({
-  component: RepoBlobPage,
+export const Route = createFileRoute("/$owner/$repo/blame/$")({
+  component: RepoBlamePage,
   head: ({ params }) => {
     const { path } = parseRefAndPath(
       (params as { _splat?: string })._splat,
     );
-    const owner = (params as { owner: string }).owner;
-    const repo = (params as { repo: string }).repo;
     const base = path.split("/").pop() || path || "file";
     const trunc = base.length > 40 ? `…${base.slice(-36)}` : base;
     return {
-      meta: [{ title: `${trunc} · ${owner}/${repo} · Octanest` }],
+      meta: [{ title: `Blame · ${trunc} · Octanest` }],
     };
   },
 });
@@ -42,12 +38,19 @@ type Phase =
       repo: RepoPublic;
       refName: string;
       path: string;
-      blob: RepoBlobResponse;
-      refs: RepoRefEntry[];
+      blame: RepoBlameResponse;
     };
 
-export function RepoBlobPage() @{
-  const params = useParams({ from: "/$owner/$repo/blob/$" }) as {
+function shortSha(sha: string): string {
+  return sha.slice(0, 7);
+}
+
+function relativeCommitTime(iso: string): string {
+  return formatRelativeUpdated(iso).replace(/^Updated\s+/i, "");
+}
+
+export function RepoBlamePage() @{
+  const params = useParams({ from: "/$owner/$repo/blame/$" }) as {
     owner: string;
     repo: string;
     _splat?: string;
@@ -81,24 +84,21 @@ export function RepoBlobPage() @{
           setPhase({ kind: "not_found" });
           return;
         }
-        const [blobRes, refsRes] = await Promise.all([
-          apiClient.repo.blob({
-            owner,
-            name: repoName,
-            ref: refName,
-            path: parsed.path,
-          }),
-          apiClient.repo.refs({ owner, name: repoName }),
-        ]);
+        const blameRes = await apiClient.repo.blame({
+          owner,
+          name: repoName,
+          ref: refName,
+          path: parsed.path,
+        });
         if (cancelled) return;
-        if (!blobRes.ok) {
+        if (!blameRes.ok) {
           setPhase(
-            blobRes.error.code === "repo.not_found" ||
-              blobRes.error.code === "git.not_found"
+            blameRes.error.code === "repo.not_found" ||
+              blameRes.error.code === "repo.path_not_found"
               ? { kind: "not_found" }
               : {
                   kind: "error",
-                  message: blobRes.error.message || "Could not load file.",
+                  message: blameRes.error.message || "Could not load blame.",
                 },
           );
           return;
@@ -106,10 +106,9 @@ export function RepoBlobPage() @{
         setPhase({
           kind: "ready",
           repo,
-          refName: shortRefName(blobRes.data.ref) || refName,
-          path: blobRes.data.path || parsed.path,
-          blob: blobRes.data,
-          refs: refsRes.ok ? refsRes.data.refs : [],
+          refName: blameRes.data.ref || refName,
+          path: blameRes.data.path || parsed.path,
+          blame: blameRes.data,
         });
       } catch {
         if (cancelled) return;
@@ -131,7 +130,7 @@ export function RepoBlobPage() @{
       @if (phase.kind === "loading") {
         <div className="flex flex-col gap-4" aria-busy="true">
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-96 w-full" />
         </div>
       } @else {
         @if (phase.kind === "error") {
@@ -141,33 +140,53 @@ export function RepoBlobPage() @{
         } @else {
           <>
             <RepoChrome repo={phase.repo} active="code" />
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <RefSelect
-                owner={owner}
-                repo={repoName}
-                refs={phase.refs}
-                value={phase.refName}
-                pathUnderRef={phase.path}
-                mode="blob"
-              />
-            </div>
             <PathBreadcrumb
               owner={owner}
               repo={repoName}
               refName={phase.refName}
               path={phase.path}
             />
-            <p className="mb-3 text-[14px]">
-              <a
-                href={
-                  blameHref(owner, repoName, phase.refName, phase.path) as string
-                }
-                className="text-primary no-underline hover:underline"
-              >
-                Blame
-              </a>
-            </p>
-            <BlobViewer owner={owner} repo={repoName} blob={phase.blob} />
+            @if (phase.blame.truncated) {
+              <p className="mb-2 text-[14px] text-muted-foreground">
+                Blame truncated for size.
+              </p>
+            }
+            <div className="overflow-x-auto border border-border">
+              <table className="w-full border-collapse text-left text-[14px] leading-[1.45]">
+                <tbody>
+                  @for (const line of phase.blame.lines; key line.line_number) {
+                    <tr className="border-b border-border/60 align-top">
+                      <td className="whitespace-nowrap bg-muted/30 px-2 py-0.5 font-mono text-[12px] text-muted-foreground">
+                        <a
+                          href={commitHref(owner, repoName, line.sha) as string}
+                          className="text-primary no-underline hover:underline"
+                          title={line.sha as string}
+                        >
+                          {shortSha(line.sha) as string}
+                        </a>
+                        <span className="ml-2 text-muted-foreground">
+                          {line.author_name as string}
+                        </span>
+                        <time
+                          className="ml-2 text-muted-foreground"
+                          dateTime={line.authored_at as string}
+                        >
+                          {relativeCommitTime(line.authored_at) as string}
+                        </time>
+                      </td>
+                      <td className="select-none px-2 py-0.5 font-mono text-[12px] text-muted-foreground">
+                        {String(line.line_number) as string}
+                      </td>
+                      <td className="px-2 py-0.5 font-mono text-[14px] text-foreground">
+                        <pre className="m-0 whitespace-pre-wrap font-mono">
+                          {line.content as string}
+                        </pre>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </>
         }
       }

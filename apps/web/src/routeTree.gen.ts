@@ -24,7 +24,11 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
+import { Route as OwnerRepoBlameSplatRouteImport } from './routes/$owner.$repo.blame.$'
 import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.blob.$'
+import { Route as OwnerRepoCommitShaRouteImport } from './routes/$owner.$repo.commit.$sha'
+import { Route as OwnerRepoCommitsSplatRouteImport } from './routes/$owner.$repo.commits.$'
+import { Route as OwnerRepoCompareSplatRouteImport } from './routes/$owner.$repo.compare.$'
 import { Route as OwnerRepoTreeSplatRouteImport } from './routes/$owner.$repo.tree.$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -102,9 +106,29 @@ const OwnerRepoIndexRoute = OwnerRepoIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoBlameSplatRoute = OwnerRepoBlameSplatRouteImport.update({
+  id: '/blame/$',
+  path: '/blame/$',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoBlobSplatRoute = OwnerRepoBlobSplatRouteImport.update({
   id: '/blob/$',
   path: '/blob/$',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoCommitShaRoute = OwnerRepoCommitShaRouteImport.update({
+  id: '/commit/$sha',
+  path: '/commit/$sha',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoCommitsSplatRoute = OwnerRepoCommitsSplatRouteImport.update({
+  id: '/commits/$',
+  path: '/commits/$',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoCompareSplatRoute = OwnerRepoCompareSplatRouteImport.update({
+  id: '/compare/$',
+  path: '/compare/$',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
 const OwnerRepoTreeSplatRoute = OwnerRepoTreeSplatRouteImport.update({
@@ -129,7 +153,11 @@ export interface FileRoutesByFullPath {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
+  '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
+  '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRoutesByTo {
@@ -146,7 +174,11 @@ export interface FileRoutesByTo {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
+  '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
+  '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRoutesById {
@@ -166,7 +198,11 @@ export interface FileRoutesById {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
+  '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
+  '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
+  '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
 }
 export interface FileRouteTypes {
@@ -187,7 +223,11 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/'
+    | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/commit/$sha'
+    | '/$owner/$repo/commits/$'
+    | '/$owner/$repo/compare/$'
     | '/$owner/$repo/tree/$'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -204,7 +244,11 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup'
     | '/$owner/$repo'
+    | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/commit/$sha'
+    | '/$owner/$repo/commits/$'
+    | '/$owner/$repo/compare/$'
     | '/$owner/$repo/tree/$'
   id:
     | '__root__'
@@ -223,7 +267,11 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/'
+    | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
+    | '/$owner/$repo/commit/$sha'
+    | '/$owner/$repo/commits/$'
+    | '/$owner/$repo/compare/$'
     | '/$owner/$repo/tree/$'
   fileRoutesById: FileRoutesById
 }
@@ -349,11 +397,39 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoIndexRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/blame/$': {
+      id: '/$owner/$repo/blame/$'
+      path: '/blame/$'
+      fullPath: '/$owner/$repo/blame/$'
+      preLoaderRoute: typeof OwnerRepoBlameSplatRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/blob/$': {
       id: '/$owner/$repo/blob/$'
       path: '/blob/$'
       fullPath: '/$owner/$repo/blob/$'
       preLoaderRoute: typeof OwnerRepoBlobSplatRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/commit/$sha': {
+      id: '/$owner/$repo/commit/$sha'
+      path: '/commit/$sha'
+      fullPath: '/$owner/$repo/commit/$sha'
+      preLoaderRoute: typeof OwnerRepoCommitShaRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/commits/$': {
+      id: '/$owner/$repo/commits/$'
+      path: '/commits/$'
+      fullPath: '/$owner/$repo/commits/$'
+      preLoaderRoute: typeof OwnerRepoCommitsSplatRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/compare/$': {
+      id: '/$owner/$repo/compare/$'
+      path: '/compare/$'
+      fullPath: '/$owner/$repo/compare/$'
+      preLoaderRoute: typeof OwnerRepoCompareSplatRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
     '/$owner/$repo/tree/$': {
@@ -380,13 +456,21 @@ const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
 interface OwnerRepoRouteChildren {
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
+  OwnerRepoBlameSplatRoute: typeof OwnerRepoBlameSplatRoute
   OwnerRepoBlobSplatRoute: typeof OwnerRepoBlobSplatRoute
+  OwnerRepoCommitShaRoute: typeof OwnerRepoCommitShaRoute
+  OwnerRepoCommitsSplatRoute: typeof OwnerRepoCommitsSplatRoute
+  OwnerRepoCompareSplatRoute: typeof OwnerRepoCompareSplatRoute
   OwnerRepoTreeSplatRoute: typeof OwnerRepoTreeSplatRoute
 }
 
 const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
+  OwnerRepoBlameSplatRoute: OwnerRepoBlameSplatRoute,
   OwnerRepoBlobSplatRoute: OwnerRepoBlobSplatRoute,
+  OwnerRepoCommitShaRoute: OwnerRepoCommitShaRoute,
+  OwnerRepoCommitsSplatRoute: OwnerRepoCommitsSplatRoute,
+  OwnerRepoCompareSplatRoute: OwnerRepoCompareSplatRoute,
   OwnerRepoTreeSplatRoute: OwnerRepoTreeSplatRoute,
 }
 
