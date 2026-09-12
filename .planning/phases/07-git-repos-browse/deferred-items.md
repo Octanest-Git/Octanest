@@ -1,3 +1,2 @@
 - [ ] Pre-existing Wave 0 stub `git_archive_formats_zip_and_tar_gz` fails `cargo nextest run -p octanest-git --lib` until archive lands (out of scope for 07-05).
 - Pre-existing: `version::tests::git_archive_formats_zip_and_tar_gz` fails under `cargo nextest -p octanest-git --lib` (out of 07-06 scope).
-- Pre-existing Wave 0 stubs: `repo_branch_soft_protect_*` (owned by 07-07).

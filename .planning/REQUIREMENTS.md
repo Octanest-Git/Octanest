@@ -45,7 +45,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
 - [ ] **GIT-04**: User can add, list, and revoke SSH public keys on their account
 - [x] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
-- [ ] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
+- [x] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
 - [ ] **GIT-07**: User can download a source archive for a ref
 - [x] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
 - [x] **GIT-09**: Git operations use the system `git` CLI (≥2.5) behind a `GitBackend` abstraction (`CliGitBackend` shipped); a future gitoxide/`gix` (`GixGitBackend`) adapter is documented for when feature coverage allows
@@ -196,7 +196,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-03 | Phase 9 | Pending |
 | GIT-04 | Phase 9 | Pending |
 | GIT-05 | Phase 7 | Complete |
-| GIT-06 | Phase 7 | Pending |
+| GIT-06 | Phase 7 | Complete |
 | GIT-07 | Phase 7 | Pending |
 | GIT-08 | Phase 7 | Complete |
 | GIT-09 | Phase 7 | Complete |
