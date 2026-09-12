@@ -41,7 +41,20 @@ fn err_json(status: StatusCode, code: &str, message: &str) -> Response {
 
 fn validate_ref(ref_name: &str) -> Result<&str, Response> {
     let t = ref_name.trim();
-    if t.is_empty() || t.contains('\0') || t.contains("..") || t.contains('/') {
+    // Allow `/` for hierarchical branches (WR-02); reject leading `-` / `..` / NUL / metachar (CR-01).
+    if t.is_empty() || t.contains('\0') || t.contains("..") || t.starts_with('-') {
+        return Err(err_json(
+            StatusCode::BAD_REQUEST,
+            "repo.invalid_ref",
+            "invalid ref",
+        ));
+    }
+    if t.chars().any(|c| {
+        matches!(
+            c,
+            ';' | '|' | '&' | '`' | '$' | '(' | ')' | '<' | '>' | '\n' | '\r' | ' '
+        )
+    }) {
         return Err(err_json(
             StatusCode::BAD_REQUEST,
             "repo.invalid_ref",
