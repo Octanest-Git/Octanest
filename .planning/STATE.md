@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 19 of 19
-Status: Phase complete — ready for verification
-Last activity: 2026-09-12 — Phase 07 execution started
+Phase: 07 (Git Repos & Browse) — GAP CLOSURE PLANNED
+Plan: gap plans 07-19..07-21 (after 19/19 executed)
+Status: Gap-closure plans ready for `/gsd-execute-phase --gaps-only`
+Last activity: 2026-09-12 — Wrote 07-19..07-21 gap-closure PLANs (CR-01/CR-02 + WR advisories)
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 planned (19 plans: stubs → schema → create tracer → browse → ops/docs)
+Progress: Phase 7 executed (19 plans); verification found CR-01/CR-02; 3 gap-closure plans pending
 
 See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
 
