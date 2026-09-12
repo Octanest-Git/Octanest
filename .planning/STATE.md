@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-16-PLAN.md
-last_updated: "2026-09-12T16:51:05.899Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-09-12T16:55:29.251Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: 57950efd8f54363c0822686ca06c85b5dbc945d6
+state_head: d3e3c23450630fa4b21e2e1e1a71c3ec2a2c0ad5
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 43
+  completed_plans: 44
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 3 of 19
+Plan: 4 of 19
 Status: Ready to execute
 Last activity: 2026-09-12 — Phase 07 execution started
 
@@ -93,6 +93,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 06 P07 | 2min | 2 tasks | 8 files |
 | Phase 07-git-repos-browse P00 | 3 min | 1 tasks | 10 files |
 | Phase 07-git-repos-browse P16 | 2 min | 1 tasks | 2 files |
+| Phase 07 P01 | 1min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -175,6 +176,9 @@ Recent decisions affecting current work:
 - [Phase 07]: octanest-git exports parse_git_version/assert_git_version placeholders that Err until implementation
 - [Phase 07]: Wave 0 web stubs RED-only for /new wall + home CTA → /new — Production /new and CTA wiring deferred to 07-13 / 07-04; Nyquist discoverability first
 - [Phase 07]: new.integration.test uses @vite-ignore dynamic import while route absent — Static import('./new') fails Vite transform with 0 tests; runtime import keeps suite discoverable and RED
+- [Phase 07]: D-14: owner_repo_path — public URLs /{owner}/{repo} with reserved-name denylist
+- [Phase 07]: D-33: fail_boot_git — refuse API boot if git missing or < 2.5
+- [Phase 07]: D-32: CLI-primary GitBackend; promote GitBackend noun; CliGitBackend now, GixGitBackend later
 
 ### Pending Todos
 
@@ -196,6 +200,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T16:51:05.850Z
-Stopped at: Completed 07-16-PLAN.md
+Last session: 2026-09-12T16:55:29.205Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None

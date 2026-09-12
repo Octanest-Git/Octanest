@@ -48,8 +48,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
 - [ ] **GIT-07**: User can download a source archive for a ref
 - [ ] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
-- [ ] **GIT-09**: Git operations use the system `git` CLI (≥2.5) behind a `GitBackend` abstraction (`CliGitBackend` shipped); a future gitoxide/`gix` (`GixGitBackend`) adapter is documented for when feature coverage allows
-- [ ] **GIT-10**: Architecture docs and code boundaries keep `GitBackend` swappable — CLI is the current adapter; gitoxide/`gix` is a future adapter, not a Phase 7 primary
+- [x] **GIT-09**: Git operations use the system `git` CLI (≥2.5) behind a `GitBackend` abstraction (`CliGitBackend` shipped); a future gitoxide/`gix` (`GixGitBackend`) adapter is documented for when feature coverage allows
+- [x] **GIT-10**: Architecture docs and code boundaries keep `GitBackend` swappable — CLI is the current adapter; gitoxide/`gix` is a future adapter, not a Phase 7 primary
 - [ ] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
 - [ ] **GIT-12**: User can push and fetch Git LFS objects for a repository
 - [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
@@ -199,8 +199,8 @@ Deferred; not in the current roadmap until promoted.
 | GIT-06 | Phase 7 | Pending |
 | GIT-07 | Phase 7 | Pending |
 | GIT-08 | Phase 7 | Pending |
-| GIT-09 | Phase 7 | Pending |
-| GIT-10 | Phase 7 | Pending |
+| GIT-09 | Phase 7 | Complete |
+| GIT-10 | Phase 7 | Complete |
 | GIT-11 | Phase 8 | Pending |
 | GIT-12 | Phase 14 | Pending |
 | GIT-13 | Phase 14 | Pending |

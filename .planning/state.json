@@ -36,7 +36,7 @@
     {
       "number": "7",
       "name": "Git Repos & Browse",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "8",
@@ -116,8 +116,8 @@
   ],
   "next": {
     "command": "/gsd-progress --next",
-    "label": "Advance to the next step (plan phase 07)",
-    "reason": "Phase 07 of 22 — needs a plan"
+    "label": "Advance to the next step",
+    "reason": "Phase 07 of 22 · executing"
   },
-  "updated_at": "2026-09-12T16:40:45.105Z"
+  "updated_at": "2026-09-12T16:55:28.418Z"
 }
