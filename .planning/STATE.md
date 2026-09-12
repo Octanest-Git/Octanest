@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: executing
-stopped_at: Completed 07-19-PLAN.md
-last_updated: "2026-09-12T19:46:46.802Z"
+stopped_at: Completed 07-20-PLAN.md
+last_updated: "2026-09-12T19:53:21.495Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
-state_head: bcb5cf2e48ff7f795038495dacd7286274fa44fc
+state_head: fcb8e14ad040094fd918018dcce674cea114fdee
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 63
-  completed_plans: 61
+  completed_plans: 62
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 20 of 22 (next: 07-20 CR-01 archive argv)
+Plan: 21 of 22 (next: 07-20 CR-01 archive argv)
 Status: Ready to execute
 Last activity: 2026-09-12 — Completed 07-19 CR-02 gap closure
 
@@ -111,6 +111,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 07-git-repos-browse P10 | 10min | 3 tasks | 20 files |
 | Phase 07-git-repos-browse P11 | 3min | 2 tasks | 3 files |
 | Phase 07-git-repos-browse P19 | 2 min | 2 tasks | 4 files |
+| Phase 07 P20 | 2 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -235,6 +236,8 @@ Recent decisions affecting current work:
 - [Phase 07]: rpc-gen produced no api-client diff — client already matched repo.* dispatch
 - [Phase 07]: reject_option_like_branch treats any leading- hyphen as repo.invalid_ref (covers -d/-D/-m/-M/-f and case variants) — Matches validate_treeish; no separate token allowlist needed for CR-02
 - [Phase 07]: Known flags -m/-D stay before --; user from/to/name always after end-of-options — Defense in depth so operands cannot slide into option position (CR-02)
+- [Phase 07]: RED for archive CR-01 asserts HTTP-boundary invalid ref message so intentional fail remains after 07-19 CLI validate_treeish — Bare 4xx+no-file would unexpected-GREEN after plan 19
+- [Phase 07]: validate_ref allows slashy hierarchical refs and rejects leading hyphen like archive — WR-02 / GIT-05 browse parity with CR-01 defense-in-depth
 
 ### Pending Todos
 
@@ -256,6 +259,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T19:46:46.744Z
-Stopped at: Completed 07-19-PLAN.md
+Last session: 2026-09-12T19:53:21.438Z
+Stopped at: Completed 07-20-PLAN.md
 Resume file: None

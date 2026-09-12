@@ -226,7 +226,7 @@ Plans:
 **Wave 16 (gap closure)** *(blocked on verification gaps CR-01/CR-02)*
 
 - [x] 07-19-PLAN.md — CR-02 branch argv injection + soft-protect integrity
-- [ ] 07-20-PLAN.md — CR-01 archive/--output injection + WR-02 raw slash parity
+- [x] 07-20-PLAN.md — CR-01 archive/--output injection + WR-02 raw slash parity
 - [ ] 07-21-PLAN.md — WR-01 create compensate + WR-03 hierarchical ref parse
 
 **Wave 1**
@@ -517,7 +517,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
-| 7. Git Repos & Browse | 20/22 | In Progress|  |
+| 7. Git Repos & Browse | 21/22 | In Progress|  |
 | 8. Git HTTPS & PATs | 0/TBD | Not started | - |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
