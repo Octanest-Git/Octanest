@@ -323,3 +323,84 @@ async fn repo_create_all_none_templates_leaves_empty_bare() {
         log.status.code()
     );
 }
+
+/// WR-01: when init_bare fails after insert, soft-delete the row so the name is reusable.
+#[tokio::test]
+async fn repo_create_git_failure_soft_deletes_row_allows_recreate() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_git_fail.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "gitfail@ex.com", "gitfail").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    // Block init_bare: destination must be a non-directory file (WR-01 preferred seam).
+    let owner_dir = repos.join("gitfail");
+    std::fs::create_dir_all(&owner_dir).expect("owner dir");
+    let blocked = owner_dir.join("retry-me.git");
+    std::fs::write(&blocked, b"not-a-git-dir").expect("block bare path");
+
+    let fail = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"retry-me","visibility":"public"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let fail_bytes = fail.into_body().collect().await.unwrap().to_bytes();
+    let fail_v: serde_json::Value = serde_json::from_slice(&fail_bytes).unwrap();
+    assert_eq!(
+        fail_v["ok"], false,
+        "create must fail when init_bare cannot proceed — {fail_v}"
+    );
+    let code = fail_v["error"]["code"].as_str().unwrap_or("");
+    assert!(
+        code == "repo.git_init_failed" || code == "repo.git_seed_failed",
+        "expected git_*_failed, got {code} — {fail_v}"
+    );
+
+    // Compensating soft-delete: no live row should occupy the name.
+    let live = db
+        .find_repository_by_owner_name(&user_id, "retry-me")
+        .await
+        .expect("find");
+    assert!(
+        live.is_none(),
+        "WR-01: failed create must not leave a live name-blocking row — found {live:?}"
+    );
+
+    // Clear blocker so a retry can succeed on disk.
+    std::fs::remove_file(&blocked).expect("remove blocker");
+
+    let retry = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"retry-me","visibility":"public"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        retry.status(),
+        StatusCode::OK,
+        "recreate same name after compensated failure"
+    );
+    let retry_bytes = retry.into_body().collect().await.unwrap().to_bytes();
+    let retry_v: serde_json::Value = serde_json::from_slice(&retry_bytes).unwrap();
+    assert_eq!(
+        retry_v["ok"], true,
+        "recreate must succeed after soft-delete compensate — {retry_v}"
+    );
+    assert_eq!(retry_v["data"]["name"], "retry-me");
+}
