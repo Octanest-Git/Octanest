@@ -104,3 +104,4 @@ octanest/
 - **`octanest-db` as the only dialect boundary** — Callers use `Database` methods; migrations live under `migrations/{postgres,mysql,sqlite}/`.
 - **Same-origin Traefik** — Avoids cross-origin cookie issues in Compose; local Vite proxies mirror that path layout.
 - **`deploy/`** — Holds operator Traefik notes; primary routing is Compose labels on `web` and `api` (see root `docker-compose.yml`).
+- **Stack presets** — Day-one `/new` templates are in-repo packs under `crates/octanest-api/assets/stack-presets/` (community PRs; no marketplace UI yet). See [guides/stack-presets.md](guides/stack-presets.md).
