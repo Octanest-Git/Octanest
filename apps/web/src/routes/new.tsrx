@@ -3,25 +3,117 @@ import {
   redirect,
   useLoaderData,
 } from "@octanejs/tanstack-router";
-import type { RepoVisibility, UserPublic } from "@octanest/api-client";
+import { Check, ChevronDown } from "@octanejs/lucide";
+import type {
+  RepoCreateDefaults,
+  RepoTemplateOption,
+  RepoVisibility,
+  UserPublic,
+} from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  SelectIcon,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectList,
+  SelectPopup,
+  SelectPortal,
+  SelectPositioner,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
-import { fetchSessionMe } from "@/lib/ssr-auth";
+import { listSpdxLicenseOptions } from "@/lib/spdx-licenses";
+import {
+  fetchRepoCreateDefaults,
+  fetchSessionMe,
+} from "@/lib/ssr-auth";
 import { cn } from "@/lib/utils";
 
 export type NewLoaderData = {
   user: UserPublic;
+  defaults: RepoCreateDefaults | null;
 };
 
 const NETWORK_ERROR =
   "Can't reach Octanest. Check your connection and try again.";
 const NAME_HELPER =
   "Letters, digits, hyphen, underscore, and period. Reserved names are rejected.";
+const DUPLICATE_NAME_ERROR =
+  "A repository with this name already exists. Choose a different name.";
+
+function TemplateSelect({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (next: string) => void;
+}) @{
+  const current = options.find((o) => o.value === value) ?? options[0]!;
+
+  <div className="flex flex-col gap-2">
+    <Label htmlFor={id}>{label as string}</Label>
+    <SelectRoot
+      value={value}
+      onValueChange={(next) => {
+        if (typeof next === "string") onChange(next);
+      }}
+    >
+      <SelectTrigger id={id} className="w-full" aria-label={label}>
+        <SelectValue>{current.label as string}</SelectValue>
+        <SelectIcon>
+          <ChevronDown aria-hidden size={16} />
+        </SelectIcon>
+      </SelectTrigger>
+      <SelectPortal>
+        <SelectPositioner sideOffset={4}>
+          <SelectPopup className="max-h-72 overflow-y-auto">
+            <SelectList>
+              @for (const opt of options; key opt.value) {
+                <SelectItem value={opt.value}>
+                  <SelectItemIndicator>
+                    <Check aria-hidden size={16} className="text-primary" />
+                  </SelectItemIndicator>
+                  <SelectItemText>{opt.label as string}</SelectItemText>
+                </SelectItem>
+              }
+            </SelectList>
+          </SelectPopup>
+        </SelectPositioner>
+      </SelectPortal>
+    </SelectRoot>
+  </div>
+}
+
+function groupTemplateOptions(
+  items: RepoTemplateOption[],
+): { value: string; label: string }[] {
+  const sorted = [...items].sort((a, b) => {
+    const g = a.group.localeCompare(b.group);
+    if (g !== 0) return g;
+    return a.label.localeCompare(b.label);
+  });
+  return [
+    { value: "none", label: "None" },
+    ...sorted.map((item) => ({
+      value: item.id,
+      label: `${item.group} — ${item.label}`,
+    })),
+  ];
+}
 
 export const Route = createFileRoute("/new")({
   component: NewPage,
@@ -42,7 +134,14 @@ export const Route = createFileRoute("/new")({
     if (!me.ok) {
       throw redirect({ href: "/login?returnTo=/new" });
     }
-    return { user: me.data };
+    let defaults: RepoCreateDefaults | null = null;
+    if (me.data.email_verified) {
+      const res = await fetchRepoCreateDefaults();
+      if (res.ok) {
+        defaults = res.data;
+      }
+    }
+    return { user: me.data, defaults };
   },
 });
 
@@ -52,9 +151,20 @@ export function NewPage() @{
   const user = data?.user;
   const showWall = !user || !user.email_verified;
 
+  const stackOptions = groupTemplateOptions(data?.defaults?.stacks ?? []);
+  const gitignoreOptions = groupTemplateOptions(data?.defaults?.gitignores ?? []);
+  // Native <select> for full SPDX list — custom Select mounts every item and stalls.
+  const licenseOptions = listSpdxLicenseOptions();
+
+  const initialVisibility: RepoVisibility =
+    data?.defaults?.default_visibility === "private" ? "private" : "public";
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<RepoVisibility>("public");
+  const [visibility, setVisibility] = useState<RepoVisibility>(initialVisibility);
+  const [stackId, setStackId] = useState("none");
+  const [licenseId, setLicenseId] = useState("none");
+  const [gitignoreId, setGitignoreId] = useState("none");
   const [nameError, setNameError] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
@@ -75,10 +185,15 @@ export function NewPage() @{
         name: trimmed,
         description: description.trim() || null,
         visibility,
+        stack_id: stackId === "none" ? null : stackId,
+        license_id: licenseId === "none" ? null : licenseId,
+        gitignore_id: gitignoreId === "none" ? null : gitignoreId,
       });
       if (!res.ok) {
         const code = res.error.code;
-        if (code === "repo.name_taken" || code === "repo.invalid_name") {
+        if (code === "repo.name_taken") {
+          setNameError(DUPLICATE_NAME_ERROR);
+        } else if (code === "repo.invalid_name") {
           setNameError(res.error.message);
         } else if (code === "auth.email_unverified") {
           setFormError("Verify your email before creating a repository.");
@@ -166,6 +281,7 @@ export function NewPage() @{
             id="repo-description"
             name="description"
             rows={3}
+            className="max-w-full break-words [overflow-wrap:anywhere]"
             value={description}
             onInput={(ev) =>
               setDescription((ev.currentTarget as HTMLTextAreaElement).value)
@@ -201,21 +317,40 @@ export function NewPage() @{
           </div>
         </fieldset>
 
-        <div className="flex flex-col gap-3 rounded-md border border-border bg-card/40 px-4 py-3">
+        <div className="flex flex-col gap-4">
           <p className="text-[14px] font-normal text-muted-foreground">
-            Templates (placeholders — full pickers in a later plan)
+            Templates (optional)
           </p>
-          <div className="grid gap-2 text-[14px] text-foreground sm:grid-cols-3">
-            <p>
-              <span className="text-muted-foreground">Stack: </span>None
-            </p>
-            <p>
-              <span className="text-muted-foreground">License: </span>None
-            </p>
-            <p>
-              <span className="text-muted-foreground">.gitignore: </span>None
-            </p>
+          <TemplateSelect
+            id="repo-stack"
+            label="Stack template"
+            value={stackId}
+            options={stackOptions}
+            onChange={setStackId}
+          />
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="repo-license">License</Label>
+            <select
+              id="repo-license"
+              aria-label="License"
+              className="h-11 w-full rounded-md border border-input bg-card px-3 text-[14px] font-normal text-foreground outline-none transition-colors duration-150 hover:border-foreground/25 focus-visible:ring-2 focus-visible:ring-ring"
+              value={licenseId}
+              onChange={(ev) =>
+                setLicenseId((ev.currentTarget as HTMLSelectElement).value)
+              }
+            >
+              @for (const opt of licenseOptions; key opt.id) {
+                <option value={opt.id}>{opt.label as string}</option>
+              }
+            </select>
           </div>
+          <TemplateSelect
+            id="repo-gitignore"
+            label=".gitignore"
+            value={gitignoreId}
+            options={gitignoreOptions}
+            onChange={setGitignoreId}
+          />
         </div>
 
         <Button

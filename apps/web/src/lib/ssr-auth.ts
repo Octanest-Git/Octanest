@@ -49,6 +49,14 @@ export const fetchSessionMe = createServerFn({ method: "GET" }).handler(
   },
 );
 
+/** SSR: repo.createDefaults for /new visibility + catalogs (D-02, D-08). */
+export const fetchRepoCreateDefaults = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.createDefaults();
+  },
+);
+
 /** SSR: auth.provider_config (allow_signup) with Cookie forward. */
 export const fetchProviderConfig = createServerFn({ method: "GET" }).handler(
   async () => {
