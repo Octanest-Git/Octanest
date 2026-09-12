@@ -246,6 +246,92 @@ export type RepoRefsResponse = {
   refs: RepoRefEntry[];
 };
 
+export type RepoCommitsRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  skip?: number;
+  limit?: number;
+};
+
+export type RepoCommitSummary = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+};
+
+export type RepoCommitsResponse = {
+  ref: string;
+  commits: RepoCommitSummary[];
+  skip: number;
+  limit: number;
+};
+
+export type RepoCommitRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+};
+
+export type RepoDiffFile = {
+  path: string;
+  status: string;
+  patch: string;
+};
+
+export type RepoCommitResponse = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  body: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+  parents: string[];
+  files: RepoDiffFile[];
+  truncated: boolean;
+};
+
+export type RepoCompareRequest = {
+  owner: string;
+  name: string;
+  base: string;
+  head: string;
+};
+
+export type RepoCompareResponse = {
+  base: string;
+  head: string;
+  empty: boolean;
+  truncated: boolean;
+  files: RepoDiffFile[];
+};
+
+export type RepoBlameRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path: string;
+};
+
+export type RepoBlameLine = {
+  sha: string;
+  author_name: string;
+  authored_at: string;
+  line_number: number;
+  content: string;
+};
+
+export type RepoBlameResponse = {
+  path: string;
+  ref: string;
+  lines: RepoBlameLine[];
+  truncated: boolean;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -320,6 +406,13 @@ export function createClient(opts: CreateClientOptions) {
       tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
       blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
       refs: (input: RepoGetRequest) => rpcCall<RepoRefsResponse>(opts, "repo.refs", input),
+      commits: (input: RepoCommitsRequest) =>
+        rpcCall<RepoCommitsResponse>(opts, "repo.commits", input),
+      commit: (input: RepoCommitRequest) =>
+        rpcCall<RepoCommitResponse>(opts, "repo.commit", input),
+      compare: (input: RepoCompareRequest) =>
+        rpcCall<RepoCompareResponse>(opts, "repo.compare", input),
+      blame: (input: RepoBlameRequest) => rpcCall<RepoBlameResponse>(opts, "repo.blame", input),
     },
     admin: {
       auth: {
@@ -480,6 +573,154 @@ export function repoCreateMutationOptions(client: OctanestClient) {
   };
 }
 
+export function repoGetQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "get", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoTreeQueryOptions(
+  client: OctanestClient,
+  input: RepoTreeRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "tree",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.tree(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoBlobQueryOptions(
+  client: OctanestClient,
+  input: RepoBlobRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "blob",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.blob(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoRefsQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "refs", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.refs(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCommitsQueryOptions(
+  client: OctanestClient,
+  input: RepoCommitsRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "commits",
+      input.owner,
+      input.name,
+      input.ref,
+      input.skip ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.commits(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCommitQueryOptions(
+  client: OctanestClient,
+  input: RepoCommitRequest,
+) {
+  return {
+    queryKey: ["repo", "commit", input.owner, input.name, input.sha] as const,
+    queryFn: async () => {
+      const res = await client.repo.commit(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCompareQueryOptions(
+  client: OctanestClient,
+  input: RepoCompareRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "compare",
+      input.owner,
+      input.name,
+      input.base,
+      input.head,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.compare(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoBlameQueryOptions(
+  client: OctanestClient,
+  input: RepoBlameRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "blame",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.blame(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function adminAuthGetSettingsQueryOptions(client: OctanestClient) {
   return {
     queryKey: ["admin", "auth", "getSettings"] as const,
@@ -510,6 +751,14 @@ export const queryOptions = {
   authProviderConfig: authProviderConfigQueryOptions,
   userGetProfile: userGetProfileQueryOptions,
   repoListMine: repoListMineQueryOptions,
+  repoGet: repoGetQueryOptions,
+  repoTree: repoTreeQueryOptions,
+  repoBlob: repoBlobQueryOptions,
+  repoRefs: repoRefsQueryOptions,
+  repoCommits: repoCommitsQueryOptions,
+  repoCommit: repoCommitQueryOptions,
+  repoCompare: repoCompareQueryOptions,
+  repoBlame: repoBlameQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {

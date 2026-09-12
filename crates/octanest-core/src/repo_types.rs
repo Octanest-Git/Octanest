@@ -160,6 +160,124 @@ pub struct RepoRefsResponse {
     pub refs: Vec<RepoRefEntry>,
 }
 
+/// `repo.commits` (log) input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitsRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    #[serde(default)]
+    pub skip: u32,
+    #[serde(default = "default_commits_limit")]
+    pub limit: u32,
+}
+
+fn default_commits_limit() -> u32 {
+    30
+}
+
+/// One commit row for history list.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitSummary {
+    pub sha: String,
+    pub short_sha: String,
+    pub subject: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub authored_at: String,
+}
+
+/// `repo.commits` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitsResponse {
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub commits: Vec<RepoCommitSummary>,
+    pub skip: u32,
+    pub limit: u32,
+}
+
+/// `repo.commit` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitRequest {
+    pub owner: String,
+    pub name: String,
+    pub sha: String,
+}
+
+/// One file in a commit/compare diff.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoDiffFile {
+    pub path: String,
+    pub status: String,
+    pub patch: String,
+}
+
+/// `repo.commit` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitResponse {
+    pub sha: String,
+    pub short_sha: String,
+    pub subject: String,
+    pub body: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub authored_at: String,
+    pub parents: Vec<String>,
+    pub files: Vec<RepoDiffFile>,
+    pub truncated: bool,
+}
+
+/// `repo.compare` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCompareRequest {
+    pub owner: String,
+    pub name: String,
+    pub base: String,
+    pub head: String,
+}
+
+/// `repo.compare` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCompareResponse {
+    pub base: String,
+    pub head: String,
+    pub empty: bool,
+    pub truncated: bool,
+    pub files: Vec<RepoDiffFile>,
+}
+
+/// `repo.blame` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBlameRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub path: String,
+}
+
+/// One blame line.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBlameLine {
+    pub sha: String,
+    pub author_name: String,
+    pub authored_at: String,
+    pub line_number: u32,
+    pub content: String,
+}
+
+/// `repo.blame` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBlameResponse {
+    pub path: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub lines: Vec<RepoBlameLine>,
+    pub truncated: bool,
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {

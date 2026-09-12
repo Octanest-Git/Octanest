@@ -6,8 +6,8 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::backend::{
-    BlameFile, CommitDetail, CommitSummary, DiffResult, GitBackend, GitError, GitRef, TreeEntry,
-    TreeEntryKind,
+    BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult, GitBackend, GitError,
+    GitRef, TreeEntry, TreeEntryKind, BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -53,10 +53,19 @@ async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
     )))
 }
 
-/// Reject NUL / `..` / absolute-looking refs (T-07-15).
+/// Reject NUL / `..` / absolute-looking refs (T-07-15 / T-07-17).
 fn validate_treeish(treeish: &str) -> Result<&str, GitError> {
     let t = treeish.trim();
     if t.is_empty() || t.contains('\0') || t.contains("..") {
+        return Err(GitError::InvalidArg(format!("invalid treeish: {treeish}")));
+    }
+    // Allow branch/tag/sha characters; reject shell metacharacters.
+    if t.chars().any(|c| {
+        matches!(
+            c,
+            ';' | '|' | '&' | '`' | '$' | '(' | ')' | '<' | '>' | '\n' | '\r' | ' '
+        )
+    }) {
         return Err(GitError::InvalidArg(format!("invalid treeish: {treeish}")));
     }
     Ok(t)
@@ -101,6 +110,217 @@ fn parse_ls_tree_line(line: &str) -> Option<TreeEntry> {
         oid,
         name: name.to_string(),
     })
+}
+
+fn repo_str(repo: &Path) -> Result<&str, GitError> {
+    repo.to_str()
+        .ok_or_else(|| GitError::InvalidArg(format!("non-utf8 repo path: {}", repo.display())))
+}
+
+fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
+    let parts: Vec<&str> = record.split('\0').collect();
+    if parts.len() < 6 {
+        return None;
+    }
+    let sha = parts[0].trim();
+    if sha.is_empty() {
+        return None;
+    }
+    Some(CommitSummary {
+        sha: sha.to_string(),
+        short_sha: parts[1].trim().to_string(),
+        subject: parts[2].to_string(),
+        author_name: parts[3].to_string(),
+        author_email: parts[4].to_string(),
+        authored_at: parts[5].trim().to_string(),
+    })
+}
+
+fn status_from_diff_header(header: &str) -> String {
+    if header.contains("new file mode") {
+        "added".into()
+    } else if header.contains("deleted file mode") {
+        "deleted".into()
+    } else if header.contains("rename from") || header.contains("similarity index") {
+        "renamed".into()
+    } else if header.contains("copy from") {
+        "copied".into()
+    } else {
+        "modified".into()
+    }
+}
+
+fn path_from_diff_git_line(line: &str) -> String {
+    // diff --git a/path b/path  (paths may include spaces when quoted)
+    let rest = line.strip_prefix("diff --git ").unwrap_or(line);
+    let mut parts = rest.split_whitespace();
+    let _a = parts.next().unwrap_or("");
+    let b = parts.next().unwrap_or("");
+    let path = b.strip_prefix("b/").unwrap_or(b);
+    if path.starts_with('"') {
+        path.trim_matches('"').to_string()
+    } else {
+        path.to_string()
+    }
+}
+
+/// Split unified `git show` / `git diff` patch output into per-file hunks.
+fn parse_unified_diff_files(patch: &str, soft_max: usize) -> (Vec<DiffFile>, bool) {
+    let mut files = Vec::new();
+    let mut truncated = false;
+    let mut total = 0usize;
+    let mut current_header = String::new();
+    let mut current_body = String::new();
+    let mut current_path = String::new();
+
+    let flush = |header: &str,
+                 body: &str,
+                 path: &str,
+                 files: &mut Vec<DiffFile>,
+                 total: &mut usize,
+                 truncated: &mut bool| {
+        if path.is_empty() && header.is_empty() && body.is_empty() {
+            return;
+        }
+        let chunk = if header.is_empty() {
+            body.to_string()
+        } else if body.is_empty() {
+            header.to_string()
+        } else {
+            format!("{header}{body}")
+        };
+        let take = if *total >= soft_max {
+            *truncated = true;
+            String::new()
+        } else if *total + chunk.len() > soft_max {
+            *truncated = true;
+            let remain = soft_max - *total;
+            chunk.chars().take(remain).collect()
+        } else {
+            chunk
+        };
+        *total += take.len();
+        if path.is_empty() && take.is_empty() {
+            return;
+        }
+        files.push(DiffFile {
+            path: if path.is_empty() {
+                "(unknown)".into()
+            } else {
+                path.to_string()
+            },
+            status: status_from_diff_header(header),
+            patch: take,
+        });
+    };
+
+    for line in patch.lines() {
+        if line.starts_with("diff --git ") {
+            flush(
+                &current_header,
+                &current_body,
+                &current_path,
+                &mut files,
+                &mut total,
+                &mut truncated,
+            );
+            current_path = path_from_diff_git_line(line);
+            current_header = format!("{line}\n");
+            current_body.clear();
+        } else if current_path.is_empty() && current_header.is_empty() {
+            // Skip commit metadata preamble before first diff.
+            continue;
+        } else if line.starts_with("@@")
+            || line.starts_with('+')
+            || line.starts_with('-')
+            || line.starts_with(' ')
+            || line == "\\ No newline at end of file"
+        {
+            current_body.push_str(line);
+            current_body.push('\n');
+        } else {
+            current_header.push_str(line);
+            current_header.push('\n');
+        }
+        if truncated {
+            break;
+        }
+    }
+    flush(
+        &current_header,
+        &current_body,
+        &current_path,
+        &mut files,
+        &mut total,
+        &mut truncated,
+    );
+    (files, truncated)
+}
+
+fn parse_blame_porcelain(text: &str, soft_max_lines: usize) -> (Vec<BlameLine>, bool) {
+    let mut lines = Vec::new();
+    let mut truncated = false;
+    let mut sha = String::new();
+    let mut author = String::new();
+    let mut authored_at = String::new();
+    let mut line_number = 0u32;
+
+    for raw in text.lines() {
+        if raw.starts_with('\t') {
+            if lines.len() >= soft_max_lines {
+                truncated = true;
+                break;
+            }
+            lines.push(BlameLine {
+                sha: sha.clone(),
+                author_name: author.clone(),
+                authored_at: authored_at.clone(),
+                line_number,
+                content: raw[1..].to_string(),
+            });
+            continue;
+        }
+        if raw.is_empty() {
+            continue;
+        }
+        let mut parts = raw.split_whitespace();
+        let first = parts.next().unwrap_or("");
+        if first.len() >= 40 && first.chars().all(|c| c.is_ascii_hexdigit()) {
+            sha = first.to_string();
+            let _orig = parts.next();
+            if let Some(final_no) = parts.next() {
+                line_number = final_no.parse().unwrap_or(0);
+            }
+        } else if first == "author" {
+            author = raw.strip_prefix("author ").unwrap_or("").to_string();
+        } else if first == "author-time" {
+            let secs: i64 = parts.next().and_then(|s| s.parse().ok()).unwrap_or(0);
+            authored_at = chrono_like_iso(secs);
+        }
+    }
+    (lines, truncated)
+}
+
+fn chrono_like_iso(secs: i64) -> String {
+    if secs < 0 {
+        return String::new();
+    }
+    // Howard Hinnant civil-from-days (proleptic Gregorian), UTC.
+    let z = (secs / 86_400) + 719_468;
+    let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+    let doe = (z - era * 146_097) as u64;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let y = (yoe as i64) + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = if m <= 2 { y + 1 } else { y };
+    let tod = (secs % 86_400) as u32;
+    let hour = tod / 3600;
+    let min = (tod % 3600) / 60;
+    let sec = tod % 60;
+    format!("{y:04}-{m:02}-{d:02}T{hour:02}:{min:02}:{sec:02}Z")
 }
 
 #[async_trait::async_trait]
@@ -350,58 +570,278 @@ impl GitBackend for CliGitBackend {
         Ok(refs)
     }
 
-    // RED stubs — return empty so unit tests fail on assertions until GREEN.
+    // GREEN: real git log / show / diff / blame via argv.
     async fn log(
         &self,
-        _repo: &Path,
-        _refname: &str,
-        _skip: u32,
-        _limit: u32,
+        repo: &Path,
+        refname: &str,
+        skip: u32,
+        limit: u32,
     ) -> Result<Vec<CommitSummary>, GitError> {
-        Ok(Vec::new())
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let limit = limit.clamp(1, 100);
+        let skip_s = skip.to_string();
+        let limit_s = limit.to_string();
+
+        // Empty / unborn → empty page.
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let stdout = run_git_stdout(&[
+            "-C",
+            repo_s,
+            "log",
+            &format!("--skip={skip_s}"),
+            &format!("--max-count={limit_s}"),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI",
+            refname,
+        ])
+        .await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for record in text.split('\n') {
+            let record = record.trim_end_matches('\r');
+            if record.is_empty() {
+                continue;
+            }
+            if let Some(summary) = parse_commit_summary_record(record) {
+                out.push(summary);
+            }
+        }
+        Ok(out)
     }
 
-    async fn show_commit(&self, _repo: &Path, sha: &str) -> Result<CommitDetail, GitError> {
+    async fn show_commit(&self, repo: &Path, sha: &str) -> Result<CommitDetail, GitError> {
+        let sha = validate_treeish(sha)?;
+        let repo_s = repo_str(repo)?;
+
+        let meta = run_git_stdout(&[
+            "-C",
+            repo_s,
+            "show",
+            "-s",
+            "--format=%H%x00%h%x00%s%x00%b%x00%an%x00%ae%x00%aI%x00%P",
+            sha,
+        ])
+        .await
+        .map_err(|e| {
+            let msg = e.to_string();
+            if msg.contains("unknown revision")
+                || msg.contains("bad object")
+                || msg.contains("invalid object")
+                || msg.contains("Not a valid object")
+            {
+                GitError::NotFound(format!("commit {sha}"))
+            } else {
+                e
+            }
+        })?;
+        let meta_text = String::from_utf8_lossy(&meta);
+        let meta_line = meta_text.trim();
+        let parts: Vec<&str> = meta_line.split('\0').collect();
+        if parts.len() < 8 {
+            return Err(GitError::Process(format!(
+                "unexpected git show format for {sha}"
+            )));
+        }
+        let full_sha = parts[0].trim().to_string();
+        let short_sha = parts[1].trim().to_string();
+        let subject = parts[2].to_string();
+        let body = parts[3].trim_end().to_string();
+        let author_name = parts[4].to_string();
+        let author_email = parts[5].to_string();
+        let authored_at = parts[6].trim().to_string();
+        let parents: Vec<String> = parts[7]
+            .split_whitespace()
+            .map(str::to_string)
+            .filter(|s| !s.is_empty())
+            .collect();
+
+        let patch_bytes = run_git_stdout(&[
+            "-C",
+            repo_s,
+            "show",
+            "--format=",
+            "--patch",
+            "--find-renames",
+            &full_sha,
+        ])
+        .await?;
+        let patch_text = String::from_utf8_lossy(&patch_bytes);
+        let (files, truncated) = parse_unified_diff_files(&patch_text, DIFF_SOFT_MAX_BYTES);
+
         Ok(CommitDetail {
-            sha: sha.to_string(),
-            short_sha: sha.chars().take(7).collect(),
-            subject: String::new(),
-            body: String::new(),
-            author_name: String::new(),
-            author_email: String::new(),
-            authored_at: String::new(),
-            parents: Vec::new(),
-            files: Vec::new(),
-            truncated: false,
+            sha: full_sha,
+            short_sha,
+            subject,
+            body,
+            author_name,
+            author_email,
+            authored_at,
+            parents,
+            files,
+            truncated,
         })
     }
 
     async fn diff(
         &self,
-        _repo: &Path,
+        repo: &Path,
         base: &str,
         head: &str,
     ) -> Result<DiffResult, GitError> {
+        let base = validate_treeish(base)?;
+        let head = validate_treeish(head)?;
+        let repo_s = repo_str(repo)?;
+
+        // Resolve both ends; identical trees → empty (not 500).
+        for tip in [base, head] {
+            let rev = Command::new("git")
+                .args(["-C", repo_s, "rev-parse", "--verify", &format!("{tip}^{{commit}}")])
+                .stdin(Stdio::null())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .output()
+                .await
+                .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+            if !rev.status.success() {
+                return Err(GitError::NotFound(format!("ref {tip}")));
+            }
+        }
+
+        let range = format!("{base}...{head}");
+        let output = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "diff",
+                "--find-renames",
+                "--patch",
+                &range,
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // Empty / nothing to compare still often exits 0 with empty stdout.
+            if output.stdout.is_empty()
+                && (stderr.contains("unknown revision")
+                    || stderr.contains("bad revision")
+                    || stderr.contains("ambiguous"))
+            {
+                return Err(GitError::NotFound(format!("diff {range}")));
+            }
+            if output.stdout.is_empty() {
+                return Ok(DiffResult {
+                    base: base.to_string(),
+                    head: head.to_string(),
+                    files: Vec::new(),
+                    empty: true,
+                    truncated: false,
+                });
+            }
+            return Err(GitError::Process(format!(
+                "git diff failed: {}",
+                stderr.trim()
+            )));
+        }
+
+        if output.stdout.is_empty() {
+            return Ok(DiffResult {
+                base: base.to_string(),
+                head: head.to_string(),
+                files: Vec::new(),
+                empty: true,
+                truncated: false,
+            });
+        }
+
+        let patch_text = String::from_utf8_lossy(&output.stdout);
+        let (files, truncated) = parse_unified_diff_files(&patch_text, DIFF_SOFT_MAX_BYTES);
+        let empty = files.is_empty();
         Ok(DiffResult {
             base: base.to_string(),
             head: head.to_string(),
-            files: Vec::new(),
-            empty: false,
-            truncated: false,
+            files,
+            empty,
+            truncated,
         })
     }
 
     async fn blame(
         &self,
-        _repo: &Path,
+        repo: &Path,
         refname: &str,
         path: &str,
     ) -> Result<BlameFile, GitError> {
+        let refname = validate_treeish(refname)?;
+        let path = validate_repo_rel_path(path)?;
+        if path.is_empty() {
+            return Err(GitError::InvalidArg("blame path required".into()));
+        }
+        let repo_s = repo_str(repo)?;
+
+        let output = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "blame",
+                "--line-porcelain",
+                refname,
+                "--",
+                &path,
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            if stderr.contains("no such path")
+                || stderr.contains("cannot find")
+                || stderr.contains("Not a valid object")
+                || stderr.contains("no such ref")
+                || stderr.contains("fatal:")
+            {
+                return Err(GitError::NotFound(format!("blame {refname}:{path}")));
+            }
+            return Err(GitError::Process(format!(
+                "git blame failed: {}",
+                stderr.trim()
+            )));
+        }
+
+        let text = String::from_utf8_lossy(&output.stdout);
+        let (lines, truncated) = parse_blame_porcelain(&text, BLAME_SOFT_MAX_LINES);
         Ok(BlameFile {
-            path: path.to_string(),
+            path,
             ref_name: refname.to_string(),
-            lines: Vec::new(),
-            truncated: false,
+            lines,
+            truncated,
         })
     }
 }

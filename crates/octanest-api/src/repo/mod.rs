@@ -9,10 +9,16 @@ pub use acl::{resolve_repo_for_read, AccessibleRepo};
 /// 1 MiB matches GitHub-like soft preview limits.
 pub const BLOB_SOFT_MAX_BYTES: usize = 1_048_576;
 
+/// Soft cap for unified patch bytes in commit/compare (aligned with git backend).
+pub const DIFF_SOFT_MAX_BYTES: usize = octanest_git::DIFF_SOFT_MAX_BYTES;
+
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoBlobRequest, RepoBlobResponse,
-    RepoCreateDefaults, RepoGetRequest, RepoListMineResponse, RepoPublic, RepoRefEntry,
-    RepoRefsResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse, RepoVisibility,
+    validate_repo_name, AppError, CreateRepoRequest, RepoBlameLine, RepoBlameRequest,
+    RepoBlameResponse, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary, RepoCommitsRequest,
+    RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse, RepoCreateDefaults,
+    RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest, RepoListMineResponse,
+    RepoPublic, RepoRefEntry, RepoRefsResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
+    RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -282,6 +288,153 @@ pub async fn refs(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoRefsResp
                 oid: r.oid,
             })
             .collect(),
+    })
+}
+
+/// `repo.commits` — paged `git log` behind ACL.
+pub async fn commits(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoCommitsResponse, AppError> {
+    let req: RepoCommitsRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.commits input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let limit = if req.limit == 0 { 30 } else { req.limit.min(100) };
+    let commits = ctx
+        .git
+        .log(&path, &ref_name, req.skip, limit)
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoCommitsResponse {
+        ref_name,
+        commits: commits
+            .into_iter()
+            .map(|c| RepoCommitSummary {
+                sha: c.sha,
+                short_sha: c.short_sha,
+                subject: c.subject,
+                author_name: c.author_name,
+                author_email: c.author_email,
+                authored_at: c.authored_at,
+            })
+            .collect(),
+        skip: req.skip,
+        limit,
+    })
+}
+
+/// `repo.commit` — commit detail + unified patches.
+pub async fn commit(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoCommitResponse, AppError> {
+    let req: RepoCommitRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.commit input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let detail = ctx
+        .git
+        .show_commit(&path, req.sha.trim())
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoCommitResponse {
+        sha: detail.sha,
+        short_sha: detail.short_sha,
+        subject: detail.subject,
+        body: detail.body,
+        author_name: detail.author_name,
+        author_email: detail.author_email,
+        authored_at: detail.authored_at,
+        parents: detail.parents,
+        files: detail
+            .files
+            .into_iter()
+            .map(|f| RepoDiffFile {
+                path: f.path,
+                status: f.status,
+                patch: f.patch,
+            })
+            .collect(),
+        truncated: detail.truncated,
+    })
+}
+
+/// `repo.compare` — `base...head` unified diff (empty → empty result).
+pub async fn compare(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoCompareResponse, AppError> {
+    let req: RepoCompareRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.compare input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let result = ctx
+        .git
+        .diff(&path, req.base.trim(), req.head.trim())
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoCompareResponse {
+        base: result.base,
+        head: result.head,
+        empty: result.empty,
+        truncated: result.truncated,
+        files: result
+            .files
+            .into_iter()
+            .map(|f| RepoDiffFile {
+                path: f.path,
+                status: f.status,
+                patch: f.patch,
+            })
+            .collect(),
+    })
+}
+
+/// `repo.blame` — per-line blame for a text path.
+pub async fn blame(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoBlameResponse, AppError> {
+    let req: RepoBlameRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.blame input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let file_path = req.path.trim_start_matches('/').to_string();
+    let blame = ctx
+        .git
+        .blame(&path, &ref_name, &file_path)
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoBlameResponse {
+        path: blame.path,
+        ref_name: blame.ref_name,
+        lines: blame
+            .lines
+            .into_iter()
+            .map(|l| RepoBlameLine {
+                sha: l.sha,
+                author_name: l.author_name,
+                authored_at: l.authored_at,
+                line_number: l.line_number,
+                content: l.content,
+            })
+            .collect(),
+        truncated: blame.truncated,
     })
 }
 

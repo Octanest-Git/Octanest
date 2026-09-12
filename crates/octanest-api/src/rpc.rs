@@ -237,6 +237,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(refs) => RpcResponse::ok(refs),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.commits" => match repo::commits(ctx, req.input).await {
+            Ok(commits) => RpcResponse::ok(commits),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.commit" => match repo::commit(ctx, req.input).await {
+            Ok(commit) => RpcResponse::ok(commit),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.compare" => match repo::compare(ctx, req.input).await {
+            Ok(compare) => RpcResponse::ok(compare),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.blame" => match repo::blame(ctx, req.input).await {
+            Ok(blame) => RpcResponse::ok(blame),
+            Err(e) => RpcResponse::err(e),
+        },
         other => RpcResponse::err(AppError::new(
             "rpc.unknown_procedure",
             format!("unknown procedure: {other}"),
