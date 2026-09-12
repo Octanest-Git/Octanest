@@ -4,11 +4,17 @@ import { Badge } from "@/components/ui/badge";
 
 type RepoChromeProps = {
   repo: RepoPublic;
-  active: "code" | "commits" | "branches" | "tags";
+  active: "code" | "commits" | "branches" | "tags" | "settings";
+  /** When true, show Settings nav (owner surfaces). */
+  showSettings?: boolean;
 };
 
 /** Title row + Code/Commits/Branches/Tags link-row (Issues/PRs omitted). */
-export function RepoChrome({ repo, active }: RepoChromeProps) @{
+export function RepoChrome({
+  repo,
+  active,
+  showSettings = false,
+}: RepoChromeProps) @{
   const owner = repo.owner_username;
   const name = repo.name;
   const base = `/${owner}/${name}`;
@@ -16,6 +22,7 @@ export function RepoChrome({ repo, active }: RepoChromeProps) @{
   const commitsHref = `${base}/commits/${encodeURIComponent(repo.default_branch)}`;
   const branchesHref = `${base}/branches`;
   const tagsHref = `${base}/tags`;
+  const settingsHref = `${base}/settings`;
 
   function navClass(isActive: boolean): string {
     return isActive
@@ -77,6 +84,15 @@ export function RepoChrome({ repo, active }: RepoChromeProps) @{
       >
         Tags
       </a>
+      @if (showSettings) {
+        <a
+          href={settingsHref as string}
+          className={navClass(active === "settings") as string}
+          aria-current={active === "settings" ? "page" : undefined}
+        >
+          Settings
+        </a>
+      }
     </nav>
   </div>
 }

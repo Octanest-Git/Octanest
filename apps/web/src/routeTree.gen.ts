@@ -25,6 +25,7 @@ import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
+import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
 import { Route as OwnerRepoBlameSplatRouteImport } from './routes/$owner.$repo.blame.$'
 import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.blob.$'
@@ -113,6 +114,11 @@ const OwnerRepoBranchesRoute = OwnerRepoBranchesRouteImport.update({
   path: '/branches',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoSettingsRoute = OwnerRepoSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoTagsRoute = OwnerRepoTagsRouteImport.update({
   id: '/tags',
   path: '/tags',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -188,6 +195,7 @@ export interface FileRoutesByTo {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -214,6 +222,7 @@ export interface FileRoutesById {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/$repo'
     | '/$owner/$repo/blame/$'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
@@ -428,6 +440,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoBranchesRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/settings': {
+      id: '/$owner/$repo/settings'
+      path: '/settings'
+      fullPath: '/$owner/$repo/settings'
+      preLoaderRoute: typeof OwnerRepoSettingsRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/tags': {
       id: '/$owner/$repo/tags'
       path: '/tags'
@@ -494,6 +513,7 @@ const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
 interface OwnerRepoRouteChildren {
   OwnerRepoBranchesRoute: typeof OwnerRepoBranchesRoute
+  OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoTagsRoute: typeof OwnerRepoTagsRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
   OwnerRepoBlameSplatRoute: typeof OwnerRepoBlameSplatRoute
@@ -506,6 +526,7 @@ interface OwnerRepoRouteChildren {
 
 const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoBranchesRoute: OwnerRepoBranchesRoute,
+  OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoTagsRoute: OwnerRepoTagsRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
   OwnerRepoBlameSplatRoute: OwnerRepoBlameSplatRoute,
