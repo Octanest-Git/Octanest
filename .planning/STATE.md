@@ -4,14 +4,14 @@ milestone: v1.0
 current_phase: 7
 current_phase_name: Git Repos & Browse
 status: planning
-stopped_at: Phase 7 UI-SPEC revised (copywriting)
-last_updated: "2026-09-12T17:35:00.000Z"
+stopped_at: Phase 7 UI-SPEC approved
+last_updated: "2026-09-12T15:45:17.460Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 7 UI-SPEC revised — verb+noun CTAs (Save default branch; Download file; Copy HTTPS URL)
-state_head: 3394bbb
+state_head: 2f32a4b644df15e29cf57806989ed76f826305b6
 progress:
   total_phases: 22
-  completed_phases: 6
+  completed_phases: 0
   total_plans: 41
   completed_plans: 41
 milestone_name: milestone
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 7 — Git Repos & Browse
 Plan: Not started
-Status: UI-SPEC revised after checker Dimension 1 — ready for re-check
-Last activity: 2026-09-12 — 07-UI-SPEC.md copywriting revision (Save default branch + large-file / clone labels)
+Status: UI-SPEC approved (7/7 dimensions + UI Considerations probe)
+Last activity: 2026-09-12 — 07-UI-SPEC.md approved; GitHub parity checklist + probe coverage written
 
-Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC draft — Nyquist compliant for closed phases
+Progress: Phases 1–6 complete (plans through 06-09); Phase 7 CONTEXT + UI-SPEC approved — ready to plan
 
 See also: `phases/07-git-repos-browse/07-CONTEXT.md` · `phases/07-git-repos-browse/07-UI-SPEC.md` · `phases/06-self-host-admin-bootstrap/deferred-items.md` § Post-close addendum (2026-09-12).
 
@@ -190,6 +190,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T17:35:00.000Z
-Stopped at: Phase 7 UI-SPEC revised (copywriting)
-Resume file: .planning/phases/07-git-repos-browse/07-UI-SPEC.md
+Last session: 2026-09-12T15:45:17.418Z
+Stopped at: Phase 7 UI-SPEC approved
+Resume file: /home/jesse/wsl-projects/personal/typescript/octanest/.planning/phases/07-git-repos-browse/07-UI-SPEC.md
