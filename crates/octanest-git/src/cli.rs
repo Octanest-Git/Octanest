@@ -54,10 +54,10 @@ async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
     )))
 }
 
-/// Reject NUL / `..` / absolute-looking refs (T-07-15 / T-07-17).
+/// Reject NUL / `..` / leading `-` / absolute-looking refs (T-07-15 / T-07-17 / CR-02).
 fn validate_treeish(treeish: &str) -> Result<&str, GitError> {
     let t = treeish.trim();
-    if t.is_empty() || t.contains('\0') || t.contains("..") {
+    if t.is_empty() || t.contains('\0') || t.contains("..") || t.starts_with('-') {
         return Err(GitError::InvalidArg(format!("invalid treeish: {treeish}")));
     }
     // Allow branch/tag/sha characters; reject shell metacharacters.
@@ -855,7 +855,8 @@ impl GitBackend for CliGitBackend {
         let name = validate_treeish(name)?;
         let start = validate_treeish(start)?;
         let repo_s = repo_str(repo)?;
-        run_git(&["-C", repo_s, "branch", name, start]).await?;
+        // End-of-options so option-like names cannot become switches (CR-02).
+        run_git(&["-C", repo_s, "branch", "--", name, start]).await?;
         Ok(())
     }
 

@@ -462,6 +462,18 @@ async fn resolve_repo_for_owner_mutate(
     Ok(accessible)
 }
 
+/// Reject reserved git option tokens used as branch names (CR-02 / D-28).
+fn reject_option_like_branch(name: &str) -> Result<(), AppError> {
+    let t = name.trim();
+    if t.starts_with('-') {
+        return Err(AppError::new(
+            "repo.invalid_ref",
+            format!("invalid branch name: {name}"),
+        ));
+    }
+    Ok(())
+}
+
 /// `repo.branchCreate` — owner creates a branch from `start` (GIT-06 / D-27).
 pub async fn branch_create(
     ctx: &RpcCtx,
@@ -478,12 +490,14 @@ pub async fn branch_create(
     if branch.is_empty() {
         return Err(AppError::new("repo.invalid_ref", "branch name required"));
     }
+    reject_option_like_branch(branch)?;
     let start = req
         .start
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .unwrap_or(accessible.row.default_branch.as_str());
+    reject_option_like_branch(start)?;
     let path = bare_repo_path(
         &ctx.repos_dir,
         &accessible.owner_username,
