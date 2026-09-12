@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 22 of 22 (next: 07-21 gap closure)
-Status: Ready to execute
-Last activity: 2026-09-12 — Completed 07-20 CR-01 / WR-02 gap closure
+Plan: 22 of 22 (all plans have SUMMARY — last completed: 07-21)
+Status: Phase plans complete; ready for verify / milestone closeout
+Last activity: 2026-09-12 — Completed 07-21 WR-01 / WR-03 gap closure
 
-Progress: Phase 7 plans 00–20 complete (incl. CR-01 archive argv); gap-closure remaining: 07-21
+Progress: Phase 7 plans 00–21 complete (create compensate + hierarchical parseRefAndPath)
 
 See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
 
