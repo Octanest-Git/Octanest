@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use octanest_core::{
     AppError, AuthSettingsPublic, EmailProviderKind, FactoryResetRequest, FactoryResetResponse,
-    ProviderMode, UpdateAuthSettingsRequest,
+    ProviderMode, RepoVisibility, UpdateAuthSettingsRequest,
 };
 use octanest_db::AuthSettingsRow;
 
@@ -132,6 +132,8 @@ pub fn settings_to_public(row: &AuthSettingsRow) -> Result<AuthSettingsPublic, A
         workos_api_key_configured: env_nonempty("WORKOS_API_KEY"),
         oidc_client_secret_configured: env_nonempty("OCTANEST_OIDC_CLIENT_SECRET"),
         allow_signup: row.allow_signup,
+        default_visibility: RepoVisibility::parse(&row.default_visibility)
+            .unwrap_or(RepoVisibility::Public),
     })
 }
 
@@ -153,7 +155,7 @@ pub async fn update_settings(
         )
     })?;
 
-    // Persist allow_signup from admin update request (06-01 DTOs).
+    // Persist allow_signup + default_visibility from admin update request (06-01 / D-08).
     let row = ctx
         .db
         .update_auth_settings(
@@ -164,6 +166,7 @@ pub async fn update_settings(
             req.oidc_client_id.as_deref(),
             req.workos_client_id.as_deref(),
             req.allow_signup,
+            req.default_visibility.as_str(),
         )
         .await
         .map_err(db_err)?;

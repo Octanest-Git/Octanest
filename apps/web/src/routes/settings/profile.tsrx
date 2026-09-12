@@ -35,11 +35,13 @@ function ProfilePage() {
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [defaultBranch, setDefaultBranch] = useState("main");
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(undefined);
   const [avatarStatus, setAvatarStatus] = useState("");
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
+  const [branchPending, setBranchPending] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +60,7 @@ function ProfilePage() {
         setDisplayName(user.display_name ?? "");
         setUsername(user.username ?? "");
         setBio(user.bio ?? "");
+        setDefaultBranch(user.default_branch?.trim() || "main");
         setAvatarUrl(user.avatar_url);
         setPhase({ kind: "ready", user });
       } catch {
@@ -89,6 +92,7 @@ function ProfilePage() {
       setDisplayName(res.data.display_name ?? "");
       setUsername(res.data.username ?? "");
       setBio(res.data.bio ?? "");
+      setDefaultBranch(res.data.default_branch?.trim() || "main");
       setAvatarUrl(res.data.avatar_url);
       setAuthMeCache(queryClient, res.data);
       setSuccess("Profile saved.");
@@ -96,6 +100,33 @@ function ProfilePage() {
     } catch {
       setFormError(NETWORK_ERROR);
       setPending(false);
+    }
+  }
+
+  async function saveDefaultBranch() {
+    setFormError("");
+    setSuccess("");
+    setBranchPending(true);
+    try {
+      const res = await apiClient.user.updateProfile({
+        display_name: displayName.trim(),
+        username: username.trim(),
+        bio: bio.slice(0, BIO_MAX),
+        default_branch: defaultBranch.trim() || "main",
+      });
+      if (!res.ok) {
+        setFormError(res.error.message || "Could not save default branch. Try again.");
+        setBranchPending(false);
+        return;
+      }
+      setPhase({ kind: "ready", user: res.data });
+      setDefaultBranch(res.data.default_branch?.trim() || "main");
+      setAuthMeCache(queryClient, res.data);
+      setSuccess("Default branch saved.");
+      setBranchPending(false);
+    } catch {
+      setFormError(NETWORK_ERROR);
+      setBranchPending(false);
     }
   }
 
@@ -277,6 +308,34 @@ function ProfilePage() {
             className="w-full sm:w-auto"
           >
             {(pending ? "Working…" : "Save profile") as string}
+          </Button>
+        </div>
+
+        <hr className="border-border" />
+
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="default-branch">Default branch name</Label>
+            <Input
+              id="default-branch"
+              value={defaultBranch}
+              onInput={(e) =>
+                setDefaultBranch((e.currentTarget as HTMLInputElement).value)
+              }
+              autoComplete="off"
+            />
+            <p className="text-[14px] text-muted-foreground">
+              Applies to new repositories you create. Existing repos keep their
+              current default branch.
+            </p>
+          </div>
+          <Button
+            type="button"
+            disabled={branchPending}
+            onClick={() => void saveDefaultBranch()}
+            className="w-full sm:w-auto"
+          >
+            {(branchPending ? "Working…" : "Save default branch") as string}
           </Button>
         </div>
 

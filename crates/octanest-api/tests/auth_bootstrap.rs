@@ -220,6 +220,7 @@ async fn bootstrap_allow_signup_false_blocks_signup() {
         open.oidc_client_id.as_deref(),
         open.workos_client_id.as_deref(),
         true,
+        &open.default_visibility,
     )
     .await
     .expect("pre-open signup");

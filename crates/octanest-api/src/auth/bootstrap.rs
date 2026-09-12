@@ -192,6 +192,7 @@ pub async fn bootstrap_setup(
             oidc_client_id,
             workos_client_id,
             req.allow_signup,
+            &settings.default_visibility,
         )
         .await
         .map_err(db_err)?;

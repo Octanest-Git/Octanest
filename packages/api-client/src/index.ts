@@ -46,6 +46,7 @@ export type UserPublic = {
   profile_incomplete: boolean;
   email_verified: boolean;
   must_change_credentials: boolean;
+  default_branch: string;
 };
 
 export type BootstrapStatus = {
@@ -111,10 +112,13 @@ export type ProviderConfigPublic = {
   allow_signup: boolean;
 };
 
+export type RepoVisibility = "public" | "private";
+
 export type UpdateProfileRequest = {
   display_name: string;
   username: string;
   bio: string;
+  default_branch?: string | null;
 };
 
 export type AuthSettingsPublic = {
@@ -129,6 +133,7 @@ export type AuthSettingsPublic = {
   workos_api_key_configured: boolean;
   oidc_client_secret_configured: boolean;
   allow_signup: boolean;
+  default_visibility: RepoVisibility;
 };
 
 export type UpdateAuthSettingsRequest = {
@@ -139,9 +144,8 @@ export type UpdateAuthSettingsRequest = {
   oidc_client_id?: string | null;
   workos_client_id?: string | null;
   allow_signup?: boolean;
+  default_visibility?: RepoVisibility;
 };
-
-export type RepoVisibility = "public" | "private";
 
 export type CreateRepoRequest = {
   name: string;

@@ -60,6 +60,7 @@ pub async fn maybe_seed_admin(db: &Database) -> Result<(), String> {
         settings.oidc_client_id.as_deref(),
         settings.workos_client_id.as_deref(),
         allow_signup,
+        &settings.default_visibility,
     )
     .await?;
 

@@ -52,6 +52,7 @@ pub async fn unlock_signup(db: &Database) {
             settings.oidc_client_id.as_deref(),
             settings.workos_client_id.as_deref(),
             true,
+            &settings.default_visibility,
         )
         .await
         .expect("open allow_signup for tests");

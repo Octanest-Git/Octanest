@@ -5,6 +5,7 @@ import type {
   AuthSettingsPublic,
   EmailProviderKind,
   ProviderMode,
+  RepoVisibility,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
@@ -46,6 +47,11 @@ const PROVIDER_OPTIONS: { value: ProviderMode; label: string }[] = [
   { value: "local", label: "Local" },
   { value: "workos", label: "WorkOS" },
   { value: "oidc", label: "OIDC" },
+];
+
+const VISIBILITY_OPTIONS: { value: RepoVisibility; label: string }[] = [
+  { value: "public", label: "Public" },
+  { value: "private", label: "Private" },
 ];
 
 const EMAIL_OPTIONS: { value: EmailProviderKind; label: string }[] = [
@@ -123,6 +129,8 @@ export function AdminAuthPage() @{
 
   const [providerMode, setProviderMode] = useState<ProviderMode>("local");
   const [allowSignup, setAllowSignup] = useState(false);
+  const [defaultVisibility, setDefaultVisibility] =
+    useState<RepoVisibility>("public");
   const [emailProvider, setEmailProvider] = useState<EmailProviderKind>("log");
   const [fromAddress, setFromAddress] = useState("");
   const [workosClientId, setWorkosClientId] = useState("");
@@ -142,6 +150,9 @@ export function AdminAuthPage() @{
   function applySettings(next: AuthSettingsPublic) {
     setProviderMode(next.provider_mode);
     setAllowSignup(next.allow_signup === true);
+    setDefaultVisibility(
+      next.default_visibility === "private" ? "private" : "public",
+    );
     setEmailProvider(next.email_provider);
     setFromAddress(next.from_address ?? "");
     setWorkosClientId(next.workos_client_id ?? "");
@@ -185,6 +196,7 @@ export function AdminAuthPage() @{
         oidc_client_id:
           providerMode === "oidc" ? oidcClientId.trim() || null : null,
         allow_signup: allowSignup,
+        default_visibility: defaultVisibility,
       });
       if (!res.ok) {
         setFormError(res.error.message || "Could not save auth settings.");
@@ -278,6 +290,18 @@ export function AdminAuthPage() @{
             Auth settings.
           </p>
         </div>
+
+        <ModeSelect
+          id="default-visibility"
+          label="Default repository visibility"
+          value={defaultVisibility}
+          options={VISIBILITY_OPTIONS}
+          onChange={setDefaultVisibility}
+        />
+        <p className="-mt-4 text-[14px] font-normal leading-[1.4] text-muted-foreground">
+          Used when creating a repository if the owner doesn’t pick Public or
+          Private (D-08).
+        </p>
 
         @if (providerMode === "workos") {
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">

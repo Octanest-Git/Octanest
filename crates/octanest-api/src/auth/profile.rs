@@ -111,5 +111,30 @@ pub async fn update_profile(
         .await
         .map_err(db_err)?;
 
+    let updated = if let Some(branch) = req.default_branch {
+        let branch = branch.trim().to_string();
+        if branch.is_empty() || branch.len() > 100 {
+            return Err(AppError::new(
+                "auth.invalid_default_branch",
+                "default branch name must be 1–100 characters",
+            ));
+        }
+        if !branch
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '/' || c == '.')
+        {
+            return Err(AppError::new(
+                "auth.invalid_default_branch",
+                "default branch name has invalid characters",
+            ));
+        }
+        ctx.db
+            .set_user_default_branch(&session.user_id, &branch)
+            .await
+            .map_err(db_err)?
+    } else {
+        updated
+    };
+
     Ok(user_to_public(&updated))
 }

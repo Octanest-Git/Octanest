@@ -106,13 +106,15 @@ pub async fn update(
     oidc_client_id: Option<&str>,
     workos_client_id: Option<&str>,
     allow_signup: bool,
+    default_visibility: &str,
 ) -> Result<AuthSettingsRow, String> {
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
                 "UPDATE instance_auth_settings
 SET provider_mode = $1, email_provider = $2, from_address = $3,
-    oidc_issuer = $4, oidc_client_id = $5, workos_client_id = $6, allow_signup = $7, updated_at = now()
+    oidc_issuer = $4, oidc_client_id = $5, workos_client_id = $6, allow_signup = $7,
+    default_visibility = $8, updated_at = now()
 WHERE id = 1",
             )
             .bind(provider_mode)
@@ -122,6 +124,7 @@ WHERE id = 1",
             .bind(oidc_client_id)
             .bind(workos_client_id)
             .bind(allow_signup)
+            .bind(default_visibility)
             .execute(p)
             .await
             .map_err(|e| format!("update auth settings failed: {e}"))?;
@@ -130,7 +133,8 @@ WHERE id = 1",
             sqlx::query(
                 "UPDATE instance_auth_settings
 SET provider_mode = ?, email_provider = ?, from_address = ?,
-    oidc_issuer = ?, oidc_client_id = ?, workos_client_id = ?, allow_signup = ?, updated_at = NOW()
+    oidc_issuer = ?, oidc_client_id = ?, workos_client_id = ?, allow_signup = ?,
+    default_visibility = ?, updated_at = NOW()
 WHERE id = 1",
             )
             .bind(provider_mode)
@@ -140,6 +144,7 @@ WHERE id = 1",
             .bind(oidc_client_id)
             .bind(workos_client_id)
             .bind(allow_signup)
+            .bind(default_visibility)
             .execute(p)
             .await
             .map_err(|e| format!("update auth settings failed: {e}"))?;
@@ -149,6 +154,7 @@ WHERE id = 1",
                 "UPDATE instance_auth_settings
 SET provider_mode = ?1, email_provider = ?2, from_address = ?3,
     oidc_issuer = ?4, oidc_client_id = ?5, workos_client_id = ?6, allow_signup = ?7,
+    default_visibility = ?8,
     updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
 WHERE id = 1",
             )
@@ -159,6 +165,7 @@ WHERE id = 1",
             .bind(oidc_client_id)
             .bind(workos_client_id)
             .bind(allow_signup)
+            .bind(default_visibility)
             .execute(p)
             .await
             .map_err(|e| format!("update auth settings failed: {e}"))?;

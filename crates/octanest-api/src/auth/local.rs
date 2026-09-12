@@ -28,6 +28,11 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
         profile_incomplete: is_placeholder_username(&row.username),
         email_verified: row.email_verified_at.is_some(),
         must_change_credentials: row.must_change_credentials,
+        default_branch: if row.default_branch.trim().is_empty() {
+            "main".into()
+        } else {
+            row.default_branch.clone()
+        },
     }
 }
 

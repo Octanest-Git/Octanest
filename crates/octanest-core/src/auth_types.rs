@@ -77,6 +77,13 @@ pub struct UserPublic {
     pub email_verified: bool,
     /// True when ENV-seeded admin must confirm credentials before normal use (AUTH-06).
     pub must_change_credentials: bool,
+    /// Default branch name for new repositories (D-09); defaults to `main`.
+    #[serde(default = "default_branch_main")]
+    pub default_branch: String,
+}
+
+fn default_branch_main() -> String {
+    "main".into()
 }
 
 /// Empty-instance bootstrap status (AUTH-07).
@@ -165,6 +172,9 @@ pub struct UpdateProfileRequest {
     pub display_name: String,
     pub username: String,
     pub bio: String,
+    /// When set, updates the account default branch for new repos (D-09).
+    #[serde(default)]
+    pub default_branch: Option<String>,
 }
 
 /// Instance auth settings for admin UI — secrets never returned; ENV badges only (D-09, T-04-22).
@@ -182,6 +192,13 @@ pub struct AuthSettingsPublic {
     pub workos_api_key_configured: bool,
     pub oidc_client_secret_configured: bool,
     pub allow_signup: bool,
+    /// Instance default visibility for new repos (D-08).
+    #[serde(default = "default_visibility_public")]
+    pub default_visibility: crate::RepoVisibility,
+}
+
+fn default_visibility_public() -> crate::RepoVisibility {
+    crate::RepoVisibility::Public
 }
 
 /// Admin update payload — non-secret fields only.
@@ -195,6 +212,9 @@ pub struct UpdateAuthSettingsRequest {
     pub workos_client_id: Option<String>,
     #[serde(default)]
     pub allow_signup: bool,
+    /// Instance default visibility for new repos (D-08).
+    #[serde(default = "default_visibility_public")]
+    pub default_visibility: crate::RepoVisibility,
 }
 
 const RESERVED_USERNAMES: &[&str] = &[

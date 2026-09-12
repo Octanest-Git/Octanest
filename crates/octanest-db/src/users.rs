@@ -336,6 +336,50 @@ WHERE id = ?1",
         .ok_or_else(|| "update user profile failed: user not found".into())
 }
 
+pub async fn set_default_branch(
+    pool: &DbPool,
+    id: &str,
+    default_branch: &str,
+) -> Result<UserRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE users SET default_branch = $2, updated_at = now() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(default_branch)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update default_branch failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE users SET default_branch = ?, updated_at = NOW() WHERE id = ?",
+            )
+            .bind(default_branch)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update default_branch failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE users SET default_branch = ?2,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(default_branch)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update default_branch failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update default_branch failed: user not found".into())
+}
+
 pub async fn count_users(pool: &DbPool) -> Result<i64, String> {
     match pool {
         DbPool::Postgres(p) => sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users")

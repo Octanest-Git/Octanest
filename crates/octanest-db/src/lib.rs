@@ -196,6 +196,14 @@ impl Database {
         .await
     }
 
+    pub async fn set_user_default_branch(
+        &self,
+        id: &str,
+        default_branch: &str,
+    ) -> Result<UserRow, String> {
+        users::set_default_branch(self.require_pool()?, id, default_branch).await
+    }
+
     pub async fn count_users(&self) -> Result<i64, String> {
         users::count_users(self.require_pool()?).await
     }
@@ -394,6 +402,7 @@ impl Database {
         oidc_client_id: Option<&str>,
         workos_client_id: Option<&str>,
         allow_signup: bool,
+        default_visibility: &str,
     ) -> Result<auth_settings::AuthSettingsRow, String> {
         auth_settings::update(
             self.require_pool()?,
@@ -404,6 +413,7 @@ impl Database {
             oidc_client_id,
             workos_client_id,
             allow_signup,
+            default_visibility,
         )
         .await
     }
