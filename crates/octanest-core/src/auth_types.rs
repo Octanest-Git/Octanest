@@ -314,6 +314,14 @@ mod tests {
         assert!(validate_username("system-administrator").is_err());
     }
 
+    /// Wave 07-02 / D-14: flat `/new` must stay off the owner slug namespace.
+    #[test]
+    fn new_is_reserved_for_flat_routes() {
+        assert!(is_reserved_username("new"));
+        assert!(is_reserved_username("New"));
+        assert!(validate_username("new").is_err());
+    }
+
     #[test]
     fn user_public_json_includes_must_change_credentials() {
         let json = serde_json::json!({

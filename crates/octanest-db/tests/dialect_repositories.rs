@@ -1,10 +1,12 @@
-//! Wave 0 / 07-02: `0007_repositories` + default_branch / default_visibility columns.
+//! 07-02: `0007_repositories` + default_branch / default_visibility + insert/get API.
 //!
-//! RED until tri-dialect migration lands. Asserts file presence + column names per RESEARCH.
+//! RED until tri-dialect migration + Database repositories helpers land.
 
+use octanest_core::Role;
 use octanest_db::Database;
 
-/// Expect sqlite `0007_repositories.sql` with repositories table + settings columns.
+/// Expect sqlite `0007_repositories.sql` with repositories table + settings columns,
+/// then insert_repository + get by owner+name for non-deleted rows.
 #[tokio::test]
 async fn migrate_0007_repositories_schema_presence() {
     let migration_path = concat!(
@@ -38,10 +40,25 @@ async fn migrate_0007_repositories_schema_presence() {
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
 
-    // After migrate, columns must be readable via Database API (lands with repositories.rs).
+    let owner = db
+        .create_user(
+            "u-repo-owner",
+            "owner@example.com",
+            "repoowner",
+            Some("hash"),
+            "Repo Owner",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create owner");
+
+    // RED: insert_repository / find_repository_by_owner_name land in GREEN.
     assert!(
         false,
-        "Wave 0: Database repositories + user default_branch / instance default_visibility APIs not wired"
+        "Wave 0→GREEN: insert_repository + get by owner+name for non-deleted rows (owner={})",
+        owner.id
     );
 }
 
@@ -54,15 +71,19 @@ fn migrate_0007_repositories_tri_dialect_files() {
         let sql = std::fs::read_to_string(&path).unwrap_or_default();
         assert!(
             !sql.is_empty(),
-            "Wave 0: missing {path} — tri-dialect 0007_repositories required"
+            "missing {path} — tri-dialect 0007_repositories required"
         );
         assert!(
             sql.contains("default_branch"),
-            "Wave 0: {dialect} 0007 must mention default_branch"
+            "{dialect} 0007 must mention default_branch"
         );
         assert!(
             sql.contains("default_visibility"),
-            "Wave 0: {dialect} 0007 must mention default_visibility"
+            "{dialect} 0007 must mention default_visibility"
+        );
+        assert!(
+            sql.contains("deleted_at"),
+            "{dialect} 0007 must mention deleted_at soft-delete"
         );
     }
 }
