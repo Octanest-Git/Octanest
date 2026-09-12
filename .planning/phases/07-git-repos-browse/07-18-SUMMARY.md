@@ -111,7 +111,7 @@ Each task was committed atomically:
 
 1. **Task 1: Branches / Tags UI + delete confirm dialog** - `c714f4d` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `4aac4dc` (docs: complete plan)
 
 ## Files Created/Modified
 
