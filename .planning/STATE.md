@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
-status: executing
-stopped_at: Completed 07-21-PLAN.md
-last_updated: "2026-09-12T19:59:06.249Z"
+status: human_needed
+stopped_at: Awaiting UAT after gap-closure verify (07-UAT.md)
+last_updated: "2026-09-12T20:05:00Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 07 execution started
-state_head: 809005287a95d108dad4d9ad26b8ff08f5de29a9
+last_activity_desc: Gap-closure verified 7/7; human UAT pending
+state_head: 0c835f7
 progress:
   total_phases: 22
   completed_phases: 0
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — EXECUTING
-Plan: 22 of 22 (all plans have SUMMARY — last completed: 07-21)
-Status: Phase plans complete; ready for verify / milestone closeout
-Last activity: 2026-09-12 — Completed 07-21 WR-01 / WR-03 gap closure
+Phase: 07 (Git Repos & Browse) — HUMAN VERIFICATION
+Plan: 22 of 22 complete (gap plans 07-19..21 closed CR/WR)
+Status: Automated verify 7/7 — awaiting `/gsd-verify-work 07` UAT
+Last activity: 2026-09-12 — Gap-closure execute + re-verify → human_needed
 
-Progress: Phase 7 plans 00–21 complete (create compensate + hierarchical parseRefAndPath)
+Progress: Phase 7 plans 00–21 complete; CR-01/CR-02 + WR-01..03 closed; 5 UAT items in `07-UAT.md`
 
 See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
 
