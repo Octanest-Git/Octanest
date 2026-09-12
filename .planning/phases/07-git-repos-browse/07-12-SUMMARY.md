@@ -108,7 +108,7 @@ status: complete
 
 1. **Task 1: End-to-end empty public create via GitBackend CLI** — `f10d98b` (feat)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `256bc1c` (docs: complete plan)
 
 ## Files Created/Modified
 
