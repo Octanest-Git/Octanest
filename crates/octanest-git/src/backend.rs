@@ -26,4 +26,14 @@ pub trait GitBackend: Send + Sync {
     /// Create a bare repository at `path` and point unborn `HEAD` at
     /// `refs/heads/{initial_branch}` (Git 2.5-compatible; no `--initial-branch`).
     async fn init_bare(&self, path: &Path, initial_branch: &str) -> Result<(), GitError>;
+
+    /// Write `files` (relative path → bytes) as a single commit on `branch` in an
+    /// existing bare repo (temp worktree + push). No-op when `files` is empty.
+    async fn seed_commit(
+        &self,
+        bare_path: &Path,
+        branch: &str,
+        message: &str,
+        files: &[(String, Vec<u8>)],
+    ) -> Result<(), GitError>;
 }

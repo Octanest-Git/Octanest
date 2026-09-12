@@ -1,0 +1,89 @@
+{
+  "packs": [
+    {
+      "id": "empty",
+      "label": "Empty with README",
+      "group": "General"
+    },
+    {
+      "id": "rust",
+      "label": "Rust",
+      "group": "Systems"
+    },
+    {
+      "id": "cmake-cpp",
+      "label": "C / C++ (CMake)",
+      "group": "Systems"
+    },
+    {
+      "id": "zig",
+      "label": "Zig",
+      "group": "Systems"
+    },
+    {
+      "id": "go",
+      "label": "Go",
+      "group": "Backend"
+    },
+    {
+      "id": "node-typescript",
+      "label": "Node + TypeScript",
+      "group": "Backend"
+    },
+    {
+      "id": "deno",
+      "label": "Deno",
+      "group": "Backend"
+    },
+    {
+      "id": "python",
+      "label": "Python",
+      "group": "Backend"
+    },
+    {
+      "id": "java",
+      "label": "Java",
+      "group": "Backend"
+    },
+    {
+      "id": "csharp",
+      "label": "C#",
+      "group": "Backend"
+    },
+    {
+      "id": "ruby",
+      "label": "Ruby",
+      "group": "Backend"
+    },
+    {
+      "id": "php",
+      "label": "PHP",
+      "group": "Backend"
+    },
+    {
+      "id": "elixir",
+      "label": "Elixir",
+      "group": "Backend"
+    },
+    {
+      "id": "react",
+      "label": "React",
+      "group": "Frontend"
+    },
+    {
+      "id": "nextjs",
+      "label": "Next.js",
+      "group": "Frontend"
+    },
+    {
+      "id": "vue",
+      "label": "Vue",
+      "group": "Frontend"
+    },
+    {
+      "id": "svelte",
+      "label": "Svelte",
+      "group": "Frontend"
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "templates": [
+    {
+      "id": "Node",
+      "label": "Node",
+      "group": "Languages"
+    },
+    {
+      "id": "Python",
+      "label": "Python",
+      "group": "Languages"
+    },
+    {
+      "id": "Rust",
+      "label": "Rust",
+      "group": "Languages"
+    },
+    {
+      "id": "Go",
+      "label": "Go",
+      "group": "Languages"
+    },
+    {
+      "id": "Java",
+      "label": "Java",
+      "group": "Languages"
+    },
+    {
+      "id": "C",
+      "label": "C",
+      "group": "Languages"
+    },
+    {
+      "id": "C++",
+      "label": "C++",
+      "group": "Languages"
+    },
+    {
+      "id": "Ruby",
+      "label": "Ruby",
+      "group": "Languages"
+    },
+    {
+      "id": "PHP",
+      "label": "PHP",
+      "group": "Languages"
+    },
+    {
+      "id": "Swift",
+      "label": "Swift",
+      "group": "Languages"
+    },
+    {
+      "id": "Kotlin",
+      "label": "Kotlin",
+      "group": "Languages"
+    },
+    {
+      "id": "Dart",
+      "label": "Dart",
+      "group": "Languages"
+    },
+    {
+      "id": "Elixir",
+      "label": "Elixir",
+      "group": "Languages"
+    },
+    {
+      "id": "Haskell",
+      "label": "Haskell",
+      "group": "Languages"
+    },
+    {
+      "id": "Terraform",
+      "label": "Terraform",
+      "group": "Tools"
+    },
+    {
+      "id": "Unity",
+      "label": "Unity",
+      "group": "Tools"
+    },
+    {
+      "id": "VisualStudio",
+      "label": "Visual Studio",
+      "group": "IDEs"
+    },
+    {
+      "id": "JetBrains",
+      "label": "JetBrains",
+      "group": "IDEs"
+    },
+    {
+      "id": "macOS",
+      "label": "macOS",
+      "group": "OS"
+    },
+    {
+      "id": "Windows",
+      "label": "Windows",
+      "group": "OS"
+    },
+    {
+      "id": "Linux",
+      "label": "Linux",
+      "group": "OS"
+    }
+  ]
+}

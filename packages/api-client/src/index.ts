@@ -147,6 +147,21 @@ export type CreateRepoRequest = {
   name: string;
   description?: string | null;
   visibility?: RepoVisibility | null;
+  stack_id?: string | null;
+  license_id?: string | null;
+  gitignore_id?: string | null;
+};
+
+export type RepoTemplateOption = {
+  id: string;
+  label: string;
+  group: string;
+};
+
+export type RepoCreateDefaults = {
+  default_visibility: RepoVisibility;
+  stacks: RepoTemplateOption[];
+  gitignores: RepoTemplateOption[];
 };
 
 export type RepoPublic = {
@@ -226,6 +241,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<UserPublic>(opts, "user.update_profile", input),
     },
     repo: {
+      createDefaults: () =>
+        rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
     },
     admin: {

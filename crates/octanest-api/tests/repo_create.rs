@@ -206,4 +206,120 @@ async fn repo_create_duplicate_name_stable_error() {
         v["error"]["code"], "repo.name_taken",
         "stable duplicate code for inline UI — {v}"
     );
+    assert_eq!(
+        v["error"]["message"],
+        "A repository with this name already exists. Choose a different name.",
+        "D-12 inline copy — {v}"
+    );
+}
+
+/// Template pickers seed a single initial commit on the default branch (ASSUME Q2 / D-02).
+#[tokio::test]
+async fn repo_create_with_templates_seeds_initial_commit() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_seed.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "seed@ex.com", "seedowner").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"templated","visibility":"public","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK, "templated create");
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "templated ok — {v}");
+
+    let bare = repos.join("seedowner").join("templated.git");
+    assert!(bare.is_dir(), "bare path {}", bare.display());
+    let log = std::process::Command::new("git")
+        .args(["-C", bare.to_str().unwrap(), "log", "--oneline", "-1"])
+        .output()
+        .expect("git log");
+    assert!(
+        log.status.success(),
+        "seeded repo must have a commit: {}",
+        String::from_utf8_lossy(&log.stderr)
+    );
+    let log_s = String::from_utf8_lossy(&log.stdout);
+    assert!(
+        log_s.contains("Initial commit"),
+        "expected Initial commit, got {log_s}"
+    );
+    let ls = std::process::Command::new("git")
+        .args([
+            "-C",
+            bare.to_str().unwrap(),
+            "ls-tree",
+            "-r",
+            "--name-only",
+            "HEAD",
+        ])
+        .output()
+        .expect("ls-tree");
+    assert!(ls.status.success());
+    let tree = String::from_utf8_lossy(&ls.stdout);
+    assert!(tree.contains("README.md"), "tree: {tree}");
+    assert!(tree.contains("LICENSE"), "tree: {tree}");
+    assert!(tree.contains(".gitignore"), "tree: {tree}");
+    assert!(tree.contains("Cargo.toml"), "tree: {tree}");
+}
+
+/// All-none templates leave bare empty (no commits) — Quick setup path.
+#[tokio::test]
+async fn repo_create_all_none_templates_leaves_empty_bare() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_empty_tpl.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "emptytpl@ex.com", "emptytpl").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"bare-empty","visibility":"public"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let bare = repos.join("emptytpl").join("bare-empty.git");
+    let log = std::process::Command::new("git")
+        .args(["-C", bare.to_str().unwrap(), "rev-list", "--count", "--all"])
+        .output()
+        .expect("rev-list");
+    // Empty unborn branch: rev-list may fail or return 0
+    let count = String::from_utf8_lossy(&log.stdout).trim().to_string();
+    assert!(
+        !log.status.success() || count == "0" || count.is_empty(),
+        "empty bare must have no commits (status={:?} count={count})",
+        log.status.code()
+    );
 }

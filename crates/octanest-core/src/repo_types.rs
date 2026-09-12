@@ -29,7 +29,7 @@ impl RepoVisibility {
     }
 }
 
-/// Create-repository input (RPC wired in 07-12).
+/// Create-repository input (RPC wired in 07-12; templates in 07-03).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateRepoRequest {
     pub name: String,
@@ -38,6 +38,31 @@ pub struct CreateRepoRequest {
     /// When omitted, API uses instance `default_visibility` (else public) — D-08.
     #[serde(default)]
     pub visibility: Option<RepoVisibility>,
+    /// Stack preset pack id under `assets/stack-presets/` (omit / null = none).
+    #[serde(default)]
+    pub stack_id: Option<String>,
+    /// SPDX license id or omit / null / `"none"` for no LICENSE file.
+    #[serde(default)]
+    pub license_id: Option<String>,
+    /// Gitignore catalog id under `assets/gitignore/` (omit / null / `"none"` = none).
+    #[serde(default)]
+    pub gitignore_id: Option<String>,
+}
+
+/// Public create-form defaults + catalog metadata (D-02–D-04, D-08).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCreateDefaults {
+    pub default_visibility: RepoVisibility,
+    pub stacks: Vec<RepoTemplateOption>,
+    pub gitignores: Vec<RepoTemplateOption>,
+}
+
+/// Select option for stack / gitignore pickers.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTemplateOption {
+    pub id: String,
+    pub label: String,
+    pub group: String,
 }
 
 /// Public repository metadata returned over RPC.

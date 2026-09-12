@@ -1,7 +1,10 @@
-//! Repository RPC handlers (`repo.create` tracer — GIT-01 / D-11 / D-30–D-32).
+//! Repository RPC handlers (`repo.create` + templates — GIT-01 / D-02–D-12 / D-30–D-32).
+
+mod templates;
 
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoPublic, RepoVisibility,
+    validate_repo_name, AppError, CreateRepoRequest, RepoCreateDefaults, RepoPublic,
+    RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -48,7 +51,18 @@ async fn resolve_visibility(
     }
 }
 
-/// `repo.create` — verified owner creates an empty public/private repo (DB + bare git).
+/// `repo.createDefaults` — visibility default + stack/gitignore catalogs for `/new`.
+pub async fn create_defaults(ctx: &RpcCtx) -> Result<RepoCreateDefaults, AppError> {
+    let _ = require_verified(ctx).await?;
+    let default_visibility = resolve_visibility(ctx, None).await?;
+    Ok(RepoCreateDefaults {
+        default_visibility,
+        stacks: templates::list_stacks()?,
+        gitignores: templates::list_gitignores()?,
+    })
+}
+
+/// `repo.create` — verified owner creates a public/private repo (DB + bare git + optional seed).
 pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
     let user = require_verified(ctx).await?;
 
@@ -71,6 +85,9 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
     } else {
         user.default_branch.clone()
     };
+
+    let seed_files =
+        templates::assemble_seed_files(&req.stack_id, &req.license_id, &req.gitignore_id)?;
 
     if ctx
         .db
@@ -110,6 +127,29 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
             "repo.git_init_failed",
             "failed to initialize repository storage",
         ));
+    }
+
+    if !seed_files.is_empty() {
+        if let Err(e) = ctx
+            .git
+            .seed_commit(
+                &path,
+                &default_branch,
+                "Initial commit",
+                &seed_files,
+            )
+            .await
+        {
+            tracing::error!(
+                error = %e,
+                path = %path.display(),
+                "seed_commit failed after init_bare"
+            );
+            return Err(AppError::new(
+                "repo.git_seed_failed",
+                "failed to seed initial commit from templates",
+            ));
+        }
     }
 
     Ok(RepoPublic {
