@@ -104,7 +104,7 @@ Each task was committed atomically:
 2. **Task 2: Confirm fail-boot when git missing or < 2.5 (D-33)** — checkpoint decision — selected `fail_boot_git` (no code commit)
 3. **Task 3: Amend GIT-09/ROADMAP/PROJECT + ensure COVERAGE.md** — `d3e3c23` (docs)
 
-**Plan metadata:** (pending final docs commit)
+**Plan metadata:** `6f4c5d6` (docs: complete plan)
 
 ## Files Created/Modified
 
