@@ -14,11 +14,12 @@ pub const DIFF_SOFT_MAX_BYTES: usize = octanest_git::DIFF_SOFT_MAX_BYTES;
 
 use octanest_core::{
     validate_repo_name, AppError, CreateRepoRequest, RepoBlameLine, RepoBlameRequest,
-    RepoBlameResponse, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary, RepoCommitsRequest,
-    RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse, RepoCreateDefaults,
-    RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest, RepoListMineResponse,
-    RepoPublic, RepoRefEntry, RepoRefsResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
-    RepoVisibility,
+    RepoBlameResponse, RepoBranchCreateRequest, RepoBranchDeleteRequest, RepoBranchMutationResponse,
+    RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
+    RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
+    RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
+    RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse, RepoTreeEntry,
+    RepoTreeRequest, RepoTreeResponse, RepoVisibility,
 };
 use uuid::Uuid;
 
@@ -435,6 +436,134 @@ pub async fn blame(
             })
             .collect(),
         truncated: blame.truncated,
+    })
+}
+
+fn soft_protect_err() -> AppError {
+    AppError::new(
+        "repo.default_branch_protected",
+        "The default branch can't be renamed or deleted.",
+    )
+}
+
+/// Resolve repo for owner-only mutate (D-27). Non-owner → identical [`acl::not_found`].
+async fn resolve_repo_for_owner_mutate(
+    ctx: &RpcCtx,
+    owner: &str,
+    name: &str,
+) -> Result<AccessibleRepo, AppError> {
+    let _ = require_verified(ctx).await?;
+    let session = require_session_user(ctx)?;
+    let accessible = resolve_repo_for_read(ctx, owner, name).await?;
+    if session.user_id != accessible.row.owner_id {
+        return Err(acl::not_found());
+    }
+    Ok(accessible)
+}
+
+/// `repo.branchCreate` — owner creates a branch from `start` (GIT-06 / D-27).
+pub async fn branch_create(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoBranchMutationResponse, AppError> {
+    let req: RepoBranchCreateRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.branchCreate input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let branch = req.branch.trim();
+    if branch.is_empty() {
+        return Err(AppError::new("repo.invalid_ref", "branch name required"));
+    }
+    let start = req
+        .start
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(accessible.row.default_branch.as_str());
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    ctx.git
+        .branch_create(&path, branch, start)
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoBranchMutationResponse {
+        branch: branch.to_string(),
+    })
+}
+
+/// `repo.branchRename` — owner renames a branch; default soft-protected (D-28).
+pub async fn branch_rename(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoBranchMutationResponse, AppError> {
+    let req: RepoBranchRenameRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.branchRename input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let from = req.from.trim();
+    let to = req.to.trim();
+    if from.is_empty() || to.is_empty() {
+        return Err(AppError::new(
+            "repo.invalid_ref",
+            "from and to branch names required",
+        ));
+    }
+    if from == accessible.row.default_branch {
+        return Err(soft_protect_err());
+    }
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    ctx.git
+        .branch_rename(&path, from, to)
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoBranchMutationResponse {
+        branch: to.to_string(),
+    })
+}
+
+/// `repo.branchDelete` — owner deletes a branch; default soft-protected (D-28).
+pub async fn branch_delete(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoBranchMutationResponse, AppError> {
+    let req: RepoBranchDeleteRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.branchDelete input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let branch = req.branch.trim();
+    if branch.is_empty() {
+        return Err(AppError::new("repo.invalid_ref", "branch name required"));
+    }
+    if branch == accessible.row.default_branch {
+        return Err(soft_protect_err());
+    }
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    ctx.git
+        .branch_delete(&path, branch)
+        .await
+        .map_err(map_git_err)?;
+    Ok(RepoBranchMutationResponse {
+        branch: branch.to_string(),
     })
 }
 

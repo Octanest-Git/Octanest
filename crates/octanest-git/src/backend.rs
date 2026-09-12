@@ -203,4 +203,18 @@ pub trait GitBackend: Send + Sync {
         refname: &str,
         path: &str,
     ) -> Result<BlameFile, GitError>;
+
+    /// Create branch `name` pointing at `start` (branch/tag/sha).
+    async fn branch_create(
+        &self,
+        repo: &Path,
+        name: &str,
+        start: &str,
+    ) -> Result<(), GitError>;
+
+    /// Rename local branch `from` → `to`.
+    async fn branch_rename(&self, repo: &Path, from: &str, to: &str) -> Result<(), GitError>;
+
+    /// Delete local branch `name` (`git branch -D`).
+    async fn branch_delete(&self, repo: &Path, name: &str) -> Result<(), GitError>;
 }

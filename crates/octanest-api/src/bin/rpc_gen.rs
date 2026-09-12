@@ -332,6 +332,30 @@ export type RepoBlameResponse = {
   truncated: boolean;
 };
 
+export type RepoBranchCreateRequest = {
+  owner: string;
+  name: string;
+  branch: string;
+  start?: string | null;
+};
+
+export type RepoBranchRenameRequest = {
+  owner: string;
+  name: string;
+  from: string;
+  to: string;
+};
+
+export type RepoBranchDeleteRequest = {
+  owner: string;
+  name: string;
+  branch: string;
+};
+
+export type RepoBranchMutationResponse = {
+  branch: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -413,6 +437,12 @@ export function createClient(opts: CreateClientOptions) {
       compare: (input: RepoCompareRequest) =>
         rpcCall<RepoCompareResponse>(opts, "repo.compare", input),
       blame: (input: RepoBlameRequest) => rpcCall<RepoBlameResponse>(opts, "repo.blame", input),
+      branchCreate: (input: RepoBranchCreateRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchCreate", input),
+      branchRename: (input: RepoBranchRenameRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchRename", input),
+      branchDelete: (input: RepoBranchDeleteRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchDelete", input),
     },
     admin: {
       auth: {

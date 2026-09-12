@@ -278,6 +278,40 @@ pub struct RepoBlameResponse {
     pub truncated: bool,
 }
 
+/// `repo.branchCreate` input (GIT-06).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBranchCreateRequest {
+    pub owner: String,
+    pub name: String,
+    pub branch: String,
+    /// Start point (branch/tag/sha). Empty/omit → repository default branch.
+    #[serde(default)]
+    pub start: Option<String>,
+}
+
+/// `repo.branchRename` input (GIT-06).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBranchRenameRequest {
+    pub owner: String,
+    pub name: String,
+    pub from: String,
+    pub to: String,
+}
+
+/// `repo.branchDelete` input (GIT-06).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBranchDeleteRequest {
+    pub owner: String,
+    pub name: String,
+    pub branch: String,
+}
+
+/// Branch mutate response — name of the resulting branch (create/rename) or deleted name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoBranchMutationResponse {
+    pub branch: String,
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {

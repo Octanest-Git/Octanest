@@ -844,6 +844,35 @@ impl GitBackend for CliGitBackend {
             truncated,
         })
     }
+
+    async fn branch_create(
+        &self,
+        repo: &Path,
+        name: &str,
+        start: &str,
+    ) -> Result<(), GitError> {
+        let name = validate_treeish(name)?;
+        let start = validate_treeish(start)?;
+        let repo_s = repo_str(repo)?;
+        run_git(&["-C", repo_s, "branch", name, start]).await?;
+        Ok(())
+    }
+
+    async fn branch_rename(&self, repo: &Path, from: &str, to: &str) -> Result<(), GitError> {
+        let from = validate_treeish(from)?;
+        let to = validate_treeish(to)?;
+        let repo_s = repo_str(repo)?;
+        run_git(&["-C", repo_s, "branch", "-m", from, to]).await?;
+        Ok(())
+    }
+
+    async fn branch_delete(&self, repo: &Path, name: &str) -> Result<(), GitError> {
+        let name = validate_treeish(name)?;
+        let repo_s = repo_str(repo)?;
+        // Force delete: forge UI confirms; bare repos have no "unmerged" worktree concept.
+        run_git(&["-C", repo_s, "branch", "-D", name]).await?;
+        Ok(())
+    }
 }
 
 /// Reject absolute paths and `..` components (T-07-09).
