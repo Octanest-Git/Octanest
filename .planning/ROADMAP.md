@@ -223,25 +223,70 @@ Plans:
 
 **Plans**: 19 plans
 Plans:
+**Wave 1**
+
 - [ ] 07-00-PLAN.md — Wave 0 Nyquist Rust stubs (git crate, repo_*, dialect)
 - [ ] 07-16-PLAN.md — Wave 0 web stubs (/new + home CTA)
 - [ ] 07-01-PLAN.md — One-way gates D-14/D-33 + REQUIREMENTS/ROADMAP amend + COVERAGE
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 07-02-PLAN.md — Schema 0007 + validators + proceed gate
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 07-12-PLAN.md — Tracer: GitBackend CLI create → bare disk
 - [ ] 07-17-PLAN.md — Fail-boot git gate + Dockerfile/Compose repos volume
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 07-13-PLAN.md — Minimal /new + empty Code Quick setup
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 07-03-PLAN.md — Create templates, SPDX/gitignore, duplicate inline error
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 07-04-PLAN.md — Dashboard home + default branch/visibility settings
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 07-05-PLAN.md — Browse APIs + ACL 404 + raw HTTP
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 07-14-PLAN.md — Markdown sanitize + Shiki + tsrx/ripple grammars
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 07-15-PLAN.md — Code/tree/blob Octane routes + integration tests
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 07-06-PLAN.md — Commits, commit detail, compare, blame
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
 - [ ] 07-07-PLAN.md — Branch CRUD soft-protect API
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
 - [ ] 07-18-PLAN.md — Branches/Tags UI + dialogs
 - [ ] 07-08-PLAN.md — Archives zip/tar.gz + clone box
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
 - [ ] 07-09-PLAN.md — Repo settings visibility + soft-delete
+
+**Wave 14** *(blocked on Wave 13 completion)*
+
 - [ ] 07-10-PLAN.md — Factory reset scope + orphan reconcile + gc + CONFIGURATION
+
+**Wave 15** *(blocked on Wave 14 completion)*
+
 - [ ] 07-11-PLAN.md — ARCHITECTURE GitBackend docs + VALIDATION + rpc-gen smoke
+
 **UI hint**: yes
 
 ### Phase 8: Git HTTPS & PATs
