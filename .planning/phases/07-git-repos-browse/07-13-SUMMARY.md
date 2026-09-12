@@ -104,7 +104,7 @@ Each task was committed atomically:
 
 1. **Task 1: Minimal /new + empty Code Quick setup route** - `e83d452` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `f31225b` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/web/src/routes/new.tsrx` — create form + D-11 verify wall; navigates to `/{owner}/{repo}`
