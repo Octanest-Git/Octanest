@@ -310,3 +310,30 @@ pub async fn serve_archive(
     }
     res
 }
+
+#[cfg(test)]
+mod validate_ref_tests {
+    use super::validate_ref;
+
+    #[test]
+    fn validate_ref_rejects_leading_hyphen() {
+        assert!(
+            validate_ref("-D").is_err(),
+            "leading hyphen must be repo.invalid_ref (CR-01 defense-in-depth)"
+        );
+        assert!(validate_ref("  --output=/tmp/x  ").is_err());
+    }
+
+    #[test]
+    fn validate_ref_allows_hierarchical_slashy_names() {
+        let ok = validate_ref("feature/x").expect("slashy branch names must be allowed (WR-02)");
+        assert_eq!(ok, "feature/x");
+    }
+
+    #[test]
+    fn validate_ref_still_rejects_dotdot_and_empty() {
+        assert!(validate_ref("").is_err());
+        assert!(validate_ref("a..b").is_err());
+        assert!(validate_ref("main\0evil").is_err());
+    }
+}
