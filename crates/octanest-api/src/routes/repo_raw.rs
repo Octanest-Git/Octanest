@@ -1,4 +1,4 @@
-//! Raw blob HTTP (`GET /api/repos/{owner}/{repo}/raw/{ref}/{*path}`) — GIT-05 / D-17.
+//! Raw blob + source archive HTTP — GIT-05 / GIT-07 / D-17 / D-29.
 //!
 //! Cookie session ACL via [`crate::repo::resolve_repo_for_read`]. Not RPC JSON (large bytes).
 
@@ -8,6 +8,7 @@ use axum::extract::{Path as AxumPath, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use octanest_git::ArchiveFormat;
 
 use crate::app::AppState;
 use crate::auth::session::SESSION_COOKIE_NAME;
@@ -50,6 +51,31 @@ fn validate_ref(ref_name: &str) -> Result<&str, Response> {
     Ok(t)
 }
 
+/// Treeish for archives — allow `/` in branch names (e.g. `feature/x`), still reject `..` / NUL.
+fn validate_archive_treeish(treeish: &str) -> Result<&str, Response> {
+    let t = treeish.trim();
+    if t.is_empty() || t.contains('\0') || t.contains("..") {
+        return Err(err_json(
+            StatusCode::BAD_REQUEST,
+            "repo.invalid_ref",
+            "invalid ref",
+        ));
+    }
+    if t.chars().any(|c| {
+        matches!(
+            c,
+            ';' | '|' | '&' | '`' | '$' | '(' | ')' | '<' | '>' | '\n' | '\r' | ' '
+        )
+    }) {
+        return Err(err_json(
+            StatusCode::BAD_REQUEST,
+            "repo.invalid_ref",
+            "invalid ref",
+        ));
+    }
+    Ok(t)
+}
+
 fn validate_blob_path(path: &str) -> Result<String, Response> {
     let rel = path.trim().trim_start_matches('/');
     if rel.is_empty() || rel.contains('\0') {
@@ -75,6 +101,31 @@ fn validate_blob_path(path: &str) -> Result<String, Response> {
         ));
     }
     Ok(rel.to_string())
+}
+
+/// Parse `main.zip` / `main.tar.gz` / `feature/x.tar.gz` into (treeish, format).
+fn parse_archive_filename(name: &str) -> Result<(&str, ArchiveFormat), Response> {
+    let name = name.trim().trim_start_matches('/');
+    if name.is_empty() {
+        return Err(err_json(
+            StatusCode::BAD_REQUEST,
+            "repo.invalid_archive",
+            "invalid archive path",
+        ));
+    }
+    if let Some(stem) = name.strip_suffix(".tar.gz") {
+        let treeish = validate_archive_treeish(stem)?;
+        return Ok((treeish, ArchiveFormat::TarGz));
+    }
+    if let Some(stem) = name.strip_suffix(".zip") {
+        let treeish = validate_archive_treeish(stem)?;
+        return Ok((treeish, ArchiveFormat::Zip));
+    }
+    Err(err_json(
+        StatusCode::BAD_REQUEST,
+        "repo.invalid_archive",
+        "archive must end in .zip or .tar.gz",
+    ))
 }
 
 async fn build_ctx(state: &AppState, headers: &HeaderMap) -> RpcCtx {
@@ -181,6 +232,81 @@ pub async fn serve_raw(
                 .insert("x-octanest-blob-truncated", HeaderValue::from_static("1"));
             res.headers_mut().insert("x-octanest-blob-soft-max", v);
         }
+    }
+    res
+}
+
+/// `GET /api/repos/{owner}/{repo}/archive/{*archive_file}` — e.g. `main.zip`, `main.tar.gz`.
+pub async fn serve_archive(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    AxumPath((owner, repo_name, archive_file)): AxumPath<(String, String, String)>,
+) -> Response {
+    let (treeish, format) = match parse_archive_filename(&archive_file) {
+        Ok(v) => v,
+        Err(r) => return r,
+    };
+    let treeish = treeish.to_string();
+
+    let ctx = build_ctx(&state, &headers).await;
+    let accessible = match repo::resolve_repo_for_read(&ctx, &owner, &repo_name).await {
+        Ok(a) => a,
+        Err(e) if e.code == "repo.not_found" => {
+            return err_json(StatusCode::NOT_FOUND, &e.code, &e.message);
+        }
+        Err(e) => {
+            return err_json(StatusCode::BAD_REQUEST, &e.code, &e.message);
+        }
+    };
+
+    let bare = match bare_repo_path(
+        &state.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    ) {
+        Ok(p) => p,
+        Err(e) => return err_json(StatusCode::BAD_REQUEST, &e.code, &e.message),
+    };
+
+    let prefix = accessible.row.name.as_str();
+    let bytes = match state.git.archive(&bare, &treeish, format, prefix).await {
+        Ok(b) => b,
+        Err(octanest_git::GitError::NotFound(_)) => {
+            return err_json(
+                StatusCode::NOT_FOUND,
+                "repo.archive_unavailable",
+                "This repository has no commits yet. Push a commit before downloading an archive.",
+            );
+        }
+        Err(octanest_git::GitError::InvalidArg(msg)) => {
+            return err_json(StatusCode::BAD_REQUEST, "repo.invalid_ref", &msg);
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "git archive failed");
+            return err_json(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "repo.git_failed",
+                "git archive failed",
+            );
+        }
+    };
+
+    let filename = format!(
+        "{}-{}.{}",
+        accessible.row.name,
+        treeish.replace('/', "-"),
+        format.extension()
+    );
+    let disposition = format!("attachment; filename=\"{filename}\"");
+
+    let mut res = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, format.content_type())
+        .body(axum::body::Body::from(bytes))
+        .unwrap_or_else(|_| err_json(StatusCode::INTERNAL_SERVER_ERROR, "repo.git_failed", "response build failed"));
+
+    if let Ok(v) = HeaderValue::from_str(&disposition) {
+        res.headers_mut().insert(header::CONTENT_DISPOSITION, v);
     }
     res
 }

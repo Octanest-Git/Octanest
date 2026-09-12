@@ -7,7 +7,7 @@ use tokio::process::Command;
 
 use crate::backend::{
     ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
-    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, BLAME_SOFT_MAX_LINES,
+    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES,
     DIFF_SOFT_MAX_BYTES,
 };
 
@@ -877,13 +877,54 @@ impl GitBackend for CliGitBackend {
 
     async fn archive(
         &self,
-        _repo: &Path,
-        _treeish: &str,
-        _format: ArchiveFormat,
-        _prefix: &str,
+        repo: &Path,
+        treeish: &str,
+        format: ArchiveFormat,
+        prefix: &str,
     ) -> Result<Vec<u8>, GitError> {
-        // RED stub — GREEN implements `git archive` with timeout (GIT-07).
-        Err(GitError::Process("archive not implemented".into()))
+        let treeish = validate_treeish(treeish)?;
+        let repo_s = repo_str(repo)?;
+        let prefix = prefix.trim().trim_matches('/');
+        if prefix.is_empty() || prefix.contains('\0') || prefix.contains("..") {
+            return Err(GitError::InvalidArg(format!("invalid archive prefix: {prefix}")));
+        }
+        if prefix.chars().any(|c| matches!(c, ';' | '|' | '&' | '`' | '$' | '\n' | '\r')) {
+            return Err(GitError::InvalidArg(format!("invalid archive prefix: {prefix}")));
+        }
+        let prefix_arg = format!("--prefix={prefix}/");
+        let format_arg = format!("--format={}", format.as_git_format());
+        let args = [
+            "-C",
+            repo_s,
+            "archive",
+            format_arg.as_str(),
+            prefix_arg.as_str(),
+            treeish,
+        ];
+
+        let result = tokio::time::timeout(ARCHIVE_TIMEOUT, run_git_stdout(&args))
+            .await
+            .map_err(|_| GitError::Process("git archive timed out".into()))?;
+
+        match result {
+            Ok(bytes) => Ok(bytes),
+            Err(GitError::Process(msg)) => {
+                let lower = msg.to_lowercase();
+                if lower.contains("not a valid object")
+                    || lower.contains("bad revision")
+                    || lower.contains("unknown revision")
+                    || lower.contains("does not exist")
+                    || lower.contains("ambiguous argument")
+                {
+                    Err(GitError::NotFound(format!(
+                        "archive unavailable for ref {treeish}"
+                    )))
+                } else {
+                    Err(GitError::Process(msg))
+                }
+            }
+            Err(e) => Err(e),
+        }
     }
 }
 

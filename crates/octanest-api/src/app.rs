@@ -116,6 +116,10 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/api/repos/{owner}/{repo}/raw/{ref}/{*path}",
             get(repo_raw::serve_raw),
         )
+        .route(
+            "/api/repos/{owner}/{repo}/archive/{*archive_file}",
+            get(repo_raw::serve_archive),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
