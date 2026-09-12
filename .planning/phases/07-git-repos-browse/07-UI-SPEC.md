@@ -1,10 +1,11 @@
 ---
 phase: 7
 slug: git-repos-browse
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-nova
 created: 2026-09-12
+reviewed_at: 2026-09-12T17:43:00Z
 ---
 
 # Phase 7 — UI Design Contract
@@ -388,53 +389,98 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 
 ## UI Considerations
 
-> Shape-rooted UI state coverage for Phase 7 surfaces. Empty/error COPY lives in Copywriting — this section references those rows.
+> Shape-rooted UI state coverage for Phase 7 surfaces (post-verification probe). Empty/error COPY lives in Copywriting — this section references those rows.
+> Kinds: detected as-is; E11 soft-delete classified as `form` (was unclassified). GitHub parity locked via D-13–D-22 / D-25 (IA, clone box, 404 private, soft limits).
 
-Applicable state considerations resolved: **22 covered, 4 backstop, 0 unresolved**
+Applicable: **69** — **59** explicit · **5** backstop · **5** dismissed · **0** unresolved
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| empty | Home repo list | ✅ covered | Zero repos → empty hero Create your first repository + New repository (Copywriting); activity placeholder separate |
-| loading | Home repo list | ✅ covered | SignedInHomeSkeleton / list skeletons until Query settles |
-| error | Home repo list | ✅ covered | Inline Body network/error with retry via refresh; Copywriting network error |
-| populated | Home repo list | ✅ covered | Rows with name, visibility Badge, relative updated time; recently updated first |
-| partial | Home repo list | ✅ covered | Missing description OK; visibility always shown; activity always placeholder |
-| overflow | Home repo list | ✅ covered | Long repo names truncate with ellipsis + `title` full name; list scrolls in page |
-| zero-one-many | Home repo list | ✅ covered | Zero = empty hero; one/many = same row layout; plural title Your repositories |
-| long-text | Home repo list | 🧪 backstop | Extreme slug length ellipsis — held-out visual check |
-| empty | `/new` form | ✅ covered | Unfilled required name; Create disabled until valid name; optional fields empty |
-| loading | `/new` form | ✅ covered | Creating… on submit; page not blanked |
-| error | `/new` form | ✅ covered | Inline duplicate name; AuthErrorBanner-style for server/network (Copywriting) |
-| partial | `/new` form | ✅ covered | Description/license/gitignore optional; visibility always chosen |
-| long-text | `/new` description | 🧪 backstop | Textarea wraps; no horizontal overflow — held-out visual |
-| empty | Code home tree | ✅ covered | Empty repo → Quick setup first-push guide (not empty table) |
-| loading | Code home tree | ✅ covered | Tree + README skeletons |
-| error | Code home tree | ✅ covered | Failed load → problem + retry; private → 404 not error toast |
-| populated | Code home tree | ✅ covered | Directories first + README below when present |
-| overflow | Code tree / blob | ✅ covered | Horizontal scroll for long lines in pre; tree column scrolls vertically |
-| long-text | Blob / README | 🧪 backstop | Very long lines / README — scroll + soft large-file notice — held-out visual |
-| empty | Branches list | ✅ covered | At least default branch after first push; empty-repo branches page shows muted “No branches yet” if reachable |
-| loading | Branches list | ✅ covered | List skeleton |
-| error | Branches list | ✅ covered | Inline error + retry |
-| populated | Branches list | ✅ covered | Name, tip SHA, actions for owner |
-| zero-one-many | Branches list | ✅ covered | One default vs many; soft-protect default always |
-| empty | Clone / Download menu | dismissed | Menu always has HTTPS + archive actions when repo exists; SSH is placeholder row not empty state |
-| loading | Clone / Download menu | dismissed | Sync clipboard; no async open required |
-| error | Clone copy | ✅ covered | If clipboard fails, Body “Couldn’t copy. Select the URL and copy manually.” |
-| empty | Factory reset dialog | ✅ covered | Radios default Database only; phrase empty; CTA disabled |
-| loading | Factory reset dialog | ✅ covered | Resetting… then redirect |
-| error | Factory reset dialog | ✅ covered | Alert in dialog for wrong phrase / server error |
-| partial | Factory reset dialog | ✅ covered | Scope chosen independently of phrase until both valid |
-| long-text | Factory reset radio labels | 🧪 backstop | Radio labels wrap in dialog width — held-out visual |
-| empty | Compare view | ✅ covered | Nothing to compare for these refs |
-| loading | Compare / commit diff | ✅ covered | Diff skeleton / Working… |
-| error | Compare / commit diff | ✅ covered | Inline problem + next step |
-| overflow | Diff hunks | ✅ covered | Horizontal scroll in pre; file list sticky or scroll independently |
-| empty | Blame | ✅ covered | Missing path → 404 |
-| loading | Blame | ✅ covered | Skeleton lines |
-| error | Blame | ✅ covered | Inline error |
-| populated | Blame | ✅ covered | Gutter meta + highlighted source |
-| long-text | Path breadcrumbs | ✅ covered | Middle segments collapse with ellipsis when overflowing; last segment preferred visible |
+| empty | E1 Home repo list | ✅ covered | Zero repos → empty hero Create your first repository + New repository; activity placeholder separate |
+| loading | E1 Home repo list | ✅ covered | SignedInHomeSkeleton / list skeletons; do not flash marketing |
+| error | E1 Home repo list | ✅ covered | Inline Body network/error (Copywriting); retry via refresh |
+| populated | E1 Home repo list | ✅ covered | Rows owner/name, visibility Badge, relative updated; recently updated first |
+| partial | E1 Home repo list | ✅ covered | Missing description OK; visibility always shown; activity always placeholder |
+| overflow | E1 Home repo list | ✅ covered | Long names ellipsis + `title`; list scrolls in page |
+| zero-one-many | E1 Home repo list | ✅ covered | Zero = empty hero; one/many = same row layout; plural Your repositories |
+| empty | E2 `/new` form | ✅ covered | Create disabled until valid name; optional fields empty |
+| loading | E2 `/new` form | ✅ covered | Creating…; form stays; CTA disabled |
+| error | E2 `/new` form | ✅ covered | Inline duplicate name; server/network banner + network error copy |
+| partial | E2 `/new` form | ✅ covered | Description/license/gitignore optional; visibility always chosen |
+| overflow | E2 `/new` form | dismissed | Form max-w-2xl; no list overflow surface |
+| long-text | E2 `/new` description | 🧪 backstop | Textarea wraps; no horizontal overflow — held-out visual |
+| empty | E3 Code home | ✅ covered | Empty repo → Quick setup first-push guide with HTTPS remote |
+| loading | E3 Code home | ✅ covered | Tree + README skeletons |
+| error | E3 Code home | ✅ covered | Problem + retry; private/unauthorized → 404 |
+| populated | E3 Code home | ✅ covered | Directories first + README; title row + Clone/Download |
+| partial | E3 Code home | ✅ covered | No README → tree only; description optional |
+| overflow | E3 Code home | ✅ covered | Tree scrolls vertically; long names truncate with title |
+| zero-one-many | E3 Code home | ✅ covered | Empty vs single-file vs many; directories first |
+| long-text | E3 Code home | 🧪 backstop | Description / long paths — wrap or ellipsis — held-out visual |
+| empty | E4 Tree/blob/blame | ✅ covered | Missing path → 404; empty directory muted |
+| loading | E4 Tree/blob/blame | ✅ covered | Tree/blob/blame skeletons |
+| error | E4 Tree/blob/blame | ✅ covered | Inline problem + retry; unauthorized → 404 |
+| populated | E4 Tree/blob/blame | ✅ covered | Highlighted source + line numbers; blame gutter; breadcrumbs |
+| partial | E4 Tree/blob/blame | ✅ covered | Large file notice + Download file / View raw file; binary can’t preview |
+| overflow | E4 Tree/blob/blame | ✅ covered | Horizontal scroll in pre; tree scrolls vertically |
+| zero-one-many | E4 Tree/blob/blame | ✅ covered | Single file vs many tree entries; same row pattern |
+| long-text | E4 Tree/blob/blame | 🧪 backstop | Long lines / breadcrumb middle collapse — held-out visual |
+| empty | E5 Commits | ✅ covered | Empty repo / no history → muted empty |
+| loading | E5 Commits | ✅ covered | List / diff skeletons |
+| error | E5 Commits | ✅ covered | Inline problem + retry |
+| populated | E5 Commits | ✅ covered | SHA, message, author, time; detail header + unified diffs |
+| partial | E5 Commits | ✅ covered | Message truncate + title; Load more pagination |
+| overflow | E5 Commits | ✅ covered | Diff hunks horizontal scroll; list page scrolls |
+| zero-one-many | E5 Commits | ✅ covered | One vs many; Load more when many |
+| long-text | E5 Commits | ✅ covered | Message truncate with title for full text |
+| empty | E6 Branches/tags | ✅ covered | No branches yet / empty tags muted if reachable |
+| loading | E6 Branches/tags | ✅ covered | List skeleton |
+| error | E6 Branches/tags | ✅ covered | Inline error + retry |
+| populated | E6 Branches/tags | ✅ covered | Name, tip SHA, updated; owner actions; tags + archive download |
+| partial | E6 Branches/tags | ✅ covered | Default soft-protect; non-owner read-only |
+| overflow | E6 Branches/tags | ✅ covered | Long names truncate with title; list scrolls |
+| zero-one-many | E6 Branches/tags | ✅ covered | One default vs many; soft-protect always |
+| loading | E7 Compare | ✅ covered | Diff skeleton / Working… |
+| error | E7 Compare | ✅ covered | Inline problem + next step |
+| long-text | E7 Compare | 🧪 backstop | Long ref names in pickers truncate — held-out visual |
+| loading | E8 Visibility | ✅ covered | Control disabled while saving; toast Visibility updated |
+| error | E8 Visibility | ✅ covered | Inline/server error; non-owner → 404 |
+| long-text | E8 Visibility | dismissed | Fixed Public/Private labels — no long-text surface |
+| empty | E9 Default branch | ✅ covered | Input defaults to main; helper for new repos |
+| loading | E9 Default branch | ✅ covered | Save default branch disabled while saving |
+| error | E9 Default branch | ✅ covered | Inline validation/server error under field |
+| partial | E9 Default branch | dismissed | Single field — no multi-field partial |
+| long-text | E9 Default branch | ✅ covered | Ref-rule constrained; input scrolls visually |
+| empty | E10 Factory reset | ✅ covered | Radios default Database only; phrase empty; CTA disabled until RESET |
+| loading | E10 Factory reset | ✅ covered | Resetting… then redirect /setup |
+| error | E10 Factory reset | ✅ covered | Alert in dialog for wrong phrase / server error |
+| partial | E10 Factory reset | ✅ covered | Scope independent of phrase until both valid |
+| long-text | E10 Factory reset | 🧪 backstop | Radio labels wrap in dialog — held-out visual |
+| empty | E11 Soft-delete | ✅ covered | Confirm empty; Delete repository disabled until name matches |
+| loading | E11 Soft-delete | ✅ covered | CTA disabled + pending in flight |
+| error | E11 Soft-delete | ✅ covered | Inline mismatch/server error in dialog |
+| partial | E11 Soft-delete | dismissed | Single confirm field — no partial multi-field |
+| long-text | E11 Soft-delete | ✅ covered | Confirm input scrolls; body wraps |
+| loading | E12 Copy HTTPS | dismissed | Clipboard write sync; no async open |
+| error | E12 Copy HTTPS | ✅ covered | Couldn’t copy. Select the URL and copy manually. |
+| overflow | E12 Copy HTTPS | ✅ covered | URL truncates in clone box; full value selectable |
+| long-text | E12 Copy HTTPS | ✅ covered | Long URL mid-ellipsis; full URL selectable |
+
+### GitHub parity (executor checklist)
+
+Locked to match GitHub/Gitea where CONTEXT requires it; intentional deltas below.
+
+| Surface | GitHub-like contract | Intentional delta |
+|---------|----------------------|-------------------|
+| Home | Repo list, visibility badge/lock, empty hero, New repository | Activity is placeholder only; no GitHub “For you” feed |
+| Create | `/new`, Public/Private, templates, license, gitignore | Owner read-only (orgs later) |
+| Code IA | Code / Commits / Branches / Tags link-row; tree+README; Quick setup empty | Issues/PRs/Actions **omitted** |
+| Paths | `/tree`, `/blob`, `/raw`, `/blame`, `/commits`, `/commit`, `/compare` | — |
+| Clone | HTTPS + Copy; Download ZIP + tar.gz | SSH placeholder until Phase 9; no PAT UI until Phase 8 |
+| Private | 404 anti-enumeration | — |
+| Files | Permalinks `#L`/`#L-L`; soft large-file limits; images inline | Highlight adds `.tsrx` / `.ripple` |
+| Branches | Owner CRUD; default soft-protect | Full branch-protection rules later |
+| Tags | List + archive download | Create-tag UI deferred |
 
 <!-- Status vocabulary: ✅ covered / 🧪 backstop / dismissed / ⚠ unresolved — Rows REPLACED on probe re-run. -->
 
@@ -516,12 +562,12 @@ Resolved without re-asking (CONTEXT + inherited UI-SPEC + researcher defaults):
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
-- [ ] Dimension 7 Inventory Provenance: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
+- [x] Dimension 7 Inventory Provenance: PASS
 
-**Approval:** pending
+**Approval:** approved (2026-09-12) — revision fixed bare Save → Save default branch; UI Considerations probe post-verify
