@@ -13,6 +13,8 @@ graph TD
   Traefik["Traefik :80"]
   Web["web :3000<br/>@octanest/web"]
   Api["api :8080<br/>octanest-api"]
+  Git["octanest-git<br/>GitBackend / CliGitBackend"]
+  Repos["Bare repos<br/>OCTANEST_REPOS_DIR"]
   Db["Database<br/>Postgres / MySQL / SQLite"]
   Client["@octanest/api-client<br/>rpc-gen"]
 
@@ -23,6 +25,8 @@ graph TD
   Client -.->|"typed RPC calls"| Api
   Web --> Client
   Api --> Db
+  Api --> Git
+  Git --> Repos
 ```
 
 Local development without Compose runs the API on `127.0.0.1:8080` and the Vite dev server on `:3000`, with proxies for `/api/*`, `/uploads`, and `/health` (see `apps/web/vite.config.ts`).
@@ -35,8 +39,8 @@ Typical authenticated request path:
 2. **RPC call** — `@octanest/api-client` `createClient` POSTs to `/api/rpc` with `Octanest-RPC-Version: 1`, `credentials: "include"`, and body `{ procedure, input }`. WebSocket upgrades use `/api/rpc/ws` for the same procedure dispatch.
 3. **Edge** — Traefik (priority 100) routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
 4. **Axum** — `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name.
-5. **Domain + storage** — Handlers in `auth/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, auth identities, auth settings). Dialect branching stays inside `octanest-db` only.
-6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`.
+5. **Domain + storage** — Handlers in `auth/`, `repo/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, auth settings). Dialect branching stays inside `octanest-db` only. Git forge ops go through `octanest_git::GitBackend` (never raw `gix` / shell from handlers).
+6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)).
 
 OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and `/api/auth/oidc/start|callback`, then return with a session cookie.
 
@@ -44,15 +48,31 @@ OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and
 
 | Abstraction | Role | Location |
 | --- | --- | --- |
-| `AppState` | Shared Axum state: DB, swappable email sender, sessions, pending auth, uploads dir | `crates/octanest-api/src/app.rs` |
-| `RpcCtx` / `dispatch` | Session-aware RPC context and procedure router (`system.*`, `auth.*`, `user.*`, `admin.auth.*`) | `crates/octanest-api/src/rpc.rs` |
+| `AppState` | Shared Axum state: DB, swappable email sender, sessions, pending auth, uploads dir, `GitBackend`, repos dir | `crates/octanest-api/src/app.rs` |
+| `RpcCtx` / `dispatch` | Session-aware RPC context and procedure router (`system.*`, `auth.*`, `user.*`, `repo.*`, `admin.*`) | `crates/octanest-api/src/rpc.rs` |
 | `SessionService` | Opaque HttpOnly cookie; CSPRNG token in cookie, SHA-256 hash in DB; idle 24h / remember-me 30d | `crates/octanest-api/src/auth/session.rs` |
 | `EmailSender` | Trait + adapters: log sink, SMTP (`OCTANEST_SMTP_URL`), Resend (`OCTANEST_RESEND_API_KEY`) | `crates/octanest-api/src/email/` |
+| `GitBackend` | Trait seam for all forge git ops (init, tree, blob, refs, history, branch, archive, gc) | `crates/octanest-git/src/backend.rs` |
+| `CliGitBackend` | Shipped Phase 7 adapter: system `git` CLI ≥ 2.5 via argv arrays (never `sh -c`) | `crates/octanest-git/src/cli.rs` |
 | `Database` / `DbPool` / `Dialect` | Uniform DB façade over sqlx Postgres, MySQL, SQLite pools | `crates/octanest-db/src/{lib,pool,dialect}.rs` |
 | `RpcRequest` / `RpcResponse` / `AppError` | Shared RPC envelope and error shape (Rust source of truth) | `crates/octanest-core/src/lib.rs` |
 | Auth DTOs | `UserPublic`, provider modes, auth settings types shared with codegen | `crates/octanest-core/src/auth_types.rs` |
 | `createClient` | Generated TS client + TanStack Query helpers; default `credentials: "include"` | `packages/api-client/src/index.ts` |
 | `rpc-gen` binary | Emits `packages/api-client` from a maintained template (keep in sync with `rpc.rs`) | `crates/octanest-api/src/bin/rpc_gen.rs` |
+
+### Git forge (`GitBackend`)
+
+Phase 7 ships a self-hosted forge browse/create surface behind a deep **`GitBackend`** module in `octanest-git` (**GIT-09**, **GIT-10**, **D-32**):
+
+| Concern | Contract |
+| --- | --- |
+| **Current adapter** | **`CliGitBackend`** — invokes the system `git` binary (≥ **2.5.0**). API **fails boot** if `git` is missing or below that floor (see [CONFIGURATION.md](CONFIGURATION.md)). |
+| **Future adapter** | **`GixGitBackend`** (gitoxide) is **documented, not shipped**. Implement the same `GitBackend` trait when create / browse / branch / archive / gc coverage reaches parity. Do **not** call `gix` from API handlers or treat gitoxide as the Phase 7 primary backend. |
+| **On-disk layout** | Bare repos at `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (default root `var/repos`). |
+| **ACL stub** | Private repos are **owner-only** until org collaborators (later phase). Missing repos and unauthorized private reads return identical `repo.not_found` (anti-enumeration). |
+| **RPC vs HTTP** | Metadata and mutations use JSON RPC (`repo.create`, `repo.tree`, `repo.blob`, `repo.commits`, branch/settings, …). Large binary payloads use HTTP GET: `/api/repos/{owner}/{repo}/raw/{ref}/…` and `/api/repos/{owner}/{repo}/archive/{ref}.zip` / `.tar.gz` — same ACL resolve as RPC. |
+
+API handlers depend on `Arc<dyn GitBackend>` (or the concrete `CliGitBackend` held on `AppState`), so swapping adapters later is a crate-local change, not a rewrite of `repo/*` routes.
 
 ### Auth sessions
 
@@ -85,9 +105,10 @@ octanest/
 ├── apps/web/              # Octane TanStack Start UI (routes, chrome, auth screens)
 ├── packages/api-client/   # Generated TS RPC client (do not hand-edit src/index.ts)
 ├── crates/
-│   ├── octanest-api/      # Axum HTTP/WS server, auth, email, rpc-gen
+│   ├── octanest-api/      # Axum HTTP/WS server, auth, repo RPC/HTTP, email, rpc-gen
 │   ├── octanest-core/     # Shared domain / RPC types (no I/O)
-│   └── octanest-db/       # Multi-dialect sqlx adapter + migrations/
+│   ├── octanest-db/       # Multi-dialect sqlx adapter + migrations/
+│   └── octanest-git/      # GitBackend trait + CliGitBackend (system git)
 ├── deploy/traefik/        # Optional Traefik static extras (Compose uses labels)
 ├── docs/                  # Operator docs (database, local auth stubs, architecture)
 ├── brand/                 # Product mark and brand assets
@@ -102,6 +123,8 @@ octanest/
 
 - **Split JS/Rust workspaces** — UI and generated client stay in Bun/Turbo; API and persistence stay in Cargo so dialect and auth logic remain typed and testable in Rust.
 - **`octanest-db` as the only dialect boundary** — Callers use `Database` methods; migrations live under `migrations/{postgres,mysql,sqlite}/`.
+- **`octanest-git` as the only git process boundary** — Callers use `GitBackend`; CLI argv construction and future gitoxide live in this crate only.
 - **Same-origin Traefik** — Avoids cross-origin cookie issues in Compose; local Vite proxies mirror that path layout.
 - **`deploy/`** — Holds operator Traefik notes; primary routing is Compose labels on `web` and `api` (see root `docker-compose.yml`).
 - **Stack presets** — Day-one `/new` templates are in-repo packs under `crates/octanest-api/assets/stack-presets/` (community PRs; no marketplace UI yet). See [guides/stack-presets.md](guides/stack-presets.md).
+- **Repos volume** — Compose binds `./var/repos` for bare git objects; knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, orphan/gc intervals).

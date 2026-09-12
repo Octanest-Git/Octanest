@@ -52,6 +52,8 @@ Dev-auth Compose port overrides (see `docker-compose.dev-auth.yml`): `OCTANEST_M
 
 Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTANEST_REPOS_DIR}/{owner}/{name}.git`.
 
+**Backend seam (D-32 / GIT-09 / GIT-10):** Forge operations use the `GitBackend` trait; Phase 7 ships **`CliGitBackend`** (system `git`). A future **`GixGitBackend`** (gitoxide) is not the primary backend — see [ARCHITECTURE.md](ARCHITECTURE.md#git-forge-gitbackend).
+
 **Git version floor (D-33):** The API **fails boot** (exit 1) if the `git` binary is missing or older than **2.5.0**. The API container image installs distro `git`; host `make` workflows require a local git ≥ 2.5 on `PATH`.
 
 **Compose volume (D-30 / D-31):** Default stack mounts `./var/repos:/var/repos` on the API service so repository objects survive container recreation. Do not point `OCTANEST_REPOS_DIR` outside that volume unless you also update the bind mount.
