@@ -51,6 +51,8 @@ services:
     volumes:
       # Avatar uploads (D-18) — api CWD is `/`, so bind to /var/uploads
       - ./var/uploads:/var/uploads
+      # Bare repos (D-30 / D-38) — default OCTANEST_REPOS_DIR=var/repos → /var/repos
+      - ./var/repos:/var/repos
     depends_on:
       postgres:
         condition: service_healthy

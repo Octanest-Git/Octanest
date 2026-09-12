@@ -1,6 +1,7 @@
 use octanest_api::auth::seed;
 use octanest_api::build_cors;
 use octanest_db::Database;
+use octanest_git::assert_git_version;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -8,6 +9,12 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();
+
+    // D-33 / GIT-09: refuse to serve if system git is missing or older than 2.5.0.
+    if let Err(e) = assert_git_version((2, 5, 0)) {
+        eprintln!("git version gate failed: {e}");
+        std::process::exit(1);
+    }
 
     let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
     let cors_origins = std::env::var("OCTANEST_CORS_ORIGINS").ok();
