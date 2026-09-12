@@ -896,12 +896,14 @@ impl GitBackend for CliGitBackend {
         }
         let prefix_arg = format!("--prefix={prefix}/");
         let format_arg = format!("--format={}", format.as_git_format());
+        // Known format/prefix flags, then end-of-options before user revision (CR-01).
         let args = [
             "-C",
             repo_s,
             "archive",
             format_arg.as_str(),
             prefix_arg.as_str(),
+            "--",
             treeish,
         ];
 

@@ -51,10 +51,10 @@ fn validate_ref(ref_name: &str) -> Result<&str, Response> {
     Ok(t)
 }
 
-/// Treeish for archives — allow `/` in branch names (e.g. `feature/x`), still reject `..` / NUL.
+/// Treeish for archives — allow `/` in branch names (e.g. `feature/x`), reject `..` / NUL / leading `-` (CR-01).
 fn validate_archive_treeish(treeish: &str) -> Result<&str, Response> {
     let t = treeish.trim();
-    if t.is_empty() || t.contains('\0') || t.contains("..") {
+    if t.is_empty() || t.contains('\0') || t.contains("..") || t.starts_with('-') {
         return Err(err_json(
             StatusCode::BAD_REQUEST,
             "repo.invalid_ref",
