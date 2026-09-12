@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
-status: planning
-stopped_at: Phase 7 plans revised (07-00..07-18)
-last_updated: "2026-09-12T16:40:45.093Z"
+status: executing
+stopped_at: Completed 07-00-PLAN.md
+last_updated: "2026-09-12T16:47:56.233Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 7 revision 2 — VALIDATION 00-18, file-budget splits 16/17/18, Dockerfile xref 07-17
-state_head: d367bc661914ae4dc443435472f5fd32939c8554
+last_activity_desc: Phase 07 execution started
+state_head: 3e4e7fe9827004f9abe1a1218eb15da85fad99a8
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 60
-  completed_plans: 41
+  completed_plans: 42
 milestone_name: milestone
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — READY TO EXECUTE
-Plan: 07-00 (Wave 0) next
-Status: PLANNING complete — ready for `/gsd-execute-phase 07`
-Last activity: 2026-09-12 — 19 plans (07-00..07-18); revision 2 closed file-budget warnings + VALIDATION coverage
+Phase: 07 (Git Repos & Browse) — EXECUTING
+Plan: 2 of 19
+Status: Ready to execute
+Last activity: 2026-09-12 — Phase 07 execution started
 
 Progress: Phases 1–6 complete (plans through 06-09); Phase 7 planned (19 plans: stubs → schema → create tracer → browse → ops/docs)
 
@@ -91,6 +91,7 @@ See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-C
 | Phase 06-self-host-admin-bootstrap P09 | 7min | 2 tasks | 6 files |
 | Phase 06-self-host-admin-bootstrap P08 | 13min | 2 tasks | 8 files |
 | Phase 06 P07 | 2min | 2 tasks | 8 files |
+| Phase 07-git-repos-browse P00 | 3 min | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -169,6 +170,8 @@ Recent decisions affecting current work:
 - [Post-06]: Setup wizard can choose auth stack (local/WorkOS/OIDC public fields); sys-admin factory reset wipes instance back to needs_setup
 - [Phase 07]: Git backend is system `git` CLI 2.5+ (fail boot if missing); gitoxide deferred until feature-complete; keep GitBackend abstraction (amends GIT-09)
 - [Phase 07]: GitHub-like browse IA (`/{owner}/{repo}`, tree/blob/raw/blame/compare); private=owner-only until Phase 10; create via `/new` with full templates
+- [Phase 07]: Wave 0 is RED-only — no CliGitBackend or repo RPC handlers; later 07-xx plans turn stubs green
+- [Phase 07]: octanest-git exports parse_git_version/assert_git_version placeholders that Err until implementation
 
 ### Pending Todos
 
@@ -190,6 +193,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T15:45:17.418Z
-Stopped at: Phase 7 UI-SPEC approved
-Resume file: /home/jesse/wsl-projects/personal/typescript/octanest/.planning/phases/07-git-repos-browse/07-UI-SPEC.md
+Last session: 2026-09-12T16:47:56.184Z
+Stopped at: Completed 07-00-PLAN.md
+Resume file: None
