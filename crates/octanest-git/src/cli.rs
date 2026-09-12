@@ -6,8 +6,9 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::backend::{
-    BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult, GitBackend, GitError,
-    GitRef, TreeEntry, TreeEntryKind, BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
+    ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
+    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, BLAME_SOFT_MAX_LINES,
+    DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -873,6 +874,17 @@ impl GitBackend for CliGitBackend {
         run_git(&["-C", repo_s, "branch", "-D", name]).await?;
         Ok(())
     }
+
+    async fn archive(
+        &self,
+        _repo: &Path,
+        _treeish: &str,
+        _format: ArchiveFormat,
+        _prefix: &str,
+    ) -> Result<Vec<u8>, GitError> {
+        // RED stub — GREEN implements `git archive` with timeout (GIT-07).
+        Err(GitError::Process("archive not implemented".into()))
+    }
 }
 
 /// Reject absolute paths and `..` components (T-07-09).
@@ -904,7 +916,7 @@ fn safe_worktree_path(work: &Path, rel: &str) -> Result<PathBuf, GitError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::backend::{GitBackend, TreeEntryKind};
+    use crate::backend::{ArchiveFormat, GitBackend, GitError, TreeEntryKind};
 
     #[tokio::test]
     async fn ls_tree_returns_dirs_files_and_gitlink_modes() {
@@ -1132,5 +1144,60 @@ mod tests {
         assert!(!blame.lines[0].author_name.is_empty());
         assert_eq!(blame.lines[0].line_number, 1);
         assert!(blame.lines[0].content.contains("alpha"));
+    }
+
+    /// Filter: `git_archive_formats` — zip + tar.gz via CliGitBackend (GIT-07).
+    #[tokio::test]
+    async fn git_archive_formats_zip_and_tar_gz() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("arch.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "archive seed",
+            &[("hello.txt".into(), b"hello archive\n".to_vec())],
+        )
+        .await
+        .unwrap();
+
+        let zip = git
+            .archive(&bare, "main", ArchiveFormat::Zip, "arch")
+            .await
+            .expect("zip archive");
+        assert!(
+            !zip.is_empty(),
+            "zip archive bytes must be non-empty"
+        );
+        assert_eq!(&zip[0..2], b"PK", "zip should start with PK magic");
+
+        let tar_gz = git
+            .archive(&bare, "main", ArchiveFormat::TarGz, "arch")
+            .await
+            .expect("tar.gz archive");
+        assert!(
+            !tar_gz.is_empty(),
+            "tar.gz archive bytes must be non-empty"
+        );
+        // gzip magic 1f 8b
+        assert_eq!(&tar_gz[0..2], &[0x1f, 0x8b], "tar.gz should be gzip");
+    }
+
+    #[tokio::test]
+    async fn git_archive_empty_repo_returns_not_found() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("empty-arch.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+
+        let err = git
+            .archive(&bare, "main", ArchiveFormat::Zip, "empty-arch")
+            .await
+            .expect_err("empty repo archive must fail");
+        match err {
+            GitError::NotFound(_) => {}
+            other => panic!("expected NotFound for empty archive, got {other}"),
+        }
     }
 }

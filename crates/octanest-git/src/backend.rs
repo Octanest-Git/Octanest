@@ -139,6 +139,39 @@ pub const DIFF_SOFT_MAX_BYTES: usize = 1_048_576;
 /// Soft cap for blame line count (D-20).
 pub const BLAME_SOFT_MAX_LINES: usize = 10_000;
 
+/// Soft timeout for `git archive` (T-07-22).
+pub const ARCHIVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// Source archive format for [`GitBackend::archive`] (GIT-07 / D-29).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArchiveFormat {
+    Zip,
+    TarGz,
+}
+
+impl ArchiveFormat {
+    pub fn as_git_format(self) -> &'static str {
+        match self {
+            Self::Zip => "zip",
+            Self::TarGz => "tar.gz",
+        }
+    }
+
+    pub fn content_type(self) -> &'static str {
+        match self {
+            Self::Zip => "application/zip",
+            Self::TarGz => "application/gzip",
+        }
+    }
+
+    pub fn extension(self) -> &'static str {
+        match self {
+            Self::Zip => "zip",
+            Self::TarGz => "tar.gz",
+        }
+    }
+}
+
 /// Async forge git operations. API/RPC never shell out directly.
 #[async_trait::async_trait]
 pub trait GitBackend: Send + Sync {
@@ -217,4 +250,14 @@ pub trait GitBackend: Send + Sync {
 
     /// Delete local branch `name` (`git branch -D`).
     async fn branch_delete(&self, repo: &Path, name: &str) -> Result<(), GitError>;
+
+    /// Build a source archive (`git archive`) for `treeish` with `--prefix={prefix}/`.
+    /// Empty / unborn refs → [`GitError::NotFound`] (not a panic).
+    async fn archive(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        format: ArchiveFormat,
+        prefix: &str,
+    ) -> Result<Vec<u8>, GitError>;
 }

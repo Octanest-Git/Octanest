@@ -68,12 +68,5 @@ mod tests {
         );
     }
 
-    /// Filter: `git_archive_formats` — zip + tar.gz via CliGitBackend (GIT-07).
-    #[test]
-    fn git_archive_formats_zip_and_tar_gz() {
-        assert!(
-            false,
-            "Wave 0: CliGitBackend::archive must support zip and tar.gz formats"
-        );
-    }
+    // git_archive_formats coverage lives in `cli::tests` (async CliGitBackend).
 }

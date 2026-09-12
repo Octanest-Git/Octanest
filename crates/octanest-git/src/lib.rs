@@ -11,8 +11,9 @@ pub mod cli;
 pub mod version;
 
 pub use backend::{
-    BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult, GitBackend,
-    GitError, GitRef, TreeEntry, TreeEntryKind, BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
+    ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
+    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES,
+    DIFF_SOFT_MAX_BYTES,
 };
 pub use cli::CliGitBackend;
 pub use version::{assert_git_version, parse_git_version};
