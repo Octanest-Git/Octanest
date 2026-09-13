@@ -363,19 +363,13 @@ const USER_LIMIT: usize = 10; // for SSH: fingerprint bucket replaces user id
 
 **If this table is empty:** (not empty — confirm A1 with planner if product wants GitHub-like “any key works for public” only when authenticated — already assumed yes.)
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Anonymous public SSH?**  
-   - What we know: D-SSH-04 says public fetch OK when authenticated.  
-   - What's unclear: none for planning if A1 accepted.  
-   - Recommendation: Require registered key for all SSH; document HTTPS for anonymous public clone.
+1. **Anonymous public SSH?** — **RESOLVED:** Require registered key for all SSH; document HTTPS for anonymous public clone (D-SSH-04: public fetch OK when authenticated).
 
-2. **Separate advertise vs listen port?**  
-   - Discretion resolved: single `OCTANEST_SSH_PORT` + docs.  
-   - Revisit only if Railway/cloud forces different publish mapping in Phase 22.
+2. **Separate advertise vs listen port?** — **RESOLVED:** single `OCTANEST_SSH_PORT` + docs (D-SSH-02). Revisit only if Railway/cloud forces different publish mapping in Phase 22.
 
-3. **RPC naming**  
-   - Recommendation: `ssh.listKeys` / `ssh.addKey` / `ssh.revokeKey` (session cookie; not PAT). Exact names locked at plan time via specta.
+3. **RPC naming** — **RESOLVED:** Locked at plan time as **`sshKey.add` / `sshKey.list` / `sshKey.revoke`** (session cookie; not PAT). RESEARCH earlier draft `ssh.listKeys`/`addKey`/`revokeKey` is superseded.
 
 ## Environment Availability
 

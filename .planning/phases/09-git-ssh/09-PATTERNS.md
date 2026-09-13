@@ -8,8 +8,8 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-api/src/git/ssh_backend.rs` (or sibling) | service | file-I/O + request-response | `crates/octanest-api/src/git/http_backend.rs` | role-match |
-| `crates/octanest-api/src/routes/git_ssh.rs` (or `ssh/` module) | controller | request-response | `crates/octanest-api/src/routes/git_smart_http.rs` | exact |
+| `crates/octanest-api/src/ssh/pack.rs` (+ `server.rs` / `auth.rs` / `host_keys.rs`) | service | file-I/O + request-response | `crates/octanest-api/src/git/http_backend.rs` | role-match — RESEARCH layout `src/ssh/*` |
+| `crates/octanest-api/src/ssh/mod.rs` | controller | request-response | `crates/octanest-api/src/routes/git_smart_http.rs` | role-match — in-process russh (not Axum `.git` route) |
 | ACL reuse in SSH authz | utility | request-response | `crates/octanest-api/src/repo/acl.rs` | exact |
 | `crates/octanest-db/migrations/{sqlite,postgres,mysql}/0009_ssh_keys.sql` | migration | CRUD | `…/0008_pats.sql` | exact |
 | `crates/octanest-db/src/ssh_keys.rs` (+ `Database` facade) | model | CRUD | `crates/octanest-db/src/pats.rs` | exact |
