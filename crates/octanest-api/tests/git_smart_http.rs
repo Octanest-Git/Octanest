@@ -343,18 +343,126 @@ async fn git_smart_insufficient_scope_403() {
     );
 }
 
-/// Failed-auth over limit → 429 + Retry-After (D-26). Expansion — 08-06.
+/// Failed-auth over limit → 429 + Retry-After (D-26).
 #[tokio::test]
-#[ignore = "08-06: failed-auth rate limit"]
 async fn git_smart_failed_auth_rate_limit_429_retry_after() {
-    assert!(false, "expansion: 429 + Retry-After");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_rl.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "rl@ex.com", "rluser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    // 20 failed Basic attempts from the same IP → next is 429.
+    for i in 0..20 {
+        let req = Request::builder()
+            .method("GET")
+            .uri(info_refs_uri("rluser", "hello"))
+            .header(header::AUTHORIZATION, basic_header("rluser", "password1"))
+            .header("x-forwarded-for", "198.51.100.9")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.clone().oneshot(req).await.unwrap();
+        assert_eq!(
+            res.status(),
+            StatusCode::UNAUTHORIZED,
+            "attempt {i} should still be 401"
+        );
+    }
+
+    let limited = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("rluser", "hello"))
+        .header(header::AUTHORIZATION, basic_header("rluser", "password1"))
+        .header("x-forwarded-for", "198.51.100.9")
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(limited).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::TOO_MANY_REQUESTS,
+        "21st failure from same IP must 429"
+    );
+    let retry = res
+        .headers()
+        .get(header::RETRY_AFTER)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        !retry.is_empty() && retry.parse::<u64>().unwrap_or(0) > 0,
+        "Retry-After seconds required — got {retry:?}"
+    );
 }
 
-/// Unverified owner push (receive-pack) denied (D-24). Expansion — 08-06.
+/// Unverified owner push (receive-pack) denied (D-24); fetch still allowed (Open Q2).
 #[tokio::test]
-#[ignore = "08-06: unverified push deny"]
 async fn git_smart_unverified_push_denied() {
-    assert!(false, "expansion: unverified push denied");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_unv.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "unv@ex.com", "unvown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"pre-unverify","scopes":["repo"]}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let token = v["data"]["token"].as_str().expect("token").to_string();
+
+    db.clear_email_verified_at(user_id)
+        .await
+        .expect("clear verify");
+
+    // Fetch still OK for unverified + valid PAT.
+    let fetch = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("unvown", "hello"))
+        .header(header::AUTHORIZATION, basic_header("unvown", &token))
+        .body(Body::empty())
+        .unwrap();
+    let fetch_res = app.clone().oneshot(fetch).await.unwrap();
+    assert_eq!(
+        fetch_res.status(),
+        StatusCode::OK,
+        "unverified may still fetch with PAT"
+    );
+
+    let push = Request::builder()
+        .method("GET")
+        .uri("/unvown/hello.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("unvown", &token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push).await.unwrap();
+    assert_ne!(
+        push_res.status(),
+        StatusCode::OK,
+        "unverified must not receive-pack"
+    );
+    let push_bytes = push_res.into_body().collect().await.unwrap().to_bytes();
+    let body = String::from_utf8_lossy(&push_bytes);
+    assert!(
+        body.contains("auth.email_unverified") || body.contains("email"),
+        "must surface email_unverified semantics — {body}"
+    );
 }
 
 /// Valid classic PAT authenticates public upload-pack info/refs (tracer fetch path).
