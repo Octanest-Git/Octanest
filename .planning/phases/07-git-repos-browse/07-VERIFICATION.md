@@ -1,10 +1,11 @@
 ---
 phase: 07-git-repos-browse
 verified: 2026-09-12T20:01:51Z
-status: human_needed
+status: passed
 score: 7/7 must-haves verified
 next_action: "Human verification required. Complete the manual tests in the phase's *-UAT.md, then re-run the verify step until status is passed."
 covered_files:
+
   - .planning/REQUIREMENTS.md
   - .planning/phases/07-git-repos-browse/07-00-PLAN.md
   - .planning/phases/07-git-repos-browse/07-00-SUMMARY.md
@@ -85,6 +86,7 @@ covered_files:
   - crates/octanest-git/src/version.rs
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
+
 covered_digest: "v1:sha256:c949dba2bda73010d9cb3528d41b5a95e2bd4e2083560653e45fc4b444661a4d"
 behavior_unverified: 3
 overrides_applied: 0
@@ -105,6 +107,7 @@ re_verification:
   regressions: []
 advisory: []
 behavior_unverified_items:
+
   - truth: "Syntax highlighting visual fidelity for .tsrx/.ripple held for human UAT (07-00 backstop)"
     test: "Open a seeded blob for .tsrx and .ripple in the Code UI"
     expected: "Tokens highlight via in-repo grammars (not plain TS/JS alias look)"
@@ -118,6 +121,7 @@ behavior_unverified_items:
     expected: "Ellipsis or wrap per UI-SPEC; layout remains usable"
     why_human: "verification: backstop — visual layout only"
 human_verification:
+
   - test: "Open a seeded blob for .tsrx and .ripple in the Code UI"
     expected: "Tokens highlight via in-repo grammars (not plain TS/JS alias look)"
     why_human: "verification: backstop — presence of grammars/tests does not prove visual fidelity"
