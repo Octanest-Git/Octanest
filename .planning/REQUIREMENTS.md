@@ -201,7 +201,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-08 | Phase 7 | Complete |
 | GIT-09 | Phase 7 | Complete |
 | GIT-10 | Phase 7 | Complete |
-| GIT-11 | Phase 8 | Gaps Found |
+| GIT-11 | Phase 8 | Pending |
 | GIT-12 | Phase 14 | Pending |
 | GIT-13 | Phase 14 | Pending |
 | GIT-14 | Phase 15 | Pending |

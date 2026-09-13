@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: 08-03 proceed_locked — implementing PAT schema
-last_updated: "2026-09-13T18:22:51.155Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-09-13T18:26:22.204Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 530d04cdbdda2fa731a95367705647123dee3eff
+state_head: 803b54f4eabf089e9c12a597c3646c537391d93c
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 66
+  completed_plans: 67
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 4 of 14
+Plan: 5 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -116,6 +116,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08 P00 | 2min | 1 tasks | 3 files |
 | Phase 08-git-https-pats P01 | 3min | 1 tasks | 2 files |
 | Phase 08 P02 | 1min | 3 tasks | 4 files |
+| Phase 08-git-https-pats P03 | 4min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -252,6 +253,7 @@ Recent decisions affecting current work:
 - [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 - [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
 - [Phase 08]: 08-03-T0: proceed_locked — implement D-08 octanest_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
+- [Phase 08]: 08-03: PAT schema uses octanest_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
 
 ### Pending Todos
 
@@ -273,6 +275,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:22:50.874Z
-Stopped at: 08-03 proceed_locked — implementing PAT schema
+Last session: 2026-09-13T18:26:22.145Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
