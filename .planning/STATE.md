@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
-last_updated: "2026-09-13T18:15:32.253Z"
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-09-13T18:18:48.169Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: c03e98efbb8e716a14ce17eebe81f87e35f342c7
+state_head: 18086a7833dd2d28d3cc198b7389a87b59f897d9
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 65
+  completed_plans: 66
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 3 of 14
+Plan: 4 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -115,6 +115,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 07-git-repos-browse P21 | 4 min | 2 tasks | 7 files |
 | Phase 08 P00 | 2min | 1 tasks | 3 files |
 | Phase 08-git-https-pats P01 | 3min | 1 tasks | 2 files |
+| Phase 08 P02 | 1min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -249,6 +250,7 @@ Recent decisions affecting current work:
 - [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
 - [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
 - [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
+- [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
 
 ### Pending Todos
 
@@ -270,6 +272,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:15:32.193Z
-Stopped at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
+Last session: 2026-09-13T18:18:48.103Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None

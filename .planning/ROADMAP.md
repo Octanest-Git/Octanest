@@ -305,11 +305,11 @@ Plans:
   1. User can create, list, and revoke personal access tokens for HTTPS git (and RPC/API where applicable)
   2. User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth
 
-**Plans**: 2/14 plans executed (waves 0–7)
+**Plans**: 3/14 plans executed (waves 0–7)
 
 - [x] 08-00-PLAN.md
 - [x] 08-01-PLAN.md
-- [ ] 08-02-PLAN.md
+- [x] 08-02-PLAN.md
 - [ ] 08-03-PLAN.md
 - [ ] 08-04-PLAN.md
 - [ ] 08-05-PLAN.md
@@ -324,7 +324,7 @@ Plans:
 
 - [x] `08-00-PLAN.md` — Wave 0 RED: pat_rpc + git_smart_http + dialect_pats stubs
 - [x] `08-01-PLAN.md` — Wave 0 RED: tokens + CloneBox how-to Vitest stubs
-- [ ] `08-02-PLAN.md` — Reversibility gates D-08/D-18/D-21 (+ D-01 PAT HTTPS-only)
+- [x] `08-02-PLAN.md` — Reversibility gates D-08/D-18/D-21 (+ D-01 PAT HTTPS-only)
 - [ ] `08-03-PLAN.md` — Schema 0008_pats + pat_types + DB CRUD + reserved aliases
 - [ ] `08-04-PLAN.md` — **Tracer**: classic PAT RPC + Smart HTTP public fetch + password reject
 - [ ] `08-05-PLAN.md` — Fine-grained PAT create RPC
@@ -555,7 +555,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | In Progress|  |
-| 8. Git HTTPS & PATs | 2/14 | In Progress|  |
+| 8. Git HTTPS & PATs | 3/14 | In Progress|  |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
 | 11. Issues | 0/TBD | Not started | - |
