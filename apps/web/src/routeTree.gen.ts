@@ -28,6 +28,7 @@ import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
+import { Route as SettingsTokensNewRouteImport } from './routes/settings/tokens.new'
 import { Route as OwnerRepoBlameSplatRouteImport } from './routes/$owner.$repo.blame.$'
 import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.blob.$'
 import { Route as OwnerRepoCommitShaRouteImport } from './routes/$owner.$repo.commit.$sha'
@@ -130,6 +131,11 @@ const OwnerRepoTagsRoute = OwnerRepoTagsRouteImport.update({
   path: '/tags',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const SettingsTokensNewRoute = SettingsTokensNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => SettingsTokensRoute,
+} as any)
 const OwnerRepoBlameSplatRoute = OwnerRepoBlameSplatRouteImport.update({
   id: '/blame/$',
   path: '/blame/$',
@@ -174,12 +180,13 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
-  '/settings/tokens': typeof SettingsTokensRoute
+  '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/settings/tokens/new': typeof SettingsTokensNewRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -199,12 +206,13 @@ export interface FileRoutesByTo {
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
-  '/settings/tokens': typeof SettingsTokensRoute
+  '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/settings/tokens/new': typeof SettingsTokensNewRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -227,12 +235,13 @@ export interface FileRoutesById {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
-  '/settings/tokens': typeof SettingsTokensRoute
+  '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/settings/tokens/new': typeof SettingsTokensNewRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/settings/tokens/new'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/settings/tokens/new'
     | '/$owner/$repo'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/settings/tokens/new'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -336,7 +348,7 @@ export interface RootRouteChildren {
   OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
-  SettingsTokensRoute: typeof SettingsTokensRoute
+  SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
 }
 
 declare module '@octanejs/tanstack-router' {
@@ -474,6 +486,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoTagsRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/settings/tokens/new': {
+      id: '/settings/tokens/new'
+      path: '/new'
+      fullPath: '/settings/tokens/new'
+      preLoaderRoute: typeof SettingsTokensNewRouteImport
+      parentRoute: typeof SettingsTokensRoute
+    }
     '/$owner/$repo/blame/$': {
       id: '/$owner/$repo/blame/$'
       path: '/blame/$'
@@ -561,6 +580,18 @@ const OwnerRepoRouteWithChildren = OwnerRepoRoute._addFileChildren(
   OwnerRepoRouteChildren,
 )
 
+interface SettingsTokensRouteChildren {
+  SettingsTokensNewRoute: typeof SettingsTokensNewRoute
+}
+
+const SettingsTokensRouteChildren: SettingsTokensRouteChildren = {
+  SettingsTokensNewRoute: SettingsTokensNewRoute,
+}
+
+const SettingsTokensRouteWithChildren = SettingsTokensRoute._addFileChildren(
+  SettingsTokensRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
@@ -574,7 +605,7 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
-  SettingsTokensRoute: SettingsTokensRoute,
+  SettingsTokensRoute: SettingsTokensRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
