@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-05-PLAN.md
-last_updated: "2026-09-13T18:42:34.592Z"
+stopped_at: Completed 08-06-PLAN.md
+last_updated: "2026-09-13T18:51:36.037Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 5b0f405d7e44eda8732c03b3f9adc57158100f3e
+state_head: 001ce79ae0093332599c4c7a00e34e092e10cfbe
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 69
+  completed_plans: 70
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 7 of 14
+Plan: 8 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -119,6 +119,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08-git-https-pats P03 | 4min | 2 tasks | 11 files |
 | Phase 08-git-https-pats P04 | 8min | 2 tasks | 11 files |
 | Phase 08 P05 | 2min | 1 tasks | 2 files |
+| Phase 08-git-https-pats P06 | 6min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,7 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
 - [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_
 - [Phase 08]: Selected empty or non-owned repo ids → pat.invalid_scope; all ignores repository_ids
+- [Phase 08]: Prefixes remain octanest_pat_/octanest_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
 
 ### Pending Todos
 
@@ -281,6 +283,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:42:34.530Z
-Stopped at: Completed 08-05-PLAN.md
+Last session: 2026-09-13T18:51:35.978Z
+Stopped at: Completed 08-06-PLAN.md
 Resume file: None
