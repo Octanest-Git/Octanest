@@ -19,7 +19,7 @@ affects:
 actuals:
   tokens: 2273
   tasks: 3
-  commits: 6
+  commits: 7
 
 plan_head_before: 9700d3688f3292f131ddfe7fd8a9d9fc3b540f07
 
@@ -102,7 +102,7 @@ Each task was committed atomically:
 
 **Follow-ups:** `c03e98e` (STATE decision dedupe), `5ea4ee3` (session stop for Task 3 gate)
 
-**Plan metadata:** _(included in final docs commit below)_
+**Plan metadata:** `bcf32c8` (docs: complete plan)
 
 ## Files Created/Modified
 
