@@ -350,7 +350,7 @@ async fn pat_create_fine_grained_selected_persists_repos() {
     assert_eq!(fg["repository_ids"].as_array().unwrap()[0], repo.id);
 }
 
-/// Selected with empty repository_ids → pat.invalid_scope.
+/// Selected with empty repository_ids → pat.repos_required.
 #[tokio::test]
 async fn pat_create_fine_grained_selected_empty_rejected() {
     let dir = tempfile::tempdir().expect("tempdir");
@@ -374,7 +374,7 @@ async fn pat_create_fine_grained_selected_empty_rejected() {
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
-    assert_eq!(v["error"]["code"], "pat.invalid_scope");
+    assert_eq!(v["error"]["code"], "pat.repos_required");
 }
 
 /// Unverified createFineGrained → auth.email_unverified (D-24).

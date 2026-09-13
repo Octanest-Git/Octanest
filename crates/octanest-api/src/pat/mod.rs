@@ -202,7 +202,7 @@ pub async fn create_fine_grained(
         FgRepoAccess::Selected => {
             if req.repository_ids.is_empty() {
                 return Err(AppError::new(
-                    "pat.invalid_scope",
+                    "pat.repos_required",
                     "selected fine-grained tokens require at least one repository",
                 ));
             }

@@ -237,7 +237,7 @@ Manage tokens with the session cookie via RPC (or `@octanest/api-client`). Token
 
 Create responses include a one-time plaintext `token` (store it immediately) plus a metadata `item` **without** the secret. `pat.list` / list items never return the secret — only `token_prefix`, scopes/permissions, `last_used_at` / `last_used_ip`, etc. `pat.revoke` input: `{ "id": "…" }`.
 
-Minting requires a verified email (`auth.email_unverified` otherwise). Empty note/name → `pat.note_required`. Invalid classic scopes, empty/foreign fine-grained `selected` repos → `pat.invalid_scope`. Unknown or non-owned revoke id → `pat.not_found`.
+Minting requires a verified email (`auth.email_unverified` otherwise). Empty note/name → `pat.note_required`. Selected fine-grained with no repositories → `pat.repos_required`. Invalid classic scopes or foreign/empty-id fine-grained `selected` repos → `pat.invalid_scope`. Unknown or non-owned revoke id → `pat.not_found`.
 
 ### Git Smart HTTP
 
@@ -307,6 +307,7 @@ Common `error.code` values:
 | `auth.not_configured` | WorkOS/OIDC ENV missing (SSO start) |
 | `admin.forbidden` | Authenticated but not admin |
 | `pat.note_required` | PAT name/note empty |
+| `pat.repos_required` | Fine-grained `selected` with no repository ids |
 | `pat.invalid_scope` | Classic scopes or fine-grained repo selection invalid |
 | `pat.not_found` | Revoke target missing or not owned |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |
