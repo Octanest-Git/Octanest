@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 9
+open_count: 13
 waived_count: 0
 fixed_count: 0
-total_count: 9
-last_updated: 2026-09-12T18:23:10.268Z
+total_count: 13
+last_updated: 2026-09-13T17:58:59.686Z
 ---
 
 # Broken Windows Ledger
@@ -24,6 +24,10 @@ last_updated: 2026-09-12T18:23:10.268Z
 | 7 | 07 | stub | apps/web/src/routes/$owner.$repo.index.tsrx |  | Clone/Download toolbar stub until 07-08 | open |  | 2026-09-12T18:11:31.663Z |  |
 | 8 | 07 | skipped-test | crates/octanest-git/src/version.rs |  | Pre-existing git_archive_formats_zip_and_tar_gz Wave 0 stub fails nextest | open |  | 2026-09-12T18:23:10.183Z |  |
 | 9 | 07 | skipped-test | crates/octanest-api/tests/repo_branch_soft_protect.rs |  | Wave 0 soft-protect stubs owned by 07-07 | open |  | 2026-09-12T18:23:10.268Z |  |
+| 10 | 08 | stub | crates/octanest-api/tests/pat_rpc.rs |  | Wave 0 RED pat_* stubs until 08-04 | open |  | 2026-09-13T17:58:59.409Z |  |
+| 11 | 08 | stub | crates/octanest-api/tests/git_smart_http.rs |  | Wave 0 RED git_smart_* stubs until 08-04/08-06 | open |  | 2026-09-13T17:58:59.506Z |  |
+| 12 | 08 | stub | crates/octanest-db/tests/dialect_pats.rs |  | Wave 0 dialect_pats until 08-03 0008_pats | open |  | 2026-09-13T17:58:59.595Z |  |
+| 13 | 08 | deviation | crates/octanest-db/tests/dialect_pats.rs |  | Renamed dialect tests for test(dialect_pats) nextest filter | open |  | 2026-09-13T17:58:59.686Z |  |
 
 ````json
 [
@@ -133,6 +137,54 @@ last_updated: 2026-09-12T18:23:10.268Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T18:23:10.268Z",
+    "resolved_at": null
+  },
+  {
+    "id": 10,
+    "kind": "stub",
+    "phase": "08",
+    "file": "crates/octanest-api/tests/pat_rpc.rs",
+    "line": null,
+    "description": "Wave 0 RED pat_* stubs until 08-04",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T17:58:59.409Z",
+    "resolved_at": null
+  },
+  {
+    "id": 11,
+    "kind": "stub",
+    "phase": "08",
+    "file": "crates/octanest-api/tests/git_smart_http.rs",
+    "line": null,
+    "description": "Wave 0 RED git_smart_* stubs until 08-04/08-06",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T17:58:59.506Z",
+    "resolved_at": null
+  },
+  {
+    "id": 12,
+    "kind": "stub",
+    "phase": "08",
+    "file": "crates/octanest-db/tests/dialect_pats.rs",
+    "line": null,
+    "description": "Wave 0 dialect_pats until 08-03 0008_pats",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T17:58:59.595Z",
+    "resolved_at": null
+  },
+  {
+    "id": 13,
+    "kind": "deviation",
+    "phase": "08",
+    "file": "crates/octanest-db/tests/dialect_pats.rs",
+    "line": null,
+    "description": "Renamed dialect tests for test(dialect_pats) nextest filter",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T17:58:59.686Z",
     "resolved_at": null
   }
 ]

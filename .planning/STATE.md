@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
-status: planned
-stopped_at: Phase 08 plan-checker revision (research RESOLVED + D-02/D-04 citations)
-last_updated: "2026-09-13T17:50:11.039Z"
+status: executing
+stopped_at: Completed 08-00-PLAN.md
+last_updated: "2026-09-13T17:59:00.809Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 08 PLAN revision — Open Questions RESOLVED; D-02/D-04 cited; 08-04 tracer keep-note
-state_head: 18a5e1dee3b479601b9c46c700740ea70b702d78
+last_activity_desc: Phase 08 execution started
+state_head: 80275abe944fed8dba745af5c8e5639bdcff69c8
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 63
+  completed_plans: 64
 milestone_name: milestone
 ---
 
@@ -24,14 +24,14 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs (planned; ready for execute-phase)
+**Current focus:** Phase 08 — Git HTTPS & PATs
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — READY TO EXECUTE
-Plan: 08-00 next (Wave 0 RED stubs); tracer 08-04 after schema 08-03 + reversibility 08-02
-Status: planned
-Last activity: 2026-09-13 — gsd-planner wrote 14 executable PLAN.md files (waves 0–7)
+Phase: 08 (Git HTTPS & PATs) — EXECUTING
+Plan: 2 of 14
+Status: Ready to execute
+Last activity: 2026-09-13 — Phase 08 execution started
 
 Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 plans ready for `/gsd-execute-phase`
 
@@ -113,6 +113,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 07-git-repos-browse P19 | 2 min | 2 tasks | 4 files |
 | Phase 07 P20 | 2 min | 2 tasks | 5 files |
 | Phase 07-git-repos-browse P21 | 4 min | 2 tasks | 7 files |
+| Phase 08 P00 | 2min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -241,6 +242,8 @@ Recent decisions affecting current work:
 - [Phase 07]: validate_ref allows slashy hierarchical refs and rejects leading hyphen like archive — WR-02 / GIT-05 browse parity with CR-01 defense-in-depth
 - [Phase 07]: compensate_failed_create soft-deletes then remove_dir_all with remove_file fallback for blocking non-dir paths — WR-01 recreate must clear both DB name lock and stuck bare path
 - [Phase 07]: Route bodies fetch repo.refs before parseRefAndPath; document.head() keeps first-segment-only — Refs unavailable in head hook; page load re-parses for WR-03/D-17
+- [Phase 08]: Wave 0 RED-only for PAT/Smart HTTP; no production handlers in 08-00
+- [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
 
 ### Pending Todos
 
@@ -262,6 +265,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T17:45:00.000Z
-Stopped at: Phase 08 plans written (08-00…08-13)
-Resume file: .planning/phases/08-git-https-pats/08-00-PLAN.md
+Last session: 2026-09-13T17:59:00.745Z
+Stopped at: Completed 08-00-PLAN.md
+Resume file: None
