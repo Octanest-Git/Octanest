@@ -21,6 +21,7 @@ import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
@@ -92,6 +93,11 @@ const AdminAuthRoute = AdminAuthRouteImport.update({
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/settings/profile',
   path: '/settings/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTokensRoute = SettingsTokensRouteImport.update({
+  id: '/settings/tokens',
+  path: '/settings/tokens',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetupIndexRoute = SetupIndexRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/tokens': typeof SettingsTokensRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/tokens': typeof SettingsTokensRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/tokens': typeof SettingsTokensRoute
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/tokens'
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/tokens'
     | '/setup/credentials'
     | '/setup'
     | '/$owner/$repo/branches'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/tokens'
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
@@ -324,6 +336,7 @@ export interface RootRouteChildren {
   OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsTokensRoute: typeof SettingsTokensRoute
 }
 
 declare module '@octanejs/tanstack-router' {
@@ -410,6 +423,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/settings/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/tokens': {
+      id: '/settings/tokens'
+      path: '/settings/tokens'
+      fullPath: '/settings/tokens'
+      preLoaderRoute: typeof SettingsTokensRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setup/': {
@@ -554,6 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsTokensRoute: SettingsTokensRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

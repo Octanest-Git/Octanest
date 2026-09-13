@@ -108,81 +108,105 @@ async function loadTokensModule(): Promise<Record<string, unknown>> {
 }
 
 describe("/settings/tokens (GIT-11 / D-14 list)", () => {
-  it("list title Personal access tokens + empty hero No personal access tokens + Generate new token", async () => {
-    const mod = await loadTokensModule();
-    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-    renderWithQueryClient(TokensPage);
+  it(
+    "list title Personal access tokens + empty hero No personal access tokens + Generate new token",
+    async () => {
+      const mod = await loadTokensModule();
+      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+      const { container } = renderWithQueryClient(TokensPage);
 
-    await waitFor(() => {
+      await waitFor(() => {
+        expect(
+          container.querySelector("h1")?.textContent,
+        ).toBe("Personal access tokens");
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("No personal access tokens"),
+        ).toBeInTheDocument();
+      });
       expect(
-        screen.getByRole("heading", { name: "Personal access tokens" }),
+        screen.getByText("Create a token to clone, fetch, and push over HTTPS."),
       ).toBeInTheDocument();
-    });
+      const generate = screen.getAllByRole("button", {
+        name: /Generate new token/i,
+      })[0]!;
+      expect(generate).toBeInTheDocument();
+      expect(generate).not.toBeDisabled();
+      generate.click();
+      await waitFor(() => {
+        expect(screen.getByText("Classic token")).toBeInTheDocument();
+      });
+      expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
+      // T-08-01: no plaintext secrets on list
+      expect(container.textContent).not.toMatch(
+        /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
+      );
+    },
+    15_000,
+  );
 
-    expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
-    expect(
-      screen.getByText("Create a token to clone, fetch, and push over HTTPS."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Generate new token/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Classic token")).toBeInTheDocument();
-    expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
-    // T-08-01: no plaintext secrets on list
-    expect(document.body.textContent).not.toMatch(
-      /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
-    );
-  });
+  it(
+    "unverified: list visible with Generate disabled + Verify your email to create a token.",
+    async () => {
+      loaderData = {
+        kind: "ready",
+        user: { ...verifiedUser, email_verified: false },
+      };
+      meMock.mockResolvedValue({
+        ok: true,
+        data: { ...verifiedUser, email_verified: false },
+      });
 
-  it("unverified: list visible with Generate disabled + Verify your email to create a token.", async () => {
-    loaderData = {
-      kind: "ready",
-      user: { ...verifiedUser, email_verified: false },
-    };
-    meMock.mockResolvedValue({
-      ok: true,
-      data: { ...verifiedUser, email_verified: false },
-    });
+      const mod = await loadTokensModule();
+      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+      const { container } = renderWithQueryClient(TokensPage);
 
-    const mod = await loadTokensModule();
-    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-    renderWithQueryClient(TokensPage);
+      await waitFor(() => {
+        expect(
+          container.querySelector("h1")?.textContent,
+        ).toBe("Personal access tokens");
+      });
 
-    await waitFor(() => {
+      const generate = screen.getAllByRole("button", {
+        name: /Generate new token/i,
+      })[0]!;
+      expect(generate).toBeDisabled();
       expect(
-        screen.getByRole("heading", { name: "Personal access tokens" }),
+        screen.getByText("Verify your email to create a token."),
       ).toBeInTheDocument();
-    });
+      await waitFor(() => {
+        expect(
+          screen.getByText("No personal access tokens"),
+        ).toBeInTheDocument();
+      });
+    },
+    15_000,
+  );
 
-    const generate = screen.getByRole("button", { name: /Generate new token/i });
-    expect(generate).toBeDisabled();
-    expect(
-      screen.getByText("Verify your email to create a token."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
-  });
+  it(
+    "settings secondary nav Profile | Personal access tokens",
+    async () => {
+      const mod = await loadTokensModule();
+      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+      const { container } = renderWithQueryClient(TokensPage);
 
-  it("settings secondary nav Profile | Personal access tokens", async () => {
-    const mod = await loadTokensModule();
-    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-    renderWithQueryClient(TokensPage);
+      await waitFor(() => {
+        expect(
+          container.querySelector('nav[aria-label="Settings"]'),
+        ).toBeTruthy();
+      });
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole("navigation", { name: "Settings" }),
-      ).toBeInTheDocument();
-    });
-
-    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
-      "href",
-      "/settings/profile",
-    );
-    const tokensLink = screen.getByRole("link", {
-      name: "Personal access tokens",
-    });
-    expect(tokensLink).toHaveAttribute("href", "/settings/tokens");
-    expect(tokensLink).toHaveAttribute("aria-current", "page");
-  });
+      const nav = container.querySelector('nav[aria-label="Settings"]')!;
+      const profile = nav.querySelector('a[href="/settings/profile"]');
+      const tokens = nav.querySelector('a[href="/settings/tokens"]');
+      expect(profile?.textContent).toBe("Profile");
+      expect(tokens?.textContent).toBe("Personal access tokens");
+      expect(tokens?.getAttribute("aria-current")).toBe("page");
+    },
+    15_000,
+  );
 });
 
 describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {

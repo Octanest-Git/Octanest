@@ -107,6 +107,14 @@ function AccountMenu({
       >
         Profile
       </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/settings/tokens");
+        }}
+      >
+        Personal access tokens
+      </DropdownMenuItem>
       @if (user.role === "sys-admin") {
         <DropdownMenuItem
           onClick={() => {

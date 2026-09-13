@@ -7,6 +7,7 @@ import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useRef, useState } from "octane";
 import { AvatarPreview } from "@/components/avatar-preview";
 import { ProfilePageSkeleton } from "@/components/page-skeletons";
+import { SettingsNav } from "@/components/settings/settings-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -292,6 +293,7 @@ function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-16">
+      <SettingsNav active="profile" />
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Profile
       </h1>
