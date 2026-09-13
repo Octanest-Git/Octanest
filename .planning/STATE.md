@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-09-13T18:18:48.169Z"
+stopped_at: 08-03 proceed_locked — implementing PAT schema
+last_updated: "2026-09-13T18:22:51.155Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 18086a7833dd2d28d3cc198b7389a87b59f897d9
+state_head: 530d04cdbdda2fa731a95367705647123dee3eff
 progress:
   total_phases: 22
   completed_phases: 0
@@ -251,6 +251,7 @@ Recent decisions affecting current work:
 - [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
 - [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 - [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
+- [Phase 08]: 08-03-T0: proceed_locked — implement D-08 octanest_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
 
 ### Pending Todos
 
@@ -272,6 +273,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:18:48.103Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-09-13T18:22:50.874Z
+Stopped at: 08-03 proceed_locked — implementing PAT schema
 Resume file: None

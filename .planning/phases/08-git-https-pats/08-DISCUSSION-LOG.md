@@ -256,3 +256,22 @@
 **User's choice:** `git_401_pat_https_only` — unauthenticated git access to private/no-access repos returns **401 + WWW-Authenticate Basic** (not web `repo.not_found` 404). PATs authenticate **HTTPS git only** in Phase 8 — not typed RPC Bearer; web stays on session cookies (D-01, D-21). GIT-11 ROADMAP parenthetical “RPC/API where applicable” interpreted as HTTPS-git-only for Phase 8.
 **Notes:** Intentional git-vs-web split; credential helpers expect 401 challenges. Mixing 404 with git confuses clients.
 **Recorded:** 2026-09-13 (08-02 continuation)
+
+---
+
+## 08-03 Schema proceed gate (checkpoint outcome)
+
+### Task 0 — Confirm proceed with D-08/D-18/D-21 from 08-02
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `proceed_locked` | Proceed with locked D-08/D-18/D-21 (recommended) | ✓ |
+| `stop` | Revisit 08-02 | |
+
+**User's choice:** `proceed_locked` — implement PAT schema/types/CRUD using locked contracts from 08-02:
+- **D-08:** `octanest_pat_` / `octanest_fg_` (option `octanest_prefixes`; **not** plan option id `ona_prefixes` / `ona_pat_`/`ona_fg_`)
+- **D-18:** `owner_repo_git` — `/{owner}/{repo}.git`
+- **D-21/D-01:** `git_401_pat_https_only`
+
+**Notes:** Plan 08-03 checkpoint text still says `ona_prefixes`; human + 08-02 SUMMARY override to full-brand `octanest_*` everywhere token prefixes appear in new code.
+**Recorded:** 2026-09-13 (08-03 continuation)
