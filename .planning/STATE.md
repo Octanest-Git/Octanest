@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
 status: planning
-stopped_at: Phase 10 patterns mapped — ready for planning
-last_updated: "2026-09-14T00:50:00.000Z"
+stopped_at: Phase 10 research complete — ready for planning
+last_updated: "2026-09-14T00:55:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 10 PATTERNS.md written (ACL stub, repos schema, Smart HTTP, settings UI, invite/email, reserved slugs, /new + $owner.$repo)
+last_activity_desc: Phase 10 RESEARCH.md written (orgs/ACL schema, capability model, PAT∩ACL, invite UX, Nyquist map)
 state_head: 15efaa3b59acd509551d0a50332fd3f7e8833f2c
 progress:
   total_phases: 22
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 10 — Orgs & Permissions
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-14 — Phase 10 pattern map complete (`10-PATTERNS.md`)
+Last activity: 2026-09-14 — Phase 10 research complete (`10-RESEARCH.md`); patterns also present
 
 See also: `.planning/ROADMAP.md` Phase 10 · ORG-01…04
 
