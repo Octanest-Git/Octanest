@@ -3,16 +3,16 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
-status: ui_spec_draft
-stopped_at: Phase 08 UI-SPEC approved
-last_updated: "2026-09-13T17:20:09.195Z"
+status: planned
+stopped_at: Phase 08 plan-checker revision (research RESOLVED + D-02/D-04 citations)
+last_updated: "2026-09-13T17:50:11.039Z"
 last_activity: 2026-09-13
-last_activity_desc: 08-UI-SPEC.md approved (7/7 + forge-parity UI Considerations)
-state_head: 95f460d097385f4e122d515a8d3f99f4dc8dc375
+last_activity_desc: Phase 08 PLAN revision — Open Questions RESOLVED; D-02/D-04 cited; 08-04 tracer keep-note
+state_head: 18a5e1dee3b479601b9c46c700740ea70b702d78
 progress:
   total_phases: 22
   completed_phases: 0
-  total_plans: 63
+  total_plans: 77
   completed_plans: 63
 milestone_name: milestone
 ---
@@ -24,18 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs (UI-SPEC draft, checker revision)
+**Current focus:** Phase 08 — Git HTTPS & PATs (planned; ready for execute-phase)
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — UI-SPEC draft (revised)
-Plan: not started — next planner consumes `08-RESEARCH.md` + `08-UI-SPEC.md` after checker approval
-Status: ui_spec_draft
-Last activity: 2026-09-13 — UI-SPEC Dimension 1 copywriting BLOCKs fixed; awaiting re-check
+Phase: 08 (Git HTTPS & PATs) — READY TO EXECUTE
+Plan: 08-00 next (Wave 0 RED stubs); tracer 08-04 after schema 08-03 + reversibility 08-02
+Status: planned
+Last activity: 2026-09-13 — gsd-planner wrote 14 executable PLAN.md files (waves 0–7)
 
-Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 UI-SPEC revised for checker re-run
+Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 plans ready for `/gsd-execute-phase`
 
-See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md` · `08-DISCUSSION-LOG.md`
+See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md`
 
 ## Performance Metrics
 
@@ -262,6 +262,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T17:20:09.135Z
-Stopped at: Phase 08 UI-SPEC approved
-Resume file: .planning/phases/08-git-https-pats/08-UI-SPEC.md
+Last session: 2026-09-13T17:45:00.000Z
+Stopped at: Phase 08 plans written (08-00…08-13)
+Resume file: .planning/phases/08-git-https-pats/08-00-PLAN.md

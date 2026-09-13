@@ -305,7 +305,29 @@ Plans:
   1. User can create, list, and revoke personal access tokens for HTTPS git (and RPC/API where applicable)
   2. User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth
 
-**Plans**: TBD
+**Plans**: 14 plans (waves 0–7)
+
+- [ ] `08-00-PLAN.md` — Wave 0 RED: pat_rpc + git_smart_http + dialect_pats stubs
+- [ ] `08-01-PLAN.md` — Wave 0 RED: tokens + CloneBox how-to Vitest stubs
+- [ ] `08-02-PLAN.md` — Reversibility gates D-08/D-18/D-21 (+ D-01 PAT HTTPS-only)
+- [ ] `08-03-PLAN.md` — Schema 0008_pats + pat_types + DB CRUD + reserved aliases
+- [ ] `08-04-PLAN.md` — **Tracer**: classic PAT RPC + Smart HTTP public fetch + password reject
+- [ ] `08-05-PLAN.md` — Fine-grained PAT create RPC
+- [ ] `08-06-PLAN.md` — Smart HTTP ACL/push/403/429/unverified push
+- [ ] `08-07-PLAN.md` — Traefik `.git` PathRegexp + smoke-git-https
+- [ ] `08-08-PLAN.md` — make rpc-gen + API.md
+- [ ] `08-09-PLAN.md` — `/settings/tokens` list/nav/revoke
+- [ ] `08-10-PLAN.md` — Classic create + one-time reveal
+- [ ] `08-11-PLAN.md` — Fine-grained create UI
+- [ ] `08-12-PLAN.md` — CloneBox/QuickSetup PAT how-to
+- [ ] `08-13-PLAN.md` — Docs + phase gate sweep
+
+**Cross-cutting constraints:**
+
+- Token list empty state shows empty hero and Generate new token entry (GitHub-shaped)
+- HTTPS how-to teaches username + PAT-as-password with aliases username / git / token / oauth2
+- Classic and fine-grained are separate create flows with distinct routes (GitHub dual model)
+
 **UI hint**: yes
 
 ### Phase 9: Git SSH

@@ -395,21 +395,24 @@ Tables: `personal_access_tokens` (id, user_id, kind `classic|fine_grained`, name
 | A4 | Phase 8 FG “all future repos” means all repos **owned by** the user (not collab) | FG catalog | Phase 10 collab will need ACL expansion |
 | A5 | Private + authenticated non-owner → 401 (not 404) for git is acceptable | Pitfalls / D-21 | Slightly different from “no enumeration”; still no 200 |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Reserved usernames for aliases?**
+1. **Reserved usernames for aliases?** — **RESOLVED**
    - What we know: Aliases `git` / `token` / `oauth2` recommended.
    - What's unclear: Whether signup already blocks them.
    - Recommendation: Planner adds reserved-name check if missing; prefer documenting aliases in how-to panel.
+   - **Resolution:** Extend `RESERVED_USERNAMES` with `git`, `token`, `oauth2` (08-02 ASSUME / 08-03 schema); document aliases in CloneBox/QuickSetup how-to (08-12).
 
-2. **Unverified user fetch of private own repo?**
+2. **Unverified user fetch of private own repo?** — **RESOLVED**
    - What we know: D-24 requires verified for create + **push**.
    - What's unclear: Whether unverified owner may **fetch** private via PAT.
    - Recommendation: Allow fetch with valid PAT; block push + create only (matches “privileged write” spirit).
+   - **Resolution:** Allow upload-pack (fetch) with valid PAT for unverified owners; block `pat.create*` and receive-pack (push) via `require_verified` / `auth.email_unverified` (08-04 ASSUME Open Q2; 08-06).
 
-3. **Rate-limit storage process-local vs DB?**
+3. **Rate-limit storage process-local vs DB?** — **RESOLVED**
    - What we know: No global HTTP limiter exists; email limits are DB-backed.
    - Recommendation: In-memory per API process for Phase 8 (Compose single API replica); document multi-replica follow-up.
+   - **Resolution:** In-memory `pat/rate_limit.rs` per API process (Compose single replica); multi-replica deferred (08-06 ASSUME / D-26).
 
 ## Environment Availability
 
