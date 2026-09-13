@@ -131,8 +131,11 @@ pub async fn create_classic(
 
     let mut secret_bytes = [0u8; TOKEN_BYTES];
     rand::fill(&mut secret_bytes);
-    let plaintext = format!("{CLASSIC_PAT_PREFIX}{}", bytes_to_hex(&secret_bytes));
+    let secret_hex = bytes_to_hex(&secret_bytes);
+    let plaintext = format!("{CLASSIC_PAT_PREFIX}{secret_hex}");
     let token_hash = sha256_hex(plaintext.as_bytes());
+    // Display fingerprint: brand prefix + first 8 hex of secret (not the hash).
+    let token_prefix = format!("{CLASSIC_PAT_PREFIX}{}", &secret_hex[..8]);
 
     let scopes_json = serde_json::to_string(
         &req.scopes
@@ -151,7 +154,7 @@ pub async fn create_classic(
             &user.id,
             PatKind::Classic.as_str(),
             req.name.trim(),
-            CLASSIC_PAT_PREFIX,
+            &token_prefix,
             &token_hash,
             Some(&scopes_json),
             None,
@@ -244,8 +247,11 @@ pub async fn create_fine_grained(
 
     let mut secret_bytes = [0u8; TOKEN_BYTES];
     rand::fill(&mut secret_bytes);
-    let plaintext = format!("{FINE_GRAINED_PAT_PREFIX}{}", bytes_to_hex(&secret_bytes));
+    let secret_hex = bytes_to_hex(&secret_bytes);
+    let plaintext = format!("{FINE_GRAINED_PAT_PREFIX}{secret_hex}");
     let token_hash = sha256_hex(plaintext.as_bytes());
+    // Display fingerprint: brand prefix + first 8 hex of secret (not the hash).
+    let token_prefix = format!("{FINE_GRAINED_PAT_PREFIX}{}", &secret_hex[..8]);
 
     let expires_at = validate_expires_at(req.expires_at.as_deref())?;
 
@@ -256,7 +262,7 @@ pub async fn create_fine_grained(
             &user.id,
             PatKind::FineGrained.as_str(),
             req.name.trim(),
-            FINE_GRAINED_PAT_PREFIX,
+            &token_prefix,
             &token_hash,
             None,
             Some(req.contents.as_str()),

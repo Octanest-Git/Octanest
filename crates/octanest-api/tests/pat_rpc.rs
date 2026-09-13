@@ -117,7 +117,15 @@ async fn pat_create_classic_returns_one_time_token() {
     );
     assert_eq!(v["data"]["item"]["kind"], "classic");
     assert_eq!(v["data"]["item"]["name"], "laptop");
-    assert_eq!(v["data"]["item"]["token_prefix"], CLASSIC_PAT_PREFIX);
+    let prefix = v["data"]["item"]["token_prefix"].as_str().expect("token_prefix");
+    assert!(
+        prefix.starts_with(CLASSIC_PAT_PREFIX) && prefix.len() == CLASSIC_PAT_PREFIX.len() + 8,
+        "token_prefix must be brand + 8 hex fingerprint — {prefix}"
+    );
+    assert!(
+        token.starts_with(prefix),
+        "plaintext must start with display prefix — {token} / {prefix}"
+    );
     assert!(v["data"]["item"].get("token").is_none());
 }
 
@@ -158,7 +166,8 @@ async fn pat_list_omits_secret_token() {
         !dumped.contains(&plaintext),
         "plaintext must not appear in list response"
     );
-    assert_eq!(items[0]["token_prefix"], CLASSIC_PAT_PREFIX);
+    assert_eq!(items[0]["token_prefix"].as_str().unwrap().len(), CLASSIC_PAT_PREFIX.len() + 8);
+    assert!(plaintext.starts_with(items[0]["token_prefix"].as_str().unwrap()));
 }
 
 /// `pat.revoke` removes the token from subsequent list results.
@@ -285,7 +294,16 @@ async fn pat_create_fine_grained_all_returns_fg_token() {
     );
     assert_eq!(v["data"]["item"]["kind"], "fine_grained");
     assert_eq!(v["data"]["item"]["name"], "ci-all");
-    assert_eq!(v["data"]["item"]["token_prefix"], FINE_GRAINED_PAT_PREFIX);
+    let prefix = v["data"]["item"]["token_prefix"].as_str().expect("token_prefix");
+    assert!(
+        prefix.starts_with(FINE_GRAINED_PAT_PREFIX)
+            && prefix.len() == FINE_GRAINED_PAT_PREFIX.len() + 8,
+        "token_prefix must be brand + 8 hex fingerprint — {prefix}"
+    );
+    assert!(
+        token.starts_with(prefix),
+        "plaintext must start with display prefix — {token} / {prefix}"
+    );
     assert_eq!(v["data"]["item"]["repo_access"], "all");
     assert_eq!(v["data"]["item"]["contents"], "write");
     let repos = v["data"]["item"]["repository_ids"]
@@ -346,7 +364,12 @@ async fn pat_create_fine_grained_selected_persists_repos() {
         .iter()
         .find(|i| i["kind"] == "fine_grained")
         .expect("fine_grained in list");
-    assert_eq!(fg["token_prefix"], FINE_GRAINED_PAT_PREFIX);
+    let fg_prefix = fg["token_prefix"].as_str().expect("token_prefix");
+    assert!(
+        fg_prefix.starts_with(FINE_GRAINED_PAT_PREFIX)
+            && fg_prefix.len() == FINE_GRAINED_PAT_PREFIX.len() + 8,
+        "token_prefix must be brand + 8 hex fingerprint — {fg_prefix}"
+    );
     assert_eq!(fg["repository_ids"].as_array().unwrap()[0], repo.id);
 }
 
