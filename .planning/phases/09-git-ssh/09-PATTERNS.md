@@ -16,7 +16,7 @@
 | `crates/octanest-db/tests/dialect_ssh_keys.rs` | test | CRUD | `crates/octanest-db/tests/dialect_pats.rs` | exact |
 | `crates/octanest-core/src/ssh_key_types.rs` | model | transform | `crates/octanest-core/src/pat_types.rs` | role-match |
 | `crates/octanest-api/src/ssh_keys/mod.rs` (RPC) | controller | request-response | `crates/octanest-api/src/pat/mod.rs` | exact |
-| `crates/octanest-api/src/ssh_keys/rate_limit.rs` | middleware | request-response | `crates/octanest-api/src/pat/rate_limit.rs` | exact |
+| `crates/octanest-api/src/ssh/rate_limit.rs` | middleware | request-response | `crates/octanest-api/src/pat/rate_limit.rs` | exact |
 | `crates/octanest-api/src/rpc.rs` + `rpc_gen` + `make rpc-gen` | config | request-response | `pat.*` dispatch in `rpc.rs` / `bin/rpc_gen.rs` | exact |
 | `crates/octanest-api/tests/ssh_key_rpc.rs` | test | request-response | `crates/octanest-api/tests/pat_rpc.rs` | role-match |
 | `apps/web/src/routes/settings/ssh-keys*.tsrx` | route | CRUD | `apps/web/src/routes/settings/tokens.tsrx` | exact |
@@ -234,7 +234,7 @@ SSH differences vs PAT: no one-time secret reveal on create; store full public k
 "pat.list" => match pat::list(ctx).await { … },
 "pat.revoke" => match pat::revoke(ctx, req.input).await { … },
 ```
-Add `sshKey.create` / `sshKey.list` / `sshKey.revoke` the same way, then `make rpc-gen`.
+Add `sshKey.add` / `sshKey.list` / `sshKey.revoke` the same way, then `make rpc-gen`.
 
 ---
 
@@ -263,7 +263,7 @@ UI: disable “Add key” when `!user.email_verified` (same as tokens Generate �
 
 ---
 
-### `crates/octanest-api/src/ssh_keys/rate_limit.rs` (middleware, request-response)
+### `crates/octanest-api/src/ssh/rate_limit.rs` (middleware, request-response)
 
 **Analog:** `crates/octanest-api/src/pat/rate_limit.rs` + `AppState.git_auth_limiter`
 
