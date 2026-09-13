@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 18
+open_count: 19
 waived_count: 0
 fixed_count: 1
-total_count: 19
-last_updated: 2026-09-13T18:42:52.268Z
+total_count: 20
+last_updated: 2026-09-13T19:06:10.084Z
 ---
 
 # Broken Windows Ledger
@@ -34,6 +34,7 @@ last_updated: 2026-09-13T18:42:52.268Z
 | 17 | 08 | stub | crates/octanest-api/src/pat/mod.rs |  | create_fine_grained stub → pat.not_implemented (08-05) | fixed |  | 2026-09-13T18:37:52.435Z | 2026-09-13T18:42:52.268Z |
 | 18 | 08 | skipped-test | crates/octanest-api/tests/git_smart_http.rs |  | 4 expansion git_smart tests #[ignore] until 08-06 | open |  | 2026-09-13T18:37:52.519Z |  |
 | 19 | 08 | deviation | crates/octanest-api/src/pat/mod.rs |  | Plan prose ona_fg_ locked to octanest_fg_ (FINE_GRAINED_PAT_PREFIX / D-08) | open |  | 2026-09-13T18:42:34.877Z |  |
+| 20 | 08 | unrun-verify | scripts/smoke-git-https.sh |  | Live make smoke-git-https not run — Docker engine unavailable on executor host | open |  | 2026-09-13T19:06:10.084Z |  |
 
 ````json
 [
@@ -263,6 +264,18 @@ last_updated: 2026-09-13T18:42:52.268Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T18:42:34.877Z",
+    "resolved_at": null
+  },
+  {
+    "id": 20,
+    "kind": "unrun-verify",
+    "phase": "08",
+    "file": "scripts/smoke-git-https.sh",
+    "line": null,
+    "description": "Live make smoke-git-https not run — Docker engine unavailable on executor host",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T19:06:10.084Z",
     "resolved_at": null
   }
 ]

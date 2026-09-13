@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-08-PLAN.md
-last_updated: "2026-09-13T18:56:43.033Z"
+stopped_at: Completed 08-07-PLAN.md
+last_updated: "2026-09-13T19:06:17.144Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 483daf5433c52c8101bf29654f089b3e573fc80d
+state_head: a315997fb262e10c163f793652689238c3670523
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 71
+  completed_plans: 72
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 9 of 14
+Plan: 10 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -121,6 +121,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08 P05 | 2min | 1 tasks | 2 files |
 | Phase 08-git-https-pats P06 | 6min | 2 tasks | 7 files |
 | Phase 08 P08 | 4min | 1 tasks | 3 files |
+| Phase 08-git-https-pats P07 | 6min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -265,6 +266,8 @@ Recent decisions affecting current work:
 - [Phase 08]: Prefixes remain octanest_pat_/octanest_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
 - [Phase 08]: PAT client surface via rpc_gen template only (no hand-edit api-client)
 - [Phase 08]: API.md D-01: session cookie for RPC; PAT Basic for Smart HTTP only
+- [Phase 08]: Separate Traefik api-git router (PathRegexp prio 110) → service api; keep api@100 and web@1
+- [Phase 08]: smoke-git-https uses octanest_pat_/octanest_fg_ prefixes; skips exit 0 without Docker
 
 ### Pending Todos
 
@@ -286,6 +289,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:56:42.970Z
-Stopped at: Completed 08-08-PLAN.md
+Last session: 2026-09-13T19:06:17.072Z
+Stopped at: Completed 08-07-PLAN.md
 Resume file: None
