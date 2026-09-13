@@ -358,15 +358,35 @@ Plans:
 **Plans**: 10 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
 - [ ] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
 - [ ] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 09-04-PLAN.md — ACL parity, receive-pack, rate-limit, key caps
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 09-05-PLAN.md — Compose TCP 2222 + host keys + smoke-git-ssh
 - [ ] 09-06-PLAN.md — make rpc-gen + API.md SSH docs
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 09-07-PLAN.md — /settings/ssh-keys UI + nav + revoke confirm
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 09-08-PLAN.md — CloneBox scp-style SSH URL + how-to CTA
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 09-09-PLAN.md — CONFIGURATION/ARCHITECTURE + VALIDATION phase gate
 
 **UI hint**: yes
@@ -385,6 +405,7 @@ Plans:
 **Plans**: 14 plans
 
 Plans:
+
 - [ ] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
 - [ ] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
 - [ ] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
