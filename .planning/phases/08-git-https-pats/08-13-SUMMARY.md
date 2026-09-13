@@ -17,7 +17,7 @@ affects:
 actuals:
   tokens: 5396
   tasks: 2
-  commits: 2
+  commits: 4
 
 plan_head_before: 529a4d242bb9fe7e920d82684a7e702b3f7a8867
 
@@ -116,6 +116,8 @@ Each task was committed atomically:
 
 1. **Task 1: CONFIGURATION + ARCHITECTURE Smart HTTP/PAT notes** - `766e94e` (docs)
 2. **Task 2: Phase gate verify + VALIDATION map refresh** - `601e6c9` (test)
+
+**Plan metadata:** `39e2965` (docs: complete plan) + ledger-align follow-up
 
 ## Files Created/Modified
 
