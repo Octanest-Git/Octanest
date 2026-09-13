@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 13
+open_count: 16
 waived_count: 0
 fixed_count: 0
-total_count: 13
-last_updated: 2026-09-13T17:58:59.686Z
+total_count: 16
+last_updated: 2026-09-13T18:04:19.657Z
 ---
 
 # Broken Windows Ledger
@@ -28,6 +28,9 @@ last_updated: 2026-09-13T17:58:59.686Z
 | 11 | 08 | stub | crates/octanest-api/tests/git_smart_http.rs |  | Wave 0 RED git_smart_* stubs until 08-04/08-06 | open |  | 2026-09-13T17:58:59.506Z |  |
 | 12 | 08 | stub | crates/octanest-db/tests/dialect_pats.rs |  | Wave 0 dialect_pats until 08-03 0008_pats | open |  | 2026-09-13T17:58:59.595Z |  |
 | 13 | 08 | deviation | crates/octanest-db/tests/dialect_pats.rs |  | Renamed dialect tests for test(dialect_pats) nextest filter | open |  | 2026-09-13T17:58:59.686Z |  |
+| 14 | 08 | stub | apps/web/src/routes/settings/tokens.integration.test.ts |  | Wave 0 RED tokens UI stubs until 08-09/08-10 | open |  | 2026-09-13T18:04:19.488Z |  |
+| 15 | 08 | stub | apps/web/src/components/repo/clone-box.pat.integration.test.ts |  | Wave 0 RED CloneBox PAT how-to stubs until 08-12 | open |  | 2026-09-13T18:04:19.572Z |  |
+| 16 | 08 | deviation | apps/web/src/routes/settings/tokens.integration.test.ts |  | Used runtime-variable @vite-ignore import so Vitest collects while tokens route absent | open |  | 2026-09-13T18:04:19.657Z |  |
 
 ````json
 [
@@ -185,6 +188,42 @@ last_updated: 2026-09-13T17:58:59.686Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T17:58:59.686Z",
+    "resolved_at": null
+  },
+  {
+    "id": 14,
+    "kind": "stub",
+    "phase": "08",
+    "file": "apps/web/src/routes/settings/tokens.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 RED tokens UI stubs until 08-09/08-10",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T18:04:19.488Z",
+    "resolved_at": null
+  },
+  {
+    "id": 15,
+    "kind": "stub",
+    "phase": "08",
+    "file": "apps/web/src/components/repo/clone-box.pat.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 RED CloneBox PAT how-to stubs until 08-12",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T18:04:19.572Z",
+    "resolved_at": null
+  },
+  {
+    "id": 16,
+    "kind": "deviation",
+    "phase": "08",
+    "file": "apps/web/src/routes/settings/tokens.integration.test.ts",
+    "line": null,
+    "description": "Used runtime-variable @vite-ignore import so Vitest collects while tokens route absent",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T18:04:19.657Z",
     "resolved_at": null
   }
 ]

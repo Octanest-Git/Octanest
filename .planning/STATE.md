@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-00-PLAN.md
-last_updated: "2026-09-13T17:59:00.809Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-09-13T18:04:20.594Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 80275abe944fed8dba745af5c8e5639bdcff69c8
+state_head: fb8975dfb550e4ad5e237b40455a23193cd48777
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 64
+  completed_plans: 65
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 2 of 14
+Plan: 3 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -114,6 +114,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 07 P20 | 2 min | 2 tasks | 5 files |
 | Phase 07-git-repos-browse P21 | 4 min | 2 tasks | 7 files |
 | Phase 08 P00 | 2min | 1 tasks | 3 files |
+| Phase 08-git-https-pats P01 | 3min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -244,6 +245,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Route bodies fetch repo.refs before parseRefAndPath; document.head() keeps first-segment-only — Refs unavailable in head hook; page load re-parses for WR-03/D-17
 - [Phase 08]: Wave 0 RED-only for PAT/Smart HTTP; no production handlers in 08-00
 - [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
+- [Phase 08]: Wave 0 web stubs RED-only; variable @vite-ignore import for absent tokens route
+- [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
 
 ### Pending Todos
 
@@ -265,6 +268,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T17:59:00.745Z
-Stopped at: Completed 08-00-PLAN.md
+Last session: 2026-09-13T18:04:20.528Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
