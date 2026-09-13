@@ -5,6 +5,8 @@ pub mod auth_settings;
 pub mod dialect;
 pub mod email_tokens;
 pub mod migrate;
+pub mod org_members;
+pub mod organizations;
 pub mod pats;
 pub mod pool;
 pub mod probe;
@@ -15,11 +17,12 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
+pub use org_members::OrgMemberRow;
+pub use organizations::OrganizationRow;
 pub use pats::PatRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
-
 use dialect::resolve_dialect_from_env as resolve_from_env;
 use pool::DbPool as Pool;
 
@@ -100,6 +103,55 @@ impl Database {
             return Err("database not configured".into());
         };
         probe::probe(pool, dialect).await
+    }
+
+    // --- organizations ---
+
+    pub async fn insert_organization(
+        &self,
+        id: &str,
+        slug: &str,
+        display_name: &str,
+        member_base_permission: &str,
+    ) -> Result<OrganizationRow, String> {
+        organizations::insert_organization(
+            self.require_pool()?,
+            id,
+            slug,
+            display_name,
+            member_base_permission,
+        )
+        .await
+    }
+
+    pub async fn find_organization_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<OrganizationRow>, String> {
+        organizations::find_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn find_organization_by_slug(
+        &self,
+        slug: &str,
+    ) -> Result<Option<OrganizationRow>, String> {
+        organizations::find_by_slug(self.require_pool()?, slug).await
+    }
+
+    pub async fn insert_org_owner_membership(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::insert_owner_membership(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn find_org_member(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<Option<OrgMemberRow>, String> {
+        org_members::find_member(self.require_pool()?, org_id, user_id).await
     }
 
     // --- repositories ---
