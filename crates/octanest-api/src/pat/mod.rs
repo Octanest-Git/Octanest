@@ -210,7 +210,11 @@ pub async fn create_fine_grained(
                         "one or more repositories are not accessible for this token",
                     ));
                 }
-                owned.push(row.id);
+                // Deduplicate after ownership checks (preserve order) so duplicate
+                // ids cannot fail the composite PK on personal_access_token_repos.
+                if !owned.iter().any(|id| id == &row.id) {
+                    owned.push(row.id);
+                }
             }
             owned
         }
