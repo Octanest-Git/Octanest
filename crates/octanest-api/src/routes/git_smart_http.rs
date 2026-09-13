@@ -20,6 +20,7 @@ const PAT_HINT: &str =
     "Authentication failed. Use a personal access token as the password (not your account password). Create one in Settings → Personal access tokens.";
 
 /// Username aliases accepted for Basic auth (identity still comes from the PAT) — D-10.
+/// 401 responses set `WWW-Authenticate: Basic realm="Octanest Git"`.
 const USERNAME_ALIASES: &[&str] = &["git", "token", "oauth2"];
 
 #[derive(Debug, Deserialize)]
