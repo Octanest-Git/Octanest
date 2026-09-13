@@ -1,0 +1,9 @@
+{
+  "command": "bunx vitest run src/routes/settings/tokens.integration.test.ts --reporter=tap",
+  "exitCode": 1,
+  "targetTest": "title New fine-grained token + All repositories / Only select repositories + Contents Read-only / Read and write",
+  "targetFile": "apps/web/src/routes/settings/tokens.integration.test.ts",
+  "expected": "New fine-grained token heading + All repositories / Only select repositories + Contents permission Read-only / Read and write + Generate token",
+  "actual": "08-11: /settings/tokens/new/fine-grained route missing — Cannot find module tokens.new.fine-grained",
+  "output": "1..5\nnot ok 1 - title New fine-grained token + All repositories / Only select repositories + Contents Read-only / Read and write\n  ---\n  message: '08-11: /settings/tokens/new/fine-grained route missing — implement FG create + reveal (GIT-11 / D-05 / D-06)'\n  ...\nnot ok 2 - selected empty submit shows Select at least one repository.\nnot ok 3 - zero owned repos shows You don’t have any repositories yet. + New repository link\nnot ok 4 - unverified shows Verify your email AuthShell — not the FG create form\nnot ok 5 - success shows Make sure to copy… + Copy token + Back to tokens via createFineGrained\n# tests 14\n# pass 9\n# fail 5\n# cancelled 0\n"
+}

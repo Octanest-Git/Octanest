@@ -18,6 +18,8 @@ import { renderWithQueryClient } from "@/test/render-with-query";
 const listMock = vi.fn();
 const revokeMock = vi.fn();
 const createClassicMock = vi.fn();
+const createFineGrainedMock = vi.fn();
+const listMineMock = vi.fn();
 const meMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
@@ -29,6 +31,10 @@ vi.mock("@/lib/api-client", () => ({
       list: (...args: unknown[]) => listMock(...args),
       revoke: (...args: unknown[]) => revokeMock(...args),
       createClassic: (...args: unknown[]) => createClassicMock(...args),
+      createFineGrained: (...args: unknown[]) => createFineGrainedMock(...args),
+    },
+    repo: {
+      listMine: (...args: unknown[]) => listMineMock(...args),
     },
   },
 }));
@@ -95,9 +101,28 @@ beforeEach(() => {
   listMock.mockReset();
   revokeMock.mockReset();
   createClassicMock.mockReset();
+  createFineGrainedMock.mockReset();
+  listMineMock.mockReset();
   meMock.mockReset();
   loaderData = { kind: "ready", user: verifiedUser };
   listMock.mockResolvedValue({ ok: true, data: [] });
+  listMineMock.mockResolvedValue({
+    ok: true,
+    data: {
+      repos: [
+        {
+          id: "repo-1",
+          owner_id: "u1",
+          owner_username: "ada",
+          name: "demo",
+          description: "",
+          visibility: "private",
+          default_branch: "main",
+          updated_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+    },
+  });
   meMock.mockResolvedValue({ ok: true, data: verifiedUser });
 });
 
@@ -484,6 +509,214 @@ describe("/settings/tokens/new (GIT-11 / D-15 one-time reveal)", () => {
       ).toBeInTheDocument();
       expect(
         screen.getByDisplayValue("octanest_pat_abcdef0123456789deadbeef"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Copy token" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Back to tokens" }),
+      ).toHaveAttribute("href", "/settings/tokens");
+      expect(
+        screen.queryByRole("button", { name: "Generate token" }),
+      ).not.toBeInTheDocument();
+    },
+    15_000,
+  );
+});
+
+/** Load fine-grained create page; @vite-ignore keeps suite collectable before route exists. */
+async function loadTokensNewFgModule(): Promise<Record<string, unknown>> {
+  const rel = "./tokens.new.fine-grained";
+  try {
+    return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
+  } catch (err) {
+    throw new Error(
+      `08-11: /settings/tokens/new/fine-grained route missing — implement FG create + reveal (GIT-11 / D-05 / D-06). ${(err as Error).message}`,
+    );
+  }
+}
+
+function tokensNewFgPage(mod: Record<string, unknown>): unknown {
+  const page =
+    mod.TokensNewFineGrainedPage ??
+    mod.FineGrainedCreatePage ??
+    mod.default;
+  expect(
+    page,
+    "Wave 0: TokensNewFineGrainedPage (or FineGrainedCreatePage) must be exported from tokens.new.fine-grained",
+  ).toBeTruthy();
+  return page;
+}
+
+describe("/settings/tokens/new/fine-grained (GIT-11 / D-05 / D-06 FG create)", () => {
+  it(
+    "title New fine-grained token + All repositories / Only select repositories + Contents Read-only / Read and write",
+    async () => {
+      const mod = await loadTokensNewFgModule();
+      const { container } = renderWithQueryClient(tokensNewFgPage(mod));
+
+      await waitFor(() => {
+        expect(container.querySelector("h1")?.textContent).toBe(
+          "New fine-grained token",
+        );
+      });
+      expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+      expect(screen.getByText("All repositories")).toBeInTheDocument();
+      expect(screen.getByText("Only select repositories")).toBeInTheDocument();
+      expect(screen.getByText("Contents permission")).toBeInTheDocument();
+      expect(screen.getByText("Read-only")).toBeInTheDocument();
+      expect(screen.getByText("Read and write")).toBeInTheDocument();
+      expect(screen.getByText("No expiration")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Generate token" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Personal access tokens/i }),
+      ).toHaveAttribute("href", "/settings/tokens");
+    },
+    15_000,
+  );
+
+  it(
+    "selected empty submit shows Select at least one repository.",
+    async () => {
+      const mod = await loadTokensNewFgModule();
+      renderWithQueryClient(tokensNewFgPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+      });
+
+      fireEvent.input(screen.getByLabelText(/^Note$/i), {
+        target: { value: "ci" },
+      });
+      // Default is Only select repositories with nothing checked
+      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Select at least one repository."),
+        ).toBeInTheDocument();
+      });
+      expect(createFineGrainedMock).not.toHaveBeenCalled();
+    },
+    15_000,
+  );
+
+  it(
+    "zero owned repos shows You don’t have any repositories yet. + New repository link",
+    async () => {
+      listMineMock.mockResolvedValue({ ok: true, data: { repos: [] } });
+
+      const mod = await loadTokensNewFgModule();
+      renderWithQueryClient(tokensNewFgPage(mod));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("You don’t have any repositories yet."),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.getByRole("link", { name: "New repository" }),
+      ).toHaveAttribute("href", "/new");
+    },
+    15_000,
+  );
+
+  it(
+    "unverified shows Verify your email AuthShell — not the FG create form",
+    async () => {
+      loaderData = {
+        kind: "ready",
+        user: { ...verifiedUser, email_verified: false },
+      };
+      meMock.mockResolvedValue({
+        ok: true,
+        data: { ...verifiedUser, email_verified: false },
+      });
+
+      const mod = await loadTokensNewFgModule();
+      renderWithQueryClient(tokensNewFgPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByText("Verify your email")).toBeInTheDocument();
+      });
+      expect(
+        screen.getByText(
+          "Verify your email before creating a personal access token.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute(
+        "href",
+        "/verify",
+      );
+      expect(
+        screen.queryByRole("button", { name: "Generate token" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
+    },
+    15_000,
+  );
+});
+
+describe("/settings/tokens/new/fine-grained (GIT-11 / D-15 FG reveal)", () => {
+  it(
+    "success shows Make sure to copy… + Copy token + Back to tokens via createFineGrained",
+    async () => {
+      createFineGrainedMock.mockResolvedValue({
+        ok: true,
+        data: {
+          token: "octanest_fg_abcdef0123456789deadbeef",
+          item: {
+            id: "pat-fg-1",
+            kind: "fine_grained",
+            name: "ci",
+            token_prefix: "octanest_fg_abcd",
+            contents: "write",
+            repo_access: "all",
+            expires_at: null,
+            last_used_at: null,
+            last_used_ip: null,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        },
+      });
+
+      const mod = await loadTokensNewFgModule();
+      renderWithQueryClient(tokensNewFgPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+      });
+
+      fireEvent.input(screen.getByLabelText(/^Note$/i), {
+        target: { value: "ci" },
+      });
+      fireEvent.click(screen.getByText("All repositories"));
+      fireEvent.click(screen.getByText("Read and write"));
+      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+      await waitFor(() => {
+        expect(createFineGrainedMock).toHaveBeenCalled();
+      });
+      expect(createFineGrainedMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "ci",
+          repo_access: "all",
+          contents: "write",
+        }),
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Make sure to copy your personal access token now"),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.getByText("You won’t be able to see it again."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue("octanest_fg_abcdef0123456789deadbeef"),
       ).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: "Copy token" }),
