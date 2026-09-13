@@ -218,11 +218,13 @@ fn build_session_cookie(raw_token: &str, ttl: Duration, env_name: &str) -> Cooki
         .build()
 }
 
-fn sha256_hex(data: &[u8]) -> String {
+/// SHA-256 hex digest (sessions + PAT hash-at-rest).
+pub fn sha256_hex(data: &[u8]) -> String {
     bytes_to_hex(&Sha256::digest(data))
 }
 
-fn bytes_to_hex(bytes: &[u8]) -> String {
+/// Lowercase hex encode (CSPRNG token / PAT secret material).
+pub fn bytes_to_hex(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for &b in bytes {

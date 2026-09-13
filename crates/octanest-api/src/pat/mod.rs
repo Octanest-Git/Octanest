@@ -1,0 +1,211 @@
+//! Personal access token RPC (`pat.createClassic` / `list` / `revoke`) — GIT-11 tracer.
+
+use octanest_core::{
+    ClassicPatScope, CreateClassicPatRequest, CreatePatResponse, PatKind, PatListItem, AppError,
+    CLASSIC_PAT_PREFIX,
+};
+use serde::Deserialize;
+use uuid::Uuid;
+
+use crate::auth::gate::require_verified;
+use crate::auth::session::{bytes_to_hex, sha256_hex};
+use crate::rpc::RpcCtx;
+
+const TOKEN_BYTES: usize = 32;
+
+fn db_err(e: String) -> AppError {
+    if e == "database not configured" {
+        AppError::new(
+            "db.not_configured",
+            "no database configured for this instance",
+        )
+    } else {
+        tracing::error!("pat db error: {e}");
+        AppError::new("pat.internal", "personal access token operation failed")
+    }
+}
+
+fn require_session_user_id(ctx: &RpcCtx) -> Result<&str, AppError> {
+    ctx.session
+        .as_ref()
+        .map(|s| s.user_id.as_str())
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "not authenticated"))
+}
+
+fn row_to_list_item(row: &octanest_db::PatRow) -> Result<PatListItem, AppError> {
+    let kind = PatKind::parse(&row.kind).map_err(|e| AppError::new("pat.internal", e))?;
+    let scopes = match row.scopes_json.as_deref() {
+        Some(raw) => {
+            let names: Vec<String> = serde_json::from_str(raw).map_err(|e| {
+                tracing::error!(error = %e, "invalid scopes_json");
+                AppError::new("pat.internal", "corrupt pat scopes")
+            })?;
+            let mut out = Vec::with_capacity(names.len());
+            for n in names {
+                out.push(
+                    ClassicPatScope::parse(&n)
+                        .map_err(|e| AppError::new("pat.internal", e))?,
+                );
+            }
+            Some(out)
+        }
+        None => None,
+    };
+    let contents = match row.contents_perm.as_deref() {
+        Some(s) => Some(
+            octanest_core::ContentsPerm::parse(s)
+                .map_err(|e| AppError::new("pat.internal", e))?,
+        ),
+        None => None,
+    };
+    let repo_access = match row.repo_access.as_deref() {
+        Some(s) => Some(
+            octanest_core::FgRepoAccess::parse(s)
+                .map_err(|e| AppError::new("pat.internal", e))?,
+        ),
+        None => None,
+    };
+    Ok(PatListItem {
+        id: row.id.clone(),
+        kind,
+        name: row.name.clone(),
+        token_prefix: row.token_prefix.clone(),
+        scopes,
+        contents,
+        repo_access,
+        repository_ids: row.repository_ids.clone(),
+        expires_at: row.expires_at.clone(),
+        last_used_at: row.last_used_at.clone(),
+        last_used_ip: row.last_used_ip.clone(),
+        created_at: row.created_at.clone(),
+    })
+}
+
+/// Mint classic PAT: verified session, non-empty note, `repo` scope (D-08 / D-15 / D-16 / D-24).
+pub async fn create_classic(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<CreatePatResponse, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: CreateClassicPatRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid pat.createClassic input: {e}"),
+        )
+    })?;
+
+    if req.name.trim().is_empty() {
+        return Err(AppError::new(
+            "pat.note_required",
+            "A note (name) is required for personal access tokens",
+        ));
+    }
+    if !req.scopes.iter().any(|s| *s == ClassicPatScope::Repo) {
+        return Err(AppError::new(
+            "pat.invalid_scope",
+            "classic tokens must include the repo scope",
+        ));
+    }
+
+    let mut secret_bytes = [0u8; TOKEN_BYTES];
+    rand::fill(&mut secret_bytes);
+    let plaintext = format!("{CLASSIC_PAT_PREFIX}{}", bytes_to_hex(&secret_bytes));
+    let token_hash = sha256_hex(plaintext.as_bytes());
+
+    let scopes_json = serde_json::to_string(
+        &req.scopes
+            .iter()
+            .map(|s| s.as_str())
+            .collect::<Vec<_>>(),
+    )
+    .map_err(|e| AppError::new("pat.internal", format!("scopes serialize: {e}")))?;
+
+    let id = Uuid::new_v4().to_string();
+    ctx.db
+        .create_pat(
+            &id,
+            &user.id,
+            PatKind::Classic.as_str(),
+            req.name.trim(),
+            CLASSIC_PAT_PREFIX,
+            &token_hash,
+            Some(&scopes_json),
+            None,
+            None,
+            req.expires_at.as_deref(),
+            &[],
+        )
+        .await
+        .map_err(db_err)?;
+
+    let row = ctx
+        .db
+        .list_pats_for_user(&user.id)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .find(|p| p.id == id)
+        .ok_or_else(|| AppError::new("pat.internal", "created pat missing from list"))?;
+
+    Ok(CreatePatResponse {
+        token: plaintext,
+        item: row_to_list_item(&row)?,
+    })
+}
+
+/// Fine-grained create — deferred to 08-05.
+pub async fn create_fine_grained(
+    _ctx: &RpcCtx,
+    _input: serde_json::Value,
+) -> Result<CreatePatResponse, AppError> {
+    Err(AppError::new(
+        "pat.not_implemented",
+        "fine-grained PAT create is not available yet",
+    ))
+}
+
+/// List active PATs for the signed-in user (session required; email verify not required).
+pub async fn list(ctx: &RpcCtx) -> Result<Vec<PatListItem>, AppError> {
+    let user_id = require_session_user_id(ctx)?;
+    let rows = ctx.db.list_pats_for_user(user_id).await.map_err(db_err)?;
+    let mut items = Vec::with_capacity(rows.len());
+    for row in &rows {
+        items.push(row_to_list_item(row)?);
+    }
+    Ok(items)
+}
+
+#[derive(Debug, Deserialize)]
+struct RevokePatRequest {
+    id: String,
+}
+
+/// Soft-revoke a PAT owned by the signed-in user.
+pub async fn revoke(ctx: &RpcCtx, input: serde_json::Value) -> Result<serde_json::Value, AppError> {
+    let user_id = require_session_user_id(ctx)?;
+    let req: RevokePatRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid pat.revoke input: {e}"))
+    })?;
+    let id = req.id.trim();
+    if id.is_empty() {
+        return Err(AppError::new("pat.not_found", "personal access token not found"));
+    }
+
+    let owned = ctx
+        .db
+        .list_pats_for_user(user_id)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .any(|p| p.id == id);
+    if !owned {
+        return Err(AppError::new(
+            "pat.not_found",
+            "personal access token not found",
+        ));
+    }
+
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    ctx.db.revoke_pat(id, &now).await.map_err(db_err)?;
+    Ok(serde_json::json!({ "ok": true }))
+}
