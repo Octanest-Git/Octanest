@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
-status: context_ready
+status: research_ready
 stopped_at: Phase 08 context gathered
-last_updated: "2026-09-13T16:29:54.748Z"
+last_updated: "2026-09-13T16:44:22.928Z"
 last_activity: 2026-09-13
-last_activity_desc: "08-CONTEXT.md gathered (GIT-02/11; classic+FG PATs; Smart HTTP)"
-state_head: 04e8f2fee89cc300035d18f4847f353144773170
+last_activity_desc: 08-CONTEXT.md gathered (GIT-02/11; classic+FG PATs; Smart HTTP)
+state_head: faa01071be943b9ad3e1eb4e400e1b07f3e044c0
 progress:
   total_phases: 22
   completed_phases: 0
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 08 (Git HTTPS & PATs) — CONTEXT gathered
 Plan: not started — next `/gsd-plan-phase 08`
-Status: context_ready
+Status: research_ready
 Last activity: 2026-09-13 — `/gsd-discuss-phase 08` → `08-CONTEXT.md`
 
 Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 decisions locked for planning
