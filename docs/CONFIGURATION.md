@@ -88,7 +88,7 @@ Bare `/{owner}/{repo}` (no `.git` suffix) stays on the web UI. Self-hosted rever
 
 **PAT prefixes (redacted examples only):** classic `octanest_pat_REDACTED`, fine-grained `octanest_fg_REDACTED`. Mint via Settings → Tokens (RPC `pat.*` with session cookie). **PATs are not RPC Bearer credentials** — typed `/api/rpc` stays on the session cookie; PATs authenticate Smart HTTP over HTTPS via HTTP Basic (password = token) only.
 
-**Failed-auth rate limit (single replica):** Failed Basic/PAT attempts are limited **in-process** (20 failures per client IP and 10 per username per 15 minutes → HTTP `429` + `Retry-After`). Counters are **not** shared across API replicas — multi-replica deployments need an external / shared limiter or sticky single replica for this control.
+**Failed-auth rate limit (single replica):** Failed Basic/PAT attempts are limited **in-process** (20 failures per client IP and 10 per username per 15 minutes → HTTP `429` + `Retry-After`). Client IP is taken from the **rightmost** `X-Forwarded-For` hop (the address appended by the trusted reverse proxy). **Do not expose the API directly to the internet without a proxy that overwrites or sanitizes forwarded headers** — otherwise clients can spoof leftmost XFF hops and bypass the per-IP window. Counters are **not** shared across API replicas — multi-replica deployments need an external / shared limiter or sticky single replica for this control.
 
 ## Config file format
 

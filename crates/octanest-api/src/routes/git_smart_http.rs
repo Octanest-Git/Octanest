@@ -125,14 +125,21 @@ fn looks_like_pat(password: &str) -> bool {
     password.starts_with(CLASSIC_PAT_PREFIX) || password.starts_with(FINE_GRAINED_PAT_PREFIX)
 }
 
-/// Client IP for last-used / rate-limit — first `X-Forwarded-For` hop (Traefik) when present.
+/// Client IP for last-used / rate-limit — rightmost `X-Forwarded-For` hop
+/// (appended by a trusted proxy such as Traefik). Do not expose the API without
+/// a proxy that overwrites/sanitizes forwarded headers; leftmost hops are
+/// client-controlled and must not drive the failed-auth IP bucket.
 fn client_ip(headers: &HeaderMap) -> Option<String> {
     headers
         .get("x-forwarded-for")
         .and_then(|v| v.to_str().ok())
-        .and_then(|s| s.split(',').next())
-        .map(|s| s.trim().to_string())
-        .filter(|s| !s.is_empty())
+        .and_then(|s| {
+            s.split(',')
+                .map(str::trim)
+                .filter(|p| !p.is_empty())
+                .next_back()
+        })
+        .map(|s| s.to_string())
 }
 
 fn pat_expired(expires_at: &Option<String>) -> bool {
