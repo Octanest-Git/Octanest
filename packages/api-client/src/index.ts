@@ -174,7 +174,6 @@ export type RepoTemplateOption = {
   label: string;
   group: string;
   description: string;
-  /** Stack packs: recommended gitignore catalog id applied when gitignore is omitted. */
   default_gitignore?: string | null;
 };
 
