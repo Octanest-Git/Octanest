@@ -112,7 +112,7 @@ status: complete
 1. **Task 1 RED: failing FG create tests** - `4a49518` (test)
 2. **Task 1 GREEN: implement createFineGrained** - `5b0f405` (feat)
 
-**Plan metadata:** (final docs commit after this SUMMARY)
+**Plan metadata:** `9e7c50e` (docs: complete plan); `a8090d4` (docs: ROADMAP/WINDOWS sync)
 
 ## TDD Gate Compliance
 
