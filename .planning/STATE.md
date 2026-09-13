@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 10-00-PLAN.md
-last_updated: "2026-09-13T23:33:53.798Z"
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-09-13T23:41:24.891Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-00 Wave 0 Rust stubs
-state_head: 86f2bfa6c1ab72115e1e86dcf12b942448d32c80
+state_head: b414571ff4ee4114f5d663c48dd285f266d67c97
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 78
+  completed_plans: 79
 milestone_name: milestone
 ---
 
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Executing Phase 10 — next 10-01
+Status: Ready to execute
 Last activity: 2026-09-14 — Completed 10-00 Wave 0 Rust stubs
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
@@ -131,6 +131,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 08 P13 | 3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
+| Phase 10 P01 | 5min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -289,6 +290,8 @@ Recent decisions affecting current work:
 - [Phase 08]: nyquist_compliant left false; validate-phase owns Nyquist flip
 - [Phase 10]: Wave 0 is RED-only — no production org RPC, ACL rewrite, or 0010 migrations
 - [Phase 10]: Use 0010_orgs_acl (not 0009) because Phase 09 SSH claims 0009_ssh_keys
+- [Phase 10]: Wave 0 web stubs RED-only; no production Octane org routes
+- [Phase 10]: Collaborators Wave 0 stubs import future collaborators-panel; T-10-03 no-email in lookup assertions
 
 ### Pending Todos
 
@@ -310,6 +313,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T23:33:31.078Z
-Stopped at: Completed 10-00-PLAN.md
+Last session: 2026-09-13T23:41:24.803Z
+Stopped at: Completed 10-01-PLAN.md
 Resume file: None

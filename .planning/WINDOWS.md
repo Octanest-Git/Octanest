@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 21
+open_count: 25
 waived_count: 0
 fixed_count: 1
-total_count: 22
-last_updated: 2026-09-13T19:22:14.499Z
+total_count: 26
+last_updated: 2026-09-13T23:41:25.415Z
 ---
 
 # Broken Windows Ledger
@@ -37,6 +37,10 @@ last_updated: 2026-09-13T19:22:14.499Z
 | 20 | 08 | unrun-verify | scripts/smoke-git-https.sh |  | Live make smoke-git-https not run — Docker engine unavailable on executor host | open |  | 2026-09-13T19:06:10.084Z |  |
 | 21 | 08 | skipped-test | apps/web/src/routes/settings/tokens.integration.test.ts |  | D-15 one-time reveal it.skip until 08-10 | open |  | 2026-09-13T19:22:14.417Z |  |
 | 22 | 08 | deviation | apps/web/src/components/settings/pat-revoke-dialog.tsrx |  | Revoke dialog landed with T1 list commit; T2 greened assertions | open |  | 2026-09-13T19:22:14.499Z |  |
+| 23 | 10 | stub | apps/web/src/routes/orgs.new.integration.test.ts |  | Fails until /orgs/new lands in 10-13 | open |  | 2026-09-13T23:41:25.124Z |  |
+| 24 | 10 | stub | apps/web/src/routes/new.owner-picker.integration.test.ts |  | Fails until owner Select lands in 10-11 | open |  | 2026-09-13T23:41:25.222Z |  |
+| 25 | 10 | stub | apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts |  | Fails until collaborators-panel + can_admin in 10-11 | open |  | 2026-09-13T23:41:25.316Z |  |
+| 26 | 10 | stub | apps/web/src/routes/$owner.settings.members.integration.test.ts |  | Fails until members/invites UI in 10-10 | open |  | 2026-09-13T23:41:25.415Z |  |
 
 ````json
 [
@@ -302,6 +306,54 @@ last_updated: 2026-09-13T19:22:14.499Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T19:22:14.499Z",
+    "resolved_at": null
+  },
+  {
+    "id": 23,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/orgs.new.integration.test.ts",
+    "line": null,
+    "description": "Fails until /orgs/new lands in 10-13",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.124Z",
+    "resolved_at": null
+  },
+  {
+    "id": 24,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/new.owner-picker.integration.test.ts",
+    "line": null,
+    "description": "Fails until owner Select lands in 10-11",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.222Z",
+    "resolved_at": null
+  },
+  {
+    "id": 25,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts",
+    "line": null,
+    "description": "Fails until collaborators-panel + can_admin in 10-11",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.316Z",
+    "resolved_at": null
+  },
+  {
+    "id": 26,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/$owner.settings.members.integration.test.ts",
+    "line": null,
+    "description": "Fails until members/invites UI in 10-10",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.415Z",
     "resolved_at": null
   }
 ]
