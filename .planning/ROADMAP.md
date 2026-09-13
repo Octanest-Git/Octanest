@@ -355,7 +355,20 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**Plans**: TBD
+**Plans**: 10 plans
+
+Plans:
+- [ ] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
+- [ ] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
+- [ ] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
+- [ ] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
+- [ ] 09-04-PLAN.md — ACL parity, receive-pack, rate-limit, key caps
+- [ ] 09-05-PLAN.md — Compose TCP 2222 + host keys + smoke-git-ssh
+- [ ] 09-06-PLAN.md — make rpc-gen + API.md SSH docs
+- [ ] 09-07-PLAN.md — /settings/ssh-keys UI + nav + revoke confirm
+- [ ] 09-08-PLAN.md — CloneBox scp-style SSH URL + how-to CTA
+- [ ] 09-09-PLAN.md — CONFIGURATION/ARCHITECTURE + VALIDATION phase gate
+
 **UI hint**: yes
 
 ### Phase 10: Orgs & Permissions
