@@ -3,18 +3,18 @@ phase: "07"
 slug: "git-repos-browse"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-12"
-updated: "2026-09-12"
+updated: "2026-09-13"
 ---
 
 # Phase 07 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
-> Plan IDs below match every `07-*-PLAN.md` in this phase (07-00 … 07-18).
-> `nyquist_compliant` stays **false** until `/gsd-validate-phase` signs off.
+> Plan IDs below match every `07-*-PLAN.md` in this phase (07-00 … 07-21).
+> `nyquist_compliant: true` after Nyquist auditor gap fill (2026-09-13).
 
 ---
 
@@ -58,11 +58,18 @@ updated: "2026-09-12"
 | 07-06-T* | 07-06 | 10 | GIT-05 | T-07-18 | Commits/compare/blame soft caps | unit/integration | `nextest -p octanest-git --lib` + `test(repo_)` | ✅ | ✅ green |
 | 07-07-T1 | 07-07 | 11 | GIT-06 | T-07-branch | Owner branch CRUD; default soft-protect | integration | `nextest … test(repo_branch)` | ✅ | ✅ green |
 | 07-18-T1 | 07-18 | 12 | GIT-06 | — | Branches/Tags UI + Dialog/AlertDialog | build | `bun --cwd apps/web run build` | ✅ | ✅ green |
-| 07-08-T* | 07-08 | 13 | GIT-07 | T-07-SC | zip + tar.gz archive HTTP + clone box | unit/integration | `nextest … test(repo_archive)\|test(git_archive)` | ✅ | ✅ green |
+| 07-08-T* | 07-08 | 13 | GIT-07 | T-07-SC | zip + tar.gz archive HTTP + clone box | unit/integration | `nextest … test(repo_archive)\|test(git_archive)` + `vitest … clone-box.integration` | ✅ | ✅ green |
 | 07-09-T* | 07-09 | 14 | GIT-01 | — | Visibility toggle + soft-delete | integration | `nextest … test(repo_)` + web build | ✅ | ✅ green |
 | 07-10-T* | 07-10 | 14 | GIT-08 | D-36–38 | Orphan reconcile, gc, factory-reset scope | integration + docs | `nextest … orphan\|gc\|factory_reset` + CONFIGURATION rg | ✅ | ✅ green |
 | 07-11-T1 | 07-11 | 15 | GIT-09, GIT-10 | T-07-03 | ARCHITECTURE CliGitBackend + future Gix | docs | `rg GitBackend\|CliGitBackend\|GixGitBackend` docs | ✅ | ✅ green |
 | 07-11-T2 | 07-11 | 15 | GIT-09, GIT-10 | T-07-SC | VALIDATION map + rpc-gen client sync | smoke | `rpc-gen` + web build + `test(repo_)` + git `--lib` | ✅ | ✅ green |
+| 07-19-T* | 07-19 | gap | GIT-06 | T-07-GC19 / CR-02 | option-like branchCreate rejected; default soft-protect intact; validate_treeish leading-`-` + branch argv `--` | integration | `cargo test -p octanest-api --test repo_branch_soft_protect` | ✅ | ✅ green |
+| 07-20-T* | 07-20 | gap | GIT-07, GIT-05 | T-07-GC20 / CR-01 | option-like archive treeish rejected; no `--output` file write | integration | `cargo test -p octanest-api --test repo_archive` | ✅ | ✅ green |
+| 07-21-T1 | 07-21 | gap | GIT-01 | T-07-GC21 / WR-01 | create git failure soft-deletes row; name reusable | integration | `cargo test -p octanest-api --test repo_create` | ✅ | ✅ green |
+| 07-21-T2 | 07-21 | gap | GIT-05 | WR-03 / D-17 | parseRefAndPath longest-prefix hierarchical refs | unit | `bunx vitest run src/lib/repo-browse.unit.test.ts` (cwd `apps/web`) | ✅ | ✅ green |
+| 07-14-HL | 07-14 | 8 | GIT-05 / UI-SPEC | — | `.tsrx` / `.ripple` Shiki grammars load + highlight | unit | `bunx vitest run src/lib/highlight.test.ts` (cwd `apps/web`) | ✅ | ✅ green |
+| 07-14-MD | 07-14 | 8 | GIT-05 / D-18 | — | Safe Markdown README (sanitize + ReadmePanel) | unit/integration | `bunx vitest run src/lib/markdown.test.ts src/components/repo/readme-panel.integration.test.ts` (cwd `apps/web`) | ✅ | ✅ green |
+| 07-08-CB | 07-08 | 13 | D-22 | — | Clone box HTTPS URL + SSH placeholder | integration | `bunx vitest run src/components/repo/clone-box.integration.test.ts` (cwd `apps/web`) | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -89,6 +96,9 @@ updated: "2026-09-12"
 | 07-16 | Wave 0 web integration stubs | ✅ |
 | 07-17 | Git version gate + Compose volume | ✅ |
 | 07-18 | Branches / Tags UI | ✅ |
+| 07-19 | CR-02 branchCreate option injection | ✅ |
+| 07-20 | CR-01 archive argv + WR-02 raw slash | ✅ |
+| 07-21 | Create compensate + hierarchical parseRefAndPath | ✅ |
 
 ---
 
@@ -108,11 +118,13 @@ Conceptual checklist after Phase 7 execution history (stubs turned green by late
 
 ## Manual-Only Verifications
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Syntax highlighting for `.tsrx` / `.ripple` + common languages | GIT-05 / UI-SPEC | Visual fidelity | Open blob views for sample files; confirm highlight + line permalinks |
-| Safe Markdown README render | GIT-05 / D-18 | Sanitizer edge cases | Render README with HTML/script attempts; confirm stripped |
-| Clone/download box UX (HTTPS shown, SSH placeholder) | D-22 | UI copy | Inspect Code tab clone box on a seeded repo |
+None remaining — former manual rows promoted after automated green (2026-09-13):
+
+| Behavior (promoted) | Requirement | Automated Command | Former reason |
+|---------------------|-------------|-------------------|---------------|
+| Syntax highlighting for `.tsrx` / `.ripple` | GIT-05 / UI-SPEC | `bunx vitest run src/lib/highlight.test.ts` (cwd `apps/web`) | Visual fidelity → grammar + highlight HTML asserts |
+| Safe Markdown README render | GIT-05 / D-18 | `bunx vitest run src/lib/markdown.test.ts src/components/repo/readme-panel.integration.test.ts` (cwd `apps/web`) | Sanitizer edge cases → unit + ReadmePanel integration |
+| Clone/download box UX (HTTPS + SSH placeholder) | D-22 | `bunx vitest run src/components/repo/clone-box.integration.test.ts` (cwd `apps/web`) | UI copy → CloneBox integration |
 
 ---
 
@@ -123,6 +135,31 @@ Conceptual checklist after Phase 7 execution history (stubs turned green by late
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [x] Feedback latency < 120s
-- [ ] `nyquist_compliant: true` set in frontmatter *(deferred to `/gsd-validate-phase`)*
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending validate-phase
+**Approval:** Nyquist auditor gap fill 2026-09-13 (plans 07-19..21 mapped; manuals promoted)
+
+---
+
+## Validation Audit
+
+**Date:** 2026-09-13  
+**Auditor:** gsd-nyquist-auditor  
+**Scope:** Fix all gaps — map 07-19/20/21; verify + promote former Manual-Only rows
+
+### Commands run
+
+| Command | Result |
+|---------|--------|
+| `cargo test -p octanest-api --test repo_branch_soft_protect` | PASS (4 tests) |
+| `cargo test -p octanest-api --test repo_archive` | PASS (4 tests) |
+| `cargo test -p octanest-api --test repo_create` | PASS (6 tests) |
+| `bunx vitest run src/lib/repo-browse.unit.test.ts src/lib/highlight.test.ts src/lib/markdown.test.ts src/components/repo/readme-panel.integration.test.ts src/components/repo/clone-box.integration.test.ts` (cwd `apps/web`) | PASS (5 files / 20 tests) |
+
+### Outcomes
+
+- **07-19 / 07-20 / 07-21:** Existing tests COVERED requirements; Per-Task Map + plan index updated (FILLED).
+- **Manual → automated:** highlight / markdown+readme-panel / clone-box all green; removed from Manual-Only (FILLED).
+- **Implementation changes:** none (read-only).
+- **Escalations:** none.
+- **Frontmatter:** `status: validated`, `nyquist_compliant: true`.
