@@ -210,14 +210,110 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
 });
 
 describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
-  it("revoke AlertDialog copy Revoke token? / Keep token", async () => {
-    // Expanded assertions land with pat-revoke-dialog in 08-09-T2.
-    const mod = await loadTokensModule();
-    expect(
-      mod.TokensPage ?? mod.default,
-      "Wave 0: revoke dialog must use Revoke token? / Keep token (not Cancel)",
-    ).toBeTruthy();
-  });
+  it(
+    "revoke AlertDialog copy Revoke token? / Keep token",
+    async () => {
+      listMock.mockResolvedValue({
+        ok: true,
+        data: [
+          {
+            id: "pat-1",
+            kind: "classic",
+            name: "laptop",
+            token_prefix: "octanest_pat_abcd",
+            scopes: ["repo"],
+            expires_at: null,
+            last_used_at: null,
+            last_used_ip: null,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      });
+
+      const mod = await loadTokensModule();
+      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+      renderWithQueryClient(TokensPage);
+
+      await waitFor(() => {
+        expect(screen.getByText("laptop")).toBeInTheDocument();
+      });
+
+      screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
+
+      await waitFor(() => {
+        expect(screen.getByText("Revoke token?")).toBeInTheDocument();
+      });
+      expect(
+        screen.getByRole("button", { name: "Keep token" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByRole("button", { name: /^Revoke token$/ }).length,
+      ).toBeGreaterThanOrEqual(1);
+      expect(
+        screen.getByText(/Revokes .*laptop/i),
+      ).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bCancel\b/);
+    },
+    15_000,
+  );
+
+  it(
+    "revoke confirm calls pat.revoke and keeps dialog open on error",
+    async () => {
+      listMock.mockResolvedValue({
+        ok: true,
+        data: [
+          {
+            id: "pat-1",
+            kind: "classic",
+            name: "ci-bot",
+            token_prefix: "octanest_pat_ef01",
+            scopes: ["repo"],
+            expires_at: null,
+            last_used_at: null,
+            last_used_ip: null,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      });
+      revokeMock.mockResolvedValue({
+        ok: false,
+        error: { code: "internal", message: "fail" },
+      });
+
+      const mod = await loadTokensModule();
+      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+      renderWithQueryClient(TokensPage);
+
+      await waitFor(() => {
+        expect(screen.getByText("ci-bot")).toBeInTheDocument();
+      });
+
+      screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
+      await waitFor(() => {
+        expect(screen.getByText("Revoke token?")).toBeInTheDocument();
+      });
+
+      const confirmBtns = screen.getAllByRole("button", {
+        name: /^Revoke token$/,
+      });
+      // Dialog confirm is the last Revoke token button (row trigger already clicked)
+      confirmBtns[confirmBtns.length - 1]!.click();
+
+      await waitFor(() => {
+        expect(revokeMock).toHaveBeenCalledWith({ id: "pat-1" });
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            "Couldn't revoke token. Check your connection and try again.",
+          ),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText("Revoke token?")).toBeInTheDocument();
+    },
+    15_000,
+  );
 });
 
 describe("/settings/tokens (GIT-11 / D-15 one-time reveal)", () => {
