@@ -30,7 +30,7 @@ created: "2026-09-14"
 
 - **Per task commit:** focused nextest filter + relevant Vitest file
 - **Per wave merge:** `make test`
-- **Phase gate:** Full suite green before `/gsd-verify-work`; dialect migration smoke if 0009 touches MySQL quirks
+- **Phase gate:** Full suite green before `/gsd-verify-work`; dialect migration smoke if **0010** touches MySQL quirks
 
 ---
 

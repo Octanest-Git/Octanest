@@ -12,7 +12,7 @@
 | `crates/octanest-api/src/repo/mod.rs` | controller | CRUD | *(self — mutate gates)* | exact |
 | `crates/octanest-api/src/routes/git_smart_http.rs` | middleware | request-response | *(self — git ACL)* | exact |
 | `crates/octanest-api/src/routes/repo_raw.rs` | controller | file-I/O | `repo/acl.rs` + raw routes | exact |
-| `crates/octanest-db/migrations/*/0009_orgs.sql` (name TBD) | migration | CRUD | `0007_repositories.sql` + `0008_pats.sql` | role-match |
+| `crates/octanest-db/migrations/*/0010_orgs_acl.sql` | migration | CRUD | `0007_repositories.sql` + `0008_pats.sql` | role-match — Phase 09 owns `0009_ssh_keys` |
 | `crates/octanest-db/src/repositories.rs` | model | CRUD | *(self — owner_id)* | exact |
 | `crates/octanest-db/src/organizations.rs` (new) | model | CRUD | `repositories.rs` + `email_tokens.rs` | role-match |
 | `crates/octanest-api/src/org/` (new module) | controller | CRUD | `repo/mod.rs` + `auth/admin.rs` | role-match |

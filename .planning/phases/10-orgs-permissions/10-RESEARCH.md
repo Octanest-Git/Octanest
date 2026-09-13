@@ -437,22 +437,13 @@ repo.listMine — extend or add listAccessible for home + PAT picker
 | A5 | `repo.create` gains optional owner slug; create-in-org requires Owner/Admin | Pitfall 8 | Members with write base cannot create repos (acceptable default) |
 | A6 | No new npm/crates dependencies required | Standard Stack | If UI needs combobox lib, revisit legitimacy |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Org profile at `/{org}` vs `/{org}/settings` only**
-   - What we know: D-ORG-06 allows overview or settings under `/{org}/settings`
-   - What's unclear: Whether `/{org}` is a public org home listing public repos in Phase 10 or a stub
-   - Recommendation: Minimal public org overview listing public repos + members count; settings nested — keeps reserved `orgs` for `/orgs/new`
+1. **Org profile at `/{org}` vs `/{org}/settings` only** — **RESOLVED:** Minimal public org overview at `/{org}` listing public repos + members count; settings nested under `/{org}/settings` (plan 10-10). Keeps `/orgs/new` for create.
 
-2. **Last org Owner removal**
-   - What we know: Need at least one Owner
-   - What's unclear: Transfer-on-leave UX
-   - Recommendation: Block removing/demoting the last Owner with stable error `org.last_owner`
+2. **Last org Owner removal** — **RESOLVED:** Block removing/demoting the last Owner with stable error `org.last_owner` (plan 10-05).
 
-3. **Phase 9 sequencing**
-   - What we know: ROADMAP Phase 10 depends on Phase 7; SSH must call shared ACL after P10
-   - What's unclear: Whether SSH lands before ACL rewrite
-   - Recommendation: Land `acl.rs` API first; SSH/Smart HTTP both call it — if P9 ships owner-only interim, P10 updates the call site once
+3. **Phase 9 sequencing** — **RESOLVED:** Land central `acl.rs` in Phase 10; SSH (Phase 9) and Smart HTTP both call it. Migration **0010_orgs_acl** (Phase 9 owns **0009_ssh_keys**). Parallel plan/execute OK; ACL call sites updated once in plans 10-04/10-08.
 
 ## Environment Availability
 
