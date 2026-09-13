@@ -127,7 +127,7 @@ Each task was committed atomically:
 2. **Task 1 GREEN: list + nav + Generate gate** - `a00b658` (feat) — includes revoke dialog shell required by PatList
 3. **Task 2: green revoke AlertDialog assertions** - `a47eca2` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `8c9bfdd` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/web/src/routes/settings/tokens.tsrx` — list page + Generate dropdown + auth redirect
