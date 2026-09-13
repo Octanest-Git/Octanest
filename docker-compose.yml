@@ -67,6 +67,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=octanest_octanest
+      # Smart HTTP (D-18 / D-22): /{owner}/{repo}.git → API before SPA catch-all (priority 110 > api 100 > web 1).
+      - traefik.http.routers.api-git.rule=Host(`localhost`) && PathRegexp(`^/[^/]+/[^/]+\.git`)
+      - traefik.http.routers.api-git.entrypoints=web
+      - traefik.http.routers.api-git.priority=110
+      - traefik.http.routers.api-git.service=api
       - traefik.http.routers.api.rule=Host(`localhost`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`) || Path(`/health`))
       - traefik.http.routers.api.entrypoints=web
       - traefik.http.routers.api.priority=100
