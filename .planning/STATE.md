@@ -1,14 +1,14 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 09
-current_phase_name: Git SSH
+current_phase: 10
+current_phase_name: Orgs & Permissions
 status: planned
 stopped_at: Phase 9 plans complete — ready for execute
-last_updated: "2026-09-13T23:22:37.337Z"
+last_updated: "2026-09-13T23:22:49.976Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 9+10 plan-checker revisions (09 host_keys/wave; 10 split 02/13)
-state_head: a530285cede8ddf93de84fab2724d7938a53e00f
+state_head: 787f75accdc8dbe212cbfbaeb1038ad11ea629fd
 progress:
   total_phases: 22
   completed_phases: 8
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 09 (Git SSH) — READY TO EXECUTE
+Phase: 10 (Orgs & Permissions) — READY TO EXECUTE
 Plan: 09-00 … 09-09 (10 plans)
 Status: Planned — ready to execute
 Last activity: 2026-09-14 — Phase 9 PLAN.md + UI-SPEC committed (`docs(09): plan Git SSH`)

@@ -405,20 +405,48 @@ Plans:
 **Plans**: 14 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
 - [ ] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
 - [ ] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 10-13-PLAN.md — Tracer org.create RPC + /orgs/new
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 10-03-PLAN.md — Polymorphic OwnerRef + repo.create owner slug
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 10-04-PLAN.md — Central Capability ACL + resolve_repo_for_read + can_admin
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 10-05-PLAN.md — Org members/roles + member_base_permission
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 10-06-PLAN.md — Email invites + closed-signup accept + /invites/$token
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 10-07-PLAN.md — Repo collaborators CRUD (personal + org) + visibility admin gate
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 10-08-PLAN.md — Mutate/Smart HTTP/PAT ∩ ACL consumers
 - [ ] 10-09-PLAN.md — user.lookup live username autocomplete
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 10-10-PLAN.md — Org overview/settings/members/invites UI
 - [ ] 10-11-PLAN.md — /new owner picker + collaborators settings panel
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 10-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
 
 **UI hint**: yes
