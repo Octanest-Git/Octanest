@@ -2,9 +2,11 @@
 //!
 //! Session cookies are intentionally ignored for authorization (D-12 / T-08-02).
 
+use std::time::Duration;
+
 use axum::body::Bytes;
 use axum::extract::{Path as AxumPath, Query, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use chrono::{DateTime, Utc};
@@ -64,6 +66,43 @@ fn forbidden_insufficient_scope() -> Response {
         .into_response()
 }
 
+fn too_many_requests(retry_after: Duration) -> Response {
+    let secs = retry_after.as_secs().max(1).to_string();
+    let mut res = (
+        StatusCode::TOO_MANY_REQUESTS,
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        "Too many failed authentication attempts. Try again later.",
+    )
+        .into_response();
+    if let Ok(v) = HeaderValue::from_str(&secs) {
+        res.headers_mut().insert(header::RETRY_AFTER, v);
+    }
+    res
+}
+
+fn email_unverified_push() -> Response {
+    (
+        StatusCode::FORBIDDEN,
+        Json(serde_json::json!({
+            "ok": false,
+            "error": {
+                "code": "auth.email_unverified",
+                "message": "verify your email to continue"
+            }
+        })),
+    )
+        .into_response()
+}
+
+fn limiter_lock(
+    state: &AppState,
+) -> std::sync::MutexGuard<'_, crate::pat::rate_limit::FailedAuthLimiter> {
+    state
+        .git_auth_limiter
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+}
+
 /// Decode `Authorization: Basic …` → (username, password).
 fn parse_basic(headers: &HeaderMap) -> Result<Option<(String, String)>, Response> {
     let Some(raw) = headers.get(header::AUTHORIZATION) else {
@@ -111,6 +150,27 @@ struct AuthedPat {
     owner: UserRow,
 }
 
+/// Record a failed Basic/PAT attempt against IP and optional username→user bucket.
+async fn record_failed_auth(state: &AppState, headers: &HeaderMap, username: Option<&str>) {
+    let ip = client_ip(headers).unwrap_or_else(|| "unknown".into());
+    let mut user_id: Option<String> = None;
+    if let Some(name) = username {
+        if !USERNAME_ALIASES
+            .iter()
+            .any(|a| name.eq_ignore_ascii_case(a))
+        {
+            if let Ok(Some(u)) = state.db.find_user_by_username(name).await {
+                user_id = Some(u.id);
+            }
+        }
+    }
+    let mut lim = limiter_lock(state);
+    lim.record_ip(&ip);
+    if let Some(uid) = user_id {
+        lim.record_user(&uid);
+    }
+}
+
 /// Resolve Basic credentials to a PAT owner. Cookies are never consulted (D-12).
 async fn authenticate_pat(
     state: &AppState,
@@ -120,26 +180,48 @@ async fn authenticate_pat(
         return Ok(None);
     };
     if username.is_empty() {
+        record_failed_auth(state, headers, None).await;
         return Err(unauthorized_basic());
     }
+
+    // Per-user failed-auth gate when username maps to an account (D-26).
+    if !USERNAME_ALIASES
+        .iter()
+        .any(|a| username.eq_ignore_ascii_case(a))
+    {
+        if let Ok(Some(u)) = state.db.find_user_by_username(&username).await {
+            if let Err(retry) = limiter_lock(state).check_user(&u.id) {
+                return Err(too_many_requests(retry));
+            }
+        }
+    }
+
     if !looks_like_pat(&password) {
+        record_failed_auth(state, headers, Some(&username)).await;
         return Err(unauthorized_pat_hint());
     }
     let token_hash = sha256_hex(password.as_bytes());
     let pat = match state.db.find_pat_by_token_hash(&token_hash).await {
         Ok(Some(p)) => p,
-        Ok(None) => return Err(unauthorized_pat_hint()),
+        Ok(None) => {
+            record_failed_auth(state, headers, Some(&username)).await;
+            return Err(unauthorized_pat_hint());
+        }
         Err(e) => {
             tracing::error!(error = %e, "find_pat_by_token_hash failed");
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
     if pat_expired(&pat.expires_at) {
+        record_failed_auth(state, headers, Some(&username)).await;
         return Err(unauthorized_pat_hint());
     }
     let owner = match state.db.find_user_by_id(&pat.user_id).await {
         Ok(Some(u)) => u,
-        Ok(None) => return Err(unauthorized_pat_hint()),
+        Ok(None) => {
+            record_failed_auth(state, headers, Some(&username)).await;
+            return Err(unauthorized_pat_hint());
+        }
         Err(e) => {
             tracing::error!(error = %e, "find_user_by_id failed");
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
@@ -150,15 +232,17 @@ async fn authenticate_pat(
         .any(|a| username.eq_ignore_ascii_case(a))
         || username.eq_ignore_ascii_case(&owner.username);
     if !user_ok {
+        record_failed_auth(state, headers, Some(&username)).await;
         return Err(unauthorized_basic());
     }
+    // Successful auth clears user bucket only (D-26).
+    limiter_lock(state).clear_user(&owner.id);
     Ok(Some(AuthedPat { pat, owner }))
 }
 
 struct ResolvedRepo {
     row: RepositoryRow,
     owner_id: String,
-    owner_username: String,
 }
 
 async fn resolve_repo(
@@ -189,7 +273,6 @@ async fn resolve_repo(
     Ok(ResolvedRepo {
         row,
         owner_id: owner_user.id,
-        owner_username: owner_user.username,
     })
 }
 
@@ -291,6 +374,12 @@ async fn authorize_and_cgi(
         return StatusCode::NOT_FOUND.into_response();
     }
 
+    // D-26: IP failed-auth gate before Basic/PAT work.
+    let ip = client_ip(headers).unwrap_or_else(|| "unknown".into());
+    if let Err(retry) = limiter_lock(state).check_ip(&ip) {
+        return too_many_requests(retry);
+    }
+
     let authed = match authenticate_pat(state, headers).await {
         Ok(a) => a,
         Err(r) => return r,
@@ -327,6 +416,10 @@ async fn authorize_and_cgi(
         // Push is owner-only until Phase 10.
         if receive && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
             return unauthorized_basic();
+        }
+        // D-24 / Open Q2: unverified may fetch; push denied with email_unverified.
+        if receive && auth.owner.email_verified_at.is_none() {
+            return email_unverified_push();
         }
         if !pat_allows_operation(&auth.pat, &resolved.row, &resolved.owner_id, receive) {
             return forbidden_insufficient_scope();

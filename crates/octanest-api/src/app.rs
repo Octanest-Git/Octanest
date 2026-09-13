@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use axum::extract::DefaultBodyLimit;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
@@ -22,6 +22,7 @@ use crate::auth::session::{
     SessionService, SESSION_COOKIE_NAME, SESSION_IDLE,
 };
 use crate::email::{self, EmailSender};
+use crate::pat::rate_limit::FailedAuthLimiter;
 use crate::routes::{auth_callbacks, avatar, git_smart_http, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
@@ -37,6 +38,8 @@ pub struct AppState {
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
     pub pending: PendingAuthStore,
+    /// Smart HTTP failed Basic/PAT auth counters (D-26) — per process.
+    pub git_auth_limiter: Arc<Mutex<FailedAuthLimiter>>,
     pub env_name: String,
 }
 
@@ -67,6 +70,7 @@ impl AppState {
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
+            git_auth_limiter: Arc::new(Mutex::new(FailedAuthLimiter::new())),
             env_name,
         }
     }

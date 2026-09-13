@@ -359,11 +359,12 @@ async fn git_smart_failed_auth_rate_limit_429_retry_after() {
     create_public_repo(&app, &db, &cookie, user_id).await;
 
     // 20 failed Basic attempts from the same IP → next is 429.
+    // Use username alias `git` so only the IP bucket fills (user limit is 10).
     for i in 0..20 {
         let req = Request::builder()
             .method("GET")
             .uri(info_refs_uri("rluser", "hello"))
-            .header(header::AUTHORIZATION, basic_header("rluser", "password1"))
+            .header(header::AUTHORIZATION, basic_header("git", "password1"))
             .header("x-forwarded-for", "198.51.100.9")
             .body(Body::empty())
             .unwrap();
@@ -378,7 +379,7 @@ async fn git_smart_failed_auth_rate_limit_429_retry_after() {
     let limited = Request::builder()
         .method("GET")
         .uri(info_refs_uri("rluser", "hello"))
-        .header(header::AUTHORIZATION, basic_header("rluser", "password1"))
+        .header(header::AUTHORIZATION, basic_header("git", "password1"))
         .header("x-forwarded-for", "198.51.100.9")
         .body(Body::empty())
         .unwrap();

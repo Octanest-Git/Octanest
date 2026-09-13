@@ -1,5 +1,7 @@
 //! Personal access token RPC (`pat.createClassic` / `createFineGrained` / `list` / `revoke`).
 
+pub mod rate_limit;
+
 use octanest_core::{
     ClassicPatScope, CreateClassicPatRequest, CreateFineGrainedPatRequest, CreatePatResponse,
     FgRepoAccess, PatKind, PatListItem, AppError, CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX,
