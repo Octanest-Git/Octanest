@@ -112,7 +112,7 @@ status: complete
 1. **Task 0: Confirm D-ORG-01 schema door** — decision only (no commit); user chose `proceed_0010`
 2. **Task 1: 0010_orgs_acl + DB helpers + org_types** — `2968ee0` (feat)
 
-**Plan metadata:** see docs commit after SUMMARY/STATE/ROADMAP
+**Plan metadata:** `36ed457` (docs: complete plan)
 
 ## Files Created/Modified
 
