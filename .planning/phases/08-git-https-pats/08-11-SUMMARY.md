@@ -121,7 +121,7 @@ Each task was committed atomically:
 1. **Task 1 RED: failing FG create/reveal assertions** - `61ab247` (test)
 2. **Task 1 GREEN: FG create + reveal reuse** - `4adee2f` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `a022bac` (docs: complete plan)
 
 ## Files Created/Modified
 - `apps/web/src/routes/settings/tokens.new.fine-grained.tsrx` — route, AuthShell wall, form↔reveal switch

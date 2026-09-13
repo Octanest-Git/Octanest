@@ -31,9 +31,9 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
 Plan: 14 of 14
 Status: Ready to execute
-Last activity: 2026-09-13 — Completed 08-12 shared PAT how-to (CloneBox/QuickSetup)
+Last activity: 2026-09-13 — Completed 08-11 fine-grained create UI
 
-Progress: Phase 08 — 12/14 plans complete; remaining 08-11 fine-grained create UI and 08-13 docs gate
+Progress: Phase 08 — 13/14 plans complete; remaining 08-13 docs gate
 
 See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md`
 

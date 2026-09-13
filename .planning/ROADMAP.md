@@ -333,7 +333,7 @@ Plans:
 - [x] `08-08-PLAN.md` — make rpc-gen + API.md
 - [x] `08-09-PLAN.md` — `/settings/tokens` list/nav/revoke
 - [x] `08-10-PLAN.md` — Classic create + one-time reveal
-- [ ] `08-11-PLAN.md` — Fine-grained create UI
+- [x] `08-11-PLAN.md` — Fine-grained create UI
 - [x] `08-12-PLAN.md` — CloneBox/QuickSetup PAT how-to
 - [ ] `08-13-PLAN.md` — Docs + phase gate sweep
 
