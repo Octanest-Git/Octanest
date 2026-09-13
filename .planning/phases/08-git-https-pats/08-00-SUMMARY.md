@@ -44,7 +44,7 @@ key-decisions:
 patterns-established:
   - "Nyquist Wave 0 for Phase 8: failing nextest paths exist before PAT + Smart HTTP implementation waves"
 
-requirements-completed: [GIT-02, GIT-11]
+requirements-completed: []  # Wave 0 scaffolds only; greens land in later 08-xx plans
 
 coverage:
   - id: D1
@@ -101,7 +101,7 @@ Each task was committed atomically:
 
 1. **Task 1: PAT RPC + Smart HTTP + dialect Wave 0 stubs** - `80275ab` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `fe1a95a` (docs: complete plan)
 
 _Note: Wave 0 is RED-only by design — GREEN belongs to later 08-xx plans._
 
@@ -126,6 +126,14 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to later 08-xx plans._
 - **Fix:** Renamed to `dialect_pats_migrate_0008_schema_presence` and `dialect_pats_tri_dialect_files`
 - **Files modified:** `crates/octanest-db/tests/dialect_pats.rs`
 - **Commit:** `80275ab`
+
+### Auto-fixed Issues (close-out)
+
+**2. [Rule 1 - Bug] Reverted premature GIT-02/GIT-11 mark-complete**
+- **Found during:** SUMMARY close-out
+- **Issue:** `requirements.ready-ids` reports GIT-02/GIT-11 blocked for Wave 0; mark-complete had unchecked them incorrectly
+- **Fix:** `requirements.revert-phase GIT-02 GIT-11`; SUMMARY `requirements-completed: []`
+- **Files modified:** `.planning/REQUIREMENTS.md`, `08-00-SUMMARY.md`
 
 ## Auth Gates
 

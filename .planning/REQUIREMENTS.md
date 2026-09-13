@@ -41,7 +41,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 ### Git hosting
 
 - [x] **GIT-01**: User can create a repository (public or private)
-- [x] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
+- [ ] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
 - [ ] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
 - [ ] **GIT-04**: User can add, list, and revoke SSH public keys on their account
 - [x] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
@@ -50,7 +50,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
 - [x] **GIT-09**: Git operations use the system `git` CLI (≥2.5) behind a `GitBackend` abstraction (`CliGitBackend` shipped); a future gitoxide/`gix` (`GixGitBackend`) adapter is documented for when feature coverage allows
 - [x] **GIT-10**: Architecture docs and code boundaries keep `GitBackend` swappable — CLI is the current adapter; gitoxide/`gix` is a future adapter, not a Phase 7 primary
-- [x] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
+- [ ] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
 - [ ] **GIT-12**: User can push and fetch Git LFS objects for a repository
 - [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
 - [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
@@ -192,7 +192,7 @@ Deferred; not in the current roadmap until promoted.
 | AUTH-11 | Phase 4 | Complete |
 | AUTH-12 | Phase 5 | Complete |
 | GIT-01 | Phase 7 | Complete |
-| GIT-02 | Phase 8 | Complete |
+| GIT-02 | Phase 8 | Gaps Found |
 | GIT-03 | Phase 9 | Pending |
 | GIT-04 | Phase 9 | Pending |
 | GIT-05 | Phase 7 | Complete |
@@ -201,7 +201,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-08 | Phase 7 | Complete |
 | GIT-09 | Phase 7 | Complete |
 | GIT-10 | Phase 7 | Complete |
-| GIT-11 | Phase 8 | Complete |
+| GIT-11 | Phase 8 | Gaps Found |
 | GIT-12 | Phase 14 | Pending |
 | GIT-13 | Phase 14 | Pending |
 | GIT-14 | Phase 15 | Pending |
