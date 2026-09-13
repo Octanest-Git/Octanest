@@ -5,10 +5,10 @@ current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
 stopped_at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
-last_updated: "2026-09-13T18:15:09.762Z"
+last_updated: "2026-09-13T18:15:32.253Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 693df1a609e268e251e75cb13f3ad6748e4036f0
+state_head: c03e98efbb8e716a14ce17eebe81f87e35f342c7
 progress:
   total_phases: 22
   completed_phases: 0
@@ -270,6 +270,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:15:09.536Z
+Last session: 2026-09-13T18:15:32.193Z
 Stopped at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
 Resume file: None
