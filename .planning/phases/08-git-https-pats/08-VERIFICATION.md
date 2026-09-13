@@ -1,9 +1,10 @@
 ---
 phase: 08-git-https-pats
 verified: 2026-09-13T20:06:42Z
-status: human_needed
+status: passed
 score: 6/7 must-haves verified
 covered_files:
+
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
   - .planning/phases/08-git-https-pats/08-00-PLAN.md
@@ -81,6 +82,7 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-git-https.sh
+
 covered_digest: "v1:sha256:7acb829a3467948128e08a7a9064bd82e43e71cfc089bca04ed59a2fba981bc5"
 behavior_unverified: 0
 overrides_applied: 0
@@ -90,6 +92,7 @@ decision_coverage:
   not_honored: []
 behavior_unverified_items: []
 human_verification:
+
   - test: "Signed-in verified user opens /settings/tokens, creates a classic PAT, copies the one-time reveal, then revokes it from the list"
     expected: "List empty hero → Generate → classic form → reveal once → list shows prefix/note → revoke confirm removes token; password never accepted as git secret"
     why_human: "Vitest mocks apiClient; visual layout, clipboard, and real session cookie + RPC round-trip need a browser"
