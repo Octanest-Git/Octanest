@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: ui_spec_draft
-stopped_at: Phase 08 UI-SPEC draft written
-last_updated: "2026-09-13T17:00:00.000Z"
+stopped_at: Phase 08 UI-SPEC approved
+last_updated: "2026-09-13T17:20:09.195Z"
 last_activity: 2026-09-13
-last_activity_desc: "08-UI-SPEC.md draft written; awaiting ui-checker"
-state_head: f528162
+last_activity_desc: 08-UI-SPEC.md approved (7/7 + forge-parity UI Considerations)
+state_head: 95f460d097385f4e122d515a8d3f99f4dc8dc375
 progress:
   total_phases: 22
   completed_phases: 0
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs (UI-SPEC draft)
+**Current focus:** Phase 08 — Git HTTPS & PATs (UI-SPEC draft, checker revision)
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — UI-SPEC draft
+Phase: 08 (Git HTTPS & PATs) — UI-SPEC draft (revised)
 Plan: not started — next planner consumes `08-RESEARCH.md` + `08-UI-SPEC.md` after checker approval
 Status: ui_spec_draft
-Last activity: 2026-09-13 — `/gsd-ui-phase` researcher → `08-UI-SPEC.md`
+Last activity: 2026-09-13 — UI-SPEC Dimension 1 copywriting BLOCKs fixed; awaiting re-check
 
-Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 research + UI-SPEC draft ready for checker
+Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 UI-SPEC revised for checker re-run
 
 See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md` · `08-DISCUSSION-LOG.md`
 
@@ -262,6 +262,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T16:29:54.630Z
-Stopped at: Phase 08 context gathered
-Resume file: .planning/phases/08-git-https-pats/08-CONTEXT.md
+Last session: 2026-09-13T17:20:09.135Z
+Stopped at: Phase 08 UI-SPEC approved
+Resume file: .planning/phases/08-git-https-pats/08-UI-SPEC.md

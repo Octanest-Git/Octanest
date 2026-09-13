@@ -1,10 +1,11 @@
 ---
 phase: 8
 slug: git-https-pats
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-nova
 created: 2026-09-13
+reviewed_at: "2026-09-13T19:02:00Z"
 ---
 
 # Phase 8 — UI Design Contract
@@ -110,12 +111,12 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |---------|----------|
 | Primary CTAs | Dropdown **Generate new token** with two items: **Classic token**, **Fine-grained token** — OR two adjacent Buttons: primary **Generate classic token**, secondary outline **Generate fine-grained token**. **Lock: dropdown split** (GitHub-familiar; one primary control). |
 | Empty | Empty hero: Heading **No personal access tokens** + Body + open Generate dropdown |
-| Rows | Card/row on `--card`: **note/name** (Heading-weight Label 600), kind Badge (**Classic** / **Fine-grained**), scope summary (Label muted), expires (date or **No expiration**), **Last used** relative time + IP (or **Never**), created relative, **Revoke** destructive ghost/outline |
+| Rows | Card/row on `--card`: **note/name** (Heading-weight Label 600), kind Badge (**Classic** / **Fine-grained**), scope summary (Label muted), expires (date or **No expiration**), **Last used** relative time + IP (or **Never**), created relative, **Revoke token** destructive ghost/outline |
 | Prefix hint | Optional Label muted showing truncated prefix only (`ona_pat_…` / `ona_fg_…`) — never full secret |
 | Loading | List skeletons (3 rows) — do not flash empty |
 | Error | Inline Body destructive + retry |
 | Long note | Ellipsis + `title` full note |
-| Expired | Badge **Expired**; Revoke still available |
+| Expired | Badge **Expired**; **Revoke token** still available |
 
 ### Classic create `/settings/tokens/new` (D-05, D-07, D-16)
 
@@ -153,20 +154,21 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Token | Read-only Input/monospace block showing full `ona_pat_…` or `ona_fg_…` string; select-on-focus |
 | Copy | Button **Copy token** (aria-label same); success inline **Copied** (2s) like CloneBox |
 | Copy fail | **Couldn’t copy. Select the token and copy manually.** |
-| Continue | Primary **Done** → `/settings/tokens` (list without secret) |
+| Continue | Primary **Back to tokens** → `/settings/tokens` (list without secret) |
 | Never | Do not show plaintext on list, reload, or soft-nav back into create |
 
 ### Revoke confirm (D-17)
 
 | Element | Contract |
 |---------|----------|
-| Trigger | Row **Revoke** |
+| Trigger | Row **Revoke token** |
 | Dialog | AlertDialog (branch-delete pattern) |
 | Title | **Revoke token?** |
 | Body | Revokes **{note}**. Git clients using this token will stop working. This can’t be undone. |
 | Confirm | Destructive **Revoke token** — no type-to-confirm (note is not a secret; lighter than repo delete) |
-| Cancel | **Cancel** |
-| Pending | **Revoking…** then close + refresh list |
+| Dismiss | **Keep token** (closes dialog; does not revoke) |
+| Pending | **Revoking…**; **Keep token** disabled while pending; then close + refresh list |
+| Server failure | Inline Body destructive in dialog: **Couldn’t revoke token. Check your connection and try again.** — keep dialog open; confirm stays enabled |
 
 ### Verify wall (D-24, D-25)
 
@@ -220,7 +222,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | 3xl | 64px | Page vertical padding |
 
 **Exceptions:**
-- Touch targets (Buttons, Selects, menu items, Revoke): **≥ 44px** height / effective target
+- Touch targets (Buttons, Selects, menu items, Revoke token): **≥ 44px** height / effective target
 - Monospace token/URL blocks: **13px** type OK (inherits Phase 7 code surface exception)
 - Settings forms: **max-w-2xl**
 
@@ -257,21 +259,21 @@ Do **not** use Display on settings forms.
 |------|-----------------|----------------|-------|
 | Dominant (60%) | `--background` `#DFE8F0` | `#07080A` | Page canvas |
 | Secondary (30%) | `--card` `#FFFFFF` | `#12151B` | Token rows, reveal panel, how-to blocks, settings panels |
-| Primary cool (≤10% with warm) | `#0B6488` | `#4EB8D9` | Generate CTAs, focus rings, active settings nav, Done |
+| Primary cool (≤10% with warm) | `#0B6488` | `#4EB8D9` | Generate CTAs, focus rings, active settings nav, Back to tokens |
 | Secondary warm | `#C43D0F` | `#FF7A3D` | Header Sign up only — **never** for token CTAs |
-| Destructive | `#B42318` | `#FF6B6B` | Revoke, form errors, reveal urgency border OK via destructive/10 wash |
+| Destructive | `#B42318` | `#FF6B6B` | Revoke token, form errors, reveal urgency border OK via destructive/10 wash |
 
 ### Accent reserved for (Phase 8)
 
 **Primary (cool) reserved for:**
-1. **Generate token**, **Generate new token** trigger, **Done** after reveal, **Create a personal access token** how-to CTA
+1. **Generate token**, **Generate new token** trigger, **Back to tokens** after reveal, **Create a personal access token** how-to CTA
 2. Active settings secondary-nav indicator (Profile / Tokens)
 3. Focus rings on inputs, dialogs, checkboxes
 4. Existing Phase 3–7 reservations (auth CTAs, repo CTAs, Switch on, etc.)
 
 **Secondary (warm) reserved for:** header **Sign up** only when `allow_signup`.
 
-**Destructive reserved for:** **Revoke** / **Revoke token**, validation/server errors, reveal “won’t see again” emphasis (text or border — not solid warm accent).
+**Destructive reserved for:** **Revoke token**, validation/server errors, reveal “won’t see again” emphasis (text or border — not solid warm accent).
 
 **Not accent:** kind Badges (muted/outline), SSH placeholder, last-used IP text, expired Badge (muted or destructive outline only).
 
@@ -320,19 +322,20 @@ Do **not** use Display on settings forms.
 | Copy token | **Copy token** |
 | Copy success | Copied |
 | Copy fail | Couldn’t copy. Select the token and copy manually. |
-| Reveal done | **Done** |
+| Reveal done | **Back to tokens** |
 | Kind Classic badge | Classic |
 | Kind FG badge | Fine-grained |
 | Expires never | No expiration |
 | Expired badge | Expired |
 | Last used never | Never |
 | Last used row | Last used {relative} from {ip} |
-| Revoke row | **Revoke** |
+| Revoke row | **Revoke token** |
 | Revoke title | Revoke token? |
 | Revoke body | Revokes “{note}”. Git clients using this token will stop working. This can’t be undone. |
 | Revoke confirm CTA | **Revoke token** |
 | Revoke pending | Revoking… |
-| Revoke cancel | Cancel |
+| Revoke dismiss | **Keep token** |
+| Revoke server error | Couldn’t revoke token. Check your connection and try again. |
 | Unverified wall title | Verify your email |
 | Unverified wall body | Verify your email before creating a personal access token. |
 | Unverified wall CTA | **Verify email** |
@@ -348,70 +351,104 @@ Do **not** use Display on settings forms.
 
 ## UI Considerations
 
-> Shape-rooted UI state coverage for Phase 8 surfaces. Empty/error COPY lives in Copywriting — this section references those rows.
-> Element kinds: list-collection (token list, repo checklist), form (classic/FG create), interactive-control (revoke, copy, generate dropdown), nav (settings link-row), static-content (how-to panel, reveal warning).
+> Shape-rooted UI state coverage for Phase 8. Empty/error **copy** lives in Copywriting — this section covers state shape only.
+> Kinds confirmed 2026-09-13: E1 list-collection · E2 form · E3 form+list · E4 interactive-control · E5 interactive-control · E6 nav · E7 static-content · E8 form/gate.
+> Probe resolved via existing contract + forge-parity pass (user: match GitHub / forge alternatives as closely as possible). **0 unresolved.**
 
-Applicable: **48** — **42** explicit · **4** backstop · **2** dismissed · **0** unresolved
+Applicable: **45** — **38** explicit · **4** backstop · **3** dismissed · **0** unresolved
 
 | Category | Element(s) | Status | Resolution / Reason |
 |----------|------------|--------|---------------------|
-| empty | E1 Token list | ✅ covered | Zero tokens → empty hero No personal access tokens + Generate new token |
+| empty | E1 Token list | ✅ covered | Zero tokens → empty hero **No personal access tokens** + **Generate new token** (GitHub Settings → Developer settings empty pattern) |
 | loading | E1 Token list | ✅ covered | Three row skeletons; no marketing flash |
-| error | E1 Token list | ✅ covered | Inline Couldn’t load tokens + refresh |
-| populated | E1 Token list | ✅ covered | Note, kind Badge, scopes, expiry, last used+IP, Revoke |
-| partial | E1 Token list | ✅ covered | Never last-used shows Never; missing IP omits “from {ip}” |
-| overflow | E1 Token list | ✅ covered | Long notes ellipsis + title; page scrolls |
-| zero-one-many | E1 Token list | ✅ covered | Zero = empty hero; one/many = same row layout |
-| long-text | E1 Token list note | 🧪 backstop | Ellipsis + title — held-out visual |
-| empty | E2 Classic create | ✅ covered | Note empty; Generate blocked by validation; No expiration default |
-| loading | E2 Classic create | ✅ covered | Generating…; CTA disabled |
-| error | E2 Classic create | ✅ covered | Inline note/scope/server; network error copy |
-| partial | E2 Classic create | ✅ covered | Expiry date only when Expires on selected |
-| long-text | E2 Classic note | ✅ covered | Input scrolls; max length server-enforced if any |
-| empty | E3 FG create | ✅ covered | Same note/expiry; selected mode starts with zero repos checked |
-| loading | E3 FG create | ✅ covered | Repo checklist skeleton; Generating… |
-| error | E3 FG create | ✅ covered | Select at least one repository; network/server inline |
-| partial | E3 FG create | ✅ covered | All-repos hides checklist; selected shows checklist |
-| overflow | E3 FG repo list | ✅ covered | Checklist scrolls in page; long names truncate + title |
-| zero-one-many | E3 FG repo list | ✅ covered | Zero owned → empty repos body + New repository; one/many checkboxes |
-| long-text | E3 FG repo names | 🧪 backstop | Truncate with title — held-out visual |
-| empty | E4 One-time reveal | dismissed | Reveal only after successful mint — not an empty collection |
-| loading | E4 One-time reveal | dismissed | Sync replace after create response; copy is local |
-| error | E4 Copy token | ✅ covered | Couldn’t copy… manual select |
-| populated | E4 One-time reveal | ✅ covered | Full plaintext once + Copy + Done |
-| long-text | E4 Token string | ✅ covered | Monospace wraps or mid-ellipsis with full selectable value |
-| empty | E5 Revoke dialog | ✅ covered | Open with note in body; confirm enabled immediately |
-| loading | E5 Revoke dialog | ✅ covered | Revoking…; Cancel disabled while pending |
-| error | E5 Revoke dialog | ✅ covered | Inline alert in dialog on server failure |
-| long-text | E5 Revoke note | 🧪 backstop | Long note wraps in dialog description — held-out visual |
-| empty | E6 Verify wall | ✅ covered | AuthShell only; no create fields |
-| loading | E6 Verify wall | ✅ covered | Session pending may skeleton briefly then wall |
-| error | E6 Verify wall | ✅ covered | Session error uses network error path before wall |
-| empty | E7 How-to panel | ✅ covered | Always shows static steps (not data-driven empty) |
-| loading | E7 How-to panel | dismissed | Static content; no async |
-| error | E7 How-to CTA | ✅ covered | CTA navigates; clone copy errors stay on CloneBox E12 |
-| overflow | E7 How-to examples | ✅ covered | Code blocks overflow-x-auto |
-| long-text | E7 How-to | 🧪 backstop | Long clone URLs wrap/scroll in code — held-out visual |
-| loading | E8 Settings nav | ✅ covered | Nav always present when settings chrome mounts |
-| error | E8 Settings nav | dismissed | Static links — no load failure surface |
-| overflow | E8 Settings nav | ✅ covered | Labels short; wrap on narrow if needed |
-| empty | E9 Unverified list gate | ✅ covered | Generate disabled + Verify your email to create a token. |
-| loading | E9 Generate dropdown | ✅ covered | Trigger disabled while unverified or pending session |
-| error | E9 Generate dropdown | dismissed | No async open |
-| populated | E9 Generate dropdown | ✅ covered | Classic token / Fine-grained token items |
-| partial | E2/E3 Expiry | ✅ covered | Date field hidden/disabled when No expiration |
-| zero-one-many | E1 Last-used | ✅ covered | Never vs timestamp+IP singular copy |
+| error | E1 Token list | ✅ covered | Inline **Couldn’t load tokens. Refresh and try again.** |
+| populated | E1 Token list | ✅ covered | Note, kind Badge (Classic / Fine-grained), scopes, expiry, last used + IP, **Revoke token** |
+| partial | E1 Token list | ✅ covered | Never last-used → **Never**; missing IP omits “from {ip}” |
+| overflow | E1 Token list | ✅ covered | Long notes ellipsis + `title`; page scrolls |
+| zero-one-many | E1 Token list | ✅ covered | Zero = empty hero; one/many = identical row layout (no singular layout fork) |
+| long-text | E1 Token list note | 🧪 backstop | `{ statement: "Long PAT notes ellipsis with full title tooltip on list rows", verification: backstop }` |
+| empty | E2 Classic create | ✅ covered | Unfilled form; **Generate token** blocked until required note + `repo` checked; **No expiration** default (GitHub classic optional expiry) |
+| loading | E2 Classic create | ✅ covered | **Generating…**; CTA disabled |
+| error | E2 Classic create | ✅ covered | Inline field/server errors; network retry copy |
+| partial | E2 Classic create | ✅ covered | Expiry date field only when **Expires on** selected |
+| long-text | E2 Classic note | ✅ covered | Input scrolls; server max length if any |
+| empty | E3 FG create | ✅ covered | Note/expiry empty; **Selected repositories** starts with zero repos checked (GitHub FG) |
+| loading | E3 FG create | ✅ covered | Repo checklist skeleton; **Generating…** |
+| error | E3 FG create | ✅ covered | **Select at least one repository** when selected-mode empty; network/server inline |
+| partial | E3 FG create | ✅ covered | **All repositories** hides checklist; **Selected** shows checklist (GitHub FG repo access radios) |
+| overflow | E3 FG repo list | ✅ covered | Checklist scrolls; long `owner/name` truncate + `title` |
+| zero-one-many | E3 FG repo list | ✅ covered | Zero owned → empty repos body + **New repository** CTA; one/many checkboxes |
+| long-text | E3 FG repo names | 🧪 backstop | `{ statement: "Long repository names truncate with title tooltip in FG checklist", verification: backstop }` |
+| loading | E4 Reveal | dismissed | Reveal replaces create view synchronously after mint; copy is local clipboard — no async reveal load |
+| error | E4 Copy token | ✅ covered | **Couldn’t copy…** + manual select fallback |
+| overflow | E4 Token string | ✅ covered | Monospace wraps or mid-ellipsis; full value remains selectable |
+| long-text | E4 Token string | ✅ covered | Same as overflow — full opaque string selectable once |
+| overflow | E5 Revoke dialog | ✅ covered | Dialog body scrolls if needed; actions stay pinned |
+| long-text | E5 Revoke note | 🧪 backstop | `{ statement: "Long token notes wrap in revoke dialog description without clipping CTAs", verification: backstop }` |
+| empty | E6 Settings nav | dismissed | Nav is static chrome links (Profile \| Personal access tokens) — not a data collection |
+| loading | E6 Settings nav | ✅ covered | Present when settings chrome mounts (no skeleton required) |
+| error | E6 Settings nav | dismissed | Static links — no load-failure surface |
+| populated | E6 Settings nav | ✅ covered | Active underline/border on **Personal access tokens** when on tokens routes |
+| partial | E6 Settings nav | dismissed | Both links always present for signed-in settings |
+| overflow | E6 Settings nav | ✅ covered | Short labels; wrap on narrow viewports |
+| zero-one-many | E6 Settings nav | dismissed | Fixed two-link row — not a collection |
+| long-text | E6 Settings nav | ✅ covered | Labels fixed copy; no truncation needed |
+| empty | E7 How-to panel | ✅ covered | Always shows static credential steps (not data-driven empty) |
+| loading | E7 How-to panel | dismissed | Static content; no async fetch |
+| error | E7 How-to CTA | ✅ covered | CTA navigates to `/settings/tokens` (or login `returnTo`); clone copy errors stay on CloneBox |
+| partial | E7 How-to | ✅ covered | SSH remains placeholder until Phase 9; HTTPS how-to fully specified |
+| long-text | E7 How-to URLs | 🧪 backstop | `{ statement: "Long clone URLs wrap or overflow-x-auto in how-to code blocks", verification: backstop }` |
+| empty | E8 Verify wall | ✅ covered | AuthShell only on create routes when unverified — no create fields |
+| loading | E8 Verify wall | ✅ covered | Brief session skeleton then wall / list gate |
+| error | E8 Verify wall | ✅ covered | Session error uses network error path before wall |
+| populated | E8 List Generate gate | ✅ covered | Unverified: list visible; **Generate new token** disabled + **Verify your email to create a token.** |
+| partial | E8 Expiry + gate | ✅ covered | Expiry date hidden when No expiration; Generate disabled while unverified |
+| overflow | E8 AuthShell | ✅ covered | Wall content scrolls in viewport; CTA ≥44px |
+| zero-one-many | E8 Generate dropdown | ✅ covered | Verified: dropdown items **Classic token** / **Fine-grained token**; unverified: trigger disabled (no empty menu) |
+| long-text | E8 Verify hint | ✅ covered | Hint wraps under Generate control |
 
-### Forge parity (executor checklist)
+### Truths for plan-phase lift (explicit)
 
-| Surface | GitHub-like contract | Intentional delta |
-|---------|----------------------|-------------------|
-| Token IA | `/settings/tokens`; Classic vs Fine-grained separate creates | Octanest prefixes `ona_pat_` / `ona_fg_` (never `ghp_` / `github_pat_`) |
-| Reveal | One-time plaintext + copy | Same |
-| List | Note, scopes, last used | Also show last-used **IP** (D-09) |
-| HTTPS how-to | Username + PAT as password | Aliases: username, `git`, `token`, `oauth2` (research) |
-| SSH | Placeholder | Until Phase 9 |
-| RPC Bearer | — | Explicitly out (D-01) |
+- Token list empty state shows empty hero and Generate new token entry (GitHub-shaped).
+- Token list rows show note, kind, scopes, expiry, last used (+ IP per D-09), and Revoke token.
+- Classic and fine-grained are **separate create flows** with distinct routes (GitHub dual model).
+- Fine-grained repo access supports **Selected repositories** and **All repositories** (GitHub FG).
+- One-time reveal shows plaintext once with Copy token and Back to tokens; secret never reappears in list.
+- Revoke uses AlertDialog with **Revoke token** confirm and **Keep token** dismiss (no generic Cancel).
+- HTTPS how-to teaches username + PAT-as-password with aliases username / `git` / `token` / `oauth2`.
+- Unverified users see list but cannot mint; create routes show AuthShell verify wall.
+
+### Backstop truths (held-out visual)
+
+- `{ statement: "Long PAT notes ellipsis with full title tooltip on list rows", verification: backstop }`
+- `{ statement: "Long repository names truncate with title tooltip in FG checklist", verification: backstop }`
+- `{ statement: "Long token notes wrap in revoke dialog description without clipping CTAs", verification: backstop }`
+- `{ statement: "Long clone URLs wrap or overflow-x-auto in how-to code blocks", verification: backstop }`
+
+### Forge parity (executor checklist) — match GitHub / Forgejo as closely as possible
+
+| Surface | Target contract (GitHub unless noted) | Octanest lock | Intentional delta only |
+|---------|----------------------------------------|---------------|------------------------|
+| Settings IA | Developer settings → Personal access tokens | `/settings/tokens` + Profile \| Personal access tokens nav; Account menu item | Nested under account settings (no separate “Developer settings” hub yet) |
+| Dual token types | Classic vs Fine-grained, **separate** create UIs | D-05 routes `/new` + `/new/fine-grained`; Generate dropdown split | Same |
+| Classic scope | Broad `repo` for private git | Single required **repo** checkbox — Full control of private repositories | No unused classic scopes in Phase 8 UI |
+| FG repo access | Only select repositories **or** All repositories | Radios Selected / All (D-06) | Same |
+| FG permissions | Contents Read/Read and write (+ metadata implied) | Contents **read** / **write**; metadata auto (research) | No account/org permission matrix until Phase 10 |
+| Note / name | Required token description | Required note (D-16) | Same |
+| Expiry | Optional expiration | No expiration **or** date (D-07) | Same |
+| Reveal | One-time plaintext + copy; never again | D-15; **Back to tokens** | Same |
+| List metadata | Name, scopes, last used | + **last-used IP** (D-09) | IP is additive vs GitHub |
+| Revoke | Confirm before delete | AlertDialog; **Keep token** / **Revoke token** | Verb+noun dismiss (no Cancel) |
+| HTTPS credential | Username + PAT as password; never account password | How-to panel + backend D-10/D-11 | Aliases include Forgejo-friendly `token` / `oauth2` + `git` |
+| Token string look | Prefixed opaque secret | `ona_pat_` / `ona_fg_` examples only | **Never** `ghp_` / `github_pat_` / `gho_` (D-08) |
+| Clone UX | HTTPS clone URL + auth help | CloneBox + QuickSetup full how-to + CTA (D-13) | SSH placeholder until Phase 9 |
+| Email gate | Verified email for privileged actions | Create + push require verified (D-24/D-25) | Aligns Phase 5; GitHub similarly gates some actions |
+| SSH keys | Separate settings | Out — Phase 9 | Same deferral |
+| OAuth apps | Separate | Out — PLAT-V2-02 remainder | Same |
+| Org/FG org tokens | Later | Out — Phase 10+ | Same |
+| RPC Bearer PAT | GitHub API tokens work as Bearer | **Out** Phase 8 (D-01) — git HTTPS only | Document in how-to: web stays on session cookies |
+
+**Parity bar for executors:** If a GitHub PAT settings / HTTPS clone help screen has a control or copy pattern for the rows above, implement the Octanest equivalent unless the Intentional delta column says otherwise. Prefer familiar labels (**Generate new token**, **Classic**, **Fine-grained**, **All repositories**, **No expiration**, one-time reveal warning) over novel IA.
 
 <!-- Status vocabulary: ✅ covered / 🧪 backstop / dismissed / ⚠ unresolved — Rows REPLACED on probe re-run. -->
 
@@ -488,18 +525,19 @@ Resolved without re-asking (CONTEXT + RESEARCH + inherited UI-SPEC):
 | Token prefixes in UX | `ona_pat_` / `ona_fg_` |
 | Revoke confirm | AlertDialog; no type-to-confirm |
 | Unverified list | Visible; Generate disabled + hint |
-| Primary CTAs | **Generate token** / **Create a personal access token** / **Done** / **Revoke token** |
+| Primary CTAs | **Generate token** / **Create a personal access token** / **Back to tokens** / **Revoke token** |
+| Revoke dismiss | **Keep token** (not Cancel) |
 
 ---
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
-- [ ] Dimension 7 Inventory Provenance: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
+- [x] Dimension 7 Inventory Provenance: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-09-13 (revision: Keep token; UI Considerations probe + forge-parity pass)
