@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
-status: research_ready
-stopped_at: Phase 08 research complete
-last_updated: "2026-09-13T16:44:22.928Z"
+status: ui_spec_draft
+stopped_at: Phase 08 UI-SPEC draft written
+last_updated: "2026-09-13T17:00:00.000Z"
 last_activity: 2026-09-13
-last_activity_desc: "08-RESEARCH.md + 08-VALIDATION.md written; UI-SPEC gate blocking plan"
-state_head: faa01071be943b9ad3e1eb4e400e1b07f3e044c0
+last_activity_desc: "08-UI-SPEC.md draft written; awaiting ui-checker"
+state_head: f528162
 progress:
   total_phases: 22
   completed_phases: 0
@@ -24,18 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs (research ready)
+**Current focus:** Phase 08 — Git HTTPS & PATs (UI-SPEC draft)
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — RESEARCH complete
-Plan: not started — next planner consumes `08-RESEARCH.md`
-Status: research_ready
-Last activity: 2026-09-13 — `/gsd-plan-phase` research → `08-RESEARCH.md`
+Phase: 08 (Git HTTPS & PATs) — UI-SPEC draft
+Plan: not started — next planner consumes `08-RESEARCH.md` + `08-UI-SPEC.md` after checker approval
+Status: ui_spec_draft
+Last activity: 2026-09-13 — `/gsd-ui-phase` researcher → `08-UI-SPEC.md`
 
-Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 research ready for planning
+Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 research + UI-SPEC draft ready for checker
 
-See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-RESEARCH.md` · `08-DISCUSSION-LOG.md`
+See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md` · `08-DISCUSSION-LOG.md`
 
 ## Performance Metrics
 
