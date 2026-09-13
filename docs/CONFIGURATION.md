@@ -17,7 +17,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `API_BIND` | Optional | `0.0.0.0:8080` | Listen address for `octanest-api`. Host `make` workflows often use `127.0.0.1:8080`. |
 | `OCTANEST_RPC_VERSION` | Optional | `1` (Compose) | Documented / passed through Compose. The generated TS client embeds `RPC_VERSION = 1` and sends header `Octanest-RPC-Version`. |
 | `RUST_LOG` | Optional | `info` (Compose) | `tracing` / `EnvFilter` log directives. |
-| `OCTANEST_PUBLIC_ORIGIN` | Optional | `http://localhost:8080` (API fallback when unset) | Browser-facing origin for **verify/reset magic links** and SSO redirect URIs. Trailing slash is stripped. Compose defaults to `http://localhost` via `OCTANEST_COMPOSE_PUBLIC_ORIGIN` so a host Vite value (`http://localhost:3000`) in `.env` does not poison container mail. |
+| `OCTANEST_PUBLIC_ORIGIN` | Optional | `http://localhost:8080` (API fallback when unset) | Browser-facing origin for **verify/reset magic links**, SSO redirect URIs, and **HTTPS git clone URLs** (`{origin}/{owner}/{repo}.git`, D-19). Trailing slash is stripped. Compose defaults to `http://localhost` via `OCTANEST_COMPOSE_PUBLIC_ORIGIN` so a host Vite value (`http://localhost:3000`) in `.env` does not poison container mail. |
 | `OCTANEST_COMPOSE_PUBLIC_ORIGIN` | Optional (Compose) | `http://localhost` | Sets `OCTANEST_PUBLIC_ORIGIN` inside the API container (`make up` / `make up-with-dev-auth`). |
 | `OCTANEST_ADMIN_EMAIL` | Optional | _(unset)_ | With `OCTANEST_ADMIN_PASSWORD`, seeds one `sys-admin` on an **empty instance** (username `system-administrator`, `must_change_credentials` until `/setup/credentials`). Set both **before first boot**. If either/both unset and users is empty, the SPA `/setup` wizard creates the first `sys-admin` instead. Same path for cloud and self-host — no deployment-mode fork. Seed failure with both set → **fail boot** (exit 1). |
 | `OCTANEST_ADMIN_PASSWORD` | Optional | _(unset)_ | Paired with `OCTANEST_ADMIN_EMAIL` for empty-instance `sys-admin` seed. Placeholders only in examples — never commit real passwords. |
@@ -69,6 +69,26 @@ Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTA
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | 604800 | Scheduled `git gc --auto` on active repos |
 
 Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`).
+
+## Git Smart HTTP & personal access tokens
+
+Phase 8 adds Git **Smart HTTP** on `/{owner}/{repo}.git` and **personal access tokens (PATs)** for HTTPS git auth. Procedures and error codes: [API.md](API.md). Architecture: [ARCHITECTURE.md](ARCHITECTURE.md#git-smart-http--pats).
+
+**Clone URL host (D-19):** Displayed clone URLs use `OCTANEST_PUBLIC_ORIGIN` (not the request `Host` header). Set this to the browser-facing origin operators expect in `git clone` copy (Compose: `OCTANEST_COMPOSE_PUBLIC_ORIGIN` → API/web containers).
+
+**Traefik `.git` routing:** Default Compose routes Smart HTTP to the API **before** the SPA catch-all:
+
+```text
+Host(`localhost`) && PathRegexp(`^/[^/]+/[^/]+\.git`)   # priority 110 → api
+```
+
+Bare `/{owner}/{repo}` (no `.git` suffix) stays on the web UI. Self-hosted reverse proxies must mirror this PathRegexp (or equivalent) so `git clone` / `ls-remote` / `push` hit the API, not HTML.
+
+**CGI / disk:** Smart HTTP spawns `git-http-backend` with `GIT_PROJECT_ROOT` = `OCTANEST_REPOS_DIR`. No extra env vars are required for CGI beyond the existing repos root and a system `git` ≥ 2.5 with `git-http-backend` on the exec path (API image installs distro git).
+
+**PAT prefixes (redacted examples only):** classic `octanest_pat_REDACTED`, fine-grained `octanest_fg_REDACTED`. Mint via Settings → Tokens (RPC `pat.*` with session cookie). **PATs are not RPC Bearer credentials** — typed `/api/rpc` stays on the session cookie; PATs authenticate Smart HTTP over HTTPS via HTTP Basic (password = token) only.
+
+**Failed-auth rate limit (single replica):** Failed Basic/PAT attempts are limited **in-process** (20 failures per client IP and 10 per username per 15 minutes → HTTP `429` + `Retry-After`). Counters are **not** shared across API replicas — multi-replica deployments need an external / shared limiter or sticky single replica for this control.
 
 ## Config file format
 

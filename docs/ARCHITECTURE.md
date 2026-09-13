@@ -21,6 +21,7 @@ graph TD
   Browser --> Traefik
   Traefik -->|"Host localhost"| Web
   Traefik -->|"/api /uploads /health"| Api
+  Traefik -->|"/{owner}/{repo}.git PathRegexp"| Api
   Web -->|"Vite proxy in local dev"| Api
   Client -.->|"typed RPC calls"| Api
   Web --> Client
@@ -29,7 +30,7 @@ graph TD
   Git --> Repos
 ```
 
-Local development without Compose runs the API on `127.0.0.1:8080` and the Vite dev server on `:3000`, with proxies for `/api/*`, `/uploads`, and `/health` (see `apps/web/vite.config.ts`).
+Local development without Compose runs the API on `127.0.0.1:8080` and the Vite dev server on `:3000`, with proxies for `/api/*`, `/uploads`, and `/health` (see `apps/web/vite.config.ts`). Smart HTTP on `/{owner}/{repo}.git` is served by the API directly in local `make` workflows (no Traefik PathRegexp required).
 
 ## Data flow
 
@@ -37,10 +38,10 @@ Typical authenticated request path:
 
 1. **Entry** — Browser loads UI from Traefik → `web`, or Vite in local `make dev`. Session cookie `octanest_session` is same-origin.
 2. **RPC call** — `@octanest/api-client` `createClient` POSTs to `/api/rpc` with `Octanest-RPC-Version: 1`, `credentials: "include"`, and body `{ procedure, input }`. WebSocket upgrades use `/api/rpc/ws` for the same procedure dispatch.
-3. **Edge** — Traefik (priority 100) routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
-4. **Axum** — `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name.
-5. **Domain + storage** — Handlers in `auth/`, `repo/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, auth settings). Dialect branching stays inside `octanest-db` only. Git forge ops go through `octanest_git::GitBackend` (never raw `gix` / shell from handlers).
-6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)).
+3. **Edge** — Traefik (priority **110**) routes `/{owner}/{repo}.git` (PathRegexp) to `api` for Smart HTTP; priority **100** routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
+4. **Axum** — For RPC, `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name. Smart HTTP uses a separate route stack (Basic + PAT) — see [Git Smart HTTP & PATs](#git-smart-http--pats).
+5. **Domain + storage** — Handlers in `auth/`, `repo/`, `pat/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, PATs, auth settings). Dialect branching stays inside `octanest-db` only. Forge browse/create ops go through `octanest_git::GitBackend`; Smart HTTP wire protocol goes through `git-http-backend` CGI.
+6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)). Git clients speak Smart HTTP under `/{owner}/{repo}.git/...`.
 
 OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and `/api/auth/oidc/start|callback`, then return with a session cookie.
 
@@ -74,6 +75,23 @@ Phase 7 ships a self-hosted forge browse/create surface behind a deep **`GitBack
 
 API handlers depend on `Arc<dyn GitBackend>` (or the concrete `CliGitBackend` held on `AppState`), so swapping adapters later is a crate-local change, not a rewrite of `repo/*` routes.
 
+### Git Smart HTTP & PATs
+
+Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface:
+
+| Concern | Contract |
+| --- | --- |
+| **Wire protocol** | Axum mounts `info/refs`, `git-upload-pack`, `git-receive-pack` under `/{owner}/{repo}.git` and spawns **`git-http-backend`** CGI (`GIT_PROJECT_ROOT` = `OCTANEST_REPOS_DIR`). |
+| **Auth split (D-01 / D-12)** | **Session cookies never authenticate git.** Smart HTTP uses HTTP Basic with password = PAT. Typed RPC (`/api/rpc`) stays on `octanest_session` only — do **not** send `Authorization: Bearer <pat>`. |
+| **Hash-at-rest** | PAT plaintext is shown **once** at mint; DB stores SHA-256 of the secret (same pattern as sessions). Revoke soft-deletes; list never returns secrets. |
+| **Prefixes** | Classic `octanest_pat_…`, fine-grained `octanest_fg_…` (CSPRNG hex after the prefix). Redacted docs examples only (`octanest_pat_REDACTED`). |
+| **Classic scopes** | Scope catalog includes `repo` (HTTPS fetch + push where ACL allows). |
+| **Fine-grained** | Bound to **owned** repositories selected at mint; insufficient scope → HTTP 403 on Smart HTTP. |
+| **Clone URL** | `https://{OCTANEST_PUBLIC_ORIGIN host}/{owner}/{repo}.git` (D-18 / D-19). |
+| **Edge** | Compose Traefik `PathRegexp` for `.git` → API (priority 110). See [CONFIGURATION.md](CONFIGURATION.md#git-smart-http--personal-access-tokens). |
+
+RPC lifecycle: `pat.createClassic`, `pat.createFineGrained`, `pat.list`, `pat.revoke` (session + verified email for mint). Full path/auth/error matrix: [API.md](API.md).
+
 ### Auth sessions
 
 - Cookie name: `octanest_session` (HttpOnly; `Secure` except `OCTANEST_ENV=development`/`dev`).
@@ -84,6 +102,7 @@ API handlers depend on `Arc<dyn GitBackend>` (or the concrete `CliGitBackend` he
   - When both `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set and `users` is empty, `main` seeds a `sys-admin` with username `system-administrator`, applies `OCTANEST_ALLOW_SIGNUP` (default false) to instance `allow_signup`, and marks `must_change_credentials` until `/setup/credentials` (`auth.confirm_admin_credentials`). Seed error → fail boot (exit 1).
   - When either/both admin ENV vars are unset and `users` is empty, `auth.bootstrap_status.needs_setup` is true; SSR/UI gates to `/setup`. While `needs_setup`, RPC allowlists only bootstrap/health procedures. `auth.bootstrap_setup` creates the first `sys-admin` + session and persists wizard `allow_signup`.
   - After bootstrap, `allow_signup` governs local signup (`auth.signup`, `/signup`, chrome CTAs); Admin → Auth can toggle it.
+- Cookie sessions do **not** authorize Smart HTTP (D-12); mint/list/revoke PATs over RPC still require the session cookie.
 
 ### Email adapters
 
