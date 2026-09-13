@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRefAndPath } from "./repo-browse";
+import { parseRefAndPath, pathBreadcrumbCrumbs } from "./repo-browse";
 
 describe("parseRefAndPath", () => {
   it("returns empty ref and path for empty splat", () => {
@@ -43,5 +43,36 @@ describe("parseRefAndPath", () => {
       ref: "feature/foo",
       path: "",
     });
+  });
+});
+
+describe("pathBreadcrumbCrumbs", () => {
+  it("returns empty crumbs for empty path", () => {
+    expect(pathBreadcrumbCrumbs("")).toEqual([]);
+    expect(pathBreadcrumbCrumbs("/")).toEqual([]);
+  });
+
+  it("builds prefix crumbs for a deep path (long-path chrome)", () => {
+    expect(
+      pathBreadcrumbCrumbs(
+        "src/very/deeply/nested/components/ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
+      ),
+    ).toEqual([
+      { seg: "src", prefix: "src", last: false },
+      { seg: "very", prefix: "src/very", last: false },
+      { seg: "deeply", prefix: "src/very/deeply", last: false },
+      { seg: "nested", prefix: "src/very/deeply/nested", last: false },
+      {
+        seg: "components",
+        prefix: "src/very/deeply/nested/components",
+        last: false,
+      },
+      {
+        seg: "ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
+        prefix:
+          "src/very/deeply/nested/components/ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
+        last: true,
+      },
+    ]);
   });
 });

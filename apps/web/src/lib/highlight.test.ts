@@ -28,4 +28,15 @@ describe("highlight", () => {
     expect(html).toMatch(/shiki/i);
     expect(html).toMatch(/tsrx|source\.tsrx/i);
   });
+
+  it("maps and highlights .ts blobs as typescript (07-15 UAT)", async () => {
+    expect(languageIdForPath("src/util.ts")).toBe("typescript");
+    const html = await highlightCode("const x: number = 1;", {
+      lang: languageIdForPath("src/util.ts"),
+      theme: "github-dark",
+    });
+    expect(html).toMatch(/shiki/i);
+    expect(html).toMatch(/language-typescript|typescript/i);
+    expect(html).toMatch(/const/);
+  });
 });

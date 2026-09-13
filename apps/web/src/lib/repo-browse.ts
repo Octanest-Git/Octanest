@@ -68,6 +68,22 @@ export function joinRepoPath(...parts: string[]): string {
     .join("/");
 }
 
+/** Crumb segments for tree/blob path chrome (D-17 / UI long-path backstop). */
+export type PathCrumb = {
+  seg: string;
+  prefix: string;
+  last: boolean;
+};
+
+export function pathBreadcrumbCrumbs(path: string): PathCrumb[] {
+  const segments = path.split("/").filter(Boolean);
+  return segments.map((seg, i) => ({
+    seg,
+    prefix: segments.slice(0, i + 1).join("/"),
+    last: i === segments.length - 1,
+  }));
+}
+
 export function treeHref(
   owner: string,
   repo: string,
