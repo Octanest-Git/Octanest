@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-07-PLAN.md
-last_updated: "2026-09-13T19:06:17.144Z"
+stopped_at: Completed 08-09-PLAN.md
+last_updated: "2026-09-13T19:22:15.447Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: a315997fb262e10c163f793652689238c3670523
+state_head: a47eca2fb31f2e5d7d130aa5da5af29bccb3ac6a
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 72
+  completed_plans: 73
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 10 of 14
+Plan: 11 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -122,6 +122,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08-git-https-pats P06 | 6min | 2 tasks | 7 files |
 | Phase 08 P08 | 4min | 1 tasks | 3 files |
 | Phase 08-git-https-pats P07 | 6min | 1 tasks | 3 files |
+| Phase 08-git-https-pats P09 | 9min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -268,6 +269,8 @@ Recent decisions affecting current work:
 - [Phase 08]: API.md D-01: session cookie for RPC; PAT Basic for Smart HTTP only
 - [Phase 08]: Separate Traefik api-git router (PathRegexp prio 110) → service api; keep api@100 and web@1
 - [Phase 08]: smoke-git-https uses octanest_pat_/octanest_fg_ prefixes; skips exit 0 without Docker
+- [Phase 08]: 08-09: SettingsNav + Account menu PAT link; Generate disabled when unverified
+- [Phase 08]: 08-09: Revoke AlertDialog Keep token / Revoke token (no type-to-confirm)
 
 ### Pending Todos
 
@@ -289,6 +292,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:06:17.072Z
-Stopped at: Completed 08-07-PLAN.md
+Last session: 2026-09-13T19:22:15.388Z
+Stopped at: Completed 08-09-PLAN.md
 Resume file: None

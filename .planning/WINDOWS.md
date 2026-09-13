@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 19
+open_count: 21
 waived_count: 0
 fixed_count: 1
-total_count: 20
-last_updated: 2026-09-13T19:06:10.084Z
+total_count: 22
+last_updated: 2026-09-13T19:22:14.499Z
 ---
 
 # Broken Windows Ledger
@@ -35,6 +35,8 @@ last_updated: 2026-09-13T19:06:10.084Z
 | 18 | 08 | skipped-test | crates/octanest-api/tests/git_smart_http.rs |  | 4 expansion git_smart tests #[ignore] until 08-06 | open |  | 2026-09-13T18:37:52.519Z |  |
 | 19 | 08 | deviation | crates/octanest-api/src/pat/mod.rs |  | Plan prose ona_fg_ locked to octanest_fg_ (FINE_GRAINED_PAT_PREFIX / D-08) | open |  | 2026-09-13T18:42:34.877Z |  |
 | 20 | 08 | unrun-verify | scripts/smoke-git-https.sh |  | Live make smoke-git-https not run — Docker engine unavailable on executor host | open |  | 2026-09-13T19:06:10.084Z |  |
+| 21 | 08 | skipped-test | apps/web/src/routes/settings/tokens.integration.test.ts |  | D-15 one-time reveal it.skip until 08-10 | open |  | 2026-09-13T19:22:14.417Z |  |
+| 22 | 08 | deviation | apps/web/src/components/settings/pat-revoke-dialog.tsrx |  | Revoke dialog landed with T1 list commit; T2 greened assertions | open |  | 2026-09-13T19:22:14.499Z |  |
 
 ````json
 [
@@ -276,6 +278,30 @@ last_updated: 2026-09-13T19:06:10.084Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T19:06:10.084Z",
+    "resolved_at": null
+  },
+  {
+    "id": 21,
+    "kind": "skipped-test",
+    "phase": "08",
+    "file": "apps/web/src/routes/settings/tokens.integration.test.ts",
+    "line": null,
+    "description": "D-15 one-time reveal it.skip until 08-10",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T19:22:14.417Z",
+    "resolved_at": null
+  },
+  {
+    "id": 22,
+    "kind": "deviation",
+    "phase": "08",
+    "file": "apps/web/src/components/settings/pat-revoke-dialog.tsrx",
+    "line": null,
+    "description": "Revoke dialog landed with T1 list commit; T2 greened assertions",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T19:22:14.499Z",
     "resolved_at": null
   }
 ]
