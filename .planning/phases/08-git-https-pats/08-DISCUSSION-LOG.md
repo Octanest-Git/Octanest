@@ -218,3 +218,19 @@
 - PAT as RPC Bearer (out of Phase 8)
 - OAuth apps (remaining PLAT-V2-02)
 - Org-scoped tokens (Phase 10+)
+
+---
+
+## 08-02 Reversibility gates (checkpoint outcomes)
+
+### Task 1 — D-08 PAT prefixes (one-way)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `ona_prefixes` | `ona_pat_` / `ona_fg_` (plan recommended; CONTEXT/RESEARCH) | |
+| `octanest_prefixes` | `octanest_pat_` / `octanest_fg_` (full-brand) | ✓ |
+| `stop` | Revisit prefix design | |
+
+**User's choice:** `octanest_prefixes` — classic `octanest_pat_`, fine-grained `octanest_fg_`, then CSPRNG hex (32+ bytes). Never `ghp_` / `github_pat_` / `gho_` / any github/gh* prefix.
+**Notes:** Deviation from plan option id `ona_prefixes`. CONTEXT/RESEARCH recommended shorter `ona_*` brand prefixes; human locked full-brand `octanest_*` as the public token format / secret-scanning contract (D-08 one-way).
+**Recorded:** 2026-09-13 (08-02 continuation)

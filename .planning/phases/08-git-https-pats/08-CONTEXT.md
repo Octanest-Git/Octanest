@@ -35,7 +35,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 - **D-05:** **Two separate create flows** — Classic PAT and Fine-grained PAT (not a single wizard)
 - **D-06:** Fine-grained tokens support **selected repos** and **all current + future repositories** (GitHub-style)
 - **D-07:** **Optional expiry** — user may set an expiration date or choose no expiration
-- **D-08:** **Prefixed opaque** token strings with **Octanest-only** prefixes (distinct classic vs fine-grained variants); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks
+- **D-08:** **Prefixed opaque** token strings — classic `octanest_pat_`, fine-grained `octanest_fg_`, then CSPRNG hex (32+ bytes); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks *(08-02 locked option `octanest_prefixes`; CONTEXT/RESEARCH had recommended shorter `ona_pat_` / `ona_fg_`)*
 - **D-09:** Token list shows **last-used timestamp** and **last-used IP**
 
 ### B — HTTPS credential contract
