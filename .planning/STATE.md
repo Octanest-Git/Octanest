@@ -7,7 +7,7 @@ status: research_ready
 stopped_at: Phase 08 research complete
 last_updated: "2026-09-13T16:44:22.928Z"
 last_activity: 2026-09-13
-last_activity_desc: "08-RESEARCH.md written (GIT-02/11 Smart HTTP + PATs)"
+last_activity_desc: "08-RESEARCH.md + 08-VALIDATION.md written; UI-SPEC gate blocking plan"
 state_head: faa01071be943b9ad3e1eb4e400e1b07f3e044c0
 progress:
   total_phases: 22
