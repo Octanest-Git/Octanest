@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
 status: planned
-stopped_at: Phase 9 plans complete — ready for execute
-last_updated: "2026-09-13T23:22:49.976Z"
+stopped_at: Phases 9 and 10 plans verified — ready to execute
+last_updated: "2026-09-14T01:23:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 9+10 plan-checker revisions (09 host_keys/wave; 10 split 02/13)
-state_head: 787f75accdc8dbe212cbfbaeb1038ad11ea629fd
+last_activity_desc: Phases 9+10 plan-checker PASSED — both ready to execute
+state_head: 88f0a46
 progress:
   total_phases: 22
   completed_phases: 8
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 9 Git SSH + Phase 10 Orgs (plan-checker loop; 10 split schema/tracer)
+**Current focus:** Phases 9 (Git SSH) and 10 (Orgs & Permissions) — both planned and ready to execute in parallel
 
 ## Current Position
 
-Phase: 10 (Orgs & Permissions) — READY TO EXECUTE
-Plan: 09-00 … 09-09 (10 plans)
+Phase: 10 (Orgs & Permissions) — READY TO EXECUTE (14 plans: 10-00…10-13)
+Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Planned — ready to execute
-Last activity: 2026-09-14 — Phase 9 PLAN.md + UI-SPEC committed (`docs(09): plan Git SSH`)
+Last activity: 2026-09-14 — Phase 9+10 plan verification passed
 
-See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04
+See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
 ## Performance Metrics
 
