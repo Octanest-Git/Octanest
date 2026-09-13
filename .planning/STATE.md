@@ -24,7 +24,7 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 9 — Git SSH (plans ready; Phase 10 research parked)
+**Current focus:** Phase 10 — Orgs & Permissions (plans ready); Phase 9 Git SSH plans also ready (parallel)
 
 ## Current Position
 
