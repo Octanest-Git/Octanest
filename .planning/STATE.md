@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-09-13T18:26:22.204Z"
+stopped_at: Completed 08-04-PLAN.md
+last_updated: "2026-09-13T18:37:53.459Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 803b54f4eabf089e9c12a597c3646c537391d93c
+state_head: d795b865abf915a5efc54f9cddc7054ca285c94e
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 67
+  completed_plans: 68
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 5 of 14
+Plan: 6 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -117,6 +117,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08-git-https-pats P01 | 3min | 1 tasks | 2 files |
 | Phase 08 P02 | 1min | 3 tasks | 4 files |
 | Phase 08-git-https-pats P03 | 4min | 2 tasks | 11 files |
+| Phase 08-git-https-pats P04 | 8min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -254,6 +255,8 @@ Recent decisions affecting current work:
 - [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
 - [Phase 08]: 08-03-T0: proceed_locked — implement D-08 octanest_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
 - [Phase 08]: 08-03: PAT schema uses octanest_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
+- [Phase 08]: 08-04: mint classic PATs with octanest_pat_ (not ona_pat_); Axum uses {repo_git} segment
+- [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
 
 ### Pending Todos
 
@@ -275,6 +278,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:26:22.145Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-09-13T18:37:53.402Z
+Stopped at: Completed 08-04-PLAN.md
 Resume file: None
