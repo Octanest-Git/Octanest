@@ -1,10 +1,11 @@
 ---
 phase: 07-git-repos-browse
-verified: 2026-09-13T01:32:57Z
+verified: 2026-09-13T21:40:32Z
 status: passed
 score: 7/7 must-haves verified
-next_action: "Phase verification passed. Proceed to next phase or ship."
+next_action: "Verification passed — continue."
 covered_files:
+  - .env.example
   - .planning/REQUIREMENTS.md
   - .planning/phases/07-git-repos-browse/07-00-PLAN.md
   - .planning/phases/07-git-repos-browse/07-00-SUMMARY.md
@@ -50,15 +51,19 @@ covered_files:
   - .planning/phases/07-git-repos-browse/07-20-SUMMARY.md
   - .planning/phases/07-git-repos-browse/07-21-PLAN.md
   - .planning/phases/07-git-repos-browse/07-21-SUMMARY.md
+  - .planning/phases/07-git-repos-browse/07-CONTEXT.md
+  - .planning/phases/07-git-repos-browse/07-COVERAGE.md
   - .planning/phases/07-git-repos-browse/07-REVIEW.md
+  - .planning/phases/07-git-repos-browse/07-SECURITY.md
   - .planning/phases/07-git-repos-browse/07-UAT.md
-  - apps/web/src/components/repo/clone-box.tsrx
+  - .planning/phases/07-git-repos-browse/07-VALIDATION.md
   - apps/web/src/components/repo/clone-box.integration.test.ts
-  - apps/web/src/components/repo/path-breadcrumb.tsrx
+  - apps/web/src/components/repo/clone-box.tsrx
   - apps/web/src/components/repo/path-breadcrumb.integration.test.ts
+  - apps/web/src/components/repo/path-breadcrumb.tsrx
   - apps/web/src/components/repo/readme-panel.integration.test.ts
-  - apps/web/src/lib/highlight.ts
   - apps/web/src/lib/highlight.test.ts
+  - apps/web/src/lib/highlight.ts
   - apps/web/src/lib/markdown.ts
   - apps/web/src/lib/repo-browse.ts
   - apps/web/src/lib/repo-browse.unit.test.ts
@@ -89,9 +94,10 @@ covered_files:
   - crates/octanest-git/src/cli.rs
   - crates/octanest-git/src/lib.rs
   - crates/octanest-git/src/version.rs
+  - docker-compose.yml
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
-covered_digest: "v1:sha256:5116e759aaedb7d6895a813992e3023a9544308060e460a87f12f702d31eb298"
+covered_digest: "v1:sha256:33a9b2258d0b8c766477a7fb2bdaac9f52e46fdeffaae11c26ede91eaa454b49"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -102,7 +108,7 @@ re_verification:
   previous_status: passed
   previous_score: 7/7
   gaps_closed:
-    - "Prior backstop/human UAT items (syntax highlight, /new wrap, long-path ellipsis, clone-box, README sanitize) — closed via 07-UAT.md status:complete 5/5"
+    - "Stale covered_digest refresh after UAT complete (prior report 2026-09-13T01:32:57Z) — live content drift from Phase 08 edits to shared files; must-haves reconfirmed green"
   gaps_remaining: []
   regressions: []
 advisory: []
@@ -112,11 +118,13 @@ advisory: []
 
 **Phase Goal:** Users can create filesystem-backed repos and browse history in the UI via system `git` CLI behind a `GitBackend` seam, with a documented future gitoxide path
 
-**Verified:** 2026-09-13T01:32:57Z  
+**Verified:** 2026-09-13T21:40:32Z  
 **Status:** passed  
-**Re-verification:** Yes — fresh live-codebase verify after UAT complete (prior report 2026-09-12T20:01:51Z)  
-**UAT:** `07-UAT.md` — `status: complete`, **5/5 passed**, 0 issues  
-**Next action:** Phase verification passed. Proceed to next phase or ship.
+**Re-verification:** Yes — digest refresh after UAT complete (prior report `passed` / stale fingerprint at 2026-09-13T01:32:57Z)  
+**UAT:** `07-UAT.md` — `status: complete`, **5/5 passed**, 0 issues (not reopened)  
+**Security:** `07-SECURITY.md` — `threats_open: 0`  
+**Validation:** `07-VALIDATION.md` present  
+**Next action:** Verification passed — continue.
 
 ## Goal Achievement
 
@@ -125,14 +133,14 @@ advisory: []
 | # | Truth | Status | Evidence |
 | --- | ------- | ---------- | -------------- |
 | 1 | Authenticated (and verified, on cloud) user can create a public or private repository | ✓ VERIFIED | `repo.create` + `/new` visibility; WR-01 `compensate_failed_create` → `soft_delete_repository`; `repo_create_git_failure_soft_deletes_row_allows_recreate` **PASS** |
-| 2 | User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref | ✓ VERIFIED | tree/blob/commits/branches/tags routes; clone-box archives; `repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref` **PASS**; WR-03 `parseRefAndPath(..., knownRefs)` on tree/blob/blame; UAT clone-box + highlight **PASS** |
+| 2 | User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref | ✓ VERIFIED | tree/blob/commits/branches/tags routes; clone-box archives; `repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref` **PASS**; WR-03 `parseRefAndPath(..., knownRefs)` on tree/blob/blame; UAT 5/5 **PASS** |
 | 3 | User can create, rename, and delete branches from the web UI where permitted | ✓ VERIFIED | Soft-protect + CR-02: `reject_option_like_branch`, `validate_treeish` leading `-`, branch argv `--`; injection + soft-protect named tests **PASS** |
 | 4 | Repository objects live on the local filesystem (volume-backed), and git ops use system `git` CLI with docs allowing future gitoxide swap | ✓ VERIFIED | `OCTANEST_REPOS_DIR` + Compose `./var/repos:/var/repos`; `CliGitBackend`; `assert_git_version` fail-boot; ARCHITECTURE Cli now / Gix later; no `GixGitBackend` impl |
-| 5 | Private/non-access returns identical `repo.not_found` (D-23–D-25) | ✓ VERIFIED | `resolve_repo_for_read` + archive/settings tests assert unified `repo.not_found` |
+| 5 | Private/non-access returns identical `repo.not_found` (D-23–D-25) | ✓ VERIFIED | `resolve_repo_for_read` / `acl.rs` unified `repo.not_found` |
 | 6 | Default-branch rename/delete via intended APIs returns soft-protect error | ✓ VERIFIED | Soft-protect checks + `repo_branch_soft_protect_blocks_default_rename_and_delete` **PASS**; CR-02 bypass closed |
 | 7 | Archive/treeish argv cannot be interpreted as git CLI options | ✓ VERIFIED | `validate_treeish` / `validate_archive_treeish` / `validate_ref` reject leading `-`; archive `--` before treeish; `repo_archive_rejects_option_like_treeish_no_output_file` **PASS** |
 
-**Score:** 7/7 truths verified (0 behavior-unverified — prior backstops closed by UAT 5/5)
+**Score:** 7/7 truths verified (0 behavior-unverified — UAT 5/5 complete; named regression tests still green after Phase 08 shared-file churn)
 
 ### Deferred Items
 
@@ -140,7 +148,7 @@ None.
 
 ### Advisory (New Scope, Unevidenced)
 
-None — re-verification Step 7 found no new-scope unevidenced blockers. CR-01/CR-02 and WR-01..03 remain closed.
+None — re-verification Step 7 found no new-scope unevidenced blockers. Shared files touched by Phase 08 still satisfy Phase 07 must-haves (named tests **PASS**). CR-01/CR-02 and WR-01..03 remain closed.
 
 ### Gap Closure Status (CR/WR)
 
@@ -149,8 +157,8 @@ None — re-verification Step 7 found no new-scope unevidenced blockers. CR-01/C
 | CR-02 | FAILED (branchCreate `-D` bypass) | **CLOSED** | 07-19; injection test **PASS**; `--` on create/rename/delete |
 | CR-01 | FAILED (`--output=` archive write) | **CLOSED** | 07-20; injection test **PASS**; archive `--` + HTTP leading-`-` |
 | WR-01 | Advisory (orphan name lock) | **CLOSED** | 07-21; recreate test **PASS**; `compensate_failed_create` |
-| WR-02 | Advisory (raw `/` ban) | **CLOSED** | 07-20; `validate_ref` allows `/`, rejects leading `-`; unit tests in `repo_raw.rs` |
-| WR-03 | Advisory (first-segment-only parse) | **CLOSED** | 07-21; longest-prefix + vitest 8/8; knownRefs in tree/blob/blame |
+| WR-02 | Advisory (raw `/` ban) | **CLOSED** | 07-20; `validate_ref` allows `/`, rejects leading `-` |
+| WR-03 | Advisory (first-segment-only parse) | **CLOSED** | 07-21; longest-prefix + vitest **PASS**; knownRefs in tree/blob/blame |
 
 ### Required Artifacts
 
@@ -163,26 +171,25 @@ None — re-verification Step 7 found no new-scope unevidenced blockers. CR-01/C
 | `crates/octanest-api/src/repo/mod.rs` | create + branch + compensate | ✓ VERIFIED | `reject_option_like_branch`; `compensate_failed_create` |
 | `crates/octanest-api/src/routes/repo_raw.rs` | raw + archive HTTP | ✓ VERIFIED | Leading-`-` reject; slashy refs allowed (WR-02) |
 | `apps/web/src/lib/repo-browse.ts` | hierarchical parse | ✓ VERIFIED | `parseRefAndPath(splat, knownRefs?)` longest-prefix |
-| `apps/web/src/lib/repo-browse.unit.test.ts` | WR-03 unit coverage | ✓ VERIFIED | 8 tests **PASS** |
+| `apps/web/src/lib/repo-browse.unit.test.ts` | WR-03 unit coverage | ✓ VERIFIED | 9 tests **PASS** |
 | `apps/web/src/components/repo/path-breadcrumb.tsrx` | long-path truncate | ✓ VERIFIED | truncate + title; UAT #3 **PASS** |
 | `apps/web/src/routes/new.tsrx` | create UI | ✓ VERIFIED | rpc-gen client create; UAT wrap **PASS** |
 | `apps/web/src/routes/$owner.$repo.{tree,blob,blame,branches,tags,settings}*` | browse UI | ✓ VERIFIED | knownRefs wired on tree/blob/blame |
 | `docs/ARCHITECTURE.md` | GitBackend docs | ✓ VERIFIED | CliGitBackend / GixGitBackend section |
+| `docker-compose.yml` / `.env.example` | volume-backed repos | ✓ VERIFIED | `./var/repos:/var/repos` + `OCTANEST_REPOS_DIR` |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `repo/mod.rs` | `CliGitBackend` | `ctx.git.branch_*` / `init_bare` | ✓ WIRED | Dyn trait on RpcCtx |
-| `repo/mod.rs` | `soft_delete_repository` | `compensate_failed_create` | ✓ WIRED | WR-01 on init/seed Err (`ctx.db.soft_delete_repository`) |
+| `repo/mod.rs` | `soft_delete_repository` | `compensate_failed_create` | ✓ WIRED | WR-01 on init/seed Err |
 | `main.rs` | `version.rs` | `assert_git_version` | ✓ WIRED | Boot call |
 | `new.tsrx` | `repo.create` | apiClient | ✓ WIRED | |
 | `branches.tsrx` | `repo.branch_*` | apiClient | ✓ WIRED | |
-| `clone-box.tsrx` | archive HTTP | `/api/repos/.../archive/` | ✓ WIRED | integration 3/3 **PASS** |
+| `clone-box.tsrx` | archive HTTP | `/api/repos/.../archive/` | ✓ WIRED | integration **PASS** |
 | `repo_raw.rs` | `git.archive` | `serve_archive` | ✓ WIRED | CR-01 hardened |
 | `tree/blob/blame.$.tsrx` | `repo-browse.ts` | `parseRefAndPath(..., knownRefs)` | ✓ WIRED | WR-03 / D-17 |
-
-Note: `gsd_run query verify.key-links` on 07-21 false-negatived path-to-symbol links; manual grep confirms wiring.
 
 ### Data-Flow Trace (Level 4)
 
@@ -202,10 +209,8 @@ Note: `gsd_run query verify.key-links` on 07-21 false-negatived path-to-symbol l
 | CR-01 `--output=` rejected | `cargo test -p octanest-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact` | 1 passed | ✓ PASS |
 | Archive zip/tar.gz nonempty | `cargo test -p octanest-api --test repo_archive repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref -- --exact` | 1 passed | ✓ PASS |
 | WR-01 create compensate | `cargo test -p octanest-api --test repo_create repo_create_git_failure_soft_deletes_row_allows_recreate -- --exact` | 1 passed | ✓ PASS |
-| WR-03 parseRefAndPath | `bunx vitest run src/lib/repo-browse.unit.test.ts` | 8 passed | ✓ PASS |
-| Clone-box UAT automation | `bunx vitest run src/components/repo/clone-box.integration.test.ts` | 3 passed | ✓ PASS |
-| Highlight + README panel | `bunx vitest run .../readme-panel.integration.test.ts src/lib/highlight.test.ts` | 4 passed | ✓ PASS |
-| Path breadcrumb | `bunx vitest run .../path-breadcrumb.integration.test.ts` | 2 passed | ✓ PASS |
+| WR-03 parseRefAndPath | `bunx vitest run src/lib/repo-browse.unit.test.ts` | 9 passed | ✓ PASS |
+| Clone-box + highlight + breadcrumb | `bunx vitest run ...clone-box... ...highlight... ...path-breadcrumb...` | 10 passed | ✓ PASS |
 
 ### Probe Execution
 
@@ -247,7 +252,6 @@ No self-evidencing debt markers; advisory list empty.
 | `repo_raw.rs` validate_ref_tests | GIT-05 | yes | none | no | Value | OK — WR-02 slash + leading `-` |
 | `clone-box.integration.test.ts` | GIT-07 | yes | none | no | Behavioral | OK — HTTPS/SSH/archive |
 | `highlight.test.ts` | GIT-05 | yes | none | no | Value | OK — `.ts` / `.tsrx` / `.ripple` |
-| `readme-panel.integration.test.ts` | GIT-05 | yes | none | no | Behavioral | OK — script strip |
 | `path-breadcrumb.integration.test.ts` | GIT-05 | yes | none | no | Behavioral | OK — truncate/wrap |
 
 **Disabled tests on requirements:** 0  
@@ -271,13 +275,13 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts. (38/38 hono
 
 ### Human Verification Required
 
-None — `07-UAT.md` is `status: complete` with **5/5 passed** (0 issues). Prior backstop items (syntax highlight fidelity, `/new` wrap, long-path ellipsis, clone-box chrome, README sanitize) are closed by UAT evidence plus automated integration/unit coverage added during UAT.
+None — `07-UAT.md` is `status: complete` with **5/5 passed** (0 issues). UAT was not reopened.
 
 ### Gaps Summary
 
-No open gaps. All seven roadmap/must-have truths verify in code and named tests. **CR-01**, **CR-02**, **WR-01**, **WR-02**, and **WR-03** remain closed. Phase status is **passed**.
+No open gaps. All seven roadmap/must-have truths verify in code and named tests. **CR-01**, **CR-02**, **WR-01**, **WR-02**, and **WR-03** remain closed. Fingerprint refreshed so `verification.status` is no longer stale. Phase status is **passed**.
 
 ---
 
-_Verified: 2026-09-13T01:32:57Z_  
+_Verified: 2026-09-13T21:40:32Z_  
 _Verifier: Claude (gsd-verifier)_
