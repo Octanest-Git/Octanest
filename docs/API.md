@@ -25,6 +25,8 @@ Session auth uses an **opaque HttpOnly cookie** named `octanest_session` (not JW
 - Manual HTTP: include `Cookie: octanest_session=<token>`.
 - Signup, login, and WorkOS/OIDC callbacks attach `Set-Cookie`. Logout / logout-all clear the cookie (`Max-Age=0`).
 
+**Personal access tokens (PATs) are not RPC Bearer credentials (D-01).** Typed `/api/rpc` and `/api/rpc/ws` use the session cookie only. PATs authenticate **Git Smart HTTP** over HTTPS via HTTP Basic (password = token). Do not send `Authorization: Bearer <pat>` to RPC — it is ignored for session resolution.
+
 **Provider modes** (instance setting via `admin.auth.*`): `local` | `workos` | `oidc`. Local signup/login RPC only works when mode is `local`. SSO browser flows require matching mode and ENV secrets (see [CONFIGURATION.md](CONFIGURATION.md)).
 
 **RPC version gate** — every `/api/rpc` and `/api/rpc/ws` request must send:
@@ -50,6 +52,9 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/api/auth/oidc/callback` | OIDC code exchange; sets session cookie | No (redirect) |
 | `POST` | `/api/user/avatar` | Multipart avatar upload (field `avatar`) | Yes (`octanest_session`) |
 | `GET` | `/uploads/avatars/{file}` | Public WebP avatar bytes (`{user_id}.webp`) | No |
+| `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
+| `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
+| `POST` | `/{owner}/{repo}.git/git-receive-pack` | Git push body | PAT Basic (verified email; write scope) |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -73,6 +78,10 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `user.update_profile` | Update `display_name`, `username`, `bio` | Session |
 | `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
 | `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
+| `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response | Session + verified email |
+| `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); one-time plaintext in response | Session + verified email |
+| `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
+| `pat.revoke` | Soft-revoke a PAT by `id` | Session |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -199,6 +208,61 @@ curl -sS http://127.0.0.1:8080/api/user/avatar \
 
 Response includes boolean badges such as `smtp_configured`, `resend_configured`, `workos_api_key_configured`, `oidc_client_secret_configured` — never raw secrets.
 
+### Personal access tokens (`pat.*`)
+
+Manage tokens with the session cookie via RPC (or `@octanest/api-client`). Token **prefixes** (redacted examples only):
+
+| Kind | Prefix | Phase 8 capability |
+| --- | --- | --- |
+| Classic | `octanest_pat_` | Scope catalog: `repo` (HTTPS fetch + push where ACL allows) |
+| Fine-grained | `octanest_fg_` | `repo_access`: `selected` \| `all`; `contents`: `read` \| `write` |
+
+`pat.createClassic` input:
+
+```json
+{ "name": "laptop", "scopes": ["repo"], "expires_at": null }
+```
+
+`pat.createFineGrained` input:
+
+```json
+{
+  "name": "ci-bot",
+  "repo_access": "selected",
+  "repository_ids": ["…repo-id…"],
+  "contents": "write",
+  "expires_at": null
+}
+```
+
+Create responses include a one-time plaintext `token` (store it immediately) plus a metadata `item` **without** the secret. `pat.list` / list items never return the secret — only `token_prefix`, scopes/permissions, `last_used_at` / `last_used_ip`, etc. `pat.revoke` input: `{ "id": "…" }`.
+
+Minting requires a verified email (`auth.email_unverified` otherwise). Empty note/name → `pat.note_required`. Invalid classic scopes, empty/foreign fine-grained `selected` repos → `pat.invalid_scope`. Unknown or non-owned revoke id → `pat.not_found`.
+
+### Git Smart HTTP
+
+Clone / fetch / push use Git Smart HTTP under `/{owner}/{repo}.git` (not `/api/rpc`):
+
+| Method | Path | Service |
+| --- | --- | --- |
+| `GET` | `/{owner}/{repo}.git/info/refs?service=git-upload-pack` | Discovery (fetch) |
+| `GET` | `/{owner}/{repo}.git/info/refs?service=git-receive-pack` | Discovery (push) |
+| `POST` | `/{owner}/{repo}.git/git-upload-pack` | Fetch / clone |
+| `POST` | `/{owner}/{repo}.git/git-receive-pack` | Push |
+
+**Auth:** HTTP Basic with password = PAT (`octanest_pat_…` or `octanest_fg_…`). Username may be the account username or aliases `git`, `token`, or `oauth2` (identity comes from the PAT hash). Account passwords are rejected. **Session cookies are ignored** for Smart HTTP authorization.
+
+Public repos may allow anonymous `upload-pack`. Private repos and push require a valid PAT with sufficient scope; insufficient scope → HTTP 403. Unverified-email users may fetch but not push (`auth.email_unverified` JSON on receive-pack). Failed Basic auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` and a PAT hint body.
+
+Example (redacted token):
+
+```bash
+git clone https://git:octanest_pat_REDACTED@example.com/alice/demo.git
+# or:
+git -c http.extraHeader="Authorization: Basic $(printf 'git:octanest_pat_REDACTED' | base64 -w0)" \
+  ls-remote https://example.com/alice/demo.git
+```
+
 ### TypeScript client
 
 ```ts
@@ -207,9 +271,12 @@ import { createClient } from "@octanest/api-client";
 const client = createClient({ baseUrl: "" }); // same-origin; credentials: "include" by default
 const health = await client.system.health();
 const me = await client.auth.me();
+const pats = await client.pat.list();
+const created = await client.pat.createClassic({ name: "laptop", scopes: ["repo"] });
+// created.data.token is shown once — never send it as RPC Bearer
 ```
 
-TanStack Query helpers (`authMeQueryOptions`, `adminAuthGetSettingsQueryOptions`, etc.) are exported from the same package.
+TanStack Query helpers (`authMeQueryOptions`, `patListQueryOptions`, `adminAuthGetSettingsQueryOptions`, etc.) are exported from the same package.
 
 ## Error codes
 
@@ -220,8 +287,8 @@ HTTP status for `/api/rpc` is derived from the RPC error:
 | `200` | `ok: true` |
 | `400` | Most RPC errors (validation, provider mismatch, version mismatch, etc.) |
 | `401` | `auth.unauthenticated` |
-| `403` | `admin.forbidden` |
-| `404` | `rpc.unknown_procedure` |
+| `403` | `admin.forbidden`, `auth.email_unverified` |
+| `404` | `rpc.unknown_procedure`, `repo.not_found` |
 
 Common `error.code` values:
 
@@ -232,12 +299,16 @@ Common `error.code` values:
 | `rpc.payload_too_large` | Echo message too large |
 | `rpc.unknown_procedure` | Unknown procedure name |
 | `auth.unauthenticated` | No valid session |
+| `auth.email_unverified` | Verified email required (PAT mint; Smart HTTP push) |
 | `auth.provider_mismatch` | Local auth disabled for current mode |
 | `auth.taken` / `auth.invalid_*` / `auth.weak_password` / `auth.reserved_username` | Signup/profile validation |
 | `auth.setup_required` | Empty instance must complete `/setup` before signup/SSO |
 | `auth.setup_unavailable` | `/setup` already completed (users exist or ENV seed path) |
 | `auth.not_configured` | WorkOS/OIDC ENV missing (SSO start) |
 | `admin.forbidden` | Authenticated but not admin |
+| `pat.note_required` | PAT name/note empty |
+| `pat.invalid_scope` | Classic scopes or fine-grained repo selection invalid |
+| `pat.not_found` | Revoke target missing or not owned |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |
 | `avatar.*` | Multipart/type/size/store failures on avatar upload |
 
@@ -245,7 +316,7 @@ Avatar and SSO JSON errors use the same `{ ok: false, error: { code, message } }
 
 ## Rate limits
 
-No application-level rate limiting is configured in `octanest-api` (no rate-limit middleware or dependency detected). Rely on reverse-proxy / edge controls if needed in deployment.
+Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Successful PAT auth clears the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
 
 ## Regenerating the TypeScript client
 

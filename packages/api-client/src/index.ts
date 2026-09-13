@@ -377,6 +377,55 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+/** Classic PAT string prefix (octanest_pat_). */
+export const CLASSIC_PAT_PREFIX = "octanest_pat_" as const;
+/** Fine-grained PAT string prefix (octanest_fg_). */
+export const FINE_GRAINED_PAT_PREFIX = "octanest_fg_" as const;
+
+export type PatKind = "classic" | "fine_grained";
+export type ClassicPatScope = "repo";
+export type FgRepoAccess = "selected" | "all";
+export type ContentsPerm = "read" | "write";
+
+export type CreateClassicPatRequest = {
+  name: string;
+  scopes: ClassicPatScope[];
+  expires_at?: string | null;
+};
+
+export type CreateFineGrainedPatRequest = {
+  name: string;
+  repo_access: FgRepoAccess;
+  repository_ids?: string[];
+  contents: ContentsPerm;
+  expires_at?: string | null;
+};
+
+export type PatListItem = {
+  id: string;
+  kind: PatKind;
+  name: string;
+  token_prefix: string;
+  scopes?: ClassicPatScope[];
+  contents?: ContentsPerm;
+  repo_access?: FgRepoAccess;
+  repository_ids?: string[];
+  expires_at?: string | null;
+  last_used_at?: string | null;
+  last_used_ip?: string | null;
+  created_at: string;
+};
+
+/** One-time create response — plaintext `token` only on create. */
+export type CreatePatResponse = {
+  token: string;
+  item: PatListItem;
+};
+
+export type RevokePatRequest = {
+  id: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -468,6 +517,15 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+    },
+    pat: {
+      createClassic: (input: CreateClassicPatRequest) =>
+        rpcCall<CreatePatResponse>(opts, "pat.createClassic", input),
+      createFineGrained: (input: CreateFineGrainedPatRequest) =>
+        rpcCall<CreatePatResponse>(opts, "pat.createFineGrained", input),
+      list: () => rpcCall<PatListItem[]>(opts, "pat.list", {}),
+      revoke: (input: RevokePatRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "pat.revoke", input),
     },
     admin: {
       auth: {
@@ -780,6 +838,50 @@ export function repoBlameQueryOptions(
   };
 }
 
+export function patListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["pat", "list"] as const,
+    queryFn: async () => {
+      const res = await client.pat.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patCreateClassicMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "createClassic"] as const,
+    mutationFn: async (input: CreateClassicPatRequest) => {
+      const res = await client.pat.createClassic(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patCreateFineGrainedMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "createFineGrained"] as const,
+    mutationFn: async (input: CreateFineGrainedPatRequest) => {
+      const res = await client.pat.createFineGrained(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patRevokeMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "revoke"] as const,
+    mutationFn: async (input: RevokePatRequest) => {
+      const res = await client.pat.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function adminAuthGetSettingsQueryOptions(client: OctanestClient) {
   return {
     queryKey: ["admin", "auth", "getSettings"] as const,
@@ -818,6 +920,7 @@ export const queryOptions = {
   repoCommit: repoCommitQueryOptions,
   repoCompare: repoCompareQueryOptions,
   repoBlame: repoBlameQueryOptions,
+  patList: patListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
@@ -828,5 +931,8 @@ export const mutationOptions = {
   authLogoutAll: authLogoutAllMutationOptions,
   userUpdateProfile: userUpdateProfileMutationOptions,
   repoCreate: repoCreateMutationOptions,
+  patCreateClassic: patCreateClassicMutationOptions,
+  patCreateFineGrained: patCreateFineGrainedMutationOptions,
+  patRevoke: patRevokeMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };
