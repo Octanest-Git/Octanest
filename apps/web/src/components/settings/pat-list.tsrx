@@ -19,7 +19,7 @@ function formatRelativeShort(iso: string): string {
 function formatExpiry(item: PatListItem, nowMs = Date.now()): string {
   if (!item.expires_at) return "No expiration";
   const ms = Date.parse(item.expires_at);
-  if (Number.isNaN(ms)) return "No expiration";
+  if (Number.isNaN(ms)) return "Invalid expiration";
   return new Date(ms).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -30,7 +30,8 @@ function formatExpiry(item: PatListItem, nowMs = Date.now()): string {
 function isExpired(item: PatListItem, nowMs = Date.now()): boolean {
   if (!item.expires_at) return false;
   const ms = Date.parse(item.expires_at);
-  return !Number.isNaN(ms) && ms < nowMs;
+  if (Number.isNaN(ms)) return true;
+  return ms < nowMs;
 }
 
 function scopeSummary(item: PatListItem): string {

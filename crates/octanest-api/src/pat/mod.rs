@@ -27,6 +27,26 @@ fn db_err(e: String) -> AppError {
     }
 }
 
+/// Reject missing/blank as `None`; otherwise require RFC3339 and a future instant.
+fn validate_expires_at(expires_at: Option<&str>) -> Result<Option<&str>, AppError> {
+    let Some(raw) = expires_at.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let dt = chrono::DateTime::parse_from_rfc3339(raw).map_err(|_| {
+        AppError::new(
+            "rpc.bad_input",
+            "expires_at must be a valid RFC3339 timestamp",
+        )
+    })?;
+    if dt.with_timezone(&chrono::Utc) <= chrono::Utc::now() {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "expires_at must be in the future",
+        ));
+    }
+    Ok(Some(raw))
+}
+
 fn require_session_user_id(ctx: &RpcCtx) -> Result<&str, AppError> {
     ctx.session
         .as_ref()
@@ -122,6 +142,8 @@ pub async fn create_classic(
     )
     .map_err(|e| AppError::new("pat.internal", format!("scopes serialize: {e}")))?;
 
+    let expires_at = validate_expires_at(req.expires_at.as_deref())?;
+
     let id = Uuid::new_v4().to_string();
     ctx.db
         .create_pat(
@@ -134,7 +156,7 @@ pub async fn create_classic(
             Some(&scopes_json),
             None,
             None,
-            req.expires_at.as_deref(),
+            expires_at,
             &[],
         )
         .await
@@ -225,6 +247,8 @@ pub async fn create_fine_grained(
     let plaintext = format!("{FINE_GRAINED_PAT_PREFIX}{}", bytes_to_hex(&secret_bytes));
     let token_hash = sha256_hex(plaintext.as_bytes());
 
+    let expires_at = validate_expires_at(req.expires_at.as_deref())?;
+
     let id = Uuid::new_v4().to_string();
     ctx.db
         .create_pat(
@@ -237,7 +261,7 @@ pub async fn create_fine_grained(
             None,
             Some(req.contents.as_str()),
             Some(req.repo_access.as_str()),
-            req.expires_at.as_deref(),
+            expires_at,
             &repository_ids,
         )
         .await
