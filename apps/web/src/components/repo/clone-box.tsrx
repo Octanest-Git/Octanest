@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PatHowTo } from "@/components/repo/pat-how-to";
 import { httpsCloneUrl } from "@/lib/public-origin";
 import { useRepoStore } from "@/lib/repo-store";
 
@@ -120,6 +121,8 @@ export function CloneBox({
             Couldn’t copy. Select the URL and copy manually.
           </p>
         }
+
+        <PatHowTo httpsUrl={httpsUrl as string} compact />
       </div>
 
       <DropdownMenuSeparator />

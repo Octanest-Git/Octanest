@@ -1,4 +1,5 @@
 import { Link } from "@octanejs/tanstack-router";
+import { PatHowTo } from "@/components/repo/pat-how-to";
 import { httpsCloneUrl } from "@/lib/public-origin";
 import { useRepoStore } from "@/lib/repo-store";
 
@@ -52,6 +53,8 @@ ${pushCmd}`;
           {httpsUrl as string}
         </code>
       </div>
+
+      <PatHowTo httpsUrl={httpsUrl as string} />
 
       <div className="flex flex-col gap-2">
         <p className="text-[14px] font-medium text-foreground">

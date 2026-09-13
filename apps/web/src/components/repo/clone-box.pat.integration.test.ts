@@ -9,10 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloneBox } from "./clone-box";
 
 /**
- * GIT-02 Wave 0 stubs: CloneBox HTTPS PAT how-to panel (D-13 / UI-SPEC).
+ * GIT-02: CloneBox HTTPS PAT how-to panel (D-13 / UI-SPEC).
  *
- * RED until PatHowTo embeds in CloneBox (08-12).
- * Do not implement production how-to here.
+ * Greens with PatHowTo embed in CloneBox (08-12).
  */
 
 afterEach(cleanup);
@@ -35,7 +34,7 @@ async function openCloneMenu() {
   });
 }
 
-describe("CloneBox PAT how-to Wave 0 (GIT-02 / D-13)", () => {
+describe("CloneBox PAT how-to (GIT-02 / D-13)", () => {
   it(
     "shows Authenticate with a personal access token how-to with username aliases",
     async () => {
