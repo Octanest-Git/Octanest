@@ -146,45 +146,8 @@ async fn load_repo_ids(pool: &DbPool, token_id: &str) -> Result<Vec<String>, Str
     }
 }
 
-async fn insert_repo_links(pool: &DbPool, token_id: &str, repository_ids: &[String]) -> Result<(), String> {
-    for repo_id in repository_ids {
-        match pool {
-            DbPool::Postgres(p) => {
-                sqlx::query(
-                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES ($1, $2)",
-                )
-                .bind(token_id)
-                .bind(repo_id)
-                .execute(p)
-                .await
-                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
-            }
-            DbPool::MySql(p) => {
-                sqlx::query(
-                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES (?, ?)",
-                )
-                .bind(token_id)
-                .bind(repo_id)
-                .execute(p)
-                .await
-                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
-            }
-            DbPool::Sqlite(p) => {
-                sqlx::query(
-                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES (?1, ?2)",
-                )
-                .bind(token_id)
-                .bind(repo_id)
-                .execute(p)
-                .await
-                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
-            }
-        }
-    }
-    Ok(())
-}
-
-/// Insert a PAT row and optional FG selected-repo links. Stores `token_hash` only.
+/// Insert a PAT row and optional FG selected-repo links in one transaction.
+/// Roll back on any link failure so create never leaves an orphan PAT without plaintext (WR-01).
 #[allow(clippy::too_many_arguments)]
 pub async fn create(
     pool: &DbPool,
@@ -202,6 +165,10 @@ pub async fn create(
 ) -> Result<(), String> {
     match pool {
         DbPool::Postgres(p) => {
+            let mut tx = p
+                .begin()
+                .await
+                .map_err(|e| format!("begin pat create tx failed: {e}"))?;
             sqlx::query(
                 "INSERT INTO personal_access_tokens
 (id, user_id, kind, name, token_prefix, token_hash, scopes_json, contents_perm, repo_access, expires_at)
@@ -217,11 +184,28 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::timestamptz)",
             .bind(contents_perm)
             .bind(repo_access)
             .bind(expires_at)
-            .execute(p)
+            .execute(&mut *tx)
             .await
             .map_err(|e| format!("create pat failed: {e}"))?;
+            for repo_id in repository_ids {
+                sqlx::query(
+                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES ($1, $2)",
+                )
+                .bind(id)
+                .bind(repo_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
+            }
+            tx.commit()
+                .await
+                .map_err(|e| format!("commit pat create tx failed: {e}"))?;
         }
         DbPool::MySql(p) => {
+            let mut tx = p
+                .begin()
+                .await
+                .map_err(|e| format!("begin pat create tx failed: {e}"))?;
             sqlx::query(
                 "INSERT INTO personal_access_tokens
 (id, user_id, kind, name, token_prefix, token_hash, scopes_json, contents_perm, repo_access, expires_at)
@@ -237,11 +221,28 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             .bind(contents_perm)
             .bind(repo_access)
             .bind(expires_at)
-            .execute(p)
+            .execute(&mut *tx)
             .await
             .map_err(|e| format!("create pat failed: {e}"))?;
+            for repo_id in repository_ids {
+                sqlx::query(
+                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES (?, ?)",
+                )
+                .bind(id)
+                .bind(repo_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
+            }
+            tx.commit()
+                .await
+                .map_err(|e| format!("commit pat create tx failed: {e}"))?;
         }
         DbPool::Sqlite(p) => {
+            let mut tx = p
+                .begin()
+                .await
+                .map_err(|e| format!("begin pat create tx failed: {e}"))?;
             sqlx::query(
                 "INSERT INTO personal_access_tokens
 (id, user_id, kind, name, token_prefix, token_hash, scopes_json, contents_perm, repo_access, expires_at)
@@ -257,12 +258,25 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
             .bind(contents_perm)
             .bind(repo_access)
             .bind(expires_at)
-            .execute(p)
+            .execute(&mut *tx)
             .await
             .map_err(|e| format!("create pat failed: {e}"))?;
+            for repo_id in repository_ids {
+                sqlx::query(
+                    "INSERT INTO personal_access_token_repos (token_id, repository_id) VALUES (?1, ?2)",
+                )
+                .bind(id)
+                .bind(repo_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(|e| format!("insert pat repo link failed: {e}"))?;
+            }
+            tx.commit()
+                .await
+                .map_err(|e| format!("commit pat create tx failed: {e}"))?;
         }
     }
-    insert_repo_links(pool, id, repository_ids).await
+    Ok(())
 }
 
 /// Lookup by SHA-256 hex. Returns `None` when missing or soft-revoked.
