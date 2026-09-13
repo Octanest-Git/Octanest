@@ -75,3 +75,90 @@ pub async fn resolve_repo_for_read(
         owner_username: owner_user.username,
     })
 }
+
+#[cfg(test)]
+mod coalesce_stubs {
+    //! Wave 0 / ORG-02 / D-ORG-05: highest-wins coalesce matrix stubs.
+    //! RED until Capability + coalesce land — do not change production can_read_as_owner yet.
+
+    /// Personal owner → admin (D-ORG-05).
+    #[test]
+    fn coalesce_personal_owner_is_admin() {
+        assert!(
+            false,
+            "Wave 0: personal owner coalesce → Capability::Admin (ORG-02 / D-ORG-05)"
+        );
+    }
+
+    /// Org Owner → admin regardless of member_base.
+    #[test]
+    fn coalesce_org_owner_is_admin() {
+        assert!(
+            false,
+            "Wave 0: org Owner coalesce → Admin (ORG-02 / D-ORG-02a)"
+        );
+    }
+
+    /// Org Admin → admin regardless of member_base.
+    #[test]
+    fn coalesce_org_admin_is_admin() {
+        assert!(
+            false,
+            "Wave 0: org Admin coalesce → Admin (ORG-02 / D-ORG-02a)"
+        );
+    }
+
+    /// Member × member_base=none → no capability from org role alone.
+    #[test]
+    fn coalesce_member_base_none_yields_none() {
+        assert!(
+            false,
+            "Wave 0: Member + member_base none → no org capability (ORG-02 / D-ORG-02b)"
+        );
+    }
+
+    /// Member × member_base=read → Read.
+    #[test]
+    fn coalesce_member_base_read_is_read() {
+        assert!(
+            false,
+            "Wave 0: Member + member_base read → Read (ORG-02 / D-ORG-02b)"
+        );
+    }
+
+    /// Member × member_base=write → Write.
+    #[test]
+    fn coalesce_member_base_write_is_write() {
+        assert!(
+            false,
+            "Wave 0: Member + member_base write → Write (ORG-02 / D-ORG-02b)"
+        );
+    }
+
+    /// Collaborator grant raises Member with base none.
+    #[test]
+    fn coalesce_collaborator_raises_member_base_none() {
+        assert!(
+            false,
+            "Wave 0: Collaborator raise over Member base none (ORG-02/03 / D-ORG-05)"
+        );
+    }
+
+    /// Public visibility grants at least Read.
+    #[test]
+    fn coalesce_public_repo_grants_read() {
+        assert!(
+            false,
+            "Wave 0: public_repo bump → Read (ORG-02 / D-ORG-05)"
+        );
+    }
+
+    /// Anonymous private → none (no grant sources).
+    #[test]
+    fn coalesce_anonymous_private_is_none() {
+        assert!(
+            false,
+            "Wave 0: anonymous private coalesce → None (ORG-04 / D-ORG-05)"
+        );
+    }
+}

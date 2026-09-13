@@ -603,3 +603,21 @@ async fn git_smart_pat_push_fetch_happy_path() {
         "expected receive-pack advertisement, got {push_ct}"
     );
 }
+
+/// Wave 0 / ORG-04: classic PAT push as collaborator (not owner) with repo scope.
+#[tokio::test]
+async fn git_smart_collaborator_classic_pat_push() {
+    assert!(
+        false,
+        "Wave 0: collaborator classic PAT with repo scope must allow receive-pack (ORG-04)"
+    );
+}
+
+/// Wave 0 / ORG-04: private non-grantee Smart HTTP → 401 (D-21 / T-10-01).
+#[tokio::test]
+async fn git_smart_private_non_grantee_401() {
+    assert!(
+        false,
+        "Wave 0: private non-grantee git path → 401 (ORG-04 / D-21 / T-10-01)"
+    );
+}

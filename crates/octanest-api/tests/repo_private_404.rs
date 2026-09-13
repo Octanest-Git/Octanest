@@ -246,3 +246,21 @@ async fn repo_private_404_empty_tree_structured() {
     assert_eq!(v["data"]["empty"], true);
     assert_eq!(v["data"]["entries"], serde_json::json!([]));
 }
+
+/// Wave 0 / ORG-04: org private non-member → soft `repo.not_found` (D-ORG-05 / T-10-01).
+#[tokio::test]
+async fn repo_private_404_org_non_member_soft_not_found() {
+    assert!(
+        false,
+        "Wave 0: org private non-member web path → repo.not_found (ORG-04 / D-25 / T-10-01)"
+    );
+}
+
+/// Wave 0 / ORG-04: collaborator-granted read on private org repo succeeds (D-ORG-02c).
+#[tokio::test]
+async fn repo_private_404_collaborator_granted_read() {
+    assert!(
+        false,
+        "Wave 0: collaborator read grant must allow private org repo read (ORG-03/04)"
+    );
+}
