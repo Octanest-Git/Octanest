@@ -283,6 +283,40 @@ async fn git_smart_session_cookie_ignored_as_anon() {
         "cookie alone on public = anon success"
     );
 
+    // Private repo + session cookie only (no Basic) must still 401 — cookie must not elevate.
+    let create_priv = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_priv.status(), StatusCode::OK);
+    let _ = create_priv.into_body().collect().await;
+
+    let req_priv = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("ckuser", "secret"))
+        .header(header::COOKIE, &cookie)
+        .body(Body::empty())
+        .unwrap();
+    let res_priv = app.clone().oneshot(req_priv).await.unwrap();
+    assert_eq!(
+        res_priv.status(),
+        StatusCode::UNAUTHORIZED,
+        "private + session cookie alone must 401 (D-12)"
+    );
+    let www_priv = res_priv
+        .headers()
+        .get(header::WWW_AUTHENTICATE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        www_priv.contains("Basic") && www_priv.contains("Octanest Git"),
+        "WWW-Authenticate — {www_priv}"
+    );
+
     // Mint PAT then prove cookie alone does not substitute for Basic on a path that needs auth:
     // use password rejection path — cookie + wrong secret still PAT-hint (not session elevate).
     let req2 = Request::builder()
