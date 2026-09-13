@@ -1,8 +1,8 @@
-//! Personal access token RPC (`pat.createClassic` / `list` / `revoke`) — GIT-11 tracer.
+//! Personal access token RPC (`pat.createClassic` / `createFineGrained` / `list` / `revoke`).
 
 use octanest_core::{
-    ClassicPatScope, CreateClassicPatRequest, CreatePatResponse, PatKind, PatListItem, AppError,
-    CLASSIC_PAT_PREFIX,
+    ClassicPatScope, CreateClassicPatRequest, CreateFineGrainedPatRequest, CreatePatResponse,
+    FgRepoAccess, PatKind, PatListItem, AppError, CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX,
 };
 use serde::Deserialize;
 use uuid::Uuid;
@@ -153,15 +153,103 @@ pub async fn create_classic(
     })
 }
 
-/// Fine-grained create — deferred to 08-05.
+/// Mint fine-grained PAT: verified session, note, selected|all repos, contents read|write (D-04–D-08 / D-16 / D-24).
 pub async fn create_fine_grained(
-    _ctx: &RpcCtx,
-    _input: serde_json::Value,
+    ctx: &RpcCtx,
+    input: serde_json::Value,
 ) -> Result<CreatePatResponse, AppError> {
-    Err(AppError::new(
-        "pat.not_implemented",
-        "fine-grained PAT create is not available yet",
-    ))
+    let user = require_verified(ctx).await?;
+    let req: CreateFineGrainedPatRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid pat.createFineGrained input: {e}"),
+        )
+    })?;
+
+    if req.name.trim().is_empty() {
+        return Err(AppError::new(
+            "pat.note_required",
+            "A note (name) is required for personal access tokens",
+        ));
+    }
+
+    let repository_ids = match req.repo_access {
+        FgRepoAccess::All => Vec::new(),
+        FgRepoAccess::Selected => {
+            if req.repository_ids.is_empty() {
+                return Err(AppError::new(
+                    "pat.invalid_scope",
+                    "selected fine-grained tokens require at least one repository",
+                ));
+            }
+            let mut owned = Vec::with_capacity(req.repository_ids.len());
+            for repo_id in &req.repository_ids {
+                let id = repo_id.trim();
+                if id.is_empty() {
+                    return Err(AppError::new(
+                        "pat.invalid_scope",
+                        "repository id must not be empty",
+                    ));
+                }
+                let row = ctx
+                    .db
+                    .find_repository_by_id(id)
+                    .await
+                    .map_err(db_err)?
+                    .ok_or_else(|| {
+                        AppError::new(
+                            "pat.invalid_scope",
+                            "one or more repositories are not accessible for this token",
+                        )
+                    })?;
+                if row.owner_id != user.id {
+                    return Err(AppError::new(
+                        "pat.invalid_scope",
+                        "one or more repositories are not accessible for this token",
+                    ));
+                }
+                owned.push(row.id);
+            }
+            owned
+        }
+    };
+
+    let mut secret_bytes = [0u8; TOKEN_BYTES];
+    rand::fill(&mut secret_bytes);
+    let plaintext = format!("{FINE_GRAINED_PAT_PREFIX}{}", bytes_to_hex(&secret_bytes));
+    let token_hash = sha256_hex(plaintext.as_bytes());
+
+    let id = Uuid::new_v4().to_string();
+    ctx.db
+        .create_pat(
+            &id,
+            &user.id,
+            PatKind::FineGrained.as_str(),
+            req.name.trim(),
+            FINE_GRAINED_PAT_PREFIX,
+            &token_hash,
+            None,
+            Some(req.contents.as_str()),
+            Some(req.repo_access.as_str()),
+            req.expires_at.as_deref(),
+            &repository_ids,
+        )
+        .await
+        .map_err(db_err)?;
+
+    let row = ctx
+        .db
+        .list_pats_for_user(&user.id)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .find(|p| p.id == id)
+        .ok_or_else(|| AppError::new("pat.internal", "created pat missing from list"))?;
+
+    Ok(CreatePatResponse {
+        token: plaintext,
+        item: row_to_list_item(&row)?,
+    })
 }
 
 /// List active PATs for the signed-in user (session required; email verify not required).
