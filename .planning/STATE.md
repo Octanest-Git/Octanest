@@ -4,14 +4,14 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: audited
-stopped_at: "Nyquist validated phases 01–03; next Phase 08 or re-run /gsd-audit-milestone"
-last_updated: "2026-09-13T15:10:00Z"
+stopped_at: Phase 08 context gathered
+last_updated: "2026-09-13T16:29:54.748Z"
 last_activity: 2026-09-13
-last_activity_desc: "validate-phase 01/02/03 → status validated; rpc-gen SoT restore; 03-VALIDATION created"
-state_head: 13058c4
+last_activity_desc: validate-phase 01/02/03 → status validated; rpc-gen SoT restore; 03-VALIDATION created
+state_head: 04e8f2fee89cc300035d18f4847f353144773170
 progress:
   total_phases: 22
-  completed_phases: 7
+  completed_phases: 0
   total_plans: 63
   completed_plans: 63
 milestone_name: milestone
@@ -262,6 +262,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-12T19:59:06.197Z
-Stopped at: Phase 07 verification passed 7/7; UAT 5/5 complete; next /gsd-secure-phase 07 or advance
-Resume file: None
+Last session: 2026-09-13T16:29:54.630Z
+Stopped at: Phase 08 context gathered
+Resume file: .planning/phases/08-git-https-pats/08-CONTEXT.md
