@@ -89,4 +89,34 @@ describe("CloneBox PAT how-to (GIT-02 / D-13)", () => {
     },
     20000,
   );
+
+  it(
+    "long HTTPS clone URL uses overflow-x-auto + break-all so it wraps/scrolls",
+    async () => {
+      const longOrigin =
+        "http://127.0.0.1:3000/" + "very-long-owner-name".repeat(4);
+      render(CloneBox, {
+        props: {
+          owner: "ada-with-a-quite-long-username",
+          repo: "hello-world-repository-with-a-long-name",
+          refName: "main",
+          empty: false,
+          publicOrigin: longOrigin,
+        },
+      });
+
+      await openCloneMenu();
+
+      const howTo = document.querySelector('[data-slot="pat-how-to"]');
+      expect(howTo).toBeTruthy();
+      const code = howTo!.querySelector("code");
+      expect(code).toBeTruthy();
+      const cls = code!.className;
+      expect(cls).toMatch(/overflow-x-auto/);
+      expect(cls).toMatch(/break-all/);
+      expect(cls).toMatch(/whitespace-pre-wrap/);
+      expect(code!.textContent).toMatch(/git clone http/);
+    },
+    20000,
+  );
 });
