@@ -1,0 +1,220 @@
+# Phase 8: Git HTTPS & PATs - Discussion Log
+
+> **Audit trail only.** Do not use as input to planning, research, or execution agents.
+> Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
+
+**Date:** 2026-09-13
+**Phase:** 08-Git HTTPS & PATs
+**Areas discussed:** PAT capabilities, HTTPS credential contract, Token management UX, Smart HTTP surface, Verify gate for PATs, Auth abuse limits, Clone URL host, Fine-grained all repos
+
+---
+
+## PAT capabilities
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Git only | HTTPS git; no RPC Bearer | ✓ |
+| Git + RPC | PAT also for typed RPC | |
+| You decide | | |
+
+**User's choice:** Git only; support git and HTTPS like GitHub (SSH later as other forges do)
+**Notes:** Dual-remote mental model; SSH stays Phase 9
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Single full git access | Any PAT full write where permitted | |
+| Classic scopes | read vs write | |
+| You decide + both classic & FG | | ✓ |
+
+**User's choice:** Support both classic scopes and fine-grained scopes
+**Notes:** Pulls PAT fine-grained into Phase 8 (OAuth apps remain later)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Selected repos only | | |
+| Repos + account toggles | | |
+| You decide — forge parity | | ✓ |
+
+**User's choice:** Match GitHub and other forges
+**Notes:** Exact scope catalog → Claude discretion / research
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Two create flows | Classic vs Fine-grained separate | ✓ |
+| One wizard | | |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Optional expiry | | ✓ |
+| Required expiry | | |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Prefixed opaque | Octanest prefixes | ✓ |
+| Unprefixed | | |
+| You decide | | |
+
+**Notes:** No “github” / `gh*` in prefix
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Last-used yes | | ✓ |
+| Created/expires only | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Timestamp + IP | | ✓ |
+| Timestamp only | | |
+
+---
+
+## HTTPS credential contract
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Username + PAT as password | Forge pattern | ✓ |
+| Token as username | | |
+| You decide | | |
+
+**Notes:** Match GitHub and other forges
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Hard reject password | | |
+| Hard reject + hint | | ✓ |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| PAT-only (no cookies) | | ✓ |
+| PAT or session | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Short inline hint | | |
+| Full how-to panel | | ✓ |
+| You decide | | |
+
+---
+
+## Token management UX
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `/settings/tokens` | | ✓ |
+| Under profile settings | | |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| One-time reveal | | ✓ |
+| One-time + download | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Required note | | ✓ |
+| Optional note | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Confirm on revoke | | ✓ |
+| Immediate revoke | | |
+
+---
+
+## Smart HTTP surface
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `/{owner}/{repo}.git` same origin | | ✓ |
+| Prefixed `/git/...` | | |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Anonymous public read | | ✓ |
+| Always require PAT | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| 401 + WWW-Authenticate | Private unauth | ✓ |
+| 404 like web | | |
+| You decide | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Require `.git` suffix | | ✓ |
+| Both with/without `.git` | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| 403 insufficient scope | | ✓ |
+| 401 | | |
+
+---
+
+## Verify gate for PATs
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Verified for create + push | | ✓ |
+| Verified to create only | | |
+| No verify gate | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Same as privileged (`auth.email_unverified`) | | ✓ |
+| Generic 403 | | |
+
+---
+
+## Auth abuse limits
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Per IP and per user | | ✓ |
+| Per IP only | | |
+| No special limit | | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| 429 + Retry-After | | ✓ |
+| 403 only | | |
+
+---
+
+## Clone URL host
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `OCTANEST_PUBLIC_ORIGIN` | | ✓ |
+| Request Host | | |
+| Origin then Host fallback | | |
+
+---
+
+## Fine-grained all repos
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Selected only | | |
+| All current + future | | ✓ |
+| All current only | | |
+
+---
+
+## Claude's Discretion
+
+- Exact classic / fine-grained scope catalogs (forge parity)
+- Exact Basic-auth username aliases
+- Exact rate-limit thresholds
+- Smart HTTP implementation approach and Traefik routing details
+
+## Deferred Ideas
+
+- SSH (Phase 9)
+- PAT as RPC Bearer (out of Phase 8)
+- OAuth apps (remaining PLAT-V2-02)
+- Org-scoped tokens (Phase 10+)
