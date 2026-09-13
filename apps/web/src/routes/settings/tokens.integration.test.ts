@@ -1,5 +1,10 @@
 import { createElement } from "octane";
-import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import {
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+} from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
@@ -7,11 +12,12 @@ import { renderWithQueryClient } from "@/test/render-with-query";
  * GIT-11 /settings/tokens list / create / revoke UI
  * (D-14, D-15, D-17, D-24 / T-08-01 / T-08-03).
  *
- * List + nav greened in 08-09-T1; revoke dialog in 08-09-T2; create/reveal in 08-10/08-11.
+ * List + nav greened in 08-09-T1; revoke dialog in 08-09-T2; classic create/reveal in 08-10.
  */
 
 const listMock = vi.fn();
 const revokeMock = vi.fn();
+const createClassicMock = vi.fn();
 const meMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
@@ -22,6 +28,7 @@ vi.mock("@/lib/api-client", () => ({
     pat: {
       list: (...args: unknown[]) => listMock(...args),
       revoke: (...args: unknown[]) => revokeMock(...args),
+      createClassic: (...args: unknown[]) => createClassicMock(...args),
     },
   },
 }));
@@ -87,6 +94,7 @@ const verifiedUser = {
 beforeEach(() => {
   listMock.mockReset();
   revokeMock.mockReset();
+  createClassicMock.mockReset();
   meMock.mockReset();
   loaderData = { kind: "ready", user: verifiedUser };
   listMock.mockResolvedValue({ ok: true, data: [] });
@@ -316,17 +324,177 @@ describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
   );
 });
 
-describe("/settings/tokens (GIT-11 / D-15 one-time reveal)", () => {
-  // Deferred to 08-10 — classic create + reveal route.
-  it.skip("one-time reveal Make sure to copy your personal access token now", async () => {
-    const rel = "./tokens.new";
-    const mod = (await import(/* @vite-ignore */ rel)) as Record<
-      string,
-      unknown
-    >;
-    expect(
-      mod.TokensNewPage ?? mod.ClassicCreatePage ?? mod.default,
-      "Wave 0: create reveal must show Make sure to copy your personal access token now",
-    ).toBeTruthy();
-  });
+/** Load classic create page; @vite-ignore keeps suite collectable before route exists. */
+async function loadTokensNewModule(): Promise<Record<string, unknown>> {
+  const rel = "./tokens.new";
+  try {
+    return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
+  } catch (err) {
+    throw new Error(
+      `08-10: /settings/tokens/new route missing — implement classic create + reveal (GIT-11 / D-05 / D-15). ${(err as Error).message}`,
+    );
+  }
+}
+
+function tokensNewPage(mod: Record<string, unknown>): unknown {
+  const page = mod.TokensNewPage ?? mod.ClassicCreatePage ?? mod.default;
+  expect(
+    page,
+    "Wave 0: TokensNewPage (or ClassicCreatePage) must be exported from tokens.new",
+  ).toBeTruthy();
+  return page;
+}
+
+describe("/settings/tokens/new (GIT-11 / D-05 classic create)", () => {
+  it(
+    "title New classic token + Note + Full control checkbox + No expiration + Generate token",
+    async () => {
+      const mod = await loadTokensNewModule();
+      const { container } = renderWithQueryClient(tokensNewPage(mod));
+
+      await waitFor(() => {
+        expect(container.querySelector("h1")?.textContent).toBe(
+          "New classic token",
+        );
+      });
+      expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+      expect(
+        screen.getByText("Full control of private repositories"),
+      ).toBeInTheDocument();
+      expect(screen.getByText("No expiration")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Generate token" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /Personal access tokens/i }),
+      ).toHaveAttribute("href", "/settings/tokens");
+    },
+    15_000,
+  );
+
+  it(
+    "empty Note submit shows Note is required.",
+    async () => {
+      const mod = await loadTokensNewModule();
+      renderWithQueryClient(tokensNewPage(mod));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: "Generate token" }),
+        ).toBeInTheDocument();
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+      await waitFor(() => {
+        expect(screen.getByText("Note is required.")).toBeInTheDocument();
+      });
+      expect(createClassicMock).not.toHaveBeenCalled();
+    },
+    15_000,
+  );
+
+  it(
+    "unverified shows Verify your email AuthShell — not the create form",
+    async () => {
+      loaderData = {
+        kind: "ready",
+        user: { ...verifiedUser, email_verified: false },
+      };
+      meMock.mockResolvedValue({
+        ok: true,
+        data: { ...verifiedUser, email_verified: false },
+      });
+
+      const mod = await loadTokensNewModule();
+      renderWithQueryClient(tokensNewPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByText("Verify your email")).toBeInTheDocument();
+      });
+      expect(
+        screen.getByText(
+          "Verify your email before creating a personal access token.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute(
+        "href",
+        "/verify",
+      );
+      expect(
+        screen.queryByRole("button", { name: "Generate token" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
+    },
+    15_000,
+  );
+});
+
+describe("/settings/tokens/new (GIT-11 / D-15 one-time reveal)", () => {
+  it(
+    "success shows Make sure to copy… + Copy token + Back to tokens",
+    async () => {
+      createClassicMock.mockResolvedValue({
+        ok: true,
+        data: {
+          token: "octanest_pat_abcdef0123456789deadbeef",
+          item: {
+            id: "pat-new",
+            kind: "classic",
+            name: "laptop",
+            token_prefix: "octanest_pat_abcd",
+            scopes: ["repo"],
+            expires_at: null,
+            last_used_at: null,
+            last_used_ip: null,
+            created_at: "2026-01-01T00:00:00Z",
+          },
+        },
+      });
+
+      const mod = await loadTokensNewModule();
+      renderWithQueryClient(tokensNewPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+      });
+
+      fireEvent.input(screen.getByLabelText(/^Note$/i), {
+        target: { value: "laptop" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+      await waitFor(() => {
+        expect(createClassicMock).toHaveBeenCalled();
+      });
+      expect(createClassicMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "laptop",
+          scopes: ["repo"],
+        }),
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("Make sure to copy your personal access token now"),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.getByText("You won’t be able to see it again."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue("octanest_pat_abcdef0123456789deadbeef"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Copy token" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Back to tokens" }),
+      ).toHaveAttribute("href", "/settings/tokens");
+      expect(
+        screen.queryByRole("button", { name: "Generate token" }),
+      ).not.toBeInTheDocument();
+    },
+    15_000,
+  );
 });
