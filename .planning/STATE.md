@@ -31,9 +31,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 09 — Git SSH
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-13 — Phase 07 sealed (verify refresh); Phase 08 already complete on roadmap
+Last activity: 2026-09-13 — Phase 09 + 10 CONTEXT written (parallel discuss complete)
+Plan: Not started (09 + 10 ready to plan)
+Status: Ready to plan
 
-Progress: Phases 1–8 complete on roadmap; next is Phase 09 Git SSH (no phase directory yet)
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03 / GIT-04
 
