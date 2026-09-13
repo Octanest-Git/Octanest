@@ -92,7 +92,7 @@ status: complete
 
 1. **Task 1: Traefik .git PathRegexp + smoke-git-https** - `a315997` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `b7aac8d` (docs: complete plan)
 
 ## Files Created/Modified
 - `docker-compose.yml` — `api-git` Traefik router (PathRegexp + priority 110)
