@@ -1,17 +1,17 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 08
-current_phase_name: Git HTTPS & PATs
-status: verifying
-stopped_at: Completed 08-13-PLAN.md
-last_updated: "2026-09-13T19:59:40.809Z"
+current_phase: 7
+current_phase_name: Git Repos & Browse
+status: planning
+stopped_at: Phase 08 complete, ready to plan Phase 7
+last_updated: "2026-09-13T21:18:24.200Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 08 execution started
-state_head: 601e6c98e9085685161a9b174f9df261da5c6aeb
+last_activity_desc: Phase 08 complete, transitioned to Phase 7
+state_head: 8ea11d26133fea04507e0203dcedf0a0d8f0c72d
 progress:
   total_phases: 22
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 77
   completed_plans: 77
 milestone_name: milestone
@@ -28,20 +28,20 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 14 of 14
-Status: Phase complete — ready for verification
-Last activity: 2026-09-13 — Completed 08-11 fine-grained create UI
+Phase: 7 — Git Repos & Browse
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-13 — Phase 08 complete, transitioned to Phase 7
 
-Progress: Phase 08 — 13/14 plans complete; remaining 08-13 docs gate
+Progress: Phase 08 — 14/14 plans executed; awaiting human UAT
 
-See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CONTEXT.md` · `08-RESEARCH.md` · `08-UI-SPEC.md`
+See also: `phases/08-git-https-pats/08-VERIFICATION.md` · `08-00-PLAN.md` … `08-13-PLAN.md` · `08-CONTEXT.md`
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 41
+- Total plans completed: 55
 - Average duration: —
 - Total execution time: —
 
@@ -55,6 +55,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | 4 | 8 | - | - |
 | 5 | 7 | - | - |
 | 06 | 10 | - | - |
+| 08 | 14 | - | - |
 
 **Recent Trend:**
 
@@ -267,7 +268,8 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-04: mint classic PATs with octanest_pat_ (not ona_pat_); Axum uses {repo_git} segment
 - [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
 - [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_
-- [Phase 08]: Selected empty or non-owned repo ids → pat.invalid_scope; all ignores repository_ids
+- [Phase 08]: Empty selected FG repos → pat.repos_required; foreign/non-owned → pat.invalid_scope; all ignores repository_ids
+- [Phase 08]: PAT list token_prefix is brand + first 8 hex of secret (display fingerprint)
 - [Phase 08]: Prefixes remain octanest_pat_/octanest_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
 - [Phase 08]: PAT client surface via rpc_gen template only (no hand-edit api-client)
 - [Phase 08]: API.md D-01: session cookie for RPC; PAT Basic for Smart HTTP only
@@ -304,5 +306,5 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 ## Session Continuity
 
 Last session: 2026-09-13T19:59:40.748Z
-Stopped at: Completed 08-13-PLAN.md
+Stopped at: Phase 08 complete, ready to plan Phase 7
 Resume file: None

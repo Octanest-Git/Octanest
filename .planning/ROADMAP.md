@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset (completed 2026-09-11)
 - [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
 - [ ] **Phase 7: Git Repos & Browse** - system git CLI filesystem repos, create, browse, branches, archives
-- [ ] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens
+- [x] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens (completed 2026-09-13)
 - [ ] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
 - [ ] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement
 - [ ] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
@@ -555,7 +555,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | In Progress|  |
-| 8. Git HTTPS & PATs | 14/14 | In Progress|  |
+| 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
 | 9. Git SSH | 0/TBD | Not started | - |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
 | 11. Issues | 0/TBD | Not started | - |
