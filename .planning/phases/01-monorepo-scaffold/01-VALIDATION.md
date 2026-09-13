@@ -1,12 +1,13 @@
 ---
 phase: 1
 slug: monorepo-scaffold
-status: approved
+status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-09-09
 approved: 2026-09-09
-validated: 2026-09-09
+validated: 2026-09-13
+updated: 2026-09-13
 ---
 
 # Phase 1 — Validation Strategy
@@ -42,17 +43,17 @@ validated: 2026-09-09
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 01-00-01 | 01 | 0 | PLAT-* | — | N/A | infra | scaffold configs exist | ✅ | ✅ green |
-| 01-02-01 | 02 | 2 | PLAT-05, PLAT-06 | T-01-03 | Reject missing/wrong `Octanest-RPC-Version` | integration | `cargo test -p octanest-api --test rpc_http` | ✅ `crates/octanest-api/tests/rpc_http.rs` | ✅ green |
-| 01-02-02 | 02 | 2 | PLAT-06 | T-01-04 | CORS prod requires allowlist | unit | `cargo test -p octanest-api cors_` | ✅ `crates/octanest-api/src/cors.rs` | ✅ green |
+| 01-02-01 | 02 | 2 | PLAT-05, PLAT-06 | T-01-03 | Reject missing/wrong `Octanest-RPC-Version` | integration | `cargo test -p octanest-api --test rpc_http` | ✅ `crates/octanest-api/tests/rpc_http.rs` | ✅ green (re-verified 2026-09-13) |
+| 01-02-02 | 02 | 2 | PLAT-06 | T-01-04 | CORS prod requires allowlist | unit | `cargo test -p octanest-api cors::tests` | ✅ `crates/octanest-api/src/cors.rs` | ✅ green (re-verified 2026-09-13; map filter was `cors_` — matched 0 tests) |
 | 01-02-03 | 02 | 2 | PLAT-06 | T-01-05 | echo HTTP+WS (+ 8KiB cap) | integration | `cargo test -p octanest-api --test rpc_http --test rpc_ws` | ✅ `tests/rpc_http.rs`, `tests/rpc_ws.rs` | ✅ green |
-| 01-02-04 | 02 | 2 | PLAT-06 | T-01-06 | codegen sync | script | `make rpc-sync-check` | ✅ `scripts/check-rpc-sync.sh` | ✅ green |
+| 01-02-04 | 02 | 2 | PLAT-06 | T-01-06 | codegen sync | script | `make rpc-sync-check` | ✅ `scripts/check-rpc-sync.sh` | ✅ green (2026-09-13: dropped hand JSDoc; `make rpc-gen` SoT) |
 | 01-03-01 | 03 | 3 | PLAT-04, PLAT-10, PLAT-11 | T-01-07 | web build | build | `bunx turbo run build --filter=@octanest/web` | ✅ `apps/web` | ✅ green |
-| 01-04-01 | 04 | 4 | PLAT-01 | T-01-09/10 | Compose config + smoke | smoke | `docker compose config` / `./scripts/compose-smoke.sh` | ✅ | ✅ green (smoke verified 2026-09-09) |
+| 01-04-01 | 04 | 4 | PLAT-01 | T-01-09/10 | Compose config + smoke | smoke | `docker compose config` / `./scripts/compose-smoke.sh` | ✅ | ⚠️ env-blocked this host (`docker` not on PATH); last green 2026-09-09 + CI compose job |
 | 01-05-01 | 05 | 5 | PLAT-* | T-01-12/13 | CI gates | ci | `.github/workflows/ci.yml` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky / env-blocked*
 
-**Requirement coverage:** PLAT-01, PLAT-04, PLAT-05, PLAT-06, PLAT-10, PLAT-11 → COVERED (automated and/or UAT).
+**Requirement coverage:** PLAT-01 COVERED (CI/smoke historically green; local docker CLI env-blocked), PLAT-04/05/06/10/11 COVERED.
 
 ---
 
@@ -85,7 +86,7 @@ validated: 2026-09-09
 - [x] Feedback latency < 120s quick
 - [x] `nyquist_compliant: true` set in frontmatter after plans pass Dimension 8
 
-**Approval:** 2026-09-09
+**Approval:** Nyquist validate-phase 2026-09-13 (`status: validated`)
 
 ---
 
@@ -97,3 +98,30 @@ validated: 2026-09-09
 | Partial refreshed | 1 (`01-04-01` smoke → green) |
 | Escalated | 0 |
 | Suite re-run | cargo + vitest + rpc-sync + compose config + web build — green |
+
+---
+
+## Validation Audit 2026-09-13
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 (MISSING new product tests) |
+| Re-verify green | rpc_http (4/4); cors::tests (2/2); `make rpc-sync-check` after dropping hand JSDoc |
+| Env-blocked | `docker compose config` — docker CLI not on PATH this host |
+| Escalated then resolved | 1 (`01-02-04` hand JSDoc on generated client → `make rpc-gen` SoT restore) |
+| Lifecycle | `#2117` `status: validated` applied |
+
+### Commands run
+
+| Command | Result |
+|---------|--------|
+| `cargo test -p octanest-api --test rpc_http` | ✅ 4 passed |
+| `cargo test -p octanest-api cors::tests` | ✅ 2 passed |
+| `make rpc-gen` + commit aligned client (removed hand JSDoc on `default_gitignore`) | ✅ |
+| `make rpc-sync-check` | ✅ after client aligned |
+| `docker compose config -q` | ⚠️ docker not on PATH |
+
+### Map hygiene
+
+- Updated `01-02-02` command `cors_` → `cors::tests`.
+- PLAT-06 sync closed by restoring generated client as source of truth (no hand edits in `@octanest/api-client`).

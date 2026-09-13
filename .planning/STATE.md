@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
 status: audited
-stopped_at: "v1.0 audit gaps_found (01–03 unverified; PLAT matrix); next Phase 08 or backfill verify/validate 01–03"
-last_updated: "2026-09-13T14:05:01Z"
+stopped_at: "Nyquist validated phases 01–03; next Phase 08 or re-run /gsd-audit-milestone"
+last_updated: "2026-09-13T15:10:00Z"
 last_activity: 2026-09-13
-last_activity_desc: "v1.0-MILESTONE-AUDIT.md gaps_found; Phase 07 Nyquist validated; integration 9/9"
+last_activity_desc: "validate-phase 01/02/03 → status validated; rpc-gen SoT restore; 03-VALIDATION created"
 state_head: 13058c4
 progress:
   total_phases: 22
@@ -24,18 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 07 done (secured + Nyquist); milestone audit `gaps_found` — continue Phase 08 or backfill 01–03 verify/validate
+**Current focus:** Phases 01–07 Nyquist validated; continue Phase 08 (Git HTTPS & PATs)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — AUDITED (milestone gaps on 01–03 process)
-Plan: 22 of 22 complete (gap plans 07-19..21 closed CR/WR)
-Status: audited (`v1.0-MILESTONE-AUDIT.md` → gaps_found)
-Last activity: 2026-09-13 — `/gsd-audit-milestone` → integration 9/9, flows 6/6; 21/34 phase-1–7 reqs satisfied
+Phase: 07 (Git Repos & Browse) — complete; Nyquist 01–03 backfilled
+Plan: Phase 07 22/22; validate-phase 01·02·03 done 2026-09-13
+Status: audited (milestone gaps_found for VERIFICATION.md on 01–03 still open; Nyquist now COMPLIANT for 01–07)
+Last activity: 2026-09-13 — `/gsd-validate-phase 01 · 02 · 03` → all `status: validated`
 
-Progress: Phases 1–7 directories complete; 04–07 VERIFICATION passed + Nyquist validated; 01–03 missing VERIFICATION (audit blockers); do not complete-milestone yet
+Progress: Nyquist COMPLIANT phases 01–07; VERIFICATION.md still missing for 01–03 (separate from Nyquist)
 
-See also: `v1.0-MILESTONE-AUDIT.md` · `phases/07-git-repos-browse/07-VALIDATION.md` · `07-SECURITY.md`
+See also: `01-VALIDATION.md` · `02-VALIDATION.md` · `03-VALIDATION.md` · `v1.0-MILESTONE-AUDIT.md`
 
 ## Performance Metrics
 
