@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 25
+open_count: 28
 waived_count: 0
 fixed_count: 1
-total_count: 26
-last_updated: 2026-09-13T23:34:42.250Z
+total_count: 29
+last_updated: 2026-09-13T23:38:48.269Z
 ---
 
 # Broken Windows Ledger
@@ -41,6 +41,9 @@ last_updated: 2026-09-13T23:34:42.250Z
 | 24 | 09 | stub | crates/octanest-api/tests/git_ssh.rs |  | Wave 0 assert!(false) git_ssh stubs until 09-04/09-05 | open |  | 2026-09-13T23:34:42.044Z |  |
 | 25 | 09 | stub | crates/octanest-db/tests/dialect_ssh_keys.rs |  | Wave 0 dialect_ssh_keys until 0009_ssh_keys migration (09-02) | open |  | 2026-09-13T23:34:42.151Z |  |
 | 26 | 09 | stub | scripts/smoke-git-ssh.sh |  | Wave 0 smoke-git-ssh exit 1 until 09-05 Compose TCP green | open |  | 2026-09-13T23:34:42.250Z |  |
+| 27 | 09 | stub | apps/web/src/routes/settings/ssh-keys.integration.test.ts |  | Wave 0 RED ssh-keys integration stubs until 09-07 | open |  | 2026-09-13T23:38:48.019Z |  |
+| 28 | 09 | stub | apps/web/src/components/repo/clone-box.ssh.integration.test.ts |  | Wave 0 RED CloneBox SSH integration stubs until 09-08 | open |  | 2026-09-13T23:38:48.151Z |  |
+| 29 | 09 | unrun-verify | apps/web/src/routes/settings/ssh-keys.integration.test.ts |  | Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design | open |  | 2026-09-13T23:38:48.269Z |  |
 
 ````json
 [
@@ -354,6 +357,42 @@ last_updated: 2026-09-13T23:34:42.250Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T23:34:42.250Z",
+    "resolved_at": null
+  },
+  {
+    "id": 27,
+    "kind": "stub",
+    "phase": "09",
+    "file": "apps/web/src/routes/settings/ssh-keys.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 RED ssh-keys integration stubs until 09-07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:38:48.019Z",
+    "resolved_at": null
+  },
+  {
+    "id": 28,
+    "kind": "stub",
+    "phase": "09",
+    "file": "apps/web/src/components/repo/clone-box.ssh.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 RED CloneBox SSH integration stubs until 09-08",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:38:48.151Z",
+    "resolved_at": null
+  },
+  {
+    "id": 29,
+    "kind": "unrun-verify",
+    "phase": "09",
+    "file": "apps/web/src/routes/settings/ssh-keys.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:38:48.269Z",
     "resolved_at": null
   }
 ]

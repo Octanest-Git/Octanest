@@ -3,17 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 09
 current_phase_name: Git SSH
+current_plan: 4
 status: executing
-stopped_at: Completed 09-00-PLAN.md
-last_updated: "2026-09-13T23:34:43.644Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-09-13T23:39:52.655Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 09 execution started
-state_head: 3d754fc10992242eb62b189c28ac1cc54d9978cd
+state_head: 1f8362bfa62195fffe0083ed81d66caee54a5b08
 progress:
   total_phases: 22
   completed_phases: 1
   total_plans: 101
-  completed_plans: 78
+  completed_plans: 79
 milestone_name: milestone
 ---
 
@@ -28,10 +29,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
+Current Plan: 3
+Total Plans in Phase: 10
 Phase: 09 (Git SSH) — EXECUTING
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Executing Phase 09
-Last activity: 2026-09-14 — Phase 09 execution started
+Last activity: 2026-09-13 — Completed 09-01-PLAN.md
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
@@ -128,6 +131,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 08 P13 | 3min | 2 tasks | 3 files |
 | Phase 09 P00 | 5min | 2 tasks | 5 files |
+| Phase 09 P01 | 3min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -287,6 +291,8 @@ Recent decisions affecting current work:
 - [Phase 09]: Wave 0 RED-only for Phase 9 SSH — no russh/migrations/RPC in 09-00
 - [Phase 09]: SSH keys migration number is 0009_ssh_keys (Phase 10 owns 0010)
 - [Phase 09]: smoke-git-ssh exits 1 when Docker present until 09-05 greens TCP 2222
+- [Phase 09]: Wave 0 web stubs only — no production ssh-keys UI or CloneBox SSH panel (09-07/09-08)
+- [Phase 09]: GIT-03/GIT-04 not marked complete after 09-01 Wave 0 stubs; greens land in 09-07/09-08
 
 ### Pending Todos
 
@@ -308,6 +314,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T23:34:43.543Z
-Stopped at: Completed 09-00-PLAN.md
+Last session: 2026-09-13T23:39:32.057Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None
