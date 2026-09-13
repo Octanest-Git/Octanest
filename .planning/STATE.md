@@ -3,8 +3,8 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
-status: human_needed
-stopped_at: Awaiting UAT after gap-closure verify (07-UAT.md)
+status: uat_complete
+stopped_at: UAT complete 5/5; phase advance needs fresh verify + secure-phase
 last_updated: "2026-09-12T20:05:00Z"
 last_activity: 2026-09-12
 last_activity_desc: Gap-closure verified 7/7; human UAT pending
