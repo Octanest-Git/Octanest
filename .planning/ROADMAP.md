@@ -382,12 +382,13 @@ Plans:
   2. Org owner can assign member roles that control repo access; repo owner can set visibility and collaborator permissions
   3. Unauthorized users cannot read private repos or push without permission
 
-**Plans**: 13 plans
+**Plans**: 14 plans
 
 Plans:
 - [ ] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
 - [ ] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
-- [ ] 10-02-PLAN.md — Confirm 0010 schema door + tracer org.create + /orgs/new
+- [ ] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
+- [ ] 10-13-PLAN.md — Tracer org.create RPC + /orgs/new
 - [ ] 10-03-PLAN.md — Polymorphic OwnerRef + repo.create owner slug
 - [ ] 10-04-PLAN.md — Central Capability ACL + resolve_repo_for_read + can_admin
 - [ ] 10-05-PLAN.md — Org members/roles + member_base_permission

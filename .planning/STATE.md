@@ -7,12 +7,12 @@ status: planned
 stopped_at: Phase 9 plans complete — ready for execute
 last_updated: "2026-09-14T01:00:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 9 PLAN.md set (10 plans + UI-SPEC) committed — GIT-03/04 Git SSH
-state_head: 17b243f
+last_activity_desc: Phase 9+10 plan-checker revisions (09 host_keys/wave; 10 split 02/13)
+state_head: 95ee7f7
 progress:
   total_phases: 22
   completed_phases: 8
-  total_plans: 87
+  total_plans: 88
   completed_plans: 77
 milestone_name: milestone
 ---
@@ -24,7 +24,7 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 10 — Orgs & Permissions (plans ready); Phase 9 Git SSH plans also ready (parallel)
+**Current focus:** Phase 9 Git SSH + Phase 10 Orgs (plan-checker loop; 10 split schema/tracer)
 
 ## Current Position
 
