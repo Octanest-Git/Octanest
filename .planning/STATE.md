@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-12-PLAN.md
-last_updated: "2026-09-13T19:47:00.493Z"
+stopped_at: Completed 08-11-PLAN.md
+last_updated: "2026-09-13T19:55:23.999Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: f21f9e3d28296a1f7a566e6af1af67aee7c2f85b
+state_head: 4adee2f21f86a4f8ecd4ea7546b40e09598f1661
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 75
+  completed_plans: 76
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 13 of 14
+Plan: 14 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Completed 08-12 shared PAT how-to (CloneBox/QuickSetup)
 
@@ -125,6 +125,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08-git-https-pats P09 | 9min | 2 tasks | 8 files |
 | Phase 08-git-https-pats P10 | 14min | 1 tasks | 5 files |
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
+| Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -277,6 +278,7 @@ Recent decisions affecting current work:
 - [Phase 08]: PatReveal shared component for classic (08-10) and fine-grained (08-11) one-time reveal
 - [Phase 08]: PatHowTo CTA uses plain <a href=/settings/tokens> so CloneBox tests need no RouterProvider; tokens route handles signed-out redirect
 - [Phase 08]: PatHowTo always-visible shared panel in CloneBox (compact) and QuickSetup; SSH placeholder unchanged until Phase 9
+- [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (octanest_fg_)
 
 ### Pending Todos
 
@@ -298,6 +300,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:47:00.425Z
-Stopped at: Completed 08-12-PLAN.md
+Last session: 2026-09-13T19:55:23.940Z
+Stopped at: Completed 08-11-PLAN.md
 Resume file: None
