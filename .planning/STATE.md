@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 09
 current_phase_name: Git SSH
 status: planning
-stopped_at: Phase 07 sealed; Phase 08 already complete — ready to plan Phase 09
-last_updated: "2026-09-13T21:42:00.000Z"
-last_activity: 2026-09-13
-last_activity_desc: Phase 07 verification refreshed and complete; advanced past completed Phase 08 to Phase 09
+stopped_at: Phase 09 patterns mapped — ready for research/planning
+last_updated: "2026-09-14T00:47:00.000Z"
+last_activity: 2026-09-14
+last_activity_desc: Phase 09 PATTERNS.md written (Smart HTTP, PAT CRUD, CloneBox, Compose smoke analogs)
 state_head: 15efaa3b59acd509551d0a50332fd3f7e8833f2c
 progress:
   total_phases: 22
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 09 — Git SSH
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-13 — Phase 09 + 10 CONTEXT written (parallel discuss complete)
-Plan: Not started (09 + 10 ready to plan)
+Last activity: 2026-09-14 — Phase 09 pattern map complete (`09-PATTERNS.md`)
+Plan: Not started (09 patterns ready for planner; 10 CONTEXT exists)
 Status: Ready to plan
 
 
