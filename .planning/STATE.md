@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-09-13T18:04:20.594Z"
+stopped_at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
+last_updated: "2026-09-13T18:15:09.762Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: fb8975dfb550e4ad5e237b40455a23193cd48777
+state_head: 693df1a609e268e251e75cb13f3ad6748e4036f0
 progress:
   total_phases: 22
   completed_phases: 0
@@ -247,6 +247,8 @@ Recent decisions affecting current work:
 - [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
 - [Phase 08]: Wave 0 web stubs RED-only; variable @vite-ignore import for absent tokens route
 - [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
+- [Phase 08]: [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
+- [Phase 08]: [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 
 ### Pending Todos
 
@@ -268,6 +270,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:04:20.528Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-09-13T18:15:09.536Z
+Stopped at: 08-02 Task 2 complete; awaiting Task 3 D-21 checkpoint
 Resume file: None

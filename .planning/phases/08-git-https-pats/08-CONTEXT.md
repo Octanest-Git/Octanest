@@ -51,11 +51,11 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 - **D-17:** **Confirm dialog** before revoke
 
 ### D — Smart HTTP surface
-- **D-18:** Clone URL shape **`https://{host}/{owner}/{repo}.git`** on the same public origin — **Reversibility:** one-way — public git URL scheme
+- **D-18:** Clone URL shape **`https://{host}/{owner}/{repo}.git`** on the same public origin — **Reversibility:** one-way — public git URL scheme *(08-02 locked option `owner_repo_git`)*
 - **D-19:** Clone URL host comes from **`OCTANEST_PUBLIC_ORIGIN`** (operator config), not the request Host header
 - **D-20:** **Anonymous clone/fetch** of **public** repos; **push always requires a PAT**
 - **D-21:** Unauthenticated access to **private** / no-access over git → **401 + WWW-Authenticate** (not the web UI’s 404 anti-enumeration) — **Reversibility:** costly — git vs web error contracts differ by design
-- **D-22:** Smart HTTP is served **only** on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` remains the web UI
+- **D-22:** Smart HTTP is served **only** on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` remains the web UI *(08-02 confirmed with D-18)*
 - **D-23:** Authenticated but **insufficient PAT scope** → **403** (not 401)
 
 ### E — Verify gate & abuse limits

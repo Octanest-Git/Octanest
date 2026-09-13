@@ -234,3 +234,14 @@
 **User's choice:** `octanest_prefixes` — classic `octanest_pat_`, fine-grained `octanest_fg_`, then CSPRNG hex (32+ bytes). Never `ghp_` / `github_pat_` / `gho_` / any github/gh* prefix.
 **Notes:** Deviation from plan option id `ona_prefixes`. CONTEXT/RESEARCH recommended shorter `ona_*` brand prefixes; human locked full-brand `octanest_*` as the public token format / secret-scanning contract (D-08 one-way).
 **Recorded:** 2026-09-13 (08-02 continuation)
+
+### Task 2 — D-18 HTTPS clone URL (one-way)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `owner_repo_git` | `https://{host}/{owner}/{repo}.git` on public origin (recommended — D-18) | ✓ |
+| `stop` | Revisit URL scheme | |
+
+**User's choice:** `owner_repo_git` — public clone URL shape is `https://{host}/{owner}/{repo}.git` on the same public origin (host from `OCTANEST_PUBLIC_ORIGIN`, D-18/D-19). Smart HTTP only on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` stays web UI (D-22).
+**Notes:** Matches Phase 7 clone box; Traefik PathRegexp must keep SPA from stealing `.git`.
+**Recorded:** 2026-09-13 (08-02 continuation)
