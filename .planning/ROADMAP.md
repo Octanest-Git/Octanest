@@ -322,7 +322,7 @@ Plans:
 - [ ] 08-12-PLAN.md
 - [ ] 08-13-PLAN.md
 
-- [ ] `08-00-PLAN.md` — Wave 0 RED: pat_rpc + git_smart_http + dialect_pats stubs
+- [x] `08-00-PLAN.md` — Wave 0 RED: pat_rpc + git_smart_http + dialect_pats stubs
 - [ ] `08-01-PLAN.md` — Wave 0 RED: tokens + CloneBox how-to Vitest stubs
 - [ ] `08-02-PLAN.md` — Reversibility gates D-08/D-18/D-21 (+ D-01 PAT HTTPS-only)
 - [ ] `08-03-PLAN.md` — Schema 0008_pats + pat_types + DB CRUD + reserved aliases
