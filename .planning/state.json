@@ -41,7 +41,7 @@
     {
       "number": "8",
       "name": "Git HTTPS & PATs",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "9",
@@ -115,9 +115,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 08 of 22 · executing"
+    "command": "/gsd-verify-work",
+    "label": "Re-verify work",
+    "reason": "Recent verification failed — re-verify or debug"
   },
-  "updated_at": "2026-09-13T17:58:59.926Z"
+  "updated_at": "2026-09-13T19:46:59.710Z"
 }

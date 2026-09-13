@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-10-PLAN.md
-last_updated: "2026-09-13T19:42:03.200Z"
+stopped_at: Completed 08-12-PLAN.md
+last_updated: "2026-09-13T19:47:00.493Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: 1785dec648a491c70be7fe11e18cb4d210e5d310
+state_head: f21f9e3d28296a1f7a566e6af1af67aee7c2f85b
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 74
+  completed_plans: 75
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 11 of 14
+Plan: 12 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Completed 08-10 classic create + reveal
 
@@ -124,6 +124,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08-git-https-pats P07 | 6min | 1 tasks | 3 files |
 | Phase 08-git-https-pats P09 | 9min | 2 tasks | 8 files |
 | Phase 08-git-https-pats P10 | 14min | 1 tasks | 5 files |
+| Phase 08 P12 | 2min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -274,6 +275,8 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-09: Revoke AlertDialog Keep token / Revoke token (no type-to-confirm)
 - [Phase 08]: Classic create: session loader mirrors tokens list; plaintext only in ephemeral page state until Back to tokens
 - [Phase 08]: PatReveal shared component for classic (08-10) and fine-grained (08-11) one-time reveal
+- [Phase 08]: PatHowTo CTA uses plain <a href=/settings/tokens> so CloneBox tests need no RouterProvider; tokens route handles signed-out redirect
+- [Phase 08]: PatHowTo always-visible shared panel in CloneBox (compact) and QuickSetup; SSH placeholder unchanged until Phase 9
 
 ### Pending Todos
 
@@ -295,6 +298,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:42:03.139Z
-Stopped at: Completed 08-10-PLAN.md
+Last session: 2026-09-13T19:47:00.425Z
+Stopped at: Completed 08-12-PLAN.md
 Resume file: None
