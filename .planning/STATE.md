@@ -1,18 +1,18 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 10
-current_phase_name: Orgs & Permissions
-status: planning
-stopped_at: Phase 10 research complete — ready for planning
-last_updated: "2026-09-14T00:55:00.000Z"
+current_phase: 9
+current_phase_name: Git SSH
+status: planned
+stopped_at: Phase 9 plans complete — ready for execute
+last_updated: "2026-09-14T01:00:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Phase 10 RESEARCH.md written (orgs/ACL schema, capability model, PAT∩ACL, invite UX, Nyquist map)
-state_head: 15efaa3b59acd509551d0a50332fd3f7e8833f2c
+last_activity_desc: Phase 9 PLAN.md set (10 plans + UI-SPEC) committed — GIT-03/04 Git SSH
+state_head: 17b243f
 progress:
   total_phases: 22
   completed_phases: 8
-  total_plans: 77
+  total_plans: 87
   completed_plans: 77
 milestone_name: milestone
 ---
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 10 — Orgs & Permissions
+**Current focus:** Phase 9 — Git SSH (plans ready; Phase 10 research parked)
 
 ## Current Position
 
-Phase: 10 — Orgs & Permissions
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-14 — Phase 10 research complete (`10-RESEARCH.md`); patterns also present
+Phase: 9 — Git SSH
+Plan: 09-00 … 09-09 (10 plans)
+Status: Planned — ready to execute
+Last activity: 2026-09-14 — Phase 9 PLAN.md + UI-SPEC committed (`docs(09): plan Git SSH`)
 
-See also: `.planning/ROADMAP.md` Phase 10 · ORG-01…04
+See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04
 
 ## Performance Metrics
 
