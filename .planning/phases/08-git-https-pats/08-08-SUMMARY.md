@@ -94,7 +94,7 @@ Each task was committed atomically:
 
 1. **Task 1: make rpc-gen + API.md PAT/Smart HTTP docs** - `483daf5` (feat)
 
-**Plan metadata:** (pending final docs commit)
+**Plan metadata:** `afb6522` (docs: complete plan)
 
 ## Files Created/Modified
 - `crates/octanest-api/src/bin/rpc_gen.rs` - PAT types, client methods, TanStack helpers
