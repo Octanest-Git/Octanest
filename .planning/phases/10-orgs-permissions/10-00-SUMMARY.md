@@ -21,7 +21,7 @@ affects:
 actuals:
   tokens: 3703
   tasks: 2
-  commits: 2
+  commits: 3
 
 plan_head_before: f86dcf2eb936ea61cb69874a0d349d70a4341160
 
@@ -128,7 +128,7 @@ Each task was committed atomically:
 1. **Task 1: Org / invite / collaborator / dialect Wave 0 stubs** - `8d7315a` (test)
 2. **Task 2: ACL coalesce unit stubs + extend private/git stub names** - `86f2bfa` (test)
 
-**Plan metadata:** _(pending docs commit)_
+**Plan metadata:** `4ad4991` (docs: complete plan)
 
 _Note: Wave 0 is RED-only by design — GREEN belongs to later 10-xx plans._
 

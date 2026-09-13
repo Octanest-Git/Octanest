@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 3
+current_plan: 2
 status: executing
 stopped_at: Completed 10-00-PLAN.md
 last_updated: "2026-09-13T23:33:53.798Z"
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 3
+Current Plan: 2
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Ready to execute
+Status: Executing Phase 10 — next 10-01
 Last activity: 2026-09-14 — Completed 10-00 Wave 0 Rust stubs
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
