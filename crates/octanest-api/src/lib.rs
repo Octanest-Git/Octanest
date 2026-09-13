@@ -5,6 +5,7 @@ pub mod email;
 pub mod git;
 pub mod jobs;
 pub mod pat;
+pub mod ssh_keys;
 pub mod repo;
 pub mod routes;
 pub mod rpc;
