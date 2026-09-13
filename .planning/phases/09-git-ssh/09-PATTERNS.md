@@ -29,7 +29,7 @@
 
 ## Pattern Assignments
 
-### `crates/octanest-api/src/routes/git_ssh.rs` (controller, request-response)
+### `crates/octanest-api/src/ssh/mod.rs` (controller, request-response)
 
 **Analog:** `crates/octanest-api/src/routes/git_smart_http.rs`
 
@@ -87,7 +87,7 @@ SSH forces login user `git` only (D-SSH-03); identity comes from key fingerprint
 
 ---
 
-### `crates/octanest-api/src/git/ssh_backend.rs` (service, file-I/O)
+### `crates/octanest-api/src/ssh/pack.rs` (service, file-I/O)
 
 **Analog:** `crates/octanest-api/src/git/http_backend.rs` + path helper `git/mod.rs`
 
