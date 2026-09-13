@@ -17,7 +17,7 @@ affects:
 actuals:
   tokens: 4604
   tasks: 1
-  commits: 3
+  commits: 5
 
 plan_head_before: bafd6eaa8904b2b9ab8c1d237181f1aad422259a
 
