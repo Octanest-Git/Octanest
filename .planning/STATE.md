@@ -3,17 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-status: planned
-stopped_at: Phases 9 and 10 plans verified — ready to execute
-last_updated: "2026-09-14T01:23:00.000Z"
+current_plan: 3
+status: executing
+stopped_at: Completed 10-00-PLAN.md
+last_updated: "2026-09-13T23:33:53.798Z"
 last_activity: 2026-09-14
-last_activity_desc: Phases 9+10 plan-checker PASSED — both ready to execute
-state_head: 88f0a46
+last_activity_desc: Completed 10-00 Wave 0 Rust stubs
+state_head: 86f2bfa6c1ab72115e1e86dcf12b942448d32c80
 progress:
   total_phases: 22
-  completed_phases: 8
+  completed_phases: 0
   total_plans: 101
-  completed_plans: 77
+  completed_plans: 78
 milestone_name: milestone
 ---
 
@@ -24,14 +25,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phases 9 (Git SSH) and 10 (Orgs & Permissions) — both planned and ready to execute in parallel
+**Current focus:** Phase 10 — Orgs & Permissions
 
 ## Current Position
 
-Phase: 10 (Orgs & Permissions) — READY TO EXECUTE (14 plans: 10-00…10-13)
+Phase: 10 (Orgs & Permissions) — EXECUTING
+Current Plan: 3
+Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Planned — ready to execute
-Last activity: 2026-09-14 — Phase 9+10 plan verification passed
+Status: Ready to execute
+Last activity: 2026-09-14 — Completed 10-00 Wave 0 Rust stubs
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
@@ -127,6 +130,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 08 P13 | 3min | 2 tasks | 3 files |
+| Phase 10 P00 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -283,6 +287,8 @@ Recent decisions affecting current work:
 - [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (octanest_fg_)
 - [Phase 08]: Docs use octanest_pat_/octanest_fg_ (D-08), not ona_* draft wording
 - [Phase 08]: nyquist_compliant left false; validate-phase owns Nyquist flip
+- [Phase 10]: Wave 0 is RED-only — no production org RPC, ACL rewrite, or 0010 migrations
+- [Phase 10]: Use 0010_orgs_acl (not 0009) because Phase 09 SSH claims 0009_ssh_keys
 
 ### Pending Todos
 
@@ -304,6 +310,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:59:40.748Z
-Stopped at: Phase 07 complete, ready to plan Phase 08
+Last session: 2026-09-13T23:33:31.078Z
+Stopped at: Completed 10-00-PLAN.md
 Resume file: None

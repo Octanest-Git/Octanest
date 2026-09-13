@@ -402,12 +402,12 @@ Plans:
   2. Org owner can assign member roles that control repo access; repo owner can set visibility and collaborator permissions
   3. Unauthorized users cannot read private repos or push without permission
 
-**Plans**: 14 plans
+**Plans**: 1/14 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
+- [x] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
 - [ ] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
 - [ ] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
 
@@ -636,7 +636,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
 | 9. Git SSH | 0/TBD | Not started | - |
-| 10. Orgs & Permissions | 0/TBD | Not started | - |
+| 10. Orgs & Permissions | 1/14 | In Progress|  |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
