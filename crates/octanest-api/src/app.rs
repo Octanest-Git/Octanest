@@ -22,7 +22,7 @@ use crate::auth::session::{
     SessionService, SESSION_COOKIE_NAME, SESSION_IDLE,
 };
 use crate::email::{self, EmailSender};
-use crate::routes::{auth_callbacks, avatar, repo_raw};
+use crate::routes::{auth_callbacks, avatar, git_smart_http, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 
 #[derive(Clone)]
@@ -128,6 +128,19 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
         .route(
             "/api/repos/{owner}/{repo}/archive/{*archive_file}",
             get(repo_raw::serve_archive),
+        )
+        // Smart HTTP — D-18/D-22: only on /{owner}/{repo}.git (segment includes .git suffix)
+        .route(
+            "/{owner}/{repo_git}/info/refs",
+            get(git_smart_http::info_refs),
+        )
+        .route(
+            "/{owner}/{repo_git}/git-upload-pack",
+            axum::routing::post(git_smart_http::upload_pack),
+        )
+        .route(
+            "/{owner}/{repo_git}/git-receive-pack",
+            axum::routing::post(git_smart_http::receive_pack),
         )
         .layer(cors)
         .layer(TraceLayer::new_for_http())

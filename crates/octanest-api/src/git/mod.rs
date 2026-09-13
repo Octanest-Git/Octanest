@@ -1,7 +1,10 @@
 //! API-side git helpers: path layout under `OCTANEST_REPOS_DIR` (D-30 / D-31).
 //!
 //! All process invocation lives in `octanest-git` (`CliGitBackend`). This module
-//! only builds safe on-disk paths under the configured repos root.
+//! only builds safe on-disk paths under the configured repos root — except Smart
+//! HTTP CGI in [`http_backend`].
+
+pub mod http_backend;
 
 use std::path::{Path, PathBuf};
 

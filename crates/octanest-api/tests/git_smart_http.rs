@@ -1,76 +1,330 @@
-//! GIT-02 Wave 0 stubs: Git Smart HTTP auth / ACL / status codes.
-//!
-//! RED until Smart HTTP routes land (08-04 / 08-06). Do not implement handlers here.
-//! Threat mitigations: T-08-02 — password reject, cookie ignore, private 401 (D-11, D-12, D-21).
+//! GIT-02: Git Smart HTTP auth / ACL / status codes (08-04 tracer + 08-06 expansion stubs).
+
+mod support;
+
+use std::sync::Arc;
+
+use axum::body::Body;
+use axum::http::{header, Request, StatusCode};
+use http_body_util::BodyExt;
+use octanest_api::email::{EmailSender, LogSink};
+use octanest_api::{build_cors, router_with_state, AppState};
+use octanest_db::Database;
+use tower::ServiceExt;
+
+async fn test_app(db: Database, repos_dir: std::path::PathBuf) -> axum::Router {
+    let state = AppState::new(db, Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos_dir);
+    let cors = build_cors("development", None).expect("cors");
+    router_with_state(state, cors)
+}
+
+fn rpc_req(body: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .header("cookie", cookie)
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn session_cookie_from_response(res: &axum::http::Response<Body>) -> String {
+    let set_cookie = res
+        .headers()
+        .get("set-cookie")
+        .expect("Set-Cookie")
+        .to_str()
+        .unwrap();
+    set_cookie.split(';').next().unwrap().trim().to_string()
+}
+
+async fn signup_and_login(
+    app: &axum::Router,
+    email: &str,
+    username: &str,
+) -> (String, serde_json::Value) {
+    let signup_body = format!(
+        r#"{{"procedure":"auth.signup","input":{{"email":"{email}","username":"{username}","password":"password1"}}}}"#
+    );
+    let signup = app.clone().oneshot(rpc_req(&signup_body)).await.unwrap();
+    assert_eq!(signup.status(), StatusCode::OK);
+    let _ = signup.into_body().collect().await;
+
+    let login_body = format!(
+        r#"{{"procedure":"auth.login","input":{{"identifier":"{email}","password":"password1","remember_me":false}}}}"#
+    );
+    let login = app.clone().oneshot(rpc_req(&login_body)).await.unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&login);
+    let bytes = login.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    (cookie, v)
+}
+
+fn basic_header(user: &str, password: &str) -> String {
+    // Manual base64 so tests don't need the base64 crate.
+    let raw = format!("{user}:{password}");
+    format!("Basic {}", encode_b64(raw.as_bytes()))
+}
+
+fn encode_b64(input: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::new();
+    for chunk in input.chunks(3) {
+        let mut n = (chunk[0] as u32) << 16;
+        if chunk.len() > 1 {
+            n |= (chunk[1] as u32) << 8;
+        }
+        if chunk.len() > 2 {
+            n |= chunk[2] as u32;
+        }
+        out.push(T[((n >> 18) & 63) as usize] as char);
+        out.push(T[((n >> 12) & 63) as usize] as char);
+        out.push(if chunk.len() > 1 {
+            T[((n >> 6) & 63) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            T[(n & 63) as usize] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
+async fn create_public_repo(app: &axum::Router, db: &Database, cookie: &str, user_id: &str) {
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(user_id, &now)
+        .await
+        .expect("verify");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"hello","visibility":"public","description":""}}"#,
+            cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+}
+
+fn info_refs_uri(owner: &str, repo: &str) -> String {
+    format!("/{owner}/{repo}.git/info/refs?service=git-upload-pack")
+}
 
 /// Public repo: anonymous `info/refs?service=git-upload-pack` allowed.
 #[tokio::test]
 async fn git_smart_public_anon_upload_pack_info_refs_ok() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_anon.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "owner@ex.com", "owner1").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("owner1", "hello"))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::OK,
+        "public anon upload-pack info/refs must succeed"
+    );
+    let ct = res
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
     assert!(
-        false,
-        "Wave 0: public anon upload-pack info/refs must succeed (GIT-02)"
+        ct.contains("git-upload-pack"),
+        "expected git-upload-pack content-type, got {ct}"
     );
 }
 
-/// Private repo: anonymous → 401 + WWW-Authenticate (D-21).
+/// Private repo: anonymous → 401 + WWW-Authenticate (D-21). Expansion — 08-06.
 #[tokio::test]
+#[ignore = "08-06: private anon 401"]
 async fn git_smart_private_anon_401_www_authenticate() {
-    assert!(
-        false,
-        "Wave 0: private anon → 401 + WWW-Authenticate Basic (GIT-02 / D-21)"
-    );
+    assert!(false, "expansion: private anon → 401 + WWW-Authenticate");
 }
 
 /// Basic auth with account password (not PAT) → 401 + PAT hint (D-11).
 #[tokio::test]
 async fn git_smart_basic_account_password_rejected_401() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_pw.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "pw@ex.com", "pwuser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("pwuser", "hello"))
+        .header(header::AUTHORIZATION, basic_header("pwuser", "password1"))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    let www = res
+        .headers()
+        .get(header::WWW_AUTHENTICATE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
     assert!(
-        false,
-        "Wave 0: account password over Basic → 401 + PAT hint; never accept password (GIT-02 / D-11)"
+        www.contains("Basic") && www.contains("Octanest Git"),
+        "WWW-Authenticate — {www}"
+    );
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let body = String::from_utf8_lossy(&bytes);
+    assert!(
+        body.to_lowercase().contains("personal access token"),
+        "body must hint PAT — {body}"
     );
 }
 
 /// Session cookie alone is treated as anonymous (D-12) — never authenticates Smart HTTP.
 #[tokio::test]
 async fn git_smart_session_cookie_ignored_as_anon() {
-    assert!(
-        false,
-        "Wave 0: session cookie alone treated as anon on Smart HTTP (GIT-02 / D-12)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_cookie.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "ck@ex.com", "ckuser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    // Cookie present but no Basic — public still OK (anon path); cookie must not be required.
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("ckuser", "hello"))
+        .header(header::COOKIE, &cookie)
+        .body(Body::empty())
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::OK,
+        "cookie alone on public = anon success"
+    );
+
+    // Mint PAT then prove cookie alone does not substitute for Basic on a path that needs auth:
+    // use password rejection path — cookie + wrong secret still PAT-hint (not session elevate).
+    let req2 = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("ckuser", "hello"))
+        .header(header::COOKIE, &cookie)
+        .header(header::AUTHORIZATION, basic_header("ckuser", "password1"))
+        .body(Body::empty())
+        .unwrap();
+    let res2 = app.oneshot(req2).await.unwrap();
+    assert_eq!(
+        res2.status(),
+        StatusCode::UNAUTHORIZED,
+        "session cookie must not make account password succeed"
     );
 }
 
-/// Valid PAT with insufficient scope → 403.
+/// Valid PAT with insufficient scope → 403. Expansion — 08-05/08-06.
 #[tokio::test]
+#[ignore = "08-05/08-06: FG scope matrix"]
 async fn git_smart_insufficient_scope_403() {
-    assert!(
-        false,
-        "Wave 0: insufficient PAT scope → 403 (GIT-02)"
-    );
+    assert!(false, "expansion: insufficient PAT scope → 403");
 }
 
-/// Failed-auth over limit → 429 + Retry-After (D-26).
+/// Failed-auth over limit → 429 + Retry-After (D-26). Expansion — 08-06.
 #[tokio::test]
+#[ignore = "08-06: failed-auth rate limit"]
 async fn git_smart_failed_auth_rate_limit_429_retry_after() {
-    assert!(
-        false,
-        "Wave 0: failed-auth over limit → 429 + Retry-After (GIT-02 / D-26)"
-    );
+    assert!(false, "expansion: 429 + Retry-After");
 }
 
-/// Unverified owner push (receive-pack) denied (D-24).
+/// Unverified owner push (receive-pack) denied (D-24). Expansion — 08-06.
 #[tokio::test]
+#[ignore = "08-06: unverified push deny"]
 async fn git_smart_unverified_push_denied() {
-    assert!(
-        false,
-        "Wave 0: unverified email cannot push over Smart HTTP (GIT-02 / D-24)"
-    );
+    assert!(false, "expansion: unverified push denied");
 }
 
-/// PAT push/fetch happy-path stub (GIT-02 end-to-end once handlers land).
+/// Valid classic PAT authenticates public upload-pack info/refs (tracer fetch path).
 #[tokio::test]
 async fn git_smart_pat_push_fetch_happy_path() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_pat.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "patgit@ex.com", "patgit").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"cli","scopes":["repo"]}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let token = v["data"]["token"].as_str().expect("token");
+
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("patgit", "hello"))
+        .header(header::AUTHORIZATION, basic_header("patgit", token))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::OK,
+        "valid PAT must allow fetch info/refs"
+    );
+    let ct = res
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
     assert!(
-        false,
-        "Wave 0: valid PAT must allow fetch + push on owned repo (GIT-02)"
+        ct.contains("git-upload-pack"),
+        "expected upload-pack advertisement, got {ct}"
     );
 }
