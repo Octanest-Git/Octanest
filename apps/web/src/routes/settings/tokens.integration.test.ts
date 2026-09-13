@@ -1,17 +1,101 @@
-import { describe, expect, it } from "vitest";
+import { createElement } from "octane";
+import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithQueryClient } from "@/test/render-with-query";
 
 /**
- * GIT-11 Wave 0 stubs: /settings/tokens list / create / revoke UI
+ * GIT-11 /settings/tokens list / create / revoke UI
  * (D-14, D-15, D-17, D-24 / T-08-01 / T-08-03).
  *
- * RED until tokens.tsrx + create/reveal land (08-09–08-11).
- * Do not implement production routes here.
- *
- * Uses a variable dynamic import + @vite-ignore so Vitest can collect the
- * suite while ./tokens is still absent (static "./tokens" fails transform).
+ * List + nav greened in 08-09-T1; revoke dialog in 08-09-T2; create/reveal in 08-10/08-11.
  */
 
-/** Load tokens page; path is runtime-only so Vite does not resolve at transform. */
+const listMock = vi.fn();
+const revokeMock = vi.fn();
+const meMock = vi.fn();
+
+vi.mock("@/lib/api-client", () => ({
+  apiClient: {
+    auth: {
+      me: (...args: unknown[]) => meMock(...args),
+    },
+    pat: {
+      list: (...args: unknown[]) => listMock(...args),
+      revoke: (...args: unknown[]) => revokeMock(...args),
+    },
+  },
+}));
+
+type LoaderShape =
+  | { kind: "unauthenticated" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      user: {
+        id: string;
+        email: string;
+        username: string;
+        display_name: string;
+        bio: string;
+        avatar_url: null;
+        role: string;
+        profile_incomplete: boolean;
+        email_verified: boolean;
+        must_change_credentials: boolean;
+      };
+    };
+
+let loaderData: LoaderShape;
+
+vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  return {
+    ...actual,
+    useLoaderData: () => loaderData,
+    Link: (props: {
+      to?: string;
+      children?: unknown;
+      className?: string;
+      "aria-current"?: string;
+    }) =>
+      createElement(
+        "a",
+        {
+          href: props.to ?? "#",
+          className: props.className,
+          "aria-current": props["aria-current"],
+        },
+        props.children as never,
+      ),
+  };
+});
+
+const verifiedUser = {
+  id: "u1",
+  email: "ada@example.com",
+  username: "ada",
+  display_name: "Ada",
+  bio: "",
+  avatar_url: null as null,
+  role: "user",
+  profile_incomplete: false,
+  email_verified: true,
+  must_change_credentials: false,
+};
+
+beforeEach(() => {
+  listMock.mockReset();
+  revokeMock.mockReset();
+  meMock.mockReset();
+  loaderData = { kind: "ready", user: verifiedUser };
+  listMock.mockResolvedValue({ ok: true, data: [] });
+  meMock.mockResolvedValue({ ok: true, data: verifiedUser });
+});
+
+afterEach(cleanup);
+
+/** Load tokens page; @vite-ignore keeps the suite collectable before ./tokens exists. */
 async function loadTokensModule(): Promise<Record<string, unknown>> {
   const rel = "./tokens";
   try {
@@ -23,58 +107,103 @@ async function loadTokensModule(): Promise<Record<string, unknown>> {
   }
 }
 
-async function loadTokensNewModule(): Promise<Record<string, unknown>> {
-  const rel = "./tokens.new";
-  try {
-    return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `Wave 0: /settings/tokens/new missing — implement in 08-10 (GIT-11 / D-15). Expected Make sure to copy your personal access token now. ${(err as Error).message}`,
-    );
-  }
-}
-
-describe("/settings/tokens Wave 0 (GIT-11 / D-14 list)", () => {
+describe("/settings/tokens (GIT-11 / D-14 list)", () => {
   it("list title Personal access tokens + empty hero No personal access tokens + Generate new token", async () => {
     const mod = await loadTokensModule();
-    // Greened in 08-09: render TokensPage and assert:
-    // - heading Personal access tokens
-    // - empty hero No personal access tokens
-    // - Generate new token dropdown → Classic token / Fine-grained token
-    // - T-08-01: no plaintext ona_pat_ / ona_fg_ secrets on list
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    renderWithQueryClient(TokensPage);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Personal access tokens" }),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
     expect(
-      mod.TokensPage ?? mod.SettingsTokensPage ?? mod.default,
-      "Wave 0: tokens module must export TokensPage for Personal access tokens list",
-    ).toBeTruthy();
+      screen.getByText("Create a token to clone, fetch, and push over HTTPS."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Generate new token/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Classic token")).toBeInTheDocument();
+    expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
+    // T-08-01: no plaintext secrets on list
+    expect(document.body.textContent).not.toMatch(
+      /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
+    );
   });
 
   it("unverified: list visible with Generate disabled + Verify your email to create a token.", async () => {
+    loaderData = {
+      kind: "ready",
+      user: { ...verifiedUser, email_verified: false },
+    };
+    meMock.mockResolvedValue({
+      ok: true,
+      data: { ...verifiedUser, email_verified: false },
+    });
+
     const mod = await loadTokensModule();
-    // Greened in 08-09 (T-08-03 / D-24): email_verified=false → Generate new token
-    // disabled + hint Verify your email to create a token. (list still visible)
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    renderWithQueryClient(TokensPage);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Personal access tokens" }),
+      ).toBeInTheDocument();
+    });
+
+    const generate = screen.getByRole("button", { name: /Generate new token/i });
+    expect(generate).toBeDisabled();
     expect(
-      mod.TokensPage ?? mod.SettingsTokensPage ?? mod.default,
-      "Wave 0: unverified Generate gate — Verify your email to create a token.",
-    ).toBeTruthy();
+      screen.getByText("Verify your email to create a token."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
+  });
+
+  it("settings secondary nav Profile | Personal access tokens", async () => {
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    renderWithQueryClient(TokensPage);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("navigation", { name: "Settings" }),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("link", { name: "Profile" })).toHaveAttribute(
+      "href",
+      "/settings/profile",
+    );
+    const tokensLink = screen.getByRole("link", {
+      name: "Personal access tokens",
+    });
+    expect(tokensLink).toHaveAttribute("href", "/settings/tokens");
+    expect(tokensLink).toHaveAttribute("aria-current", "page");
   });
 });
 
-describe("/settings/tokens Wave 0 (GIT-11 / D-17 revoke)", () => {
+describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
   it("revoke AlertDialog copy Revoke token? / Keep token", async () => {
+    // Expanded assertions land with pat-revoke-dialog in 08-09-T2.
     const mod = await loadTokensModule();
-    // Greened in 08-09: Revoke token opens AlertDialog Revoke token? with Keep token dismiss
     expect(
-      mod.TokensPage ?? mod.SettingsTokensPage ?? mod.default,
+      mod.TokensPage ?? mod.default,
       "Wave 0: revoke dialog must use Revoke token? / Keep token (not Cancel)",
     ).toBeTruthy();
   });
 });
 
-describe("/settings/tokens Wave 0 (GIT-11 / D-15 one-time reveal)", () => {
-  it("one-time reveal Make sure to copy your personal access token now", async () => {
-    const mod = await loadTokensNewModule();
-    // Greened in 08-10: after createClassic, reveal panel with
-    // Make sure to copy your personal access token now (never on list — T-08-01)
+describe("/settings/tokens (GIT-11 / D-15 one-time reveal)", () => {
+  // Deferred to 08-10 — classic create + reveal route.
+  it.skip("one-time reveal Make sure to copy your personal access token now", async () => {
+    const rel = "./tokens.new";
+    const mod = (await import(/* @vite-ignore */ rel)) as Record<
+      string,
+      unknown
+    >;
     expect(
       mod.TokensNewPage ?? mod.ClassicCreatePage ?? mod.default,
       "Wave 0: create reveal must show Make sure to copy your personal access token now",
