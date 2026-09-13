@@ -245,3 +245,14 @@
 **User's choice:** `owner_repo_git` — public clone URL shape is `https://{host}/{owner}/{repo}.git` on the same public origin (host from `OCTANEST_PUBLIC_ORIGIN`, D-18/D-19). Smart HTTP only on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` stays web UI (D-22).
 **Notes:** Matches Phase 7 clone box; Traefik PathRegexp must keep SPA from stealing `.git`.
 **Recorded:** 2026-09-13 (08-02 continuation)
+
+### Task 3 — D-21 git private unauth 401 + D-01 PAT-not-RPC (costly)
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| `git_401_pat_https_only` | 401 + WWW-Authenticate Basic for private/no-access git; PATs HTTPS-git-only (not RPC Bearer) | ✓ |
+| `stop` | Revisit error/auth class | |
+
+**User's choice:** `git_401_pat_https_only` — unauthenticated git access to private/no-access repos returns **401 + WWW-Authenticate Basic** (not web `repo.not_found` 404). PATs authenticate **HTTPS git only** in Phase 8 — not typed RPC Bearer; web stays on session cookies (D-01, D-21). GIT-11 ROADMAP parenthetical “RPC/API where applicable” interpreted as HTTPS-git-only for Phase 8.
+**Notes:** Intentional git-vs-web split; credential helpers expect 401 challenges. Mixing 404 with git confuses clients.
+**Recorded:** 2026-09-13 (08-02 continuation)

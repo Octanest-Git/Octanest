@@ -28,7 +28,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 ## Implementation Decisions
 
 ### A — PAT capabilities
-- **D-01:** PATs authenticate **git over HTTPS only** in Phase 8 — not RPC/API Bearer; web stays on opaque session cookies — **Reversibility:** costly — credential class split
+- **D-01:** PATs authenticate **git over HTTPS only** in Phase 8 — not RPC/API Bearer; web stays on opaque session cookies — **Reversibility:** costly — credential class split *(08-02 locked option `git_401_pat_https_only` with D-21)*
 - **D-02:** Dual remotes like GitHub/other forges: **HTTPS + PAT now**; **SSH** remains Phase 9
 - **D-03:** Support **both classic scopes and fine-grained scopes** in Phase 8 (pulls PAT portion of PLAT-V2-02 forward; OAuth apps stay later) — **Reversibility:** costly — token model + UI
 - **D-04:** Fine-grained model targets **GitHub-/forge parity** (repository selection + account permissions as needed for real forge use); exact scope catalog is Claude discretion via research
@@ -54,7 +54,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 - **D-18:** Clone URL shape **`https://{host}/{owner}/{repo}.git`** on the same public origin — **Reversibility:** one-way — public git URL scheme *(08-02 locked option `owner_repo_git`)*
 - **D-19:** Clone URL host comes from **`OCTANEST_PUBLIC_ORIGIN`** (operator config), not the request Host header
 - **D-20:** **Anonymous clone/fetch** of **public** repos; **push always requires a PAT**
-- **D-21:** Unauthenticated access to **private** / no-access over git → **401 + WWW-Authenticate** (not the web UI’s 404 anti-enumeration) — **Reversibility:** costly — git vs web error contracts differ by design
+- **D-21:** Unauthenticated access to **private** / no-access over git → **401 + WWW-Authenticate** (not the web UI’s 404 anti-enumeration) — **Reversibility:** costly — git vs web error contracts differ by design *(08-02 locked option `git_401_pat_https_only` with D-01)*
 - **D-22:** Smart HTTP is served **only** on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` remains the web UI *(08-02 confirmed with D-18)*
 - **D-23:** Authenticated but **insufficient PAT scope** → **403** (not 401)
 
