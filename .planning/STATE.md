@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: research_ready
-stopped_at: Phase 08 context gathered
+stopped_at: Phase 08 research complete
 last_updated: "2026-09-13T16:44:22.928Z"
 last_activity: 2026-09-13
-last_activity_desc: 08-CONTEXT.md gathered (GIT-02/11; classic+FG PATs; Smart HTTP)
+last_activity_desc: "08-RESEARCH.md written (GIT-02/11 Smart HTTP + PATs)"
 state_head: faa01071be943b9ad3e1eb4e400e1b07f3e044c0
 progress:
   total_phases: 22
@@ -24,18 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs (context ready)
+**Current focus:** Phase 08 — Git HTTPS & PATs (research ready)
 
 ## Current Position
 
-Phase: 08 (Git HTTPS & PATs) — CONTEXT gathered
-Plan: not started — next `/gsd-plan-phase 08`
+Phase: 08 (Git HTTPS & PATs) — RESEARCH complete
+Plan: not started — next planner consumes `08-RESEARCH.md`
 Status: research_ready
-Last activity: 2026-09-13 — `/gsd-discuss-phase 08` → `08-CONTEXT.md`
+Last activity: 2026-09-13 — `/gsd-plan-phase` research → `08-RESEARCH.md`
 
-Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 decisions locked for planning
+Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 research ready for planning
 
-See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-DISCUSSION-LOG.md`
+See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-RESEARCH.md` · `08-DISCUSSION-LOG.md`
 
 ## Performance Metrics
 
