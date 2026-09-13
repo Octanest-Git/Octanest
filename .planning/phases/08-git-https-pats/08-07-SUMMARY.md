@@ -18,7 +18,7 @@ affects:
 actuals:
   tokens: 1868
   tasks: 1
-  commits: 3
+  commits: 5
 
 plan_head_before: a74989927c96653cb96a7936361d337ba0a8f8f5
 
@@ -92,7 +92,7 @@ status: complete
 
 1. **Task 1: Traefik .git PathRegexp + smoke-git-https** - `a315997` (feat)
 
-**Plan metadata:** `b7aac8d` (docs: complete plan)
+**Plan metadata:** `b7aac8d`, `3c8dc2b`, `f944cd5` (docs: complete plan)
 
 ## Files Created/Modified
 - `docker-compose.yml` — `api-git` Traefik router (PathRegexp + priority 110)
