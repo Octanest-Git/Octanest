@@ -275,6 +275,10 @@ const RESERVED_USERNAMES: &[&str] = &[
     "tree",
     "blob",
     "raw",
+    // Phase 8 Basic-auth username aliases (D-10) — must not collide with accounts
+    "git",
+    "token",
+    "oauth2",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).

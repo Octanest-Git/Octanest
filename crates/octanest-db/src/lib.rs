@@ -5,6 +5,7 @@ pub mod auth_settings;
 pub mod dialect;
 pub mod email_tokens;
 pub mod migrate;
+pub mod pats;
 pub mod pool;
 pub mod probe;
 pub mod repositories;
@@ -14,6 +15,7 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
+pub use pats::PatRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
@@ -381,6 +383,64 @@ impl Database {
 
     pub async fn delete_sessions_for_user(&self, user_id: &str) -> Result<u64, String> {
         sessions::delete_all_for_user(self.require_pool()?, user_id).await
+    }
+
+    // --- personal access tokens ---
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn create_pat(
+        &self,
+        id: &str,
+        user_id: &str,
+        kind: &str,
+        name: &str,
+        token_prefix: &str,
+        token_hash: &str,
+        scopes_json: Option<&str>,
+        contents_perm: Option<&str>,
+        repo_access: Option<&str>,
+        expires_at: Option<&str>,
+        repository_ids: &[String],
+    ) -> Result<(), String> {
+        pats::create(
+            self.require_pool()?,
+            id,
+            user_id,
+            kind,
+            name,
+            token_prefix,
+            token_hash,
+            scopes_json,
+            contents_perm,
+            repo_access,
+            expires_at,
+            repository_ids,
+        )
+        .await
+    }
+
+    pub async fn find_pat_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<pats::PatRow>, String> {
+        pats::find_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn list_pats_for_user(&self, user_id: &str) -> Result<Vec<pats::PatRow>, String> {
+        pats::list_for_user(self.require_pool()?, user_id).await
+    }
+
+    pub async fn revoke_pat(&self, id: &str, revoked_at: &str) -> Result<(), String> {
+        pats::revoke(self.require_pool()?, id, revoked_at).await
+    }
+
+    pub async fn touch_pat_last_used(
+        &self,
+        id: &str,
+        last_used_at: &str,
+        last_used_ip: Option<&str>,
+    ) -> Result<(), String> {
+        pats::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
     }
 
     // --- auth identities ---

@@ -1,9 +1,11 @@
 //! Shared domain types for Octanest.
 
 pub mod auth_types;
+pub mod pat_types;
 pub mod repo_types;
 
 pub use auth_types::*;
+pub use pat_types::*;
 pub use repo_types::*;
 
 use serde::{Deserialize, Serialize};
