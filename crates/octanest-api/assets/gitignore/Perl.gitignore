@@ -1,0 +1,6 @@
+blib/
+Build
+_build/
+*.bak
+local/
+

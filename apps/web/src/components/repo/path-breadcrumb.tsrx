@@ -20,7 +20,7 @@ export function PathBreadcrumb({
 
   <nav
     aria-label="Path"
-    className="mb-4 flex min-w-0 max-w-full flex-wrap items-center gap-1 text-[14px]"
+    className="flex min-w-0 max-w-full flex-wrap items-center gap-1 text-[14px]"
   >
     <a
       href={rootHref as string}

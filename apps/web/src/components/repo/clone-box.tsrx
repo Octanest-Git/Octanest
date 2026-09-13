@@ -1,3 +1,4 @@
+import { Check, ChevronDown, Code, Copy } from "@octanejs/lucide";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,14 +47,19 @@ export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
       className="inline-flex h-11 items-center gap-2 rounded-md border border-border bg-card px-4 text-[14px] font-semibold text-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
       aria-label="Clone or download"
     >
+      <Code aria-hidden size={16} className="text-foreground" />
       Code
+      <ChevronDown aria-hidden size={16} className="text-muted-foreground" />
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="min-w-72 p-2">
-      <div className="px-2 py-1.5">
-        <p className="text-[14px] font-normal text-muted-foreground">HTTPS</p>
-        <div className="mt-1 flex items-center gap-2">
+    <DropdownMenuContent align="end" className="w-80 p-3">
+      <div className="px-1 py-1">
+        <p className="text-[14px] font-medium text-foreground">Clone with HTTPS</p>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">
+          Use this URL from any Git client.
+        </p>
+        <div className="mt-3 flex items-stretch gap-2">
           <code
-            className="block min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-2 py-1.5 font-mono text-[13px] text-foreground"
+            className="block min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[13px] leading-none text-foreground"
             title={httpsUrl as string}
           >
             {httpsUrl as string}
@@ -61,16 +67,26 @@ export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
           <Button
             type="button"
             variant="secondary"
-            size="default"
-            className="shrink-0 px-3"
+            size="icon"
+            className="shrink-0"
             aria-label="Copy HTTPS URL"
+            title={(copyState === "copied" ? "Copied" : "Copy HTTPS URL") as string}
             onClick={() => void copyHttps()}
           >
-            @if (copyState === "copied") {
-              {"Copied"}
-            } @else {
-              {"Copy"}
-            }
+            <Copy
+              aria-hidden
+              size={16}
+              className={(copyState === "copied"
+                ? "hidden"
+                : "text-secondary") as string}
+            />
+            <Check
+              aria-hidden
+              size={16}
+              className={(copyState === "copied"
+                ? "text-secondary"
+                : "hidden") as string}
+            />
           </Button>
         </div>
         @if (copyState === "error") {
@@ -82,7 +98,7 @@ export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
 
       <DropdownMenuSeparator />
 
-      <p className="px-2 py-2 text-[14px] text-muted-foreground">
+      <p className="px-1 py-2 text-[13px] text-muted-foreground">
         SSH cloning arrives in a later phase.
       </p>
 

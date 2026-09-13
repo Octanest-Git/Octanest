@@ -27,6 +27,26 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
+vi.mock("@/lib/use-chrome-account", () => ({
+  useChromeAccountState: () => ({
+    pending: false,
+    user: {
+      id: "u1",
+      email: "ada@example.com",
+      username: "ada",
+      display_name: "Ada",
+      bio: "",
+      role: "user",
+      profile_incomplete: false,
+      email_verified: true,
+      must_change_credentials: false,
+    },
+    needsSetup: false,
+    allowSignup: true,
+  }),
+  resolveAllowSignup: () => true,
+}));
+
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
   const actual =
     await importOriginal<typeof import("@octanejs/tanstack-router")>();
@@ -98,6 +118,10 @@ describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
       });
       expect(screen.queryByText("src")).not.toBeInTheDocument();
       expect(screen.queryByText("Page not found")).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
+        "href",
+        "/ada/hello/settings",
+      );
     },
     20000,
   );

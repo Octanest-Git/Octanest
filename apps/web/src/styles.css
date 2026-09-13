@@ -112,6 +112,14 @@
   --accent-foreground: #071018;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
+
+  /* Unified-diff line washes (commit / compare). */
+  --diff-add-bg: #eaf6ee;
+  --diff-add-fg: #0f3d24;
+  --diff-del-bg: #fceceb;
+  --diff-del-fg: #7a1f1a;
+  --diff-hunk-bg: #eef3f9;
+  --diff-hunk-fg: #334155;
   --border: #97a8ba;
   --input: #97a8ba;
   --ring: #0b6488;
@@ -134,6 +142,12 @@
   --accent-foreground: #f4f6f9;
   --destructive: #ff6b6b;
   --destructive-foreground: #1a0b0a;
+  --diff-add-bg: #13261c;
+  --diff-add-fg: #b6ebc6;
+  --diff-del-bg: #2a1515;
+  --diff-del-fg: #f0b4b0;
+  --diff-hunk-bg: #172033;
+  --diff-hunk-fg: #9eb6d4;
   --border: #3a4454;
   --input: #3a4454;
   --ring: #4eb8d9;
@@ -254,6 +268,22 @@
       transform: none !important;
       transition: none !important;
     }
+  }
+
+  /* Blob viewer: keep Shiki token colors, drop theme chrome so gutter aligns. */
+  .blob-code pre,
+  .blob-code code {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-size: 12px;
+    line-height: 1.25rem;
+  }
+  .blob-code .line {
+    display: inline-block;
+    width: 100%;
+    min-height: 1.25rem;
+    line-height: 1.25rem;
   }
 }
 

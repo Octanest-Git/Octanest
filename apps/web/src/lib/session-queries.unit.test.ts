@@ -22,6 +22,7 @@ import {
   adminAuthSettingsQueryOptions,
   authMeQueryKey,
   authProviderConfigQueryKey,
+  authProviderConfigQueryOptions,
   authSessionQueryOptions,
   clearSessionQueries,
   setAdminAuthSettingsCache,
@@ -75,6 +76,16 @@ describe("authSessionQueryOptions", () => {
     expect(data).toEqual(sampleUser);
   });
 
+  it("maps auth.setup_required to null (pre-setup lock)", async () => {
+    vi.mocked(apiClient.auth.me).mockResolvedValueOnce({
+      ok: false,
+      error: { code: "auth.setup_required", message: "setup" },
+    } as never);
+
+    const data = await authSessionQueryOptions().queryFn();
+    expect(data).toBeNull();
+  });
+
   it("throws on non-auth failures", async () => {
     vi.mocked(apiClient.auth.me).mockResolvedValueOnce({
       ok: false,
@@ -84,6 +95,18 @@ describe("authSessionQueryOptions", () => {
     await expect(authSessionQueryOptions().queryFn()).rejects.toThrow(
       /rpc.internal/,
     );
+  });
+});
+
+describe("authProviderConfigQueryOptions", () => {
+  it("maps auth.setup_required to locked allow_signup false", async () => {
+    vi.mocked(apiClient.auth.providerConfig).mockResolvedValueOnce({
+      ok: false,
+      error: { code: "auth.setup_required", message: "setup" },
+    } as never);
+
+    const data = await authProviderConfigQueryOptions().queryFn();
+    expect(data).toEqual({ mode: "local", allow_signup: false });
   });
 });
 

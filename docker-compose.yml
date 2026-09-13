@@ -48,10 +48,12 @@ services:
       API_BIND: 0.0.0.0:8080
       OCTANEST_RPC_VERSION: ${OCTANEST_RPC_VERSION:-1}
       RUST_LOG: ${RUST_LOG:-info}
+      # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
+      OCTANEST_REPOS_DIR: /var/repos
     volumes:
       # Avatar uploads (D-18) — api CWD is `/`, so bind to /var/uploads
       - ./var/uploads:/var/uploads
-      # Bare repos (D-30 / D-38) — default OCTANEST_REPOS_DIR=var/repos → /var/repos
+      # Bare repos (D-30 / D-38)
       - ./var/repos:/var/repos
     depends_on:
       postgres:
@@ -78,6 +80,8 @@ services:
       dockerfile: apps/web/Dockerfile
     environment:
       PORT: "3000"
+      # SSR Cookie-forward RPCs (bootstrap / session gate) — not 127.0.0.1 inside the container.
+      OCTANEST_API_ORIGIN: http://api:8080
     depends_on:
       api:
         condition: service_healthy

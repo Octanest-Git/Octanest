@@ -16,6 +16,9 @@ export function resolveAllowSignup(cfg: {
 /**
  * Shared chrome session slice — one `auth.me` / bootstrap / providerConfig
  * fetch for header + mobile nav (+ verify banner uses session alone).
+ *
+ * Session/config queryFns soft-handle `auth.setup_required` so TanStack Query
+ * never enters a throw→remount refetch loop on the marketing home.
  */
 export function useChromeAccountState(): {
   pending: boolean;

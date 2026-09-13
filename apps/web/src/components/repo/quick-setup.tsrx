@@ -20,7 +20,7 @@ ${remoteCmd}
 ${pushCmd}`;
 
   <section
-    className="rounded-md border border-border bg-card/30 px-6 py-8"
+    className="rounded-lg border border-border bg-card px-6 py-8 shadow-sm"
     aria-labelledby="quick-setup-heading"
   >
     <h2
@@ -29,24 +29,24 @@ ${pushCmd}`;
     >
       Quick setup
     </h2>
-    <p className="mt-2 text-[16px] text-muted-foreground">
+    <p className="mt-2 max-w-2xl text-[16px] leading-relaxed text-muted-foreground">
       This repository is empty. Push an existing repository from the command
       line using the HTTPS remote below.
     </p>
 
-    <div className="mt-6 flex flex-col gap-4">
+    <div className="mt-6 flex flex-col gap-5">
       <div className="flex flex-col gap-2">
-        <p className="text-[14px] font-normal text-muted-foreground">HTTPS</p>
-        <code className="block overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2 font-mono text-[13px] text-foreground">
+        <p className="text-[14px] font-medium text-foreground">HTTPS</p>
+        <code className="block overflow-x-auto rounded-md border border-border bg-muted/50 px-3 py-2.5 font-mono text-[13px] text-foreground">
           {httpsUrl as string}
         </code>
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-[14px] font-normal text-muted-foreground">
+        <p className="text-[14px] font-medium text-foreground">
           …or create a new repository on the command line
         </p>
-        <pre className="overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-3 font-mono text-[13px] leading-[1.5] text-foreground whitespace-pre-wrap">
+        <pre className="overflow-x-auto rounded-md border border-border bg-muted/50 px-3 py-3.5 font-mono text-[13px] leading-[1.55] text-foreground whitespace-pre-wrap">
           {setupScript as string}
         </pre>
       </div>

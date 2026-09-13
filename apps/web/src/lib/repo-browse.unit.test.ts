@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseRefAndPath, pathBreadcrumbCrumbs } from "./repo-browse";
+import {
+  formatFileSize,
+  parseRefAndPath,
+  pathBreadcrumbCrumbs,
+} from "./repo-browse";
 
 describe("parseRefAndPath", () => {
   it("returns empty ref and path for empty splat", () => {
@@ -74,5 +78,15 @@ describe("pathBreadcrumbCrumbs", () => {
         last: true,
       },
     ]);
+  });
+});
+
+describe("formatFileSize", () => {
+  it("formats bytes / KB / MB", () => {
+    expect(formatFileSize(0)).toBe("0 Bytes");
+    expect(formatFileSize(58)).toBe("58 Bytes");
+    expect(formatFileSize(1536)).toBe("1.5 KB");
+    expect(formatFileSize(10_240)).toBe("10 KB");
+    expect(formatFileSize(2_097_152)).toBe("2 MB");
   });
 });

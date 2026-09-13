@@ -3,34 +3,20 @@ import {
   redirect,
   useLoaderData,
 } from "@octanejs/tanstack-router";
-import { Check, ChevronDown } from "@octanejs/lucide";
 import type {
   RepoCreateDefaults,
-  RepoTemplateOption,
   RepoVisibility,
   UserPublic,
 } from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
+import { TemplatePicker } from "@/components/repo/template-picker";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  SelectIcon,
-  SelectItem,
-  SelectItemIndicator,
-  SelectItemText,
-  SelectList,
-  SelectPopup,
-  SelectPortal,
-  SelectPositioner,
-  SelectRoot,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
-import { listSpdxLicenseOptions } from "@/lib/spdx-licenses";
+import { listLicensePickerOptions } from "@/lib/spdx-licenses";
 import {
   fetchRepoCreateDefaults,
   fetchSessionMe,
@@ -48,72 +34,6 @@ const NAME_HELPER =
   "Letters, digits, hyphen, underscore, and period. Reserved names are rejected.";
 const DUPLICATE_NAME_ERROR =
   "A repository with this name already exists. Choose a different name.";
-
-function TemplateSelect({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  id: string;
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (next: string) => void;
-}) @{
-  const current = options.find((o) => o.value === value) ?? options[0]!;
-
-  <div className="flex flex-col gap-2">
-    <Label htmlFor={id}>{label as string}</Label>
-    <SelectRoot
-      value={value}
-      onValueChange={(next) => {
-        if (typeof next === "string") onChange(next);
-      }}
-    >
-      <SelectTrigger id={id} className="w-full" aria-label={label}>
-        <SelectValue>{current.label as string}</SelectValue>
-        <SelectIcon>
-          <ChevronDown aria-hidden size={16} />
-        </SelectIcon>
-      </SelectTrigger>
-      <SelectPortal>
-        <SelectPositioner sideOffset={4}>
-          <SelectPopup className="max-h-72 overflow-y-auto">
-            <SelectList>
-              @for (const opt of options; key opt.value) {
-                <SelectItem value={opt.value}>
-                  <SelectItemIndicator>
-                    <Check aria-hidden size={16} className="text-primary" />
-                  </SelectItemIndicator>
-                  <SelectItemText>{opt.label as string}</SelectItemText>
-                </SelectItem>
-              }
-            </SelectList>
-          </SelectPopup>
-        </SelectPositioner>
-      </SelectPortal>
-    </SelectRoot>
-  </div>
-}
-
-function groupTemplateOptions(
-  items: RepoTemplateOption[],
-): { value: string; label: string }[] {
-  const sorted = [...items].sort((a, b) => {
-    const g = a.group.localeCompare(b.group);
-    if (g !== 0) return g;
-    return a.label.localeCompare(b.label);
-  });
-  return [
-    { value: "none", label: "None" },
-    ...sorted.map((item) => ({
-      value: item.id,
-      label: `${item.group} — ${item.label}`,
-    })),
-  ];
-}
 
 export const Route = createFileRoute("/new")({
   component: NewPage,
@@ -151,10 +71,9 @@ export function NewPage() @{
   const user = data?.user;
   const showWall = !user || !user.email_verified;
 
-  const stackOptions = groupTemplateOptions(data?.defaults?.stacks ?? []);
-  const gitignoreOptions = groupTemplateOptions(data?.defaults?.gitignores ?? []);
-  // Native <select> for full SPDX list — custom Select mounts every item and stalls.
-  const licenseOptions = listSpdxLicenseOptions();
+  const stacks = data?.defaults?.stacks ?? [];
+  const gitignores = data?.defaults?.gitignores ?? [];
+  const licenseOptions = listLicensePickerOptions();
 
   const initialVisibility: RepoVisibility =
     data?.defaults?.default_visibility === "private" ? "private" : "public";
@@ -187,7 +106,8 @@ export function NewPage() @{
         visibility,
         stack_id: stackId === "none" ? null : stackId,
         license_id: licenseId === "none" ? null : licenseId,
-        gitignore_id: gitignoreId === "none" ? null : gitignoreId,
+        // Send explicit "none" so stack default gitignore is not re-applied server-side.
+        gitignore_id: gitignoreId,
       });
       if (!res.ok) {
         const code = res.error.code;
@@ -317,38 +237,54 @@ export function NewPage() @{
           </div>
         </fieldset>
 
-        <div className="flex flex-col gap-4">
-          <p className="text-[14px] font-normal text-muted-foreground">
-            Templates (optional)
-          </p>
-          <TemplateSelect
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="text-[14px] font-semibold text-foreground">
+              Templates (optional)
+            </p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              Seed an initial commit with a stack, license, and ignore rules —
+              or leave them as None for an empty Quick setup repo.
+            </p>
+          </div>
+          <TemplatePicker
             id="repo-stack"
             label="Stack template"
+            description="Project skeleton files committed on create. Picking a stack also selects a matching .gitignore (changeable below)."
             value={stackId}
-            options={stackOptions}
-            onChange={setStackId}
+            options={stacks}
+            noneLabel="None"
+            noneDescription="No stack files — empty repo with Quick setup."
+            onChange={(id) => {
+              setStackId(id);
+              if (id === "none") {
+                setGitignoreId("none");
+                return;
+              }
+              const pack = stacks.find((s) => s.id === id);
+              setGitignoreId(pack?.default_gitignore ?? "none");
+            }}
           />
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="repo-license">License</Label>
-            <select
-              id="repo-license"
-              aria-label="License"
-              className="h-11 w-full rounded-md border border-input bg-card px-3 text-[14px] font-normal text-foreground outline-none transition-colors duration-150 hover:border-foreground/25 focus-visible:ring-2 focus-visible:ring-ring"
-              value={licenseId}
-              onChange={(ev) =>
-                setLicenseId((ev.currentTarget as HTMLSelectElement).value)
-              }
-            >
-              @for (const opt of licenseOptions; key opt.id) {
-                <option value={opt.id}>{opt.label as string}</option>
-              }
-            </select>
-          </div>
-          <TemplateSelect
+          <TemplatePicker
+            id="repo-license"
+            label="License"
+            description="LICENSE file for the initial commit. Browse popular licenses or search the full SPDX catalog."
+            value={licenseId}
+            options={licenseOptions}
+            noneLabel="None"
+            noneDescription="No LICENSE in the initial commit."
+            browseGroups={["Popular"]}
+            searchPlaceholder="Search SPDX licenses…"
+            onChange={setLicenseId}
+          />
+          <TemplatePicker
             id="repo-gitignore"
             label=".gitignore"
+            description="Language and tooling ignore rules. Auto-filled from the stack; set to None to skip."
             value={gitignoreId}
-            options={gitignoreOptions}
+            options={gitignores}
+            noneLabel="None"
+            noneDescription="No .gitignore in the initial commit."
             onChange={setGitignoreId}
           />
         </div>

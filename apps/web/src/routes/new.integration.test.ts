@@ -14,10 +14,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const createMock = vi.fn();
 
 vi.mock("@/lib/spdx-licenses", () => ({
+  listLicensePickerOptions: () => [
+    {
+      id: "MIT",
+      label: "MIT",
+      group: "Popular",
+      description: "Permissive — keep the copyright notice.",
+    },
+    {
+      id: "Apache-2.0",
+      label: "Apache 2.0",
+      group: "Popular",
+      description: "Permissive with an express patent grant.",
+    },
+  ],
   listSpdxLicenseOptions: () => [
     { id: "none", label: "None" },
     { id: "MIT", label: "MIT — MIT License" },
-    { id: "Apache-2.0", label: "Apache-2.0 — Apache License 2.0" },
   ],
 }));
 
@@ -47,8 +60,18 @@ type LoaderShape = {
   };
   defaults: {
     default_visibility: "public" | "private";
-    stacks: { id: string; label: string; group: string }[];
-    gitignores: { id: string; label: string; group: string }[];
+    stacks: {
+      id: string;
+      label: string;
+      group: string;
+      description: string;
+    }[];
+    gitignores: {
+      id: string;
+      label: string;
+      group: string;
+      description: string;
+    }[];
   } | null;
 };
 
@@ -129,8 +152,23 @@ describe("/new create form (D-02, D-04, D-12)", () => {
         },
         defaults: {
           default_visibility: "public",
-          stacks: [{ id: "rust", label: "Rust", group: "Systems" }],
-          gitignores: [{ id: "Rust", label: "Rust", group: "Languages" }],
+          stacks: [
+            {
+              id: "rust",
+              label: "Rust",
+              group: "Systems",
+              description: "Cargo binary crate with src/main.rs.",
+              default_gitignore: "Rust",
+            },
+          ],
+          gitignores: [
+            {
+              id: "Rust",
+              label: "Rust",
+              group: "Languages",
+              description: "target/ and Cargo build noise.",
+            },
+          ],
         },
       };
 
@@ -145,6 +183,32 @@ describe("/new create form (D-02, D-04, D-12)", () => {
       expect(screen.getByLabelText("Stack template")).toBeInTheDocument();
       expect(screen.getByLabelText("License")).toBeInTheDocument();
       expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByLabelText("Stack template"));
+      await waitFor(() => {
+        expect(
+          screen.getByRole("heading", { name: "Choose Stack template" }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText("Cargo binary crate with src/main.rs.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /Rust/i }));
+      await waitFor(() => {
+        expect(
+          screen.queryByRole("heading", { name: "Choose Stack template" }),
+        ).not.toBeInTheDocument();
+      });
+      // Stack pick auto-fills the matching .gitignore
+      expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Rust/);
+
+      fireEvent.click(screen.getByLabelText("License"));
+      await waitFor(() => {
+        expect(
+          screen.getByRole("heading", { name: "Choose License" }),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.getByText("Permissive — keep the copyright notice."),
+      ).toBeInTheDocument();
     },
     20000,
   );

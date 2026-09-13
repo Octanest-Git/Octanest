@@ -1,0 +1,10 @@
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+

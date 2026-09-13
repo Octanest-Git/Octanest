@@ -1,9 +1,12 @@
+import { Check, Copy, FileCode2 } from "@octanejs/lucide";
 import { useEffect, useEffectEvent, useState } from "octane";
 import type { RepoBlobResponse } from "@octanest/api-client";
 import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { highlightCode, languageIdForPath } from "@/lib/highlight";
 import {
+  blameHref,
+  formatFileSize,
   imageMimeForPath,
   isImagePath,
   parseLineHash,
@@ -18,13 +21,25 @@ type BlobViewerProps = {
   blob: RepoBlobResponse;
 };
 
-/** Syntax-highlighted blob with line numbers + #L / #L-L wash (D-19, D-20). */
+function fileBaseName(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  return parts[parts.length - 1] || path || "file";
+}
+
+function lineCountLabel(n: number): string {
+  return n === 1 ? "1 line" : `${n} lines`;
+}
+
+/** Syntax-highlighted blob with forge-style header, line numbers, #L permalinks (D-19, D-20). */
 export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
   const [hl, setHl] = useState<string | null>(null);
   const [range, setRange] = useState<{ start: number; end: number } | null>(
     null,
   );
+  const [copied, setCopied] = useState(false);
   const rawUrl = rawBlobUrl(owner, repo, blob.ref, blob.path);
+  const blameUrl = blameHref(owner, repo, blob.ref, blob.path);
+  const baseName = fileBaseName(blob.path);
 
   const text =
     !blob.is_binary && blob.encoding === "utf-8" && blob.content
@@ -86,41 +101,114 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
     setRange({ start: n, end: n });
   }
 
+  async function copyContents() {
+    if (!text || typeof navigator === "undefined" || !navigator.clipboard) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
   const showImage =
     blob.is_binary &&
     isImagePath(blob.path) &&
     !!blob.content &&
     blob.encoding === "base64";
 
-  <div className="rounded-md border border-border bg-card/40">
-    @if (blob.truncated) {
-      <div
-        role="status"
-        className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3"
-      >
-        <p className="flex-1 text-[14px] text-muted-foreground">
-          This file is too large to display. View raw or download.
-        </p>
-        <a
-          href={rawUrl as string}
-          className={cn(buttonVariants({ variant: "secondary" }))}
-          download
+  const metaBits: string[] = [];
+  if (!blob.is_binary && lineCount > 0) {
+    metaBits.push(lineCountLabel(lineCount));
+  }
+  metaBits.push(formatFileSize(blob.size));
+
+  <div className="overflow-hidden rounded-md border border-border bg-card">
+    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-muted/35 px-3 py-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <FileCode2
+          aria-hidden
+          size={16}
+          className="shrink-0 text-muted-foreground"
+        />
+        <span
+          className="truncate font-mono text-[14px] font-semibold text-foreground"
+          title={blob.path as string}
         >
-          Download file
-        </a>
+          {baseName as string}
+        </span>
+        <span className="shrink-0 text-[13px] text-muted-foreground">
+          {metaBits.join(" · ") as string}
+        </span>
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
         <a
           href={rawUrl as string}
-          className={cn(buttonVariants({ variant: "ghost" }))}
+          className={cn(
+            buttonVariants({ variant: "ghost" }),
+            "h-8 px-2.5 text-[13px]",
+          )}
           target="_blank"
           rel="noreferrer"
         >
-          View raw file
+          Raw
         </a>
+        <a
+          href={blameUrl as string}
+          className={cn(
+            buttonVariants({ variant: "ghost" }),
+            "h-8 px-2.5 text-[13px]",
+          )}
+        >
+          Blame
+        </a>
+        @if (!blob.is_binary && text) {
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "h-8 gap-1.5 px-2.5 text-[13px]",
+            )}
+            onClick={() => void copyContents()}
+            aria-label={copied ? "Copied" : "Copy file contents"}
+            title={copied ? "Copied" : "Copy file contents"}
+          >
+            @if (copied) {
+              <Check aria-hidden size={14} />
+            } @else {
+              <Copy aria-hidden size={14} />
+            }
+            {(copied ? "Copied" : "Copy") as string}
+          </button>
+        }
+        @if (blob.truncated || blob.is_binary) {
+          <a
+            href={rawUrl as string}
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "h-8 px-2.5 text-[13px]",
+            )}
+            download
+          >
+            Download
+          </a>
+        }
+      </div>
+    </div>
+
+    @if (blob.truncated) {
+      <div role="status" className="border-b border-border px-4 py-3">
+        <p className="text-[14px] text-muted-foreground">
+          This file is too large to display. View raw or download.
+        </p>
       </div>
     }
 
     @if (showImage) {
-      <div className="flex justify-center p-6">
+      <div className="flex justify-center bg-muted/20 p-6">
         <img
           src={
             (`data:${imageMimeForPath(blob.path)};base64,${blob.content}` as string)
@@ -135,16 +223,6 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
           <p className="text-[16px] text-muted-foreground">
             This file can't be previewed. Download it instead.
           </p>
-          <a
-            href={rawUrl as string}
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "mt-4 inline-flex",
-            )}
-            download
-          >
-            Download file
-          </a>
         </div>
       } @else {
         @if (hl === null && !blob.truncated) {
@@ -156,19 +234,19 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
         } @else {
           <div className="flex overflow-x-auto">
             <div
-              className="sticky left-0 z-10 shrink-0 select-none border-r border-border bg-muted/40 font-mono text-[14px] leading-5 text-muted-foreground"
+              className="sticky left-0 z-10 shrink-0 select-none border-r border-border bg-muted/50 py-3 font-mono text-[12px] leading-5 text-muted-foreground"
               aria-label="Line numbers"
             >
               @for (const n of lineNums; key n) {
                 const wash =
                   range && n >= range.start && n <= range.end
-                    ? "bg-primary/10 text-foreground"
+                    ? "bg-primary/15 text-foreground"
                     : "";
                 <button
                   type="button"
                   id={`L${n}` as string}
                   className={
-                    (`block min-w-[3rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string)
+                    (`block h-5 min-w-[3.25rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string)
                   }
                   onClick={() => goLine(n)}
                   aria-label={`Line ${n}`}
@@ -178,9 +256,10 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
               }
             </div>
             <div
-              className="min-w-0 flex-1 overflow-x-auto font-mono text-[14px] leading-5 [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-3 [&_code]:font-mono"
+              className="blob-code min-w-0 flex-1 overflow-x-auto py-3 font-mono text-[12px] leading-5 [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-0 [&_pre]:leading-5 [&_code]:block [&_code]:font-mono [&_code]:leading-5 [&_code]:px-3"
               dangerouslySetInnerHTML={{
-                __html: (hl ?? `<pre><code>${escapeHtml(text)}</code></pre>`) as string,
+                __html: (hl ??
+                  `<pre><code>${escapeHtml(text)}</code></pre>`) as string,
               }}
             />
           </div>

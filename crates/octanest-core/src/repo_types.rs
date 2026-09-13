@@ -57,12 +57,18 @@ pub struct RepoCreateDefaults {
     pub gitignores: Vec<RepoTemplateOption>,
 }
 
-/// Select option for stack / gitignore pickers.
+/// Catalog option for stack / gitignore pickers (modal cards on `/new`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoTemplateOption {
     pub id: String,
     pub label: String,
     pub group: String,
+    /// Short human description shown in the picker modal.
+    pub description: String,
+    /// When set on a stack pack, `/new` auto-selects this gitignore and create
+    /// seeds it unless the client sends an explicit gitignore (including `"none"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_gitignore: Option<String>,
 }
 
 /// Public repository metadata returned over RPC.

@@ -26,6 +26,11 @@ struct CatalogEntry {
     id: String,
     label: String,
     group: String,
+    #[serde(default)]
+    description: String,
+    /// Stack packs only — recommended `.gitignore` catalog id.
+    #[serde(default)]
+    default_gitignore: Option<String>,
 }
 
 fn is_safe_id(id: &str) -> bool {
@@ -61,7 +66,7 @@ fn none_like(v: &Option<String>) -> bool {
     }
 }
 
-/// List stack packs for `/new` Select (grouped by `group`).
+/// List stack packs for `/new` picker modal (grouped by `group`).
 pub fn list_stacks() -> Result<Vec<RepoTemplateOption>, AppError> {
     let file = ASSETS
         .get_file("stack-presets/catalog.json")
@@ -79,11 +84,13 @@ pub fn list_stacks() -> Result<Vec<RepoTemplateOption>, AppError> {
             id: p.id,
             label: p.label,
             group: p.group,
+            description: p.description,
+            default_gitignore: p.default_gitignore,
         })
         .collect())
 }
 
-/// List gitignore templates for `/new` Select.
+/// List gitignore templates for `/new` picker modal.
 pub fn list_gitignores() -> Result<Vec<RepoTemplateOption>, AppError> {
     let file = ASSETS
         .get_file("gitignore/catalog.json")
@@ -101,6 +108,8 @@ pub fn list_gitignores() -> Result<Vec<RepoTemplateOption>, AppError> {
             id: p.id,
             label: p.label,
             group: p.group,
+            description: p.description,
+            default_gitignore: None,
         })
         .collect())
 }
@@ -215,6 +224,42 @@ fn load_license(license_id: &str) -> Result<Vec<u8>, AppError> {
     Ok(stub.into_bytes())
 }
 
+/// Look up a stack pack's recommended gitignore id (if any).
+fn stack_default_gitignore(stack_id: &str) -> Result<Option<String>, AppError> {
+    let packs = list_stacks()?;
+    Ok(packs
+        .into_iter()
+        .find(|p| p.id == stack_id)
+        .and_then(|p| p.default_gitignore))
+}
+
+/// Resolve which gitignore to seed.
+/// - Explicit id → that template
+/// - Explicit `"none"` / empty → none (even when the stack has a default)
+/// - Omitted (`None`) + stack with `default_gitignore` → stack default
+fn resolve_gitignore_id(
+    stack_id: &Option<String>,
+    gitignore_id: &Option<String>,
+) -> Result<Option<String>, AppError> {
+    match gitignore_id {
+        Some(raw) => {
+            let t = raw.trim();
+            if t.is_empty() || t.eq_ignore_ascii_case("none") {
+                Ok(None)
+            } else {
+                Ok(Some(t.to_string()))
+            }
+        }
+        None => {
+            if none_like(stack_id) {
+                Ok(None)
+            } else {
+                stack_default_gitignore(stack_id.as_ref().unwrap().trim())
+            }
+        }
+    }
+}
+
 /// Assemble files for the initial commit. Empty when all template pickers are none (ASSUME Q2).
 pub fn assemble_seed_files(
     stack_id: &Option<String>,
@@ -230,9 +275,8 @@ pub fn assemble_seed_files(
         }
     }
 
-    if !none_like(gitignore_id) {
-        let id = gitignore_id.as_ref().unwrap().trim();
-        map.insert(".gitignore".into(), load_gitignore(id)?);
+    if let Some(id) = resolve_gitignore_id(stack_id, gitignore_id)? {
+        map.insert(".gitignore".into(), load_gitignore(&id)?);
     }
 
     if !none_like(license_id) {
@@ -279,5 +323,41 @@ mod tests {
         assert!(paths.contains(&"Cargo.toml"));
         assert!(paths.contains(&"LICENSE"));
         assert!(paths.contains(&".gitignore"));
+    }
+
+    #[test]
+    fn stack_alone_seeds_default_gitignore() {
+        let files = assemble_seed_files(&Some("rust".into()), &None, &None).unwrap();
+        let paths: Vec<_> = files.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(paths.contains(&".gitignore"));
+        assert!(paths.contains(&"Cargo.toml"));
+    }
+
+    #[test]
+    fn explicit_none_skips_stack_default_gitignore() {
+        let files =
+            assemble_seed_files(&Some("rust".into()), &None, &Some("none".into())).unwrap();
+        let paths: Vec<_> = files.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(paths.contains(&"Cargo.toml"));
+        assert!(!paths.contains(&".gitignore"));
+    }
+
+    #[test]
+    fn stacks_with_defaults_point_at_known_gitignores() {
+        let known: std::collections::HashSet<_> = list_gitignores()
+            .unwrap()
+            .into_iter()
+            .map(|g| g.id)
+            .collect();
+        for stack in list_stacks().unwrap() {
+            if let Some(gi) = stack.default_gitignore {
+                assert!(
+                    known.contains(&gi),
+                    "stack {} default_gitignore {} missing from catalog",
+                    stack.id,
+                    gi
+                );
+            }
+        }
     }
 }

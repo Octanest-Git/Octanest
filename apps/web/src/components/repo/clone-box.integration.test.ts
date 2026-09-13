@@ -24,7 +24,7 @@ beforeEach(() => {
 async function openCloneMenu() {
   fireEvent.click(screen.getByRole("button", { name: "Clone or download" }));
   await waitFor(() => {
-    expect(screen.getByText("HTTPS")).toBeInTheDocument();
+    expect(screen.getByText("Clone with HTTPS")).toBeInTheDocument();
   });
 }
 
@@ -46,9 +46,9 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
     expect(code).toHaveTextContent(httpsUrl);
     expect(code.className).toMatch(/truncate/);
 
-    expect(
-      screen.getByRole("button", { name: "Copy HTTPS URL" }),
-    ).toBeInTheDocument();
+    const copyBtn = screen.getByRole("button", { name: "Copy HTTPS URL" });
+    expect(copyBtn).toBeInTheDocument();
+    expect(copyBtn.querySelector("svg")).not.toBeNull();
 
     expect(
       screen.getByText("SSH cloning arrives in a later phase."),

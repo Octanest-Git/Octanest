@@ -1,20 +1,26 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
+import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 type RepoChromeProps = {
   repo: RepoPublic;
   active: "code" | "commits" | "branches" | "tags" | "settings";
-  /** When true, show Settings nav (owner surfaces). */
+  /** Force Settings nav (e.g. settings page). Owners also see it via session. */
   showSettings?: boolean;
 };
 
-/** Title row + Code/Commits/Branches/Tags link-row (Issues/PRs omitted). */
+/** Title row + Code/Commits/Branches/Tags/(Settings) link-row. Issues/PRs omitted until later phases. */
 export function RepoChrome({
   repo,
   active,
   showSettings = false,
 }: RepoChromeProps) @{
+  const { user } = useChromeAccountState();
+  const isOwner =
+    !!user?.username && user.username === repo.owner_username;
+  const settingsVisible = showSettings || isOwner;
+
   const owner = repo.owner_username;
   const name = repo.name;
   const base = `/${owner}/${name}`;
@@ -84,7 +90,7 @@ export function RepoChrome({
       >
         Tags
       </a>
-      @if (showSettings) {
+      @if (settingsVisible) {
         <a
           href={settingsHref as string}
           className={navClass(active === "settings") as string}

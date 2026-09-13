@@ -15,7 +15,7 @@ import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { blameHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
+import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 
 export const Route = createFileRoute("/$owner/$repo/blob/$")({
   component: RepoBlobPage,
@@ -129,7 +129,7 @@ export function RepoBlobPage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />
   } @else {
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-8">
       @if (phase.kind === "loading") {
         <div className="flex flex-col gap-4" aria-busy="true">
           <Skeleton className="h-8 w-64" />
@@ -143,7 +143,7 @@ export function RepoBlobPage() @{
         } @else {
           <>
             <RepoChrome repo={phase.repo} active="code" />
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
               <RefSelect
                 owner={owner}
                 repo={repoName}
@@ -152,23 +152,13 @@ export function RepoBlobPage() @{
                 pathUnderRef={phase.path}
                 mode="blob"
               />
+              <PathBreadcrumb
+                owner={owner}
+                repo={repoName}
+                refName={phase.refName}
+                path={phase.path}
+              />
             </div>
-            <PathBreadcrumb
-              owner={owner}
-              repo={repoName}
-              refName={phase.refName}
-              path={phase.path}
-            />
-            <p className="mb-3 text-[14px]">
-              <a
-                href={
-                  blameHref(owner, repoName, phase.refName, phase.path) as string
-                }
-                className="text-primary no-underline hover:underline"
-              >
-                Blame
-              </a>
-            </p>
             <BlobViewer owner={owner} repo={repoName} blob={phase.blob} />
           </>
         }

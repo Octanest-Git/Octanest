@@ -183,6 +183,8 @@ export type RepoTemplateOption = {
   id: string;
   label: string;
   group: string;
+  description: string;
+  default_gitignore?: string | null;
 };
 
 export type RepoCreateDefaults = {

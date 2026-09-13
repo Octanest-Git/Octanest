@@ -7,6 +7,7 @@ import type {
   RepoPublic,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { DiffPatch } from "@/components/repo/diff-patch";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -152,17 +153,11 @@ export function RepoCommitPage() @{
             } @else {
               <div className="flex flex-col gap-6">
                 @for (const f of phase.commit.files; key f.path) {
-                  <section className="overflow-hidden border border-border">
-                    <h3 className="border-b border-border bg-muted/40 px-3 py-2 font-mono text-[14px] text-foreground">
-                      {f.path as string}
-                      <span className="ml-2 text-muted-foreground">
-                        ({f.status as string})
-                      </span>
-                    </h3>
-                    <pre className="overflow-x-auto p-3 font-mono text-[14px] leading-[1.45] text-foreground">
-                      {f.patch as string}
-                    </pre>
-                  </section>
+                  <DiffPatch
+                    path={f.path as string}
+                    status={f.status as string}
+                    patch={f.patch as string}
+                  />
                 }
               </div>
             }

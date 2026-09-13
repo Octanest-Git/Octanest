@@ -15,18 +15,26 @@ export const authBootstrapQueryKey = ["auth", "bootstrapStatus"] as const;
 export const authProviderConfigQueryKey = ["auth", "providerConfig"] as const;
 export const adminAuthSettingsQueryKey = ["admin", "auth", "getSettings"] as const;
 
-/** Soft session read — unauthenticated → `null` (shared chrome / banner cache). */
+/** Soft session read — unauthenticated / pre-setup → `null` (shared chrome / banner cache). */
 export function authSessionQueryOptions() {
   return queryOptions({
     queryKey: authMeQueryKey,
     queryFn: async (): Promise<UserPublic | null> => {
       const res = await apiClient.auth.me();
       if (!res.ok) {
-        if (res.error.code === "auth.unauthenticated") return null;
+        // Expected anonymous / lock states — never throw (throws → Query remount refetch spam).
+        if (
+          res.error.code === "auth.unauthenticated" ||
+          res.error.code === "auth.setup_required"
+        ) {
+          return null;
+        }
         throw new Error(`${res.error.code}: ${res.error.message}`);
       }
       return res.data;
     },
+    retry: false,
+    staleTime: 30_000,
   });
 }
 
@@ -40,8 +48,16 @@ export function authBootstrapQueryOptions() {
       }
       return res.data;
     },
+    retry: false,
+    staleTime: 30_000,
   });
 }
+
+/** Fail-closed signup flag when locked or anonymous config unavailable. */
+const PROVIDER_CONFIG_LOCKED: ProviderConfigPublic = {
+  mode: "local",
+  allow_signup: false,
+};
 
 export function authProviderConfigQueryOptions() {
   return queryOptions({
@@ -49,10 +65,15 @@ export function authProviderConfigQueryOptions() {
     queryFn: async (): Promise<ProviderConfigPublic> => {
       const res = await apiClient.auth.providerConfig();
       if (!res.ok) {
+        if (res.error.code === "auth.setup_required") {
+          return PROVIDER_CONFIG_LOCKED;
+        }
         throw new Error(`${res.error.code}: ${res.error.message}`);
       }
       return res.data;
     },
+    retry: false,
+    staleTime: 30_000,
   });
 }
 

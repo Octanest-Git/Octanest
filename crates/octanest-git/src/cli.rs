@@ -378,8 +378,13 @@ impl GitBackend for CliGitBackend {
             return Err(GitError::InvalidArg("commit message contains NUL".into()));
         }
 
-        let bare_str = bare_path.to_str().ok_or_else(|| {
-            GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_path.display()))
+        // Relative bare paths (e.g. default OCTANEST_REPOS_DIR=var/repos) must be
+        // absolutized: push runs with `-C` in a temp worktree, so git would otherwise
+        // resolve `origin` relative to /tmp/... and fail with "does not appear to be a
+        // git repository".
+        let bare_abs = absolute_path(bare_path)?;
+        let bare_str = bare_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
         })?;
 
         let tmp = tempfile::tempdir().map_err(GitError::Io)?;
@@ -939,6 +944,15 @@ impl GitBackend for CliGitBackend {
     }
 }
 
+/// Resolve `path` against the process cwd when relative (seed push remote safety).
+fn absolute_path(path: &Path) -> Result<PathBuf, GitError> {
+    if path.is_absolute() {
+        return Ok(path.to_path_buf());
+    }
+    let cwd = std::env::current_dir().map_err(GitError::Io)?;
+    Ok(cwd.join(path))
+}
+
 /// Reject absolute paths and `..` components (T-07-09).
 fn safe_worktree_path(work: &Path, rel: &str) -> Result<PathBuf, GitError> {
     let rel = rel.trim_start_matches('/');
@@ -969,6 +983,39 @@ fn safe_worktree_path(work: &Path, rel: &str) -> Result<PathBuf, GitError> {
 mod tests {
     use super::*;
     use crate::backend::{ArchiveFormat, GitBackend, GitError, TreeEntryKind};
+
+    #[test]
+    fn absolute_path_keeps_absolute_and_joins_relative() {
+        let abs = PathBuf::from("/var/repos/x.git");
+        assert_eq!(absolute_path(&abs).unwrap(), abs);
+        let rel = PathBuf::from("var/repos/x.git");
+        let joined = absolute_path(&rel).unwrap();
+        assert!(joined.is_absolute());
+        assert!(joined.ends_with("var/repos/x.git"));
+    }
+
+    #[tokio::test]
+    async fn seed_commit_works_with_relative_bare_path() {
+        let root = tempfile::tempdir().unwrap();
+        let prev = std::env::current_dir().unwrap();
+        std::env::set_current_dir(root.path()).unwrap();
+        let bare = PathBuf::from("relative-bare.git");
+        let git = CliGitBackend::new();
+        let result = async {
+            git.init_bare(&bare, "main").await?;
+            git.seed_commit(
+                &bare,
+                "main",
+                "seed",
+                &[("README.md".into(), b"# hi\n".to_vec())],
+            )
+            .await
+        }
+        .await;
+        let _ = std::env::set_current_dir(&prev);
+        result.expect("relative bare seed");
+        assert!(root.path().join("relative-bare.git").join("HEAD").exists());
+    }
 
     #[tokio::test]
     async fn ls_tree_returns_dirs_files_and_gitlink_modes() {

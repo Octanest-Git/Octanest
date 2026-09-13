@@ -50,6 +50,15 @@ impl AppState {
         let repos_dir = std::env::var("OCTANEST_REPOS_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|_| PathBuf::from("var/repos"));
+        // Absolutize so git ops that run in a temp `-C` worktree (seed push) still
+        // resolve the bare remote correctly when OCTANEST_REPOS_DIR is relative.
+        let repos_dir = if repos_dir.is_absolute() {
+            repos_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(repos_dir)
+        };
         Self {
             db,
             email: Arc::new(RwLock::new(email)),

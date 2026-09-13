@@ -153,6 +153,20 @@ export function rawBlobUrl(
     .join("/")}`;
 }
 
+/** Human-readable byte size for blob headers (GitHub-style). */
+export function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "0 Bytes";
+  if (bytes < 1024) return `${Math.round(bytes)} Bytes`;
+  if (bytes < 1024 * 1024) {
+    const kb = bytes / 1024;
+    const rounded = kb < 10 ? Math.round(kb * 10) / 10 : Math.round(kb);
+    return `${rounded} KB`;
+  }
+  const mb = bytes / (1024 * 1024);
+  const rounded = mb < 10 ? Math.round(mb * 10) / 10 : Math.round(mb);
+  return `${rounded} MB`;
+}
+
 export function isImagePath(filePath: string): boolean {
   return /\.(png|jpe?g|gif|webp|svg|ico|bmp)$/i.test(filePath);
 }
