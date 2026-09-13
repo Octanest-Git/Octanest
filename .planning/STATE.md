@@ -1,13 +1,13 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 07
-current_phase_name: Git Repos & Browse
-status: audited
+current_phase: 08
+current_phase_name: Git HTTPS & PATs
+status: context_ready
 stopped_at: Phase 08 context gathered
 last_updated: "2026-09-13T16:29:54.748Z"
 last_activity: 2026-09-13
-last_activity_desc: validate-phase 01/02/03 → status validated; rpc-gen SoT restore; 03-VALIDATION created
+last_activity_desc: "08-CONTEXT.md gathered (GIT-02/11; classic+FG PATs; Smart HTTP)"
 state_head: 04e8f2fee89cc300035d18f4847f353144773170
 progress:
   total_phases: 22
@@ -24,18 +24,18 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phases 01–07 Nyquist validated; continue Phase 08 (Git HTTPS & PATs)
+**Current focus:** Phase 08 — Git HTTPS & PATs (context ready)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — complete; Nyquist 01–03 backfilled
-Plan: Phase 07 22/22; validate-phase 01·02·03 done 2026-09-13
-Status: audited (milestone gaps_found for VERIFICATION.md on 01–03 still open; Nyquist now COMPLIANT for 01–07)
-Last activity: 2026-09-13 — `/gsd-validate-phase 01 · 02 · 03` → all `status: validated`
+Phase: 08 (Git HTTPS & PATs) — CONTEXT gathered
+Plan: not started — next `/gsd-plan-phase 08`
+Status: context_ready
+Last activity: 2026-09-13 — `/gsd-discuss-phase 08` → `08-CONTEXT.md`
 
-Progress: Nyquist COMPLIANT phases 01–07; VERIFICATION.md still missing for 01–03 (separate from Nyquist)
+Progress: Phases 01–07 shipped + Nyquist validated; Phase 08 decisions locked for planning
 
-See also: `01-VALIDATION.md` · `02-VALIDATION.md` · `03-VALIDATION.md` · `v1.0-MILESTONE-AUDIT.md`
+See also: `phases/08-git-https-pats/08-CONTEXT.md` · `08-DISCUSSION-LOG.md`
 
 ## Performance Metrics
 
