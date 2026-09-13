@@ -1,64 +1,89 @@
 ---
 phase: 08-git-https-pats
-fixed_at: 2026-09-13T20:19:25Z
+fixed_at: 2026-09-13T20:30:00Z
 review_path: .planning/phases/08-git-https-pats/08-REVIEW.md
-iteration: 1
-findings_in_scope: 4
-fixed: 4
+iteration: 2
+findings_in_scope: 7
+fixed: 3
+already_fixed: 4
 skipped: 0
 status: all_fixed
 ---
 
 # Phase 08: Code Review Fix Report
 
-**Fixed at:** 2026-09-13T20:19:25Z
+**Fixed at:** 2026-09-13T20:30:00Z
 **Source review:** `.planning/phases/08-git-https-pats/08-REVIEW.md`
-**Iteration:** 1
+**Iteration:** 2 (`--fix --all`)
 
 **Summary:**
-- Findings in scope: 4 (Critical + Warning; Info skipped per `critical_warning`)
-- Fixed: 4
+- Findings in scope: 7 (Critical + Warning + Info)
+- Fixed this pass: 3 (IN-01, IN-02, IN-03)
+- Already fixed (prior pass): 4 (WR-01..WR-04)
 - Skipped: 0
 
 **Verification environment:** Main checkout (`workflow.use_worktrees=false`). Gates ran in the main working tree, not an isolated worktree.
 
 **Targeted tests:** `cargo nextest run -p octanest-api --locked --test pat_rpc --test git_smart_http` — 18 passed.
 
-## Fixed Issues
+## Already Fixed (prior iteration)
+
+Verified still present in tree; not re-applied.
 
 ### WR-01: Fine-grained PAT create is not transactional
 
-**Files modified:** `crates/octanest-db/src/pats.rs`
+**Files:** `crates/octanest-db/src/pats.rs`
 **Commit:** `3f416f7`
-**Applied fix:** Rewrote `create` so PAT insert + `personal_access_token_repos` links run inside a per-dialect sqlx transaction (`begin` → inserts → `commit`). Removed the non-transactional `insert_repo_links` helper. Link failures roll back the PAT row.
+**Status:** `already_fixed`
+**Verified:** `create` still uses per-dialect `begin` → insert PAT + repo links → `commit`.
 
 ### WR-02: Duplicate `repository_ids` can orphan a fine-grained PAT
 
-**Files modified:** `crates/octanest-api/src/pat/mod.rs`
+**Files:** `crates/octanest-api/src/pat/mod.rs`
 **Commit:** `69fde82`
-**Applied fix:** After ownership checks in `create_fine_grained`, skip pushing a repo id already present in `owned` (order-preserving dedupe) so composite PK collisions cannot fail create after the PAT row exists.
+**Status:** `already_fixed`
+**Verified:** Order-preserving dedupe after ownership checks still present.
 
 ### WR-03: Failed-auth IP identity uses first `X-Forwarded-For` hop (spoofable)
 
-**Files modified:** `crates/octanest-api/src/routes/git_smart_http.rs`, `docs/CONFIGURATION.md`, `docs/API.md`
+**Files:** `crates/octanest-api/src/routes/git_smart_http.rs`, `docs/CONFIGURATION.md`, `docs/API.md`
 **Commit:** `57daaba`
-**Applied fix:** `client_ip` now takes the rightmost non-empty XFF hop. Documented trusted-proxy / sanitize-forwarded-headers requirement in CONFIGURATION (rate-limit section) and API rate-limits section.
+**Status:** `already_fixed`
+**Verified:** `client_ip` still takes rightmost non-empty XFF hop.
 
 ### WR-04: No server-side `expires_at` validation; UI mislabels unparseable expiry
 
-**Files modified:** `crates/octanest-api/src/pat/mod.rs`, `apps/web/src/components/settings/pat-list.tsrx`
+**Files:** `crates/octanest-api/src/pat/mod.rs`, `apps/web/src/components/settings/pat-list.tsrx`
 **Commit:** `ce30698`
-**Status:** `fixed: requires human verification` (logic: RFC3339 + future-instant gate)
-**Applied fix:** Added `validate_expires_at` used by classic and fine-grained create (blank → None; invalid RFC3339 / past → `rpc.bad_input`). UI `formatExpiry` maps NaN to `"Invalid expiration"`; `isExpired` treats NaN as expired so the Expired badge shows.
+**Status:** `already_fixed`
+**Verified:** `validate_expires_at` still gates create; UI still maps NaN to `"Invalid expiration"`.
+
+## Fixed Issues (this pass)
+
+### IN-01: UI handles `pat.repos_required` but API never emits it
+
+**Files modified:** `crates/octanest-api/src/pat/mod.rs`, `crates/octanest-api/tests/pat_rpc.rs`, `docs/API.md`
+**Commit:** `a4aa1ce`
+**Applied fix:** Empty fine-grained `selected` now returns `pat.repos_required` (matches existing UI branch). Foreign/invalid repo ids still use `pat.invalid_scope`. Updated empty-selected RPC test and API docs / error-code table.
+
+### IN-02: List `token_prefix` is brand prefix only (no secret fingerprint)
+
+**Files modified:** `crates/octanest-api/src/pat/mod.rs`, `crates/octanest-api/tests/pat_rpc.rs`
+**Commit:** `557dd17`
+**Applied fix:** Classic and fine-grained create store `token_prefix` as brand prefix + first 8 hex chars of the secret (not the hash), e.g. `octanest_pat_a1b2c3d4`. Updated create/list assertions to require prefix length and plaintext starts-with fingerprint.
+
+### IN-03: Session-cookie ignore test does not cover private + cookie → 401
+
+**Files modified:** `crates/octanest-api/tests/git_smart_http.rs`
+**Commit:** `57c158b`
+**Applied fix:** Extended `git_smart_session_cookie_ignored_as_anon` to create a private repo and assert cookie-only `info/refs` → 401 + `WWW-Authenticate` Basic realm.
 
 ## Skipped Issues
 
-None — all in-scope findings were fixed.
-
-Info findings (IN-01, IN-02, IN-03) were out of scope for this run.
+None — all in-scope findings were fixed or already fixed.
 
 ---
 
-_Fixed: 2026-09-13T20:19:25Z_
+_Fixed: 2026-09-13T20:30:00Z_
 _Fixer: Claude (gsd-code-fixer)_
-_Iteration: 1_
+_Iteration: 2_
