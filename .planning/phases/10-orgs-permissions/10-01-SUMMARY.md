@@ -112,7 +112,7 @@ Each task was committed atomically:
 
 1. **Task 1: Web Wave 0 stubs for orgs UI surfaces** - `b414571` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `d789f73` (docs: complete plan)
 
 _Note: Wave 0 is RED-only by design — GREEN belongs to 10-10 / 10-11 / 10-13._
 
