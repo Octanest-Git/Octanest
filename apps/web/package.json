@@ -21,6 +21,7 @@
     "@octanejs/tanstack-query": "^0.1.52",
     "@octanejs/tanstack-router": "^0.1.53",
     "@octanejs/tanstack-start": "^0.1.44",
+    "@octanejs/zustand": "^0.1.52",
     "@octanest/api-client": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

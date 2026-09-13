@@ -82,6 +82,8 @@ services:
       PORT: "3000"
       # SSR Cookie-forward RPCs (bootstrap / session gate) — not 127.0.0.1 inside the container.
       OCTANEST_API_ORIGIN: http://api:8080
+      # Browser-facing origin for SSR clone URLs (Traefik Host(localhost)).
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
     depends_on:
       api:
         condition: service_healthy

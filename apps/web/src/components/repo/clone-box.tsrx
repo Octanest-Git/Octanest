@@ -8,6 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { httpsCloneUrl } from "@/lib/public-origin";
+import { useRepoStore } from "@/lib/repo-store";
 
 type CloneBoxProps = {
   owner: string;
@@ -16,13 +18,24 @@ type CloneBoxProps = {
   refName: string;
   /** When true, ZIP / tar.gz items are disabled (GIT-07 empty edge). */
   empty: boolean;
+  /** Optional override for tests; otherwise SSR layout store origin. */
+  publicOrigin?: string;
 };
 
 /** Code clone / download dropdown (D-22 / D-29 / E12). */
-export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const httpsUrl = `${origin}/${owner}/${repo}.git`;
+export function CloneBox({
+  owner,
+  repo,
+  refName,
+  empty,
+  publicOrigin: publicOriginProp,
+}: CloneBoxProps) @{
+  const storeOrigin = useRepoStore((s) => s.publicOrigin);
+  const httpsUrl = httpsCloneUrl(
+    publicOriginProp || storeOrigin,
+    owner,
+    repo,
+  );
   const zipHref = `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.zip`;
   const tarHref = `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.tar.gz`;
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
@@ -51,24 +64,37 @@ export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
       Code
       <ChevronDown aria-hidden size={16} className="text-muted-foreground" />
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-80 p-3">
+    <DropdownMenuContent
+      align="end"
+      className="w-[min(100vw-2rem,32rem)] p-3"
+    >
       <div className="px-1 py-1">
         <p className="text-[14px] font-medium text-foreground">Clone with HTTPS</p>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
           Use this URL from any Git client.
         </p>
         <div className="mt-3 flex items-stretch gap-2">
-          <code
-            className="block min-w-0 flex-1 truncate rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[13px] leading-none text-foreground"
+          <input
+            type="text"
+            readOnly
+            value={httpsUrl as string}
+            aria-label="HTTPS clone URL"
             title={httpsUrl as string}
-          >
-            {httpsUrl as string}
-          </code>
+            onFocus={(e) => {
+              const el = e.currentTarget;
+              el.select();
+              // select() can scroll long URLs so the scheme disappears — pin start.
+              requestAnimationFrame(() => {
+                el.scrollLeft = 0;
+              });
+            }}
+            className="min-w-0 flex-1 rounded-md border border-border bg-muted/40 px-2.5 py-2 font-mono text-[13px] leading-none text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="shrink-0"
+            className="h-auto shrink-0 border border-border hover:bg-muted"
             aria-label="Copy HTTPS URL"
             title={(copyState === "copied" ? "Copied" : "Copy HTTPS URL") as string}
             onClick={() => void copyHttps()}
@@ -78,13 +104,13 @@ export function CloneBox({ owner, repo, refName, empty }: CloneBoxProps) @{
               size={16}
               className={(copyState === "copied"
                 ? "hidden"
-                : "text-secondary") as string}
+                : "text-foreground") as string}
             />
             <Check
               aria-hidden
               size={16}
               className={(copyState === "copied"
-                ? "text-secondary"
+                ? "text-foreground"
                 : "hidden") as string}
             />
           </Button>

@@ -144,10 +144,9 @@ export function rawBlobUrl(
   ref: string,
   path: string,
 ): string {
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
+  // Same-origin relative path — SSR-safe (no window / Host needed).
   const rel = path.replace(/^\/+/, "");
-  return `${origin}/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/raw/${encodeURIComponent(ref)}/${rel
+  return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/raw/${encodeURIComponent(ref)}/${rel
     .split("/")
     .map(encodeURIComponent)
     .join("/")}`;

@@ -341,7 +341,12 @@ pub async fn confirm_admin_credentials(
         user.display_name.clone()
     };
 
-    ctx.db
+    if username != user.username {
+        crate::git::rename_owner_repos_dir(&ctx.repos_dir, &user.username, &username).await?;
+    }
+
+    if let Err(e) = ctx
+        .db
         .update_user_profile(
             &user.id,
             &display_name,
@@ -350,7 +355,13 @@ pub async fn confirm_admin_credentials(
             user.avatar_path.as_deref(),
         )
         .await
-        .map_err(db_err)?;
+    {
+        if username != user.username {
+            let _ =
+                crate::git::rename_owner_repos_dir(&ctx.repos_dir, &username, &user.username).await;
+        }
+        return Err(db_err(e));
+    }
 
     let updated = ctx
         .db

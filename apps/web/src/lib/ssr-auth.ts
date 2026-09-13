@@ -1,6 +1,10 @@
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
 import { createClient, type OctanestClient } from "@octanest/api-client";
+import {
+  resolveThemeForSsr,
+  themePreferenceFromCookieHeader,
+} from "@/lib/theme";
 
 /** API origin for SSR Cookie-forward RPCs — never the browser origin during SSR. */
 function ssrApiOrigin(): string {
@@ -62,6 +66,40 @@ export const fetchProviderConfig = createServerFn({ method: "GET" }).handler(
   async () => {
     const client = createSsrClient(incomingCookie());
     return client.auth.providerConfig();
+  },
+);
+
+/** SSR: repo.listMine with Cookie forward (signed-in home). */
+export const fetchRepoListMine = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.listMine();
+  },
+);
+
+/** SSR: user.get_profile with Cookie forward. */
+export const fetchUserGetProfile = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.user.getProfile();
+  },
+);
+
+/** SSR: system.health (status page). */
+export const fetchSystemHealth = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.system.health();
+  },
+);
+
+/** SSR: resolved Shiki theme (cookie + Client Hints). */
+export const resolveSsrHighlightTheme = createServerFn({ method: "GET" }).handler(
+  async (): Promise<"github-light" | "github-dark"> => {
+    const pref = themePreferenceFromCookieHeader(incomingCookie());
+    const ch = getRequestHeader("sec-ch-prefers-color-scheme");
+    const resolved = resolveThemeForSsr(pref, ch);
+    return resolved === "dark" ? "github-dark" : "github-light";
   },
 );
 

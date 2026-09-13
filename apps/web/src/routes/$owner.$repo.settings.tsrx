@@ -1,10 +1,10 @@
 import {
   createFileRoute,
+  useLoaderData,
   useParams,
 } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
-import type { RepoPublic, RepoVisibility } from "@octanest/api-client";
-import { useEffect, useState } from "octane";
+import type { RepoVisibility } from "@octanest/api-client";
+import { useState } from "octane";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import {
@@ -19,10 +19,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
+import {
+  type RepoLayoutLoaderData,
+  useRepoStore,
+} from "@/lib/repo-store";
 import { toastSuccess } from "@/lib/toast";
-import { authSessionQueryOptions } from "@/lib/session-queries";
 
 export const Route = createFileRoute("/$owner/$repo/settings")({
   component: RepoSettingsPage,
@@ -41,13 +43,7 @@ const PRIVATE_HELPER =
 const SOFT_DELETE_BODY =
   "Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm.";
 
-type Phase =
-  | { kind: "loading" }
-  | { kind: "not_found" }
-  | { kind: "error"; message: string }
-  | { kind: "ready"; repo: RepoPublic };
-
-/** Owner-only visibility + soft-delete danger zone (D-26 / D-35). */
+/** Owner-only visibility + soft-delete — SSR from parent layout loader (D-26 / D-35). */
 export function RepoSettingsPage() @{
   const params = useParams({ from: "/$owner/$repo/settings" }) as {
     owner: string;
@@ -55,9 +51,23 @@ export function RepoSettingsPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const me = useQuery(authSessionQueryOptions());
-  const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [visibility, setVisibility] = useState<RepoVisibility>("public");
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as
+    | RepoLayoutLoaderData
+    | undefined;
+  const setRepo = useRepoStore((s) => s.setRepo);
+
+  const repo = layout?.repo ?? null;
+  const me = layout?.me ?? null;
+  const layoutError = layout?.status === "error" ? layout.message : "";
+  const isOwner = !!repo && !!me && me.id === repo.owner_id;
+  const showNotFound =
+    !layout ||
+    layout.status === "not_found" ||
+    (layout.status === "ok" && !!repo && !isOwner);
+
+  const [visibility, setVisibility] = useState<RepoVisibility>(
+    () => repo?.visibility ?? "public",
+  );
   const [visPending, setVisPending] = useState(false);
   const [visError, setVisError] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -65,49 +75,8 @@ export function RepoSettingsPage() @{
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setPhase({ kind: "loading" });
-      try {
-        const got = await apiClient.repo.get({ owner, name: repoName });
-        if (cancelled) return;
-        if (!got.ok) {
-          setPhase(
-            got.error.code === "repo.not_found"
-              ? { kind: "not_found" }
-              : {
-                  kind: "error",
-                  message: got.error.message || "Could not load repository.",
-                },
-          );
-          return;
-        }
-        setPhase({ kind: "ready", repo: got.data });
-        setVisibility(got.data.visibility);
-      } catch {
-        if (cancelled) return;
-        setPhase({ kind: "error", message: NETWORK_ERROR });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [owner, repoName]);
-
-  const isOwner =
-    phase.kind === "ready" &&
-    me.isSuccess &&
-    me.data !== null &&
-    me.data.id === phase.repo.owner_id;
-
-  // Non-owner (incl. anonymous) → identical 404 once session resolves.
-  const showNotFound =
-    phase.kind === "not_found" ||
-    (phase.kind === "ready" && me.isSuccess && !isOwner);
-
   async function saveVisibility() {
-    if (phase.kind !== "ready") return;
+    if (!repo) return;
     setVisError("");
     setVisPending(true);
     try {
@@ -117,17 +86,12 @@ export function RepoSettingsPage() @{
         visibility,
       });
       if (!res.ok) {
-        if (res.error.code === "repo.not_found") {
-          setPhase({ kind: "not_found" });
-          setVisPending(false);
-          return;
-        }
         setVisError(res.error.message || "Could not update visibility.");
         setVisPending(false);
         return;
       }
-      setPhase({ kind: "ready", repo: res.data });
       setVisibility(res.data.visibility);
+      setRepo(res.data);
       toastSuccess("Visibility updated.");
       setVisPending(false);
     } catch {
@@ -137,7 +101,7 @@ export function RepoSettingsPage() @{
   }
 
   async function submitDelete() {
-    if (phase.kind !== "ready") return;
+    if (!repo) return;
     setDeleteError("");
     setDeletePending(true);
     try {
@@ -158,102 +122,99 @@ export function RepoSettingsPage() @{
     }
   }
 
-  @if (phase.kind === "loading" || (phase.kind === "ready" && me.isPending)) {
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-6 h-40 w-full" />
-    </div>
-  } @else if (showNotFound) {
+  @if (showNotFound) {
     <RepoNotFound />
-  } @else if (phase.kind === "error") {
-    <div className="mx-auto max-w-lg px-4 py-16 text-center">
+  } @else if (layoutError) {
+    <div className="max-w-lg py-6 text-center">
       <p role="alert" className="text-[16px] text-destructive">
-        {phase.message as string}
+        {layoutError as string}
       </p>
     </div>
-  } @else if (phase.kind === "ready" && isOwner) {
-    <div className="mx-auto max-w-3xl px-4 py-10">
+  } @else if (repo && isOwner) {
+    <>
       <RepoChrome
-        repo={phase.repo}
+        repo={repo}
         active="settings"
         showSettings={true}
       />
 
-      <section className="mt-8 flex flex-col gap-4" aria-labelledby="vis-heading">
-        <h2
-          id="vis-heading"
-          className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-foreground"
-        >
-          Visibility
-        </h2>
-        <p className="text-[14px] text-muted-foreground">
-          Choose who can see this repository.
-        </p>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Visibility">
-          <Button
-            type="button"
-            variant={visibility === "public" ? "default" : "secondary"}
-            aria-pressed={visibility === "public"}
-            disabled={visPending}
-            onClick={() => setVisibility("public")}
+      <div className="max-w-3xl">
+        <section className="mt-8 flex flex-col gap-4" aria-labelledby="vis-heading">
+          <h2
+            id="vis-heading"
+            className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-foreground"
           >
-            Public
-          </Button>
-          <Button
-            type="button"
-            variant={visibility === "private" ? "default" : "secondary"}
-            aria-pressed={visibility === "private"}
-            disabled={visPending}
-            onClick={() => setVisibility("private")}
-          >
-            Private
-          </Button>
-        </div>
-        @if (visibility === "private") {
-          <p className="text-[14px] text-muted-foreground">{PRIVATE_HELPER as string}</p>
-        }
-        @if (visError) {
-          <p role="alert" className="text-[14px] text-destructive">
-            {visError as string}
+            Visibility
+          </h2>
+          <p className="text-[14px] text-muted-foreground">
+            Choose who can see this repository.
           </p>
-        }
-        <Button
-          type="button"
-          disabled={visPending || visibility === phase.repo.visibility}
-          onClick={() => void saveVisibility()}
-          className="w-full sm:w-auto"
-        >
-          {(visPending ? "Saving…" : "Save visibility") as string}
-        </Button>
-      </section>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Visibility">
+            <Button
+              type="button"
+              variant={visibility === "public" ? "default" : "secondary"}
+              aria-pressed={visibility === "public"}
+              disabled={visPending}
+              onClick={() => setVisibility("public")}
+            >
+              Public
+            </Button>
+            <Button
+              type="button"
+              variant={visibility === "private" ? "default" : "secondary"}
+              aria-pressed={visibility === "private"}
+              disabled={visPending}
+              onClick={() => setVisibility("private")}
+            >
+              Private
+            </Button>
+          </div>
+          @if (visibility === "private") {
+            <p className="text-[14px] text-muted-foreground">{PRIVATE_HELPER as string}</p>
+          }
+          @if (visError) {
+            <p role="alert" className="text-[14px] text-destructive">
+              {visError as string}
+            </p>
+          }
+          <Button
+            type="button"
+            disabled={visPending || visibility === repo.visibility}
+            onClick={() => void saveVisibility()}
+            className="w-full sm:w-auto"
+          >
+            {(visPending ? "Saving…" : "Save visibility") as string}
+          </Button>
+        </section>
 
-      <section
-        className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4"
-        aria-labelledby="danger-heading"
-      >
-        <h2
-          id="danger-heading"
-          className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-destructive"
+        <section
+          className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4"
+          aria-labelledby="danger-heading"
         >
-          Danger zone
-        </h2>
-        <p className="text-[14px] leading-[1.4] text-muted-foreground">
-          Soft-delete removes this repository from Octanest. Disk cleanup may run
-          later.
-        </p>
-        <Button
-          type="button"
-          variant="destructive"
-          className="w-full sm:w-auto"
-          onClick={() => {
-            setDeleteError("");
-            setConfirmName("");
-            setDeleteOpen(true);
-          }}
-        >
-          Delete repository
-        </Button>
-      </section>
+          <h2
+            id="danger-heading"
+            className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-destructive"
+          >
+            Danger zone
+          </h2>
+          <p className="text-[14px] leading-[1.4] text-muted-foreground">
+            Soft-delete removes this repository from Octanest. Disk cleanup may run
+            later.
+          </p>
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full sm:w-auto"
+            onClick={() => {
+              setDeleteError("");
+              setConfirmName("");
+              setDeleteOpen(true);
+            }}
+          >
+            Delete repository
+          </Button>
+        </section>
+      </div>
 
       <AlertDialog
         open={deleteOpen}
@@ -297,7 +258,7 @@ export function RepoSettingsPage() @{
               type="button"
               variant="destructive"
               disabled={
-                deletePending || confirmName.trim() !== phase.repo.name
+                deletePending || confirmName.trim() !== repo.name
               }
               onClick={() => void submitDelete()}
             >
@@ -306,6 +267,6 @@ export function RepoSettingsPage() @{
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   }
 }

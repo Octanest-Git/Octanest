@@ -2,8 +2,13 @@ import { Check, Copy, FileCode2 } from "@octanejs/lucide";
 import { useEffect, useEffectEvent, useState } from "octane";
 import type { RepoBlobResponse } from "@octanest/api-client";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { highlightCode, languageIdForPath } from "@/lib/highlight";
+import {
+  countCodeLines,
+  highlightCode,
+  languageIdForPath,
+  stripTrailingNewline,
+  type HighlightTheme,
+} from "@/lib/highlight";
 import {
   blameHref,
   formatFileSize,
@@ -19,6 +24,10 @@ type BlobViewerProps = {
   owner: string;
   repo: string;
   blob: RepoBlobResponse;
+  /** SSR Shiki HTML when available. */
+  highlightedHtml?: string | null;
+  /** Theme used for `highlightedHtml` — skip client re-highlight when it matches. */
+  highlightTheme?: HighlightTheme | null;
 };
 
 function fileBaseName(path: string): string {
@@ -30,9 +39,39 @@ function lineCountLabel(n: number): string {
   return n === 1 ? "1 line" : `${n} lines`;
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function plainCodeHtml(text: string): string {
+  return `<pre><code>${escapeHtml(stripTrailingNewline(text))}</code></pre>`;
+}
+
+function clientHighlightTheme(): HighlightTheme {
+  return resolveTheme(readThemePreference()) === "dark"
+    ? "github-dark"
+    : "github-light";
+}
+
 /** Syntax-highlighted blob with forge-style header, line numbers, #L permalinks (D-19, D-20). */
-export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
-  const [hl, setHl] = useState<string | null>(null);
+export function BlobViewer({
+  owner,
+  repo,
+  blob,
+  highlightedHtml = null,
+  highlightTheme = null,
+}: BlobViewerProps) @{
+  const text =
+    !blob.is_binary && blob.encoding === "utf-8" && blob.content
+      ? blob.content
+      : "";
+  const [hl, setHl] = useState<string | null>(() =>
+    highlightedHtml ?? (text ? plainCodeHtml(text) : null),
+  );
   const [range, setRange] = useState<{ start: number; end: number } | null>(
     null,
   );
@@ -40,16 +79,7 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
   const rawUrl = rawBlobUrl(owner, repo, blob.ref, blob.path);
   const blameUrl = blameHref(owner, repo, blob.ref, blob.path);
   const baseName = fileBaseName(blob.path);
-
-  const text =
-    !blob.is_binary && blob.encoding === "utf-8" && blob.content
-      ? blob.content
-      : "";
-  const rawLines = text.length > 0 ? text.split("\n") : [];
-  const lineCount =
-    rawLines.length > 0 && rawLines[rawLines.length - 1] === ""
-      ? rawLines.length - 1
-      : rawLines.length;
+  const lineCount = countCodeLines(text);
   const lineNums = Array.from({ length: lineCount }, (_, i) => i + 1);
 
   const syncHash = useEffectEvent(() => {
@@ -64,6 +94,12 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
   }, []);
 
   useEffect(() => {
+    if (highlightedHtml) {
+      setHl(highlightedHtml);
+    }
+  }, [highlightedHtml]);
+
+  useEffect(() => {
     if (
       blob.is_binary ||
       blob.truncated ||
@@ -73,22 +109,49 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
       setHl(null);
       return;
     }
+
     let cancelled = false;
-    (async () => {
-      const theme =
-        resolveTheme(readThemePreference()) === "dark"
-          ? "github-dark"
-          : "github-light";
+
+    async function run(force: boolean) {
+      const theme = clientHighlightTheme();
+      if (
+        !force &&
+        highlightedHtml &&
+        highlightTheme &&
+        theme === highlightTheme
+      ) {
+        return;
+      }
       const out = await highlightCode(blob.content ?? "", {
         lang: languageIdForPath(blob.path),
         theme,
       });
       if (!cancelled) setHl(out);
-    })();
+    }
+
+    void run(false);
+
+    const mo = new MutationObserver(() => {
+      void run(true);
+    });
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     return () => {
       cancelled = true;
+      mo.disconnect();
     };
-  }, [blob.content, blob.path, blob.is_binary, blob.truncated, blob.encoding]);
+  }, [
+    blob.content,
+    blob.path,
+    blob.is_binary,
+    blob.truncated,
+    blob.encoding,
+    highlightedHtml,
+    highlightTheme,
+  ]);
 
   useEffect(() => {
     if (!range || typeof document === "undefined") return;
@@ -225,13 +288,7 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
           </p>
         </div>
       } @else {
-        @if (hl === null && !blob.truncated) {
-          <div className="flex flex-col gap-2 p-4" aria-busy="true">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-4/5" />
-          </div>
-        } @else {
+        @if (!blob.truncated) {
           <div className="flex overflow-x-auto">
             <div
               className="sticky left-0 z-10 shrink-0 select-none border-r border-border bg-muted/50 py-3 font-mono text-[12px] leading-5 text-muted-foreground"
@@ -258,8 +315,7 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
             <div
               className="blob-code min-w-0 flex-1 overflow-x-auto py-3 font-mono text-[12px] leading-5 [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-0 [&_pre]:leading-5 [&_code]:block [&_code]:font-mono [&_code]:leading-5 [&_code]:px-3"
               dangerouslySetInnerHTML={{
-                __html: (hl ??
-                  `<pre><code>${escapeHtml(text)}</code></pre>`) as string,
+                __html: (hl ?? plainCodeHtml(text)) as string,
               }}
             />
           </div>
@@ -267,12 +323,4 @@ export function BlobViewer({ owner, repo, blob }: BlobViewerProps) @{
       }
     }
   </div>
-}
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
 }

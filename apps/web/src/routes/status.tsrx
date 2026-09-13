@@ -1,49 +1,58 @@
-import { createFileRoute } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
-import { systemHealthQueryOptions } from "@octanest/api-client";
+import {
+  createFileRoute,
+  useLoaderData,
+} from "@octanejs/tanstack-router";
+import type { HealthResponse, RpcResult } from "@octanest/api-client";
 import { StatusPageSkeleton } from "@/components/page-skeletons";
-import { apiClient } from "@/lib/api-client";
+import { fetchSystemHealth } from "@/lib/ssr-auth";
 
-export const Route = createFileRoute("/status")({
-  component: StatusPage,
-  head: () => ({ meta: [{ title: "Status · Octanest" }] }),
-});
-
-type Phase =
+export type StatusPhase =
   | { kind: "healthy"; version: string; database: string }
   | { kind: "unhealthy"; message: string }
   | { kind: "unreachable"; message: string };
 
-const UNREACHABLE: Phase = {
+const UNREACHABLE: StatusPhase = {
   kind: "unreachable",
   message:
     "Octanest couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again.",
 };
 
-const UNHEALTHY: Phase = {
+const UNHEALTHY: StatusPhase = {
   kind: "unhealthy",
   message:
     "The API reported an unhealthy state. Retry in a moment or check your Compose/API logs.",
 };
 
+/** Map `system.health` RPC result → status UI phase (exported for tests). */
+export function resolveStatusPhase(
+  res: RpcResult<HealthResponse>,
+): StatusPhase {
+  if (!res.ok) return UNREACHABLE;
+  if (res.data.status === "ok") {
+    return {
+      kind: "healthy",
+      version: res.data.version,
+      database: res.data.database,
+    };
+  }
+  return UNHEALTHY;
+}
+
+export const Route = createFileRoute("/status")({
+  component: StatusPage,
+  head: () => ({ meta: [{ title: "Status · Octanest" }] }),
+  loader: async (): Promise<StatusPhase> => {
+    try {
+      return resolveStatusPhase(await fetchSystemHealth());
+    } catch {
+      return UNREACHABLE;
+    }
+  },
+});
+
 /** Exported for integration tests. */
 export function StatusPage() @{
-  const health = useQuery(systemHealthQueryOptions(apiClient));
-
-  let phase: Phase | null = null;
-  if (health.isPending) {
-    phase = null;
-  } else if (health.isError || !health.data) {
-    phase = UNREACHABLE;
-  } else if (health.data.status === "ok") {
-    phase = {
-      kind: "healthy",
-      version: health.data.version,
-      database: health.data.database,
-    };
-  } else {
-    phase = UNHEALTHY;
-  }
+  const phase = useLoaderData({ from: "/status" }) as StatusPhase | undefined;
 
   @if (!phase) {
     <StatusPageSkeleton />
@@ -52,7 +61,8 @@ export function StatusPage() @{
   }
 }
 
-function StatusResolved({ phase }: { phase: Phase }) @{
+/** Exported for integration tests — paints a resolved status phase. */
+export function StatusResolved({ phase }: { phase: StatusPhase }) @{
   <div className="mx-auto max-w-3xl px-4 py-16">
     <style>
       @keyframes octStatusIn { from { opacity: 0; } to { opacity: 1; } }

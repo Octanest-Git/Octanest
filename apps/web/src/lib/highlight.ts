@@ -1,4 +1,5 @@
 import { createHighlighter, type Highlighter } from "shiki";
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import tsrxGrammar from "./grammars/tsrx.tmLanguage.json";
 import rippleGrammar from "./grammars/ripple.tmLanguage.json";
 
@@ -30,16 +31,20 @@ const GITHUB_CLASS_LANGS = [
   "plaintext",
 ] as const;
 
+/** Official TSRX grammar + Shiki embedded langs (oxc-tsrx / tsrx-org pattern). */
 const tsrxLang = {
+  ...tsrxGrammar,
   name: "tsrx",
   scopeName: "source.tsrx",
-  ...tsrxGrammar,
+  embeddedLangs: ["jsx", "tsx", "css"] as const,
 };
 
+/** Full Ripple grammar + embedded langs. */
 const rippleLang = {
+  ...rippleGrammar,
   name: "ripple",
   scopeName: "source.ripple",
-  ...rippleGrammar,
+  embeddedLangs: ["jsx", "tsx", "css"] as const,
 };
 
 let highlighterPromise: Promise<Highlighter> | null = null;
@@ -47,12 +52,14 @@ let highlighterPromise: Promise<Highlighter> | null = null;
 /**
  * Singleton Shiki highlighter with GitHub-class langs + in-repo tsrx/ripple grammars (D-19).
  * Custom langs are full TextMate grammars — not TypeScript/JavaScript aliases.
+ * JS regex engine (forgiving) matches official TSRX demo for large TM grammars.
  */
 export async function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: [...THEMES],
       langs: [...GITHUB_CLASS_LANGS, tsrxLang, rippleLang],
+      engine: createJavaScriptRegexEngine({ forgiving: true }),
     });
   }
   return highlighterPromise;
@@ -127,10 +134,27 @@ export async function highlightCode(
   const theme = options.theme ?? "github-dark";
   const loaded = highlighter.getLoadedLanguages();
   const lang = loaded.includes(options.lang) ? options.lang : "plaintext";
-  const html = highlighter.codeToHtml(code, { lang, theme });
+  // Trailing newline would render as an empty last line without a line number.
+  const display = stripTrailingNewline(code);
+  const html = highlighter.codeToHtml(display, { lang, theme });
   // Annotate language id for callers/tests — Shiki HTML may omit the lang name.
   return html.replace(
     /<pre(\s)/,
     `<pre data-language="${lang}"$1`,
   );
+}
+
+/** Drop a single trailing newline so line numbers match highlighted rows. */
+export function stripTrailingNewline(code: string): string {
+  return code.endsWith("\n") ? code.slice(0, -1) : code;
+}
+
+/** Line count for blob chrome — ignores a single trailing newline (POSIX text files). */
+export function countCodeLines(code: string): number {
+  if (!code) return 0;
+  const parts = code.split("\n");
+  if (parts.length > 0 && parts[parts.length - 1] === "") {
+    return parts.length - 1;
+  }
+  return parts.length;
 }

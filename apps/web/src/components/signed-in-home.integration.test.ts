@@ -1,7 +1,7 @@
 import type { RepoPublic, UserPublic } from "@octanest/api-client";
 import { createElement } from "octane";
-import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@octanejs/testing-library";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@octanejs/tanstack-router", () => ({
   Link: (props: {
@@ -16,24 +16,9 @@ vi.mock("@octanejs/tanstack-router", () => ({
     ),
 }));
 
-const listMineMock = vi.fn();
-
-vi.mock("@/lib/api-client", () => ({
-  apiClient: {
-    repo: {
-      listMine: (...args: unknown[]) => listMineMock(...args),
-    },
-  },
-}));
-
 import { SignedInHome } from "./signed-in-home";
 
 afterEach(cleanup);
-
-beforeEach(() => {
-  listMineMock.mockReset();
-  listMineMock.mockResolvedValue({ ok: true, data: { repos: [] } });
-});
 
 function user(overrides: Partial<UserPublic> = {}): UserPublic {
   return {
@@ -47,6 +32,7 @@ function user(overrides: Partial<UserPublic> = {}): UserPublic {
     profile_incomplete: false,
     email_verified: false,
     must_change_credentials: false,
+    default_branch: "main",
     ...overrides,
   };
 }
@@ -66,17 +52,15 @@ function repo(overrides: Partial<RepoPublic> = {}): RepoPublic {
 }
 
 describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
-  it("unverified: disabled CTA + verify-email hint", async () => {
-    render(SignedInHome, { props: { user: user({ email_verified: false }) } });
+  it("unverified: disabled CTA + verify-email hint", () => {
+    render(SignedInHome, {
+      props: { user: user({ email_verified: false }), repos: [] },
+    });
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Create your first repository" }),
-      ).toBeInTheDocument();
-    });
+    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Create your first repository" }),
+    ).toBeInTheDocument();
 
     const ctas = screen.getAllByRole("button", { name: "New repository" });
     expect(ctas.length).toBeGreaterThanOrEqual(1);
@@ -93,17 +77,15 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
     ).toBeInTheDocument();
   });
 
-  it("verified: enabled New repository navigates to /new", async () => {
-    render(SignedInHome, { props: { user: user({ email_verified: true }) } });
+  it("verified: enabled New repository navigates to /new", () => {
+    render(SignedInHome, {
+      props: { user: user({ email_verified: true }), repos: [] },
+    });
 
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
-    });
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Create your first repository" }),
-      ).toBeInTheDocument();
-    });
+    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Create your first repository" }),
+    ).toBeInTheDocument();
 
     const ctas = screen.getAllByRole("link", { name: "New repository" });
     expect(ctas.length).toBeGreaterThanOrEqual(1);
@@ -121,24 +103,22 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
 });
 
 describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
-  it("empty list shows Create your first repository hero and activity placeholder", async () => {
-    listMineMock.mockResolvedValue({ ok: true, data: { repos: [] } });
-    render(SignedInHome, { props: { user: user({ email_verified: true }) } });
-
-    await waitFor(() => {
-      expect(
-        screen.getByRole("heading", { name: "Create your first repository" }),
-      ).toBeInTheDocument();
+  it("empty list shows Create your first repository hero and activity placeholder", () => {
+    render(SignedInHome, {
+      props: { user: user({ email_verified: true }), repos: [] },
     });
+
+    expect(
+      screen.getByRole("heading", { name: "Create your first repository" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
     expect(screen.getByText("Activity will show up here.")).toBeInTheDocument();
-    expect(listMineMock).toHaveBeenCalled();
   });
 
-  it("populated list shows owner/name and visibility Badge", async () => {
-    listMineMock.mockResolvedValue({
-      ok: true,
-      data: {
+  it("populated list shows owner/name and visibility Badge", () => {
+    render(SignedInHome, {
+      props: {
+        user: user({ email_verified: true }),
         repos: [
           repo({ name: "hello", visibility: "public" }),
           repo({
@@ -150,11 +130,8 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
         ],
       },
     });
-    render(SignedInHome, { props: { user: user({ email_verified: true }) } });
 
-    await waitFor(() => {
-      expect(screen.getByText("ada/hello")).toBeInTheDocument();
-    });
+    expect(screen.getByText("ada/hello")).toBeInTheDocument();
     expect(screen.getByText("ada/secrets")).toBeInTheDocument();
     expect(screen.getByText("Public")).toBeInTheDocument();
     expect(screen.getByText("Private")).toBeInTheDocument();
@@ -164,16 +141,34 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
     expect(screen.getByText("Activity will show up here.")).toBeInTheDocument();
   });
 
-  it("keeps incomplete-profile banner above the list", async () => {
+  it("keeps incomplete-profile banner above the list", () => {
     render(SignedInHome, {
-      props: { user: user({ profile_incomplete: true, email_verified: true }) },
+      props: {
+        user: user({ profile_incomplete: true, email_verified: true }),
+        repos: [],
+      },
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(
-        "Choose a username to finish setup.",
-      );
-    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Choose a username to finish setup.",
+    );
     expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
+  });
+
+  it("shows reposError without empty hero", () => {
+    render(SignedInHome, {
+      props: {
+        user: user({ email_verified: true }),
+        repos: [],
+        reposError: "Could not load repositories.",
+      },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Could not load repositories.",
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Create your first repository" }),
+    ).not.toBeInTheDocument();
   });
 });

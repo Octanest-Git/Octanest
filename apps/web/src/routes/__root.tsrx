@@ -7,14 +7,31 @@ import {
   Scripts,
   createRootRoute,
   redirect,
+  useLoaderData,
 } from "@octanejs/tanstack-router";
-import { QueryClientProvider } from "@octanejs/tanstack-query";
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClientProvider,
+  type DehydratedState,
+} from "@octanejs/tanstack-query";
+import type {
+  BootstrapStatus,
+  ProviderConfigPublic,
+  UserPublic,
+} from "@octanest/api-client";
 import { SiteFooter, SiteHeader } from "@/components/chrome";
 import { AppToaster } from "@/components/ui/toaster";
 import { VerifyBanner } from "@/components/verify-banner";
-import { getQueryClient } from "@/lib/query-client";
+import { createAppQueryClient, getQueryClient } from "@/lib/query-client";
+import {
+  authBootstrapQueryKey,
+  authProviderConfigQueryKey,
+  authMeQueryKey,
+} from "@/lib/session-queries";
 import {
   fetchBootstrapStatus,
+  fetchProviderConfig,
   fetchSessionMe,
   resolveAppAccessRedirect,
 } from "@/lib/ssr-auth";
@@ -27,33 +44,66 @@ const SW_REGISTER_SCRIPT =
   '(function(){if("serviceWorker" in navigator){window.addEventListener("load",' +
   'function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}})();';
 
+const PROVIDER_CONFIG_LOCKED: ProviderConfigPublic = {
+  mode: "local",
+  allow_signup: false,
+};
+
+export type RootLoaderData = {
+  dehydratedState: DehydratedState;
+};
+
+/**
+ * SSR gate + seed auth chrome queries (me / bootstrap / providerConfig) so
+ * SiteHeader paints without a client-only skeleton flash.
+ */
 export const Route = createRootRoute({
   component: RootComponent,
   shellComponent: RootShell,
   head: () => ({
     meta: [{ title: "Octanest" }],
   }),
-  beforeLoad: async ({ location }) => {
-    // Shared SSR app-access gate (D-09/D-10 + UI-SPEC must_change) — first paint.
+  loader: async ({ location }): Promise<RootLoaderData> => {
+    const qc = createAppQueryClient();
+
     let needsSetup = false;
+    let boot: BootstrapStatus = { needs_setup: false };
     try {
       const status = await fetchBootstrapStatus();
-      needsSetup = Boolean(status.ok && status.data.needs_setup);
+      if (status.ok) {
+        boot = status.data;
+        needsSetup = Boolean(status.data.needs_setup);
+      }
     } catch {
       /* API unreachable — do not lock the tree */
     }
+    qc.setQueryData(authBootstrapQueryKey, boot);
 
+    let me: UserPublic | null = null;
     let mustChangeCredentials = false;
     if (!needsSetup) {
       try {
-        const me = await fetchSessionMe();
-        mustChangeCredentials = Boolean(
-          me.ok && me.data.must_change_credentials,
-        );
+        const meRes = await fetchSessionMe();
+        if (meRes.ok) {
+          me = meRes.data;
+          mustChangeCredentials = Boolean(me.must_change_credentials);
+        }
       } catch {
         /* anonymous / network */
       }
     }
+    qc.setQueryData(authMeQueryKey, me);
+
+    let cfg: ProviderConfigPublic = PROVIDER_CONFIG_LOCKED;
+    try {
+      const cfgRes = await fetchProviderConfig();
+      if (cfgRes.ok) {
+        cfg = cfgRes.data;
+      }
+    } catch {
+      /* fail closed */
+    }
+    qc.setQueryData(authProviderConfigQueryKey, cfg);
 
     const target = resolveAppAccessRedirect({
       pathname: location.pathname,
@@ -63,6 +113,8 @@ export const Route = createRootRoute({
     if (target) {
       throw redirect({ href: target });
     }
+
+    return { dehydratedState: dehydrate(qc) };
   },
 });
 
@@ -106,18 +158,21 @@ function RootShell({ children }: { children?: unknown }) @{
 }
 
 function RootComponent() @{
+  const data = useLoaderData({ from: "__root__" }) as RootLoaderData | undefined;
   const queryClient = getQueryClient();
 
   <QueryClientProvider client={queryClient}>
-    <AppToaster>
-      <div className="flex min-h-screen flex-col">
-        <SiteHeader />
-        <main className="octanest-main flex-1">
-          <Outlet />
-        </main>
-        <SiteFooter />
-        <VerifyBanner />
-      </div>
-    </AppToaster>
+    <HydrationBoundary state={data?.dehydratedState}>
+      <AppToaster>
+        <div className="flex min-h-screen flex-col">
+          <SiteHeader />
+          <main className="octanest-main flex-1">
+            <Outlet />
+          </main>
+          <SiteFooter />
+          <VerifyBanner />
+        </div>
+      </AppToaster>
+    </HydrationBoundary>
   </QueryClientProvider>
 }

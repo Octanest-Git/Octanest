@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useLoaderData } from "@octanejs/tanstack-router";
-import type { UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { buttonVariants } from "@/components/ui/button";
 import { OctanestMark } from "@/components/octanest-mark";
 import { SignedInHomeSkeleton } from "@/components/page-skeletons";
 import { SignedInHome } from "@/components/signed-in-home";
-import { apiClient } from "@/lib/api-client";
-import { fetchSessionMe } from "@/lib/ssr-auth";
+import {
+  fetchProviderConfig,
+  fetchRepoListMine,
+  fetchSessionMe,
+} from "@/lib/ssr-auth";
 import {
   hasSessionPresenceHint,
   syncSessionPresenceHint,
@@ -28,7 +31,15 @@ export function selectHomeTree(input: {
 export type HomeLoaderData = {
   tree: Exclude<HomeTree, "setup">;
   user: UserPublic | null;
+  /** Present when tree === "signed-in". */
+  repos: RepoPublic[];
+  reposError: string | null;
+  /** Marketing CTA — SSR'd so signup button paints without client fetch. */
+  allowSignup: boolean;
 };
+
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -43,7 +54,7 @@ export const Route = createFileRoute("/")({
     ],
   }),
   loader: async (): Promise<HomeLoaderData> => {
-    // needs_setup / must_change are owned by root beforeLoad — do not re-lock here.
+    // needs_setup / must_change are owned by root loader — do not re-lock here.
     let user: UserPublic | null = null;
     try {
       const me = await fetchSessionMe();
@@ -51,11 +62,37 @@ export const Route = createFileRoute("/")({
     } catch {
       /* anonymous */
     }
+
     const tree = selectHomeTree({
       needs_setup: false,
       hasSession: user != null,
     }) as Exclude<HomeTree, "setup">;
-    return { tree, user };
+
+    let repos: RepoPublic[] = [];
+    let reposError: string | null = null;
+    let allowSignup = false;
+
+    if (tree === "signed-in") {
+      try {
+        const list = await fetchRepoListMine();
+        if (list.ok) {
+          repos = list.data.repos;
+        } else {
+          reposError = list.error.message || "Could not load repositories.";
+        }
+      } catch {
+        reposError = NETWORK_ERROR;
+      }
+    } else {
+      try {
+        const cfg = await fetchProviderConfig();
+        if (cfg.ok) allowSignup = cfg.data.allow_signup === true;
+      } catch {
+        allowSignup = false;
+      }
+    }
+
+    return { tree, user, repos, reposError, allowSignup };
   },
 });
 
@@ -116,38 +153,25 @@ function HomePage() {
 
   useScrollReveal(tree === "marketing" || (tree == null && !presenceHint));
 
-  // Hydration / first client paint before loader resolves — presence hint PE only (D-21).
+  // Rare PE: presence cookie says signed-in before loader hydrates.
   if (tree == null && presenceHint) {
     return <SignedInHomeSkeleton />;
   }
 
   if (tree === "signed-in" && user) {
-    return <SignedInHome user={user} />;
+    return (
+      <SignedInHome
+        user={user}
+        repos={data?.repos ?? []}
+        reposError={data?.reposError ?? null}
+      />
+    );
   }
 
-  return <AnonLanding />;
+  return <AnonLanding allowSignup={data?.allowSignup === true} />;
 }
 
-function AnonLanding() @{
-  const [allowSignup, setAllowSignup] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const cfg = await apiClient.auth.providerConfig();
-        if (cancelled) return;
-        setAllowSignup(cfg.ok === true && cfg.data.allow_signup === true);
-      } catch {
-        if (cancelled) return;
-        setAllowSignup(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
+function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
   <>
     <section className="relative min-h-[32rem] overflow-hidden md:min-h-[36rem] lg:min-h-[40rem]">
       <div

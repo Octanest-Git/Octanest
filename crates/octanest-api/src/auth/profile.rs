@@ -97,9 +97,11 @@ pub async fn update_profile(
                 ));
             }
         }
+        // FS-then-DB: move `{old}/` → `{new}/` before rewriting users.username.
+        crate::git::rename_owner_repos_dir(&ctx.repos_dir, &existing.username, &username).await?;
     }
 
-    let updated = ctx
+    let updated = match ctx
         .db
         .update_user_profile(
             &session.user_id,
@@ -109,7 +111,21 @@ pub async fn update_profile(
             existing.avatar_path.as_deref(),
         )
         .await
-        .map_err(db_err)?;
+    {
+        Ok(u) => u,
+        Err(e) => {
+            if username != existing.username {
+                // Best-effort compensate: put owner dir back if DB write failed.
+                let _ = crate::git::rename_owner_repos_dir(
+                    &ctx.repos_dir,
+                    &username,
+                    &existing.username,
+                )
+                .await;
+            }
+            return Err(db_err(e));
+        }
+    };
 
     let updated = if let Some(branch) = req.default_branch {
         let branch = branch.trim().to_string();

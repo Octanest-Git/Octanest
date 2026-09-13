@@ -36,15 +36,17 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
         repo: "hello",
         refName: "main",
         empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
       },
     });
 
     await openCloneMenu();
 
     const httpsUrl = "http://127.0.0.1:3000/ada/hello.git";
-    const code = screen.getByTitle(httpsUrl);
-    expect(code).toHaveTextContent(httpsUrl);
-    expect(code.className).toMatch(/truncate/);
+    const urlField = screen.getByRole("textbox", { name: "HTTPS clone URL" });
+    expect(urlField).toHaveValue(httpsUrl);
+    expect(urlField).toHaveAttribute("readonly");
+    expect(urlField.className).not.toMatch(/truncate/);
 
     const copyBtn = screen.getByRole("button", { name: "Copy HTTPS URL" });
     expect(copyBtn).toBeInTheDocument();
@@ -69,14 +71,15 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
         repo: "empty",
         refName: "main",
         empty: true,
+        publicOrigin: "http://127.0.0.1:3000",
       },
     });
 
     await openCloneMenu();
 
     expect(
-      screen.getByTitle("http://127.0.0.1:3000/ada/empty.git"),
-    ).toBeInTheDocument();
+      screen.getByRole("textbox", { name: "HTTPS clone URL" }),
+    ).toHaveValue("http://127.0.0.1:3000/ada/empty.git");
     expect(
       screen.getByText("SSH cloning arrives in a later phase."),
     ).toBeInTheDocument();
@@ -103,6 +106,7 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
         repo: "hello",
         refName: "feature/x",
         empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
       },
     });
 

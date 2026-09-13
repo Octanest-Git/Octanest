@@ -1,15 +1,26 @@
 import { Link } from "@octanejs/tanstack-router";
+import { httpsCloneUrl } from "@/lib/public-origin";
+import { useRepoStore } from "@/lib/repo-store";
 
 type QuickSetupProps = {
   owner: string;
   repo: string;
+  /** Optional override for tests; otherwise SSR layout store origin. */
+  publicOrigin?: string;
 };
 
 /** Empty-repo first-push guide (D-15 / UI-SPEC Quick setup). */
-export function QuickSetup({ owner, repo }: QuickSetupProps) @{
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "";
-  const httpsUrl = `${origin}/${owner}/${repo}.git`;
+export function QuickSetup({
+  owner,
+  repo,
+  publicOrigin: publicOriginProp,
+}: QuickSetupProps) @{
+  const storeOrigin = useRepoStore((s) => s.publicOrigin);
+  const httpsUrl = httpsCloneUrl(
+    publicOriginProp || storeOrigin,
+    owner,
+    repo,
+  );
   const remoteCmd = `git remote add origin ${httpsUrl}`;
   const pushCmd = `git push -u origin HEAD`;
   const setupScript = `echo "# ${repo}" >> README.md

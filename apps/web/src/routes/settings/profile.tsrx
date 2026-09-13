@@ -1,4 +1,7 @@
-import { createFileRoute } from "@octanejs/tanstack-router";
+import {
+  createFileRoute,
+  useLoaderData,
+} from "@octanejs/tanstack-router";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useRef, useState } from "octane";
@@ -14,15 +17,38 @@ import {
   setAuthMeCache,
 } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
+import { fetchUserGetProfile } from "@/lib/ssr-auth";
 import { cn } from "@/lib/utils";
+
+export type ProfileLoaderData =
+  | { kind: "unauthenticated" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; user: UserPublic };
+
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const BIO_MAX = 160;
 
 export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
   head: () => ({ meta: [{ title: "Profile · Octanest" }] }),
+  loader: async (): Promise<ProfileLoaderData> => {
+    try {
+      const res = await fetchUserGetProfile();
+      if (!res.ok) {
+        if (res.error.code === "auth.unauthenticated") {
+          return { kind: "unauthenticated" };
+        }
+        return {
+          kind: "error",
+          message: res.error.message || "Could not load profile.",
+        };
+      }
+      return { kind: "ready", user: res.data };
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
 });
-
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const BIO_MAX = 160;
 
 type Phase =
   | { kind: "loading" }
@@ -31,12 +57,40 @@ type Phase =
 
 function ProfilePage() {
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [displayName, setDisplayName] = useState("");
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [defaultBranch, setDefaultBranch] = useState("main");
-  const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(undefined);
+  const loaderData = useLoaderData({ from: "/settings/profile" }) as
+    | ProfileLoaderData
+    | undefined;
+
+  useEffect(() => {
+    if (loaderData?.kind === "unauthenticated") {
+      window.location.assign("/login?returnTo=/settings/profile");
+    }
+  }, [loaderData]);
+
+  const initialUser =
+    loaderData?.kind === "ready" ? loaderData.user : null;
+
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (loaderData?.kind === "ready") return { kind: "ready", user: loaderData.user };
+    if (loaderData?.kind === "error") {
+      return { kind: "error", message: loaderData.message };
+    }
+    if (loaderData?.kind === "unauthenticated") {
+      return { kind: "loading" };
+    }
+    return { kind: "loading" };
+  });
+  const [displayName, setDisplayName] = useState(
+    () => initialUser?.display_name ?? "",
+  );
+  const [username, setUsername] = useState(() => initialUser?.username ?? "");
+  const [bio, setBio] = useState(() => initialUser?.bio ?? "");
+  const [defaultBranch, setDefaultBranch] = useState(
+    () => initialUser?.default_branch?.trim() || "main",
+  );
+  const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(
+    () => initialUser?.avatar_url,
+  );
   const [avatarStatus, setAvatarStatus] = useState("");
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
@@ -47,6 +101,25 @@ function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (!loaderData) return;
+    if (loaderData.kind === "ready") {
+      const user = loaderData.user;
+      setDisplayName(user.display_name ?? "");
+      setUsername(user.username ?? "");
+      setBio(user.bio ?? "");
+      setDefaultBranch(user.default_branch?.trim() || "main");
+      setAvatarUrl(user.avatar_url);
+      setPhase({ kind: "ready", user });
+      return;
+    }
+    if (loaderData.kind === "error") {
+      setPhase({ kind: "error", message: loaderData.message });
+    }
+  }, [loaderData]);
+
+  // Client fallback when loader payload is missing (tests / soft nav edge).
+  useEffect(() => {
+    if (loaderData) return;
     let cancelled = false;
     (async () => {
       try {
@@ -71,12 +144,13 @@ function ProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loaderData]);
 
   async function saveProfile() {
     setFormError("");
     setSuccess("");
     setPending(true);
+    const previousUsername = phase.kind === "ready" ? phase.user.username : "";
     try {
       const res = await apiClient.user.updateProfile({
         display_name: displayName.trim(),
@@ -95,7 +169,17 @@ function ProfilePage() {
       setDefaultBranch(res.data.default_branch?.trim() || "main");
       setAvatarUrl(res.data.avatar_url);
       setAuthMeCache(queryClient, res.data);
-      setSuccess("Profile saved.");
+      if (
+        previousUsername &&
+        res.data.username &&
+        previousUsername !== res.data.username
+      ) {
+        setSuccess(
+          `Username updated to @${res.data.username}. Update git remotes to /${res.data.username}/{repo}.git.`,
+        );
+      } else {
+        setSuccess("Profile saved.");
+      }
       setPending(false);
     } catch {
       setFormError(NETWORK_ERROR);

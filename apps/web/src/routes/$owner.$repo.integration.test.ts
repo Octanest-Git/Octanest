@@ -69,6 +69,7 @@ vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
   return {
     ...actual,
     useParams: () => ({ owner: "ada", repo: "hello" }),
+    useLoaderData: () => undefined,
     Link: MockLink,
   };
 });

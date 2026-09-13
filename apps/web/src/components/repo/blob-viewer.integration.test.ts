@@ -3,6 +3,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/highlight", () => ({
   languageIdForPath: () => "javascript",
+  countCodeLines: (code: string) => {
+    if (!code) return 0;
+    const parts = code.split("\n");
+    return parts[parts.length - 1] === "" ? parts.length - 1 : parts.length;
+  },
+  stripTrailingNewline: (code: string) =>
+    code.endsWith("\n") ? code.slice(0, -1) : code,
   highlightCode: async (code: string) =>
     `<pre data-language="javascript"><code>${code
       .replace(/&/g, "&amp;")
@@ -25,6 +32,9 @@ describe("BlobViewer file chrome", () => {
       props: {
         owner: "ada",
         repo: "hello",
+        highlightedHtml:
+          '<pre data-language="javascript"><code>export default function App() {\n  return null;\n}</code></pre>',
+        highlightTheme: "github-dark",
         blob: {
           path: "src/App.jsx",
           ref: "main",
