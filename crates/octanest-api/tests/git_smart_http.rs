@@ -164,11 +164,54 @@ async fn git_smart_public_anon_upload_pack_info_refs_ok() {
     );
 }
 
-/// Private repo: anonymous → 401 + WWW-Authenticate (D-21). Expansion — 08-06.
+/// Private repo: anonymous → 401 + WWW-Authenticate (D-21).
 #[tokio::test]
-#[ignore = "08-06: private anon 401"]
 async fn git_smart_private_anon_401_www_authenticate() {
-    assert!(false, "expansion: private anon → 401 + WWW-Authenticate");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_priv.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "priv@ex.com", "privown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(user_id, &now)
+        .await
+        .expect("verify");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("privown", "secret"))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::UNAUTHORIZED,
+        "private anon must 401 (D-21)"
+    );
+    let www = res
+        .headers()
+        .get(header::WWW_AUTHENTICATE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        www.contains("Basic") && www.contains("Octanest Git"),
+        "WWW-Authenticate — {www}"
+    );
 }
 
 /// Basic auth with account password (not PAT) → 401 + PAT hint (D-11).
@@ -257,11 +300,47 @@ async fn git_smart_session_cookie_ignored_as_anon() {
     );
 }
 
-/// Valid PAT with insufficient scope → 403. Expansion — 08-05/08-06.
+/// Fine-grained contents:read cannot receive-pack → 403 (D-23).
 #[tokio::test]
-#[ignore = "08-05/08-06: FG scope matrix"]
 async fn git_smart_insufficient_scope_403() {
-    assert!(false, "expansion: insufficient PAT scope → 403");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_scope.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "scope@ex.com", "scopeown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    create_public_repo(&app, &db, &cookie, user_id).await;
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createFineGrained","input":{"name":"read-only","repo_access":"all","contents":"read"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    let token = v["data"]["token"].as_str().expect("token");
+
+    let req = Request::builder()
+        .method("GET")
+        .uri("/scopeown/hello.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("scopeown", token))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::FORBIDDEN,
+        "contents:read must not receive-pack — got {}",
+        res.status()
+    );
 }
 
 /// Failed-auth over limit → 429 + Retry-After (D-26). Expansion — 08-06.
@@ -305,14 +384,16 @@ async fn git_smart_pat_push_fetch_happy_path() {
     let bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     let token = v["data"]["token"].as_str().expect("token");
+    let pat_id = v["data"]["item"]["id"].as_str().expect("pat id").to_string();
 
     let req = Request::builder()
         .method("GET")
         .uri(info_refs_uri("patgit", "hello"))
         .header(header::AUTHORIZATION, basic_header("patgit", token))
+        .header("x-forwarded-for", "203.0.113.50")
         .body(Body::empty())
         .unwrap();
-    let res = app.oneshot(req).await.unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
     assert_eq!(
         res.status(),
         StatusCode::OK,
@@ -326,5 +407,56 @@ async fn git_smart_pat_push_fetch_happy_path() {
     assert!(
         ct.contains("git-upload-pack"),
         "expected upload-pack advertisement, got {ct}"
+    );
+
+    // D-09: successful auth updates last_used_at / last_used_ip.
+    let list = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.list","input":{}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(list.status(), StatusCode::OK);
+    let list_bytes = list.into_body().collect().await.unwrap().to_bytes();
+    let list_v: serde_json::Value = serde_json::from_slice(&list_bytes).unwrap();
+    let item = list_v["data"]
+        .as_array()
+        .expect("list")
+        .iter()
+        .find(|p| p["id"] == pat_id)
+        .expect("pat in list");
+    assert!(
+        item["last_used_at"].as_str().is_some(),
+        "last_used_at must be set after successful auth — {item}"
+    );
+    assert_eq!(
+        item["last_used_ip"].as_str(),
+        Some("203.0.113.50"),
+        "last_used_ip from X-Forwarded-For — {item}"
+    );
+
+    // Classic repo scope can advertise receive-pack (push) when verified (D-20).
+    let push_refs = Request::builder()
+        .method("GET")
+        .uri("/patgit/hello.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("patgit", token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push_refs).await.unwrap();
+    assert_eq!(
+        push_res.status(),
+        StatusCode::OK,
+        "classic repo PAT must allow receive-pack info/refs"
+    );
+    let push_ct = push_res
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        push_ct.contains("git-receive-pack"),
+        "expected receive-pack advertisement, got {push_ct}"
     );
 }
