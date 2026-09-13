@@ -131,7 +131,9 @@ Each task was committed atomically:
 3. **Task 2 RED:** `b1c1d2e` — test(08-06): rate-limit + unverified-push failing tests
 4. **Task 2 GREEN:** `001ce79` — feat(08-06): rate limits + unverified push deny
 
-## Files Created/Modified
+**Plan metadata:** `56b99b7` (docs: complete plan); `f97e0cf` (docs: ROADMAP detailed checklist)
+
+_Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 - `crates/octanest-api/src/pat/rate_limit.rs` — sliding-window IP/user counters
 - `crates/octanest-api/src/routes/git_smart_http.rs` — full ACL/scope/rate-limit/verify matrix
