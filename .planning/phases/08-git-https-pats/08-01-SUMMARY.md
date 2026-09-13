@@ -91,7 +91,7 @@ Each task was committed atomically:
 
 1. **Task 1: Web Wave 0 stubs for tokens settings and CloneBox how-to** - `fb8975d` (test)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `a30e17e` (docs: complete plan)
 
 _Note: Wave 0 is RED-only by design — GREEN belongs to 08-09–08-12._
 
