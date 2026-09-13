@@ -3,7 +3,9 @@
 mod acl;
 mod templates;
 
-pub use acl::{resolve_repo_for_read, AccessibleRepo};
+pub use acl::{
+    can_read_as_owner, is_private_visibility, resolve_repo_for_read, AccessibleRepo,
+};
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
 /// 1 MiB matches GitHub-like soft preview limits.

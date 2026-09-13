@@ -7,13 +7,19 @@ use axum::extract::{Path as AxumPath, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use octanest_core::{CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX};
+use chrono::{DateTime, Utc};
+use octanest_core::{
+    ClassicPatScope, ContentsPerm, FgRepoAccess, PatKind, CLASSIC_PAT_PREFIX,
+    FINE_GRAINED_PAT_PREFIX,
+};
+use octanest_db::{PatRow, RepositoryRow, UserRow};
 use serde::Deserialize;
 
 use crate::app::AppState;
 use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
+use crate::repo::{can_read_as_owner, is_private_visibility};
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
 const PAT_HINT: &str =
@@ -49,6 +55,15 @@ fn unauthorized_basic() -> Response {
         .into_response()
 }
 
+fn forbidden_insufficient_scope() -> Response {
+    (
+        StatusCode::FORBIDDEN,
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        "Insufficient personal access token scope for this git operation",
+    )
+        .into_response()
+}
+
 /// Decode `Authorization: Basic …` → (username, password).
 fn parse_basic(headers: &HeaderMap) -> Result<Option<(String, String)>, Response> {
     let Some(raw) = headers.get(header::AUTHORIZATION) else {
@@ -71,8 +86,29 @@ fn looks_like_pat(password: &str) -> bool {
     password.starts_with(CLASSIC_PAT_PREFIX) || password.starts_with(FINE_GRAINED_PAT_PREFIX)
 }
 
+/// Client IP for last-used / rate-limit — first `X-Forwarded-For` hop (Traefik) when present.
+fn client_ip(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+fn pat_expired(expires_at: &Option<String>) -> bool {
+    let Some(raw) = expires_at.as_deref() else {
+        return false;
+    };
+    match DateTime::parse_from_rfc3339(raw) {
+        Ok(dt) => dt.with_timezone(&Utc) <= Utc::now(),
+        Err(_) => true,
+    }
+}
+
 struct AuthedPat {
-    remote_user: String,
+    pat: PatRow,
+    owner: UserRow,
 }
 
 /// Resolve Basic credentials to a PAT owner. Cookies are never consulted (D-12).
@@ -98,6 +134,9 @@ async fn authenticate_pat(
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
+    if pat_expired(&pat.expires_at) {
+        return Err(unauthorized_pat_hint());
+    }
     let owner = match state.db.find_user_by_id(&pat.user_id).await {
         Ok(Some(u)) => u,
         Ok(None) => return Err(unauthorized_pat_hint()),
@@ -113,16 +152,20 @@ async fn authenticate_pat(
     if !user_ok {
         return Err(unauthorized_basic());
     }
-    Ok(Some(AuthedPat {
-        remote_user: owner.username,
-    }))
+    Ok(Some(AuthedPat { pat, owner }))
 }
 
-async fn resolve_repo_visibility(
+struct ResolvedRepo {
+    row: RepositoryRow,
+    owner_id: String,
+    owner_username: String,
+}
+
+async fn resolve_repo(
     state: &AppState,
     owner: &str,
     name: &str,
-) -> Result<bool, Response> {
+) -> Result<ResolvedRepo, Response> {
     let owner_user = match state.db.find_user_by_username(owner).await {
         Ok(Some(u)) => u,
         Ok(None) => return Err(unauthorized_basic()),
@@ -143,7 +186,61 @@ async fn resolve_repo_visibility(
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
-    Ok(row.visibility.eq_ignore_ascii_case("private"))
+    Ok(ResolvedRepo {
+        row,
+        owner_id: owner_user.id,
+        owner_username: owner_user.username,
+    })
+}
+
+/// Classic `repo` / FG contents+selection checks — insufficient → 403 (D-23).
+fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, receive: bool) -> bool {
+    let kind = match PatKind::parse(&pat.kind) {
+        Ok(k) => k,
+        Err(_) => return false,
+    };
+    match kind {
+        PatKind::Classic => {
+            let scopes: Vec<String> =
+                match pat.scopes_json.as_deref().map(serde_json::from_str) {
+                    Some(Ok(v)) => v,
+                    Some(Err(_)) | None => return false,
+                };
+            scopes
+                .iter()
+                .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo))
+                && (!receive || pat.user_id == owner_id)
+        }
+        PatKind::FineGrained => {
+            let access = match pat
+                .repo_access
+                .as_deref()
+                .and_then(|s| FgRepoAccess::parse(s).ok())
+            {
+                Some(a) => a,
+                None => return false,
+            };
+            let repo_ok = match access {
+                FgRepoAccess::All => pat.user_id == owner_id,
+                FgRepoAccess::Selected => pat.repository_ids.iter().any(|id| id == &repo.id),
+            };
+            if !repo_ok {
+                return false;
+            }
+            let contents = match pat
+                .contents_perm
+                .as_deref()
+                .and_then(|s| ContentsPerm::parse(s).ok())
+            {
+                Some(c) => c,
+                None => return false,
+            };
+            match contents {
+                ContentsPerm::Read => !receive,
+                ContentsPerm::Write => true,
+            }
+        }
+    }
 }
 
 fn is_upload_pack_service(service: Option<&str>, path_tail: &str) -> bool {
@@ -156,6 +253,18 @@ fn is_receive_pack_service(service: Option<&str>, path_tail: &str) -> bool {
 
 fn strip_git_suffix(repo_git: &str) -> Option<&str> {
     repo_git.strip_suffix(".git").filter(|n| !n.is_empty())
+}
+
+async fn touch_last_used(state: &AppState, pat_id: &str, headers: &HeaderMap) {
+    let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let ip = client_ip(headers);
+    if let Err(e) = state
+        .db
+        .touch_pat_last_used(pat_id, &now, ip.as_deref())
+        .await
+    {
+        tracing::warn!(error = %e, pat_id, "touch_pat_last_used failed");
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -174,11 +283,11 @@ async fn authorize_and_cgi(
     // Reference the header so scanners see an explicit ignore pattern.
     let _octanest_session_cookie_ignored = headers.get(header::COOKIE);
 
-    let Some(repo) = strip_git_suffix(repo_git) else {
+    let Some(repo_name) = strip_git_suffix(repo_git) else {
         return StatusCode::NOT_FOUND.into_response();
     };
 
-    if bare_repo_path(&state.repos_dir, owner, repo).is_err() {
+    if bare_repo_path(&state.repos_dir, owner, repo_name).is_err() {
         return StatusCode::NOT_FOUND.into_response();
     }
 
@@ -187,22 +296,42 @@ async fn authorize_and_cgi(
         Err(r) => return r,
     };
 
-    let is_private = match resolve_repo_visibility(state, owner, repo).await {
-        Ok(v) => v,
+    let resolved = match resolve_repo(state, owner, repo_name).await {
+        Ok(r) => r,
         Err(r) => return r,
     };
 
+    let is_private = is_private_visibility(&resolved.row.visibility);
     let upload = is_upload_pack_service(service, path_tail);
     let receive = is_receive_pack_service(service, path_tail);
 
     if path_tail == "info/refs" && !upload && !receive {
         return (StatusCode::FORBIDDEN, "unsupported git service").into_response();
     }
+
+    // receive-pack always requires a PAT (D-20).
     if receive && authed.is_none() {
         return unauthorized_basic();
     }
+    // Private / no-access unauth → 401 (D-21), not web not_found.
     if is_private && authed.is_none() {
         return unauthorized_basic();
+    }
+
+    if let Some(ref auth) = authed {
+        let caller_id = auth.owner.id.as_str();
+        // Private + authenticated non-owner → 401 (ASSUME A5).
+        if is_private && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+            return unauthorized_basic();
+        }
+        // Push is owner-only until Phase 10.
+        if receive && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+            return unauthorized_basic();
+        }
+        if !pat_allows_operation(&auth.pat, &resolved.row, &resolved.owner_id, receive) {
+            return forbidden_insufficient_scope();
+        }
+        touch_last_used(state, &auth.pat.id, headers).await;
     }
 
     let path_info = format!("/{owner}/{repo_git}/{path_tail}");
@@ -215,7 +344,7 @@ async fn authorize_and_cgi(
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string());
 
-    let remote_user = authed.as_ref().map(|a| a.remote_user.as_str());
+    let remote_user = authed.as_ref().map(|a| a.owner.username.as_str());
 
     match http_backend::run_git_http_backend(CgiRequest {
         repos_dir: &state.repos_dir,
