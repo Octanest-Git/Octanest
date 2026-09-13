@@ -1,17 +1,17 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 7
-current_phase_name: Git Repos & Browse
+current_phase: 09
+current_phase_name: Git SSH
 status: planning
-stopped_at: Phase 08 complete, ready to plan Phase 7
-last_updated: "2026-09-13T21:18:24.200Z"
+stopped_at: Phase 07 sealed; Phase 08 already complete — ready to plan Phase 09
+last_updated: "2026-09-13T21:42:00.000Z"
 last_activity: 2026-09-13
-last_activity_desc: Phase 08 complete, transitioned to Phase 7
-state_head: 8ea11d26133fea04507e0203dcedf0a0d8f0c72d
+last_activity_desc: Phase 07 verification refreshed and complete; advanced past completed Phase 08 to Phase 09
+state_head: 15efaa3b59acd509551d0a50332fd3f7e8833f2c
 progress:
   total_phases: 22
-  completed_phases: 1
+  completed_phases: 8
   total_plans: 77
   completed_plans: 77
 milestone_name: milestone
@@ -24,24 +24,24 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 08 — Git HTTPS & PATs
+**Current focus:** Phase 09 — Git SSH
 
 ## Current Position
 
-Phase: 7 — Git Repos & Browse
+Phase: 09 — Git SSH
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-13 — Phase 08 complete, transitioned to Phase 7
+Last activity: 2026-09-13 — Phase 07 sealed (verify refresh); Phase 08 already complete on roadmap
 
-Progress: Phase 08 — 14/14 plans executed; awaiting human UAT
+Progress: Phases 1–8 complete on roadmap; next is Phase 09 Git SSH (no phase directory yet)
 
-See also: `phases/08-git-https-pats/08-VERIFICATION.md` · `08-00-PLAN.md` … `08-13-PLAN.md` · `08-CONTEXT.md`
+See also: `.planning/ROADMAP.md` Phase 9 · GIT-03 / GIT-04
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 55
+- Total plans completed: 77
 - Average duration: —
 - Total execution time: —
 
@@ -56,6 +56,7 @@ See also: `phases/08-git-https-pats/08-VERIFICATION.md` · `08-00-PLAN.md` … `
 | 5 | 7 | - | - |
 | 06 | 10 | - | - |
 | 08 | 14 | - | - |
+| 07 | 22 | - | - |
 
 **Recent Trend:**
 
@@ -306,5 +307,5 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 ## Session Continuity
 
 Last session: 2026-09-13T19:59:40.748Z
-Stopped at: Phase 08 complete, ready to plan Phase 7
+Stopped at: Phase 07 complete, ready to plan Phase 08
 Resume file: None

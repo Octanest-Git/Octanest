@@ -121,4 +121,4 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Phase 3: **semantic tokens + PWA shell** | Squircle mark, system/light/dark, assets-only SW | ✓ Good |
 
 ---
-*Last updated: 2026-09-12 after Phase 7 D-32 git engine amend*
+*Last updated: 2026-09-13 after Phase 7 sealed (repos/browse verified) + Phase 8 HTTPS/PATs*
