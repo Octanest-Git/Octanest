@@ -1,4 +1,4 @@
-//! GIT-11: pat.createClassic / list / revoke + verified gate (08-04 tracer).
+//! GIT-11: pat.createClassic / createFineGrained / list / revoke + verified gate.
 
 mod support;
 
@@ -9,7 +9,7 @@ use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::{build_cors, router_with_state, AppState};
-use octanest_core::CLASSIC_PAT_PREFIX;
+use octanest_core::{CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX};
 use octanest_db::Database;
 use tower::ServiceExt;
 
@@ -251,4 +251,193 @@ async fn pat_create_empty_note_required() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
     assert_eq!(v["error"]["code"], "pat.note_required");
+}
+
+/// Verified `pat.createFineGrained` all + contents write returns one-time `octanest_fg_` token.
+#[tokio::test]
+async fn pat_create_fine_grained_all_returns_fg_token() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_all.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "fgall@ex.com", "fgalluser").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let (status, v) = rpc_json(
+        &app,
+        r#"{"procedure":"pat.createFineGrained","input":{"name":"ci-all","repo_access":"all","contents":"write"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "createFineGrained all — {v}");
+    assert_eq!(v["ok"], true, "{v}");
+    let token = v["data"]["token"].as_str().expect("token");
+    assert!(
+        token.starts_with(FINE_GRAINED_PAT_PREFIX),
+        "must mint {FINE_GRAINED_PAT_PREFIX}* — got {token}"
+    );
+    assert_eq!(v["data"]["item"]["kind"], "fine_grained");
+    assert_eq!(v["data"]["item"]["name"], "ci-all");
+    assert_eq!(v["data"]["item"]["token_prefix"], FINE_GRAINED_PAT_PREFIX);
+    assert_eq!(v["data"]["item"]["repo_access"], "all");
+    assert_eq!(v["data"]["item"]["contents"], "write");
+    let repos = v["data"]["item"]["repository_ids"]
+        .as_array()
+        .cloned()
+        .unwrap_or_default();
+    assert!(repos.is_empty(), "all mode must not persist join rows — {v}");
+    assert!(v["data"]["item"].get("token").is_none());
+}
+
+/// Selected FG with owned repo ids persists join rows; list shows fine_grained kind.
+#[tokio::test]
+async fn pat_create_fine_grained_selected_persists_repos() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_sel.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "fgsel@ex.com", "fgseluser").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let repo = db
+        .insert_repository("r-fg-1", &user_id, "demo", "public", "", "main")
+        .await
+        .expect("insert repo");
+
+    let (status, v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"pat.createFineGrained","input":{{"name":"laptop-fg","repo_access":"selected","contents":"read","repository_ids":["{}"]}}}}"#,
+            repo.id
+        ),
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "createFineGrained selected — {v}");
+    assert_eq!(v["ok"], true, "{v}");
+    assert_eq!(v["data"]["item"]["kind"], "fine_grained");
+    assert_eq!(v["data"]["item"]["repo_access"], "selected");
+    assert_eq!(v["data"]["item"]["contents"], "read");
+    let ids = v["data"]["item"]["repository_ids"]
+        .as_array()
+        .expect("repository_ids");
+    assert_eq!(ids.len(), 1);
+    assert_eq!(ids[0], repo.id);
+
+    let (list_status, list_v) =
+        rpc_json(&app, r#"{"procedure":"pat.list","input":{}}"#, &cookie).await;
+    assert_eq!(list_status, StatusCode::OK, "{list_v}");
+    let items = list_v["data"].as_array().expect("list");
+    let fg = items
+        .iter()
+        .find(|i| i["kind"] == "fine_grained")
+        .expect("fine_grained in list");
+    assert_eq!(fg["token_prefix"], FINE_GRAINED_PAT_PREFIX);
+    assert_eq!(fg["repository_ids"].as_array().unwrap()[0], repo.id);
+}
+
+/// Selected with empty repository_ids → pat.invalid_scope.
+#[tokio::test]
+async fn pat_create_fine_grained_selected_empty_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_empty.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "fgempty@ex.com", "fgemptyu").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now)
+        .await
+        .expect("verify");
+
+    let (status, v) = rpc_json(
+        &app,
+        r#"{"procedure":"pat.createFineGrained","input":{"name":"bad","repo_access":"selected","contents":"write","repository_ids":[]}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
+    assert_eq!(v["error"]["code"], "pat.invalid_scope");
+}
+
+/// Unverified createFineGrained → auth.email_unverified (D-24).
+#[tokio::test]
+async fn pat_create_fine_grained_unverified_email_unverified() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_unv.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "fgnew@ex.com", "fgnewbie").await;
+    assert_eq!(login_v["data"]["email_verified"], false);
+
+    let (status, v) = rpc_json(
+        &app,
+        r#"{"procedure":"pat.createFineGrained","input":{"name":"x","repo_access":"all","contents":"read"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::FORBIDDEN, "{v}");
+    assert_eq!(v["error"]["code"], "auth.email_unverified");
+}
+
+/// Selected with a repo not owned by caller → pat.invalid_scope (T-08-06).
+#[tokio::test]
+async fn pat_create_fine_grained_foreign_repo_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_foreign.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (cookie_a, login_a) = signup_and_login(&app, "fga@ex.com", "fgauser").await;
+    let user_a = login_a["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_a, &now)
+        .await
+        .expect("verify a");
+
+    let (cookie_b, login_b) = signup_and_login(&app, "fgb@ex.com", "fgbuser").await;
+    let user_b = login_b["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&user_b, &now)
+        .await
+        .expect("verify b");
+
+    let foreign = db
+        .insert_repository("r-foreign", &user_a, "secrets", "private", "", "main")
+        .await
+        .expect("foreign repo");
+
+    let (status, v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"pat.createFineGrained","input":{{"name":"steal","repo_access":"selected","contents":"write","repository_ids":["{}"]}}}}"#,
+            foreign.id
+        ),
+        &cookie_b,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
+    assert_eq!(v["error"]["code"], "pat.invalid_scope");
+    let _ = cookie_a; // keep a session created for ownership fixture
 }
