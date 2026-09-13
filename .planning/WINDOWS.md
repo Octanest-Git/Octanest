@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 19
+open_count: 18
 waived_count: 0
-fixed_count: 0
+fixed_count: 1
 total_count: 19
-last_updated: 2026-09-13T18:42:34.877Z
+last_updated: 2026-09-13T18:42:52.268Z
 ---
 
 # Broken Windows Ledger
@@ -31,7 +31,7 @@ last_updated: 2026-09-13T18:42:34.877Z
 | 14 | 08 | stub | apps/web/src/routes/settings/tokens.integration.test.ts |  | Wave 0 RED tokens UI stubs until 08-09/08-10 | open |  | 2026-09-13T18:04:19.488Z |  |
 | 15 | 08 | stub | apps/web/src/components/repo/clone-box.pat.integration.test.ts |  | Wave 0 RED CloneBox PAT how-to stubs until 08-12 | open |  | 2026-09-13T18:04:19.572Z |  |
 | 16 | 08 | deviation | apps/web/src/routes/settings/tokens.integration.test.ts |  | Used runtime-variable @vite-ignore import so Vitest collects while tokens route absent | open |  | 2026-09-13T18:04:19.657Z |  |
-| 17 | 08 | stub | crates/octanest-api/src/pat/mod.rs |  | create_fine_grained stub → pat.not_implemented (08-05) | open |  | 2026-09-13T18:37:52.435Z |  |
+| 17 | 08 | stub | crates/octanest-api/src/pat/mod.rs |  | create_fine_grained stub → pat.not_implemented (08-05) | fixed |  | 2026-09-13T18:37:52.435Z | 2026-09-13T18:42:52.268Z |
 | 18 | 08 | skipped-test | crates/octanest-api/tests/git_smart_http.rs |  | 4 expansion git_smart tests #[ignore] until 08-06 | open |  | 2026-09-13T18:37:52.519Z |  |
 | 19 | 08 | deviation | crates/octanest-api/src/pat/mod.rs |  | Plan prose ona_fg_ locked to octanest_fg_ (FINE_GRAINED_PAT_PREFIX / D-08) | open |  | 2026-09-13T18:42:34.877Z |  |
 
@@ -236,10 +236,10 @@ last_updated: 2026-09-13T18:42:34.877Z
     "file": "crates/octanest-api/src/pat/mod.rs",
     "line": null,
     "description": "create_fine_grained stub → pat.not_implemented (08-05)",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-13T18:37:52.435Z",
-    "resolved_at": null
+    "resolved_at": "2026-09-13T18:42:52.268Z"
   },
   {
     "id": 18,
