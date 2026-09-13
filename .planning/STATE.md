@@ -3,12 +3,12 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 07
 current_phase_name: Git Repos & Browse
-status: verified
-stopped_at: Phase 07 verification passed 7/7; UAT 5/5 complete; next /gsd-secure-phase 07 or advance
-last_updated: "2026-09-13T01:32:57Z"
+status: secured
+stopped_at: Phase 07 threat-secure (threats_open: 0); next Phase 08 or /gsd-validate-phase 07
+last_updated: "2026-09-13T03:43:21Z"
 last_activity: 2026-09-13
-last_activity_desc: Fresh 07-VERIFICATION.md passed 7/7; CR/WR remain closed; UAT 5/5
-state_head: a7c27ba84e73b7296e9aa5687d78488d348c183d
+last_activity_desc: 07-SECURITY.md written; 39 threats closed; ASVS L1 short-circuit
+state_head: c0ce4e7
 progress:
   total_phases: 22
   completed_phases: 0
@@ -28,14 +28,14 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 07 (Git Repos & Browse) — VERIFIED
+Phase: 07 (Git Repos & Browse) — SECURED
 Plan: 22 of 22 complete (gap plans 07-19..21 closed CR/WR)
-Status: verified
-Last activity: 2026-09-13 — Fresh 07-VERIFICATION.md passed 7/7 (UAT 5/5 already complete)
+Status: secured
+Last activity: 2026-09-13 — `/gsd-secure-phase 07` → `07-SECURITY.md` (threats_open: 0)
 
-Progress: Phase 7 plans 00–21 complete; CR-01/CR-02 + WR-01..03 remain closed; UAT complete; verification passed
+Progress: Phase 7 plans 00–21 complete; CR/WR closed; UAT + verification passed; threat register verified
 
-See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
+See also: `phases/07-git-repos-browse/07-*-PLAN.md` · `07-SECURITY.md` · `07-COVERAGE.md` · `07-CONTEXT.md` · `07-UI-SPEC.md` · `07-RESEARCH.md`
 
 ## Performance Metrics
 
