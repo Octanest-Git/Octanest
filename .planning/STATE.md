@@ -247,8 +247,8 @@ Recent decisions affecting current work:
 - [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
 - [Phase 08]: Wave 0 web stubs RED-only; variable @vite-ignore import for absent tokens route
 - [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
-- [Phase 08]: [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
-- [Phase 08]: [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
+- [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
+- [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 
 ### Pending Todos
 
