@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 18
+open_count: 19
 waived_count: 0
 fixed_count: 0
-total_count: 18
-last_updated: 2026-09-13T18:37:52.519Z
+total_count: 19
+last_updated: 2026-09-13T18:42:34.877Z
 ---
 
 # Broken Windows Ledger
@@ -33,6 +33,7 @@ last_updated: 2026-09-13T18:37:52.519Z
 | 16 | 08 | deviation | apps/web/src/routes/settings/tokens.integration.test.ts |  | Used runtime-variable @vite-ignore import so Vitest collects while tokens route absent | open |  | 2026-09-13T18:04:19.657Z |  |
 | 17 | 08 | stub | crates/octanest-api/src/pat/mod.rs |  | create_fine_grained stub → pat.not_implemented (08-05) | open |  | 2026-09-13T18:37:52.435Z |  |
 | 18 | 08 | skipped-test | crates/octanest-api/tests/git_smart_http.rs |  | 4 expansion git_smart tests #[ignore] until 08-06 | open |  | 2026-09-13T18:37:52.519Z |  |
+| 19 | 08 | deviation | crates/octanest-api/src/pat/mod.rs |  | Plan prose ona_fg_ locked to octanest_fg_ (FINE_GRAINED_PAT_PREFIX / D-08) | open |  | 2026-09-13T18:42:34.877Z |  |
 
 ````json
 [
@@ -250,6 +251,18 @@ last_updated: 2026-09-13T18:37:52.519Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T18:37:52.519Z",
+    "resolved_at": null
+  },
+  {
+    "id": 19,
+    "kind": "deviation",
+    "phase": "08",
+    "file": "crates/octanest-api/src/pat/mod.rs",
+    "line": null,
+    "description": "Plan prose ona_fg_ locked to octanest_fg_ (FINE_GRAINED_PAT_PREFIX / D-08)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T18:42:34.877Z",
     "resolved_at": null
   }
 ]

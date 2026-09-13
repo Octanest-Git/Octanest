@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 08
 current_phase_name: Git HTTPS & PATs
 status: executing
-stopped_at: Completed 08-04-PLAN.md
-last_updated: "2026-09-13T18:37:53.459Z"
+stopped_at: Completed 08-05-PLAN.md
+last_updated: "2026-09-13T18:42:34.592Z"
 last_activity: 2026-09-13
 last_activity_desc: Phase 08 execution started
-state_head: d795b865abf915a5efc54f9cddc7054ca285c94e
+state_head: 5b0f405d7e44eda8732c03b3f9adc57158100f3e
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 77
-  completed_plans: 68
+  completed_plans: 69
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 08 (Git HTTPS & PATs) — EXECUTING
-Plan: 6 of 14
+Plan: 7 of 14
 Status: Ready to execute
 Last activity: 2026-09-13 — Phase 08 execution started
 
@@ -118,6 +118,7 @@ See also: `phases/08-git-https-pats/08-00-PLAN.md` … `08-13-PLAN.md` · `08-CO
 | Phase 08 P02 | 1min | 3 tasks | 4 files |
 | Phase 08-git-https-pats P03 | 4min | 2 tasks | 11 files |
 | Phase 08-git-https-pats P04 | 8min | 2 tasks | 11 files |
+| Phase 08 P05 | 2min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,8 @@ Recent decisions affecting current work:
 - [Phase 08]: 08-03: PAT schema uses octanest_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
 - [Phase 08]: 08-04: mint classic PATs with octanest_pat_ (not ona_pat_); Axum uses {repo_git} segment
 - [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
+- [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_
+- [Phase 08]: Selected empty or non-owned repo ids → pat.invalid_scope; all ignores repository_ids
 
 ### Pending Todos
 
@@ -278,6 +281,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T18:37:53.402Z
-Stopped at: Completed 08-04-PLAN.md
+Last session: 2026-09-13T18:42:34.530Z
+Stopped at: Completed 08-05-PLAN.md
 Resume file: None
