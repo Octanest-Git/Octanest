@@ -5,16 +5,16 @@ current_phase: 10
 current_phase_name: Orgs & Permissions
 current_plan: 3
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-09-13T23:41:24.891Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-09-13T23:52:49.022Z"
 last_activity: 2026-09-14
-last_activity_desc: Completed 10-00 Wave 0 Rust stubs
-state_head: b414571ff4ee4114f5d663c48dd285f266d67c97
+last_activity_desc: Completed 10-02 0010_orgs_acl schema door
+state_head: 2968ee0e3890020d353c208f81e5a19092002c84
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 79
+  completed_plans: 80
 milestone_name: milestone
 ---
 
@@ -34,7 +34,7 @@ Current Plan: 3
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
-Last activity: 2026-09-14 — Completed 10-00 Wave 0 Rust stubs
+Last activity: 2026-09-14 — Completed 10-02 0010_orgs_acl schema door
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
@@ -132,6 +132,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P13 | 3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
 | Phase 10 P01 | 5min | 1 tasks | 4 files |
+| Phase 10 P02 | 4min | 1 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -292,6 +293,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Use 0010_orgs_acl (not 0009) because Phase 09 SSH claims 0009_ssh_keys
 - [Phase 10]: Wave 0 web stubs RED-only; no production Octane org routes
 - [Phase 10]: Collaborators Wave 0 stubs import future collaborators-panel; T-10-03 no-email in lookup assertions
+- [Phase 10]: proceed_0010: migration 0010_orgs_acl + owner_type/owner_id polymorphic repos (not 0009; not owners table)
+- [Phase 10]: Invite/collaborator tables created in 0010 empty; RPCs deferred to later plans; no org.create in 10-02
 
 ### Pending Todos
 
@@ -313,6 +316,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T23:41:24.803Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-09-13T23:52:48.930Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None
