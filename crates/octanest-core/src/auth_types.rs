@@ -366,6 +366,18 @@ mod tests {
         assert!(validate_username("new").is_err());
     }
 
+    /// Wave 08-03 / D-10: Basic-auth username aliases must not be claimable accounts.
+    #[test]
+    fn git_token_oauth2_are_reserved_for_basic_aliases() {
+        for name in ["git", "token", "oauth2", "Git", "TOKEN", "OAuth2"] {
+            assert!(
+                is_reserved_username(name),
+                "{name} must be reserved (D-10 aliases)"
+            );
+            assert!(validate_username(name).is_err());
+        }
+    }
+
     #[test]
     fn user_public_json_includes_must_change_credentials() {
         let json = serde_json::json!({
