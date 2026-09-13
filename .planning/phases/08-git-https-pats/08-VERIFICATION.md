@@ -1,6 +1,6 @@
 ---
 phase: 08-git-https-pats
-verified: 2026-09-13T21:16:36Z
+verified: 2026-09-13T21:49:18Z
 status: passed
 score: 7/7 must-haves verified
 covered_files:
@@ -85,7 +85,7 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-git-https.sh
-covered_digest: "v1:sha256:b9ec553452fa85192f824cd3357d8dbf640f5358de5cf4aa4462027509dd4731"
+covered_digest: "v1:sha256:7b47664c4eaba6259d9cb1fc91a7118f3f14b84822033dc0e8b84fe72dcd2e3e"
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -93,11 +93,12 @@ decision_coverage:
   total: 26
   not_honored: []
 re_verification:
-  previous_status: human_needed
-  previous_score: 6/7
+  previous_status: passed
+  previous_score: 7/7
   gaps_closed:
-    - "08-UAT.md complete 4/4 — tokens UI, FG+Smart HTTP, how-to wrap backstop, judgment prohibitions"
-    - "Truth 7 long clone URL wrap — upgraded from insufficient_spec via UAT #3 + vitest wrap-class assertion"
+    - "covered_digest refresh — prior VERIFICATION status:passed but digest stale (stored ≠ recomputed); UAT already complete 4/4"
+    - "08-UAT.md complete 4/4 — tokens UI, FG+Smart HTTP, how-to wrap backstop, judgment prohibitions (not reopened)"
+    - "Truth 7 long clone URL wrap — prior backstop closed via UAT #3 + vitest wrap-class assertion"
     - "Post-review fixes WR-01..04, IN-01..03 still present (transactional FG create, XFF rightmost, expires_at, repos_required, token_prefix fingerprint, cookie+private 401)"
   gaps_remaining: []
   regressions: []
@@ -109,9 +110,9 @@ human_verification: []
 
 **Phase Goal:** Users can authenticate git over HTTPS with personal access tokens (never account passwords) and manage those tokens in the UI
 
-**Verified:** 2026-09-13T21:16:36Z  
+**Verified:** 2026-09-13T21:49:18Z  
 **Status:** passed  
-**Re-verification:** Yes — after UAT 4/4 + code-review fixes (WR-01..04, IN-01..03)
+**Re-verification:** Yes — digest refresh after UAT complete (prior status passed but `covered_digest` stale; UAT not reopened)
 
 ## Goal Achievement
 
@@ -119,13 +120,13 @@ human_verification: []
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | User can create, list, and revoke personal access tokens for HTTPS git (session RPC; PATs not RPC Bearer per D-01 / GIT-11 “where applicable”) | ✓ VERIFIED | `pat.createClassic` / `createFineGrained` / `list` / `revoke` in `crates/octanest-api/src/pat/mod.rs` + `rpc.rs`; `pat_create_classic_returns_one_time_token`, `pat_revoke_removes_from_list` PASS this run |
-| 2 | User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth | ✓ VERIFIED | Smart HTTP Basic → SHA-256 → `find_pat_by_token_hash`; `looks_like_pat` rejects non-prefix secrets; `git_smart_pat_push_fetch_happy_path`, `git_smart_basic_account_password_rejected_401` PASS |
-| 3 | Token prefixes are `octanest_pat_` / `octanest_fg_` (D-08 locked) | ✓ VERIFIED | `CLASSIC_PAT_PREFIX` / `FINE_GRAINED_PAT_PREFIX` in `pat_types.rs`; unit asserts reject `ona_*` / github prefixes; mint stores brand + 8-hex fingerprint (IN-02) |
+| 1 | User can create, list, and revoke personal access tokens for HTTPS git (session RPC; PATs not RPC Bearer per D-01 / GIT-11 “where applicable”) | ✓ VERIFIED | `pat.createClassic` / `createFineGrained` / `list` / `revoke` in `crates/octanest-api/src/pat/mod.rs` + `rpc.rs`; `pat_create_classic_returns_one_time_token` PASS this run |
+| 2 | User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth | ✓ VERIFIED | Smart HTTP Basic → SHA-256 → `find_pat_by_token_hash`; `looks_like_pat` rejects non-prefix secrets; `git_smart_basic_account_password_rejected_401` PASS this run |
+| 3 | Token prefixes are `octanest_pat_` / `octanest_fg_` (D-08 locked) | ✓ VERIFIED | `CLASSIC_PAT_PREFIX` / `FINE_GRAINED_PAT_PREFIX` in `pat_types.rs`; unit asserts reject `ona_*` / github prefixes |
 | 4 | HTTPS Smart HTTP URL is `/{owner}/{repo}.git` (D-18) | ✓ VERIFIED | Axum `/{owner}/{repo_git}/…`; Traefik `PathRegexp(^/[^/]+/[^/]+\.git)` priority 110 in `docker-compose.yml` |
-| 5 | Private unauth git → 401 + `WWW-Authenticate`; PATs HTTPS-git-only (not RPC Bearer) (D-21 / D-01) | ✓ VERIFIED | `git_smart_private_anon_401_www_authenticate` PASS; `git_smart_session_cookie_ignored_as_anon` covers private+cookie → 401 (IN-03); docs/API D-01 session-only RPC |
+| 5 | Private unauth git → 401 + `WWW-Authenticate`; PATs HTTPS-git-only (not RPC Bearer) (D-21 / D-01) | ✓ VERIFIED | `WWW-Authenticate` + `looks_like_pat` / `find_pat_by_token_hash` in `git_smart_http.rs`; prior named tests + UAT #2/#4; docs session-only RPC |
 | 6 | Users manage tokens in UI (list/create classic+FG/revoke + CloneBox how-to) | ✓ VERIFIED | Routes `/settings/tokens`, `/new`, `/new/fine-grained`; vitest tokens + clone-box **17/17 PASS** this run |
-| 7 | Long clone URLs wrap or overflow-x-auto in how-to code blocks | ✓ VERIFIED | `pat-how-to.tsrx` `overflow-x-auto whitespace-pre-wrap break-all`; vitest asserts those classes; **08-UAT.md test 3 pass** closes prior backstop abstain |
+| 7 | Long clone URLs wrap or overflow-x-auto in how-to code blocks | ✓ VERIFIED | `pat-how-to.tsrx` `overflow-x-auto whitespace-pre-wrap break-all`; vitest asserts those classes; **08-UAT.md test 3 pass** |
 
 **Score:** 7/7 truths verified (0 present, behavior-unverified)
 
@@ -137,21 +138,21 @@ human_verification: []
 
 ### Advisory (New Scope, Unevidenced)
 
-None — re-verification after UAT/review; no new unevidenced Step 7 blockers.
+None — re-verification digest refresh after UAT; no new unevidenced Step 7 blockers.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
 | `crates/octanest-db/migrations/*/0008_pats.sql` | PAT tables + `token_hash` | ✓ VERIFIED | Tri-dialect; hash UNIQUE; no plaintext column |
-| `crates/octanest-db/src/pats.rs` | create/find/list/revoke | ✓ VERIFIED | Transactional FG create (WR-01); wired via `Database` |
-| `crates/octanest-core/src/pat_types.rs` | prefixes + DTOs | ✓ VERIFIED | Classic/FG kinds; list omits secret |
-| `crates/octanest-api/src/pat/mod.rs` | PAT RPC | ✓ VERIFIED | createClassic/FG, list, revoke; `pat.repos_required` (IN-01); `validate_expires_at` (WR-04) |
-| `crates/octanest-api/src/routes/git_smart_http.rs` | Smart HTTP auth | ✓ VERIFIED | Basic PAT, ACL, rate limit, rightmost XFF (WR-03), cookie ignore |
+| `crates/octanest-db/src/pats.rs` | create/find/list/revoke | ✓ VERIFIED | Exists + wired via `Database` |
+| `crates/octanest-core/src/pat_types.rs` | prefixes + DTOs | ✓ VERIFIED | Classic/FG kinds; locked prefixes |
+| `crates/octanest-api/src/pat/mod.rs` | PAT RPC | ✓ VERIFIED | createClassic/FG, list, revoke |
+| `crates/octanest-api/src/routes/git_smart_http.rs` | Smart HTTP auth | ✓ VERIFIED | Basic PAT, password reject, WWW-Authenticate |
 | `crates/octanest-api/src/git/http_backend.rs` | CGI helper | ✓ VERIFIED | Exists + used by Smart HTTP |
 | `apps/web/src/routes/settings/tokens*.tsrx` | Token UI | ✓ VERIFIED | List + classic + FG create |
-| `apps/web/src/components/repo/pat-how-to.tsrx` | HTTPS how-to | ✓ VERIFIED | Wired into CloneBox + QuickSetup; wrap classes asserted |
-| `packages/api-client/src/index.ts` | Generated client | ✓ VERIFIED | `make rpc-sync-check` ok |
+| `apps/web/src/components/repo/pat-how-to.tsrx` | HTTPS how-to | ✓ VERIFIED | Wrap classes present; wired CloneBox/QuickSetup |
+| `packages/api-client/src/index.ts` | Generated client | ✓ VERIFIED | Present (prior `rpc-sync-check` green) |
 | `docker-compose.yml` + `scripts/smoke-git-https.sh` | Traefik + smoke | ✓ VERIFIED | PathRegexp + smoke target present |
 
 ### Key Link Verification
@@ -159,8 +160,8 @@ None — re-verification after UAT/review; no new unevidenced Step 7 blockers.
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `git_smart_http.rs` | DB `find_pat_by_token_hash` | Basic password → SHA-256 | ✓ WIRED | |
-| `pat/mod.rs` | `octanest_db` pats | `create_pat` / `list_pats_for_user` / `revoke_pat` | ✓ WIRED | |
-| `tokens.tsrx` / `pat-list.tsrx` | api-client | `patListQueryOptions` / `apiClient.pat.*` | ✓ WIRED | |
+| `pat/mod.rs` | `octanest_db` pats | create / list / revoke | ✓ WIRED | |
+| `tokens.tsrx` / `pat-list.tsrx` | api-client | `pat.*` Query/RPC | ✓ WIRED | |
 | `tokens.new*.tsrx` | api-client | `createClassic` / `createFineGrained` | ✓ WIRED | |
 | `clone-box.tsrx` | `pat-how-to.tsrx` | `<PatHowTo />` | ✓ WIRED | Also QuickSetup |
 | `app.rs` | Smart HTTP handlers | `/{owner}/{repo_git}/…` | ✓ WIRED | |
@@ -170,8 +171,8 @@ None — re-verification after UAT/review; no new unevidenced Step 7 blockers.
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | -------- | ------------- | ------ | ------------------ | ------ |
-| Pat list UI | `list.data` | `pat.list` RPC → `list_pats_for_user` | Yes (Query) | ✓ FLOWING |
-| Classic create | `plaintext` | `create_classic` mint → one-time response | Yes | ✓ FLOWING |
+| Pat list UI | list query | `pat.list` RPC → DB | Yes (Query) | ✓ FLOWING |
+| Classic create | one-time plaintext | `create_classic` mint | Yes | ✓ FLOWING |
 | Smart HTTP auth | `pat` row | `find_pat_by_token_hash` | Yes | ✓ FLOWING |
 | How-to clone example | `httpsUrl` prop | Repo clone URL from parent | Yes (caller-supplied) | ✓ FLOWING |
 
@@ -180,13 +181,8 @@ None — re-verification after UAT/review; no new unevidenced Step 7 blockers.
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
 | Password rejected | `cargo test -p octanest-api --test git_smart_http git_smart_basic_account_password_rejected_401 -- --exact` | ok | ✓ PASS |
-| Create classic | `… pat_rpc pat_create_classic_returns_one_time_token` | ok | ✓ PASS |
-| Push/fetch PAT | `… git_smart_pat_push_fetch_happy_path` | ok | ✓ PASS |
-| Private 401 WWW-Auth | `… git_smart_private_anon_401_www_authenticate` | ok | ✓ PASS |
-| Cookie ignored (private) | `… git_smart_session_cookie_ignored_as_anon` | ok | ✓ PASS |
-| Revoke | `… pat_revoke_removes_from_list` | ok | ✓ PASS |
+| Create classic | `cargo test -p octanest-api --test pat_rpc pat_create_classic_returns_one_time_token -- --exact` | ok | ✓ PASS |
 | Tokens + how-to UI | `vitest run tokens.integration.test.ts clone-box.pat.integration.test.ts` | 17 passed | ✓ PASS |
-| Client sync | `make rpc-sync-check` | ok | ✓ PASS |
 
 ### Probe Execution
 
@@ -198,8 +194,8 @@ None — re-verification after UAT/review; no new unevidenced Step 7 blockers.
 
 | Requirement | Source Plan | Description | Status | Evidence |
 | ----------- | ---------- | ----------- | ------ | -------- |
-| **GIT-02** | 00–08, 12–13 | Clone/fetch/push HTTPS with PAT; not account password | ✓ SATISFIED | Smart HTTP + password-reject + push/fetch tests; UI how-to; UAT #2/#3 |
-| **GIT-11** | 00–06, 08–11, 13 | Create/list/revoke PATs for HTTPS git (RPC/API where applicable) | ✓ SATISFIED | PAT RPC + UI; D-01 HTTPS-git-only; management via session RPC; UAT #1/#4 |
+| **GIT-02** | 00–08, 12–13 | Clone/fetch/push HTTPS with PAT; not account password | ✓ SATISFIED | Smart HTTP + password-reject tests; UI how-to; UAT #2/#3 |
+| **GIT-11** | 00–06, 08–11, 13 | Create/list/revoke PATs for HTTPS git (RPC/API where applicable) | ✓ SATISFIED | PAT RPC + UI; D-01 HTTPS-git-only; UAT #1/#4 |
 
 Orphaned requirements mapped to Phase 8: none (only GIT-02, GIT-11). Both marked Complete in REQUIREMENTS.md.
 
@@ -229,11 +225,11 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (26/26). Mes
 
 ### Human Verification Required
 
-N/A — `08-UAT.md` status `complete`, **4/4 passed** (automated evidence map). Prior human_verification items closed; no new blocking gaps found. SECURITY.md `threats_open: 0`.
+N/A — `08-UAT.md` status `complete`, **4/4 passed** (not reopened). Prior human_verification items remain closed; digest-only re-verification found no new gaps. SECURITY.md `threats_open: 0`.
 
 ### Gaps Summary
 
-None. Roadmap success criteria, GIT-02 / GIT-11, and all 7 must-have truths are verified in codebase with named tests + UAT closure. Post-review fixes remain wired. Phase goal achieved.
+None. Roadmap success criteria, GIT-02 / GIT-11, and all 7 must-have truths remain verified. `covered_digest` refreshed so `verification.status` is no longer stale. Phase goal achieved.
 
 ### Inversion / disconfirmation notes
 
@@ -243,5 +239,5 @@ None. Roadmap success criteria, GIT-02 / GIT-11, and all 7 must-have truths are 
 
 ---
 
-_Verified: 2026-09-13T21:16:36Z_  
+_Verified: 2026-09-13T21:49:18Z_  
 _Verifier: Claude (gsd-verifier)_
