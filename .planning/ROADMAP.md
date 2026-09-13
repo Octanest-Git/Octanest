@@ -355,12 +355,12 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**Plans**: 10 plans
+**Plans**: 1/10 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
+- [x] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
 - [ ] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
 - [ ] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
 
@@ -635,7 +635,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
-| 9. Git SSH | 0/TBD | Not started | - |
+| 9. Git SSH | 1/10 | In Progress|  |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |

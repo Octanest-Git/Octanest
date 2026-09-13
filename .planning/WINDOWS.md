@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 21
+open_count: 25
 waived_count: 0
 fixed_count: 1
-total_count: 22
-last_updated: 2026-09-13T19:22:14.499Z
+total_count: 26
+last_updated: 2026-09-13T23:34:42.250Z
 ---
 
 # Broken Windows Ledger
@@ -37,6 +37,10 @@ last_updated: 2026-09-13T19:22:14.499Z
 | 20 | 08 | unrun-verify | scripts/smoke-git-https.sh |  | Live make smoke-git-https not run — Docker engine unavailable on executor host | open |  | 2026-09-13T19:06:10.084Z |  |
 | 21 | 08 | skipped-test | apps/web/src/routes/settings/tokens.integration.test.ts |  | D-15 one-time reveal it.skip until 08-10 | open |  | 2026-09-13T19:22:14.417Z |  |
 | 22 | 08 | deviation | apps/web/src/components/settings/pat-revoke-dialog.tsrx |  | Revoke dialog landed with T1 list commit; T2 greened assertions | open |  | 2026-09-13T19:22:14.499Z |  |
+| 23 | 09 | stub | crates/octanest-api/tests/ssh_key_rpc.rs |  | Wave 0 assert!(false) sshKey RPC stubs until 09-03 | open |  | 2026-09-13T23:34:41.937Z |  |
+| 24 | 09 | stub | crates/octanest-api/tests/git_ssh.rs |  | Wave 0 assert!(false) git_ssh stubs until 09-04/09-05 | open |  | 2026-09-13T23:34:42.044Z |  |
+| 25 | 09 | stub | crates/octanest-db/tests/dialect_ssh_keys.rs |  | Wave 0 dialect_ssh_keys until 0009_ssh_keys migration (09-02) | open |  | 2026-09-13T23:34:42.151Z |  |
+| 26 | 09 | stub | scripts/smoke-git-ssh.sh |  | Wave 0 smoke-git-ssh exit 1 until 09-05 Compose TCP green | open |  | 2026-09-13T23:34:42.250Z |  |
 
 ````json
 [
@@ -302,6 +306,54 @@ last_updated: 2026-09-13T19:22:14.499Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T19:22:14.499Z",
+    "resolved_at": null
+  },
+  {
+    "id": 23,
+    "kind": "stub",
+    "phase": "09",
+    "file": "crates/octanest-api/tests/ssh_key_rpc.rs",
+    "line": null,
+    "description": "Wave 0 assert!(false) sshKey RPC stubs until 09-03",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:34:41.937Z",
+    "resolved_at": null
+  },
+  {
+    "id": 24,
+    "kind": "stub",
+    "phase": "09",
+    "file": "crates/octanest-api/tests/git_ssh.rs",
+    "line": null,
+    "description": "Wave 0 assert!(false) git_ssh stubs until 09-04/09-05",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:34:42.044Z",
+    "resolved_at": null
+  },
+  {
+    "id": 25,
+    "kind": "stub",
+    "phase": "09",
+    "file": "crates/octanest-db/tests/dialect_ssh_keys.rs",
+    "line": null,
+    "description": "Wave 0 dialect_ssh_keys until 0009_ssh_keys migration (09-02)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:34:42.151Z",
+    "resolved_at": null
+  },
+  {
+    "id": 26,
+    "kind": "stub",
+    "phase": "09",
+    "file": "scripts/smoke-git-ssh.sh",
+    "line": null,
+    "description": "Wave 0 smoke-git-ssh exit 1 until 09-05 Compose TCP green",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:34:42.250Z",
     "resolved_at": null
   }
 ]

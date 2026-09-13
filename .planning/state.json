@@ -36,12 +36,12 @@
     {
       "number": "7",
       "name": "Git Repos & Browse",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "8",
       "name": "Git HTTPS & PATs",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "9",
@@ -115,9 +115,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-verify-work",
-    "label": "Re-verify work",
-    "reason": "Recent verification failed — re-verify or debug"
+    "command": "/gsd-progress --next",
+    "label": "Advance to the next step",
+    "reason": "Phase 09 of 22 · executing"
   },
-  "updated_at": "2026-09-13T19:46:59.710Z"
+  "updated_at": "2026-09-13T23:28:01.332Z"
 }
