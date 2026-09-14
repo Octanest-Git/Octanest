@@ -42,8 +42,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 - [x] **GIT-01**: User can create a repository (public or private)
 - [x] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
-- [ ] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
-- [ ] **GIT-04**: User can add, list, and revoke SSH public keys on their account
+- [x] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
+- [x] **GIT-04**: User can add, list, and revoke SSH public keys on their account
 - [x] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
 - [x] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
 - [x] **GIT-07**: User can download a source archive for a ref
@@ -193,8 +193,8 @@ Deferred; not in the current roadmap until promoted.
 | AUTH-12 | Phase 5 | Complete |
 | GIT-01 | Phase 7 | Complete |
 | GIT-02 | Phase 8 | Complete |
-| GIT-03 | Phase 9 | Pending |
-| GIT-04 | Phase 9 | Pending |
+| GIT-03 | Phase 9 | Complete |
+| GIT-04 | Phase 9 | Complete |
 | GIT-05 | Phase 7 | Complete |
 | GIT-06 | Phase 7 | Complete |
 | GIT-07 | Phase 7 | Complete |

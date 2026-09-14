@@ -355,39 +355,39 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**Plans**: 10 plans
+**Plans**: 10/10 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
-- [ ] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
-- [ ] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
+- [x] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
+- [x] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
+- [x] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
+- [x] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 09-04-PLAN.md — ACL parity, receive-pack, rate-limit, key caps
+- [x] 09-04-PLAN.md — ACL parity, receive-pack, rate-limit, key caps
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 09-05-PLAN.md — Compose TCP 2222 + host keys + smoke-git-ssh
-- [ ] 09-06-PLAN.md — make rpc-gen + API.md SSH docs
+- [x] 09-05-PLAN.md — Compose TCP 2222 + host keys + smoke-git-ssh
+- [x] 09-06-PLAN.md — make rpc-gen + API.md SSH docs
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 09-07-PLAN.md — /settings/ssh-keys UI + nav + revoke confirm
+- [x] 09-07-PLAN.md — /settings/ssh-keys UI + nav + revoke confirm
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 09-08-PLAN.md — CloneBox scp-style SSH URL + how-to CTA
+- [x] 09-08-PLAN.md — CloneBox scp-style SSH URL + how-to CTA
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 09-09-PLAN.md — CONFIGURATION/ARCHITECTURE + VALIDATION phase gate
+- [x] 09-09-PLAN.md — CONFIGURATION/ARCHITECTURE + VALIDATION phase gate
 
 **UI hint**: yes
 
@@ -635,7 +635,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
-| 9. Git SSH | 0/TBD | Not started | - |
+| 9. Git SSH | 10/10 | In Progress|  |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |

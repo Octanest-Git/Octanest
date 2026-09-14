@@ -39,6 +39,10 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `MYSQL_DATABASE_URL` | MySQL profile | `mysql://octanest:octanest@mysql:3306/octanest` | Overrides API `DATABASE_URL` when using the MySQL Compose overlay. |
 | `OCTANEST_SQLITE_HOST_DIR` | SQLite overlay | `./var` | Host path bind-mounted to `/app/var` for SQLite file storage. |
 | `OCTANEST_REPOS_DIR` | Optional | `var/repos` | Root for bare git repositories (`{owner}/{name}.git`). Compose binds `./var/repos:/var/repos`; with API CWD `/` the default resolves to `/var/repos` without overriding the env var. |
+| `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
+| `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
+| `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
+| `OCTANEST_SSH_HOST_KEY_DIR` | Optional | `var/ssh` (Compose `/var/ssh`) | Persist Ed25519 host keys across restarts (TOFU). Compose uses a named volume. |
 | `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | Optional | `86400` (24h) | In-process orphan reconcile interval. Removes bare dirs with no DB row and purges soft-deleted repos past retention. Set `0` to disable. |
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | Optional | `14` | Days to keep soft-deleted repository rows/files before orphan reconcile hard-deletes them. |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | Optional | `604800` (7d) | In-process scheduled `git gc --auto` across active repos. Set `0` to disable. Sys-admins can also trigger `admin.repos.gc` manually. |
@@ -89,6 +93,27 @@ Bare `/{owner}/{repo}` (no `.git` suffix) stays on the web UI. Self-hosted rever
 **PAT prefixes (redacted examples only):** classic `octanest_pat_REDACTED`, fine-grained `octanest_fg_REDACTED`. Mint via Settings → Tokens (RPC `pat.*` with session cookie). **PATs are not RPC Bearer credentials** — typed `/api/rpc` stays on the session cookie; PATs authenticate Smart HTTP over HTTPS via HTTP Basic (password = token) only.
 
 **Failed-auth rate limit (single replica):** Failed Basic/PAT attempts are limited **in-process** (20 failures per client IP and 10 per username per 15 minutes → HTTP `429` + `Retry-After`). Client IP is taken from the **rightmost** `X-Forwarded-For` hop (the address appended by the trusted reverse proxy). **Do not expose the API directly to the internet without a proxy that overwrites or sanitizes forwarded headers** — otherwise clients can spoof leftmost XFF hops and bypass the per-IP window. Counters are **not** shared across API replicas — multi-replica deployments need an external / shared limiter or sticky single replica for this control.
+
+## Git over SSH
+
+Phase 9 adds Git **clone/fetch/push over SSH** beside Smart HTTP. Keys are registered via session RPC `sshKey.*` (Settings → SSH keys). Architecture: [ARCHITECTURE.md](ARCHITECTURE.md#git-over-ssh). API shapes: [API.md](API.md).
+
+| Env | Role |
+| --- | --- |
+| `OCTANEST_SSH_ENABLED` | Gate in-process `russh` listener |
+| `OCTANEST_SSH_PORT` | Listen **and** advertise port (Compose default **2222**) |
+| `OCTANEST_SSH_HOST` | Advertised hostname for CloneBox / smoke |
+| `OCTANEST_SSH_HOST_KEY_DIR` | Persist host keys (Compose volume `/var/ssh`) |
+
+**Remote URL (D-SSH-02):** Always scp-style `git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`. Do **not** treat `ssh://` as the primary CloneBox string. When `OCTANEST_SSH_PORT` ≠ 22, set `Port` under a matching `Host` in `~/.ssh/config` (or pass `ssh -p`).
+
+**Identity (D-SSH-03):** SSH username must be `git`. Account identity is the registered public-key **fingerprint** (full account ACL — no PAT scopes).
+
+**Edge (D-SSH-07):** Publish **raw TCP** on the API service (`2222:2222` in Compose). **Do not** route SSH through Traefik HTTP. Host `make dev` may omit the listener unless `OCTANEST_SSH_ENABLED` is set.
+
+**Smoke:** `make smoke-git-ssh` (skips exit 0 when Docker is missing). See `scripts/smoke-git-ssh.sh`.
+
+**Failed pubkey rate limit:** Same windows as Smart HTTP PAT failures (20/IP, 10/fingerprint per 15 minutes); successful auth clears the fingerprint bucket.
 
 ## Config file format
 

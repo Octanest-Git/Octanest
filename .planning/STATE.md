@@ -1,19 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 10
-current_phase_name: Orgs & Permissions
-status: planned
-stopped_at: Phases 9 and 10 plans verified — ready to execute
-last_updated: "2026-09-14T01:23:00.000Z"
+current_phase: 09
+current_phase_name: Git SSH
+current_plan: 10
+status: verifying
+stopped_at: Completed 09-09-PLAN.md — Phase 09 plans done
+last_updated: "2026-09-14T00:22:38.356Z"
 last_activity: 2026-09-14
-last_activity_desc: Phases 9+10 plan-checker PASSED — both ready to execute
-state_head: 88f0a46
+last_activity_desc: Phase 09 execution started
+state_head: 93eda87f0bbd024f790fbd2681275e4104e2a547
 progress:
   total_phases: 22
-  completed_phases: 8
+  completed_phases: 0
   total_plans: 101
-  completed_plans: 77
+  completed_plans: 87
 milestone_name: milestone
 ---
 
@@ -24,14 +25,16 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phases 9 (Git SSH) and 10 (Orgs & Permissions) — both planned and ready to execute in parallel
+**Current focus:** Phase 09 — Git SSH
 
 ## Current Position
 
-Phase: 10 (Orgs & Permissions) — READY TO EXECUTE (14 plans: 10-00…10-13)
+Current Plan: 10
+Total Plans in Phase: 10
+Phase: 09 (Git SSH) — EXECUTING
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Planned — ready to execute
-Last activity: 2026-09-14 — Phase 9+10 plan verification passed
+Status: Phase complete — ready for verification
+Last activity: 2026-09-13 — Completed 09-01-PLAN.md
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
@@ -127,6 +130,16 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 08 P13 | 3min | 2 tasks | 3 files |
+| Phase 09 P00 | 5min | 2 tasks | 5 files |
+| Phase 09 P01 | 3min | 1 tasks | 2 files |
+| Phase 09 P02 | 3min | 2 tasks | 8 files |
+| Phase 09 P03 | 25min | 2 tasks | 12 files |
+| Phase 09 P04 | 20min | 2 tasks | 5 files |
+| Phase 09 P05 | 15min | 2 tasks | 5 files |
+| Phase 09 P06 | 12min | 1 tasks | 3 files |
+| Phase 09 P07 | 25min | 2 tasks | 8 files |
+| Phase 09 P08 | 15min | 2 tasks | 5 files |
+| Phase 09 P09 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -283,6 +296,19 @@ Recent decisions affecting current work:
 - [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (octanest_fg_)
 - [Phase 08]: Docs use octanest_pat_/octanest_fg_ (D-08), not ona_* draft wording
 - [Phase 08]: nyquist_compliant left false; validate-phase owns Nyquist flip
+- [Phase 09]: Wave 0 RED-only for Phase 9 SSH — no russh/migrations/RPC in 09-00
+- [Phase 09]: SSH keys migration number is 0009_ssh_keys (Phase 10 owns 0010)
+- [Phase 09]: smoke-git-ssh exits 1 when Docker present until 09-05 greens TCP 2222
+- [Phase 09]: Wave 0 web stubs only — no production ssh-keys UI or CloneBox SSH panel (09-07/09-08)
+- [Phase 09]: GIT-03/GIT-04 not marked complete after 09-01 Wave 0 stubs; greens land in 09-07/09-08
+- [Phase 09]: D-SSH-02 proceed: scp-style clone URL + single OCTANEST_SSH_PORT
+- [Phase 09]: SSH key revoke is hard-delete (no revoked_at)
+- [Phase 09]: SSH tracer: upload-pack for any authenticated key; private ACL in 09-04
+- [Phase 09]: SSH ACL reuses Smart HTTP helpers; denials via git stderr
+- [Phase 09]: SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket
+- [Phase 09]: Compose publishes SSH on TCP 2222 only; never Traefik for SSH
+- [Phase 09]: CloneBox SSH is scp-style; Port hint when OCTANEST_SSH_PORT ≠ 22
+- [Phase 09]: SSH documented as russh in-api + Compose TCP 2222; never Traefik
 
 ### Pending Todos
 
@@ -304,6 +330,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-13T19:59:40.748Z
-Stopped at: Phase 07 complete, ready to plan Phase 08
+Last session: 2026-09-14T00:22:38.272Z
+Stopped at: Completed 09-09-PLAN.md — Phase 09 plans done
 Resume file: None

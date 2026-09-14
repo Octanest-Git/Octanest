@@ -17,6 +17,7 @@ use crate::auth::session::{ResolvedSession, SessionService};
 use crate::auth::verify_reset;
 use crate::email::EmailSender;
 use crate::pat;
+use crate::ssh_keys;
 use crate::repo;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
@@ -291,6 +292,18 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "pat.revoke" => match pat::revoke(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "sshKey.add" => match ssh_keys::add(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "sshKey.list" => match ssh_keys::list(ctx).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "sshKey.revoke" => match ssh_keys::revoke(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

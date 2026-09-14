@@ -21,6 +21,7 @@ import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
+import { Route as SettingsSshKeysRouteImport } from './routes/settings/ssh-keys'
 import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
@@ -95,6 +96,11 @@ const AdminAuthRoute = AdminAuthRouteImport.update({
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/settings/profile',
   path: '/settings/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSshKeysRoute = SettingsSshKeysRouteImport.update({
+  id: '/settings/ssh-keys',
+  path: '/settings/ssh-keys',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsTokensRoute = SettingsTokensRouteImport.update({
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/ssh-keys'
     | '/settings/tokens'
     | '/setup/credentials'
     | '/setup/'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/ssh-keys'
     | '/settings/tokens'
     | '/setup/credentials'
     | '/setup'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/admin/auth'
     | '/settings/profile'
+    | '/settings/ssh-keys'
     | '/settings/tokens'
     | '/setup/credentials'
     | '/setup/'
@@ -361,6 +373,7 @@ export interface RootRouteChildren {
   OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsSshKeysRoute: typeof SettingsSshKeysRoute
   SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
 }
 
@@ -448,6 +461,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/settings/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/ssh-keys': {
+      id: '/settings/ssh-keys'
+      path: '/settings/ssh-keys'
+      fullPath: '/settings/ssh-keys'
+      preLoaderRoute: typeof SettingsSshKeysRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/tokens': {
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsSshKeysRoute: SettingsSshKeysRoute,
   SettingsTokensRoute: SettingsTokensRouteWithChildren,
 }
 export const routeTree = rootRouteImport

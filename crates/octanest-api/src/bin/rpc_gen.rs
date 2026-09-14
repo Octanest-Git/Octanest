@@ -436,6 +436,27 @@ export type RevokePatRequest = {
   id: string;
 };
 
+/** `sshKey.add` input — OpenSSH one-line public key (not a private key). */
+export type AddSshKeyRequest = {
+  title: string;
+  public_key: string;
+};
+
+export type SshKeyListItem = {
+  id: string;
+  title: string;
+  fingerprint: string;
+  key_type: string;
+  public_key?: string;
+  last_used_at?: string | null;
+  last_used_ip?: string | null;
+  created_at: string;
+};
+
+export type RevokeSshKeyRequest = {
+  id: string;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -536,6 +557,13 @@ export function createClient(opts: CreateClientOptions) {
       list: () => rpcCall<PatListItem[]>(opts, "pat.list", {}),
       revoke: (input: RevokePatRequest) =>
         rpcCall<{ ok: boolean }>(opts, "pat.revoke", input),
+    },
+    sshKey: {
+      add: (input: AddSshKeyRequest) =>
+        rpcCall<SshKeyListItem>(opts, "sshKey.add", input),
+      list: () => rpcCall<SshKeyListItem[]>(opts, "sshKey.list", {}),
+      revoke: (input: RevokeSshKeyRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "sshKey.revoke", input),
     },
     admin: {
       auth: {
@@ -892,6 +920,39 @@ export function patRevokeMutationOptions(client: OctanestClient) {
   };
 }
 
+export function sshKeyListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["sshKey", "list"] as const,
+    queryFn: async () => {
+      const res = await client.sshKey.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function sshKeyAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["sshKey", "add"] as const,
+    mutationFn: async (input: AddSshKeyRequest) => {
+      const res = await client.sshKey.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function sshKeyRevokeMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["sshKey", "revoke"] as const,
+    mutationFn: async (input: RevokeSshKeyRequest) => {
+      const res = await client.sshKey.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function adminAuthGetSettingsQueryOptions(client: OctanestClient) {
   return {
     queryKey: ["admin", "auth", "getSettings"] as const,
@@ -931,6 +992,7 @@ export const queryOptions = {
   repoCompare: repoCompareQueryOptions,
   repoBlame: repoBlameQueryOptions,
   patList: patListQueryOptions,
+  sshKeyList: sshKeyListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
@@ -944,6 +1006,8 @@ export const mutationOptions = {
   patCreateClassic: patCreateClassicMutationOptions,
   patCreateFineGrained: patCreateFineGrainedMutationOptions,
   patRevoke: patRevokeMutationOptions,
+  sshKeyAdd: sshKeyAddMutationOptions,
+  sshKeyRevoke: sshKeyRevokeMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };
 "#;

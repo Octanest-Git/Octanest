@@ -50,11 +50,23 @@ services:
       RUST_LOG: ${RUST_LOG:-info}
       # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
       OCTANEST_REPOS_DIR: /var/repos
+      # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
+      OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
+      OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
+      # Advertised hostname for CloneBox / smoke (scp-style git@host:owner/repo.git).
+      # Fallback: hostname of OCTANEST_PUBLIC_ORIGIN (Compose default localhost).
+      OCTANEST_SSH_HOST: ${OCTANEST_SSH_HOST:-localhost}
+      OCTANEST_SSH_HOST_KEY_DIR: ${OCTANEST_SSH_HOST_KEY_DIR:-/var/ssh}
+    ports:
+      # Host TCP publish for SSH (D-SSH-07) — do not add Traefik TCP/HTTP routers for SSH.
+      - "2222:2222"
     volumes:
       # Avatar uploads (D-18) — api CWD is `/`, so bind to /var/uploads
       - ./var/uploads:/var/uploads
       # Bare repos (D-30 / D-38)
       - ./var/repos:/var/repos
+      # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)
+      - ssh_host_keys:/var/ssh
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,3 +126,4 @@ networks:
 
 volumes:
   postgres_data:
+  ssh_host_keys:

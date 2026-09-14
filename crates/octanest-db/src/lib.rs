@@ -10,6 +10,7 @@ pub mod pool;
 pub mod probe;
 pub mod repositories;
 pub mod sessions;
+pub mod ssh_keys;
 pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
@@ -17,6 +18,7 @@ pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use pats::PatRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
+pub use ssh_keys::SshKeyRow;
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
 
@@ -441,6 +443,57 @@ impl Database {
         last_used_ip: Option<&str>,
     ) -> Result<(), String> {
         pats::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
+    }
+
+    // --- ssh public keys ---
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn create_ssh_key(
+        &self,
+        id: &str,
+        user_id: &str,
+        title: &str,
+        public_key: &str,
+        fingerprint: &str,
+        key_type: &str,
+    ) -> Result<(), String> {
+        ssh_keys::create(
+            self.require_pool()?,
+            id,
+            user_id,
+            title,
+            public_key,
+            fingerprint,
+            key_type,
+        )
+        .await
+    }
+
+    pub async fn find_ssh_key_by_fingerprint(
+        &self,
+        fingerprint: &str,
+    ) -> Result<Option<ssh_keys::SshKeyRow>, String> {
+        ssh_keys::find_by_fingerprint(self.require_pool()?, fingerprint).await
+    }
+
+    pub async fn list_ssh_keys_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<ssh_keys::SshKeyRow>, String> {
+        ssh_keys::list_for_user(self.require_pool()?, user_id).await
+    }
+
+    pub async fn revoke_ssh_key(&self, id: &str) -> Result<(), String> {
+        ssh_keys::revoke(self.require_pool()?, id).await
+    }
+
+    pub async fn touch_ssh_key_last_used(
+        &self,
+        id: &str,
+        last_used_at: &str,
+        last_used_ip: Option<&str>,
+    ) -> Result<(), String> {
+        ssh_keys::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
     }
 
     // --- auth identities ---
