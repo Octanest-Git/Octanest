@@ -317,13 +317,22 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                 New organization
               </a>
               @if (user.role === "sys-admin") {
-                <a
-                  href="/admin/auth"
-                  className={mobileNavItemClass}
-                  onClick={onClose}
-                >
-                  Auth settings
-                </a>
+                <>
+                  <a
+                    href="/admin/auth"
+                    className={mobileNavItemClass}
+                    onClick={onClose}
+                  >
+                    Auth settings
+                  </a>
+                  <a
+                    href="/admin/lfs"
+                    className={mobileNavItemClass}
+                    onClick={onClose}
+                  >
+                    LFS quotas
+                  </a>
+                </>
               }
               <Link
                 to="/status"

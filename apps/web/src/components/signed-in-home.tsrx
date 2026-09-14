@@ -163,12 +163,20 @@ export function SignedInHome({
         Status
       </Link>
       @if (user.role === "sys-admin") {
-        <a
-          href="/admin/auth"
-          className={cn(buttonVariants({ variant: "ghost" }))}
-        >
-          Auth settings
-        </a>
+        <>
+          <a
+            href="/admin/auth"
+            className={cn(buttonVariants({ variant: "ghost" }))}
+          >
+            Auth settings
+          </a>
+          <a
+            href="/admin/lfs"
+            className={cn(buttonVariants({ variant: "ghost" }))}
+          >
+            LFS quotas
+          </a>
+        </>
       }
     </div>
   </div>
