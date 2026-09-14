@@ -3,7 +3,7 @@
 use chrono::{Duration, Utc};
 use octanest_core::{
     validate_repo_name, AppError, OwnerType, RepoPublic, RepoRenameRequest, RepoRenameResponse,
-    RepoVisibility,
+    RepoTransferRequest, RepoTransferResponse, RepoVisibility,
 };
 use octanest_db::Database;
 use uuid::Uuid;
@@ -12,6 +12,7 @@ use super::acl::{
     lookup_repo_row_or_redirect, meets, AccessibleRepo, Capability,
 };
 use super::collaborators::resolve_repo_for_admin;
+use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
 use crate::rpc::RpcCtx;
 
@@ -208,4 +209,179 @@ pub async fn supersede_redirect_on_create(
     name: &str,
 ) -> Result<(), String> {
     db.delete_repository_redirect(owner_slug, name).await
+}
+
+async fn resolve_transfer_destination(
+    ctx: &RpcCtx,
+    caller_id: &str,
+    dest_owner: &str,
+    dest_type: OwnerType,
+) -> Result<(String, OwnerType, String), AppError> {
+    let slug = dest_owner.trim();
+    if slug.is_empty() {
+        return Err(AppError::new("rpc.bad_input", "destOwner is required"));
+    }
+    match dest_type {
+        OwnerType::User => {
+            let user = ctx
+                .db
+                .find_user_by_username(slug)
+                .await
+                .map_err(db_err)?
+                .ok_or_else(|| {
+                    AppError::new("repo.transfer_dest_not_found", "Destination user not found")
+                })?;
+            Ok((user.id, OwnerType::User, user.username))
+        }
+        OwnerType::Org => {
+            let org = ctx
+                .db
+                .find_organization_by_slug(slug)
+                .await
+                .map_err(db_err)?
+                .ok_or_else(|| {
+                    AppError::new("repo.transfer_dest_not_found", "Destination organization not found")
+                })?;
+            let member = ctx
+                .db
+                .find_org_member(&org.id, caller_id)
+                .await
+                .map_err(db_err)?;
+            let allowed = member
+                .as_ref()
+                .map(|m| m.role == "owner" || m.role == "admin")
+                .unwrap_or(false);
+            if !allowed {
+                return Err(AppError::new(
+                    "repo.create_forbidden",
+                    "You do not have permission to create a repository under this owner.",
+                ));
+            }
+            Ok((org.id, OwnerType::Org, org.slug))
+        }
+    }
+}
+
+/// `repo.transfer` — Admin moves ownership + bare dir with type-confirm (GIT-17).
+pub async fn transfer(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoTransferResponse, AppError> {
+    let caller = require_verified(ctx).await?;
+    let req: RepoTransferRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.transfer input: {e}"))
+    })?;
+
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    let confirm = req.confirm_name.trim();
+    if confirm != accessible.row.name.as_str() {
+        return Err(AppError::new(
+            "repo.confirm_mismatch",
+            "Type the repository name exactly to confirm transfer.",
+        ));
+    }
+
+    let (dest_id, dest_type, dest_slug) =
+        resolve_transfer_destination(ctx, &caller.id, &req.dest_owner, req.dest_owner_type).await?;
+
+    // No-op transfer to same owner.
+    if dest_id == accessible.row.owner_id
+        && dest_type.as_str() == accessible.row.owner_type.as_str()
+    {
+        return Ok(RepoTransferResponse {
+            repo: to_public(&accessible),
+        });
+    }
+
+    if ctx
+        .db
+        .find_repository_by_owner_name(&dest_id, &accessible.row.name)
+        .await
+        .map_err(db_err)?
+        .is_some()
+    {
+        return Err(AppError::new(
+            "repo.name_taken",
+            "A repository with this name already exists. Choose a different name.",
+        ));
+    }
+
+    let old_slug = accessible.owner_username.clone();
+    let name = accessible.row.name.clone();
+    let old_path = bare_repo_path(&ctx.repos_dir, &old_slug, &name)?;
+    let new_path = bare_repo_path(&ctx.repos_dir, &dest_slug, &name)?;
+
+    if tokio::fs::try_exists(&new_path).await.unwrap_or(false) {
+        return Err(AppError::new(
+            "repo.name_taken",
+            "A repository with this name already exists. Choose a different name.",
+        ));
+    }
+
+    // Ensure destination owner directory exists.
+    if let Some(parent) = new_path.parent() {
+        tokio::fs::create_dir_all(parent).await.map_err(|e| {
+            tracing::error!(error = %e, "create dest owner dir failed");
+            AppError::new("repo.transfer_failed", "failed to prepare destination storage")
+        })?;
+    }
+
+    let moved = if tokio::fs::try_exists(&old_path).await.unwrap_or(false) {
+        tokio::fs::rename(&old_path, &new_path).await.map_err(|e| {
+            tracing::error!(error = %e, "bare repo transfer rename failed");
+            AppError::new("repo.transfer_failed", "failed to move repository storage")
+        })?;
+        true
+    } else {
+        false
+    };
+
+    let former_owner_id = accessible.row.owner_id.clone();
+    let former_was_user = accessible.row.owner_type.eq_ignore_ascii_case("user");
+
+    let updated = match ctx
+        .db
+        .update_repository_owner(&accessible.row.id, &dest_id, dest_type.as_str())
+        .await
+    {
+        Ok(row) => row,
+        Err(e) => {
+            if moved {
+                let _ = tokio::fs::rename(&new_path, &old_path).await;
+            }
+            return Err(db_err(e));
+        }
+    };
+
+    if let Err(e) = insert_rename_redirect(ctx, &old_slug, &name, &updated.id).await {
+        tracing::error!(error = %e.message, "insert redirect after transfer failed");
+    }
+
+    // user→user: former personal owner becomes admin collaborator (discretion).
+    if former_was_user && dest_type == OwnerType::User && former_owner_id != dest_id {
+        let already = ctx
+            .db
+            .find_repo_collaborator(&updated.id, &former_owner_id)
+            .await
+            .ok()
+            .flatten();
+        if already.is_none() {
+            if let Err(e) = ctx
+                .db
+                .insert_repo_collaborator(&updated.id, &former_owner_id, "admin")
+                .await
+            {
+                tracing::warn!(error = %e, "add former owner collaborator after transfer");
+            }
+        }
+    }
+
+    let capability = accessible.capability;
+    Ok(RepoTransferResponse {
+        repo: to_public(&AccessibleRepo {
+            row: updated,
+            owner_username: dest_slug,
+            capability,
+        }),
+    })
 }

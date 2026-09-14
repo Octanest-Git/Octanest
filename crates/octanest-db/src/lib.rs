@@ -422,6 +422,15 @@ impl Database {
         repositories::update_name(self.require_pool()?, id, name).await
     }
 
+    pub async fn update_repository_owner(
+        &self,
+        id: &str,
+        owner_id: &str,
+        owner_type: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_owner(self.require_pool()?, id, owner_id, owner_type).await
+    }
+
     pub async fn soft_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::soft_delete(self.require_pool()?, id).await
     }

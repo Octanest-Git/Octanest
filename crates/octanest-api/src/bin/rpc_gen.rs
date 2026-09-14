@@ -1104,6 +1104,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
       rename: (input: RepoRenameRequest) =>
         rpcCall<RepoRenameResponse>(opts, "repo.rename", input),
+      transfer: (input: RepoTransferRequest) =>
+        rpcCall<RepoTransferResponse>(opts, "repo.transfer", input),
       collaborators: {
         list: (input: RepoGetRequest) =>
           rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),

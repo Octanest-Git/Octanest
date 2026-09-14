@@ -348,6 +348,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.transfer" => match repo::transfer(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.collaborators.list" => match repo::collaborators_list(ctx, req.input).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),

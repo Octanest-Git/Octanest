@@ -16,7 +16,7 @@ pub use collaborators::{
 };
 pub use rename_transfer::{
     redirect_retention_days, rename, resolve_repo_or_redirect, supersede_redirect_on_create,
-    DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
+    transfer, DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
