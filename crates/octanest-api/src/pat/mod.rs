@@ -82,6 +82,21 @@ fn row_to_list_item(row: &octanest_db::PatRow) -> Result<PatListItem, AppError> 
         ),
         None => None,
     };
+    let packages = match kind {
+        PatKind::FineGrained => scopes.as_ref().and_then(|sc| {
+            if sc.iter().any(|s| matches!(s, ClassicPatScope::PackageWrite)) {
+                Some(octanest_core::PackagesPerm::Write)
+            } else if sc
+                .iter()
+                .any(|s| matches!(s, ClassicPatScope::PackageRead))
+            {
+                Some(octanest_core::PackagesPerm::Read)
+            } else {
+                None
+            }
+        }),
+        PatKind::Classic => None,
+    };
     let repo_access = match row.repo_access.as_deref() {
         Some(s) => Some(
             octanest_core::FgRepoAccess::parse(s)
@@ -94,8 +109,12 @@ fn row_to_list_item(row: &octanest_db::PatRow) -> Result<PatListItem, AppError> 
         kind,
         name: row.name.clone(),
         token_prefix: row.token_prefix.clone(),
-        scopes,
+        scopes: match kind {
+            PatKind::Classic => scopes,
+            PatKind::FineGrained => None,
+        },
         contents,
+        packages,
         repo_access,
         repository_ids: row.repository_ids.clone(),
         expires_at: row.expires_at.clone(),
@@ -278,6 +297,18 @@ pub async fn create_fine_grained(
 
     let expires_at = validate_expires_at(req.expires_at.as_deref())?;
 
+    let scopes_json = match req.packages {
+        Some(octanest_core::PackagesPerm::Read) => Some(
+            serde_json::to_string(&["package:read"])
+                .map_err(|e| AppError::new("pat.internal", format!("scopes serialize: {e}")))?,
+        ),
+        Some(octanest_core::PackagesPerm::Write) => Some(
+            serde_json::to_string(&["package:write"])
+                .map_err(|e| AppError::new("pat.internal", format!("scopes serialize: {e}")))?,
+        ),
+        None => None,
+    };
+
     let id = Uuid::new_v4().to_string();
     ctx.db
         .create_pat(
@@ -287,7 +318,7 @@ pub async fn create_fine_grained(
             req.name.trim(),
             &token_prefix,
             &token_hash,
-            None,
+            scopes_json.as_deref(),
             Some(req.contents.as_str()),
             Some(req.repo_access.as_str()),
             expires_at,
