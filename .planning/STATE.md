@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 09
 current_phase_name: Git SSH
-current_plan: 5
+current_plan: 6
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-09-14T00:02:12.235Z"
+stopped_at: Completed 09-04-PLAN.md
+last_updated: "2026-09-14T00:08:11.780Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 09 execution started
-state_head: e08ded0c969735afba6cc561f0e1ed3335a6d5f0
+state_head: 93474fd5facfefd7e610a7d6852cb630ad29b46c
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 81
+  completed_plans: 82
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Current Plan: 5
+Current Plan: 6
 Total Plans in Phase: 10
 Phase: 09 (Git SSH) — EXECUTING
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
@@ -134,6 +134,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 09 P01 | 3min | 1 tasks | 2 files |
 | Phase 09 P02 | 3min | 2 tasks | 8 files |
 | Phase 09 P03 | 25min | 2 tasks | 12 files |
+| Phase 09 P04 | 20min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -298,6 +299,8 @@ Recent decisions affecting current work:
 - [Phase 09]: D-SSH-02 proceed: scp-style clone URL + single OCTANEST_SSH_PORT
 - [Phase 09]: SSH key revoke is hard-delete (no revoked_at)
 - [Phase 09]: SSH tracer: upload-pack for any authenticated key; private ACL in 09-04
+- [Phase 09]: SSH ACL reuses Smart HTTP helpers; denials via git stderr
+- [Phase 09]: SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket
 
 ### Pending Todos
 
@@ -319,6 +322,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T00:02:12.152Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-09-14T00:08:11.694Z
+Stopped at: Completed 09-04-PLAN.md
 Resume file: None
