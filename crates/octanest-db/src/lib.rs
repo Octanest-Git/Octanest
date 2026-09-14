@@ -1142,9 +1142,11 @@ impl Database {
     }
 
     /// Wipe tenant + auth data so the instance returns to empty-setup (`needs_setup`).
-    /// Deletes repositories (cascades collaborators / PAT-repo links), organizations
-    /// (cascades members / invites), then sessions, identities, email tokens, and
-    /// users; resets auth settings to local/log defaults with signup closed.
+    /// Deletes repositories (cascades collaborators / PAT-repo links / issue domain
+    /// tables: issues, counters, comments, revisions, labels, assignees, reactions,
+    /// links), organizations (cascades members / invites / org-scoped labels), then
+    /// sessions, identities, email tokens, and users; resets auth settings to
+    /// local/log defaults with signup closed.
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {
