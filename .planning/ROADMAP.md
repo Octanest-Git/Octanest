@@ -517,7 +517,16 @@ Plans:
   2. User with permission can rename a repository
   3. User with permission can transfer a repository to another user or organization
 
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 15-00-PLAN.md — Wave 0 Nyquist stubs (release/rename/transfer/dialect/web)
+- [ ] 15-01-PLAN.md — Tracer: tag-bound releases with notes + Releases tab
+- [ ] 15-02-PLAN.md — Release assets volume, upload/download, Compose/Vite
+- [ ] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
+- [ ] 15-04-PLAN.md — Admin transfer with type-confirm + cascade
+- [ ] 15-05-PLAN.md — Settings danger zone UI, can_admin chrome, factory reset, docs
+
 **UI hint**: yes
 
 ### Phase 16: In-Repo Search
@@ -641,7 +650,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
 | 14. Git LFS | 0/TBD | Not started | - |
-| 15. Releases & Transfer | 0/TBD | Not started | - |
+| 15. Releases & Transfer | 0/6 | Not started | - |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
