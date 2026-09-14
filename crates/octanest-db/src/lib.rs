@@ -4,6 +4,8 @@ pub mod auth_identities;
 pub mod auth_settings;
 pub mod dialect;
 pub mod email_tokens;
+pub mod issue_labels;
+pub mod issues;
 pub mod migrate;
 pub mod org_invites;
 pub mod org_members;
@@ -18,6 +20,8 @@ pub mod ssh_keys;
 pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
+pub use issue_labels::LabelRow;
+pub use issues::IssueRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -414,6 +418,77 @@ impl Database {
 
     pub async fn hard_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::hard_delete(self.require_pool()?, id).await
+    }
+
+    // --- issues ---
+
+    pub async fn allocate_next_issue_number(&self, repo_id: &str) -> Result<i64, String> {
+        issues::allocate_next_number(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn insert_issue(
+        &self,
+        id: &str,
+        repo_id: &str,
+        author_id: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<IssueRow, String> {
+        issues::insert_issue(
+            self.require_pool()?,
+            id,
+            repo_id,
+            author_id,
+            title,
+            body,
+        )
+        .await
+    }
+
+    pub async fn find_issue_by_id(&self, id: &str) -> Result<Option<IssueRow>, String> {
+        issues::find_by_id(self.require_pool()?, id).await
+    }
+
+    /// Hard-delete; does not reclaim `#N` (D-ISS-01).
+    pub async fn delete_issue(&self, id: &str) -> Result<(), String> {
+        issues::delete_issue(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_label(
+        &self,
+        id: &str,
+        name: &str,
+        color: &str,
+        description: &str,
+        org_id: Option<&str>,
+        repo_id: Option<&str>,
+    ) -> Result<LabelRow, String> {
+        issue_labels::insert_label(
+            self.require_pool()?,
+            id,
+            name,
+            color,
+            description,
+            org_id,
+            repo_id,
+        )
+        .await
+    }
+
+    pub async fn set_issue_labels(
+        &self,
+        issue_id: &str,
+        label_ids: &[String],
+    ) -> Result<(), String> {
+        issue_labels::set_issue_labels(self.require_pool()?, issue_id, label_ids).await
+    }
+
+    pub async fn set_issue_assignees(
+        &self,
+        issue_id: &str,
+        user_ids: &[String],
+    ) -> Result<(), String> {
+        issue_labels::set_issue_assignees(self.require_pool()?, issue_id, user_ids).await
     }
 
     // --- users ---

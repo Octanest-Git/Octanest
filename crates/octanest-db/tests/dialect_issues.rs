@@ -1,9 +1,10 @@
-//! Wave 0 / 11-02: `0011_issues` + issues / counters / comments / revisions / labels / assignees / reactions / links.
-//!
-//! RED until tri-dialect migration lands. Mirror dialect_orgs pattern.
-//! Migration id is 0011_issues after 0010_orgs_acl.
+//! 11-02: `0011_issues` + issues / counters / comments / revisions / labels / assignees / reactions / links.
 
-/// Expect sqlite `0011_issues.sql` with issue domain tables.
+use octanest_core::Role;
+use octanest_db::Database;
+
+/// Expect sqlite `0011_issues.sql` with issue domain tables, migrate, and prove
+/// monotonic `#N` allocation that does not reclaim after hard-delete (D-ISS-01).
 #[tokio::test]
 async fn dialect_issues_migrate_0011_schema_presence() {
     let migration_path = concat!(
@@ -13,45 +14,134 @@ async fn dialect_issues_migrate_0011_schema_presence() {
     let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
     assert!(
         !sql.is_empty(),
-        "Wave 0: 0011_issues.sql must exist (issues + counters + comments + revisions + labels + assignees + reactions + links)"
+        "0011_issues.sql must exist (issues + counters + comments + revisions + labels + assignees + reactions + links)"
+    );
+    for needle in [
+        "issues",
+        "issue_counters",
+        "issue_comments",
+        "issue_revisions",
+        "comment_revisions",
+        "labels",
+        "repo_hidden_labels",
+        "issue_labels",
+        "issue_assignees",
+        "issue_reactions",
+        "comment_reactions",
+        "issue_links",
+    ] {
+        assert!(
+            sql.contains(needle),
+            "0011 must define {needle}"
+        );
+    }
+    assert!(
+        sql.contains("max_number"),
+        "0011 issue_counters must track max_number"
     );
     assert!(
-        sql.contains("issues"),
-        "Wave 0: 0011 must define issues"
-    );
-    assert!(
-        sql.contains("issue_counters"),
-        "Wave 0: 0011 must define issue_counters"
-    );
-    assert!(
-        sql.contains("comment"),
-        "Wave 0: 0011 must define comments (or issue_comments)"
-    );
-    assert!(
-        sql.contains("revision") || sql.contains("history"),
-        "Wave 0: 0011 must define revisions/history tables"
-    );
-    assert!(
-        sql.contains("label"),
-        "Wave 0: 0011 must define labels"
-    );
-    assert!(
-        sql.contains("assignee"),
-        "Wave 0: 0011 must define assignees"
-    );
-    assert!(
-        sql.contains("reaction"),
-        "Wave 0: 0011 must define reactions"
-    );
-    assert!(
-        sql.contains("link"),
-        "Wave 0: 0011 must define issue/PR link stubs"
+        sql.contains("pr_stub") || sql.contains("'pr_stub'"),
+        "0011 issue_links must allow pr_stub kind"
     );
 
-    assert!(
-        false,
-        "Wave 0: Database issue APIs + migrate 0011_issues not wired yet"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("issues.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate 0011_issues");
+
+    let author = db
+        .create_user(
+            "u-issue-author",
+            "issueauthor@example.com",
+            "issueauthor",
+            Some("hash"),
+            "Issue Author",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create author");
+
+    let repo = db
+        .insert_repository(
+            "r-issues-1",
+            &author.id,
+            "user",
+            "issues-demo",
+            "private",
+            "",
+            "main",
+        )
+        .await
+        .expect("insert repo");
+
+    let first = db
+        .insert_issue(
+            "i-1",
+            &repo.id,
+            &author.id,
+            "First issue",
+            "body one",
+        )
+        .await
+        .expect("insert first issue");
+    assert_eq!(first.number, 1);
+    assert_eq!(first.state, "open");
+    assert_eq!(first.title, "First issue");
+
+    let second = db
+        .insert_issue(
+            "i-2",
+            &repo.id,
+            &author.id,
+            "Second issue",
+            "body two",
+        )
+        .await
+        .expect("insert second issue");
+    assert_eq!(second.number, 2);
+
+    db.delete_issue(&first.id)
+        .await
+        .expect("hard-delete first issue");
+
+    let third = db
+        .insert_issue(
+            "i-3",
+            &repo.id,
+            &author.id,
+            "Third issue",
+            "body three",
+        )
+        .await
+        .expect("insert third after delete");
+    assert_eq!(
+        third.number, 3,
+        "D-ISS-01: hard-delete must not reclaim #N (expected 3, got {})",
+        third.number
     );
+
+    let label = db
+        .insert_label(
+            "l-bug",
+            "bug",
+            "d73a4a",
+            "A bug",
+            None,
+            Some(&repo.id),
+        )
+        .await
+        .expect("insert repo-local label");
+    assert_eq!(label.name, "bug");
+    assert_eq!(label.repo_id.as_deref(), Some(repo.id.as_str()));
+
+    db.set_issue_labels(&third.id, &["l-bug".to_string()])
+        .await
+        .expect("assign label");
+    db.set_issue_assignees(&third.id, &[author.id.clone()])
+        .await
+        .expect("assign assignee");
 }
 
 /// Tri-dialect parity: postgres and mysql siblings must exist alongside sqlite.
@@ -63,35 +153,31 @@ fn dialect_issues_tri_dialect_files() {
         let sql = std::fs::read_to_string(&path).unwrap_or_default();
         assert!(
             !sql.is_empty(),
-            "Wave 0: missing {path} — tri-dialect 0011_issues required"
+            "missing {path} — tri-dialect 0011_issues required"
         );
+        for needle in [
+            "issues",
+            "issue_counters",
+            "issue_comments",
+            "issue_revisions",
+            "comment_revisions",
+            "labels",
+            "repo_hidden_labels",
+            "issue_labels",
+            "issue_assignees",
+            "issue_reactions",
+            "comment_reactions",
+            "issue_links",
+            "max_number",
+        ] {
+            assert!(
+                sql.contains(needle),
+                "{dialect} 0011_issues must mention {needle}"
+            );
+        }
         assert!(
-            sql.contains("issues"),
-            "Wave 0: {dialect} 0011_issues must mention issues"
-        );
-        assert!(
-            sql.contains("issue_counters"),
-            "Wave 0: {dialect} 0011_issues must mention issue_counters"
-        );
-        assert!(
-            sql.contains("comment"),
-            "Wave 0: {dialect} 0011_issues must mention comments"
-        );
-        assert!(
-            sql.contains("label"),
-            "Wave 0: {dialect} 0011_issues must mention labels"
-        );
-        assert!(
-            sql.contains("assignee"),
-            "Wave 0: {dialect} 0011_issues must mention assignees"
-        );
-        assert!(
-            sql.contains("reaction"),
-            "Wave 0: {dialect} 0011_issues must mention reactions"
-        );
-        assert!(
-            sql.contains("link"),
-            "Wave 0: {dialect} 0011_issues must mention links"
+            sql.contains("pr_stub") || sql.contains("'pr_stub'"),
+            "{dialect} 0011_issues must mention pr_stub"
         );
     }
 }
