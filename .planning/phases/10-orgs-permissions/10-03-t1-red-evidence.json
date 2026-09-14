@@ -1,10 +1,9 @@
 {
-  "plan": "10-03",
-  "task": "10-03-T1",
   "command": "cargo nextest run -p octanest-api -E 'test(org_owned_repo_resolves)'",
-  "exit_code": 1,
-  "failing_test": "org_owned_repo_resolves_by_org_slug",
+  "exitCode": 1,
+  "output": "   Compiling octanest-api v0.1.0 (/home/jesse/wsl-projects/personal/typescript/octanest-wt-10/crates/octanest-api)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.41s\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n Nextest run ID f126f3b2-a7e3-440d-8b6f-7902b7de4ecc with nextest profile: default\n    Starting 1 test across 29 binaries (195 tests skipped)\n        FAIL [   1.034s] (1/1) octanest-api::org_create_members org_owned_repo_resolves_by_org_slug\n  stdout \u2500\u2500\u2500\n\n    running 1 test\n    test org_owned_repo_resolves_by_org_slug ... FAILED\n\n    failures:\n\n    failures:\n        org_owned_repo_resolves_by_org_slug\n\n    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 8 filtered out; finished in 1.02s\n\n  stderr \u2500\u2500\u2500\n\n    thread 'org_owned_repo_resolves_by_org_slug' (1055966) panicked at crates/octanest-api/tests/org_create_members.rs:189:5:\n    assertion `left == right` failed: org slug must resolve like username\n      left: 404\n     right: 200\n    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n  Cancelling due to test failure: \n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n     Summary [   1.036s] 1 test run: 0 passed, 1 failed, 195 skipped\n        FAIL [   1.034s] (1/1) octanest-api::org_create_members org_owned_repo_resolves_by_org_slug\nerror: test run failed\n\nnot ok 1 - org_owned_repo_resolves_by_org_slug\n  ---\n  message: 'assertion failed: org slug must resolve like username \u2014 got 404'\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n",
+  "targetTest": "org_owned_repo_resolves_by_org_slug",
+  "targetFile": "crates/octanest-api/tests/org_create_members.rs",
   "expected": "repo.get under org slug returns 200 with owner_username=acme-resolve",
-  "actual": "HTTP 404 (user-only find_user_by_username → not_found)",
-  "intentional": true
+  "actual": "HTTP 404 (user-only find_user_by_username \u2192 not_found)"
 }
