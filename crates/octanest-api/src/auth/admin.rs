@@ -210,6 +210,15 @@ pub async fn factory_reset(
 
     if matches!(req.scope, FactoryResetScope::DatabaseAndRepositories) {
         wipe_repos_dir_contents(&ctx.repos_dir).await?;
+        crate::jobs::wipe_lfs_dir_contents(&ctx.lfs_dir)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "wipe lfs_dir failed");
+                AppError::new(
+                    "admin.factory_reset_lfs",
+                    "Failed to wipe LFS storage.",
+                )
+            })?;
     }
 
     ctx.set_cookie = Some(CookieChange::Clear);

@@ -43,6 +43,7 @@ pub struct RpcCtx {
     pub sessions: SessionService,
     pub uploads_dir: PathBuf,
     pub repos_dir: PathBuf,
+    pub lfs_dir: PathBuf,
     pub git: Arc<dyn GitBackend>,
     pub env_name: String,
     pub session: Option<ResolvedSession>,

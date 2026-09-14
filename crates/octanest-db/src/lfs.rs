@@ -503,3 +503,89 @@ pub async fn physical_bytes(pool: &DbPool) -> Result<i64, String> {
         }
     }
 }
+
+pub async fn list_unreferenced_lfs_oids(
+    pool: &DbPool,
+    created_before: &str,
+) -> Result<Vec<String>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT o.oid AS oid FROM lfs_objects o
+                 LEFT JOIN lfs_object_links l ON l.oid = o.oid
+                 WHERE l.oid IS NULL
+                   AND datetime(o.created_at) < datetime(?)
+                 ORDER BY o.oid",
+            )
+            .bind(created_before)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_unreferenced_lfs_oids: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .filter_map(|r| r.try_get::<String, _>("oid").ok())
+                .collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT o.oid AS oid FROM lfs_objects o
+                 LEFT JOIN lfs_object_links l ON l.oid = o.oid
+                 WHERE l.oid IS NULL
+                   AND o.created_at < $1::timestamptz
+                 ORDER BY o.oid",
+            )
+            .bind(created_before)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_unreferenced_lfs_oids: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .filter_map(|r| r.try_get::<String, _>("oid").ok())
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT o.oid AS oid FROM lfs_objects o
+                 LEFT JOIN lfs_object_links l ON l.oid = o.oid
+                 WHERE l.oid IS NULL
+                   AND o.created_at < ?
+                 ORDER BY o.oid",
+            )
+            .bind(created_before)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_unreferenced_lfs_oids: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .filter_map(|r| r.try_get::<String, _>("oid").ok())
+                .collect())
+        }
+    }
+}
+
+pub async fn delete_lfs_object(pool: &DbPool, oid: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM lfs_objects WHERE oid = ?")
+                .bind(oid)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete_lfs_object: {e}"))?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM lfs_objects WHERE oid = $1")
+                .bind(oid)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete_lfs_object: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM lfs_objects WHERE oid = ?")
+                .bind(oid)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete_lfs_object: {e}"))?;
+        }
+    }
+    Ok(())
+}

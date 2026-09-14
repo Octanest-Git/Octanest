@@ -1215,6 +1215,17 @@ impl Database {
         lfs::physical_bytes(self.require_pool()?).await
     }
 
+    pub async fn list_unreferenced_lfs_oids(
+        &self,
+        created_before: &str,
+    ) -> Result<Vec<String>, String> {
+        lfs::list_unreferenced_lfs_oids(self.require_pool()?, created_before).await
+    }
+
+    pub async fn delete_lfs_object(&self, oid: &str) -> Result<(), String> {
+        lfs::delete_lfs_object(self.require_pool()?, oid).await
+    }
+
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {

@@ -71,5 +71,34 @@ async fn lfs_verify_post_checks_size_and_oid() {
 
 #[tokio::test]
 async fn lfs_gc_unreferenced_oid_removed() {
-    // GC greens in 14-06; keep discoverable name.
+    use std::time::Duration;
+
+    use futures_util::stream;
+    use octanest_api::jobs::run_lfs_gc;
+    use octanest_db::Database;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("gc.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let payload = b"gc-me";
+    let oid = sha256_hex(payload);
+    let stream = stream::iter(vec![Ok::<_, std::io::Error>(
+        axum::body::Bytes::from_static(b"gc-me"),
+    )]);
+    store::put_stream(&lfs, &oid, None, stream)
+        .await
+        .expect("put");
+    db.upsert_lfs_object(&oid, payload.len() as i64)
+        .await
+        .unwrap();
+    // No links → unreferenced.
+    let stats = run_lfs_gc(&db, &lfs, Duration::ZERO)
+        .await
+        .expect("gc");
+    assert_eq!(stats.deleted, 1, "should delete unreferenced");
+    assert!(!store::object_exists(&lfs, &oid).unwrap());
+    assert!(db.find_lfs_object(&oid).await.unwrap().is_none());
 }

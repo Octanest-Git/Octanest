@@ -161,6 +161,7 @@ async fn build_ctx(state: &AppState, headers: &HeaderMap) -> RpcCtx {
         sessions: state.sessions.clone(),
         uploads_dir: state.uploads_dir.clone(),
         repos_dir: state.repos_dir.clone(),
+        lfs_dir: state.lfs_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,
