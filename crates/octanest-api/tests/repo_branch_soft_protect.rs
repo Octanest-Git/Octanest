@@ -310,3 +310,76 @@ async fn repo_branch_soft_protect_non_owner_mutate_not_found() {
         "non-owner mutate must not leak — {create}"
     );
 }
+
+/// ORG-04 / T-10-14: Write collaborator may create branches; Read cannot.
+#[tokio::test]
+async fn repo_branch_write_collaborator_can_create_read_cannot() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("branch_collab_write.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let owner_cookie = seed_owner_repo(&app, &db, "bown@ex.com", "bown1", "shared").await;
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+
+    let (write_cookie, write_v) = signup_and_login(&app, "bwrite@ex.com", "bwrite1").await;
+    let write_id = write_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&write_id, &now)
+        .await
+        .expect("verify write");
+
+    let (read_cookie, read_v) = signup_and_login(&app, "bread@ex.com", "bread1").await;
+    let read_id = read_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&read_id, &now)
+        .await
+        .expect("verify read");
+
+    let add_write = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"bown1","name":"shared","username":"bwrite1","permission":"write"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(add_write["ok"], true, "add write collab — {add_write}");
+
+    let add_read = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"bown1","name":"shared","username":"bread1","permission":"read"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(add_read["ok"], true, "add read collab — {add_read}");
+
+    let create_ok = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"bown1","name":"shared","branch":"feature-w","start":"main"}}"#,
+        &write_cookie,
+    )
+    .await;
+    assert_eq!(
+        create_ok["ok"], true,
+        "Write collaborator must create branch — {create_ok}"
+    );
+    assert_eq!(create_ok["data"]["branch"], "feature-w");
+
+    let create_deny = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"bown1","name":"shared","branch":"feature-r","start":"main"}}"#,
+        &read_cookie,
+    )
+    .await;
+    assert_eq!(
+        create_deny["ok"], false,
+        "Read collaborator must not create branch — {create_deny}"
+    );
+    assert_eq!(
+        create_deny["error"]["code"], "repo.not_found",
+        "Read mutate must soft not_found — {create_deny}"
+    );
+}

@@ -604,20 +604,251 @@ async fn git_smart_pat_push_fetch_happy_path() {
     );
 }
 
-/// Wave 0 / ORG-04: classic PAT push as collaborator (not owner) with repo scope.
+/// ORG-04: classic PAT push as collaborator (not owner) with repo scope + Write.
 #[tokio::test]
 async fn git_smart_collaborator_classic_pat_push() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("smart_collab_push.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "cowrite@ex.com", "cowrite").await;
+    let owner_id = owner_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify owner");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"team","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "cpush@ex.com", "cpush1").await;
+    let collab_id = collab_v["data"]["id"].as_str().unwrap();
+    db.set_email_verified_at(collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let add = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"cowrite","name":"team","username":"cpush1","permission":"write"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(add.status(), StatusCode::OK);
+    let add_bytes = add.into_body().collect().await.unwrap().to_bytes();
+    let add_v: serde_json::Value = serde_json::from_slice(&add_bytes).unwrap();
+    assert_eq!(add_v["ok"], true, "grant write collab — {add_v}");
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"collab-cli","scopes":["repo"]}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().expect("token");
+
+    let push_refs = Request::builder()
+        .method("GET")
+        .uri("/cowrite/team.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("cpush1", token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push_refs).await.unwrap();
+    assert_eq!(
+        push_res.status(),
+        StatusCode::OK,
+        "write collaborator classic PAT must allow receive-pack (ORG-04)"
+    );
+    let push_ct = push_res
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
     assert!(
-        false,
-        "Wave 0: collaborator classic PAT with repo scope must allow receive-pack (ORG-04)"
+        push_ct.contains("git-receive-pack"),
+        "expected receive-pack advertisement, got {push_ct}"
     );
 }
 
-/// Wave 0 / ORG-04: private non-grantee Smart HTTP → 401 (D-21 / T-10-01).
+/// ORG-04: Read collaborator classic PAT cannot receive-pack.
+#[tokio::test]
+async fn git_smart_collaborator_read_cannot_push() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("smart_collab_read.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "coread@ex.com", "coread").await;
+    let owner_id = owner_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify owner");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"locked","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "creadp@ex.com", "creadp1").await;
+    let collab_id = collab_v["data"]["id"].as_str().unwrap();
+    db.set_email_verified_at(collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let add = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"coread","name":"locked","username":"creadp1","permission":"read"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(add.status(), StatusCode::OK);
+    let _ = add.into_body().collect().await;
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"read-cli","scopes":["repo"]}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().expect("token");
+
+    // Read collaborator may fetch private repo.
+    let fetch = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("coread", "locked"))
+        .header(header::AUTHORIZATION, basic_header("creadp1", token))
+        .body(Body::empty())
+        .unwrap();
+    let fetch_res = app.clone().oneshot(fetch).await.unwrap();
+    assert_eq!(
+        fetch_res.status(),
+        StatusCode::OK,
+        "read collaborator may upload-pack private repo"
+    );
+
+    let push = Request::builder()
+        .method("GET")
+        .uri("/coread/locked.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("creadp1", token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push).await.unwrap();
+    assert_ne!(
+        push_res.status(),
+        StatusCode::OK,
+        "read collaborator must not receive-pack"
+    );
+}
+
+/// ORG-04 / D-21 / T-10-01: private non-grantee Smart HTTP → 401.
 #[tokio::test]
 async fn git_smart_private_non_grantee_401() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("smart_nongrantee.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "ngown@ex.com", "ngown").await;
+    let owner_id = owner_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify owner");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    let (stranger_cookie, stranger_v) =
+        signup_and_login(&app, "ngstr@ex.com", "ngstr1").await;
+    let stranger_id = stranger_v["data"]["id"].as_str().unwrap();
+    db.set_email_verified_at(stranger_id, &now)
+        .await
+        .expect("verify stranger");
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"stranger-cli","scopes":["repo"]}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().expect("token");
+
+    let req = Request::builder()
+        .method("GET")
+        .uri(info_refs_uri("ngown", "secret"))
+        .header(header::AUTHORIZATION, basic_header("ngstr1", token))
+        .body(Body::empty())
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    assert_eq!(
+        res.status(),
+        StatusCode::UNAUTHORIZED,
+        "private non-grantee must 401 (D-21 / T-10-01)"
+    );
+    let www = res
+        .headers()
+        .get(header::WWW_AUTHENTICATE)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
     assert!(
-        false,
-        "Wave 0: private non-grantee git path → 401 (ORG-04 / D-21 / T-10-01)"
+        www.contains("Basic") && www.contains("Octanest Git"),
+        "WWW-Authenticate — {www}"
     );
 }
