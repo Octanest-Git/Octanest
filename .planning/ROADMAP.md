@@ -688,8 +688,8 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monorepo Scaffold | 0/TBD | Not started | - |
-| 2. Multi-DB Storage | 0/4 | Planned | - |
+| 1. Monorepo Scaffold | 5/5 | Complete    | 2026-09-09 |
+| 2. Multi-DB Storage | 5/5 | Complete    | 2026-09-09 |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
 | 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
@@ -707,10 +707,11 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |
-| 20. Packages Registry | 13/13 | In Progress|  |
+| 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 0/TBD | Not started | - |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-09-09*
+*Last updated: 2026-09-14 — forge-core pre-ship: phases 11/14/15/20 Complete*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*
