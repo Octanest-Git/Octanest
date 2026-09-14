@@ -550,7 +550,7 @@ Plans:
   2. User with permission can rename a repository
   3. User with permission can transfer a repository to another user or organization
 
-**Plans:** 2/7 plans executed
+**Plans:** 3/7 plans executed
 
 Plans:
 
@@ -558,7 +558,7 @@ Plans:
 - [x] 15-01-PLAN.md — Tracer: tag-bound releases RPC + shared migration
 - [ ] 15-06-PLAN.md — Releases tab + list/create/detail notes UI
 - [ ] 15-02-PLAN.md — Release assets volume, upload/download, Compose/Vite
-- [ ] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
+- [x] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
 - [ ] 15-04-PLAN.md — Admin transfer with type-confirm + cascade
 - [ ] 15-05-PLAN.md — Settings danger zone UI, can_admin chrome, factory reset, docs
 
@@ -702,7 +702,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
 | 14. Git LFS | 0/TBD | Not started | - |
-| 15. Releases & Transfer | 2/7 | In Progress|  |
+| 15. Releases & Transfer | 3/7 | In Progress|  |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |

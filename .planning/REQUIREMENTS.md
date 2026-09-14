@@ -55,7 +55,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
 - [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
 - [ ] **GIT-15**: User can download release assets from the web UI
-- [ ] **GIT-16**: User with permission can rename a repository
+- [x] **GIT-16**: User with permission can rename a repository
 - [ ] **GIT-17**: User with permission can transfer a repository to another user or organization
 - [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
@@ -206,7 +206,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-13 | Phase 14 | Pending |
 | GIT-14 | Phase 15 | Pending |
 | GIT-15 | Phase 15 | Pending |
-| GIT-16 | Phase 15 | Pending |
+| GIT-16 | Phase 15 | Complete |
 | GIT-17 | Phase 15 | Pending |
 | GIT-18 | Phase 16 | Pending |
 | ORG-01 | Phase 10 | Complete |
