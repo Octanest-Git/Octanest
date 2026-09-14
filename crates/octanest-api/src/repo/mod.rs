@@ -491,7 +491,8 @@ fn soft_protect_err() -> AppError {
     )
 }
 
-/// Resolve repo for owner-only mutate (D-27). Non-owner → identical [`acl::not_found`].
+/// Resolve repo for owner-only mutate (D-27 branch CRUD). Non-owner → identical [`acl::not_found`].
+/// Visibility / soft-delete use [`resolve_repo_for_admin`] (Admin capability) instead.
 async fn resolve_repo_for_owner_mutate(
     ctx: &RpcCtx,
     owner: &str,
@@ -626,7 +627,8 @@ pub async fn branch_delete(
     })
 }
 
-/// `repo.updateVisibility` — owner toggles public/private (D-26). Non-owner → not_found.
+/// `repo.updateVisibility` — Admin capability toggles public/private (D-26 / ORG-03).
+/// Insufficient capability → soft not_found.
 pub async fn update_visibility(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -637,7 +639,7 @@ pub async fn update_visibility(
             format!("invalid repo.updateVisibility input: {e}"),
         )
     })?;
-    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
     let row = ctx
         .db
         .update_repository_visibility(&accessible.row.id, map_visibility(req.visibility))
@@ -646,11 +648,11 @@ pub async fn update_visibility(
     Ok(to_public(&AccessibleRepo {
         row,
         owner_username: accessible.owner_username,
-        capability: accessible.capability,
+        capability: Some(Capability::Admin),
     }))
 }
 
-/// `repo.softDelete` — owner soft-deletes after typed name confirm (D-35). Disk purge deferred.
+/// `repo.softDelete` — Admin soft-deletes after typed name confirm (D-35). Disk purge deferred.
 pub async fn soft_delete(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -661,7 +663,7 @@ pub async fn soft_delete(
             format!("invalid repo.softDelete input: {e}"),
         )
     })?;
-    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
     let confirm = req.confirm_name.trim();
     if confirm != accessible.row.name.as_str() {
         return Err(AppError::new(
