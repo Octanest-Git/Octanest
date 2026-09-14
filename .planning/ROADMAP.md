@@ -402,7 +402,7 @@ Plans:
   2. Org owner can assign member roles that control repo access; repo owner can set visibility and collaborator permissions
   3. Unauthorized users cannot read private repos or push without permission
 
-**Plans**: 6/14 plans executed
+**Plans**: 7/14 plans executed
 
 Plans:
 **Wave 1**
@@ -425,7 +425,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 10-05-PLAN.md — Org members/roles + member_base_permission
+- [x] 10-05-PLAN.md — Org members/roles + member_base_permission
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -636,7 +636,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
 | 9. Git SSH | 0/TBD | Not started | - |
-| 10. Orgs & Permissions | 6/14 | In Progress|  |
+| 10. Orgs & Permissions | 7/14 | In Progress|  |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
