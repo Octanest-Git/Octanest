@@ -167,13 +167,16 @@ export function IssueDetailPage() @{
     if (!issue || editing) return;
     let cancelled = false;
     (async () => {
-      const html = await renderGfm(issue.body || "");
+      const html = await renderGfm(issue.body || "", {
+        owner,
+        repo: repoName,
+      });
       if (!cancelled) setBodyHtml(html);
     })();
     return () => {
       cancelled = true;
     };
-  }, [issue?.id, issue?.body, editing]);
+  }, [issue?.id, issue?.body, editing, owner, repoName]);
 
   async function invalidateIssueCaches() {
     await queryClient.invalidateQueries({
@@ -393,6 +396,8 @@ export function IssueDetailPage() @{
                   onValueChange={setEditBody}
                   rows={10}
                   disabled={pending}
+                  owner={owner}
+                  repo={repoName}
                 />
                 <div className="flex gap-2">
                   <Button type="button" disabled={pending} onClick={saveEdit}>

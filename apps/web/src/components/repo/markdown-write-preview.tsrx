@@ -10,6 +10,10 @@ export type MarkdownWritePreviewProps = {
   rows?: number;
   disabled?: boolean;
   className?: string;
+  /** Repo owner for `#N` autolink in Preview (ISS-04). */
+  owner?: string;
+  /** Repo name for `#N` autolink in Preview (ISS-04). */
+  repo?: string;
 };
 
 /**
@@ -24,13 +28,16 @@ export function MarkdownWritePreview(props: MarkdownWritePreviewProps) @{
     if (tab !== "preview") return;
     let cancelled = false;
     (async () => {
-      const html = await renderGfm(props.value || "_Nothing to preview_");
+      const html = await renderGfm(props.value || "_Nothing to preview_", {
+        owner: props.owner,
+        repo: props.repo,
+      });
       if (!cancelled) setPreviewHtml(html);
     })();
     return () => {
       cancelled = true;
     };
-  }, [tab, props.value]);
+  }, [tab, props.value, props.owner, props.repo]);
 
   <div className={(props.className ?? "flex flex-col gap-2") as string}>
     <div className="flex gap-2 border-b border-border pb-0">

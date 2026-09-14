@@ -21,18 +21,25 @@ export type IssueCommentsProps = {
 const NETWORK_ERROR =
   "Can't reach Octanest. Check your connection and try again.";
 
-function CommentBody(props: { body: string }) @{
+function CommentBody(props: {
+  body: string;
+  owner: string;
+  repoName: string;
+}) @{
   const [html, setHtml] = useState("");
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const rendered = await renderGfm(props.body || "");
+      const rendered = await renderGfm(props.body || "", {
+        owner: props.owner,
+        repo: props.repoName,
+      });
       if (!cancelled) setHtml(rendered);
     })();
     return () => {
       cancelled = true;
     };
-  }, [props.body]);
+  }, [props.body, props.owner, props.repoName]);
 
   <div
     className="prose prose-sm max-w-none"
@@ -227,6 +234,8 @@ function CommentItem(props: {
           onValueChange={setDraft}
           rows={6}
           disabled={pending}
+          owner={props.owner}
+          repo={props.repoName}
         />
         <div className="flex gap-2">
           <Button type="button" disabled={pending} onClick={() => void saveEdit()}>
@@ -247,7 +256,11 @@ function CommentItem(props: {
       </div>
     } @else {
       <div className="mt-2 flex flex-col gap-1">
-        <CommentBody body={comment.body} />
+        <CommentBody
+          body={comment.body}
+          owner={props.owner}
+          repoName={props.repoName}
+        />
         <CommentHistoryDisclosure
           owner={props.owner}
           repoName={props.repoName}
@@ -389,6 +402,8 @@ export function IssueComments(props: IssueCommentsProps) @{
           rows={6}
           disabled={pending}
           placeholder="Leave a comment (markdown supported)"
+          owner={props.owner}
+          repo={props.repoName}
         />
         <div>
           <Button type="button" disabled={pending} onClick={() => void submit()}>

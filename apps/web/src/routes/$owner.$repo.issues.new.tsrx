@@ -186,6 +186,8 @@ export function IssuesNewPage() @{
             rows={12}
             disabled={pending}
             placeholder="Describe the issue (markdown supported)"
+            owner={owner}
+            repo={repoName}
           />
         </div>
         <div className="flex gap-3">
