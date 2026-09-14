@@ -440,22 +440,25 @@ pub enum ClassicPatScope {
 
 **If this table is empty:** All claims verified — N/A (assumptions remain above).
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Migration numbering collision with Phases 11–19**
    - What we know: Postgres migrations currently end at `0010_orgs_acl`. [VERIFIED: listing `crates/octanest-db/migrations/postgres/`]
    - What's unclear: Which phase executes first and claims `0011+`.
    - Recommendation: Planner uses placeholder `00xx_packages` and resolves at execute against latest migration.
+   - RESOLVED: Plans 00/02 use `00xx_packages` placeholder; execute resolves the real id against the latest dialect migration at apply time.
 
 2. **Classic PAT: does `repo` scope imply package access?**
    - What we know: Hybrid auth adds explicit `package:read/write` (D-PKG-04).
    - What's unclear: Whether classic `repo` alone grants packages (GitHub classic often needs `read:packages` separately).
    - Recommendation: **Do not** imply packages from `repo`; require package scopes (fail closed). Document migration tip in tokens UI.
+   - RESOLVED: Fail closed — `repo` does not imply package access; require `package:read` / `package:write` (D-PKG-04; plan 03 auth + plan 11 tokens UI tip).
 
 3. **OCI nested image names (`owner/a/b`)**
    - What we know: Spec `<name>` allows multi-segment paths; Gitea allows `owner/my/image`.
    - What's unclear: How optional repo-link maps for nested names.
    - Recommendation: Allow nested OCI names; repo link is metadata on package row, not path-encoded.
+   - RESOLVED: Nested OCI names allowed; optional `repository_id` is package-row metadata, not encoded in the path (plans 04/05).
 
 ## Environment Availability
 
