@@ -53,7 +53,7 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
     expect(copyBtn.querySelector("svg")).not.toBeNull();
 
     expect(
-      screen.getByText("SSH cloning arrives in a later phase."),
+      screen.getByText("Clone with SSH"),
     ).toBeInTheDocument();
 
     const zip = screen.getByRole("menuitem", { name: "Download ZIP" });
@@ -81,7 +81,7 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
       screen.getByRole("textbox", { name: "HTTPS clone URL" }),
     ).toHaveValue("http://127.0.0.1:3000/ada/empty.git");
     expect(
-      screen.getByText("SSH cloning arrives in a later phase."),
+      screen.getByText("Clone with SSH"),
     ).toBeInTheDocument();
 
     const zip = screen.getByRole("menuitem", { name: "Download ZIP" });
