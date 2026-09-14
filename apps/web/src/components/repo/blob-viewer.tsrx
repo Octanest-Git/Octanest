@@ -17,6 +17,8 @@ import {
   parseLineHash,
   rawBlobUrl,
 } from "@/lib/repo-browse";
+import { parseLfsPointer } from "@/lib/lfs-pointer";
+import { apiClient } from "@/lib/api-client";
 import { resolveTheme, readThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +71,7 @@ export function BlobViewer({
     !blob.is_binary && blob.encoding === "utf-8" && blob.content
       ? blob.content
       : "";
+  const lfsPointer = text ? parseLfsPointer(text) : null;
   const [hl, setHl] = useState<string | null>(() =>
     highlightedHtml ?? (text ? plainCodeHtml(text) : null),
   );
@@ -76,6 +79,8 @@ export function BlobViewer({
     null,
   );
   const [copied, setCopied] = useState(false);
+  const [lfsDlPending, setLfsDlPending] = useState(false);
+  const [lfsDlError, setLfsDlError] = useState("");
   const rawUrl = rawBlobUrl(owner, repo, blob.ref, blob.path);
   const blameUrl = blameHref(owner, repo, blob.ref, blob.path);
   const baseName = fileBaseName(blob.path);
@@ -177,6 +182,37 @@ export function BlobViewer({
     }
   }
 
+  async function downloadLfsObject() {
+    if (!lfsPointer) return;
+    setLfsDlError("");
+    setLfsDlPending(true);
+    try {
+      const res = await apiClient.repo.lfs.download({
+        owner,
+        name: repo,
+        oid: lfsPointer.oid,
+      });
+      if (!res.ok) {
+        setLfsDlError(res.error.message || "Download failed.");
+        setLfsDlPending(false);
+        return;
+      }
+      const bin = Uint8Array.from(atob(res.data.content), (c) => c.charCodeAt(0));
+      const blobUrl = URL.createObjectURL(
+        new Blob([bin], { type: "application/octet-stream" }),
+      );
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fileBaseName(blob.path);
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+      setLfsDlPending(false);
+    } catch {
+      setLfsDlError("Can't reach Octanest. Check your connection and try again.");
+      setLfsDlPending(false);
+    }
+  }
+
   const showImage =
     blob.is_binary &&
     isImagePath(blob.path) &&
@@ -206,8 +242,29 @@ export function BlobViewer({
         <span className="shrink-0 text-[13px] text-muted-foreground">
           {metaBits.join(" · ") as string}
         </span>
+        @if (lfsPointer) {
+          <span
+            className="inline-flex shrink-0 items-center rounded-md border border-border bg-muted/50 px-2 py-0.5 text-[12px] font-medium text-foreground"
+            data-testid="lfs-pointer-badge"
+          >
+            LFS
+          </span>
+        }
       </div>
       <div className="flex flex-wrap items-center gap-1">
+        @if (lfsPointer) {
+          <button
+            type="button"
+            className={cn(
+              buttonVariants({ variant: "secondary" }),
+              "h-8 px-2.5 text-[13px]",
+            )}
+            disabled={lfsDlPending}
+            onClick={() => void downloadLfsObject()}
+          >
+            {(lfsDlPending ? "Downloading…" : "Download via LFS") as string}
+          </button>
+        }
         <a
           href={rawUrl as string}
           className={cn(
@@ -261,6 +318,12 @@ export function BlobViewer({
         }
       </div>
     </div>
+
+    @if (lfsDlError) {
+      <div role="alert" className="border-b border-border px-4 py-2">
+        <p className="text-[14px] text-destructive">{lfsDlError as string}</p>
+      </div>
+    }
 
     @if (blob.truncated) {
       <div role="status" className="border-b border-border px-4 py-3">
