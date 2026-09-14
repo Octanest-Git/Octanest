@@ -4,6 +4,7 @@ pub mod cors;
 pub mod email;
 pub mod git;
 pub mod jobs;
+pub mod org;
 pub mod pat;
 pub mod repo;
 pub mod routes;

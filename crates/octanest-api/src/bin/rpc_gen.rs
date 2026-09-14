@@ -387,6 +387,22 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+export type MemberBasePermission = "none" | "read" | "write";
+
+export type OrgPublic = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateOrgRequest = {
+  slug: string;
+  display_name?: string | null;
+};
+
 /** Classic PAT string prefix (octanest_pat_). */
 export const CLASSIC_PAT_PREFIX = "octanest_pat_" as const;
 /** Fine-grained PAT string prefix (octanest_fg_). */
@@ -527,6 +543,9 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+    },
+    org: {
+      create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>

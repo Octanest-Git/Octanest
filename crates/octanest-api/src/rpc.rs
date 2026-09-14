@@ -16,6 +16,7 @@ use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
 use crate::auth::verify_reset;
 use crate::email::EmailSender;
+use crate::org;
 use crate::pat;
 use crate::repo;
 
@@ -212,6 +213,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "admin.repos.gc" => match admin::repo_gc(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.create" => match org::create(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
             Err(e) => RpcResponse::err(e),
         },
         "repo.listMine" => match repo::list_mine(ctx).await {

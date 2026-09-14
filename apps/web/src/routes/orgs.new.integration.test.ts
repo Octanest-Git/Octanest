@@ -1,62 +1,210 @@
-import { describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@octanejs/testing-library";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * ORG-01 / D-ORG-01 / D-ORG-06 Wave 0 stubs: /orgs/new create UI.
- *
- * RED until orgs.new.tsrx lands (10-13).
- * Do not implement production routes here.
- *
- * Uses a variable dynamic import + @vite-ignore so Vitest can collect the
- * suite while ./orgs.new is still absent (static path fails transform).
+ * ORG-01 / D-ORG-01 / D-ORG-06: /orgs/new create UI (10-13 tracer).
  */
 
-/** Load /orgs/new page; path is runtime-only so Vite does not resolve at transform. */
-async function loadOrgsNewModule(): Promise<Record<string, unknown>> {
-  const rel = "./orgs.new";
-  try {
-    return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `Wave 0: /orgs/new route missing — implement in 10-13 (ORG-01 / D-ORG-01 / D-ORG-06). Expected title New organization · Octanest + Create organization CTA. ${(err as Error).message}`,
-    );
-  }
-}
+const createMock = vi.fn();
 
-describe("/orgs/new Wave 0 (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
+vi.mock("@/lib/api-client", () => ({
+  apiClient: {
+    auth: {
+      me: vi.fn(),
+    },
+    org: {
+      create: (...args: unknown[]) => createMock(...args),
+    },
+  },
+}));
+
+type LoaderShape = {
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    display_name: string;
+    bio: string;
+    avatar_url: null;
+    role: string;
+    profile_incomplete: boolean;
+    email_verified: boolean;
+  };
+};
+
+let loaderData: LoaderShape;
+
+vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  return {
+    ...actual,
+    useLoaderData: () => loaderData,
+  };
+});
+
+beforeEach(() => {
+  createMock.mockReset();
+  loaderData = {
+    user: {
+      id: "u1",
+      email: "ada@example.com",
+      username: "ada",
+      display_name: "Ada",
+      bio: "",
+      avatar_url: null,
+      role: "user",
+      profile_incomplete: false,
+      email_verified: false,
+    },
+  };
+});
+
+afterEach(cleanup);
+
+describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
   it("verified: Slug + optional Display name + Create organization CTA", async () => {
-    const mod = await loadOrgsNewModule();
-    // Greened in 10-13: verified session → form with Slug (required), Display name
-    // (optional), Create organization; success navigates to /{slug}
+    loaderData.user.email_verified = true;
+    const { OrgsNewPage } = await import("./orgs.new");
+    render(OrgsNewPage as never);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("heading", { name: "Create a new organization" }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText("Slug")).toBeInTheDocument();
     expect(
-      mod.OrgsNewPage ?? mod.NewOrgPage ?? mod.default,
-      "Wave 0: orgs.new must export OrgsNewPage for Create organization form",
-    ).toBeTruthy();
+      screen.getByLabelText("Display name (optional)"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create organization" }),
+    ).toBeInTheDocument();
+
+    createMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: "o1",
+        slug: "acme",
+        display_name: "Acme",
+        member_base_permission: "none",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    });
+    const assign = vi
+      .spyOn(window.location, "assign")
+      .mockImplementation(() => {});
+
+    fireEvent.input(screen.getByLabelText("Slug"), {
+      target: { value: "acme" },
+    });
+    fireEvent.input(screen.getByLabelText("Display name (optional)"), {
+      target: { value: "Acme" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create organization" }),
+    );
+
+    await waitFor(() => {
+      expect(createMock).toHaveBeenCalledWith({
+        slug: "acme",
+        display_name: "Acme",
+      });
+    });
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith("/acme");
+    });
+    assign.mockRestore();
   });
 
   it("unverified: Verify your email wall — not the create form", async () => {
-    const mod = await loadOrgsNewModule();
-    // Greened in 10-13: same verify wall pattern as /new
+    const { OrgsNewPage } = await import("./orgs.new");
+    render(OrgsNewPage as never);
+
+    await waitFor(() => {
+      expect(screen.getByText("Verify your email")).toBeInTheDocument();
+    });
     expect(
-      mod.OrgsNewPage ?? mod.NewOrgPage ?? mod.default,
-      "Wave 0: unverified must show Verify your email wall (not Slug form)",
-    ).toBeTruthy();
+      screen.getByText("Verify your email before creating an organization."),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Slug")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Create organization" }),
+    ).not.toBeInTheDocument();
   });
 
   it("reserved slug shows That username is reserved. Choose a different username.", async () => {
-    const mod = await loadOrgsNewModule();
-    // Greened in 10-13: auth.reserved_username → same copy as signup RESERVED_ERROR
-    expect(
-      mod.OrgsNewPage ?? mod.NewOrgPage ?? mod.default,
-      "Wave 0: reserved slug must map to That username is reserved. Choose a different username.",
-    ).toBeTruthy();
+    loaderData.user.email_verified = true;
+    const { OrgsNewPage } = await import("./orgs.new");
+    render(OrgsNewPage as never);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Create organization" }),
+      ).toBeInTheDocument();
+    });
+
+    createMock.mockResolvedValueOnce({
+      ok: false,
+      error: { code: "auth.reserved_username", message: "username is reserved" },
+    });
+
+    fireEvent.input(screen.getByLabelText("Slug"), {
+      target: { value: "orgs" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create organization" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "That username is reserved. Choose a different username.",
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   it("taken slug shows slug already used by a user or org", async () => {
-    const mod = await loadOrgsNewModule();
-    // Greened in 10-13: dual uniqueness vs users+orgs (D-ORG-01 shared namespace)
-    expect(
-      mod.OrgsNewPage ?? mod.NewOrgPage ?? mod.default,
-      "Wave 0: taken slug error must explain slug already used by a user or org",
-    ).toBeTruthy();
+    loaderData.user.email_verified = true;
+    const { OrgsNewPage } = await import("./orgs.new");
+    render(OrgsNewPage as never);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Create organization" }),
+      ).toBeInTheDocument();
+    });
+
+    createMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: "org.slug_taken",
+        message:
+          "That slug is already used by a user or organization. Choose a different slug.",
+      },
+    });
+
+    fireEvent.input(screen.getByLabelText("Slug"), {
+      target: { value: "taken-slug" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Create organization" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "That slug is already used by a user or organization. Choose a different slug.",
+        ),
+      ).toBeInTheDocument();
+    });
   });
 });

@@ -1,24 +1,184 @@
-//! ORG-01 / ORG-02 Wave 0 stubs: org.create, members, member_base ACL effects.
-//!
-//! RED until org RPC + ACL land (10-02+). Do not implement production handlers here.
-//! Threat: T-10-01 soft not_found for private deny; T-10-02 Member base none denies private.
+//! ORG-01 / ORG-02: org.create happy path + deferred Wave 0 stubs for members/ACL.
+
+mod support;
+
+use std::sync::Arc;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use http_body_util::BodyExt;
+use octanest_api::email::{EmailSender, LogSink};
+use octanest_api::{build_cors, router_with_state, AppState};
+use octanest_db::Database;
+use tower::ServiceExt;
+
+async fn test_app(db: Database, repos_dir: std::path::PathBuf) -> axum::Router {
+    let state = AppState::new(db, Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos_dir);
+    let cors = build_cors("development", None).expect("cors");
+    router_with_state(state, cors)
+}
+
+fn rpc_req(body: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .header("cookie", cookie)
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn session_cookie_from_response(res: &axum::http::Response<Body>) -> String {
+    let set_cookie = res
+        .headers()
+        .get("set-cookie")
+        .expect("Set-Cookie")
+        .to_str()
+        .unwrap();
+    set_cookie.split(';').next().unwrap().trim().to_string()
+}
+
+async fn signup_and_login(
+    app: &axum::Router,
+    email: &str,
+    username: &str,
+) -> (String, serde_json::Value) {
+    let signup_body = format!(
+        r#"{{"procedure":"auth.signup","input":{{"email":"{email}","username":"{username}","password":"password1"}}}}"#
+    );
+    let signup = app.clone().oneshot(rpc_req(&signup_body)).await.unwrap();
+    assert_eq!(signup.status(), StatusCode::OK);
+    let _ = signup.into_body().collect().await;
+
+    let login_body = format!(
+        r#"{{"procedure":"auth.login","input":{{"identifier":"{email}","password":"password1","remember_me":false}}}}"#
+    );
+    let login = app.clone().oneshot(rpc_req(&login_body)).await.unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&login);
+    let bytes = login.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    (cookie, v)
+}
+
+async fn verify_user(db: &Database, user_id: &str) {
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(user_id, &now)
+        .await
+        .expect("verify");
+}
 
 /// Verified `org.create` reserves a slug shared with the user namespace (D-ORG-01).
 #[tokio::test]
 async fn org_create_reserves_shared_slug_namespace() {
-    assert!(
-        false,
-        "Wave 0: org.create must reject slugs colliding with users.username (ORG-01 / D-ORG-01)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_create_slug.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "owner@ex.com", "owner1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+
+    // Collision with an existing username must fail (shared namespace).
+    let collide = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"owner1"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(collide.status(), StatusCode::BAD_REQUEST);
+    let collide_bytes = collide.into_body().collect().await.unwrap().to_bytes();
+    let collide_v: serde_json::Value = serde_json::from_slice(&collide_bytes).unwrap();
+    assert_eq!(collide_v["ok"], false);
+    assert_eq!(collide_v["error"]["code"], "org.slug_taken");
+
+    // Happy path: unique slug succeeds.
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acme-labs","display_name":"Acme Labs"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK, "org.create must succeed");
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "org.create ok=true — {v}");
+    assert_eq!(v["data"]["slug"], "acme-labs");
+    assert_eq!(v["data"]["display_name"], "Acme Labs");
+    assert_eq!(v["data"]["member_base_permission"], "none");
+
+    // Second create with same slug fails (org↔org uniqueness).
+    let dup = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acme-labs"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(dup.status(), StatusCode::BAD_REQUEST);
+    let dup_bytes = dup.into_body().collect().await.unwrap().to_bytes();
+    let dup_v: serde_json::Value = serde_json::from_slice(&dup_bytes).unwrap();
+    assert_eq!(dup_v["error"]["code"], "org.slug_taken");
 }
 
 /// Creator of an org is Owner (ORG-01 / D-ORG-02a).
 #[tokio::test]
 async fn org_create_creator_is_owner() {
-    assert!(
-        false,
-        "Wave 0: org.create must add the creator as Owner (ORG-01 / D-ORG-02a)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_create_owner.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "boss@ex.com", "boss1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &user_id).await;
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"boss-org"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "{v}");
+    let org_id = v["data"]["id"].as_str().expect("org id");
+
+    let member = db
+        .find_org_member(org_id, &user_id)
+        .await
+        .expect("find member")
+        .expect("creator membership row");
+    assert_eq!(member.role, "owner", "creator must be Owner");
 }
 
 /// `members.add` by username adds an existing instance user (ORG-01 / D-ORG-03).

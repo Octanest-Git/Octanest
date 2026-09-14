@@ -20,6 +20,7 @@ import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
+import { Route as OrgsNewRouteImport } from './routes/orgs.new'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
 import { Route as SetupIndexRouteImport } from './routes/setup.index'
@@ -90,6 +91,11 @@ const OwnerRepoRoute = OwnerRepoRouteImport.update({
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgsNewRoute = OrgsNewRouteImport.update({
+  id: '/orgs/new',
+  path: '/orgs/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/$owner/$repo'
     | '/admin/auth'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
     | '/setup/credentials'
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/verify'
     | '/admin/auth'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
     | '/setup/credentials'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/$owner/$repo'
     | '/admin/auth'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
     | '/setup/credentials'
@@ -360,6 +372,7 @@ export interface RootRouteChildren {
   VerifyRoute: typeof VerifyRoute
   OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
+  OrgsNewRoute: typeof OrgsNewRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
 }
@@ -441,6 +454,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/admin/auth'
       fullPath: '/admin/auth'
       preLoaderRoute: typeof AdminAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orgs/new': {
+      id: '/orgs/new'
+      path: '/orgs/new'
+      fullPath: '/orgs/new'
+      preLoaderRoute: typeof OrgsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/profile': {
@@ -635,6 +655,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyRoute: VerifyRoute,
   OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
+  OrgsNewRoute: OrgsNewRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTokensRoute: SettingsTokensRouteWithChildren,
 }
