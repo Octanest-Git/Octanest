@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 27
+open_count: 29
 waived_count: 0
 fixed_count: 1
-total_count: 28
-last_updated: 2026-09-14T00:06:48.676Z
+total_count: 30
+last_updated: 2026-09-14T00:36:39.533Z
 ---
 
 # Broken Windows Ledger
@@ -43,6 +43,8 @@ last_updated: 2026-09-14T00:06:48.676Z
 | 26 | 10 | stub | apps/web/src/routes/$owner.settings.members.integration.test.ts |  | Fails until members/invites UI in 10-10 | open |  | 2026-09-13T23:41:25.415Z |  |
 | 27 | 10 | stub | crates/octanest-db/migrations/postgres/0010_orgs_acl.sql |  | organization_invites/repository_collaborators tables exist without CRUD helpers/RPCs (deferred 10-06/10-07) | open |  | 2026-09-13T23:52:49.281Z |  |
 | 28 | 10 | deviation | crates/octanest-api/src/auth/local.rs |  | Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans | open |  | 2026-09-14T00:06:48.676Z |  |
+| 29 | 10 | skipped-test | crates/octanest-api/tests/repo_collaborators_acl.rs |  | Collaborator CRUD ACL tests ignored until plan 07 | open |  | 2026-09-14T00:36:39.442Z |  |
+| 30 | 10 | skipped-test | crates/octanest-api/tests/repo_private_404.rs | 410 | repo_private_404_collaborator_granted_read ignored until plan 07 | open |  | 2026-09-14T00:36:39.533Z |  |
 
 ````json
 [
@@ -380,6 +382,30 @@ last_updated: 2026-09-14T00:06:48.676Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T00:06:48.676Z",
+    "resolved_at": null
+  },
+  {
+    "id": 29,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/repo_collaborators_acl.rs",
+    "line": null,
+    "description": "Collaborator CRUD ACL tests ignored until plan 07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:36:39.442Z",
+    "resolved_at": null
+  },
+  {
+    "id": 30,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/repo_private_404.rs",
+    "line": 410,
+    "description": "repo_private_404_collaborator_granted_read ignored until plan 07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:36:39.533Z",
     "resolved_at": null
   }
 ]

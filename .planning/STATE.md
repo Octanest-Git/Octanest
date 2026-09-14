@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-09-14T00:29:59.222Z"
+stopped_at: Completed 10-04-PLAN.md
+last_updated: "2026-09-14T00:37:14.693Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: c25c694c34a7f76962b6cb1badb6abdd07775540
+state_head: c9b942bf49d17892d4144e814f6a378a098a0d3c
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 82
+  completed_plans: 83
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
@@ -135,6 +135,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P02 | 4min | 1 tasks | 9 files |
 | Phase 10 P13 | 12min | 1 tasks | 9 files |
 | Phase 10 P03 | 17min | 2 tasks | 18 files |
+| Phase 10 P04 | 6min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -301,6 +302,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Tracer 10-13: automated-only verify under end-of-phase — no blocking human-verify
 - [Phase 10]: 10-03: OwnerRef user-then-org slug resolve; never trust client owner_id alone
 - [Phase 10]: 10-03: repo.create org owner requires Owner/Admin; Members → repo.create_forbidden (A5)
+- [Phase 10]: 10-04: D-ORG-05 as highest-wins coalesce (A1) — Collaborator raises, cannot lower Owner/Admin
+- [Phase 10]: 10-04: resolve_repo_for_read always requires meets(Read); public bumps Read in coalesce
+- [Phase 10]: 10-04: can_read_as_owner retained for Smart HTTP until git ACL rewire
 
 ### Pending Todos
 
@@ -322,6 +326,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T00:29:59.137Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-09-14T00:37:14.614Z
+Stopped at: Completed 10-04-PLAN.md
 Resume file: None
