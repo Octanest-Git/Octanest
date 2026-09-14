@@ -55,6 +55,8 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-receive-pack` | Git push body | PAT Basic (verified email; write scope) |
+| `POST` | `/api/repos/{owner}/{repo}/releases/{release_id}/assets` | Multipart release asset upload (field `asset`) | Session cookie (Write+) |
+| `GET` | `/api/releases/assets/{asset_id}` | Download release asset by opaque id | Session when private (Read+) |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -87,7 +89,11 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `org.invites.accept` | Redeem invite token; may create verified user under closed signup | Token (optional session) |
 | `repo.listMine` / `repo.listByOwner` | Personal / owner-scoped repo lists (ACL-filtered) | Session |
 | `repo.create` / `repo.get` / browse / branch / settings | Forge RPC (Capability ACL) | Session (+ capability) |
+| `repo.rename` | Rename repo; moves bare dir; inserts redirect | Repo Admin |
+| `repo.transfer` | Transfer ownership (type-confirm `confirmName`); moves bare dir; redirect | Repo Admin |
+| `repo.softDelete` | Soft-delete with type-confirm | Repo Admin |
 | `repo.collaborators.list` / `add` / `update` / `remove` | Per-repo collaborator grants | Repo Admin |
+| `release.list` / `get` / `create` / `update` / `delete` / `deleteAsset` | Tag-based releases + notes; assets via HTTP | Session (+ capability) |
 | `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
 | `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
 | `admin.instance.factory_reset` | Wipe users, orgs, repos + issue domain (DB); optional disk wipe via `scope` | Sys-admin |
@@ -288,7 +294,13 @@ Organizations share the username slug namespace. `org.create` rejects reserved /
 
 `repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
 
-`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories (cascades collaborators, PAT-repo links, and **issue domain** tables), organizations (members/invites/org-scoped labels cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears `OCTANEST_REPOS_DIR` children.
+`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks / packages are not invented here (later phases).
+
+### Releases (`release.*`)
+
+Tag-based releases (GIT-14/15): `release.create` / `update` / `delete` / `list` / `get` / `deleteAsset`. Binary assets use dedicated HTTP routes under `OCTANEST_RELEASE_ASSETS_DIR` (opaque `asset_id`, not the LFS OID store). Multipart upload replaces by filename; max size `OCTANEST_RELEASE_ASSET_MAX_BYTES` (default 512 MiB). Draft visibility follows Write+; published downloads need Read+.
+
+`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories (cascades collaborators, PAT-repo links, and **issue domain** tables), organizations (members/invites/org-scoped labels cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears children under `OCTANEST_REPOS_DIR` and `OCTANEST_RELEASE_ASSETS_DIR`.
 
 ### Issues (`issue.*`) & labels (`label.*`)
 

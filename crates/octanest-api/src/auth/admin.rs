@@ -186,7 +186,8 @@ pub async fn update_settings(
 /// Wipe all users/sessions and restore empty-instance setup (sys-admin only).
 ///
 /// Scope (D-34): `database_only` (default) keeps bare repos on disk;
-/// `database_and_repositories` also deletes children under `repos_dir`.
+/// `database_and_repositories` also deletes children under `repos_dir`
+/// and `release_assets_dir` (D-REL-04 / Phase 15).
 pub async fn factory_reset(
     ctx: &mut RpcCtx,
     input: serde_json::Value,
@@ -209,6 +210,12 @@ pub async fn factory_reset(
 
     if matches!(req.scope, FactoryResetScope::DatabaseAndRepositories) {
         wipe_repos_dir_contents(&ctx.repos_dir).await?;
+        wipe_dir_contents(
+            &ctx.release_assets_dir,
+            "admin.factory_reset_release_assets",
+            "release asset storage",
+        )
+        .await?;
     }
 
     ctx.set_cookie = Some(CookieChange::Clear);
@@ -278,40 +285,44 @@ pub async fn repo_gc(
 /// Refuses paths that escape the repos root. Leaves the root directory itself
 /// (volume mount point) in place.
 pub async fn wipe_repos_dir_contents(repos_dir: &Path) -> Result<(), AppError> {
-    if !repos_dir.exists() {
+    wipe_dir_contents(repos_dir, "admin.factory_reset_repos", "repository storage").await
+}
+
+/// Delete all entries under a configured storage root after canonicalizing.
+/// Refuses paths that escape the root. Leaves the root directory itself
+/// (volume mount point) in place.
+pub async fn wipe_dir_contents(dir: &Path, err_code: &str, label: &str) -> Result<(), AppError> {
+    if !dir.exists() {
         return Ok(());
     }
-    let root = tokio::fs::canonicalize(repos_dir).await.map_err(|e| {
-        tracing::error!(error = %e, path = %repos_dir.display(), "canonicalize repos_dir failed");
+    let root = tokio::fs::canonicalize(dir).await.map_err(|e| {
+        tracing::error!(error = %e, path = %dir.display(), label, "canonicalize storage dir failed");
         AppError::new(
-            "admin.factory_reset_repos",
-            "Failed to resolve repository storage path.",
+            err_code,
+            format!("Failed to resolve {label} path."),
         )
     })?;
 
     let mut entries = tokio::fs::read_dir(&root).await.map_err(|e| {
-        tracing::error!(error = %e, path = %root.display(), "read_dir repos_dir failed");
-        AppError::new(
-            "admin.factory_reset_repos",
-            "Failed to list repository storage.",
-        )
+        tracing::error!(error = %e, path = %root.display(), label, "read_dir storage failed");
+        AppError::new(err_code, format!("Failed to list {label}."))
     })?;
 
     while let Some(entry) = entries.next_entry().await.map_err(|e| {
-        tracing::error!(error = %e, "repos_dir entry read failed");
+        tracing::error!(error = %e, label, "storage dir entry read failed");
         AppError::new(
-            "admin.factory_reset_repos",
-            "Failed to read repository storage entry.",
+            err_code,
+            format!("Failed to read {label} entry."),
         )
     })? {
         let path = entry.path();
         let canon = match tokio::fs::canonicalize(&path).await {
             Ok(p) => p,
             Err(e) => {
-                tracing::error!(error = %e, path = %path.display(), "canonicalize child failed");
+                tracing::error!(error = %e, path = %path.display(), label, "canonicalize child failed");
                 return Err(AppError::new(
-                    "admin.factory_reset_repos",
-                    "Failed to resolve a repository path.",
+                    err_code,
+                    format!("Failed to resolve a {label} path."),
                 ));
             }
         };
@@ -319,34 +330,35 @@ pub async fn wipe_repos_dir_contents(repos_dir: &Path) -> Result<(), AppError> {
             tracing::error!(
                 path = %canon.display(),
                 root = %root.display(),
-                "refusing to delete path outside repos_dir"
+                label,
+                "refusing to delete path outside storage root"
             );
             return Err(AppError::new(
-                "admin.factory_reset_repos",
-                "Refusing to delete a path outside repository storage.",
+                err_code,
+                format!("Refusing to delete a path outside {label}."),
             ));
         }
         let ft = entry.file_type().await.map_err(|e| {
-            tracing::error!(error = %e, path = %canon.display(), "file_type failed");
+            tracing::error!(error = %e, path = %canon.display(), label, "file_type failed");
             AppError::new(
-                "admin.factory_reset_repos",
-                "Failed to inspect repository storage entry.",
+                err_code,
+                format!("Failed to inspect {label} entry."),
             )
         })?;
         if ft.is_dir() {
             tokio::fs::remove_dir_all(&canon).await.map_err(|e| {
-                tracing::error!(error = %e, path = %canon.display(), "remove_dir_all failed");
+                tracing::error!(error = %e, path = %canon.display(), label, "remove_dir_all failed");
                 AppError::new(
-                    "admin.factory_reset_repos",
-                    "Failed to delete repository directories.",
+                    err_code,
+                    format!("Failed to delete {label} directories."),
                 )
             })?;
         } else {
             tokio::fs::remove_file(&canon).await.map_err(|e| {
-                tracing::error!(error = %e, path = %canon.display(), "remove_file failed");
+                tracing::error!(error = %e, path = %canon.display(), label, "remove_file failed");
                 AppError::new(
-                    "admin.factory_reset_repos",
-                    "Failed to delete a file under repository storage.",
+                    err_code,
+                    format!("Failed to delete a file under {label}."),
                 )
             })?;
         }
@@ -393,6 +405,32 @@ mod tests {
                 .unwrap()
                 .is_none(),
             "children must be gone"
+        );
+    }
+
+    #[tokio::test]
+    async fn factory_reset_wipe_release_assets_removes_children_keeps_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("release-assets");
+        tokio::fs::create_dir_all(&root).await.unwrap();
+        tokio::fs::write(root.join("asset-aaa"), b"bin").await.unwrap();
+        wipe_dir_contents(
+            &root,
+            "admin.factory_reset_release_assets",
+            "release asset storage",
+        )
+        .await
+        .expect("wipe");
+        assert!(root.exists(), "release-assets mount dir must remain");
+        assert!(
+            tokio::fs::read_dir(&root)
+                .await
+                .unwrap()
+                .next_entry()
+                .await
+                .unwrap()
+                .is_none(),
+            "release asset children must be gone"
         );
     }
 

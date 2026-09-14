@@ -1,7 +1,6 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
-import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 type RepoChromeProps = {
   repo: RepoPublic;
@@ -13,7 +12,7 @@ type RepoChromeProps = {
     | "issues"
     | "releases"
     | "settings";
-  /** Force Settings nav (e.g. settings page). Owners also see it via session. */
+  /** Force Settings nav (e.g. settings page). Admins also see it via can_admin. */
   showSettings?: boolean;
 };
 
@@ -23,10 +22,8 @@ export function RepoChrome({
   active,
   showSettings = false,
 }: RepoChromeProps) @{
-  const { user } = useChromeAccountState();
-  const isOwner =
-    !!user?.username && user.username === repo.owner_username;
-  const settingsVisible = showSettings || isOwner;
+  // Gate Settings on API can_admin — not personal username equality (D-REL-07 / D-REL-09).
+  const settingsVisible = showSettings || !!repo.can_admin;
 
   const owner = repo.owner_username;
   const name = repo.name;

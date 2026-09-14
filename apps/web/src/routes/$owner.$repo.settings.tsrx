@@ -1,9 +1,10 @@
 import {
   createFileRoute,
   useLoaderData,
+  useNavigate,
   useParams,
 } from "@octanejs/tanstack-router";
-import type { RepoVisibility } from "@octanest/api-client";
+import type { OwnerType, RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
 import { RepoChrome } from "@/components/repo/repo-chrome";
@@ -43,8 +44,10 @@ const PRIVATE_HELPER =
   "Only people with access can see this private repository.";
 const SOFT_DELETE_BODY =
   "Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm.";
+const TRANSFER_BODY =
+  "Transfers this repository to another user or organization. Type the repository name to confirm.";
 
-/** Admin settings — visibility, collaborators, soft-delete (D-ORG-04 / ORG-03). */
+/** Admin settings — visibility, collaborators, rename/transfer, soft-delete (D-ORG-04 / GIT-16/17). */
 export function RepoSettingsPage() @{
   const params = useParams({ from: "/$owner/$repo/settings" }) as {
     owner: string;
@@ -52,6 +55,7 @@ export function RepoSettingsPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
+  const navigate = useNavigate();
   const layout = useLoaderData({ from: "/$owner/$repo" }) as
     | RepoLayoutLoaderData
     | undefined;
@@ -76,6 +80,17 @@ export function RepoSettingsPage() @{
   const [deletePending, setDeletePending] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const [newName, setNewName] = useState("");
+  const [renamePending, setRenamePending] = useState(false);
+  const [renameError, setRenameError] = useState("");
+
+  const [destOwner, setDestOwner] = useState("");
+  const [destOwnerType, setDestOwnerType] = useState<OwnerType>("user");
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [transferConfirm, setTransferConfirm] = useState("");
+  const [transferPending, setTransferPending] = useState(false);
+  const [transferError, setTransferError] = useState("");
+
   async function saveVisibility() {
     if (!repo) return;
     setVisError("");
@@ -98,6 +113,66 @@ export function RepoSettingsPage() @{
     } catch {
       setVisError(NETWORK_ERROR);
       setVisPending(false);
+    }
+  }
+
+  async function submitRename() {
+    if (!repo) return;
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === repo.name) return;
+    setRenameError("");
+    setRenamePending(true);
+    try {
+      const res = await apiClient.repo.rename({
+        owner,
+        name: repoName,
+        newName: trimmed,
+      });
+      if (!res.ok) {
+        setRenameError(res.error.message || "Could not rename repository.");
+        setRenamePending(false);
+        return;
+      }
+      setRepo(res.data.repo);
+      toastSuccess("Repository renamed.");
+      await navigate({
+        to: "/$owner/$repo/settings",
+        params: {
+          owner: res.data.repo.owner_username,
+          repo: res.data.repo.name,
+        },
+      });
+    } catch {
+      setRenameError(NETWORK_ERROR);
+      setRenamePending(false);
+    }
+  }
+
+  async function submitTransfer() {
+    if (!repo) return;
+    setTransferError("");
+    setTransferPending(true);
+    try {
+      const res = await apiClient.repo.transfer({
+        owner,
+        name: repoName,
+        destOwner: destOwner.trim(),
+        destOwnerType,
+        confirmName: transferConfirm.trim(),
+      });
+      if (!res.ok) {
+        setTransferError(res.error.message || "Could not transfer repository.");
+        setTransferPending(false);
+        return;
+      }
+      setRepo(res.data.repo);
+      toastSuccess("Repository transferred.");
+      window.location.assign(
+        `/${res.data.repo.owner_username}/${res.data.repo.name}/settings`,
+      );
+    } catch {
+      setTransferError(NETWORK_ERROR);
+      setTransferPending(false);
     }
   }
 
@@ -191,7 +266,7 @@ export function RepoSettingsPage() @{
         <CollaboratorsPanel owner={owner} name={repoName} />
 
         <section
-          className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4"
+          className="mt-12 flex flex-col gap-6 rounded-md border border-destructive/40 p-4"
           aria-labelledby="danger-heading"
         >
           <h2
@@ -200,24 +275,186 @@ export function RepoSettingsPage() @{
           >
             Danger zone
           </h2>
-          <p className="text-[14px] leading-[1.4] text-muted-foreground">
-            Soft-delete removes this repository from Octanest. Disk cleanup may run
-            later.
-          </p>
-          <Button
-            type="button"
-            variant="destructive"
-            className="w-full sm:w-auto"
-            onClick={() => {
-              setDeleteError("");
-              setConfirmName("");
-              setDeleteOpen(true);
-            }}
-          >
-            Delete repository
-          </Button>
+
+          <div className="flex flex-col gap-3" aria-labelledby="rename-heading">
+            <h3
+              id="rename-heading"
+              className="text-[16px] font-semibold text-foreground"
+            >
+              Rename repository
+            </h3>
+            <p className="text-[14px] leading-[1.4] text-muted-foreground">
+              Change the repository name. Old URLs redirect for a retention
+              period.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="repo-rename-name">New name</Label>
+              <Input
+                id="repo-rename-name"
+                value={newName}
+                onInput={(e) =>
+                  setNewName((e.currentTarget as HTMLInputElement).value)
+                }
+                autoComplete="off"
+                disabled={renamePending}
+                placeholder={repo.name as string}
+              />
+            </div>
+            @if (renameError) {
+              <p role="alert" className="text-[14px] text-destructive">
+                {renameError as string}
+              </p>
+            }
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto"
+              disabled={
+                renamePending ||
+                !newName.trim() ||
+                newName.trim() === repo.name
+              }
+              onClick={() => void submitRename()}
+            >
+              {(renamePending ? "Renaming…" : "Rename repository") as string}
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3" aria-labelledby="transfer-heading">
+            <h3
+              id="transfer-heading"
+              className="text-[16px] font-semibold text-foreground"
+            >
+              Transfer ownership
+            </h3>
+            <p className="text-[14px] leading-[1.4] text-muted-foreground">
+              Move this repository to another user or organization. You must
+              type the repository name to confirm.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="repo-transfer-dest">Destination owner</Label>
+              <Input
+                id="repo-transfer-dest"
+                value={destOwner}
+                onInput={(e) =>
+                  setDestOwner((e.currentTarget as HTMLInputElement).value)
+                }
+                autoComplete="off"
+                disabled={transferPending}
+                placeholder="username or org slug"
+              />
+            </div>
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="Destination type"
+            >
+              <Button
+                type="button"
+                variant={destOwnerType === "user" ? "default" : "secondary"}
+                aria-pressed={destOwnerType === "user"}
+                disabled={transferPending}
+                onClick={() => setDestOwnerType("user")}
+              >
+                User
+              </Button>
+              <Button
+                type="button"
+                variant={destOwnerType === "org" ? "default" : "secondary"}
+                aria-pressed={destOwnerType === "org"}
+                disabled={transferPending}
+                onClick={() => setDestOwnerType("org")}
+              >
+                Organization
+              </Button>
+            </div>
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto"
+              disabled={transferPending || !destOwner.trim()}
+              onClick={() => {
+                setTransferError("");
+                setTransferConfirm("");
+                setTransferOpen(true);
+              }}
+            >
+              Transfer repository
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <p className="text-[14px] leading-[1.4] text-muted-foreground">
+              Soft-delete removes this repository from Octanest. Disk cleanup may
+              run later.
+            </p>
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                setDeleteError("");
+                setConfirmName("");
+                setDeleteOpen(true);
+              }}
+            >
+              Delete repository
+            </Button>
+          </div>
         </section>
       </div>
+
+      <AlertDialog
+        open={transferOpen}
+        onOpenChange={(open) => {
+          if (transferPending) return;
+          setTransferOpen(open);
+          if (!open) {
+            setTransferConfirm("");
+            setTransferError("");
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer repository?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {TRANSFER_BODY as string}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="transfer-confirm">Repository name</Label>
+            <Input
+              id="transfer-confirm"
+              value={transferConfirm}
+              onInput={(e) =>
+                setTransferConfirm((e.currentTarget as HTMLInputElement).value)
+              }
+              autoComplete="off"
+              disabled={transferPending}
+              placeholder={repoName as string}
+            />
+          </div>
+          @if (transferError) {
+            <p role="alert" className="text-[14px] text-destructive">
+              {transferError as string}
+            </p>
+          }
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={transferPending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                transferPending || transferConfirm.trim() !== repo.name
+              }
+              onClick={() => void submitTransfer()}
+            >
+              {(transferPending ? "Transferring…" : "Transfer repository") as string}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={deleteOpen}
