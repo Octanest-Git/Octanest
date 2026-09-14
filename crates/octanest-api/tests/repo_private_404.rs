@@ -508,3 +508,30 @@ async fn repo_private_404_collaborator_granted_read() {
     assert_eq!(stranger_v["ok"], false, "stranger — {stranger_v}");
     assert_eq!(stranger_v["error"]["code"], "repo.not_found");
 }
+
+/// Wave 0 / D-ISS-20: unauthorized private `issue.list` → soft not-found (T-11-01).
+#[tokio::test]
+async fn repo_private_404_issue_list_unauthorized_soft_not_found() {
+    assert!(
+        false,
+        "Wave 0: unauthorized private issue.list → soft not_found identical to repo (D-ISS-20 / T-11-01)"
+    );
+}
+
+/// Wave 0 / D-ISS-20: unauthorized private `issue.get` → soft not-found (T-11-01).
+#[tokio::test]
+async fn repo_private_404_issue_get_unauthorized_soft_not_found() {
+    assert!(
+        false,
+        "Wave 0: unauthorized private issue.get → soft not_found identical to repo (D-ISS-20 / T-11-01)"
+    );
+}
+
+/// Wave 0 / D-ISS-20: issue_private alias — private issue enumeration must not leak.
+#[tokio::test]
+async fn issue_private_unauthorized_soft_not_found() {
+    assert!(
+        false,
+        "Wave 0: private issue ACL soft not_found for unauthorized viewers (D-ISS-20 / T-11-01)"
+    );
+}
