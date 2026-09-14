@@ -355,7 +355,7 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**Plans**: 3/10 plans executed
+**Plans**: 4/10 plans executed
 
 Plans:
 **Wave 1**
@@ -366,7 +366,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
+- [x] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -635,7 +635,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
-| 9. Git SSH | 3/10 | In Progress|  |
+| 9. Git SSH | 4/10 | In Progress|  |
 | 10. Orgs & Permissions | 0/TBD | Not started | - |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |
