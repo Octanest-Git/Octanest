@@ -107,7 +107,7 @@ Each task was committed atomically:
 1. **Task 1: Issues routes + chrome Wave 0 stubs** - `5f7fe71` (test)
 2. **Task 2: markdown.issues autolink Wave 0 stub** - `658ae3c` (test)
 
-**Plan metadata:** `9f428be` (docs: complete plan)
+**Plan metadata:** `608b87e` (docs: complete plan) + SUMMARY actuals fix commit
 
 ## Files Created/Modified
 
@@ -173,7 +173,7 @@ None - no external service configuration required.
 - FOUND: `apps/web/src/routes/$owner.$repo.issues.integration.test.ts`
 - FOUND: `apps/web/src/lib/markdown.issues.test.ts`
 - FOUND: `.planning/phases/11-issues/11-01-SUMMARY.md`
-- FOUND: commits `5f7fe71`, `658ae3c`
+- FOUND: commits `5f7fe71`, `658ae3c`, `608b87e` (+ SUMMARY fix)
 
 ---
 *Phase: 11-issues*
