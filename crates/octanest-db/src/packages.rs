@@ -906,6 +906,323 @@ pub async fn update_package_description(
     Ok(())
 }
 
+
+pub async fn find_package_quota_override(
+    pool: &DbPool,
+    owner_type: &str,
+    owner_id: &str,
+) -> Result<Option<i64>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                "SELECT max_bytes FROM package_quota_overrides WHERE owner_type = ? AND owner_id = ?",
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v)
+        }
+        DbPool::Postgres(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                "SELECT max_bytes FROM package_quota_overrides WHERE owner_type = $1 AND owner_id = $2",
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v)
+        }
+        DbPool::MySql(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                "SELECT max_bytes FROM package_quota_overrides WHERE owner_type = ? AND owner_id = ?",
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v)
+        }
+    }
+}
+
+pub async fn upsert_package_quota_override(
+    pool: &DbPool,
+    owner_type: &str,
+    owner_id: &str,
+    max_bytes: i64,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                r#"INSERT INTO package_quota_overrides (owner_type, owner_id, max_bytes)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(owner_type, owner_id) DO UPDATE SET max_bytes = excluded.max_bytes"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .bind(max_bytes)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                r#"INSERT INTO package_quota_overrides (owner_type, owner_id, max_bytes)
+                   VALUES ($1,$2,$3)
+                   ON CONFLICT (owner_type, owner_id) DO UPDATE SET max_bytes = EXCLUDED.max_bytes"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .bind(max_bytes)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                r#"INSERT INTO package_quota_overrides (owner_type, owner_id, max_bytes)
+                   VALUES (?, ?, ?)
+                   ON DUPLICATE KEY UPDATE max_bytes = VALUES(max_bytes)"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .bind(max_bytes)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn sum_package_blob_bytes_for_owner(
+    pool: &DbPool,
+    owner_type: &str,
+    owner_id: &str,
+) -> Result<i64, String> {
+    // Approximate: sum size of blobs referenced by this owner's package versions
+    match pool {
+        DbPool::Sqlite(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                r#"SELECT COALESCE(SUM(DISTINCT b.size_bytes), 0)
+                   FROM package_blobs b
+                   JOIN package_blob_refs r ON r.blob_digest = b.digest
+                   JOIN package_versions v ON v.id = r.package_version_id
+                   JOIN packages p ON p.id = v.package_id
+                   WHERE p.owner_type = ? AND p.owner_id = ?"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v.unwrap_or(0))
+        }
+        DbPool::Postgres(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                r#"SELECT COALESCE(SUM(DISTINCT b.size_bytes), 0)
+                   FROM package_blobs b
+                   JOIN package_blob_refs r ON r.blob_digest = b.digest
+                   JOIN package_versions v ON v.id = r.package_version_id
+                   JOIN packages p ON p.id = v.package_id
+                   WHERE p.owner_type = $1 AND p.owner_id = $2"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v.unwrap_or(0))
+        }
+        DbPool::MySql(p) => {
+            let v: Option<i64> = sqlx::query_scalar(
+                r#"SELECT COALESCE(SUM(b.size_bytes), 0)
+                   FROM package_blobs b
+                   JOIN package_blob_refs r ON r.blob_digest = b.digest
+                   JOIN package_versions v ON v.id = r.package_version_id
+                   JOIN packages p ON p.id = v.package_id
+                   WHERE p.owner_type = ? AND p.owner_id = ?"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(v.unwrap_or(0))
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PackageUsageBreakdownRow {
+    pub package_id: String,
+    pub name: String,
+    pub format: String,
+    pub bytes: i64,
+}
+
+pub async fn list_package_usage_for_owner(
+    pool: &DbPool,
+    owner_type: &str,
+    owner_id: &str,
+) -> Result<Vec<PackageUsageBreakdownRow>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT p.id AS package_id, p.name, p.format,
+                          COALESCE(SUM(DISTINCT b.size_bytes), 0) AS bytes
+                   FROM packages p
+                   LEFT JOIN package_versions v ON v.package_id = p.id
+                   LEFT JOIN package_blob_refs r ON r.package_version_id = v.id
+                   LEFT JOIN package_blobs b ON b.digest = r.blob_digest
+                   WHERE p.owner_type = ? AND p.owner_id = ?
+                   GROUP BY p.id, p.name, p.format
+                   ORDER BY p.format, p.name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .into_iter()
+                .map(|r| PackageUsageBreakdownRow {
+                    package_id: r.get("package_id"),
+                    name: r.get("name"),
+                    format: r.get("format"),
+                    bytes: r.get("bytes"),
+                })
+                .collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT p.id AS package_id, p.name, p.format,
+                          COALESCE(SUM(DISTINCT b.size_bytes), 0) AS bytes
+                   FROM packages p
+                   LEFT JOIN package_versions v ON v.package_id = p.id
+                   LEFT JOIN package_blob_refs r ON r.package_version_id = v.id
+                   LEFT JOIN package_blobs b ON b.digest = r.blob_digest
+                   WHERE p.owner_type = $1 AND p.owner_id = $2
+                   GROUP BY p.id, p.name, p.format
+                   ORDER BY p.format, p.name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .into_iter()
+                .map(|r| PackageUsageBreakdownRow {
+                    package_id: r.get("package_id"),
+                    name: r.get("name"),
+                    format: r.get("format"),
+                    bytes: r.get("bytes"),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT p.id AS package_id, p.name, p.format,
+                          COALESCE(SUM(b.size_bytes), 0) AS bytes
+                   FROM packages p
+                   LEFT JOIN package_versions v ON v.package_id = p.id
+                   LEFT JOIN package_blob_refs r ON r.package_version_id = v.id
+                   LEFT JOIN package_blobs b ON b.digest = r.blob_digest
+                   WHERE p.owner_type = ? AND p.owner_id = ?
+                   GROUP BY p.id, p.name, p.format
+                   ORDER BY p.format, p.name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .into_iter()
+                .map(|r| PackageUsageBreakdownRow {
+                    package_id: r.get("package_id"),
+                    name: r.get("name"),
+                    format: r.get("format"),
+                    bytes: r.get("bytes"),
+                })
+                .collect())
+        }
+    }
+}
+
+pub async fn list_unref_package_blobs(pool: &DbPool, grace_secs: i64) -> Result<Vec<String>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT digest FROM package_blobs
+                   WHERE refcount = 0
+                     AND created_at <= datetime('now', '-' || ? || ' seconds')"#,
+            )
+            .bind(grace_secs)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| r.get("digest")).collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT digest FROM package_blobs
+                   WHERE refcount = 0
+                     AND created_at <= now() - ($1 || ' seconds')::interval"#,
+            )
+            .bind(grace_secs.to_string())
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| r.get("digest")).collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT digest FROM package_blobs
+                   WHERE refcount = 0
+                     AND created_at <= DATE_SUB(UTC_TIMESTAMP(3), INTERVAL ? SECOND)"#,
+            )
+            .bind(grace_secs)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| r.get("digest")).collect())
+        }
+    }
+}
+
+pub async fn delete_package_blob(pool: &DbPool, digest: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM package_blobs WHERE digest = ? AND refcount = 0")
+                .bind(digest)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM package_blobs WHERE digest = $1 AND refcount = 0")
+                .bind(digest)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM package_blobs WHERE digest = ? AND refcount = 0")
+                .bind(digest)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

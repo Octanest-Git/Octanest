@@ -107,6 +107,7 @@ async fn main() {
         state.db.clone(),
         state.git.clone(),
         state.repos_dir.clone(),
+        state.packages_dir.clone(),
         job_cfg,
     );
     let app = octanest_api::router_with_state(state, cors);

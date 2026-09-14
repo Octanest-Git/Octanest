@@ -1,18 +1,34 @@
-//! Session RPC: `packages.list` / `packages.deleteVersion` (PKG-05).
+//! Session RPC: packages.list / deleteVersion / Admin usage+quota (PKG-05, D-PKG-09).
+
+use std::collections::BTreeMap;
 
 use octanest_core::{
-    AppError, PackagePublic, PackageVersionPublic, PackagesDeleteVersionRequest,
-    PackagesDeleteVersionResponse, PackagesListRequest, PackagesListResponse,
+    AppError, PackagePublic, PackageUsageByFormat, PackageUsageRow, PackageVersionPublic,
+    PackagesAdminSetQuotaRequest, PackagesAdminSetQuotaResponse, PackagesAdminUsageRequest,
+    PackagesAdminUsageResponse, PackagesDeleteVersionRequest, PackagesDeleteVersionResponse,
+    PackagesListRequest, PackagesListResponse,
 };
 use octanest_db::PackageRow;
 
 use crate::auth::gate::require_verified;
 use crate::packages::acl::{self, PackageAction};
+use crate::packages::quota::{self, owner_quota_default_from_env};
 use crate::rpc::RpcCtx;
 
 fn db_err(e: String) -> AppError {
     tracing::error!("packages rpc db error: {e}");
     AppError::new("packages.internal", "package operation failed")
+}
+
+async fn require_sys_admin(ctx: &RpcCtx) -> Result<(), AppError> {
+    let user = require_verified(ctx).await?;
+    if !user.role.is_sys_admin() {
+        return Err(AppError::new(
+            "admin.forbidden",
+            "You need system admin access to manage package quotas.",
+        ));
+    }
+    Ok(())
 }
 
 async fn resolve_owner_login(
@@ -44,8 +60,6 @@ async fn to_public(ctx: &RpcCtx, row: PackageRow) -> Result<Option<PackagePublic
         .map_err(db_err)?;
     let visibility = acl::effective_visibility(&row, linked.as_ref());
     if !acl::authorize(&visibility, have, true, PackageAction::Pull) {
-        // Session has no PAT; treat session user ACL alone (pat_ok=true for session)
-        // Re-check: for session, pat scopes don't apply — authorize with pat_ok=true when session present
         if uid.is_none() {
             return Ok(None);
         }
@@ -145,7 +159,6 @@ pub async fn delete_version(
         .await
         .map_err(db_err)?;
     let visibility = acl::effective_visibility(&pkg, linked.as_ref());
-    // Session delete: Admin capability required; no PAT on session path
     if !acl::authorize(&visibility, have, true, PackageAction::Delete) {
         return Err(AppError::new(
             "packages.forbidden",
@@ -173,4 +186,75 @@ pub async fn delete_version(
         let _ = ctx.db.adjust_package_blob_refcount(&d, -1).await;
     }
     Ok(PackagesDeleteVersionResponse { ok: true })
+}
+
+pub async fn admin_usage(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<PackagesAdminUsageResponse, AppError> {
+    require_sys_admin(ctx).await?;
+    let req: PackagesAdminUsageRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid packages.adminUsage input: {e}"),
+        )
+    })?;
+    let (owner_type, owner_id) = resolve_owner_login(ctx, &req.owner).await?;
+    let used = quota::owner_usage_bytes(&ctx.db, &owner_type, &owner_id)
+        .await
+        .map_err(db_err)?;
+    let quota_bytes = quota::effective_owner_quota(&ctx.db, &owner_type, &owner_id)
+        .await
+        .map_err(db_err)?;
+    let rows = ctx
+        .db
+        .list_package_usage_for_owner(&owner_type, &owner_id)
+        .await
+        .map_err(db_err)?;
+    let mut by_fmt: BTreeMap<String, u64> = BTreeMap::new();
+    let mut packages = Vec::new();
+    for r in rows {
+        let b = r.bytes.max(0) as u64;
+        *by_fmt.entry(r.format.clone()).or_default() += b;
+        packages.push(PackageUsageRow {
+            package_id: r.package_id,
+            name: r.name,
+            format: r.format,
+            bytes: b,
+        });
+    }
+    Ok(PackagesAdminUsageResponse {
+        owner_type,
+        owner_id,
+        used_bytes: used,
+        quota_bytes,
+        default_quota_bytes: owner_quota_default_from_env(),
+        by_format: by_fmt
+            .into_iter()
+            .map(|(format, bytes)| PackageUsageByFormat { format, bytes })
+            .collect(),
+        packages,
+    })
+}
+
+pub async fn admin_set_quota(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<PackagesAdminSetQuotaResponse, AppError> {
+    require_sys_admin(ctx).await?;
+    let req: PackagesAdminSetQuotaRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid packages.adminSetQuota input: {e}"),
+        )
+    })?;
+    let (owner_type, owner_id) = resolve_owner_login(ctx, &req.owner).await?;
+    ctx.db
+        .upsert_package_quota_override(&owner_type, &owner_id, req.max_bytes as i64)
+        .await
+        .map_err(db_err)?;
+    Ok(PackagesAdminSetQuotaResponse {
+        ok: true,
+        max_bytes: req.max_bytes,
+    })
 }

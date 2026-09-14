@@ -194,3 +194,88 @@ async fn package_rpc_delete_version_bad_confirm_rejected() {
         "expected reject when confirm != name@version — status={status} {v}"
     );
 }
+
+#[tokio::test]
+async fn package_rpc_admin_usage_and_set_quota() {
+    use octanest_api::auth::hash_password_str;
+
+    let dir = tempfile::tempdir().unwrap();
+    let db = Database::connect(&format!("sqlite:{}", dir.path().join("a.db").display()))
+        .await
+        .unwrap();
+    db.migrate().await.unwrap();
+    let hash = hash_password_str("password1").unwrap();
+    let id = Uuid::new_v4().to_string();
+    db.create_user(
+        &id,
+        "adm@ex.com",
+        "pkgadmin",
+        Some(&hash),
+        "Admin",
+        "",
+        None,
+        octanest_core::Role::SysAdmin,
+    )
+    .await
+    .unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&id, &now).await.unwrap();
+
+    let app = router_with_state(
+        AppState::new(db.clone(), Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+            .with_packages_dir(dir.path().join("pkg")),
+        build_cors("development", None).unwrap(),
+    );
+    let login = app
+        .clone()
+        .oneshot(rpc(
+            r#"{"procedure":"auth.login","input":{"identifier":"adm@ex.com","password":"password1","remember_me":false}}"#,
+            None,
+        ))
+        .await
+        .unwrap();
+    let cookie = login
+        .headers()
+        .get("set-cookie")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+
+    let set = app
+        .clone()
+        .oneshot(rpc(
+            r#"{"procedure":"packages.adminSetQuota","input":{"owner":"pkgadmin","max_bytes":12345}}"#,
+            Some(&cookie),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(set.status(), StatusCode::OK);
+    let usage = app
+        .oneshot(rpc(
+            r#"{"procedure":"packages.adminUsage","input":{"owner":"pkgadmin"}}"#,
+            Some(&cookie),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(usage.status(), StatusCode::OK);
+    let v: serde_json::Value =
+        serde_json::from_slice(&usage.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(v["data"]["quota_bytes"], 12345);
+}
+
+#[tokio::test]
+async fn package_rpc_admin_usage_forbidden_for_normal_user() {
+    let (app, _db, cookie, _uid, _dir) = setup().await;
+    let res = app
+        .oneshot(rpc(
+            r#"{"procedure":"packages.adminUsage","input":{"owner":"rpcown"}}"#,
+            Some(&cookie),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::FORBIDDEN);
+}

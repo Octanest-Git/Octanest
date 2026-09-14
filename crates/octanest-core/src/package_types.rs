@@ -48,3 +48,48 @@ pub struct PackagesDeleteVersionRequest {
 pub struct PackagesDeleteVersionResponse {
     pub ok: bool,
 }
+
+/// Admin: package storage usage for an owner (D-PKG-09).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesAdminUsageRequest {
+    /// Owner username or org slug.
+    pub owner: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageUsageByFormat {
+    pub format: String,
+    pub bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageUsageRow {
+    pub package_id: String,
+    pub name: String,
+    pub format: String,
+    pub bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesAdminUsageResponse {
+    pub owner_type: String,
+    pub owner_id: String,
+    pub used_bytes: u64,
+    pub quota_bytes: u64,
+    pub default_quota_bytes: u64,
+    pub by_format: Vec<PackageUsageByFormat>,
+    pub packages: Vec<PackageUsageRow>,
+}
+
+/// Admin: set per-owner package quota override (D-PKG-09).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesAdminSetQuotaRequest {
+    pub owner: String,
+    pub max_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackagesAdminSetQuotaResponse {
+    pub ok: bool,
+    pub max_bytes: u64,
+}

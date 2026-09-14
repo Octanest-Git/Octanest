@@ -1,4 +1,4 @@
-//! Interval timers for orphan reconcile + git gc (D-36 / D-37).
+//! Interval timers for orphan reconcile + git gc + package blob GC (D-36 / D-37 / D-PKG-09).
 
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -17,15 +17,19 @@ pub struct JobConfig {
     pub orphan_interval: Duration,
     /// Default 7d. Set `OCTANEST_GIT_GC_INTERVAL_SECS=0` to disable.
     pub gc_interval: Duration,
+    /// Default 24h. Set `OCTANEST_PACKAGES_GC_INTERVAL_SECS=0` to disable.
+    pub packages_gc_interval: Duration,
 }
 
 impl JobConfig {
     pub fn from_env() -> Self {
         let orphan_secs = parse_u64_env("OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS", 86_400);
         let gc_secs = parse_u64_env("OCTANEST_GIT_GC_INTERVAL_SECS", 604_800);
+        let packages_gc_secs = parse_u64_env("OCTANEST_PACKAGES_GC_INTERVAL_SECS", 86_400);
         Self {
             orphan_interval: Duration::from_secs(orphan_secs),
             gc_interval: Duration::from_secs(gc_secs),
+            packages_gc_interval: Duration::from_secs(packages_gc_secs),
         }
     }
 }
@@ -42,6 +46,7 @@ pub fn spawn_background_jobs(
     db: Database,
     git: Arc<dyn GitBackend>,
     repos_dir: PathBuf,
+    packages_dir: PathBuf,
     config: JobConfig,
 ) {
     if config.orphan_interval.as_secs() > 0 {
@@ -83,7 +88,7 @@ pub fn spawn_background_jobs(
     }
 
     if config.gc_interval.as_secs() > 0 {
-        let db_g = db;
+        let db_g = db.clone();
         let git_g = git;
         let repos_g = repos_dir;
         let period = config.gc_interval;
@@ -110,5 +115,34 @@ pub fn spawn_background_jobs(
         );
     } else {
         tracing::info!("git gc job disabled (interval 0)");
+    }
+
+    if config.packages_gc_interval.as_secs() > 0 {
+        let db_p = db;
+        let pkg_dir = packages_dir;
+        let period = config.packages_gc_interval;
+        tokio::spawn(async move {
+            let mut ticker = interval(period);
+            ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+            loop {
+                ticker.tick().await;
+                match crate::packages::quota::gc_unref_blobs(&db_p, &pkg_dir).await {
+                    Ok(n) => {
+                        if n > 0 {
+                            tracing::info!(removed = n, "package blob GC completed");
+                        } else {
+                            tracing::debug!("package blob GC: nothing to do");
+                        }
+                    }
+                    Err(e) => tracing::error!(error = %e, "package blob GC failed"),
+                }
+            }
+        });
+        tracing::info!(
+            secs = config.packages_gc_interval.as_secs(),
+            "package blob GC job scheduled"
+        );
+    } else {
+        tracing::info!("package blob GC job disabled (interval 0)");
     }
 }

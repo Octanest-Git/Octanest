@@ -430,6 +430,23 @@ async fn put_upload(
     if actual != q.digest {
         return StatusCode::BAD_REQUEST.into_response();
     }
+    let Some((owner_type, owner_id)) = (match resolve_owner(&state.db, &owner).await {
+        Ok(v) => v,
+        Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    if let Err(msg) = crate::packages::quota::check_can_store(
+        &state.db,
+        &owner_type,
+        &owner_id,
+        bytes.len() as u64,
+    )
+    .await
+    {
+        tracing::warn!(error = %msg, "quota");
+        return StatusCode::INSUFFICIENT_STORAGE.into_response();
+    }
     let max = max_blob_bytes_from_env();
     match store::put_blob(&state.packages_dir, &bytes, max) {
         Ok((digest, size)) => {
@@ -620,6 +637,17 @@ async fn put_manifest(
     }
 
     let max = max_blob_bytes_from_env();
+    if let Err(msg) = crate::packages::quota::check_can_store(
+        &state.db,
+        &pkg.owner_type,
+        &pkg.owner_id,
+        body.len() as u64,
+    )
+    .await
+    {
+        tracing::warn!(error = %msg, "quota");
+        return StatusCode::INSUFFICIENT_STORAGE.into_response();
+    }
     if let Err(e) = store::put_blob(&state.packages_dir, &body, max) {
         return match e {
             store::StoreError::TooLarge { .. } => StatusCode::PAYLOAD_TOO_LARGE.into_response(),

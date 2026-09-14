@@ -486,6 +486,17 @@ async fn put_publish(
     };
 
     let max = max_blob_bytes_from_env();
+    if let Err(msg) = crate::packages::quota::check_can_store(
+        &state.db,
+        &owner_type,
+        &owner_id,
+        tarball.len() as u64,
+    )
+    .await
+    {
+        tracing::warn!(error = %msg, "quota");
+        return StatusCode::INSUFFICIENT_STORAGE.into_response();
+    }
     let (digest, size) = match store::put_blob(&state.packages_dir, &tarball, max) {
         Ok(v) => v,
         Err(store::StoreError::TooLarge { .. }) => {

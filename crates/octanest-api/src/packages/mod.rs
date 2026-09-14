@@ -4,6 +4,7 @@ pub mod acl;
 pub mod auth;
 pub mod generic;
 pub mod npm;
+pub mod quota;
 pub mod oci;
 pub mod rpc;
 pub mod store;

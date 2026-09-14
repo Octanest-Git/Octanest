@@ -30,7 +30,7 @@ pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
-pub use packages::{PackageRow, PackageVersionRow};
+pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
@@ -1141,6 +1141,48 @@ impl Database {
     }
 
 
+
+
+    pub async fn find_package_quota_override(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Option<i64>, String> {
+        packages::find_package_quota_override(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn upsert_package_quota_override(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+        max_bytes: i64,
+    ) -> Result<(), String> {
+        packages::upsert_package_quota_override(self.require_pool()?, owner_type, owner_id, max_bytes).await
+    }
+
+    pub async fn sum_package_blob_bytes_for_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<i64, String> {
+        packages::sum_package_blob_bytes_for_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn list_package_usage_for_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Vec<packages::PackageUsageBreakdownRow>, String> {
+        packages::list_package_usage_for_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn list_unref_package_blobs(&self, grace_secs: i64) -> Result<Vec<String>, String> {
+        packages::list_unref_package_blobs(self.require_pool()?, grace_secs).await
+    }
+
+    pub async fn delete_package_blob(&self, digest: &str) -> Result<(), String> {
+        packages::delete_package_blob(self.require_pool()?, digest).await
+    }
 
     pub async fn find_package_by_id(&self, id: &str) -> Result<Option<packages::PackageRow>, String> {
         packages::find_package_by_id(self.require_pool()?, id).await
