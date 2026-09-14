@@ -8,14 +8,15 @@ import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { IssuePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
+import { IssueComments } from "@/components/repo/issue-comments";
 import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
 import { IssueHistoryPanel } from "@/components/repo/issue-history";
+import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
@@ -105,8 +106,6 @@ export function IssueDetailPage() @{
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editBody, setEditBody] = useState("");
-  const [tab, setTab] = useState<"write" | "preview">("write");
-  const [previewHtml, setPreviewHtml] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
@@ -175,18 +174,6 @@ export function IssueDetailPage() @{
     };
   }, [issue?.id, issue?.body, editing]);
 
-  useEffect(() => {
-    if (!editing || tab !== "preview") return;
-    let cancelled = false;
-    (async () => {
-      const html = await renderGfm(editBody || "_Nothing to preview_");
-      if (!cancelled) setPreviewHtml(html);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [editing, tab, editBody]);
-
   async function invalidateIssueCaches() {
     await queryClient.invalidateQueries({
       queryKey: ["issue", "get", owner, repoName, number],
@@ -203,7 +190,6 @@ export function IssueDetailPage() @{
     if (!issue) return;
     setEditTitle(issue.title);
     setEditBody(issue.body);
-    setTab("write");
     setActionError("");
     setEditing(true);
   }
@@ -400,46 +386,13 @@ export function IssueDetailPage() @{
 
             @if (editing) {
               <div className="flex flex-col gap-2">
-                <div className="flex gap-2 border-b border-border pb-0">
-                  <button
-                    type="button"
-                    className={
-                      (tab === "write"
-                        ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
-                        : "pb-2 text-[14px] text-muted-foreground") as string
-                    }
-                    onClick={() => setTab("write")}
-                  >
-                    Write
-                  </button>
-                  <button
-                    type="button"
-                    className={
-                      (tab === "preview"
-                        ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
-                        : "pb-2 text-[14px] text-muted-foreground") as string
-                    }
-                    onClick={() => setTab("preview")}
-                  >
-                    Preview
-                  </button>
-                </div>
-                @if (tab === "write") {
-                  <Textarea
-                    id="issue-edit-body"
-                    rows={10}
-                    value={editBody}
-                    onInput={(e) =>
-                      setEditBody((e.target as HTMLTextAreaElement).value)
-                    }
-                    disabled={pending}
-                  />
-                } @else {
-                  <div
-                    className="prose prose-sm min-h-40 max-w-none rounded-md border border-border px-4 py-3"
-                    dangerouslySetInnerHTML={{ __html: previewHtml }}
-                  />
-                }
+                <MarkdownWritePreview
+                  id="issue-edit-body"
+                  value={editBody}
+                  onValueChange={setEditBody}
+                  rows={10}
+                  disabled={pending}
+                />
                 <div className="flex gap-2">
                   <Button type="button" disabled={pending} onClick={saveEdit}>
                     Save
@@ -470,17 +423,13 @@ export function IssueDetailPage() @{
               number={number}
             />
 
-            <section aria-labelledby="issue-comments-heading">
-              <h2
-                id="issue-comments-heading"
-                className="text-[16px] font-semibold text-foreground"
-              >
-                Comments
-              </h2>
-              <p className="mt-2 text-[14px] text-muted-foreground">
-                No comments yet.
-              </p>
-            </section>
+            <IssueComments
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+              currentUserId={userId}
+            />
           </div>
           <aside className="flex flex-col gap-6">
             <section aria-labelledby="issue-labels-heading">

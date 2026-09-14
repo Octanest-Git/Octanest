@@ -6,15 +6,15 @@ import {
 } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic } from "@octanest/api-client";
-import { useEffect, useState } from "octane";
+import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
+import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { renderGfm } from "@/lib/markdown";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { fetchRepoGet } from "@/lib/ssr-repo";
 
@@ -83,8 +83,6 @@ export function IssuesNewPage() @{
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [tab, setTab] = useState<"write" | "preview">("write");
-  const [previewHtml, setPreviewHtml] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -105,18 +103,6 @@ export function IssuesNewPage() @{
   });
 
   const repo = repoQ.data ?? null;
-
-  useEffect(() => {
-    if (tab !== "preview") return;
-    let cancelled = false;
-    (async () => {
-      const html = await renderGfm(body || "_Nothing to preview_");
-      if (!cancelled) setPreviewHtml(html);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [tab, body]);
 
   async function submit() {
     setError("");
@@ -193,47 +179,14 @@ export function IssuesNewPage() @{
           />
         </div>
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2 border-b border-border pb-0">
-            <button
-              type="button"
-              className={
-                (tab === "write"
-                  ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
-                  : "pb-2 text-[14px] text-muted-foreground") as string
-              }
-              onClick={() => setTab("write")}
-            >
-              Write
-            </button>
-            <button
-              type="button"
-              className={
-                (tab === "preview"
-                  ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
-                  : "pb-2 text-[14px] text-muted-foreground") as string
-              }
-              onClick={() => setTab("preview")}
-            >
-              Preview
-            </button>
-          </div>
-          @if (tab === "write") {
-            <textarea
-              id="issue-body"
-              name="body"
-              className="min-h-[12rem] w-full rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground"
-              value={body}
-              onInput={(e) =>
-                setBody((e.target as HTMLTextAreaElement).value)
-              }
-              placeholder="Describe the issue (markdown supported)"
-            />
-          } @else {
-            <div
-              className="prose prose-sm min-h-[12rem] max-w-none rounded-md border border-border px-3 py-2"
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
-          }
+          <MarkdownWritePreview
+            id="issue-body"
+            value={body}
+            onValueChange={setBody}
+            rows={12}
+            disabled={pending}
+            placeholder="Describe the issue (markdown supported)"
+          />
         </div>
         <div className="flex gap-3">
           <Button

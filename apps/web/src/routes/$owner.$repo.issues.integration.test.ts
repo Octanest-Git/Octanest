@@ -22,6 +22,11 @@ const updateMock = vi.fn();
 const closeMock = vi.fn();
 const reopenMock = vi.fn();
 const deleteMock = vi.fn();
+const commentsListMock = vi.fn();
+const commentsCreateMock = vi.fn();
+const commentsUpdateMock = vi.fn();
+const commentsDeleteMock = vi.fn();
+const commentsHistoryMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -37,6 +42,13 @@ vi.mock("@/lib/api-client", () => ({
       close: (...args: unknown[]) => closeMock(...args),
       reopen: (...args: unknown[]) => reopenMock(...args),
       delete: (...args: unknown[]) => deleteMock(...args),
+      comments: {
+        list: (...args: unknown[]) => commentsListMock(...args),
+        create: (...args: unknown[]) => commentsCreateMock(...args),
+        update: (...args: unknown[]) => commentsUpdateMock(...args),
+        delete: (...args: unknown[]) => commentsDeleteMock(...args),
+        history: (...args: unknown[]) => commentsHistoryMock(...args),
+      },
     },
   },
 }));
@@ -128,6 +140,11 @@ beforeEach(() => {
   closeMock.mockReset();
   reopenMock.mockReset();
   deleteMock.mockReset();
+  commentsListMock.mockReset();
+  commentsCreateMock.mockReset();
+  commentsUpdateMock.mockReset();
+  commentsDeleteMock.mockReset();
+  commentsHistoryMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -136,6 +153,8 @@ beforeEach(() => {
   issueGetMock.mockResolvedValue({ ok: true, data: sampleIssue });
   createMock.mockResolvedValue({ ok: true, data: sampleIssue });
   historyMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
+  commentsListMock.mockResolvedValue({ ok: true, data: { comments: [] } });
+  commentsHistoryMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
 });
 
 afterEach(cleanup);
@@ -394,6 +413,47 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
         expect(writes.length).toBeGreaterThanOrEqual(1);
         expect(previews.length).toBeGreaterThanOrEqual(1);
       });
+    },
+    15_000,
+  );
+
+  it(
+    "comment thread lists comments + Write|Preview compose (ISS-02 / D-ISS-10)",
+    async () => {
+      commentsListMock.mockResolvedValue({
+        ok: true,
+        data: {
+          comments: [
+            {
+              id: "c1",
+              issue_id: "i1",
+              author_id: "u1",
+              author_username: "ada",
+              body: "First comment",
+              created_at: "2026-09-14T00:00:00Z",
+              updated_at: "2026-09-14T00:00:00Z",
+            },
+          ],
+        },
+      });
+      const mod = await loadIssueDetailModule();
+      renderWithQueryClient(issueDetailPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("issue-comments")).toBeInTheDocument();
+      });
+      expect(screen.getByTestId("issue-comment")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId("issue-comment").textContent).toMatch(
+          /First comment/i,
+        );
+      });
+      expect(screen.getByTestId("issue-comment-compose")).toBeInTheDocument();
+      expect(screen.getByText(/^Show edit history$/i)).toBeInTheDocument();
+      const writes = screen.getAllByText(/^Write$/i);
+      const previews = screen.getAllByText(/^Preview$/i);
+      expect(writes.length).toBeGreaterThanOrEqual(1);
+      expect(previews.length).toBeGreaterThanOrEqual(1);
     },
     15_000,
   );
