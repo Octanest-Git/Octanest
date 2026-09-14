@@ -224,3 +224,80 @@ async fn factory_reset_wrong_phrase_rejected() {
     assert_eq!(v["ok"], false);
     assert_eq!(v["error"]["code"], "admin.factory_reset_confirm");
 }
+
+#[tokio::test]
+async fn factory_reset_wipes_org_acl_and_repository_rows() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("factory_reset_orgs_scope.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let admin_id = seed_sys_admin(&db).await;
+
+    let org = db
+        .insert_organization("o-wipe", "wipeorg", "Wipe Org", "none")
+        .await
+        .expect("org");
+    db.insert_org_owner_membership(&org.id, &admin_id)
+        .await
+        .expect("membership");
+    db.insert_org_invite(
+        "inv-wipe",
+        &org.id,
+        "invitee@ex.com",
+        "member",
+        "wipe-token-hash",
+        "2099-01-01 00:00:00",
+        &admin_id,
+    )
+    .await
+    .expect("invite");
+    let org_repo = db
+        .insert_repository("r-org-wipe", &org.id, "org", "teamrepo", "private", "", "main")
+        .await
+        .expect("org repo");
+    let user_repo = db
+        .insert_repository(
+            "r-user-wipe",
+            &admin_id,
+            "user",
+            "mine",
+            "private",
+            "",
+            "main",
+        )
+        .await
+        .expect("user repo");
+
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+    let cookie = login_admin(&app).await;
+
+    let res = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"admin.instance.factory_reset","input":{"confirmation":"RESET","scope":"database_only"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "{v}");
+    assert_eq!(v["data"]["needs_setup"], true);
+
+    assert_eq!(db.count_users().await.unwrap(), 0);
+    assert!(db.find_organization_by_id(&org.id).await.unwrap().is_none());
+    assert!(db.find_org_invite_by_id("inv-wipe").await.unwrap().is_none());
+    assert!(db
+        .find_repository_by_id(&org_repo.id)
+        .await
+        .unwrap()
+        .is_none());
+    assert!(db
+        .find_repository_by_id(&user_repo.id)
+        .await
+        .unwrap()
+        .is_none());
+}
