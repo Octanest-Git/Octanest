@@ -20,7 +20,7 @@ pub mod ssh_keys;
 pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
-pub use issue_labels::LabelRow;
+pub use issue_labels::{IssueAssigneeRow, LabelRow};
 pub use issues::{CommentRevisionRow, IssueCommentRow, IssueRevisionRow, IssueRow};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
@@ -639,6 +639,13 @@ impl Database {
 
     pub async fn list_labels_for_issue(&self, issue_id: &str) -> Result<Vec<LabelRow>, String> {
         issue_labels::list_labels_for_issue(self.require_pool()?, issue_id).await
+    }
+
+    pub async fn list_issue_assignees(
+        &self,
+        issue_id: &str,
+    ) -> Result<Vec<issue_labels::IssueAssigneeRow>, String> {
+        issue_labels::list_issue_assignees(self.require_pool()?, issue_id).await
     }
 
     pub async fn set_issue_labels(

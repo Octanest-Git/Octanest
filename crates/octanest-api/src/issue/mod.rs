@@ -3,11 +3,12 @@
 pub(crate) mod acl;
 
 use octanest_core::{
-    AppError, CommentHistoryResponse, CommentRevisionPublic, CreateIssueCommentRequest,
-    CreateIssueRequest, DeleteIssueCommentResponse, DeleteIssueRequest, DeleteIssueResponse,
-    IssueCommentPublic, IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse,
-    IssueListRequest, IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic,
-    IssueState, SetIssueLabelsRequest, UpdateIssueCommentRequest, UpdateIssueRequest,
+    AppError, AssigneeCandidatesRequest, AssigneeCandidatesResponse, CommentHistoryResponse,
+    CommentRevisionPublic, CreateIssueCommentRequest, CreateIssueRequest, DeleteIssueCommentResponse,
+    DeleteIssueRequest, DeleteIssueResponse, IssueAssigneePublic, IssueCommentPublic,
+    IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse, IssueListRequest,
+    IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic, IssueState,
+    SetIssueAssigneesRequest, SetIssueLabelsRequest, UpdateIssueCommentRequest, UpdateIssueRequest,
 };
 use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
@@ -80,6 +81,19 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         .await
         .map_err(db_err)?;
     let labels = crate::label::label_rows_to_public(&label_rows);
+    let assignee_rows = ctx
+        .db
+        .list_issue_assignees(&row.id)
+        .await
+        .map_err(db_err)?;
+    let assignees = assignee_rows
+        .into_iter()
+        .map(|a| IssueAssigneePublic {
+            user_id: a.user_id,
+            username: a.username,
+            display_name: a.display_name,
+        })
+        .collect();
     Ok(IssuePublic {
         id: row.id.clone(),
         repo_id: row.repo_id.clone(),
@@ -94,7 +108,7 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
         labels,
-        assignees: Vec::new(),
+        assignees,
     })
 }
 
@@ -550,4 +564,180 @@ pub async fn labels_set(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssueP
         .map_err(db_err)?
         .ok_or_else(issue_not_found)?;
     to_public(ctx, &refreshed).await
+}
+
+/// `issue.assignees.set` — Write+; each user_id must have Read+ (D-ISS-06 / D-ISS-08 / T-11-12).
+pub async fn assignees_set(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssuePublic, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: SetIssueAssigneesRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.assignees.set input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+
+    let owner_ref = crate::repo::owner_ref_for_repo(&ctx.db, &accessible.row)
+        .await
+        .map_err(|e| {
+            tracing::error!(error = %e, "owner_ref_for_repo failed");
+            AppError::new("issue.internal", "issue operation failed")
+        })?
+        .ok_or_else(not_found)?;
+
+    let mut seen = std::collections::HashSet::new();
+    let mut unique_ids = Vec::new();
+    for id in &req.user_ids {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(AppError::new("rpc.bad_input", "user id must not be empty"));
+        }
+        if !seen.insert(id.to_string()) {
+            continue;
+        }
+        let Some(_u) = ctx.db.find_user_by_id(id).await.map_err(db_err)? else {
+            return Err(AppError::new(
+                "rpc.bad_input",
+                "assignee user was not found",
+            ));
+        };
+        let cap = crate::repo::effective_capability(
+            &ctx.db,
+            Some(id),
+            &accessible.row,
+            &owner_ref,
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!(error = %e, "effective_capability for assignee failed");
+            AppError::new("issue.internal", "issue operation failed")
+        })?;
+        if !crate::repo::meets(cap, crate::repo::Capability::Read) {
+            return Err(AppError::new(
+                "rpc.bad_input",
+                "assignee must have Read access on this repository",
+            ));
+        }
+        unique_ids.push(id.to_string());
+    }
+
+    ctx.db
+        .set_issue_assignees(&issue.id, &unique_ids)
+        .await
+        .map_err(db_err)?;
+
+    let refreshed = ctx
+        .db
+        .find_issue_by_id(&issue.id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(issue_not_found)?;
+    to_public(ctx, &refreshed).await
+}
+
+/// `issue.assigneeCandidates` — Write+; profiles with effective Read+ (D-ISS-08).
+pub async fn assignee_candidates(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<AssigneeCandidatesResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: AssigneeCandidatesRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.assigneeCandidates input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let owner_ref = crate::repo::owner_ref_for_repo(&ctx.db, &accessible.row)
+        .await
+        .map_err(|e| {
+            tracing::error!(error = %e, "owner_ref_for_repo failed");
+            AppError::new("issue.internal", "issue operation failed")
+        })?
+        .ok_or_else(not_found)?;
+
+    let mut candidate_ids = std::collections::HashSet::new();
+    match &owner_ref {
+        crate::repo::OwnerRef::User { id, .. } => {
+            candidate_ids.insert(id.clone());
+        }
+        crate::repo::OwnerRef::Org { id, .. } => {
+            let members = ctx.db.list_org_members(id).await.map_err(db_err)?;
+            for m in members {
+                candidate_ids.insert(m.user_id);
+            }
+        }
+    }
+    let collabs = ctx
+        .db
+        .list_repo_collaborators(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    for c in collabs {
+        candidate_ids.insert(c.user_id);
+    }
+
+    let prefix = req
+        .prefix
+        .as_deref()
+        .map(str::trim)
+        .filter(|p| !p.is_empty())
+        .map(|p| p.to_ascii_lowercase());
+
+    if let Some(ref p) = prefix {
+        if p.chars().count() >= 2 && !p.contains('@') {
+            let hits = ctx
+                .db
+                .list_users_by_username_prefix(p, 20)
+                .await
+                .map_err(db_err)?;
+            for hit in hits {
+                if let Some(u) = ctx
+                    .db
+                    .find_user_by_username(&hit.username)
+                    .await
+                    .map_err(db_err)?
+                {
+                    candidate_ids.insert(u.id);
+                }
+            }
+        }
+    }
+
+    let mut users = Vec::new();
+    for user_id in candidate_ids {
+        let cap = crate::repo::effective_capability(
+            &ctx.db,
+            Some(&user_id),
+            &accessible.row,
+            &owner_ref,
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!(error = %e, "effective_capability for candidate failed");
+            AppError::new("issue.internal", "issue operation failed")
+        })?;
+        if !crate::repo::meets(cap, crate::repo::Capability::Read) {
+            continue;
+        }
+        let Some(u) = ctx.db.find_user_by_id(&user_id).await.map_err(db_err)? else {
+            continue;
+        };
+        if let Some(ref p) = prefix {
+            if !u.username.to_ascii_lowercase().starts_with(p.as_str()) {
+                continue;
+            }
+        }
+        users.push(IssueAssigneePublic {
+            user_id: u.id,
+            username: u.username,
+            display_name: u.display_name,
+        });
+    }
+    users.sort_by(|a, b| a.username.to_ascii_lowercase().cmp(&b.username.to_ascii_lowercase()));
+    Ok(AssigneeCandidatesResponse { users })
 }

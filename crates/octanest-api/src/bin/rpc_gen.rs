@@ -685,6 +685,23 @@ export type SetIssueLabelsRequest = {
   labelIds: string[];
 };
 
+export type SetIssueAssigneesRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  userIds: string[];
+};
+
+export type AssigneeCandidatesRequest = {
+  owner: string;
+  name: string;
+  prefix?: string | null;
+};
+
+export type AssigneeCandidatesResponse = {
+  users: IssueAssigneePublic[];
+};
+
 export type IssuePublic = {
   id: string;
   repo_id: string;
@@ -983,6 +1000,12 @@ export function createClient(opts: CreateClientOptions) {
         set: (input: SetIssueLabelsRequest) =>
           rpcCall<IssuePublic>(opts, "issue.labels.set", input),
       },
+      assignees: {
+        set: (input: SetIssueAssigneesRequest) =>
+          rpcCall<IssuePublic>(opts, "issue.assignees.set", input),
+      },
+      assigneeCandidates: (input: AssigneeCandidatesRequest) =>
+        rpcCall<AssigneeCandidatesResponse>(opts, "issue.assigneeCandidates", input),
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>
@@ -1614,6 +1637,37 @@ export function issueLabelsSetMutationOptions(client: OctanestClient) {
     mutationKey: ["issue", "labels", "set"] as const,
     mutationFn: async (input: SetIssueLabelsRequest) => {
       const res = await client.issue.labels.set(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueAssigneesSetMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "assignees", "set"] as const,
+    mutationFn: async (input: SetIssueAssigneesRequest) => {
+      const res = await client.issue.assignees.set(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueAssigneeCandidatesQueryOptions(
+  client: OctanestClient,
+  input: AssigneeCandidatesRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "assigneeCandidates",
+      input.owner,
+      input.name,
+      input.prefix ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.assigneeCandidates(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

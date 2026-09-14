@@ -608,6 +608,107 @@ pub async fn set_issue_labels(
     Ok(())
 }
 
+/// Assignee row joined to users for issue detail / candidates.
+#[derive(Debug, Clone)]
+pub struct IssueAssigneeRow {
+    pub user_id: String,
+    pub username: String,
+    pub display_name: String,
+}
+
+/// List assignees for an issue (username ascending).
+pub async fn list_issue_assignees(
+    pool: &DbPool,
+    issue_id: &str,
+) -> Result<Vec<IssueAssigneeRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id = $1
+ORDER BY lower(u.username)",
+            )
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(IssueAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id = ?
+ORDER BY LOWER(u.username)",
+            )
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(IssueAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id = ?1
+ORDER BY lower(u.username)",
+            )
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(IssueAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+    }
+}
+
 /// Replace assignees on an issue (M:N via `issue_assignees`).
 pub async fn set_issue_assignees(
     pool: &DbPool,

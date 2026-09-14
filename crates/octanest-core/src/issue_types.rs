@@ -228,6 +228,31 @@ pub struct SetIssueLabelsRequest {
     pub label_ids: Vec<String>,
 }
 
+/// Replace issue assignees by user id (Write+ — D-ISS-06 / D-ISS-07 / D-ISS-08).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetIssueAssigneesRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "userIds", alias = "user_ids")]
+    pub user_ids: Vec<String>,
+}
+
+/// List Read+-eligible assignee candidates for a repo (Write+ picker — D-ISS-08).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssigneeCandidatesRequest {
+    pub owner: String,
+    pub name: String,
+    /// Optional username prefix filter (case-insensitive).
+    #[serde(default)]
+    pub prefix: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssigneeCandidatesResponse {
+    pub users: Vec<IssueAssigneePublic>,
+}
+
 /// Create-issue input (RPC wired in 11-03).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateIssueRequest {
