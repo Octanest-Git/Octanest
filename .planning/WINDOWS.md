@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 26
+open_count: 27
 waived_count: 0
 fixed_count: 1
-total_count: 27
-last_updated: 2026-09-13T23:52:49.281Z
+total_count: 28
+last_updated: 2026-09-14T00:06:48.676Z
 ---
 
 # Broken Windows Ledger
@@ -42,6 +42,7 @@ last_updated: 2026-09-13T23:52:49.281Z
 | 25 | 10 | stub | apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts |  | Fails until collaborators-panel + can_admin in 10-11 | open |  | 2026-09-13T23:41:25.316Z |  |
 | 26 | 10 | stub | apps/web/src/routes/$owner.settings.members.integration.test.ts |  | Fails until members/invites UI in 10-10 | open |  | 2026-09-13T23:41:25.415Z |  |
 | 27 | 10 | stub | crates/octanest-db/migrations/postgres/0010_orgs_acl.sql |  | organization_invites/repository_collaborators tables exist without CRUD helpers/RPCs (deferred 10-06/10-07) | open |  | 2026-09-13T23:52:49.281Z |  |
+| 28 | 10 | deviation | crates/octanest-api/src/auth/local.rs |  | Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans | open |  | 2026-09-14T00:06:48.676Z |  |
 
 ````json
 [
@@ -367,6 +368,18 @@ last_updated: 2026-09-13T23:52:49.281Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T23:52:49.281Z",
+    "resolved_at": null
+  },
+  {
+    "id": 28,
+    "kind": "deviation",
+    "phase": "10",
+    "file": "crates/octanest-api/src/auth/local.rs",
+    "line": null,
+    "description": "Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:06:48.676Z",
     "resolved_at": null
   }
 ]
