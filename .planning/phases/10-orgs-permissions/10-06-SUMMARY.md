@@ -18,7 +18,7 @@ affects:
 actuals:
   tokens: 19647
   tasks: 2
-  commits: 3
+  commits: 4
 
 tech-stack:
   added: []
@@ -96,7 +96,7 @@ duration: 12min
 completed: 2026-09-14
 status: complete
 plan_head_before: cc7f121d46378793a7b9b01b2dcd7a3a9f1a1a7b
-commits: 3
+commits: 4
 ---
 
 # Phase 10 Plan 06: Email Invites Summary
@@ -123,7 +123,7 @@ commits: 3
 2. **Task 1 GREEN: implement org.invites create/list/revoke/accept** - `4cc919a` (feat)
 3. **Task 2: /invites/$token accept page** - `1c59d24` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `863e887` (docs: complete plan)
 
 ## Files Created/Modified
 
