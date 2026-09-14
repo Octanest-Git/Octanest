@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 44
+open_count: 45
 waived_count: 0
 fixed_count: 1
-total_count: 45
-last_updated: 2026-09-14T14:24:49.422Z
+total_count: 46
+last_updated: 2026-09-14T14:53:54.977Z
 ---
 
 # Broken Windows Ledger
@@ -60,6 +60,7 @@ last_updated: 2026-09-14T14:24:49.422Z
 | 43 | 11 | deviation | crates/octanest-api/tests/git_ssh.rs |  | Rule 3: fixed insert_repository owner_type arity to unblock nextest list | open |  | 2026-09-14T14:17:20.577Z |  |
 | 44 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.integration.test.ts |  | Wave 0 it.fails Issues UI stubs pending 11-03..11-09 greens | open |  | 2026-09-14T14:24:49.338Z |  |
 | 45 | 11 | stub | apps/web/src/lib/markdown.issues.test.ts |  | Wave 0 it.fails #N autolink stubs pending 11-10 greens | open |  | 2026-09-14T14:24:49.422Z |  |
+| 46 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Comments/Labels/Assignees/Linked PRs empty shells until later plans | open |  | 2026-09-14T14:53:54.977Z |  |
 
 ````json
 [
@@ -601,6 +602,18 @@ last_updated: 2026-09-14T14:24:49.422Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T14:24:49.422Z",
+    "resolved_at": null
+  },
+  {
+    "id": 46,
+    "kind": "stub",
+    "phase": "11",
+    "file": "apps/web/src/routes/$owner.$repo.issues.$n.tsrx",
+    "line": null,
+    "description": "Comments/Labels/Assignees/Linked PRs empty shells until later plans",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:53:54.977Z",
     "resolved_at": null
   }
 ]
