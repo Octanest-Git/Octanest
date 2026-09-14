@@ -27,8 +27,14 @@ async fn run_git(args: &[&str]) -> Result<(), GitError> {
 }
 
 async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
+    // Tests / CI often have no global git identity; env overrides avoid
+    // "Author identity unknown" without mutating the runner's ~/.gitconfig.
     let output = Command::new("git")
         .args(args)
+        .env("GIT_AUTHOR_NAME", "Octanest")
+        .env("GIT_AUTHOR_EMAIL", "noreply@octanest.local")
+        .env("GIT_COMMITTER_NAME", "Octanest")
+        .env("GIT_COMMITTER_EMAIL", "noreply@octanest.local")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
