@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens (completed 2026-09-13)
 - [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
-- [ ] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
+- [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [ ] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
