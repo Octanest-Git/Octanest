@@ -5,9 +5,9 @@ mod collaborators;
 mod templates;
 
 pub use acl::{
-    can_read_as_owner, effective_capability, fg_all_covers_repo, is_private_visibility, meets,
-    not_found, owner_ref_for_repo, resolve_owner_slug, resolve_repo_for_read, AccessibleRepo,
-    Capability, OwnerRef,
+    can_read_as_owner, coalesce, effective_capability, fg_all_covers_repo, is_private_visibility,
+    meets, not_found, owner_ref_for_repo, resolve_owner_slug, resolve_repo_for_read, AccessibleRepo,
+    Capability, MemberBasePermission, OrgRole, OwnerRef,
 };
 pub use collaborators::{
     add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
