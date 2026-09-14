@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 11
 current_plan: 13
-status: phase_11_complete_awaiting_uat_parallel_14_15_20
-stopped_at: Completed 11-12-PLAN.md
-last_updated: "2026-09-14T16:55:08.209Z"
+status: verifying
+stopped_at: Completed 20-00-PLAN.md
+last_updated: "2026-09-14T17:01:30.285Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 11 marked complete
-state_head: 27404c39cc993eae813af77b0641c420925cbc42
+state_head: 817dab52e79e05091cfbc44c44381c749a6a0113
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 114
+  completed_plans: 115
 milestone_name: milestone
 current_phase_name: Issues
 ---
@@ -32,7 +32,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 11 — COMPLETE
 Current Plan: 13
 Total Plans in Phase: 13
-Status: Phase 11 complete
+Status: Phase complete — ready for verification
 Last activity: 2026-09-14 — Phase 11 marked complete
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
@@ -130,6 +130,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 11 P12 | 5min | 2 tasks | 7 files |
+| Phase 20 P00 | 6min | 2 tasks | 6 files |
 
 # Project State
 
@@ -485,6 +486,7 @@ Recent decisions affecting current work:
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 - [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
 - [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
+- [Phase 11]: Wave 0 stubs use assert!(false) without #[ignore] for nextest list discoverability
 
 ### Pending Todos
 
@@ -506,8 +508,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T16:48:03.945Z
-Stopped at: Completed 11-12-PLAN.md
+Last session: 2026-09-14T17:01:30.181Z
+Stopped at: Completed 20-00-PLAN.md
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
