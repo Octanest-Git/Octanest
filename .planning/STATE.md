@@ -5,16 +5,16 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 14-11-PLAN.md
-last_updated: "2026-09-14T17:56:10.555Z"
+stopped_at: Completed 14-12-PLAN.md — Phase 14 execute complete
+last_updated: "2026-09-14T18:04:54.656Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: 5f264851ff747838a96083a470f5897ec0983831
+state_head: 73322f53cd2b4b91427751ed70103ec0992ae39c
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 126
+  completed_plans: 127
 milestone_name: milestone
 ---
 
@@ -142,6 +142,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 14 P09 | 8min | 2 tasks | 3 files |
 | Phase 14 P10 | 10min | 2 tasks | 6 files |
 | Phase 14 P11 | 12min | 2 tasks | 7 files |
+| Phase 14 P12 | 15min | 2 tasks | 2 files |
 
 # Project State
 
@@ -505,6 +506,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Reuse existing Traefik .git PathRegexp for info/lfs
 - [Phase 11]: repo.lfs.download returns soft-capped base64; oversized → lfs.too_large_for_rpc
 - [Phase 11]: Docs link points at CONFIGURATION.md#git-lfs; no auto-commit of .gitattributes
+- [Phase 11]: Health unreachable → smoke-git-lfs skip exit 0 (operator runs make up for full client smoke)
 
 ### Pending Todos
 
@@ -526,8 +528,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T17:56:10.448Z
-Stopped at: Completed 14-11-PLAN.md
+Last session: 2026-09-14T18:04:54.557Z
+Stopped at: Completed 14-12-PLAN.md — Phase 14 execute complete
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |

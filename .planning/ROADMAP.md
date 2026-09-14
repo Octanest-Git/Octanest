@@ -521,7 +521,7 @@ Plans:
   1. Operator can configure LFS storage on the filesystem (volume-backed) for the instance
   2. User can push and fetch Git LFS objects for a repository
 
-**Plans**: 12/13 plans executed
+**Plans**: 13/13 plans executed
 
 Plans:
 
@@ -537,7 +537,7 @@ Plans:
 - [x] 14-09-PLAN.md — Repo Settings LFS toggle + usage breakdown
 - [x] 14-10-PLAN.md — Admin quotas + instance usage UI
 - [x] 14-11-PLAN.md — Pointer badge, Download, LFS browser
-- [ ] 14-12-PLAN.md — smoke-git-lfs + phase gate
+- [x] 14-12-PLAN.md — smoke-git-lfs + phase gate
 
 ### Phase 15: Releases & Transfer
 
@@ -701,7 +701,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 11. Issues | 13/13 | In Progress|  |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
-| 14. Git LFS | 12/13 | In Progress|  |
+| 14. Git LFS | 13/13 | In Progress|  |
 | 15. Releases & Transfer | 0/7 | Not started | - |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
