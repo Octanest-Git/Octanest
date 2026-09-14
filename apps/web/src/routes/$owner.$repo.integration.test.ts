@@ -92,6 +92,7 @@ describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
         data: {
           id: "r1",
           owner_id: "u1",
+          owner_type: "user",
           owner_username: "ada",
           name: "hello",
           description: "",
@@ -135,6 +136,7 @@ describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
         data: {
           id: "r1",
           owner_id: "u1",
+          owner_type: "user",
           owner_username: "ada",
           name: "hello",
           description: "A sample repo",

@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::auth_types::is_reserved_username;
+use crate::org_types::OwnerType;
 
 /// Repo visibility. Serialized lowercase: `public` | `private`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,6 +48,9 @@ pub struct CreateRepoRequest {
     /// Gitignore catalog id under `assets/gitignore/` (omit / null / `"none"` = none).
     #[serde(default)]
     pub gitignore_id: Option<String>,
+    /// Optional owner slug (username or org). Omit → session user (A5 / D-ORG-01).
+    #[serde(default)]
+    pub owner: Option<String>,
 }
 
 /// Public create-form defaults + catalog metadata (D-02–D-04, D-08).
@@ -76,6 +80,9 @@ pub struct RepoTemplateOption {
 pub struct RepoPublic {
     pub id: String,
     pub owner_id: String,
+    /// Polymorphic owner: `user` | `org` (D-ORG-01).
+    pub owner_type: OwnerType,
+    /// Public slug label (username or org slug).
     pub owner_username: String,
     pub name: String,
     pub description: String,

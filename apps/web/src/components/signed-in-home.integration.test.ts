@@ -41,6 +41,7 @@ function repo(overrides: Partial<RepoPublic> = {}): RepoPublic {
   return {
     id: "r1",
     owner_id: "u1",
+    owner_type: "user",
     owner_username: "ada",
     name: "hello",
     description: "A demo repo",

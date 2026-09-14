@@ -243,6 +243,9 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
         RpcResponse::Err { error, .. } if error.code == "auth.email_unverified" => {
             StatusCode::FORBIDDEN
         }
+        RpcResponse::Err { error, .. } if error.code == "repo.create_forbidden" => {
+            StatusCode::FORBIDDEN
+        }
         RpcResponse::Err { error, .. } if error.code == "repo.not_found" => StatusCode::NOT_FOUND,
         RpcResponse::Err { error, .. } if error.code == "repo.path_not_found" => {
             StatusCode::NOT_FOUND

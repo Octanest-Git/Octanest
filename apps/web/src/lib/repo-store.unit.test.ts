@@ -10,6 +10,7 @@ describe("createRepoStore (@octanejs/zustand)", () => {
       repo: {
         id: "r1",
         owner_id: "u1",
+        owner_type: "user",
         owner_username: "ada",
         name: "hello",
         description: "",

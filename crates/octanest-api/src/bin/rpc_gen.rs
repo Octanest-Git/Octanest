@@ -137,6 +137,8 @@ export type ProviderConfigPublic = {
 
 export type RepoVisibility = "public" | "private";
 
+export type OwnerType = "user" | "org";
+
 export type UpdateProfileRequest = {
   display_name: string;
   username: string;
@@ -177,6 +179,7 @@ export type CreateRepoRequest = {
   stack_id?: string | null;
   license_id?: string | null;
   gitignore_id?: string | null;
+  owner?: string | null;
 };
 
 export type RepoTemplateOption = {
@@ -196,6 +199,7 @@ export type RepoCreateDefaults = {
 export type RepoPublic = {
   id: string;
   owner_id: string;
+  owner_type: OwnerType;
   owner_username: string;
   name: string;
   description: string;

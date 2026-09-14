@@ -16,7 +16,7 @@ pub const BLOB_SOFT_MAX_BYTES: usize = 1_048_576;
 pub const DIFF_SOFT_MAX_BYTES: usize = octanest_git::DIFF_SOFT_MAX_BYTES;
 
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoBlameLine, RepoBlameRequest,
+    validate_repo_name, AppError, CreateRepoRequest, OwnerType, RepoBlameLine, RepoBlameRequest,
     RepoBlameResponse, RepoBranchCreateRequest, RepoBranchDeleteRequest, RepoBranchMutationResponse,
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
@@ -54,9 +54,11 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
 
 fn to_public(repo: &AccessibleRepo) -> RepoPublic {
     let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
+    let owner_type = OwnerType::parse(&repo.row.owner_type).unwrap_or(OwnerType::User);
     RepoPublic {
         id: repo.row.id.clone(),
         owner_id: repo.row.owner_id.clone(),
+        owner_type,
         owner_username: repo.owner_username.clone(),
         name: repo.row.name.clone(),
         description: repo.row.description.clone(),
@@ -182,9 +184,11 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
         .into_iter()
         .map(|row| {
             let visibility = RepoVisibility::parse(&row.visibility).unwrap_or(RepoVisibility::Public);
+            let owner_type = OwnerType::parse(&row.owner_type).unwrap_or(OwnerType::User);
             RepoPublic {
                 id: row.id,
                 owner_id: row.owner_id,
+                owner_type,
                 owner_username: user.username.clone(),
                 name: row.name,
                 description: row.description,
@@ -664,6 +668,75 @@ pub async fn soft_delete(
     })
 }
 
+/// Deny create under a foreign owner slug (T-10-06 / A5).
+fn create_forbidden() -> AppError {
+    AppError::new(
+        "repo.create_forbidden",
+        "You do not have permission to create a repository under this owner.",
+    )
+}
+
+/// Resolve create target: omit/self → user; org slug → Owner/Admin only (A5).
+async fn resolve_create_owner(
+    ctx: &RpcCtx,
+    user_id: &str,
+    user_username: &str,
+    owner_slug: Option<&str>,
+) -> Result<(String, OwnerType, String), AppError> {
+    let slug = owner_slug.map(str::trim).filter(|s| !s.is_empty());
+    let Some(slug) = slug else {
+        return Ok((
+            user_id.to_string(),
+            OwnerType::User,
+            user_username.to_string(),
+        ));
+    };
+
+    if slug.eq_ignore_ascii_case(user_username) {
+        return Ok((
+            user_id.to_string(),
+            OwnerType::User,
+            user_username.to_string(),
+        ));
+    }
+
+    let owner_ref = match resolve_owner_slug(&ctx.db, slug).await {
+        Ok(Some(r)) => r,
+        Ok(None) => return Err(create_forbidden()),
+        Err(e) => {
+            tracing::error!(error = %e, "resolve_owner_slug for create failed");
+            return Err(AppError::new("repo.internal", "repository operation failed"));
+        }
+    };
+
+    match owner_ref {
+        OwnerRef::User { id, username } => {
+            if id == user_id {
+                Ok((id, OwnerType::User, username))
+            } else {
+                Err(create_forbidden())
+            }
+        }
+        OwnerRef::Org { id, slug } => {
+            let member = match ctx.db.find_org_member(&id, user_id).await {
+                Ok(m) => m,
+                Err(e) => {
+                    tracing::error!(error = %e, "find_org_member for create failed");
+                    return Err(AppError::new("repo.internal", "repository operation failed"));
+                }
+            };
+            let allowed = member
+                .as_ref()
+                .map(|m| m.role == "owner" || m.role == "admin")
+                .unwrap_or(false);
+            if !allowed {
+                return Err(create_forbidden());
+            }
+            Ok((id, OwnerType::Org, slug))
+        }
+    }
+}
+
 /// `repo.create` — verified owner creates a public/private repo (DB + bare git + optional seed).
 pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
     let user = require_verified(ctx).await?;
@@ -688,12 +761,20 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         user.default_branch.clone()
     };
 
+    let (owner_id, owner_type, owner_slug) = resolve_create_owner(
+        ctx,
+        &user.id,
+        &user.username,
+        req.owner.as_deref(),
+    )
+    .await?;
+
     let seed_files =
         templates::assemble_seed_files(&req.stack_id, &req.license_id, &req.gitignore_id)?;
 
     if ctx
         .db
-        .find_repository_by_owner_name(&user.id, &name)
+        .find_repository_by_owner_name(&owner_id, &name)
         .await
         .map_err(db_err)?
         .is_some()
@@ -709,8 +790,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .db
         .insert_repository(
             &id,
-            &user.id,
-            "user",
+            &owner_id,
+            owner_type.as_str(),
             &name,
             map_visibility(visibility),
             &description,
@@ -719,7 +800,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .await
         .map_err(db_err)?;
 
-    let path = bare_repo_path(&ctx.repos_dir, &user.username, &name)?;
+    let path = bare_repo_path(&ctx.repos_dir, &owner_slug, &name)?;
     if let Err(e) = ctx.git.init_bare(&path, &default_branch).await {
         tracing::error!(
             error = %e,
@@ -761,7 +842,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
     Ok(RepoPublic {
         id: row.id,
         owner_id: row.owner_id,
-        owner_username: user.username,
+        owner_type,
+        owner_username: owner_slug,
         name: row.name,
         description: row.description,
         visibility,

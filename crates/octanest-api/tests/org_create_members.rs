@@ -196,6 +196,7 @@ async fn org_create_owned_repo_resolves_by_org_slug() {
         "AccessibleRepo.owner_username is the org slug"
     );
     assert_eq!(get_v["data"]["owner_id"], org_id);
+    assert_eq!(get_v["data"]["owner_type"], "org");
 }
 
 /// Creator of an org is Owner (ORG-01 / D-ORG-02a).
