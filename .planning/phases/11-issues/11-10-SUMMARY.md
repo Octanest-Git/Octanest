@@ -15,7 +15,7 @@ affects: [issues-detail, comments, markdown-preview]
 actuals:
   tokens: 3155
   tasks: 2
-  commits: 3
+  commits: 5
 
 plan_head_before: 4527719b54514f5a23dcb1da17b4d8e9f33d742e
 
@@ -103,6 +103,8 @@ status: complete
 1. **Task 1: Install remark-github@12.0.0** — `3ca702d` (chore)
 2. **Task 2 RED: Failing autolink tests** — `e5a9e63` (test)
 3. **Task 2 GREEN: renderGfm + Preview wiring** — `fdfcca9` (feat)
+
+**Plan metadata:** `4c0bf5d` (docs: complete plan)
 
 ## TDD Gate Compliance
 
