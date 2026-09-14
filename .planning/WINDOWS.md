@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 38
+open_count: 42
 waived_count: 0
 fixed_count: 1
-total_count: 39
-last_updated: 2026-09-14T04:15:00.000Z
+total_count: 43
+last_updated: 2026-09-14T14:17:20.577Z
 ---
 
 # Broken Windows Ledger
@@ -54,6 +54,10 @@ last_updated: 2026-09-14T04:15:00.000Z
 | 37 | 10 | skipped-test | crates/octanest-api/tests/repo_collaborators_acl.rs |  | Collaborator CRUD ACL tests ignored until plan 07 | open |  | 2026-09-14T00:36:39.442Z |  |
 | 38 | 10 | skipped-test | crates/octanest-api/tests/repo_private_404.rs | 410 | repo_private_404_collaborator_granted_read ignored until plan 07 | open |  | 2026-09-14T00:36:39.533Z |  |
 | 39 | 10 | skipped-test | crates/octanest-api/tests/git_smart_http.rs | 610 | git_smart_collaborator_classic_pat_push Wave-0 stub fails under test(collab) filter; PAT collaborator push deferred to later plan | open |  | 2026-09-14T01:15:41.319Z |  |
+| 40 | 11 | stub | crates/octanest-api/tests/issue_lifecycle.rs |  | Wave 0 assert!(false) issue lifecycle stubs until 11-02+ | open |  | 2026-09-14T14:17:20.331Z |  |
+| 41 | 11 | stub | crates/octanest-db/tests/dialect_issues.rs |  | Wave 0 dialect_issues RED until 0011_issues lands | open |  | 2026-09-14T14:17:20.413Z |  |
+| 42 | 11 | stub | crates/octanest-db/tests/factory_reset_issues.rs |  | Wave 0 factory_reset_issues RED until cascade wipe lands | open |  | 2026-09-14T14:17:20.496Z |  |
+| 43 | 11 | deviation | crates/octanest-api/tests/git_ssh.rs |  | Rule 3: fixed insert_repository owner_type arity to unblock nextest list | open |  | 2026-09-14T14:17:20.577Z |  |
 
 ````json
 [
@@ -75,7 +79,7 @@ last_updated: 2026-09-14T04:15:00.000Z
     "phase": "07",
     "file": "crates/octanest-git/src/version.rs",
     "line": 43,
-    "description": "git_archive_formats_zip_and_tar_gz still Wave 0 assert!(false) \u2014 archive plan owns",
+    "description": "git_archive_formats_zip_and_tar_gz still Wave 0 assert!(false) — archive plan owns",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T17:13:59.869Z",
@@ -255,7 +259,7 @@ last_updated: 2026-09-14T04:15:00.000Z
     "phase": "08",
     "file": "crates/octanest-api/src/pat/mod.rs",
     "line": null,
-    "description": "create_fine_grained stub \u2192 pat.not_implemented (08-05)",
+    "description": "create_fine_grained stub → pat.not_implemented (08-05)",
     "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-13T18:37:52.435Z",
@@ -291,7 +295,7 @@ last_updated: 2026-09-14T04:15:00.000Z
     "phase": "08",
     "file": "scripts/smoke-git-https.sh",
     "line": null,
-    "description": "Live make smoke-git-https not run \u2014 Docker engine unavailable on executor host",
+    "description": "Live make smoke-git-https not run — Docker engine unavailable on executor host",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T19:06:10.084Z",
@@ -399,7 +403,7 @@ last_updated: 2026-09-14T04:15:00.000Z
     "phase": "09",
     "file": "apps/web/src/routes/settings/ssh-keys.integration.test.ts",
     "line": null,
-    "description": "Wave 0 vitest intentionally RED (exit 1) until production routes \u2014 verify ran, stubs fail by design",
+    "description": "Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T23:38:48.269Z",
@@ -483,7 +487,7 @@ last_updated: 2026-09-14T04:15:00.000Z
     "phase": "10",
     "file": "crates/octanest-api/src/auth/local.rs",
     "line": null,
-    "description": "Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does \u2014 defer to signup/rename plans",
+    "description": "Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T00:06:48.676Z",
@@ -523,6 +527,54 @@ last_updated: 2026-09-14T04:15:00.000Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T01:15:41.319Z",
+    "resolved_at": null
+  },
+  {
+    "id": 40,
+    "kind": "stub",
+    "phase": "11",
+    "file": "crates/octanest-api/tests/issue_lifecycle.rs",
+    "line": null,
+    "description": "Wave 0 assert!(false) issue lifecycle stubs until 11-02+",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:17:20.331Z",
+    "resolved_at": null
+  },
+  {
+    "id": 41,
+    "kind": "stub",
+    "phase": "11",
+    "file": "crates/octanest-db/tests/dialect_issues.rs",
+    "line": null,
+    "description": "Wave 0 dialect_issues RED until 0011_issues lands",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:17:20.413Z",
+    "resolved_at": null
+  },
+  {
+    "id": 42,
+    "kind": "stub",
+    "phase": "11",
+    "file": "crates/octanest-db/tests/factory_reset_issues.rs",
+    "line": null,
+    "description": "Wave 0 factory_reset_issues RED until cascade wipe lands",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:17:20.496Z",
+    "resolved_at": null
+  },
+  {
+    "id": 43,
+    "kind": "deviation",
+    "phase": "11",
+    "file": "crates/octanest-api/tests/git_ssh.rs",
+    "line": null,
+    "description": "Rule 3: fixed insert_repository owner_type arity to unblock nextest list",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:17:20.577Z",
     "resolved_at": null
   }
 ]
