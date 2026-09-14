@@ -92,6 +92,21 @@ Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface:
 
 RPC lifecycle: `pat.createClassic`, `pat.createFineGrained`, `pat.list`, `pat.revoke` (session + verified email for mint). Full path/auth/error matrix: [API.md](API.md).
 
+### Git over SSH
+
+Phase 9 adds SSH clone/fetch/push beside Smart HTTP:
+
+| Concern | Contract |
+| --- | --- |
+| **Process** | In-process **`russh`** listener in `octanest-api` (`crates/octanest-api/src/ssh/`), gated by `OCTANEST_SSH_ENABLED`. Shares DB + `OCTANEST_REPOS_DIR` with Smart HTTP. |
+| **Pack** | Allowlist `git-upload-pack` / `git-receive-pack` only; spawn system `git` with argv (no shell). ACL reuses Smart HTTP owner / visibility / verified-email rules; denials via **git stderr** (not HTTP codes). |
+| **Auth** | Force SSH username **`git`**. Identity = registered public-key fingerprint (`ssh_public_keys`). Keys map to **full account** — no PAT scopes. |
+| **Clone URL** | scp-style `git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git` (D-SSH-02). Port advertised separately; `~/.ssh/config` when ≠ 22. |
+| **Edge** | Compose **TCP `2222:2222`** on the API service — **not** Traefik. Host keys under `OCTANEST_SSH_HOST_KEY_DIR` (volume). |
+| **Rate limit** | Failed pubkey auth: IP + fingerprint buckets (reuse PAT limiter pattern). |
+
+RPC: `sshKey.add` / `list` / `revoke` (session + verified email for add). Smoke: `make smoke-git-ssh`. See [CONFIGURATION.md](CONFIGURATION.md#git-over-ssh).
+
 ### Auth sessions
 
 - Cookie name: `octanest_session` (HttpOnly; `Secure` except `OCTANEST_ENV=development`/`dev`).
