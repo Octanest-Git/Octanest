@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 42
+open_count: 44
 waived_count: 0
 fixed_count: 1
-total_count: 43
-last_updated: 2026-09-14T14:17:20.577Z
+total_count: 45
+last_updated: 2026-09-14T14:24:49.422Z
 ---
 
 # Broken Windows Ledger
@@ -58,6 +58,8 @@ last_updated: 2026-09-14T14:17:20.577Z
 | 41 | 11 | stub | crates/octanest-db/tests/dialect_issues.rs |  | Wave 0 dialect_issues RED until 0011_issues lands | open |  | 2026-09-14T14:17:20.413Z |  |
 | 42 | 11 | stub | crates/octanest-db/tests/factory_reset_issues.rs |  | Wave 0 factory_reset_issues RED until cascade wipe lands | open |  | 2026-09-14T14:17:20.496Z |  |
 | 43 | 11 | deviation | crates/octanest-api/tests/git_ssh.rs |  | Rule 3: fixed insert_repository owner_type arity to unblock nextest list | open |  | 2026-09-14T14:17:20.577Z |  |
+| 44 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.integration.test.ts |  | Wave 0 it.fails Issues UI stubs pending 11-03..11-09 greens | open |  | 2026-09-14T14:24:49.338Z |  |
+| 45 | 11 | stub | apps/web/src/lib/markdown.issues.test.ts |  | Wave 0 it.fails #N autolink stubs pending 11-10 greens | open |  | 2026-09-14T14:24:49.422Z |  |
 
 ````json
 [
@@ -575,6 +577,30 @@ last_updated: 2026-09-14T14:17:20.577Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T14:17:20.577Z",
+    "resolved_at": null
+  },
+  {
+    "id": 44,
+    "kind": "stub",
+    "phase": "11",
+    "file": "apps/web/src/routes/$owner.$repo.issues.integration.test.ts",
+    "line": null,
+    "description": "Wave 0 it.fails Issues UI stubs pending 11-03..11-09 greens",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:24:49.338Z",
+    "resolved_at": null
+  },
+  {
+    "id": 45,
+    "kind": "stub",
+    "phase": "11",
+    "file": "apps/web/src/lib/markdown.issues.test.ts",
+    "line": null,
+    "description": "Wave 0 it.fails #N autolink stubs pending 11-10 greens",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T14:24:49.422Z",
     "resolved_at": null
   }
 ]
