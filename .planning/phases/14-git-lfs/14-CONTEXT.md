@@ -20,7 +20,7 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 - Auto-committing `.gitattributes` on enable
 - Closing the gap where missing server OIDs fail smudge (standard LFS error path only)
 
-**UI hint:** yes — repo Settings LFS toggle/status/usage; Admin quotas/usage; blob pointer badge + Download; LFS browser surfaces.
+**UI hint:** yes — repo Settings LFS toggle/status/usage; Admin quotas/usage; blob pointer badge + Download; LFS browser surfaces (tree rows link to blob badges).
 
 </domain>
 
@@ -36,7 +36,7 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 ### B — Transport
 - **D-LFS-05:** **HTTPS only** in Phase 14 (batch + content transfer); **LFS-over-SSH deferred** — **Reversibility:** reversible (add later)
 - **D-LFS-06:** Routes under **`/{owner}/{repo}.git/info/lfs/…`** (reuse `.git` Traefik → API routing) — **Reversibility:** costly — client URL expectations
-- **D-LFS-07:** Ship **basic transfer + multipart/resumable uploads** — **Reversibility:** reversible (multipart is additive)
+- **D-LFS-07:** Ship **basic transfer** as the GIT-12 gate, with **resumable-within-basic** server support: **streaming PUT**, optional **verify**, and **Range GET**. Official Git LFS `transfer=multipart` is a client proposal only (not in stock `git-lfs`); Phase 14 does **not** require or ship a multipart transfer adapter. — **Reversibility:** reversible (multipart adapter can be added later if clients land) — **Locked deviation (2026-09-14 plan-check):** original discuss wording said “basic + multipart/resumable uploads”; locked intent is basic gate + streaming PUT + Range/verify resumability, not `transfer=multipart`
 - **D-LFS-08:** **Git clone without LFS smudge remains valid** (pointer files in tree) — GitHub/Gitea parity — **Reversibility:** reversible
 
 ### C — Auth & ACL
@@ -51,14 +51,14 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 - **D-LFS-15:** **Refcount + periodic GC** of unreferenced OIDs — **Reversibility:** costly — GC job + safety
 
 ### E — Client UX
-- **D-LFS-16:** Ship **docs + repo Settings** (toggle/status) **+ pointer badges on blob/tree + in-app LFS browser / quota dashboards** — **Reversibility:** costly — UI surface area
+- **D-LFS-16:** Ship **docs + repo Settings** (toggle/status) **+ pointer badges on blob + in-app LFS browser / quota dashboards** — tree listings navigate to blob where the badge appears; no separate tree-row badge required in Phase 14 — **Reversibility:** costly — UI surface area — **Locked clarification (2026-09-14):** original “blob/tree” wording means blob badges + browser discovery, not a dedicated tree-list badge without pointer metadata on tree RPC
 - **D-LFS-17:** **Document `.gitattributes` patterns only** — no server auto-commit of attributes — **Reversibility:** reversible
 - **D-LFS-18:** Blob view **detects LFS pointer** and offers **Download via LFS** (AuthZ = Read) — **Reversibility:** reversible
 - **D-LFS-19:** Usage dashboards at **repo settings** (this repo) and **Admin** (instance); both include **usage breakdown** — **Reversibility:** reversible
 
 ### Claude's Discretion
 - Exact default max object size and default quota numbers
-- Exact multipart chunk size / resume protocol details (within Git LFS-compatible basic+multipart)
+- Exact streaming/chunk buffering for basic PUT and Range GET windowing (within D-LFS-07 locked interpretation — not multipart adapter design)
 - Exact GC schedule and locking
 - Exact breakdown dimensions (by repo, user, OID count, bytes) as long as both dashboards show a useful breakdown
 - Exact Settings copy for enable LFS + link to docs
@@ -126,6 +126,8 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 - S3 / external object stores
 - Auto-commit starter `.gitattributes`
 - Rejecting git clone when LFS objects missing (non-parity)
+- LFS File Locking API (`docs/api/locking.md`)
+- Official `transfer=multipart` adapter (await stock git-lfs client support)
 
 </deferred>
 

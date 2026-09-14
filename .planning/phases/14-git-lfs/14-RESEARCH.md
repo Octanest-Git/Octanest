@@ -2,7 +2,7 @@
 
 **Researched:** 2026-09-14
 **Domain:** Git LFS Batch API + basic transfer; Axum Smart HTTP auth; volume-backed OID store; Octane settings/blob UI
-**Confidence:** HIGH (protocol + in-repo seams); MEDIUM (quota/GC defaults, multipart interpretation)
+**Confidence:** HIGH (protocol + in-repo seams); MEDIUM (quota/GC defaults) — D-LFS-07 multipart interpretation **RESOLVED** (basic + streaming PUT + Range/verify)
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -17,7 +17,7 @@
 #### B — Transport
 - **D-LFS-05:** **HTTPS only** in Phase 14 (batch + content transfer); **LFS-over-SSH deferred** — **Reversibility:** reversible (add later)
 - **D-LFS-06:** Routes under **`/{owner}/{repo}.git/info/lfs/…`** (reuse `.git` Traefik → API routing) — **Reversibility:** costly — client URL expectations
-- **D-LFS-07:** Ship **basic transfer + multipart/resumable uploads** — **Reversibility:** reversible (multipart is additive)
+- **D-LFS-07:** Ship **basic transfer** as GIT-12 gate + **resumable-within-basic** (streaming PUT, optional verify, Range GET); **no** `transfer=multipart` adapter — **Reversibility:** reversible — **Locked deviation:** discuss said “multipart/resumable”; Phase 14 locks RESEARCH client-reality interpretation (official multipart is proposal-only)
 - **D-LFS-08:** **Git clone without LFS smudge remains valid** (pointer files in tree) — GitHub/Gitea parity — **Reversibility:** reversible
 
 #### C — Auth & ACL
@@ -32,14 +32,14 @@
 - **D-LFS-15:** **Refcount + periodic GC** of unreferenced OIDs — **Reversibility:** costly — GC job + safety
 
 #### E — Client UX
-- **D-LFS-16:** Ship **docs + repo Settings** (toggle/status) **+ pointer badges on blob/tree + in-app LFS browser / quota dashboards** — **Reversibility:** costly — UI surface area
+- **D-LFS-16:** Ship **docs + repo Settings** (toggle/status) **+ pointer badges on blob + in-app LFS browser / quota dashboards** (tree → blob; no separate tree-row badge) — **Reversibility:** costly — UI surface area
 - **D-LFS-17:** **Document `.gitattributes` patterns only** — no server auto-commit of attributes — **Reversibility:** reversible
 - **D-LFS-18:** Blob view **detects LFS pointer** and offers **Download via LFS** (AuthZ = Read) — **Reversibility:** reversible
 - **D-LFS-19:** Usage dashboards at **repo settings** (this repo) and **Admin** (instance); both include **usage breakdown** — **Reversibility:** reversible
 
 ### Claude's Discretion
 - Exact default max object size and default quota numbers
-- Exact multipart chunk size / resume protocol details (within Git LFS-compatible basic+multipart)
+- Exact streaming/chunk buffering for basic PUT and Range GET windowing (within locked D-LFS-07 — not multipart adapter design)
 - Exact GC schedule and locking
 - Exact breakdown dimensions (by repo, user, OID count, bytes) as long as both dashboards show a useful breakdown
 - Exact Settings copy for enable LFS + link to docs
@@ -48,6 +48,8 @@
 - LFS-over-SSH
 - S3 / external object stores
 - Auto-commit starter `.gitattributes`
+- LFS File Locking API
+- Official `transfer=multipart` adapter (await stock client)
 - Rejecting git clone when LFS objects missing (non-parity)
 </user_constraints>
 
@@ -64,7 +66,7 @@
 
 Phase 14 adds a first-class Git LFS server to Octanest on the existing Smart HTTP `.git` surface. Clients discover LFS at `{remote}.git/info/lfs` and call `POST …/objects/batch`, then transfer bytes with the **basic** adapter (GET download / PUT upload / optional verify). Auth must mirror `git_smart_http.rs`: PAT Basic only, cookies ignored, Read for download, Write + verified email for upload, classic `repo` / FG `contents` scopes (no new `lfs` scope). Storage is a separate volume (`OCTANEST_LFS_DIR`) with instance-wide OID dedup, DB refcounts, quotas, and GC — matching Gitea/Forgejo-shaped filesystem forges rather than per-bare-repo `.git/lfs`.
 
-**Critical planning constraint for D-LFS-07:** the stock `git-lfs` client (verified locally `git-lfs/3.7.1`; official API README) currently documents **only `basic`** as a supported transfer adapter. The `multipart` transfer mode is a **proposal** (`docs/proposals/multipart_transfer_mode.md`) and is **not** implemented in the open-source client. Plans must ship Batch + basic as the GIT-12 path, and interpret “multipart/resumable” as additive server capabilities that do not break basic clients (streaming PUT, optional Range downloads, optional future/experimental adapters) — not as a requirement that stock clients negotiate `transfer: "multipart"`.
+**Critical planning constraint for D-LFS-07 (LOCKED 2026-09-14):** the stock `git-lfs` client (verified locally `git-lfs/3.7.1`; official API README) currently documents **only `basic`** as a supported transfer adapter. The `multipart` transfer mode is a **proposal** (`docs/proposals/multipart_transfer_mode.md`) and is **not** implemented in the open-source client. CONTEXT D-LFS-07 is amended to match: Batch + basic is the GIT-12 path; “multipart/resumable” means streaming PUT + optional verify + Range GET — **not** requiring clients to negotiate `transfer: "multipart"`.
 
 **Primary recommendation:** Implement Axum LFS routes beside Smart HTTP; reuse `authenticate_pat` / `effective_capability` / `pat_allows_operation`; store objects at `{OCTANEST_LFS_DIR}/{oid[0:2]}/{oid[2:4]}/{oid}`; enforce enable + quotas before issuing upload actions; raise/disable Axum body limits on LFS PUT; extend factory reset + Compose; ship Octane Settings/Admin/blob/browser UI via RPC (`make rpc-gen`).
 
@@ -348,7 +350,7 @@ Add sibling routes, e.g. `…/info/lfs/objects/batch`, `…/info/lfs/objects/{oi
 | Per-repo quota default | **10 GiB** logical | [ASSUMED] |
 | Per-user quota default | **50 GiB** logical (sum of OIDs attributed to uploader) | [ASSUMED] |
 | Unlimited sentinel | `0` or `-1` = unlimited in env/Admin | [ASSUMED] match Forgejo soft-quota style |
-| Multipart/resumable (D-LFS-07) | **Ship basic + streaming PUT + optional `verify`; support `Range` on GET.** Do **not** require `transfer=multipart` for phase gate. Optionally accept experimental tus later. Document multipart proposal as future. | HIGH (client reality) |
+| Multipart/resumable (D-LFS-07) | **RESOLVED / LOCKED:** Ship basic + streaming PUT + optional `verify` + `Range` on GET. Do **not** ship or require `transfer=multipart`. Official multipart adapter deferred until stock clients support it. | HIGH (client reality + CONTEXT lock 2026-09-14) |
 | Chunk size | N/A for basic single PUT; if server-side staging chunks used internally, **8–32 MiB** | [ASSUMED] |
 | GC schedule | Interval job like orphan reconcile; default **24h**; grace **7 days** after refcount=0 before delete; lockfile under `LFS_DIR/.gc.lock` | [ASSUMED] Forgejo-inspired |
 | Dashboard breakdown | Repo: OID count, logical bytes, top paths/OIDs; Admin: by repo, by user, instance physical bytes, OID count | aligns D-LFS-19 |
@@ -366,25 +368,17 @@ Add sibling routes, e.g. `…/info/lfs/objects/batch`, `…/info/lfs/objects/{oi
 
 **If wrong:** Discuss-phase can adjust A1/A2/A5 before plan lock; A3 is execute-time bookkeeping.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Browser Download auth path**
-   - What we know: LFS git clients use PAT Basic; web UI uses session cookies.
-   - What's unclear: Exact RPC vs signed short-lived download URL.
-   - Recommendation: Session-gated `repo.lfs.download` / HTTP under `/api/…` with Capability Read; never cookie-auth the `.git/info/lfs` tree.
+1. **Browser Download auth path** — **RESOLVED:** Session-gated `repo.lfs.download` (or equivalent session RPC / `/api/…` with Capability Read). Never cookie-auth `.git/info/lfs`. Matches plans 14-08/14-11 ASSUME A2.
 
-2. **Upload attribution for per-user quota**
-   - What we know: D-LFS-12 requires per-user quotas; Forgejo checks repository **owner**.
-   - What's unclear: Charge pushing user vs repo owner.
-   - Recommendation: Enforce **both** — reject if either repo logical quota or **repo owner** user quota would exceed; attribute new OID to pushing user for breakdown. [ASSUMED]
+2. **Upload attribution for per-user quota** — **RESOLVED:** Enforce **both** repo logical quota and **repo owner** user quota; attribute new OID to **pushing user** for breakdown. Matches plan 14-04 ASSUME / RESEARCH A1–A4.
 
-3. **LFS File Locking API**
-   - What we know: Spec exists (`docs/api/locking.md`); not in CONTEXT.
-   - Recommendation: Explicitly out of Phase 14 unless discuss reopens.
+3. **LFS File Locking API** — **RESOLVED (deferred):** Explicitly out of Phase 14; listed under CONTEXT Deferred Ideas. Spec `docs/api/locking.md` not implemented.
 
-4. **Migration number vs parallel phases**
-   - Current latest: `0010_orgs_acl`. [VERIFIED: `crates/octanest-db/migrations/sqlite/`]
-   - Recommendation: Plan says “next free migration at execute”; do not hard-code if Phases 11–13 ship first.
+4. **Migration number vs parallel phases** — **RESOLVED:** Use **next free** tri-dialect migration id at execute time; do not hard-code `0011_lfs` if Phases 11–13 ship first. Matches Wave 0 / tracer ASSUME (RESEARCH A3).
+
+5. **D-LFS-07 multipart vs basic** — **RESOLVED (locked deviation):** Phase 14 delivers basic Batch + streaming PUT + verify + Range GET as “multipart/resumable” intent. Official `transfer=multipart` is proposal-only in stock git-lfs — deferred. CONTEXT D-LFS-07 amended 2026-09-14; plans 14-02/14-05 cite the lock.
 
 ## Environment Availability
 
@@ -529,11 +523,13 @@ Step 2.6: completed (external tools: git, git-lfs, Docker Compose volume).
 | Architecture | HIGH | Locked decisions + official discovery/batch docs |
 | Pitfalls | HIGH | Body limit + multipart client gap + SSH/HTTPS LFS UX |
 
-### Open Questions
+### Open Questions (RESOLVED)
 
-- Browser Download via session RPC vs signed URL (A2)
-- Per-user quota charged to owner vs pusher (recommend both checks)
-- File Locking API explicitly deferred?
+- Browser Download via session RPC (A2) — **RESOLVED**
+- Per-user quota: enforce owner quota + attribute pusher (14-04) — **RESOLVED**
+- File Locking API — **RESOLVED** deferred
+- Migration numbering — **RESOLVED** next-free at execute
+- D-LFS-07 multipart — **RESOLVED** locked as basic + streaming PUT + Range/verify (no multipart adapter)
 
 ### Ready for Planning
 
