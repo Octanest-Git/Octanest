@@ -4,8 +4,8 @@ mod acl;
 mod templates;
 
 pub use acl::{
-    can_read_as_owner, is_private_visibility, resolve_owner_slug, resolve_repo_for_read,
-    AccessibleRepo, OwnerRef,
+    can_read_as_owner, is_private_visibility, meets, resolve_owner_slug, resolve_repo_for_read,
+    AccessibleRepo, Capability, OwnerRef,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
@@ -65,6 +65,8 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         visibility,
         default_branch: repo.row.default_branch.clone(),
         updated_at: repo.row.updated_at.clone(),
+        can_admin: meets(repo.capability, Capability::Admin),
+        can_write: meets(repo.capability, Capability::Write),
     }
 }
 
@@ -195,6 +197,8 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 visibility,
                 default_branch: row.default_branch,
                 updated_at: row.updated_at,
+                can_admin: true,
+                can_write: true,
             }
         })
         .collect();
@@ -637,6 +641,7 @@ pub async fn update_visibility(
     Ok(to_public(&AccessibleRepo {
         row,
         owner_username: accessible.owner_username,
+        capability: accessible.capability,
     }))
 }
 
@@ -849,5 +854,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         visibility,
         default_branch: row.default_branch,
         updated_at: row.updated_at,
+        can_admin: true,
+        can_write: true,
     })
 }

@@ -206,6 +206,8 @@ export type RepoPublic = {
   visibility: RepoVisibility;
   default_branch: string;
   updated_at: string;
+  can_admin: boolean;
+  can_write: boolean;
 };
 
 export type RepoListMineResponse = {

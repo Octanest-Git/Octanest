@@ -89,6 +89,12 @@ pub struct RepoPublic {
     pub visibility: RepoVisibility,
     pub default_branch: String,
     pub updated_at: String,
+    /// Caller has Admin capability (D-ORG-05 / settings UI).
+    #[serde(default)]
+    pub can_admin: bool,
+    /// Caller has Write capability (D-ORG-05).
+    #[serde(default)]
+    pub can_write: bool,
 }
 
 /// `repo.listMine` — caller's non-deleted repos, recently updated first (GIT-01 / D-13).

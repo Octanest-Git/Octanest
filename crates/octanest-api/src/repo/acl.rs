@@ -213,9 +213,11 @@ pub async fn effective_capability(
 pub struct AccessibleRepo {
     pub row: RepositoryRow,
     pub owner_username: String,
+    /// Effective capability after coalesce (None only if somehow granted without a tier).
+    pub capability: Option<Capability>,
 }
 
-/// Resolve `owner`/`name` for read. Missing OR private and caller ≠ owner → identical [`not_found`].
+/// Resolve `owner`/`name` for read. Missing OR unauthorized private → identical [`not_found`].
 pub async fn resolve_repo_for_read(
     ctx: &RpcCtx,
     owner: &str,
@@ -249,17 +251,23 @@ pub async fn resolve_repo_for_read(
         }
     };
 
-    if is_private_visibility(&row.visibility) {
-        let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
-        // Temporary: personal owner_id match only (plan 04 Task 2 rewrites ACL for org roles).
-        if !can_read_as_owner(caller_id, owner_ref.id()) {
-            return Err(not_found());
+    let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
+    let capability = match effective_capability(&ctx.db, caller_id, &row, &owner_ref).await {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!(error = %e, "effective_capability failed");
+            return Err(AppError::new("repo.internal", "repository operation failed"));
         }
+    };
+
+    if !meets(capability, Capability::Read) {
+        return Err(not_found());
     }
 
     Ok(AccessibleRepo {
         row,
         owner_username: owner_ref.slug().to_string(),
+        capability,
     })
 }
 
