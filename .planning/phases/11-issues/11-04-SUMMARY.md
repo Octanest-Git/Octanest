@@ -122,7 +122,7 @@ status: complete
 2. **Task 2: Admin issue.delete with confirmNumber** - `bb22c1d` (feat)
 3. **Task 3: Detail UI — edit/close/reopen/history/delete** - `967d4b3` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `3097617` (docs: complete plan)
 
 ## Files Created/Modified
 
