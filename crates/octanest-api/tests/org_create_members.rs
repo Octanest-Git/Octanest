@@ -237,35 +237,308 @@ async fn org_create_creator_is_owner() {
     assert_eq!(member.role, "owner", "creator must be Owner");
 }
 
+async fn rpc_json(
+    app: &axum::Router,
+    body: &str,
+    cookie: Option<&str>,
+) -> (StatusCode, serde_json::Value) {
+    let req = match cookie {
+        Some(c) => rpc_req_with_cookie(body, c),
+        None => rpc_req(body),
+    };
+    let res = app.clone().oneshot(req).await.unwrap();
+    let status = res.status();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    (status, v)
+}
+
+async fn close_signup(db: &Database) {
+    let settings = db.get_auth_settings().await.expect("auth settings");
+    db.update_auth_settings(
+        &settings.provider_mode,
+        &settings.email_provider,
+        settings.from_address.as_deref(),
+        settings.oidc_issuer.as_deref(),
+        settings.oidc_client_id.as_deref(),
+        settings.workos_client_id.as_deref(),
+        false,
+        &settings.default_visibility,
+    )
+    .await
+    .expect("close allow_signup");
+}
+
+/// `org.get` / `org.listMine` return public fields for UI (ASSUME / ORG-01).
+#[tokio::test]
+async fn org_get_and_list_mine() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_get_list_mine.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "getter@ex.com", "getter1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"get-org","display_name":"Get Org"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (get_status, get_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.get","input":{"slug":"get-org"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(get_status, StatusCode::OK, "org.get — {get_v}");
+    assert_eq!(get_v["ok"], true, "{get_v}");
+    assert_eq!(get_v["data"]["slug"], "get-org");
+    assert_eq!(get_v["data"]["display_name"], "Get Org");
+    assert_eq!(get_v["data"]["member_base_permission"], "none");
+
+    let (list_status, list_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.listMine","input":{}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(list_status, StatusCode::OK, "org.listMine — {list_v}");
+    assert_eq!(list_v["ok"], true, "{list_v}");
+    let orgs = list_v["data"]["orgs"].as_array().expect("orgs array");
+    assert_eq!(orgs.len(), 1, "{list_v}");
+    assert_eq!(orgs[0]["slug"], "get-org");
+    assert_eq!(orgs[0]["role"], "owner");
+}
+
 /// `members.add` by username adds an existing instance user (ORG-01 / D-ORG-03).
 #[tokio::test]
 async fn org_members_add_by_username() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_members_add.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "addowner@ex.com", "addowner1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, owner_id).await;
+
+    let (member_cookie, member_v) = signup_and_login(&app, "addmem@ex.com", "addmem1").await;
+    let member_id = member_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &member_id).await;
+    let _ = member_cookie;
+
+    // D-ORG-03: username add works regardless of allow_signup.
+    close_signup(&db).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"add-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (add_status, add_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"add-org","username":"addmem1","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add_status, StatusCode::OK, "members.add — {add_v}");
+    assert_eq!(add_v["ok"], true, "{add_v}");
+    assert_eq!(add_v["data"]["username"], "addmem1");
+    assert_eq!(add_v["data"]["role"], "member");
+    assert_eq!(add_v["data"]["user_id"], member_id);
+
+    let (list_status, list_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.list","input":{"slug":"add-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(list_status, StatusCode::OK, "members.list — {list_v}");
+    assert_eq!(list_v["ok"], true, "{list_v}");
+    let members = list_v["data"]["members"].as_array().expect("members");
     assert!(
-        false,
-        "Wave 0: members.add by username must link an existing user (ORG-01 / D-ORG-03)"
+        members.iter().any(|m| m["username"] == "addmem1" && m["role"] == "member"),
+        "list must include added member — {list_v}"
+    );
+    assert!(
+        members.iter().all(|m| m.get("email").is_none()),
+        "members.list must not leak emails — {list_v}"
     );
 }
 
-/// `members.updateRole` changes Owner/Admin/Member (ORG-02 / D-ORG-02a).
+/// `members.updateRole` changes Owner/Admin/Member; only Owner can grant Owner (ORG-02 / T-10-09).
 #[tokio::test]
 async fn org_members_update_role() {
-    assert!(
-        false,
-        "Wave 0: members.updateRole must set Owner|Admin|Member (ORG-02 / D-ORG-02a)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_members_role.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "roleowner@ex.com", "roleowner1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, owner_id).await;
+
+    let (_, admin_v) = signup_and_login(&app, "roleadmin@ex.com", "roleadmin1").await;
+    let admin_id = admin_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &admin_id).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"role-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (_, add_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"role-org","username":"roleadmin1","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add_v["ok"], true, "{add_v}");
+
+    let (up_status, up_v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.members.updateRole","input":{{"slug":"role-org","user_id":"{admin_id}","role":"admin"}}}}"#
+        ),
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(up_status, StatusCode::OK, "updateRole — {up_v}");
+    assert_eq!(up_v["ok"], true, "{up_v}");
+    assert_eq!(up_v["data"]["role"], "admin");
+
+    // Admin cannot grant Owner (T-10-09) — re-login as the admin we added.
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"roleadmin@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let admin_cookie = session_cookie_from_response(&login);
+    let _ = login.into_body().collect().await;
+
+    let (_, deny_v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.members.updateRole","input":{{"slug":"role-org","user_id":"{admin_id}","role":"owner"}}}}"#
+        ),
+        Some(&admin_cookie),
+    )
+    .await;
+    assert_eq!(deny_v["ok"], false, "Admin must not grant Owner — {deny_v}");
+    assert_eq!(
+        deny_v["error"]["code"], "org.forbidden",
+        "Admin grant Owner → org.forbidden — {deny_v}"
+    );
+
+    // Owner can grant a second Owner.
+    let (_, mem2_v) = signup_and_login(&app, "roleown2@ex.com", "roleown2").await;
+    let mem2_id = mem2_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &mem2_id).await;
+    let (_, add2) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"role-org","username":"roleown2","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add2["ok"], true, "{add2}");
+    let (_, grant_v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.members.updateRole","input":{{"slug":"role-org","user_id":"{mem2_id}","role":"owner"}}}}"#
+        ),
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(grant_v["ok"], true, "Owner can grant Owner — {grant_v}");
+    assert_eq!(grant_v["data"]["role"], "owner");
 }
 
-/// Demoting or removing the last Owner → `org.last_owner` (ORG-01).
+/// Demoting or removing the last Owner → `org.last_owner` (ORG-01 / T-10-10).
 #[tokio::test]
 async fn org_members_last_owner_demote_or_remove_rejected() {
-    assert!(
-        false,
-        "Wave 0: last Owner demote/remove → org.last_owner (ORG-01)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_last_owner.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "lastown@ex.com", "lastown1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &owner_id).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"last-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (_, demote_v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.members.updateRole","input":{{"slug":"last-org","user_id":"{owner_id}","role":"admin"}}}}"#
+        ),
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(demote_v["ok"], false, "{demote_v}");
+    assert_eq!(
+        demote_v["error"]["code"], "org.last_owner",
+        "demote last Owner — {demote_v}"
+    );
+
+    let (_, remove_v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.members.remove","input":{{"slug":"last-org","user_id":"{owner_id}"}}}}"#
+        ),
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(remove_v["ok"], false, "{remove_v}");
+    assert_eq!(
+        remove_v["error"]["code"], "org.last_owner",
+        "remove last Owner — {remove_v}"
     );
 }
 
 /// Member with member_base=none cannot read private org repo (ORG-02 / D-ORG-02b / T-10-02).
 #[tokio::test]
+#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_none_denies_private_repo_read() {
     assert!(
         false,
@@ -275,6 +548,7 @@ async fn org_member_base_none_denies_private_repo_read() {
 
 /// Member with member_base=read can read private org repo (ORG-02 / D-ORG-02b).
 #[tokio::test]
+#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_read_allows_private_repo_read() {
     assert!(
         false,
@@ -284,6 +558,7 @@ async fn org_member_base_read_allows_private_repo_read() {
 
 /// Member with member_base=write can write private org repo (ORG-02 / D-ORG-02b).
 #[tokio::test]
+#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_write_allows_private_repo_write() {
     assert!(
         false,
