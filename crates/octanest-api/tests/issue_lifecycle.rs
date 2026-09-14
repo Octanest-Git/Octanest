@@ -424,3 +424,241 @@ async fn issue_history_full_title_body_trail() {
     assert_eq!(revs[1]["body"], "B1");
     assert_eq!(revs[0]["editor_username"], "histown");
 }
+
+async fn rpc_json(app: &axum::Router, cookie: &str, body: &str) -> serde_json::Value {
+    let res = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(body, cookie))
+        .await
+        .unwrap();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+/// Open/Closed/All + author/label/assignee/text filters + offset pagination (D-ISS-16..18).
+#[tokio::test]
+async fn issue_list_filters_and_offset_pagination() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_list_filters.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "filtown@ex.com", "filtown").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &owner_id).await;
+    create_repo(&app, &owner_cookie, "filterbox", "public").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "filtwrite@ex.com", "filtwrite").await;
+    let writer_id = writer_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &writer_id).await;
+    let add = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"filtown","name":"filterbox","username":"filtwrite","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "add write collab — {add}");
+
+    // #1 owner-authored open with unique title/body for text search.
+    let i1 = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.create","input":{"owner":"filtown","name":"filterbox","title":"Alpha uniquephrase","body":"body one"}}"#,
+    )
+    .await;
+    assert_eq!(i1["ok"], true, "{i1}");
+    assert_eq!(i1["data"]["number"], 1);
+
+    // #2 writer-authored open — label + assignee targets.
+    let i2 = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.create","input":{"owner":"filtown","name":"filterbox","title":"Beta other","body":"body two"}}"#,
+    )
+    .await;
+    assert_eq!(i2["ok"], true, "{i2}");
+    assert_eq!(i2["data"]["number"], 2);
+
+    // #3 owner-authored then closed.
+    let i3 = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.create","input":{"owner":"filtown","name":"filterbox","title":"Gamma closed","body":"body three"}}"#,
+    )
+    .await;
+    assert_eq!(i3["ok"], true, "{i3}");
+    let closed = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.close","input":{"owner":"filtown","name":"filterbox","number":3}}"#,
+    )
+    .await;
+    assert_eq!(closed["ok"], true, "close #3 — {closed}");
+
+    let label = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"label.create","input":{"scope":"repo","owner":"filtown","repo":"filterbox","name":"bug","color":"d73a4a","description":"bugs"}}"#,
+    )
+    .await;
+    assert_eq!(label["ok"], true, "label.create — {label}");
+    let label_id = label["data"]["id"].as_str().expect("label id");
+
+    let set_labels = rpc_json(
+        &app,
+        &owner_cookie,
+        &format!(
+            r#"{{"procedure":"issue.labels.set","input":{{"owner":"filtown","name":"filterbox","number":2,"labelIds":["{label_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(set_labels["ok"], true, "labels.set — {set_labels}");
+
+    let set_assignees = rpc_json(
+        &app,
+        &owner_cookie,
+        &format!(
+            r#"{{"procedure":"issue.assignees.set","input":{{"owner":"filtown","name":"filterbox","number":2,"userIds":["{writer_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(set_assignees["ok"], true, "assignees.set — {set_assignees}");
+
+    // Bump #2 updated_at so newest-updated sort is deterministic (D-ISS-18).
+    // SQLite second-resolution timestamps need a gap so ORDER BY is stable.
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    let bump = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.update","input":{"owner":"filtown","name":"filterbox","number":2,"title":"Beta other bumped","body":"body two"}}"#,
+    )
+    .await;
+    assert_eq!(bump["ok"], true, "bump #2 — {bump}");
+
+    // Default list = open only (D-ISS-16).
+    let open_default = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox"}}"#,
+    )
+    .await;
+    assert_eq!(open_default["ok"], true, "{open_default}");
+    assert_eq!(open_default["data"]["total"], 2, "default open total — {open_default}");
+    let open_nums: Vec<i64> = open_default["data"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["number"].as_i64().unwrap())
+        .collect();
+    assert!(!open_nums.contains(&3), "closed #3 excluded from default open");
+    assert!(open_nums.contains(&1) && open_nums.contains(&2));
+
+    let closed_only = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"closed"}}"#,
+    )
+    .await;
+    assert_eq!(closed_only["ok"], true, "{closed_only}");
+    assert_eq!(closed_only["data"]["total"], 1);
+    assert_eq!(closed_only["data"]["issues"][0]["number"], 3);
+
+    let all = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all"}}"#,
+    )
+    .await;
+    assert_eq!(all["ok"], true, "{all}");
+    assert_eq!(all["data"]["total"], 3, "all states — {all}");
+
+    // Newest-updated first: assignees.set on #2 bumps it above #1 (D-ISS-18).
+    let all_nums: Vec<i64> = all["data"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["number"].as_i64().unwrap())
+        .collect();
+    assert_eq!(all_nums[0], 2, "newest-updated first — {all_nums:?}");
+
+    let by_author = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all","author":"filtwrite"}}"#,
+    )
+    .await;
+    assert_eq!(by_author["ok"], true, "{by_author}");
+    assert_eq!(by_author["data"]["total"], 1);
+    assert_eq!(by_author["data"]["issues"][0]["number"], 2);
+    assert_eq!(by_author["data"]["issues"][0]["author_username"], "filtwrite");
+
+    let by_label = rpc_json(
+        &app,
+        &owner_cookie,
+        &format!(
+            r#"{{"procedure":"issue.list","input":{{"owner":"filtown","name":"filterbox","state":"all","label":"{label_id}"}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(by_label["ok"], true, "{by_label}");
+    assert_eq!(by_label["data"]["total"], 1);
+    assert_eq!(by_label["data"]["issues"][0]["number"], 2);
+
+    let by_assignee = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all","assignee":"filtwrite"}}"#,
+    )
+    .await;
+    assert_eq!(by_assignee["ok"], true, "{by_assignee}");
+    assert_eq!(by_assignee["data"]["total"], 1);
+    assert_eq!(by_assignee["data"]["issues"][0]["number"], 2);
+
+    let by_q = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all","q":"uniquephrase"}}"#,
+    )
+    .await;
+    assert_eq!(by_q["ok"], true, "{by_q}");
+    assert_eq!(by_q["data"]["total"], 1);
+    assert_eq!(by_q["data"]["issues"][0]["number"], 1);
+
+    // Offset pagination (D-ISS-18).
+    let page1 = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all","limit":2,"offset":0}}"#,
+    )
+    .await;
+    assert_eq!(page1["ok"], true, "{page1}");
+    assert_eq!(page1["data"]["total"], 3);
+    assert_eq!(page1["data"]["issues"].as_array().unwrap().len(), 2);
+
+    let page2 = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"issue.list","input":{"owner":"filtown","name":"filterbox","state":"all","limit":2,"offset":2}}"#,
+    )
+    .await;
+    assert_eq!(page2["ok"], true, "{page2}");
+    assert_eq!(page2["data"]["total"], 3);
+    assert_eq!(page2["data"]["issues"].as_array().unwrap().len(), 1);
+    let page1_nums: Vec<i64> = page1["data"]["issues"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| i["number"].as_i64().unwrap())
+        .collect();
+    let page2_num = page2["data"]["issues"][0]["number"].as_i64().unwrap();
+    assert!(
+        !page1_nums.contains(&page2_num),
+        "pages disjoint — page1={page1_nums:?} page2={page2_num}"
+    );
+}
