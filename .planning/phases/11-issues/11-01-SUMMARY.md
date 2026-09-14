@@ -25,7 +25,7 @@ affects:
 actuals:
   tokens: 3596
   tasks: 2
-  commits: 2
+  commits: 4
 
 plan_head_before: 206f9b32d1a2b378f59e51a8fff0efbdd192539e
 
@@ -107,7 +107,7 @@ Each task was committed atomically:
 1. **Task 1: Issues routes + chrome Wave 0 stubs** - `5f7fe71` (test)
 2. **Task 2: markdown.issues autolink Wave 0 stub** - `658ae3c` (test)
 
-**Plan metadata:** see final docs commit on `feat/forge-core`
+**Plan metadata:** `9f428be` (docs: complete plan)
 
 ## Files Created/Modified
 
