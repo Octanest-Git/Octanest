@@ -4,16 +4,31 @@ import {
   useLoaderData,
 } from "@octanejs/tanstack-router";
 import type {
+  OrgMineEntry,
   RepoCreateDefaults,
   RepoVisibility,
   UserPublic,
 } from "@octanest/api-client";
+import { Check, ChevronDown } from "@octanejs/lucide";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { TemplatePicker } from "@/components/repo/template-picker";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  SelectIcon,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectList,
+  SelectPopup,
+  SelectPortal,
+  SelectPositioner,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { listLicensePickerOptions } from "@/lib/spdx-licenses";
@@ -21,11 +36,14 @@ import {
   fetchRepoCreateDefaults,
   fetchSessionMe,
 } from "@/lib/ssr-auth";
+import { fetchOrgListMine } from "@/lib/ssr-org";
 import { cn } from "@/lib/utils";
 
 export type NewLoaderData = {
   user: UserPublic;
   defaults: RepoCreateDefaults | null;
+  /** Owner/Admin orgs eligible for /new owner picker (D-ORG-06). */
+  ownerOrgs: OrgMineEntry[];
 };
 
 const NETWORK_ERROR =
@@ -55,21 +73,43 @@ export const Route = createFileRoute("/new")({
       throw redirect({ href: "/login?returnTo=/new" });
     }
     let defaults: RepoCreateDefaults | null = null;
+    let ownerOrgs: OrgMineEntry[] = [];
     if (me.data.email_verified) {
       const res = await fetchRepoCreateDefaults();
       if (res.ok) {
         defaults = res.data;
       }
+      const mine = await fetchOrgListMine();
+      if (mine.ok) {
+        ownerOrgs = mine.data.orgs.filter(
+          (o) => o.role === "owner" || o.role === "admin",
+        );
+      }
     }
-    return { user: me.data, defaults };
+    return { user: me.data, defaults, ownerOrgs };
   },
 });
+
+function ownerOptionLabel(
+  slug: string,
+  selfUsername: string,
+  orgs: OrgMineEntry[],
+): string {
+  if (slug === selfUsername) return `@${selfUsername}`;
+  const org = orgs.find((o) => o.slug === slug);
+  if (org) {
+    const name = org.display_name?.trim();
+    return name ? `${name} (${org.slug})` : org.slug;
+  }
+  return slug;
+}
 
 /** Exported for /new Wave 0 integration tests (D-11 verify wall). */
 export function NewPage() @{
   const data = useLoaderData({ from: "/new" }) as NewLoaderData | undefined;
   const user = data?.user;
   const showWall = !user || !user.email_verified;
+  const ownerOrgs = data?.ownerOrgs ?? [];
 
   const stacks = data?.defaults?.stacks ?? [];
   const gitignores = data?.defaults?.gitignores ?? [];
@@ -84,11 +124,14 @@ export function NewPage() @{
   const [stackId, setStackId] = useState("none");
   const [licenseId, setLicenseId] = useState("none");
   const [gitignoreId, setGitignoreId] = useState("none");
+  const [ownerSlug, setOwnerSlug] = useState(user?.username ?? "");
   const [nameError, setNameError] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
 
-  const ownerLabel = user?.username ? `@${user.username}` : "you";
+  const selfUsername = user?.username ?? "";
+  const selectedOwner = ownerSlug || selfUsername;
+  const ownerDisplay = ownerOptionLabel(selectedOwner, selfUsername, ownerOrgs);
 
   async function createRepo() {
     setNameError("");
@@ -108,6 +151,7 @@ export function NewPage() @{
         license_id: licenseId === "none" ? null : licenseId,
         // Send explicit "none" so stack default gitignore is not re-applied server-side.
         gitignore_id: gitignoreId,
+        owner: selectedOwner || null,
       });
       if (!res.ok) {
         const code = res.error.code;
@@ -150,7 +194,7 @@ export function NewPage() @{
         Create a new repository
       </h1>
       <p className="mt-2 text-[16px] text-muted-foreground">
-        Owner is you for now. Organizations come in a later phase.
+        Choose a personal account or an organization you administer.
       </p>
 
       <form
@@ -167,8 +211,52 @@ export function NewPage() @{
         }
 
         <div className="flex flex-col gap-2">
-          <Label>Owner</Label>
-          <p className="text-[16px] text-foreground">{ownerLabel as string}</p>
+          <Label htmlFor="repo-owner">Owner</Label>
+          <SelectRoot
+            value={selectedOwner}
+            onValueChange={(next) => {
+              if (typeof next === "string") setOwnerSlug(next);
+            }}
+          >
+            <SelectTrigger
+              id="repo-owner"
+              className="w-full max-w-sm"
+              aria-label="Owner"
+            >
+              <SelectValue>{ownerDisplay as string}</SelectValue>
+              <SelectIcon>
+                <ChevronDown aria-hidden size={16} />
+              </SelectIcon>
+            </SelectTrigger>
+            <SelectPortal>
+              <SelectPositioner sideOffset={4}>
+                <SelectPopup className="min-w-[12rem]">
+                  <SelectList>
+                    <SelectItem value={selfUsername}>
+                      <SelectItemIndicator>
+                        <Check aria-hidden size={16} className="text-primary" />
+                      </SelectItemIndicator>
+                      <SelectItemText>
+                        {("@" + selfUsername) as string}
+                      </SelectItemText>
+                    </SelectItem>
+                    @for (const org of ownerOrgs; key org.slug) {
+                      <SelectItem value={org.slug}>
+                        <SelectItemIndicator>
+                          <Check aria-hidden size={16} className="text-primary" />
+                        </SelectItemIndicator>
+                        <SelectItemText>
+                          {(org.display_name?.trim()
+                            ? `${org.display_name.trim()} (${org.slug})`
+                            : org.slug) as string}
+                        </SelectItemText>
+                      </SelectItem>
+                    }
+                  </SelectList>
+                </SelectPopup>
+              </SelectPositioner>
+            </SelectPortal>
+          </SelectRoot>
         </div>
 
         <div className="flex flex-col gap-2">

@@ -1,15 +1,14 @@
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
+  waitFor,
 } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * D-ORG-06 Wave 0 stubs: /new owner picker (self + Owner/Admin orgs).
- *
- * RED until /new owner Select lands (10-11).
- * Do not implement production owner picker here.
+ * D-ORG-06: /new owner picker (self + Owner/Admin orgs).
  */
 
 const createMock = vi.fn();
@@ -52,6 +51,15 @@ type LoaderShape = {
     stacks: never[];
     gitignores: never[];
   } | null;
+  ownerOrgs: {
+    id: string;
+    slug: string;
+    display_name: string;
+    member_base_permission: "none" | "read" | "write";
+    role: "owner" | "admin" | "member";
+    created_at: string;
+    updated_at: string;
+  }[];
 };
 
 let loaderData: LoaderShape;
@@ -95,10 +103,34 @@ beforeEach(() => {
       stacks: [],
       gitignores: [],
     },
+    // SSR already filters to Owner/Admin — Member-only orgs omitted (D-ORG-06).
+    ownerOrgs: [
+      {
+        id: "o1",
+        slug: "acme",
+        display_name: "Acme",
+        member_base_permission: "none",
+        role: "owner",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "o2",
+        slug: "widgets",
+        display_name: "Widgets",
+        member_base_permission: "none",
+        role: "admin",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+      },
+    ],
   };
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  document.body.innerHTML = "";
+});
 
 async function loadNewModule(): Promise<Record<string, unknown>> {
   const rel = "./new";
@@ -111,46 +143,96 @@ async function loadNewModule(): Promise<Record<string, unknown>> {
   }
 }
 
-describe("/new owner picker Wave 0 (D-ORG-06)", () => {
-  it("lists @self + Owner/Admin orgs — not Member-only orgs", async () => {
-    const mod = await loadNewModule();
-    const NewPage = (mod.NewPage ?? mod.default) as unknown;
-    expect(NewPage, "Wave 0: NewPage must export for owner picker").toBeTruthy();
-    render(NewPage as never);
+function ownerTrigger(): HTMLElement {
+  return screen.getByLabelText(/^Owner$/i);
+}
 
-    // Greened in 10-11: Owner Select/combobox — not locked plain text @ada
-    const ownerControl =
-      screen.queryByRole("combobox", { name: /owner/i }) ??
-      screen.queryByLabelText(/^Owner$/i);
-    expect(
-      ownerControl,
-      "Wave 0: Owner Select/combobox listing self + Owner/Admin orgs (D-ORG-06)",
-    ).toBeTruthy();
-  });
+describe("/new owner picker (D-ORG-06)", () => {
+  it(
+    "lists @self + Owner/Admin orgs — not Member-only orgs",
+    async () => {
+      const mod = await loadNewModule();
+      const NewPage = (mod.NewPage ?? mod.default) as unknown;
+      expect(NewPage, "NewPage must export for owner picker").toBeTruthy();
+      render(NewPage as never);
 
-  it("removes Organizations come in a later phase copy", async () => {
-    const mod = await loadNewModule();
-    const NewPage = (mod.NewPage ?? mod.default) as unknown;
-    render(NewPage as never);
+      const ownerControl = ownerTrigger();
+      expect(
+        ownerControl,
+        "Owner Select/combobox listing self + Owner/Admin orgs (D-ORG-06)",
+      ).toBeTruthy();
 
-    // Greened in 10-11: placeholder copy gone
-    expect(
-      screen.queryByText(/Organizations come in a later phase/i),
-    ).not.toBeInTheDocument();
-  });
+      fireEvent.click(ownerControl);
+      await waitFor(() => {
+        expect(screen.getByRole("option", { name: "@ada" })).toBeInTheDocument();
+        expect(
+          screen.getByRole("option", { name: /Acme/ }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("option", { name: /Widgets/ }),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByRole("option", { name: /ReadOnly Co/i }),
+      ).not.toBeInTheDocument();
+    },
+    20_000,
+  );
 
-  it("repo.create posts selected owner slug", async () => {
-    const mod = await loadNewModule();
-    const NewPage = (mod.NewPage ?? mod.default) as unknown;
-    render(NewPage as never);
+  it(
+    "removes Organizations come in a later phase copy",
+    async () => {
+      const mod = await loadNewModule();
+      const NewPage = (mod.NewPage ?? mod.default) as unknown;
+      render(NewPage as never);
 
-    // Greened in 10-11: Owner control present so create can post owner slug
-    const ownerControl =
-      screen.queryByRole("combobox", { name: /owner/i }) ??
-      screen.queryByLabelText(/^Owner$/i);
-    expect(
-      ownerControl,
-      "Wave 0: owner control required before create posts owner slug (D-ORG-06)",
-    ).toBeTruthy();
-  });
+      expect(
+        screen.queryByText(/Organizations come in a later phase/i),
+      ).not.toBeInTheDocument();
+    },
+    20_000,
+  );
+
+  it(
+    "repo.create posts selected owner slug",
+    async () => {
+      createMock.mockResolvedValue({
+        ok: true,
+        data: {
+          id: "r1",
+          owner_id: "u1",
+          owner_type: "user",
+          owner_username: "ada",
+          name: "demo",
+          description: "",
+          visibility: "public",
+          default_branch: "main",
+          updated_at: "2026-01-01T00:00:00Z",
+          can_admin: true,
+          can_write: true,
+        },
+      });
+
+      const mod = await loadNewModule();
+      const NewPage = (mod.NewPage ?? mod.default) as unknown;
+      render(NewPage as never);
+
+      // Default selection is self; owner slug must still be posted (D-ORG-06).
+      expect(ownerTrigger()).toHaveTextContent("@ada");
+
+      fireEvent.input(screen.getByLabelText(/repository name/i), {
+        target: { value: "demo" },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: /create repository/i }),
+      );
+
+      await waitFor(() => {
+        expect(createMock).toHaveBeenCalled();
+      });
+      const payload = createMock.mock.calls[0]?.[0] as { owner?: string };
+      expect(payload.owner).toBe("ada");
+    },
+    20_000,
+  );
 });

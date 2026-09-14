@@ -65,6 +65,7 @@ type LoaderShape = {
       label: string;
       group: string;
       description: string;
+      default_gitignore?: string;
     }[];
     gitignores: {
       id: string;
@@ -73,6 +74,7 @@ type LoaderShape = {
       description: string;
     }[];
   } | null;
+  ownerOrgs: never[];
 };
 
 let loaderData: LoaderShape;
@@ -101,6 +103,7 @@ beforeEach(() => {
       email_verified: false,
     },
     defaults: null,
+    ownerOrgs: [],
   };
 });
 
@@ -170,6 +173,7 @@ describe("/new create form (D-02, D-04, D-12)", () => {
             },
           ],
         },
+        ownerOrgs: [],
       };
 
       const { NewPage } = await import("./new");
@@ -233,6 +237,7 @@ describe("/new create form (D-02, D-04, D-12)", () => {
           stacks: [],
           gitignores: [],
         },
+        ownerOrgs: [],
       };
 
       createMock.mockResolvedValueOnce({
