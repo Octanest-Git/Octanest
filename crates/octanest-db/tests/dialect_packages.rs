@@ -1,33 +1,20 @@
-//! Phase 20 Wave 0 stub — packages migration parity (greened by 20-02).
-//!
-//! Expects tri-dialect migration `00xx_packages` (id resolved at execute) with:
-//! packages, package_versions, package_blobs, package_blob_refs, package_quota_overrides.
+//! 20-02: `0012_packages` + packages / versions / blobs / refs / quota tables.
 
-use std::path::PathBuf;
+use octanest_core::Role;
+use octanest_db::Database;
 
-fn migration_candidates() -> Vec<PathBuf> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("migrations/sqlite");
-    let mut out = Vec::new();
-    if let Ok(entries) = std::fs::read_dir(&root) {
-        for e in entries.flatten() {
-            let name = e.file_name().to_string_lossy().into_owned();
-            if name.ends_with("_packages.sql") {
-                out.push(e.path());
-            }
-        }
-    }
-    out
-}
-
-/// Wave 0: assert expected object names once migration exists; until then ignore.
+/// Expect sqlite `0012_packages.sql` with packages domain tables, then migrate applies.
 #[tokio::test]
 async fn dialect_packages_schema_presence() {
-    let paths = migration_candidates();
-    assert!(
-        !paths.is_empty(),
-        "expected */migrations/*/00xx_packages.sql (id resolved at execute)"
+    let migration_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/migrations/sqlite/0012_packages.sql"
     );
-    let sql = std::fs::read_to_string(&paths[0]).unwrap_or_default();
+    let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
+    assert!(
+        !sql.is_empty(),
+        "0012_packages.sql must exist (packages domain)"
+    );
     for table in [
         "packages",
         "package_versions",
@@ -37,8 +24,40 @@ async fn dialect_packages_schema_presence() {
     ] {
         assert!(
             sql.contains(table),
-            "packages migration must define {}",
+            "0012 must define {}",
             table
         );
     }
+    assert!(
+        sql.contains("owner_type") && sql.contains("owner_id") && sql.contains("format"),
+        "packages must carry owner + format (D-PKG-02)"
+    );
+    assert!(
+        sql.contains("repository_id"),
+        "packages must allow optional repository link"
+    );
+    assert!(
+        sql.contains("refcount"),
+        "package_blobs must track refcount (D-PKG-08)"
+    );
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("packages.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    // Prove DB is usable after packages migration (insert a user — init schema intact).
+    let _owner = db
+        .create_user(
+            "u-pkg-owner",
+            "pkgowner@example.com",
+            "pkgowner",
+            Some("hash"),
+            "Pkg Owner",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create owner after packages migrate");
 }
