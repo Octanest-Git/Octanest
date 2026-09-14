@@ -1,27 +1,23 @@
 //! Git LFS Batch + basic transfer under `/{owner}/{repo}.git/info/lfs/…` (D-LFS-05..07).
 //!
-//! Tracer auth: classic PAT with `repo` scope (full matrix in 14-03). Cookie ignored.
+//! Auth: PAT Basic only (D-LFS-09); Cookie ignored. ACL via [`crate::lfs::auth`].
 
 use axum::body::Body;
 use axum::extract::{Path as AxumPath, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use octanest_core::{ClassicPatScope, PatKind, CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX};
-use octanest_db::{PatRow, RepositoryRow, UserRow};
+use octanest_db::RepositoryRow;
 
 use crate::app::AppState;
-use crate::auth::session::sha256_hex;
+use crate::lfs::auth::{authorize_lfs, forbidden_lfs};
 use crate::lfs::batch::{
     BatchAction, BatchActions, BatchObjectOut, BatchRequest, BatchResponse, LfsErrorBody,
     LfsObjectError,
 };
 use crate::lfs::store;
-use crate::repo::{
-    is_private_visibility, resolve_owner_slug, OwnerRef,
-};
+use crate::repo::{is_private_visibility, resolve_owner_slug, OwnerRef};
 
-const LFS_AUTHENTICATE: &str = r#"Basic realm="Git LFS""#;
 const LFS_JSON: &str = "application/vnd.git-lfs+json";
 
 fn lfs_json_headers() -> [(header::HeaderName, HeaderValue); 1] {
@@ -29,35 +25,6 @@ fn lfs_json_headers() -> [(header::HeaderName, HeaderValue); 1] {
         header::CONTENT_TYPE,
         HeaderValue::from_static(LFS_JSON),
     )]
-}
-
-fn unauthorized_lfs() -> Response {
-    let mut res = (
-        StatusCode::UNAUTHORIZED,
-        lfs_json_headers(),
-        Json(LfsErrorBody {
-            message: "Credentials needed to access LFS".into(),
-            request_id: None,
-        }),
-    )
-        .into_response();
-    res.headers_mut().insert(
-        header::HeaderName::from_static("lfs-authenticate"),
-        HeaderValue::from_static(LFS_AUTHENTICATE),
-    );
-    res
-}
-
-fn forbidden_lfs(msg: &str) -> Response {
-    (
-        StatusCode::FORBIDDEN,
-        lfs_json_headers(),
-        Json(LfsErrorBody {
-            message: msg.into(),
-            request_id: None,
-        }),
-    )
-        .into_response()
 }
 
 fn not_found_lfs(msg: &str) -> Response {
@@ -76,124 +43,8 @@ fn strip_git_suffix(repo_git: &str) -> Option<&str> {
     repo_git.strip_suffix(".git").filter(|n| !n.is_empty())
 }
 
-fn parse_basic(headers: &HeaderMap) -> Option<(String, String)> {
-    let raw = headers.get(header::AUTHORIZATION)?.to_str().ok()?;
-    let encoded = raw
-        .strip_prefix("Basic ")
-        .or_else(|| raw.strip_prefix("basic "))?;
-    let bytes = base64_lite_decode(encoded.trim())?;
-    let decoded = String::from_utf8(bytes).ok()?;
-    let (user, pass) = decoded.split_once(':')?;
-    Some((user.to_string(), pass.to_string()))
-}
-
-fn base64_lite_decode(input: &str) -> Option<Vec<u8>> {
-    // Reuse the same approach as Smart HTTP via a tiny decoder.
-    fn val(c: u8) -> Option<u8> {
-        match c {
-            b'A'..=b'Z' => Some(c - b'A'),
-            b'a'..=b'z' => Some(c - b'a' + 26),
-            b'0'..=b'9' => Some(c - b'0' + 52),
-            b'+' => Some(62),
-            b'/' => Some(63),
-            _ => None,
-        }
-    }
-    let bytes = input.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len() * 3 / 4);
-    let mut buf = [0u8; 4];
-    let mut n = 0;
-    for &b in bytes {
-        if b == b'=' {
-            break;
-        }
-        buf[n] = val(b)?;
-        n += 1;
-        if n == 4 {
-            out.push((buf[0] << 2) | (buf[1] >> 4));
-            out.push((buf[1] << 4) | (buf[2] >> 2));
-            out.push((buf[2] << 6) | buf[3]);
-            n = 0;
-        }
-    }
-    if n == 3 {
-        out.push((buf[0] << 2) | (buf[1] >> 4));
-        out.push((buf[1] << 4) | (buf[2] >> 2));
-    } else if n == 2 {
-        out.push((buf[0] << 2) | (buf[1] >> 4));
-    }
-    Some(out)
-}
-
-struct AuthedPat {
-    pat: PatRow,
-    #[allow(dead_code)]
-    owner: UserRow,
-}
-
-async fn authenticate_pat(
-    state: &AppState,
-    headers: &HeaderMap,
-) -> Result<Option<AuthedPat>, Response> {
-    // D-LFS-09: Cookie must never authorize LFS.
-    let _cookie_ignored = headers.get(header::COOKIE);
-
-    let Some((user, pass)) = parse_basic(headers) else {
-        return Ok(None);
-    };
-    let _ = user;
-    if !(pass.starts_with(CLASSIC_PAT_PREFIX) || pass.starts_with(FINE_GRAINED_PAT_PREFIX)) {
-        return Err(unauthorized_lfs());
-    }
-    let token_hash = sha256_hex(pass.as_bytes());
-    let pat = match state.db.find_pat_by_token_hash(&token_hash).await {
-        Ok(Some(p)) if p.revoked_at.is_none() => p,
-        Ok(_) => return Err(unauthorized_lfs()),
-        Err(e) => {
-            tracing::error!(error = %e, "find_pat_by_token_hash");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-        }
-    };
-    let owner = match state.db.find_user_by_id(&pat.user_id).await {
-        Ok(Some(u)) => u,
-        Ok(None) => return Err(unauthorized_lfs()),
-        Err(e) => {
-            tracing::error!(error = %e, "find_user_by_id");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-        }
-    };
-    Ok(Some(AuthedPat { pat, owner }))
-}
-
-fn classic_has_repo_scope(pat: &PatRow) -> bool {
-    let scopes: Vec<String> = match pat.scopes_json.as_deref().map(serde_json::from_str) {
-        Some(Ok(v)) => v,
-        _ => return false,
-    };
-    scopes
-        .iter()
-        .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo))
-}
-
-/// Tracer: classic `repo` scope authorizes upload+download. FG expanded in 14-03.
-fn pat_allows_lfs(pat: &PatRow, upload: bool) -> bool {
-    let kind = match PatKind::parse(&pat.kind) {
-        Ok(k) => k,
-        Err(_) => return false,
-    };
-    match kind {
-        PatKind::Classic => classic_has_repo_scope(pat),
-        PatKind::FineGrained => {
-            // Tracer: treat any non-revoked FG as read; write needs contents write later.
-            let _ = upload;
-            true
-        }
-    }
-}
-
 struct ResolvedRepo {
     row: RepositoryRow,
-    #[allow(dead_code)]
     owner: OwnerRef,
 }
 
@@ -232,6 +83,20 @@ fn object_href(owner: &str, repo_git: &str, oid: &str) -> String {
     format!("/{owner}/{repo_git}/info/lfs/objects/{oid}")
 }
 
+async fn require_lfs_enabled(state: &AppState, repo_id: &str) -> Result<(), Response> {
+    let enabled = match state.db.get_repo_lfs_enabled(repo_id).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!(error = %e, "get_repo_lfs_enabled");
+            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
+        }
+    };
+    if !enabled {
+        return Err(forbidden_lfs("Git LFS is not enabled for this repository"));
+    }
+    Ok(())
+}
+
 /// `POST /{owner}/{repo}.git/info/lfs/objects/batch`
 pub async fn batch(
     State(state): State<AppState>,
@@ -247,15 +112,8 @@ pub async fn batch(
         Err(r) => return r,
     };
 
-    let enabled = match state.db.get_repo_lfs_enabled(&resolved.row.id).await {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!(error = %e, "get_repo_lfs_enabled");
-            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        }
-    };
-    if !enabled {
-        return forbidden_lfs("Git LFS is not enabled for this repository");
+    if let Err(r) = require_lfs_enabled(&state, &resolved.row.id).await {
+        return r;
     }
 
     let upload = req.operation.eq_ignore_ascii_case("upload");
@@ -272,26 +130,9 @@ pub async fn batch(
             .into_response();
     }
 
-    let authed = match authenticate_pat(&state, &headers).await {
-        Ok(a) => a,
-        Err(r) => return r,
-    };
-
-    let is_private = is_private_visibility(&resolved.row.visibility);
-    if upload {
-        let Some(auth) = &authed else {
-            return unauthorized_lfs();
-        };
-        if !pat_allows_lfs(&auth.pat, true) {
-            return forbidden_lfs("Insufficient personal access token scope for LFS upload");
-        }
-    } else if is_private {
-        let Some(auth) = &authed else {
-            return unauthorized_lfs();
-        };
-        if !pat_allows_lfs(&auth.pat, false) {
-            return forbidden_lfs("Insufficient personal access token scope for LFS download");
-        }
+    if let Err(r) = authorize_lfs(&state, &headers, &resolved.row, &resolved.owner, upload).await
+    {
+        return r;
     }
 
     // Prefer basic when client lists it (or lists nothing).
@@ -413,24 +254,12 @@ pub async fn put_object(
         Ok(r) => r,
         Err(r) => return r,
     };
-    let enabled = state
-        .db
-        .get_repo_lfs_enabled(&resolved.row.id)
-        .await
-        .unwrap_or(false);
-    if !enabled {
-        return forbidden_lfs("Git LFS is not enabled for this repository");
+    if let Err(r) = require_lfs_enabled(&state, &resolved.row.id).await {
+        return r;
     }
 
-    let authed = match authenticate_pat(&state, &headers).await {
-        Ok(a) => a,
-        Err(r) => return r,
-    };
-    let Some(auth) = authed else {
-        return unauthorized_lfs();
-    };
-    if !pat_allows_lfs(&auth.pat, true) {
-        return forbidden_lfs("Insufficient personal access token scope for LFS upload");
+    if let Err(r) = authorize_lfs(&state, &headers, &resolved.row, &resolved.owner, true).await {
+        return r;
     }
 
     if store::validate_oid(&oid).is_err() {
@@ -486,28 +315,14 @@ pub async fn get_object(
         Ok(r) => r,
         Err(r) => return r,
     };
-    let enabled = state
-        .db
-        .get_repo_lfs_enabled(&resolved.row.id)
-        .await
-        .unwrap_or(false);
-    if !enabled {
-        return forbidden_lfs("Git LFS is not enabled for this repository");
+    if let Err(r) = require_lfs_enabled(&state, &resolved.row.id).await {
+        return r;
     }
 
-    let is_private = is_private_visibility(&resolved.row.visibility);
-    let authed = match authenticate_pat(&state, &headers).await {
-        Ok(a) => a,
-        Err(r) => return r,
-    };
-    if is_private {
-        let Some(auth) = &authed else {
-            return unauthorized_lfs();
-        };
-        if !pat_allows_lfs(&auth.pat, false) {
-            return forbidden_lfs("Insufficient personal access token scope for LFS download");
-        }
+    if let Err(r) = authorize_lfs(&state, &headers, &resolved.row, &resolved.owner, false).await {
+        return r;
     }
+    let _ = is_private_visibility(&resolved.row.visibility);
 
     if store::validate_oid(&oid).is_err() {
         return not_found_lfs("Object does not exist");

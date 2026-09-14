@@ -27,6 +27,7 @@ use octanest_core::{
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
     RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
+    RepoLfsEnabledResponse, RepoLfsGetEnabledRequest, RepoLfsSetEnabledRequest,
     RepoListByOwnerRequest, RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse,
     RepoSoftDeleteRequest,
     RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
@@ -707,6 +708,47 @@ pub async fn update_visibility(
         owner_username: accessible.owner_username,
         capability: Some(Capability::Admin),
     }))
+}
+
+/// `repo.lfs.setEnabled` — Admin-only per-repo LFS toggle (D-LFS-10).
+pub async fn lfs_set_enabled(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsEnabledResponse, AppError> {
+    let req: RepoLfsSetEnabledRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.setEnabled input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    ctx.db
+        .set_repo_lfs_enabled(&accessible.row.id, req.enabled)
+        .await
+        .map_err(db_err)?;
+    Ok(RepoLfsEnabledResponse {
+        enabled: req.enabled,
+    })
+}
+
+/// `repo.lfs.getEnabled` — Read capability may inspect LFS enable status.
+pub async fn lfs_get_enabled(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsEnabledResponse, AppError> {
+    let req: RepoLfsGetEnabledRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.getEnabled input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let enabled = ctx
+        .db
+        .get_repo_lfs_enabled(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    Ok(RepoLfsEnabledResponse { enabled })
 }
 
 /// `repo.softDelete` — Admin soft-deletes after typed name confirm (D-35). Disk purge deferred.

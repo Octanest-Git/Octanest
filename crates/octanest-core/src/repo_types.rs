@@ -345,6 +345,27 @@ pub struct RepoUpdateVisibilityRequest {
     pub visibility: RepoVisibility,
 }
 
+/// `repo.lfs.setEnabled` input — Admin-only per-repo LFS toggle (D-LFS-10).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsSetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
+/// `repo.lfs.setEnabled` / `repo.lfs.getEnabled` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsEnabledResponse {
+    pub enabled: bool,
+}
+
+/// `repo.lfs.getEnabled` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsGetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+}
+
 /// `repo.softDelete` input — typed confirm name required (D-35 / T-07-24).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteRequest {
