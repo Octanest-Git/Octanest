@@ -1140,6 +1140,23 @@ impl Database {
         packages::delete_version(self.require_pool()?, version_id).await
     }
 
+
+    pub async fn list_packages_by_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Vec<packages::PackageRow>, String> {
+        packages::list_packages_by_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn update_package_description(
+        &self,
+        id: &str,
+        description: &str,
+    ) -> Result<(), String> {
+        packages::update_package_description(self.require_pool()?, id, description).await
+    }
+
     pub async fn list_package_versions(
         &self,
         package_id: &str,

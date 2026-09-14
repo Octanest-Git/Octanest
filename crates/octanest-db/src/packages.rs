@@ -656,6 +656,120 @@ pub async fn list_versions_for_package(
     }
 }
 
+
+pub async fn list_packages_by_owner(
+    pool: &DbPool,
+    owner_type: &str,
+    owner_id: &str,
+) -> Result<Vec<PackageRow>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description, created_at, updated_at
+                   FROM packages WHERE owner_type = ? AND owner_id = ? ORDER BY name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| map_package_sqlite(&r)).collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          created_at::text AS created_at, updated_at::text AS updated_at
+                   FROM packages WHERE owner_type = $1 AND owner_id = $2 ORDER BY name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .into_iter()
+                .map(|r| PackageRow {
+                    id: r.get("id"),
+                    owner_type: r.get("owner_type"),
+                    owner_id: r.get("owner_id"),
+                    name: r.get("name"),
+                    format: r.get("format"),
+                    visibility: r.get("visibility"),
+                    repository_id: r.get("repository_id"),
+                    description: r.get("description"),
+                    created_at: r.get("created_at"),
+                    updated_at: r.get("updated_at"),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          CAST(created_at AS CHAR) AS created_at,
+                          CAST(updated_at AS CHAR) AS updated_at
+                   FROM packages WHERE owner_type = ? AND owner_id = ? ORDER BY name"#,
+            )
+            .bind(owner_type)
+            .bind(owner_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .into_iter()
+                .map(|r| PackageRow {
+                    id: r.get("id"),
+                    owner_type: r.get("owner_type"),
+                    owner_id: r.get("owner_id"),
+                    name: r.get("name"),
+                    format: r.get("format"),
+                    visibility: r.get("visibility"),
+                    repository_id: r.get("repository_id"),
+                    description: r.get("description"),
+                    created_at: r.get("created_at"),
+                    updated_at: r.get("updated_at"),
+                })
+                .collect())
+        }
+    }
+}
+
+pub async fn update_package_description(
+    pool: &DbPool,
+    id: &str,
+    description: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE packages SET description = ?, updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?")
+                .bind(description)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE packages SET description = ?, updated_at = CURRENT_TIMESTAMP(3) WHERE id = ?")
+                .bind(description)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE packages SET description = $1, updated_at = now() WHERE id = $2")
+                .bind(description)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
