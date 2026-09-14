@@ -76,8 +76,21 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `auth.confirm_admin_credentials` | Forced credential change for ENV-seeded admins (`system-administrator` must be changed; email/password may be kept) | Session (seeded admin) |
 | `user.get_profile` | Current user profile | Session |
 | `user.update_profile` | Update `display_name`, `username`, `bio` | Session |
+| `user.lookup` | Username prefix autocomplete (public fields only; never emails) | Session (rate-limited) |
+| `org.create` | Create organization; slug shares username reserved list | Session + verified email |
+| `org.get` | Org profile by slug | Session + verified |
+| `org.listMine` | Orgs the caller belongs to (includes caller `role`) | Session + verified |
+| `org.updateSettings` | Update `display_name` / `member_base_permission` | Org Admin+ |
+| `org.members.list` | Members (`username`, `role`, ids — no emails) | Org member |
+| `org.members.add` / `updateRole` / `remove` | Membership mutations | Org Admin+ (Owner-only for Owner grants) |
+| `org.invites.create` / `list` / `revoke` | Email invites (plaintext token only in outbound mail link) | Org Admin+ |
+| `org.invites.accept` | Redeem invite token; may create verified user under closed signup | Token (optional session) |
+| `repo.listMine` / `repo.listByOwner` | Personal / owner-scoped repo lists (ACL-filtered) | Session |
+| `repo.create` / `repo.get` / browse / branch / settings | Forge RPC (Capability ACL) | Session (+ capability) |
+| `repo.collaborators.list` / `add` / `update` / `remove` | Per-repo collaborator grants | Repo Admin |
 | `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
 | `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
+| `admin.instance.factory_reset` | Wipe users, orgs, repos (DB); optional disk wipe via `scope` | Sys-admin |
 | `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response | Session + verified email |
 | `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); one-time plaintext in response | Session + verified email |
 | `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
@@ -258,6 +271,19 @@ Accepted key types: `ssh-ed25519` and RSA ≥2048. Response is a list item with 
 
 Add requires verified email (`auth.email_unverified` otherwise). Empty title → `sshKey.title_required`. Invalid/unsupported key → `sshKey.invalid_key`. Duplicate fingerprint → `sshKey.fingerprint_taken`. More than **25** keys → `sshKey.limit_exceeded`. Unknown or non-owned revoke id → `sshKey.not_found`.
 
+
+**PAT ∩ ACL:** Classic `repo` push/fetch requires the PAT subject to also `meets` the needed Capability on that repository (org membership, collaborator grant, or personal owner — not `owner_id == pat.user_id` alone). Fine-grained `all` covers personal-owned plus org Owner/Admin repos; collaborators must use `selected`.
+
+### Organizations (`org.*`) & collaborators
+
+Organizations share the username slug namespace. `org.create` rejects reserved / taken slugs (`org.slug_taken`, `auth.reserved_username`). Blank `display_name` defaults to the slug. `member_base_permission` defaults to `none` and applies only to org **Members** on org-owned private repos (Owner/Admin always Admin).
+
+`org.members.list` returns username + role + ids only (no emails). Live add uses `user.lookup` (prefix ≥ 2; short/email-shaped prefixes return empty ok). Invite create/list omit plaintext tokens; accept redeems the magic-link token and can create a verified local user even when instance `allow_signup` is false. If the invite email already has an account, accept returns `org.invite_login_required` instead of overwriting credentials.
+
+`repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
+
+`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories, organizations (members/invites cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears `OCTANEST_REPOS_DIR` children.
+
 ### Git Smart HTTP
 
 Clone / fetch / push use Git Smart HTTP under `/{owner}/{repo}.git` (not `/api/rpc`):
@@ -271,7 +297,7 @@ Clone / fetch / push use Git Smart HTTP under `/{owner}/{repo}.git` (not `/api/r
 
 **Auth:** HTTP Basic with password = PAT (`octanest_pat_…` or `octanest_fg_…`). Username may be the account username or aliases `git`, `token`, or `oauth2` (identity comes from the PAT hash). Account passwords are rejected. **Session cookies are ignored** for Smart HTTP authorization.
 
-Public repos may allow anonymous `upload-pack`. Private repos and push require a valid PAT with sufficient scope; insufficient scope → HTTP 403. Unverified-email users may fetch but not push (`auth.email_unverified` JSON on receive-pack). Failed Basic auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` and a PAT hint body.
+Public repos may allow anonymous `upload-pack`. Private repos and push require a valid PAT with sufficient **scope ∩ Capability ACL**; ACL denials stay HTTP **401** Basic, while insufficient PAT scope → HTTP **403**. Unverified-email users may fetch but not push (`auth.email_unverified` JSON on receive-pack). Failed Basic auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` and a PAT hint body.
 
 Example (redacted token):
 
@@ -342,6 +368,12 @@ Common `error.code` values:
 | `sshKey.fingerprint_taken` | Fingerprint already registered |
 | `sshKey.limit_exceeded` | More than 25 SSH keys for the user |
 | `sshKey.not_found` | Revoke target missing or not owned |
+| `org.slug_taken` | Org slug collides with user or org |
+| `org.forbidden` / `org.not_found` | Org ACL / missing org |
+| `org.invite_login_required` | Invite email already registered — sign in to accept |
+| `org.invite_*` | Invite expired / revoked / invalid |
+| `repo.not_found` | Missing or unauthorized private (web/RPC soft 404) |
+| `repo.create_forbidden` | Org Member cannot create under that org |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |
 | `avatar.*` | Multipart/type/size/store failures on avatar upload |
 
@@ -350,6 +382,8 @@ Avatar and SSO JSON errors use the same `{ ok: false, error: { code, message } }
 ## Rate limits
 
 Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Client IP uses the rightmost `X-Forwarded-For` hop from a trusted proxy; do not expose the API without a proxy that sanitizes forwarded headers. Successful PAT auth clears the user bucket. Git-over-SSH failed pubkey auth uses the same windows with the key **fingerprint** as the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
+
+`user.lookup` is rate-limited per session (**60** requests / **60s**). Other RPC routes do not apply in-process limiters; rely on reverse-proxy / edge controls for deployment-wide limits.
 
 ## Regenerating the TypeScript client
 

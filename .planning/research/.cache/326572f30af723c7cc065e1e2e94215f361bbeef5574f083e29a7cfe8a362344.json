@@ -1,0 +1,1 @@
+{"content":"Forge git-over-SSH pattern: custom russh server, force user git, identity from pubkey fingerprint, allowlist only pack commands, spawn system git-*pack on bare path. thrussh is predecessor with low downloads (SUS).","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-09-13T22:49:04.878Z","ttl":86400000,"kind":"web"}

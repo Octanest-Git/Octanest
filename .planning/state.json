@@ -51,7 +51,7 @@
     {
       "number": "10",
       "name": "Orgs & Permissions",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "11",
@@ -115,9 +115,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 09 of 22 · executing"
+    "command": "/gsd-progress",
+    "label": "Show progress / plan Phase 11",
+    "reason": "Phases 9 and 10 execution merged — next is Issues"
   },
-  "updated_at": "2026-09-13T23:28:01.332Z"
+  "updated_at": "2026-09-14T04:15:00.000Z"
 }

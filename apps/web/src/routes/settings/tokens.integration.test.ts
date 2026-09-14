@@ -113,6 +113,7 @@ beforeEach(() => {
         {
           id: "repo-1",
           owner_id: "u1",
+          owner_type: "user",
           owner_username: "ada",
           name: "demo",
           description: "",

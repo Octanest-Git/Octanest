@@ -127,11 +127,27 @@ export type ProviderConfigPublic = {
 
 export type RepoVisibility = "public" | "private";
 
+export type OwnerType = "user" | "org";
+
 export type UpdateProfileRequest = {
   display_name: string;
   username: string;
   bio: string;
   default_branch?: string | null;
+};
+
+export type UserLookupRequest = {
+  prefix: string;
+};
+
+export type UserLookupHit = {
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+};
+
+export type UserLookupResponse = {
+  users: UserLookupHit[];
 };
 
 export type AuthSettingsPublic = {
@@ -167,6 +183,7 @@ export type CreateRepoRequest = {
   stack_id?: string | null;
   license_id?: string | null;
   gitignore_id?: string | null;
+  owner?: string | null;
 };
 
 export type RepoTemplateOption = {
@@ -186,16 +203,23 @@ export type RepoCreateDefaults = {
 export type RepoPublic = {
   id: string;
   owner_id: string;
+  owner_type: OwnerType;
   owner_username: string;
   name: string;
   description: string;
   visibility: RepoVisibility;
   default_branch: string;
   updated_at: string;
+  can_admin: boolean;
+  can_write: boolean;
 };
 
 export type RepoListMineResponse = {
   repos: RepoPublic[];
+};
+
+export type RepoListByOwnerRequest = {
+  owner: string;
 };
 
 export type RepoGetRequest = {
@@ -377,6 +401,145 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+/** Per-repo collaborator permission ladder (D-ORG-02c). */
+export type CollaboratorPermission = "read" | "write" | "admin";
+
+export type RepoCollaboratorPublic = {
+  user_id: string;
+  username: string;
+  permission: CollaboratorPermission;
+  created_at: string;
+};
+
+export type RepoCollaboratorsListResponse = {
+  collaborators: RepoCollaboratorPublic[];
+};
+
+export type RepoCollaboratorsAddRequest = {
+  owner: string;
+  name: string;
+  username: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsUpdateRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsRemoveRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+};
+
+export type MemberBasePermission = "none" | "read" | "write";
+
+export type OrgRole = "owner" | "admin" | "member";
+
+export type OrgPublic = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateOrgRequest = {
+  slug: string;
+  display_name?: string | null;
+};
+
+export type OrgSlugRequest = {
+  slug: string;
+};
+
+export type OrgUpdateSettingsRequest = {
+  slug: string;
+  member_base_permission?: MemberBasePermission | null;
+  display_name?: string | null;
+};
+
+export type OrgMineEntry = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  role: OrgRole;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrgListMineResponse = {
+  orgs: OrgMineEntry[];
+};
+
+export type OrgMemberPublic = {
+  user_id: string;
+  username: string;
+  role: OrgRole;
+  created_at: string;
+};
+
+export type OrgMembersListResponse = {
+  members: OrgMemberPublic[];
+};
+
+export type OrgMembersAddRequest = {
+  slug: string;
+  username: string;
+  role: OrgRole;
+};
+
+export type OrgMembersUpdateRoleRequest = {
+  slug: string;
+  user_id: string;
+  role: OrgRole;
+};
+
+export type OrgMembersRemoveRequest = {
+  slug: string;
+  user_id: string;
+};
+
+export type OrgInvitePublic = {
+  id: string;
+  email: string;
+  role: OrgRole;
+  expires_at: string;
+  invited_by: string;
+  created_at: string;
+};
+
+export type OrgInvitesListResponse = {
+  invites: OrgInvitePublic[];
+};
+
+export type OrgInvitesCreateRequest = {
+  slug: string;
+  email: string;
+  role: OrgRole;
+};
+
+export type OrgInvitesRevokeRequest = {
+  slug: string;
+  invite_id: string;
+};
+
+export type OrgInvitesAcceptRequest = {
+  token: string;
+  username?: string | null;
+  password?: string | null;
+};
+
+export type OrgInvitesAcceptResponse = {
+  org: OrgPublic;
+  member: OrgMemberPublic;
+};
+
 /** Classic PAT string prefix (octanest_pat_). */
 export const CLASSIC_PAT_PREFIX = "octanest_pat_" as const;
 /** Fine-grained PAT string prefix (octanest_fg_). */
@@ -511,9 +674,13 @@ export function createClient(opts: CreateClientOptions) {
       getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
       updateProfile: (input: UpdateProfileRequest) =>
         rpcCall<UserPublic>(opts, "user.update_profile", input),
+      lookup: (input: UserLookupRequest) =>
+        rpcCall<UserLookupResponse>(opts, "user.lookup", input),
     },
     repo: {
       listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
+      listByOwner: (input: RepoListByOwnerRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "repo.listByOwner", input),
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
@@ -538,6 +705,43 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+      collaborators: {
+        list: (input: RepoGetRequest) =>
+          rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),
+        add: (input: RepoCollaboratorsAddRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.add", input),
+        update: (input: RepoCollaboratorsUpdateRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.update", input),
+        remove: (input: RepoCollaboratorsRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "repo.collaborators.remove", input),
+      },
+    },
+    org: {
+      create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
+      get: (input: OrgSlugRequest) => rpcCall<OrgPublic>(opts, "org.get", input),
+      listMine: () => rpcCall<OrgListMineResponse>(opts, "org.listMine", {}),
+      updateSettings: (input: OrgUpdateSettingsRequest) =>
+        rpcCall<OrgPublic>(opts, "org.updateSettings", input),
+      members: {
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgMembersListResponse>(opts, "org.members.list", input),
+        add: (input: OrgMembersAddRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.add", input),
+        updateRole: (input: OrgMembersUpdateRoleRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.updateRole", input),
+        remove: (input: OrgMembersRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.members.remove", input),
+      },
+      invites: {
+        create: (input: OrgInvitesCreateRequest) =>
+          rpcCall<OrgInvitePublic>(opts, "org.invites.create", input),
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgInvitesListResponse>(opts, "org.invites.list", input),
+        revoke: (input: OrgInvitesRevokeRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.invites.revoke", input),
+        accept: (input: OrgInvitesAcceptRequest) =>
+          rpcCall<OrgInvitesAcceptResponse>(opts, "org.invites.accept", input),
+      },
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
@@ -685,6 +889,20 @@ export function userGetProfileQueryOptions(client: OctanestClient) {
   };
 }
 
+export function userLookupQueryOptions(
+  client: OctanestClient,
+  input: UserLookupRequest,
+) {
+  return {
+    queryKey: ["user", "lookup", input.prefix] as const,
+    queryFn: async () => {
+      const res = await client.user.lookup(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function userUpdateProfileMutationOptions(client: OctanestClient) {
   return {
     mutationKey: ["user", "updateProfile"] as const,
@@ -701,6 +919,20 @@ export function repoListMineQueryOptions(client: OctanestClient) {
     queryKey: ["repo", "listMine"] as const,
     queryFn: async () => {
       const res = await client.repo.listMine();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoListByOwnerQueryOptions(
+  client: OctanestClient,
+  input: RepoListByOwnerRequest,
+) {
+  return {
+    queryKey: ["repo", "listByOwner", input.owner] as const,
+    queryFn: async () => {
+      const res = await client.repo.listByOwner(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

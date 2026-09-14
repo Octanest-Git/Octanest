@@ -165,6 +165,7 @@ async fn build_ctx(state: &AppState, headers: &HeaderMap) -> RpcCtx {
         env_name: state.env_name.clone(),
         session,
         set_cookie: None,
+        lookup_limiter: state.lookup_limiter.clone(),
     }
 }
 

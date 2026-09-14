@@ -189,6 +189,8 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 
 Email sender selection when building from ENV: Resend key → SMTP URL → log sink.
 
+**Organizations (Phase 10):** No new org-specific environment variables. Invite emails use the configured `EmailSender` (log / SMTP / Resend) and magic-link base `OCTANEST_PUBLIC_ORIGIN`. Instance `allow_signup` still gates public `/signup`; redeeming a valid org invite can create a verified local user under closed signup.
+
 ## Per-environment overrides
 
 | Environment | Typical `OCTANEST_ENV` | CORS | Session cookie `Secure` | Stub / insecure flags |

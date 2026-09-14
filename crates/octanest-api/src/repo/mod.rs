@@ -1,10 +1,17 @@
 //! Repository RPC handlers (`repo.create` + browse ACL — GIT-01 / GIT-05 / D-23–D-25).
 
 mod acl;
+mod collaborators;
 mod templates;
 
 pub use acl::{
-    can_read_as_owner, is_private_visibility, resolve_repo_for_read, AccessibleRepo,
+    can_read_as_owner, effective_capability, fg_all_covers_repo, is_private_visibility, meets,
+    owner_ref_for_repo, resolve_owner_slug, resolve_repo_for_read, AccessibleRepo, Capability,
+    OwnerRef,
+};
+pub use collaborators::{
+    add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
+    resolve_repo_for_admin, update as collaborators_update,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
@@ -15,12 +22,13 @@ pub const BLOB_SOFT_MAX_BYTES: usize = 1_048_576;
 pub const DIFF_SOFT_MAX_BYTES: usize = octanest_git::DIFF_SOFT_MAX_BYTES;
 
 use octanest_core::{
-    validate_repo_name, AppError, CreateRepoRequest, RepoBlameLine, RepoBlameRequest,
+    validate_repo_name, AppError, CreateRepoRequest, OwnerType, RepoBlameLine, RepoBlameRequest,
     RepoBlameResponse, RepoBranchCreateRequest, RepoBranchDeleteRequest, RepoBranchMutationResponse,
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
     RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
-    RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse, RepoSoftDeleteRequest,
+    RepoListByOwnerRequest, RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse,
+    RepoSoftDeleteRequest,
     RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
     RepoUpdateVisibilityRequest, RepoVisibility,
 };
@@ -53,15 +61,19 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
 
 fn to_public(repo: &AccessibleRepo) -> RepoPublic {
     let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
+    let owner_type = OwnerType::parse(&repo.row.owner_type).unwrap_or(OwnerType::User);
     RepoPublic {
         id: repo.row.id.clone(),
         owner_id: repo.row.owner_id.clone(),
+        owner_type,
         owner_username: repo.owner_username.clone(),
         name: repo.row.name.clone(),
         description: repo.row.description.clone(),
         visibility,
         default_branch: repo.row.default_branch.clone(),
         updated_at: repo.row.updated_at.clone(),
+        can_admin: meets(repo.capability, Capability::Admin),
+        can_write: meets(repo.capability, Capability::Write),
     }
 }
 
@@ -181,18 +193,77 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
         .into_iter()
         .map(|row| {
             let visibility = RepoVisibility::parse(&row.visibility).unwrap_or(RepoVisibility::Public);
+            let owner_type = OwnerType::parse(&row.owner_type).unwrap_or(OwnerType::User);
             RepoPublic {
                 id: row.id,
                 owner_id: row.owner_id,
+                owner_type,
                 owner_username: user.username.clone(),
                 name: row.name,
                 description: row.description,
                 visibility,
                 default_branch: row.default_branch,
                 updated_at: row.updated_at,
+                can_admin: true,
+                can_write: true,
             }
         })
         .collect();
+
+    Ok(RepoListMineResponse { repos })
+}
+
+/// `repo.listByOwner` — ACL-filtered repos under a user/org slug (D-ORG-06 org overview).
+/// Public repos are visible to any caller; private only when coalesce grants Read.
+pub async fn list_by_owner(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoListMineResponse, AppError> {
+    let req: RepoListByOwnerRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.listByOwner input: {e}"),
+        )
+    })?;
+    let owner_slug = req.owner.trim();
+    if owner_slug.is_empty() {
+        return Err(AppError::new("rpc.bad_input", "owner is required"));
+    }
+
+    let owner_ref = match resolve_owner_slug(&ctx.db, owner_slug).await {
+        Ok(Some(r)) => r,
+        Ok(None) => return Ok(RepoListMineResponse { repos: vec![] }),
+        Err(e) => {
+            tracing::error!(error = %e, "resolve_owner_slug failed");
+            return Err(AppError::new("repo.internal", "repository operation failed"));
+        }
+    };
+
+    let rows = ctx
+        .db
+        .list_repositories_by_owner(owner_ref.id())
+        .await
+        .map_err(db_err)?;
+
+    let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
+    let mut repos = Vec::with_capacity(rows.len());
+    for row in rows {
+        let capability = match effective_capability(&ctx.db, caller_id, &row, &owner_ref).await {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!(error = %e, "effective_capability failed");
+                return Err(AppError::new("repo.internal", "repository operation failed"));
+            }
+        };
+        if !meets(capability, Capability::Read) {
+            continue;
+        }
+        repos.push(to_public(&AccessibleRepo {
+            row,
+            owner_username: owner_ref.slug().to_string(),
+            capability,
+        }));
+    }
 
     Ok(RepoListMineResponse { repos })
 }
@@ -477,16 +548,17 @@ fn soft_protect_err() -> AppError {
     )
 }
 
-/// Resolve repo for owner-only mutate (D-27). Non-owner → identical [`acl::not_found`].
+/// Resolve repo for Write mutate (D-27 branch CRUD / T-10-14).
+/// Insufficient capability → identical [`acl::not_found`].
+/// Visibility / soft-delete use [`resolve_repo_for_admin`] (Admin) instead.
 async fn resolve_repo_for_owner_mutate(
     ctx: &RpcCtx,
     owner: &str,
     name: &str,
 ) -> Result<AccessibleRepo, AppError> {
     let _ = require_verified(ctx).await?;
-    let session = require_session_user(ctx)?;
     let accessible = resolve_repo_for_read(ctx, owner, name).await?;
-    if session.user_id != accessible.row.owner_id {
+    if !meets(accessible.capability, Capability::Write) {
         return Err(acl::not_found());
     }
     Ok(accessible)
@@ -612,7 +684,8 @@ pub async fn branch_delete(
     })
 }
 
-/// `repo.updateVisibility` — owner toggles public/private (D-26). Non-owner → not_found.
+/// `repo.updateVisibility` — Admin capability toggles public/private (D-26 / ORG-03).
+/// Insufficient capability → soft not_found.
 pub async fn update_visibility(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -623,7 +696,7 @@ pub async fn update_visibility(
             format!("invalid repo.updateVisibility input: {e}"),
         )
     })?;
-    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
     let row = ctx
         .db
         .update_repository_visibility(&accessible.row.id, map_visibility(req.visibility))
@@ -632,10 +705,11 @@ pub async fn update_visibility(
     Ok(to_public(&AccessibleRepo {
         row,
         owner_username: accessible.owner_username,
+        capability: Some(Capability::Admin),
     }))
 }
 
-/// `repo.softDelete` — owner soft-deletes after typed name confirm (D-35). Disk purge deferred.
+/// `repo.softDelete` — Admin soft-deletes after typed name confirm (D-35). Disk purge deferred.
 pub async fn soft_delete(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -646,7 +720,7 @@ pub async fn soft_delete(
             format!("invalid repo.softDelete input: {e}"),
         )
     })?;
-    let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
     let confirm = req.confirm_name.trim();
     if confirm != accessible.row.name.as_str() {
         return Err(AppError::new(
@@ -661,6 +735,75 @@ pub async fn soft_delete(
     Ok(RepoSoftDeleteResponse {
         name: accessible.row.name,
     })
+}
+
+/// Deny create under a foreign owner slug (T-10-06 / A5).
+fn create_forbidden() -> AppError {
+    AppError::new(
+        "repo.create_forbidden",
+        "You do not have permission to create a repository under this owner.",
+    )
+}
+
+/// Resolve create target: omit/self → user; org slug → Owner/Admin only (A5).
+async fn resolve_create_owner(
+    ctx: &RpcCtx,
+    user_id: &str,
+    user_username: &str,
+    owner_slug: Option<&str>,
+) -> Result<(String, OwnerType, String), AppError> {
+    let slug = owner_slug.map(str::trim).filter(|s| !s.is_empty());
+    let Some(slug) = slug else {
+        return Ok((
+            user_id.to_string(),
+            OwnerType::User,
+            user_username.to_string(),
+        ));
+    };
+
+    if slug.eq_ignore_ascii_case(user_username) {
+        return Ok((
+            user_id.to_string(),
+            OwnerType::User,
+            user_username.to_string(),
+        ));
+    }
+
+    let owner_ref = match resolve_owner_slug(&ctx.db, slug).await {
+        Ok(Some(r)) => r,
+        Ok(None) => return Err(create_forbidden()),
+        Err(e) => {
+            tracing::error!(error = %e, "resolve_owner_slug for create failed");
+            return Err(AppError::new("repo.internal", "repository operation failed"));
+        }
+    };
+
+    match owner_ref {
+        OwnerRef::User { id, username } => {
+            if id == user_id {
+                Ok((id, OwnerType::User, username))
+            } else {
+                Err(create_forbidden())
+            }
+        }
+        OwnerRef::Org { id, slug } => {
+            let member = match ctx.db.find_org_member(&id, user_id).await {
+                Ok(m) => m,
+                Err(e) => {
+                    tracing::error!(error = %e, "find_org_member for create failed");
+                    return Err(AppError::new("repo.internal", "repository operation failed"));
+                }
+            };
+            let allowed = member
+                .as_ref()
+                .map(|m| m.role == "owner" || m.role == "admin")
+                .unwrap_or(false);
+            if !allowed {
+                return Err(create_forbidden());
+            }
+            Ok((id, OwnerType::Org, slug))
+        }
+    }
 }
 
 /// `repo.create` — verified owner creates a public/private repo (DB + bare git + optional seed).
@@ -687,12 +830,20 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         user.default_branch.clone()
     };
 
+    let (owner_id, owner_type, owner_slug) = resolve_create_owner(
+        ctx,
+        &user.id,
+        &user.username,
+        req.owner.as_deref(),
+    )
+    .await?;
+
     let seed_files =
         templates::assemble_seed_files(&req.stack_id, &req.license_id, &req.gitignore_id)?;
 
     if ctx
         .db
-        .find_repository_by_owner_name(&user.id, &name)
+        .find_repository_by_owner_name(&owner_id, &name)
         .await
         .map_err(db_err)?
         .is_some()
@@ -708,7 +859,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .db
         .insert_repository(
             &id,
-            &user.id,
+            &owner_id,
+            owner_type.as_str(),
             &name,
             map_visibility(visibility),
             &description,
@@ -717,7 +869,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .await
         .map_err(db_err)?;
 
-    let path = bare_repo_path(&ctx.repos_dir, &user.username, &name)?;
+    let path = bare_repo_path(&ctx.repos_dir, &owner_slug, &name)?;
     if let Err(e) = ctx.git.init_bare(&path, &default_branch).await {
         tracing::error!(
             error = %e,
@@ -759,11 +911,14 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
     Ok(RepoPublic {
         id: row.id,
         owner_id: row.owner_id,
-        owner_username: user.username,
+        owner_type,
+        owner_username: owner_slug,
         name: row.name,
         description: row.description,
         visibility,
         default_branch: row.default_branch,
         updated_at: row.updated_at,
+        can_admin: true,
+        can_write: true,
     })
 }

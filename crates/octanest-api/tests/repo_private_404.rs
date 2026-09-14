@@ -246,3 +246,265 @@ async fn repo_private_404_empty_tree_structured() {
     assert_eq!(v["data"]["empty"], true);
     assert_eq!(v["data"]["entries"], serde_json::json!([]));
 }
+
+/// ORG-04 / D-ORG-05: org Owner can read private org repo; stranger → soft `repo.not_found`.
+/// Owner `repo.get` reports `can_admin: true`.
+#[tokio::test]
+async fn repo_private_404_org_non_member_soft_not_found() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_private_org_acl.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "orgboss@ex.com", "orgboss1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify owner");
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acl-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let org_bytes = org.into_body().collect().await.unwrap().to_bytes();
+    let org_v: serde_json::Value = serde_json::from_slice(&org_bytes).unwrap();
+    assert_eq!(org_v["ok"], true, "{org_v}");
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"private-widget","visibility":"private","owner":"acl-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK, "Owner create under org");
+    let _ = create.into_body().collect().await;
+
+    // Creator Owner can read + can_admin.
+    let owner_get = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"acl-org","name":"private-widget"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let owner_bytes = owner_get.into_body().collect().await.unwrap().to_bytes();
+    let owner_get_v: serde_json::Value = serde_json::from_slice(&owner_bytes).unwrap();
+    assert_eq!(owner_get_v["ok"], true, "org Owner must read private — {owner_get_v}");
+    assert_eq!(owner_get_v["data"]["can_admin"], true, "Owner can_admin — {owner_get_v}");
+    assert_eq!(owner_get_v["data"]["can_write"], true);
+
+    // Stranger → identical soft not_found (D-25 / T-10-01).
+    let (stranger_cookie, _) = signup_and_login(&app, "stranger2@ex.com", "stranger2").await;
+    let missing = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"nobody","name":"missing-repo"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let missing_bytes = missing.into_body().collect().await.unwrap().to_bytes();
+    let missing_v: serde_json::Value = serde_json::from_slice(&missing_bytes).unwrap();
+
+    let private = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"acl-org","name":"private-widget"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let private_bytes = private.into_body().collect().await.unwrap().to_bytes();
+    let private_v: serde_json::Value = serde_json::from_slice(&private_bytes).unwrap();
+
+    assert_eq!(missing_v["error"]["code"], "repo.not_found");
+    assert_eq!(
+        private_v["error"]["code"], "repo.not_found",
+        "org private stranger → repo.not_found — {private_v}"
+    );
+    assert_eq!(
+        missing_v["error"]["message"], private_v["error"]["message"],
+        "messages must match to avoid existence leak"
+    );
+}
+
+/// Public org repo: anonymous read OK even when member_base is none (D-ORG-02b / D-ORG-05).
+#[tokio::test]
+async fn repo_private_404_org_public_anonymous_ok() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_org_public_anon.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "puborg@ex.com", "puborg1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify");
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"pub-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let _ = org.into_body().collect().await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"open-widget","visibility":"public","owner":"pub-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    let get = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"repo.get","input":{"owner":"pub-org","name":"open-widget"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(get.status(), StatusCode::OK);
+    let bytes = get.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "anonymous public org get — {v}");
+    assert_eq!(v["data"]["name"], "open-widget");
+    assert_eq!(v["data"]["can_admin"], false, "anonymous must not be admin");
+    assert_eq!(v["data"]["can_write"], false);
+}
+
+/// Collaborator-granted read on private org repo (ORG-03/04).
+#[tokio::test]
+async fn repo_private_404_collaborator_granted_read() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_collab_grant_read.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "cown@ex.com", "cown1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify");
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "cread@ex.com", "cread1").await;
+    let collab_id = collab_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let (stranger_cookie, _) = signup_and_login(&app, "cstranger@ex.com", "cstranger1").await;
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"grant-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let _ = org.into_body().collect().await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"locked","visibility":"private","owner":"grant-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    // Before grant: collaborator (outside) → not_found.
+    let before = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    let before_bytes = before.into_body().collect().await.unwrap().to_bytes();
+    let before_v: serde_json::Value = serde_json::from_slice(&before_bytes).unwrap();
+    assert_eq!(before_v["ok"], false, "pre-grant — {before_v}");
+    assert_eq!(before_v["error"]["code"], "repo.not_found");
+
+    let grant = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"grant-org","name":"locked","username":"cread1","permission":"read"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let grant_bytes = grant.into_body().collect().await.unwrap().to_bytes();
+    let grant_v: serde_json::Value = serde_json::from_slice(&grant_bytes).unwrap();
+    assert_eq!(grant_v["ok"], true, "grant — {grant_v}");
+
+    // After grant: read collaborator can get; write not required.
+    let after = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(after.status(), StatusCode::OK);
+    let after_bytes = after.into_body().collect().await.unwrap().to_bytes();
+    let after_v: serde_json::Value = serde_json::from_slice(&after_bytes).unwrap();
+    assert_eq!(after_v["ok"], true, "granted read — {after_v}");
+    assert_eq!(after_v["data"]["name"], "locked");
+    assert_eq!(after_v["data"]["can_write"], false);
+    assert_eq!(after_v["data"]["can_admin"], false);
+
+    // Stranger still soft not_found.
+    let stranger = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let stranger_bytes = stranger.into_body().collect().await.unwrap().to_bytes();
+    let stranger_v: serde_json::Value = serde_json::from_slice(&stranger_bytes).unwrap();
+    assert_eq!(stranger_v["ok"], false, "stranger — {stranger_v}");
+    assert_eq!(stranger_v["error"]["code"], "repo.not_found");
+}

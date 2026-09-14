@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::auth_types::is_reserved_username;
+use crate::org_types::{CollaboratorPermission, OwnerType};
 
 /// Repo visibility. Serialized lowercase: `public` | `private`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -47,6 +48,9 @@ pub struct CreateRepoRequest {
     /// Gitignore catalog id under `assets/gitignore/` (omit / null / `"none"` = none).
     #[serde(default)]
     pub gitignore_id: Option<String>,
+    /// Optional owner slug (username or org). Omit → session user (A5 / D-ORG-01).
+    #[serde(default)]
+    pub owner: Option<String>,
 }
 
 /// Public create-form defaults + catalog metadata (D-02–D-04, D-08).
@@ -76,18 +80,33 @@ pub struct RepoTemplateOption {
 pub struct RepoPublic {
     pub id: String,
     pub owner_id: String,
+    /// Polymorphic owner: `user` | `org` (D-ORG-01).
+    pub owner_type: OwnerType,
+    /// Public slug label (username or org slug).
     pub owner_username: String,
     pub name: String,
     pub description: String,
     pub visibility: RepoVisibility,
     pub default_branch: String,
     pub updated_at: String,
+    /// Caller has Admin capability (D-ORG-05 / settings UI).
+    #[serde(default)]
+    pub can_admin: bool,
+    /// Caller has Write capability (D-ORG-05).
+    #[serde(default)]
+    pub can_write: bool,
 }
 
 /// `repo.listMine` — caller's non-deleted repos, recently updated first (GIT-01 / D-13).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoListMineResponse {
     pub repos: Vec<RepoPublic>,
+}
+
+/// `repo.listByOwner` — repos under a user/org slug the caller can read (D-ORG-06 overview).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoListByOwnerRequest {
+    pub owner: String,
 }
 
 /// `repo.get` / `repo.refs` input — owner + name (GIT-05).
@@ -339,6 +358,47 @@ pub struct RepoSoftDeleteRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteResponse {
     pub name: String,
+}
+
+/// Public collaborator row — no email (ORG-03 / D-ORG-02c).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorPublic {
+    pub user_id: String,
+    pub username: String,
+    pub permission: CollaboratorPermission,
+    pub created_at: String,
+}
+
+/// `repo.collaborators.list` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsListResponse {
+    pub collaborators: Vec<RepoCollaboratorPublic>,
+}
+
+/// `repo.collaborators.add` — existing instance user by username.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsAddRequest {
+    pub owner: String,
+    pub name: String,
+    pub username: String,
+    pub permission: CollaboratorPermission,
+}
+
+/// `repo.collaborators.update`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsUpdateRequest {
+    pub owner: String,
+    pub name: String,
+    pub user_id: String,
+    pub permission: CollaboratorPermission,
+}
+
+/// `repo.collaborators.remove`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsRemoveRequest {
+    pub owner: String,
+    pub name: String,
+    pub user_id: String,
 }
 
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;

@@ -50,7 +50,7 @@ OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and
 | Abstraction | Role | Location |
 | --- | --- | --- |
 | `AppState` | Shared Axum state: DB, swappable email sender, sessions, pending auth, uploads dir, `GitBackend`, repos dir | `crates/octanest-api/src/app.rs` |
-| `RpcCtx` / `dispatch` | Session-aware RPC context and procedure router (`system.*`, `auth.*`, `user.*`, `repo.*`, `admin.*`) | `crates/octanest-api/src/rpc.rs` |
+| `RpcCtx` / `dispatch` | Session-aware RPC context and procedure router (`system.*`, `auth.*`, `user.*`, `org.*`, `repo.*`, `pat.*`, `admin.*`) | `crates/octanest-api/src/rpc.rs` |
 | `SessionService` | Opaque HttpOnly cookie; CSPRNG token in cookie, SHA-256 hash in DB; idle 24h / remember-me 30d | `crates/octanest-api/src/auth/session.rs` |
 | `EmailSender` | Trait + adapters: log sink, SMTP (`OCTANEST_SMTP_URL`), Resend (`OCTANEST_RESEND_API_KEY`) | `crates/octanest-api/src/email/` |
 | `GitBackend` | Trait seam for all forge git ops (init, tree, blob, refs, history, branch, archive, gc) | `crates/octanest-git/src/backend.rs` |
@@ -70,14 +70,28 @@ Phase 7 ships a self-hosted forge browse/create surface behind a deep **`GitBack
 | **Current adapter** | **`CliGitBackend`** — invokes the system `git` binary (≥ **2.5.0**). API **fails boot** if `git` is missing or below that floor (see [CONFIGURATION.md](CONFIGURATION.md)). |
 | **Future adapter** | **`GixGitBackend`** (gitoxide) is **documented, not shipped**. Implement the same `GitBackend` trait when create / browse / branch / archive / gc coverage reaches parity. Do **not** call `gix` from API handlers or treat gitoxide as the Phase 7 primary backend. |
 | **On-disk layout** | Bare repos at `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (default root `var/repos`). |
-| **ACL stub** | Private repos are **owner-only** until org collaborators (later phase). Missing repos and unauthorized private reads return identical `repo.not_found` (anti-enumeration). |
-| **RPC vs HTTP** | Metadata and mutations use JSON RPC (`repo.create`, `repo.tree`, `repo.blob`, `repo.commits`, branch/settings, …). Large binary payloads use HTTP GET: `/api/repos/{owner}/{repo}/raw/{ref}/…` and `/api/repos/{owner}/{repo}/archive/{ref}.zip` / `.tar.gz` — same ACL resolve as RPC. |
+| **Owners** | Polymorphic `repositories.owner_type` (`user` \| `org`) + `owner_id`. Path `/{owner}/{repo}` resolves **user slug then org slug** in a shared namespace (same reserved-username rules). |
+| **Capability ACL** | Central evaluator in `crates/octanest-api/src/repo/acl.rs` returns effective `Capability` (`Read` \| `Write` \| `Admin`). Highest-wins coalesce: personal owner / org Owner|Admin, org `member_base_permission` for Members, per-repo collaborator grants, public→Read. Collaborator is **per-repo only** — never an org membership role. |
+| **Anti-enumeration** | Missing repos and unauthorized private **web/RPC** reads return identical `repo.not_found`. Smart HTTP maps private denials to **401 Basic** (not soft 404). |
+| **RPC vs HTTP** | Metadata and mutations use JSON RPC (`repo.create`, `repo.tree`, `repo.blob`, `repo.commits`, branch/settings, collaborators, …). Large binary payloads use HTTP GET: `/api/repos/{owner}/{repo}/raw/{ref}/…` and `/api/repos/{owner}/{repo}/archive/{ref}.zip` / `.tar.gz` — same ACL resolve as RPC. |
 
 API handlers depend on `Arc<dyn GitBackend>` (or the concrete `CliGitBackend` held on `AppState`), so swapping adapters later is a crate-local change, not a rewrite of `repo/*` routes.
 
+### Organizations & permissions
+
+Phase 10 ships orgs + ACL (ORG-01…04) on migration `0010_orgs_acl`:
+
+| Concern | Contract |
+| --- | --- |
+| **Tables** | `organizations`, `organization_members` (Owner/Admin/Member), `organization_invites` (token hash at rest), `repository_collaborators`. |
+| **Roles** | Org Owner/Admin manage membership (only Owner grants/changes Owner). Members inherit org `member_base_permission` (`none` \| `read` \| `write`) on org-owned private repos. |
+| **Invites** | Email magic links via existing `EmailSender` + `OCTANEST_PUBLIC_ORIGIN`. Accepting a valid invite can create a verified local user **even when `allow_signup` is closed**. Existing invite-email accounts must sign in (`org.invite_login_required`) — no password steal on accept. |
+| **Lookup** | `user.lookup` username autocomplete (no emails); rate-limited per session. |
+| **Factory reset** | `factory_reset_instance` deletes repositories (cascades collaborators / PAT-repo links) and organizations (cascades members / invites) before wiping auth users. |
+
 ### Git Smart HTTP & PATs
 
-Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface:
+Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface; Phase 10 intersects PAT auth with Capability ACL:
 
 | Concern | Contract |
 | --- | --- |
@@ -85,8 +99,8 @@ Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface:
 | **Auth split (D-01 / D-12)** | **Session cookies never authenticate git.** Smart HTTP uses HTTP Basic with password = PAT. Typed RPC (`/api/rpc`) stays on `octanest_session` only — do **not** send `Authorization: Bearer <pat>`. |
 | **Hash-at-rest** | PAT plaintext is shown **once** at mint; DB stores SHA-256 of the secret (same pattern as sessions). Revoke soft-deletes; list never returns secrets. |
 | **Prefixes** | Classic `octanest_pat_…`, fine-grained `octanest_fg_…` (CSPRNG hex after the prefix). Redacted docs examples only (`octanest_pat_REDACTED`). |
-| **Classic scopes** | Scope catalog includes `repo` (HTTPS fetch + push where ACL allows). |
-| **Fine-grained** | Bound to **owned** repositories selected at mint; insufficient scope → HTTP 403 on Smart HTTP. |
+| **Classic scopes** | Scope catalog includes `repo` (HTTPS fetch + push where **PAT subject ∩ Capability ACL** allows — not `owner_id` equality alone). |
+| **Fine-grained** | `selected` binds repository ids; `all` covers personal-owned plus org Owner/Admin repos. Collaborators use `selected`. Insufficient scope → HTTP 403; ACL denials stay 401 Basic. |
 | **Clone URL** | `https://{OCTANEST_PUBLIC_ORIGIN host}/{owner}/{repo}.git` (D-18 / D-19). |
 | **Edge** | Compose Traefik `PathRegexp` for `.git` → API (priority 110). See [CONFIGURATION.md](CONFIGURATION.md#git-smart-http--personal-access-tokens). |
 

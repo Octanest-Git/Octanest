@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use cookie::Cookie;
 use octanest_core::{
@@ -16,9 +16,12 @@ use crate::auth::profile;
 use crate::auth::session::{ResolvedSession, SessionService};
 use crate::auth::verify_reset;
 use crate::email::EmailSender;
+use crate::org;
 use crate::pat;
 use crate::ssh_keys;
 use crate::repo;
+use crate::user;
+use crate::user::rate_limit::LookupLimiter;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
 
@@ -42,6 +45,8 @@ pub struct RpcCtx {
     pub env_name: String,
     pub session: Option<ResolvedSession>,
     pub set_cookie: Option<CookieChange>,
+    /// Per-session `user.lookup` rate limiter (T-10-03).
+    pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
 }
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
@@ -199,6 +204,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
+        "user.lookup" => match user::lookup(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "admin.auth.get_settings" => match admin::get_settings(ctx).await {
             Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
@@ -215,7 +224,59 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "org.create" => match org::create(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.get" => match org::get(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.listMine" => match org::list_mine(ctx).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.updateSettings" => match org::update_settings(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.list" => match org::members_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.add" => match org::members_add(ctx, req.input).await {
+            Ok(member) => RpcResponse::ok(member),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.updateRole" => match org::members_update_role(ctx, req.input).await {
+            Ok(member) => RpcResponse::ok(member),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.remove" => match org::members_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.create" => match org::invites_create(ctx, req.input).await {
+            Ok(invite) => RpcResponse::ok(invite),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.list" => match org::invites_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.revoke" => match org::invites_revoke(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.accept" => match org::invites_accept(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.listMine" => match repo::list_mine(ctx).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.listByOwner" => match repo::list_by_owner(ctx, req.input).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
@@ -276,6 +337,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "repo.softDelete" => match repo::soft_delete(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.list" => match repo::collaborators_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.add" => match repo::collaborators_add(ctx, req.input).await {
+            Ok(c) => RpcResponse::ok(c),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.update" => match repo::collaborators_update(ctx, req.input).await {
+            Ok(c) => RpcResponse::ok(c),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.remove" => match repo::collaborators_remove(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

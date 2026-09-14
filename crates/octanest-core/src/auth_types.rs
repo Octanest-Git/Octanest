@@ -191,6 +191,26 @@ pub struct UpdateProfileRequest {
     pub default_branch: Option<String>,
 }
 
+/// `user.lookup` autocomplete input (ORG-01 / D-ORG-03). Prefix is matched on username only.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserLookupRequest {
+    pub prefix: String,
+}
+
+/// Public autocomplete hit — never includes email (T-10-03).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserLookupHit {
+    pub username: String,
+    pub display_name: String,
+    pub avatar_url: Option<String>,
+}
+
+/// `user.lookup` response — at most 10 hits.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserLookupResponse {
+    pub users: Vec<UserLookupHit>,
+}
+
 /// Instance auth settings for admin UI — secrets never returned; ENV badges only (D-09, T-04-22).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthSettingsPublic {

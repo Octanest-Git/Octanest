@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 29
+open_count: 38
 waived_count: 0
 fixed_count: 1
-total_count: 30
-last_updated: 2026-09-14T00:11:24.344Z
+total_count: 39
+last_updated: 2026-09-14T04:15:00.000Z
 ---
 
 # Broken Windows Ledger
@@ -45,6 +45,15 @@ last_updated: 2026-09-14T00:11:24.344Z
 | 28 | 09 | stub | apps/web/src/components/repo/clone-box.ssh.integration.test.ts |  | Wave 0 RED CloneBox SSH integration stubs until 09-08 | open |  | 2026-09-13T23:38:48.151Z |  |
 | 29 | 09 | unrun-verify | apps/web/src/routes/settings/ssh-keys.integration.test.ts |  | Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design | open |  | 2026-09-13T23:38:48.269Z |  |
 | 30 | 09 | stub | scripts/smoke-git-ssh.sh |  | RESOLVED: smoke-git-ssh greened in 09-05 | open |  | 2026-09-14T00:11:24.344Z |  |
+| 31 | 10 | stub | apps/web/src/routes/orgs.new.integration.test.ts |  | Fails until /orgs/new lands in 10-13 | open |  | 2026-09-13T23:41:25.124Z |  |
+| 32 | 10 | stub | apps/web/src/routes/new.owner-picker.integration.test.ts |  | Fails until owner Select lands in 10-11 | open |  | 2026-09-13T23:41:25.222Z |  |
+| 33 | 10 | stub | apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts |  | Fails until collaborators-panel + can_admin in 10-11 | open |  | 2026-09-13T23:41:25.316Z |  |
+| 34 | 10 | stub | apps/web/src/routes/$owner.settings.members.integration.test.ts |  | Fails until members/invites UI in 10-10 | open |  | 2026-09-13T23:41:25.415Z |  |
+| 35 | 10 | stub | crates/octanest-db/migrations/postgres/0010_orgs_acl.sql |  | organization_invites/repository_collaborators tables exist without CRUD helpers/RPCs (deferred 10-06/10-07) | open |  | 2026-09-13T23:52:49.281Z |  |
+| 36 | 10 | deviation | crates/octanest-api/src/auth/local.rs |  | Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans | open |  | 2026-09-14T00:06:48.676Z |  |
+| 37 | 10 | skipped-test | crates/octanest-api/tests/repo_collaborators_acl.rs |  | Collaborator CRUD ACL tests ignored until plan 07 | open |  | 2026-09-14T00:36:39.442Z |  |
+| 38 | 10 | skipped-test | crates/octanest-api/tests/repo_private_404.rs | 410 | repo_private_404_collaborator_granted_read ignored until plan 07 | open |  | 2026-09-14T00:36:39.533Z |  |
+| 39 | 10 | skipped-test | crates/octanest-api/tests/git_smart_http.rs | 610 | git_smart_collaborator_classic_pat_push Wave-0 stub fails under test(collab) filter; PAT collaborator push deferred to later plan | open |  | 2026-09-14T01:15:41.319Z |  |
 
 ````json
 [
@@ -66,7 +75,7 @@ last_updated: 2026-09-14T00:11:24.344Z
     "phase": "07",
     "file": "crates/octanest-git/src/version.rs",
     "line": 43,
-    "description": "git_archive_formats_zip_and_tar_gz still Wave 0 assert!(false) — archive plan owns",
+    "description": "git_archive_formats_zip_and_tar_gz still Wave 0 assert!(false) \u2014 archive plan owns",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-12T17:13:59.869Z",
@@ -246,7 +255,7 @@ last_updated: 2026-09-14T00:11:24.344Z
     "phase": "08",
     "file": "crates/octanest-api/src/pat/mod.rs",
     "line": null,
-    "description": "create_fine_grained stub → pat.not_implemented (08-05)",
+    "description": "create_fine_grained stub \u2192 pat.not_implemented (08-05)",
     "status": "fixed",
     "reason": "",
     "recorded_at": "2026-09-13T18:37:52.435Z",
@@ -282,7 +291,7 @@ last_updated: 2026-09-14T00:11:24.344Z
     "phase": "08",
     "file": "scripts/smoke-git-https.sh",
     "line": null,
-    "description": "Live make smoke-git-https not run — Docker engine unavailable on executor host",
+    "description": "Live make smoke-git-https not run \u2014 Docker engine unavailable on executor host",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T19:06:10.084Z",
@@ -390,7 +399,7 @@ last_updated: 2026-09-14T00:11:24.344Z
     "phase": "09",
     "file": "apps/web/src/routes/settings/ssh-keys.integration.test.ts",
     "line": null,
-    "description": "Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design",
+    "description": "Wave 0 vitest intentionally RED (exit 1) until production routes \u2014 verify ran, stubs fail by design",
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T23:38:48.269Z",
@@ -406,6 +415,114 @@ last_updated: 2026-09-14T00:11:24.344Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T00:11:24.344Z",
+    "resolved_at": null
+  },
+  {
+    "id": 31,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/orgs.new.integration.test.ts",
+    "line": null,
+    "description": "Fails until /orgs/new lands in 10-13",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.124Z",
+    "resolved_at": null
+  },
+  {
+    "id": 32,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/new.owner-picker.integration.test.ts",
+    "line": null,
+    "description": "Fails until owner Select lands in 10-11",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.222Z",
+    "resolved_at": null
+  },
+  {
+    "id": 33,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts",
+    "line": null,
+    "description": "Fails until collaborators-panel + can_admin in 10-11",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.316Z",
+    "resolved_at": null
+  },
+  {
+    "id": 34,
+    "kind": "stub",
+    "phase": "10",
+    "file": "apps/web/src/routes/$owner.settings.members.integration.test.ts",
+    "line": null,
+    "description": "Fails until members/invites UI in 10-10",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:41:25.415Z",
+    "resolved_at": null
+  },
+  {
+    "id": 35,
+    "kind": "stub",
+    "phase": "10",
+    "file": "crates/octanest-db/migrations/postgres/0010_orgs_acl.sql",
+    "line": null,
+    "description": "organization_invites/repository_collaborators tables exist without CRUD helpers/RPCs (deferred 10-06/10-07)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-13T23:52:49.281Z",
+    "resolved_at": null
+  },
+  {
+    "id": 36,
+    "kind": "deviation",
+    "phase": "10",
+    "file": "crates/octanest-api/src/auth/local.rs",
+    "line": null,
+    "description": "Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does \u2014 defer to signup/rename plans",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:06:48.676Z",
+    "resolved_at": null
+  },
+  {
+    "id": 37,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/repo_collaborators_acl.rs",
+    "line": null,
+    "description": "Collaborator CRUD ACL tests ignored until plan 07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:36:39.442Z",
+    "resolved_at": null
+  },
+  {
+    "id": 38,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/repo_private_404.rs",
+    "line": 410,
+    "description": "repo_private_404_collaborator_granted_read ignored until plan 07",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:36:39.533Z",
+    "resolved_at": null
+  },
+  {
+    "id": 39,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/git_smart_http.rs",
+    "line": 610,
+    "description": "git_smart_collaborator_classic_pat_push Wave-0 stub fails under test(collab) filter; PAT collaborator push deferred to later plan",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T01:15:41.319Z",
     "resolved_at": null
   }
 ]

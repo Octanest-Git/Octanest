@@ -636,3 +636,121 @@ WHERE id = ?1",
 pub async fn clear_must_change_credentials(pool: &DbPool, id: &str) -> Result<UserRow, String> {
     set_must_change_credentials(pool, id, false).await
 }
+
+/// Lean public fields for username prefix autocomplete (no email — T-10-03).
+#[derive(Debug, Clone)]
+pub struct UserLookupRow {
+    pub username: String,
+    pub display_name: String,
+    pub avatar_path: Option<String>,
+}
+
+/// Escape `\`, `%`, and `_` so they are literal in a SQL `LIKE` pattern.
+fn escape_like_pattern(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    for c in raw.chars() {
+        match c {
+            '\\' | '%' | '_' => {
+                out.push('\\');
+                out.push(c);
+            }
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// Case-insensitive username prefix list (limit capped by caller). Dialect-safe LIKE + ESCAPE.
+pub async fn list_by_username_prefix(
+    pool: &DbPool,
+    prefix: &str,
+    limit: i64,
+) -> Result<Vec<UserLookupRow>, String> {
+    let pattern = format!("{}%", escape_like_pattern(prefix));
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT username, display_name, avatar_path FROM users
+                 WHERE LOWER(username) LIKE LOWER($1) ESCAPE '\\'
+                 ORDER BY username ASC
+                 LIMIT $2",
+            )
+            .bind(&pattern)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list users by username prefix failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(UserLookupRow {
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        avatar_path: row
+                            .try_get("avatar_path")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT username, display_name, avatar_path FROM users
+                 WHERE LOWER(username) LIKE LOWER(?) ESCAPE '\\\\'
+                 ORDER BY username ASC
+                 LIMIT ?",
+            )
+            .bind(&pattern)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list users by username prefix failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(UserLookupRow {
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        avatar_path: row
+                            .try_get("avatar_path")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT username, display_name, avatar_path FROM users
+                 WHERE LOWER(username) LIKE LOWER(?1) ESCAPE '\\'
+                 ORDER BY username ASC
+                 LIMIT ?2",
+            )
+            .bind(&pattern)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list users by username prefix failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(UserLookupRow {
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                        avatar_path: row
+                            .try_get("avatar_path")
+                            .map_err(|e| format!("user lookup row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+    }
+}

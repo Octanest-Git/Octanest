@@ -1,0 +1,40 @@
+- generic [active] [ref=f6e1]:
+  - generic [ref=f6e3]:
+    - banner [ref=f6e4]:
+      - generic [ref=f6e5]:
+        - link "Octanest Octanest" [ref=f6e6] [cursor=pointer]:
+          - /url: /
+          - img "Octanest" [ref=f6e7]
+          - generic [ref=f6e8]: Octanest
+        - textbox "Search users, organizations, repositories, commits, pull requests, and code" [disabled] [ref=f6e10]:
+          - /placeholder: Search users, orgs, repos, code…
+        - generic [ref=f6e11]:
+          - 'button "Theme: System" [ref=f6e13]'
+          - group "Account" [ref=f6e44]:
+            - link "Sign in" [ref=f6e45] [cursor=pointer]:
+              - /url: /login
+    - main [ref=f6e19]:
+      - generic [ref=f6e21]:
+        - img "Octanest" [ref=f6e22]
+        - heading "Sign in" [level=1] [ref=f6e23]
+        - paragraph [ref=f6e24]: Use your email or username to continue.
+        - generic [ref=f6e26]:
+          - generic [ref=f6e27]:
+            - generic [ref=f6e28]: Email or username
+            - textbox "Email or username" [ref=f6e29]
+          - generic [ref=f6e30]:
+            - generic [ref=f6e31]: Password
+            - textbox "Password" [ref=f6e32]
+            - paragraph [ref=f6e33]
+          - generic [ref=f6e35]:
+            - checkbox "Remember me" [ref=f6e36]
+            - checkbox [aria-hidden] [ref=f6e37]
+            - generic [ref=f6e38]: Remember me
+          - button "Sign in" [ref=f6e39]
+    - contentinfo [ref=f6e40]:
+      - generic [ref=f6e41]:
+        - generic [ref=f6e42]: © Octanest
+        - link "Status" [ref=f6e43] [cursor=pointer]:
+          - /url: /status
+  - generic:
+    - region "Notifications"

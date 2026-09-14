@@ -25,6 +25,7 @@ use crate::email::{self, EmailSender};
 use crate::pat::rate_limit::FailedAuthLimiter;
 use crate::routes::{auth_callbacks, avatar, git_smart_http, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
+use crate::user::rate_limit::LookupLimiter;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -40,6 +41,8 @@ pub struct AppState {
     pub pending: PendingAuthStore,
     /// Smart HTTP failed Basic/PAT auth counters (D-26) — per process.
     pub git_auth_limiter: Arc<Mutex<FailedAuthLimiter>>,
+    /// `user.lookup` per-session counters (T-10-03) — per process.
+    pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
     pub env_name: String,
 }
 
@@ -71,6 +74,7 @@ impl AppState {
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
             git_auth_limiter: Arc::new(Mutex::new(FailedAuthLimiter::new())),
+            lookup_limiter: Arc::new(Mutex::new(LookupLimiter::new())),
             env_name,
         }
     }
@@ -190,6 +194,7 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         env_name: state.env_name.clone(),
         session,
         set_cookie: None,
+        lookup_limiter: state.lookup_limiter.clone(),
     }
 }
 
@@ -241,6 +246,9 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
             StatusCode::FORBIDDEN
         }
         RpcResponse::Err { error, .. } if error.code == "auth.email_unverified" => {
+            StatusCode::FORBIDDEN
+        }
+        RpcResponse::Err { error, .. } if error.code == "repo.create_forbidden" => {
             StatusCode::FORBIDDEN
         }
         RpcResponse::Err { error, .. } if error.code == "repo.not_found" => StatusCode::NOT_FOUND,

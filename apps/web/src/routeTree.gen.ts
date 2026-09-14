@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OwnerRouteImport } from './routes/$owner'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NewRouteImport } from './routes/new'
@@ -19,7 +20,10 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
+import { Route as OwnerSettingsRouteImport } from './routes/$owner.settings'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
+import { Route as InvitesTokenRouteImport } from './routes/invites.$token'
+import { Route as OrgsNewRouteImport } from './routes/orgs.new'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsSshKeysRouteImport } from './routes/settings/ssh-keys'
 import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
@@ -29,6 +33,7 @@ import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
+import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner.settings.members'
 import { Route as SettingsTokensNewRouteImport } from './routes/settings/tokens.new'
 import { Route as OwnerRepoBlameSplatRouteImport } from './routes/$owner.$repo.blame.$'
 import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.blob.$'
@@ -41,6 +46,11 @@ import { Route as SettingsTokensNewFineGrainedRouteImport } from './routes/setti
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/$owner',
+  path: '/$owner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -84,13 +94,28 @@ const VerifyRoute = VerifyRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerRepoRoute = OwnerRepoRouteImport.update({
-  id: '/$owner/$repo',
-  path: '/$owner/$repo',
-  getParentRoute: () => rootRouteImport,
+  id: '/$repo',
+  path: '/$repo',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerSettingsRoute = OwnerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OwnerRoute,
 } as any)
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitesTokenRoute = InvitesTokenRouteImport.update({
+  id: '/invites/$token',
+  path: '/invites/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgsNewRoute = OrgsNewRouteImport.update({
+  id: '/orgs/new',
+  path: '/orgs/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
@@ -138,6 +163,11 @@ const OwnerRepoTagsRoute = OwnerRepoTagsRouteImport.update({
   path: '/tags',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => OwnerSettingsRoute,
+} as any)
 const SettingsTokensNewRoute = SettingsTokensNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -182,6 +212,7 @@ const SettingsTokensNewFineGrainedRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$owner': typeof OwnerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
@@ -191,7 +222,10 @@ export interface FileRoutesByFullPath {
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
+  '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -200,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -212,6 +247,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$owner': typeof OwnerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
@@ -219,7 +255,10 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
+  '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -228,6 +267,7 @@ export interface FileRoutesByTo {
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -241,6 +281,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$owner': typeof OwnerRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/new': typeof NewRoute
@@ -250,7 +291,10 @@ export interface FileRoutesById {
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
+  '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
+  '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -259,6 +303,7 @@ export interface FileRoutesById {
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
@@ -273,6 +318,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$owner'
     | '/dashboard'
     | '/login'
     | '/new'
@@ -282,7 +328,10 @@ export interface FileRouteTypes {
     | '/status'
     | '/verify'
     | '/$owner/$repo'
+    | '/$owner/settings'
     | '/admin/auth'
+    | '/invites/$token'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/ssh-keys'
     | '/settings/tokens'
@@ -291,6 +340,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/$owner/settings/members'
     | '/settings/tokens/new'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
@@ -303,6 +353,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$owner'
     | '/dashboard'
     | '/login'
     | '/new'
@@ -310,7 +361,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/status'
     | '/verify'
+    | '/$owner/settings'
     | '/admin/auth'
+    | '/invites/$token'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/ssh-keys'
     | '/settings/tokens'
@@ -319,6 +373,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/$owner/settings/members'
     | '/settings/tokens/new'
     | '/$owner/$repo'
     | '/$owner/$repo/blame/$'
@@ -331,6 +386,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$owner'
     | '/dashboard'
     | '/login'
     | '/new'
@@ -340,7 +396,10 @@ export interface FileRouteTypes {
     | '/status'
     | '/verify'
     | '/$owner/$repo'
+    | '/$owner/settings'
     | '/admin/auth'
+    | '/invites/$token'
+    | '/orgs/new'
     | '/settings/profile'
     | '/settings/ssh-keys'
     | '/settings/tokens'
@@ -349,6 +408,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
+    | '/$owner/settings/members'
     | '/settings/tokens/new'
     | '/$owner/$repo/'
     | '/$owner/$repo/blame/$'
@@ -362,6 +422,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OwnerRoute: typeof OwnerRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   NewRoute: typeof NewRoute
@@ -370,8 +431,9 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
   VerifyRoute: typeof VerifyRoute
-  OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
+  InvitesTokenRoute: typeof InvitesTokenRoute
+  OrgsNewRoute: typeof OrgsNewRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsSshKeysRoute: typeof SettingsSshKeysRoute
   SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
@@ -384,6 +446,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$owner': {
+      id: '/$owner'
+      path: '/$owner'
+      fullPath: '/$owner'
+      preLoaderRoute: typeof OwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -444,16 +513,37 @@ declare module '@octanejs/tanstack-router' {
     }
     '/$owner/$repo': {
       id: '/$owner/$repo'
-      path: '/$owner/$repo'
+      path: '/$repo'
       fullPath: '/$owner/$repo'
       preLoaderRoute: typeof OwnerRepoRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/$owner/settings': {
+      id: '/$owner/settings'
+      path: '/settings'
+      fullPath: '/$owner/settings'
+      preLoaderRoute: typeof OwnerSettingsRouteImport
+      parentRoute: typeof OwnerRoute
     }
     '/admin/auth': {
       id: '/admin/auth'
       path: '/admin/auth'
       fullPath: '/admin/auth'
       preLoaderRoute: typeof AdminAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invites/$token': {
+      id: '/invites/$token'
+      path: '/invites/$token'
+      fullPath: '/invites/$token'
+      preLoaderRoute: typeof InvitesTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orgs/new': {
+      id: '/orgs/new'
+      path: '/orgs/new'
+      fullPath: '/orgs/new'
+      preLoaderRoute: typeof OrgsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/profile': {
@@ -519,6 +609,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoTagsRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/settings/members': {
+      id: '/$owner/settings/members'
+      path: '/members'
+      fullPath: '/$owner/settings/members'
+      preLoaderRoute: typeof OwnerSettingsMembersRouteImport
+      parentRoute: typeof OwnerSettingsRoute
+    }
     '/settings/tokens/new': {
       id: '/settings/tokens/new'
       path: '/new'
@@ -578,18 +675,6 @@ declare module '@octanejs/tanstack-router' {
   }
 }
 
-interface SetupRouteChildren {
-  SetupCredentialsRoute: typeof SetupCredentialsRoute
-  SetupIndexRoute: typeof SetupIndexRoute
-}
-
-const SetupRouteChildren: SetupRouteChildren = {
-  SetupCredentialsRoute: SetupCredentialsRoute,
-  SetupIndexRoute: SetupIndexRoute,
-}
-
-const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
-
 interface OwnerRepoRouteChildren {
   OwnerRepoBranchesRoute: typeof OwnerRepoBranchesRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
@@ -620,6 +705,42 @@ const OwnerRepoRouteWithChildren = OwnerRepoRoute._addFileChildren(
   OwnerRepoRouteChildren,
 )
 
+interface OwnerSettingsRouteChildren {
+  OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
+}
+
+const OwnerSettingsRouteChildren: OwnerSettingsRouteChildren = {
+  OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
+}
+
+const OwnerSettingsRouteWithChildren = OwnerSettingsRoute._addFileChildren(
+  OwnerSettingsRouteChildren,
+)
+
+interface OwnerRouteChildren {
+  OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
+  OwnerSettingsRoute: typeof OwnerSettingsRouteWithChildren
+}
+
+const OwnerRouteChildren: OwnerRouteChildren = {
+  OwnerRepoRoute: OwnerRepoRouteWithChildren,
+  OwnerSettingsRoute: OwnerSettingsRouteWithChildren,
+}
+
+const OwnerRouteWithChildren = OwnerRoute._addFileChildren(OwnerRouteChildren)
+
+interface SetupRouteChildren {
+  SetupCredentialsRoute: typeof SetupCredentialsRoute
+  SetupIndexRoute: typeof SetupIndexRoute
+}
+
+const SetupRouteChildren: SetupRouteChildren = {
+  SetupCredentialsRoute: SetupCredentialsRoute,
+  SetupIndexRoute: SetupIndexRoute,
+}
+
+const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
+
 interface SettingsTokensNewRouteChildren {
   SettingsTokensNewFineGrainedRoute: typeof SettingsTokensNewFineGrainedRoute
 }
@@ -645,6 +766,7 @@ const SettingsTokensRouteWithChildren = SettingsTokensRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OwnerRoute: OwnerRouteWithChildren,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   NewRoute: NewRoute,
@@ -653,8 +775,9 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
   VerifyRoute: VerifyRoute,
-  OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
+  InvitesTokenRoute: InvitesTokenRoute,
+  OrgsNewRoute: OrgsNewRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsSshKeysRoute: SettingsSshKeysRoute,
   SettingsTokensRoute: SettingsTokensRouteWithChildren,

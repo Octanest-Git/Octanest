@@ -21,8 +21,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
 - [x] **Phase 7: Git Repos & Browse** - system git CLI filesystem repos, create, browse, branches, archives (completed 2026-09-13)
 - [x] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens (completed 2026-09-13)
-- [ ] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
-- [ ] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement
+- [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
+- [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
 - [ ] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
@@ -402,52 +402,52 @@ Plans:
   2. Org owner can assign member roles that control repo access; repo owner can set visibility and collaborator permissions
   3. Unauthorized users cannot read private repos or push without permission
 
-**Plans**: 14 plans
+**Plans**: 14/14 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
-- [ ] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
-- [ ] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
+- [x] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
+- [x] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
+- [x] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 10-13-PLAN.md — Tracer org.create RPC + /orgs/new
+- [x] 10-13-PLAN.md — Tracer org.create RPC + /orgs/new
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 10-03-PLAN.md — Polymorphic OwnerRef + repo.create owner slug
+- [x] 10-03-PLAN.md — Polymorphic OwnerRef + repo.create owner slug
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 10-04-PLAN.md — Central Capability ACL + resolve_repo_for_read + can_admin
+- [x] 10-04-PLAN.md — Central Capability ACL + resolve_repo_for_read + can_admin
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 10-05-PLAN.md — Org members/roles + member_base_permission
+- [x] 10-05-PLAN.md — Org members/roles + member_base_permission
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 10-06-PLAN.md — Email invites + closed-signup accept + /invites/$token
+- [x] 10-06-PLAN.md — Email invites + closed-signup accept + /invites/$token
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 10-07-PLAN.md — Repo collaborators CRUD (personal + org) + visibility admin gate
+- [x] 10-07-PLAN.md — Repo collaborators CRUD (personal + org) + visibility admin gate
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 10-08-PLAN.md — Mutate/Smart HTTP/PAT ∩ ACL consumers
-- [ ] 10-09-PLAN.md — user.lookup live username autocomplete
+- [x] 10-08-PLAN.md — Mutate/Smart HTTP/PAT ∩ ACL consumers
+- [x] 10-09-PLAN.md — user.lookup live username autocomplete
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 10-10-PLAN.md — Org overview/settings/members/invites UI
-- [ ] 10-11-PLAN.md — /new owner picker + collaborators settings panel
+- [x] 10-10-PLAN.md — Org overview/settings/members/invites UI
+- [x] 10-11-PLAN.md — /new owner picker + collaborators settings panel
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 10-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
+- [x] 10-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
 
 **UI hint**: yes
 
@@ -635,8 +635,8 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
 | 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
-| 9. Git SSH | 10/10 | In Progress|  |
-| 10. Orgs & Permissions | 0/TBD | Not started | - |
+| 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
+| 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
 | 11. Issues | 0/TBD | Not started | - |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |

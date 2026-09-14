@@ -5,9 +5,13 @@ pub mod auth_settings;
 pub mod dialect;
 pub mod email_tokens;
 pub mod migrate;
+pub mod org_invites;
+pub mod org_members;
+pub mod organizations;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
@@ -16,12 +20,15 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
+pub use org_invites::OrgInviteRow;
+pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
+pub use organizations::OrganizationRow;
 pub use pats::PatRow;
+pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
-
 use dialect::resolve_dialect_from_env as resolve_from_env;
 use pool::DbPool as Pool;
 
@@ -104,12 +111,254 @@ impl Database {
         probe::probe(pool, dialect).await
     }
 
+    // --- organizations ---
+
+    pub async fn insert_organization(
+        &self,
+        id: &str,
+        slug: &str,
+        display_name: &str,
+        member_base_permission: &str,
+    ) -> Result<OrganizationRow, String> {
+        organizations::insert_organization(
+            self.require_pool()?,
+            id,
+            slug,
+            display_name,
+            member_base_permission,
+        )
+        .await
+    }
+
+    pub async fn find_organization_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<OrganizationRow>, String> {
+        organizations::find_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn find_organization_by_slug(
+        &self,
+        slug: &str,
+    ) -> Result<Option<OrganizationRow>, String> {
+        organizations::find_by_slug(self.require_pool()?, slug).await
+    }
+
+    pub async fn insert_org_owner_membership(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::insert_owner_membership(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn insert_org_member(
+        &self,
+        org_id: &str,
+        user_id: &str,
+        role: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::insert_member(self.require_pool()?, org_id, user_id, role).await
+    }
+
+    pub async fn find_org_member(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<Option<OrgMemberRow>, String> {
+        org_members::find_member(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn find_org_member_role(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<Option<String>, String> {
+        org_members::find_member_role(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn find_org_member_base_permission(
+        &self,
+        org_id: &str,
+    ) -> Result<Option<String>, String> {
+        organizations::find_member_base_permission(self.require_pool()?, org_id).await
+    }
+
+    pub async fn update_organization_settings(
+        &self,
+        id: &str,
+        member_base_permission: Option<&str>,
+        display_name: Option<&str>,
+    ) -> Result<OrganizationRow, String> {
+        organizations::update_settings(
+            self.require_pool()?,
+            id,
+            member_base_permission,
+            display_name,
+        )
+        .await
+    }
+
+    pub async fn count_org_owners(&self, org_id: &str) -> Result<i64, String> {
+        org_members::count_owners(self.require_pool()?, org_id).await
+    }
+
+    pub async fn update_org_member_role(
+        &self,
+        org_id: &str,
+        user_id: &str,
+        role: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::update_member_role(self.require_pool()?, org_id, user_id, role).await
+    }
+
+    pub async fn remove_org_member(&self, org_id: &str, user_id: &str) -> Result<(), String> {
+        org_members::remove_member(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn list_org_members(&self, org_id: &str) -> Result<Vec<OrgMemberListRow>, String> {
+        org_members::list_members(self.require_pool()?, org_id).await
+    }
+
+    pub async fn list_orgs_for_user(&self, user_id: &str) -> Result<Vec<OrgMineRow>, String> {
+        org_members::list_orgs_for_user(self.require_pool()?, user_id).await
+    }
+
+    // --- organization invites ---
+
+    pub async fn insert_org_invite(
+        &self,
+        id: &str,
+        org_id: &str,
+        email: &str,
+        role: &str,
+        token_hash: &str,
+        expires_at: &str,
+        invited_by: &str,
+    ) -> Result<OrgInviteRow, String> {
+        org_invites::insert_invite(
+            self.require_pool()?,
+            id,
+            org_id,
+            email,
+            role,
+            token_hash,
+            expires_at,
+            invited_by,
+        )
+        .await
+    }
+
+    pub async fn find_org_invite_by_id(&self, id: &str) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn find_org_invite_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_pending_org_invite_by_org_email(
+        &self,
+        org_id: &str,
+        email: &str,
+    ) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_pending_by_org_email(self.require_pool()?, org_id, email).await
+    }
+
+    pub async fn list_pending_org_invites(
+        &self,
+        org_id: &str,
+    ) -> Result<Vec<OrgInviteRow>, String> {
+        org_invites::list_pending(self.require_pool()?, org_id).await
+    }
+
+    pub async fn revoke_org_invite(&self, id: &str, revoked_at: &str) -> Result<(), String> {
+        org_invites::revoke(self.require_pool()?, id, revoked_at).await
+    }
+
+    pub async fn accept_org_invite(&self, id: &str, accepted_at: &str) -> Result<(), String> {
+        org_invites::mark_accepted(self.require_pool()?, id, accepted_at).await
+    }
+
+    pub async fn count_org_invites_created_by_since(
+        &self,
+        invited_by: &str,
+        since: &str,
+    ) -> Result<i64, String> {
+        org_invites::count_created_by_since(self.require_pool()?, invited_by, since).await
+    }
+
+    pub async fn set_org_invite_expires_at(
+        &self,
+        id: &str,
+        expires_at: &str,
+    ) -> Result<(), String> {
+        org_invites::set_expires_at(self.require_pool()?, id, expires_at).await
+    }
+
+    pub async fn find_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+    ) -> Result<Option<RepoCollaboratorRow>, String> {
+        repo_collaborators::find_collaborator(self.require_pool()?, repo_id, user_id).await
+    }
+
+    pub async fn list_repo_collaborators(
+        &self,
+        repo_id: &str,
+    ) -> Result<Vec<RepoCollaboratorListRow>, String> {
+        repo_collaborators::list_collaborators(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn insert_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+        permission: &str,
+    ) -> Result<RepoCollaboratorRow, String> {
+        repo_collaborators::insert_collaborator(
+            self.require_pool()?,
+            repo_id,
+            user_id,
+            permission,
+        )
+        .await
+    }
+
+    pub async fn update_repo_collaborator_permission(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+        permission: &str,
+    ) -> Result<RepoCollaboratorRow, String> {
+        repo_collaborators::update_collaborator_permission(
+            self.require_pool()?,
+            repo_id,
+            user_id,
+            permission,
+        )
+        .await
+    }
+
+    pub async fn remove_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+    ) -> Result<(), String> {
+        repo_collaborators::remove_collaborator(self.require_pool()?, repo_id, user_id).await
+    }
+
     // --- repositories ---
 
     pub async fn insert_repository(
         &self,
         id: &str,
         owner_id: &str,
+        owner_type: &str,
         name: &str,
         visibility: &str,
         description: &str,
@@ -119,6 +368,7 @@ impl Database {
             self.require_pool()?,
             id,
             owner_id,
+            owner_type,
             name,
             visibility,
             description,
@@ -200,6 +450,15 @@ impl Database {
 
     pub async fn find_user_by_username(&self, username: &str) -> Result<Option<UserRow>, String> {
         users::find_by_username(self.require_pool()?, username).await
+    }
+
+    /// Username prefix autocomplete rows (no email) — ORG-01 / T-10-03.
+    pub async fn list_users_by_username_prefix(
+        &self,
+        prefix: &str,
+        limit: i64,
+    ) -> Result<Vec<users::UserLookupRow>, String> {
+        users::list_by_username_prefix(self.require_pool()?, prefix, limit).await
     }
 
     pub async fn find_user_by_id(&self, id: &str) -> Result<Option<UserRow>, String> {
@@ -556,13 +815,23 @@ impl Database {
         .await
     }
 
-    /// Wipe auth data so the instance returns to empty-setup (`needs_setup`).
-    /// Deletes sessions, identities, email tokens, and users; resets auth settings
-    /// to local/log defaults with signup closed.
+    /// Wipe tenant + auth data so the instance returns to empty-setup (`needs_setup`).
+    /// Deletes repositories (cascades collaborators / PAT-repo links), organizations
+    /// (cascades members / invites), then sessions, identities, email tokens, and
+    /// users; resets auth settings to local/log defaults with signup closed.
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {
             Pool::Postgres(p) => {
+                // Polymorphic repos no longer cascade from users — wipe explicitly (T-10-15).
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
                 sqlx::query("DELETE FROM auth_email_tokens")
                     .execute(p)
                     .await
@@ -596,6 +865,14 @@ impl Database {
                 .map_err(|e| e.to_string())?;
             }
             Pool::MySql(p) => {
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
                 sqlx::query("DELETE FROM auth_email_tokens")
                     .execute(p)
                     .await
@@ -631,6 +908,14 @@ impl Database {
             Pool::Sqlite(p) => {
                 // Ensure FK cascades / order are honored.
                 sqlx::query("PRAGMA foreign_keys = ON")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
                     .execute(p)
                     .await
                     .map_err(|e| e.to_string())?;

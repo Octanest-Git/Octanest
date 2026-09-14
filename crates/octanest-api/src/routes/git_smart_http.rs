@@ -21,7 +21,10 @@ use crate::app::AppState;
 use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
-use crate::repo::{can_read_as_owner, is_private_visibility};
+use crate::repo::{
+    effective_capability, fg_all_covers_repo, is_private_visibility, meets, resolve_owner_slug,
+    Capability, OwnerRef,
+};
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
 const PAT_HINT: &str =
@@ -249,7 +252,7 @@ async fn authenticate_pat(
 
 struct ResolvedRepo {
     row: RepositoryRow,
-    owner_id: String,
+    owner: OwnerRef,
 }
 
 async fn resolve_repo(
@@ -257,17 +260,17 @@ async fn resolve_repo(
     owner: &str,
     name: &str,
 ) -> Result<ResolvedRepo, Response> {
-    let owner_user = match state.db.find_user_by_username(owner).await {
-        Ok(Some(u)) => u,
+    let owner_ref = match resolve_owner_slug(&state.db, owner).await {
+        Ok(Some(r)) => r,
         Ok(None) => return Err(unauthorized_basic()),
         Err(e) => {
-            tracing::error!(error = %e, "find_user_by_username");
+            tracing::error!(error = %e, "resolve_owner_slug");
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
     let row = match state
         .db
-        .find_repository_by_owner_name(&owner_user.id, name)
+        .find_repository_by_owner_name(owner_ref.id(), name)
         .await
     {
         Ok(Some(r)) => r,
@@ -279,27 +282,37 @@ async fn resolve_repo(
     };
     Ok(ResolvedRepo {
         row,
-        owner_id: owner_user.id,
+        owner: owner_ref,
     })
 }
 
 /// Classic `repo` / FG contents+selection checks — insufficient → 403 (D-23).
-fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, receive: bool) -> bool {
+/// ACL capability is checked separately via [`effective_capability`]; this only
+/// validates PAT scope/contents (T-10-13 / D-ORG-05). Classic push no longer
+/// requires `pat.user_id == repositories.owner_id`.
+///
+/// FG All (ASSUME A4): personal-owned + org repos where subject is Owner/Admin.
+async fn pat_allows_operation(
+    state: &AppState,
+    pat: &PatRow,
+    repo: &RepositoryRow,
+    owner: &OwnerRef,
+    receive: bool,
+) -> Result<bool, Response> {
     let kind = match PatKind::parse(&pat.kind) {
         Ok(k) => k,
-        Err(_) => return false,
+        Err(_) => return Ok(false),
     };
     match kind {
         PatKind::Classic => {
             let scopes: Vec<String> =
                 match pat.scopes_json.as_deref().map(serde_json::from_str) {
                     Some(Ok(v)) => v,
-                    Some(Err(_)) | None => return false,
+                    Some(Err(_)) | None => return Ok(false),
                 };
-            scopes
+            Ok(scopes
                 .iter()
-                .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo))
-                && (!receive || pat.user_id == owner_id)
+                .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo)))
         }
         PatKind::FineGrained => {
             let access = match pat
@@ -308,14 +321,21 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
                 .and_then(|s| FgRepoAccess::parse(s).ok())
             {
                 Some(a) => a,
-                None => return false,
+                None => return Ok(false),
             };
             let repo_ok = match access {
-                FgRepoAccess::All => pat.user_id == owner_id,
+                FgRepoAccess::All => match fg_all_covers_repo(&state.db, &pat.user_id, owner).await
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        tracing::error!(error = %e, "fg_all_covers_repo");
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                    }
+                },
                 FgRepoAccess::Selected => pat.repository_ids.iter().any(|id| id == &repo.id),
             };
             if !repo_ok {
-                return false;
+                return Ok(false);
             }
             let contents = match pat
                 .contents_perm
@@ -323,12 +343,12 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
                 .and_then(|s| ContentsPerm::parse(s).ok())
             {
                 Some(c) => c,
-                None => return false,
+                None => return Ok(false),
             };
-            match contents {
+            Ok(match contents {
                 ContentsPerm::Read => !receive,
                 ContentsPerm::Write => true,
-            }
+            })
         }
     }
 }
@@ -416,20 +436,37 @@ async fn authorize_and_cgi(
 
     if let Some(ref auth) = authed {
         let caller_id = auth.owner.id.as_str();
-        // Private + authenticated non-owner → 401 (ASSUME A5).
-        if is_private && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+        let capability = match effective_capability(
+            &state.db,
+            Some(caller_id),
+            &resolved.row,
+            &resolved.owner,
+        )
+        .await
+        {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!(error = %e, "effective_capability");
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
+        };
+        // Private + no Read → 401 (D-21 / T-10-01), not web not_found.
+        if is_private && !meets(capability, Capability::Read) {
             return unauthorized_basic();
         }
-        // Push is owner-only until Phase 10.
-        if receive && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+        // Push needs Write capability (ORG-04 / D-ORG-05).
+        if receive && !meets(capability, Capability::Write) {
             return unauthorized_basic();
         }
         // D-24 / Open Q2: unverified may fetch; push denied with email_unverified.
         if receive && auth.owner.email_verified_at.is_none() {
             return email_unverified_push();
         }
-        if !pat_allows_operation(&auth.pat, &resolved.row, &resolved.owner_id, receive) {
-            return forbidden_insufficient_scope();
+        match pat_allows_operation(state, &auth.pat, &resolved.row, &resolved.owner, receive).await
+        {
+            Ok(true) => {}
+            Ok(false) => return forbidden_insufficient_scope(),
+            Err(r) => return r,
         }
         touch_last_used(state, &auth.pat.id, headers).await;
     }

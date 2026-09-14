@@ -3,14 +3,16 @@
 pub mod rate_limit;
 
 use octanest_core::{
-    ClassicPatScope, CreateClassicPatRequest, CreateFineGrainedPatRequest, CreatePatResponse,
-    FgRepoAccess, PatKind, PatListItem, AppError, CLASSIC_PAT_PREFIX, FINE_GRAINED_PAT_PREFIX,
+    ClassicPatScope, ContentsPerm, CreateClassicPatRequest, CreateFineGrainedPatRequest,
+    CreatePatResponse, FgRepoAccess, PatKind, PatListItem, AppError, CLASSIC_PAT_PREFIX,
+    FINE_GRAINED_PAT_PREFIX,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
 use crate::auth::session::{bytes_to_hex, sha256_hex};
+use crate::repo::{effective_capability, meets, owner_ref_for_repo, Capability};
 use crate::rpc::RpcCtx;
 
 const TOKEN_BYTES: usize = 32;
@@ -181,6 +183,10 @@ pub async fn create_classic(
 }
 
 /// Mint fine-grained PAT: verified session, note, selected|all repos, contents read|write (D-04–D-08 / D-16 / D-24).
+///
+/// FG All (ASSUME A4): covers personal-owned + org Owner/Admin repos at authorize time
+/// (no join rows). FG Selected: each repository_id must be ACL-accessible at the
+/// contents permission requested (Read for contents:read, Write for contents:write).
 pub async fn create_fine_grained(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -199,6 +205,11 @@ pub async fn create_fine_grained(
             "A note (name) is required for personal access tokens",
         ));
     }
+
+    let need = match req.contents {
+        ContentsPerm::Read => Capability::Read,
+        ContentsPerm::Write => Capability::Write,
+    };
 
     let repository_ids = match req.repo_access {
         FgRepoAccess::All => Vec::new(),
@@ -229,13 +240,25 @@ pub async fn create_fine_grained(
                             "one or more repositories are not accessible for this token",
                         )
                     })?;
-                if row.owner_id != user.id {
+                let owner = owner_ref_for_repo(&ctx.db, &row)
+                    .await
+                    .map_err(db_err)?
+                    .ok_or_else(|| {
+                        AppError::new(
+                            "pat.invalid_scope",
+                            "one or more repositories are not accessible for this token",
+                        )
+                    })?;
+                let capability = effective_capability(&ctx.db, Some(&user.id), &row, &owner)
+                    .await
+                    .map_err(db_err)?;
+                if !meets(capability, need) {
                     return Err(AppError::new(
                         "pat.invalid_scope",
                         "one or more repositories are not accessible for this token",
                     ));
                 }
-                // Deduplicate after ownership checks (preserve order) so duplicate
+                // Deduplicate after ACL checks (preserve order) so duplicate
                 // ids cannot fail the composite PK on personal_access_token_repos.
                 if !owned.iter().any(|id| id == &row.id) {
                     owned.push(row.id);
