@@ -404,3 +404,10 @@ async fn factory_reset_wipes_issue_domain_rows() {
         .unwrap()
         .is_none());
 }
+
+/// D-LFS-04 / Wave 0: `database_and_repositories` must wipe `OCTANEST_LFS_DIR`
+/// children while keeping the root directory (greens when 14-08 wires wipe).
+#[tokio::test]
+async fn factory_reset_database_and_repositories_wipes_lfs_dir_children() {
+    // Wave 0 discoverable stub — replace with real wipe assertion in 14-08.
+}
