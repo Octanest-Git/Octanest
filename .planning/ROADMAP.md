@@ -521,12 +521,12 @@ Plans:
   1. Operator can configure LFS storage on the filesystem (volume-backed) for the instance
   2. User can push and fetch Git LFS objects for a repository
 
-**Plans**: 13 plans
+**Plans**: 2/13 plans executed
 
 Plans:
 
-- [ ] 14-00-PLAN.md — Wave 0 Rust/smoke stubs (lfs_batch, store, dialect, factory reset)
-- [ ] 14-01-PLAN.md — Wave 0 Vitest stubs (pointer, Settings, Admin, browser)
+- [x] 14-00-PLAN.md — Wave 0 Rust/smoke stubs (lfs_batch, store, dialect, factory reset)
+- [x] 14-01-PLAN.md — Wave 0 Vitest stubs (pointer, Settings, Admin, browser)
 - [ ] 14-02-PLAN.md — Tracer: Batch + basic transfer into OCTANEST_LFS_DIR
 - [ ] 14-03-PLAN.md — PAT Basic/ACL + Admin per-repo enable
 - [ ] 14-04-PLAN.md — Max object size + quotas + Admin overrides
@@ -701,7 +701,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 11. Issues | 13/13 | In Progress|  |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
-| 14. Git LFS | 0/TBD | Not started | - |
+| 14. Git LFS | 2/13 | In Progress|  |
 | 15. Releases & Transfer | 0/7 | Not started | - |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |

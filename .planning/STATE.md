@@ -3,17 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 11
 current_phase_name: Issues
+current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 11-12-PLAN.md
-last_updated: "2026-09-14T16:50:00.000Z"
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-09-14T17:00:52.160Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: b64317dd97767b03239ab3d5bca6bc4fd9c83cc8
+state_head: 64978b73a57e07c48387c65f1aa95d0ff452771c
 progress:
   total_phases: 22
-  completed_phases: 10
+  completed_phases: 0
   total_plans: 147
-  completed_plans: 115
+  completed_plans: 116
 milestone_name: milestone
 ---
 
@@ -129,6 +130,8 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 11 P12 | 5min | 2 tasks | 7 files |
+| Phase 14 P00 | 12min | 2 tasks | 6 files |
+| Phase 14 P01 | 8min | 2 tasks | 6 files |
 
 # Project State
 
@@ -484,6 +487,7 @@ Recent decisions affecting current work:
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 - [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
 - [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
+- [Phase 11]: Wave 0 LFS stubs use empty passing tests so nextest list filters work without --run-ignored
 
 ### Pending Todos
 
@@ -505,8 +509,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T16:48:03.945Z
-Stopped at: Completed 11-12-PLAN.md
+Last session: 2026-09-14T17:00:52.053Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
