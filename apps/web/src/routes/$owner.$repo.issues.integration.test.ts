@@ -230,7 +230,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 async function loadIssuesListModule(): Promise<Record<string, unknown>> {
-  const rel = "./$owner.$repo.issues";
+  const rel = "./$owner.$repo.issues.index";
   try {
     return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
   } catch (err) {
@@ -266,7 +266,7 @@ function issuesListPage(mod: Record<string, unknown>): unknown {
   const page = mod.IssuesListPage ?? mod.IssuesPage ?? mod.default;
   expect(
     page,
-    "Wave 0: IssuesListPage (or IssuesPage) must be exported from $owner.$repo.issues",
+    "Wave 0: IssuesListPage (or IssuesPage) must be exported from $owner.$repo.issues.index",
   ).toBeTruthy();
   return page;
 }

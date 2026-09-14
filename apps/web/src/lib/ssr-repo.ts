@@ -237,6 +237,14 @@ export const fetchIssueGet = createServerFn({ method: "GET" })
     });
   });
 
+/** SSR: `release.list` with Cookie forward. */
+export const fetchReleaseList = createServerFn({ method: "GET" })
+  .validator(ownerNameValidator)
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.release.list({ owner: data.owner, name: data.name });
+  });
+
 /**
  * SSR: browser-facing origin for clone URLs.
  * Prefer OCTANEST_PUBLIC_ORIGIN; fall back to forwarded Host.

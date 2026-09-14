@@ -24,7 +24,7 @@ describe("repo Releases tab (GIT-14/15 / D-REL-13)", () => {
   it(
     "routes under /{owner}/{repo}/releases discoverable",
     async () => {
-      const list = await import("./$owner.$repo.releases").catch(() => null);
+      const list = await import("./$owner.$repo.releases.index").catch(() => null);
       const create = await import("./$owner.$repo.releases.new").catch(() => null);
       const detail = await import("./$owner.$repo.releases.$tag").catch(() => null);
       expect(
