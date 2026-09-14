@@ -33,6 +33,10 @@ export default defineConfig({
       "/api/repos": { target: apiProxyTarget, changeOrigin: true },
       "/uploads": { target: apiProxyTarget, changeOrigin: true },
       "/health": { target: apiProxyTarget, changeOrigin: true },
+      // Phase 20 package registry (D-PKG-01) — same-host path prefixes → API
+      "/v2": { target: apiProxyTarget, changeOrigin: true },
+      "/npm": { target: apiProxyTarget, changeOrigin: true },
+      "/generic": { target: apiProxyTarget, changeOrigin: true },
     },
   },
 });
