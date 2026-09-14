@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 8
+current_plan: 9
 status: executing
-stopped_at: Completed 10-07-PLAN.md
-last_updated: "2026-09-14T01:16:31.724Z"
+stopped_at: Completed 10-08-PLAN.md
+last_updated: "2026-09-14T01:26:38.122Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: 044e733c1387ad8673b6cd8cb3e8f46822c1b5fa
+state_head: b3c6c3ead2969780a3f0e1022c0dcb4ba42ae031
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 86
+  completed_plans: 87
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 8
+Current Plan: 9
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
@@ -139,6 +139,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P05 | 9min | 2 tasks | 12 files |
 | Phase 10 P06 | 12min | 2 tasks | 12 files |
 | Phase 10 P07 | 12min | 2 tasks | 12 files |
+| Phase 10 P08 | 8min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -316,6 +317,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Existing invite-email account must sign in (org.invite_login_required) rather than password-steal on accept
 - [Phase 10]: Admin gate uses Capability ACL (meets Admin), not personal owner_id equality — required for org-owned repos
 - [Phase 10]: Collaborator is per-repo grant only (D-ORG-04) — never an organization membership role
+- [Phase 10]: Smart HTTP ACL denials stay 401 Basic; PAT scope denials stay 403
+- [Phase 10]: FG All = personal-owned + org Owner/Admin (A4); collaborators use Selected
+- [Phase 10]: Classic PAT push = repo scope ∩ meets(Write), not owner_id equality
 
 ### Pending Todos
 
@@ -337,6 +341,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:16:31.646Z
-Stopped at: Completed 10-07-PLAN.md
+Last session: 2026-09-14T01:26:38.049Z
+Stopped at: Completed 10-08-PLAN.md
 Resume file: None
