@@ -1,0 +1,655 @@
+import {
+  createFileRoute,
+  notFound,
+  redirect,
+  useLoaderData,
+  useParams,
+} from "@octanejs/tanstack-router";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import type {
+  OrgInvitePublic,
+  OrgMemberPublic,
+  OrgPublic,
+  OrgRole,
+} from "@octanest/api-client";
+import { Check, ChevronDown } from "@octanejs/lucide";
+import { useState } from "octane";
+import { AuthErrorBanner } from "@/components/auth-shell";
+import { MemberLookup } from "@/components/org/member-lookup";
+import { OrgSettingsNav } from "@/components/org/org-settings-nav";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  SelectIcon,
+  SelectItem,
+  SelectItemIndicator,
+  SelectItemText,
+  SelectList,
+  SelectPopup,
+  SelectPortal,
+  SelectPositioner,
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { apiClient } from "@/lib/api-client";
+import { fetchOrgGet, fetchOrgListMine } from "@/lib/ssr-org";
+import { fetchSessionMe } from "@/lib/ssr-auth";
+
+export type OrgMembersLoaderData = {
+  org: OrgPublic;
+  canAdmin: boolean;
+};
+
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
+const LAST_OWNER_ERROR =
+  "Cannot demote or remove the last organization owner.";
+const FORBIDDEN = "You need organization admin access to manage members.";
+
+const ROLE_OPTIONS: { value: OrgRole; label: string }[] = [
+  { value: "owner", label: "Owner" },
+  { value: "admin", label: "Admin" },
+  { value: "member", label: "Member" },
+];
+
+function roleLabel(role: OrgRole): string {
+  return ROLE_OPTIONS.find((o) => o.value === role)?.label ?? role;
+}
+
+function membersQueryKey(slug: string) {
+  return ["org", "members", slug] as const;
+}
+
+function invitesQueryKey(slug: string) {
+  return ["org", "invites", slug] as const;
+}
+
+export const Route = createFileRoute("/$owner/settings/members")({
+  component: OrgMembersPage,
+  head: ({ loaderData, params }) => {
+    const data = loaderData as OrgMembersLoaderData | undefined;
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const name = data?.org?.display_name || data?.org?.slug || owner;
+    return { meta: [{ title: `Members · ${name}` }] };
+  },
+  beforeLoad: async ({ params }) => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    try {
+      const me = await fetchSessionMe();
+      if (!me.ok) {
+        throw redirect({
+          href: `/login?returnTo=/${owner}/settings/members`,
+        });
+      }
+    } catch (e) {
+      if (e && typeof e === "object" && "href" in e) throw e;
+      throw redirect({
+        href: `/login?returnTo=/${owner}/settings/members`,
+      });
+    }
+  },
+  loader: async ({ params }): Promise<OrgMembersLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const got = await fetchOrgGet({ data: { slug: owner } });
+    if (!got.ok) throw notFound();
+
+    let canAdmin = false;
+    const mine = await fetchOrgListMine();
+    if (mine.ok) {
+      const entry = mine.data.orgs.find((o) => o.slug === got.data.slug);
+      canAdmin = entry?.role === "owner" || entry?.role === "admin";
+    }
+    if (!canAdmin) {
+      throw redirect({ href: `/${got.data.slug}` });
+    }
+    return { org: got.data, canAdmin };
+  },
+});
+
+function RoleSelect({
+  id,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value: OrgRole;
+  onChange: (role: OrgRole) => void;
+  disabled?: boolean;
+}) @{
+  <SelectRoot
+    value={value}
+    onValueChange={(next) => {
+      if (typeof next === "string") onChange(next as OrgRole);
+    }}
+  >
+    <SelectTrigger
+      id={id}
+      className="min-w-[8rem]"
+      aria-label="Role"
+      disabled={disabled}
+    >
+      <SelectValue>{roleLabel(value) as string}</SelectValue>
+      <SelectIcon>
+        <ChevronDown aria-hidden size={16} />
+      </SelectIcon>
+    </SelectTrigger>
+    <SelectPortal>
+      <SelectPositioner sideOffset={4}>
+        <SelectPopup>
+          <SelectList>
+            @for (const opt of ROLE_OPTIONS; key opt.value) {
+              <SelectItem value={opt.value}>
+                <SelectItemIndicator>
+                  <Check aria-hidden size={16} className="text-primary" />
+                </SelectItemIndicator>
+                <SelectItemText>{opt.label as string}</SelectItemText>
+              </SelectItem>
+            }
+          </SelectList>
+        </SelectPopup>
+      </SelectPositioner>
+    </SelectPortal>
+  </SelectRoot>
+}
+
+/** Exported for members Wave 0 tests (ORG-01 / D-ORG-03). */
+export function OrgMembersPage() @{
+  const params = useParams({ from: "/$owner/settings/members" }) as {
+    owner?: string;
+  };
+  const data = useLoaderData({ from: "/$owner/settings/members" }) as
+    | OrgMembersLoaderData
+    | undefined;
+  const queryClient = useQueryClient();
+
+  const org = data?.org;
+  const slug = org?.slug ?? params.owner ?? "";
+  const canAdmin = data?.canAdmin === true;
+
+  const membersQ = useQuery({
+    queryKey: membersQueryKey(slug),
+    enabled: !!slug,
+    queryFn: async () => {
+      const res = await apiClient.org.members.list({ slug });
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  });
+
+  const invitesQ = useQuery({
+    queryKey: invitesQueryKey(slug),
+    enabled: !!slug && canAdmin,
+    queryFn: async () => {
+      const res = await apiClient.org.invites.list({ slug });
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  });
+
+  const members: OrgMemberPublic[] = membersQ.data?.members ?? [];
+  const invites: OrgInvitePublic[] = invitesQ.data?.invites ?? [];
+
+  const [addUsername, setAddUsername] = useState("");
+  const [addRole, setAddRole] = useState<OrgRole>("member");
+  const [addError, setAddError] = useState("");
+  const [addPending, setAddPending] = useState(false);
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<OrgRole>("member");
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+  const [invitePending, setInvitePending] = useState(false);
+
+  const [rowError, setRowError] = useState("");
+  const [revokeTarget, setRevokeTarget] = useState<OrgInvitePublic | null>(
+    null,
+  );
+  const [revokePending, setRevokePending] = useState(false);
+  const [revokeError, setRevokeError] = useState("");
+
+  async function refreshMembers() {
+    await queryClient.invalidateQueries({ queryKey: membersQueryKey(slug) });
+  }
+
+  async function refreshInvites() {
+    await queryClient.invalidateQueries({ queryKey: invitesQueryKey(slug) });
+  }
+
+  async function addMember() {
+    setAddError("");
+    const username = addUsername.trim();
+    if (!username) {
+      setAddError("Username is required.");
+      return;
+    }
+    setAddPending(true);
+    try {
+      const res = await apiClient.org.members.add({
+        slug,
+        username,
+        role: addRole,
+      });
+      if (!res.ok) {
+        if (res.error.code === "org.last_owner") {
+          setAddError(LAST_OWNER_ERROR);
+        } else if (res.error.code === "org.forbidden") {
+          setAddError(FORBIDDEN);
+        } else {
+          setAddError(res.error.message || NETWORK_ERROR);
+        }
+        setAddPending(false);
+        return;
+      }
+      setAddUsername("");
+      setAddRole("member");
+      setAddPending(false);
+      await refreshMembers();
+    } catch {
+      setAddError(NETWORK_ERROR);
+      setAddPending(false);
+    }
+  }
+
+  async function updateRole(member: OrgMemberPublic, role: OrgRole) {
+    if (role === member.role) return;
+    setRowError("");
+    try {
+      const res = await apiClient.org.members.updateRole({
+        slug,
+        user_id: member.user_id,
+        role,
+      });
+      if (!res.ok) {
+        if (res.error.code === "org.last_owner") {
+          setRowError(LAST_OWNER_ERROR);
+        } else {
+          setRowError(res.error.message || NETWORK_ERROR);
+        }
+        return;
+      }
+      await refreshMembers();
+    } catch {
+      setRowError(NETWORK_ERROR);
+    }
+  }
+
+  async function removeMember(member: OrgMemberPublic) {
+    setRowError("");
+    try {
+      const res = await apiClient.org.members.remove({
+        slug,
+        user_id: member.user_id,
+      });
+      if (!res.ok) {
+        if (res.error.code === "org.last_owner") {
+          setRowError(LAST_OWNER_ERROR);
+        } else {
+          setRowError(res.error.message || NETWORK_ERROR);
+        }
+        return;
+      }
+      await refreshMembers();
+    } catch {
+      setRowError(NETWORK_ERROR);
+    }
+  }
+
+  async function createInvite() {
+    setInviteError("");
+    setInviteSuccess("");
+    const email = inviteEmail.trim();
+    if (!email) {
+      setInviteError("Email is required.");
+      return;
+    }
+    setInvitePending(true);
+    try {
+      const res = await apiClient.org.invites.create({
+        slug,
+        email,
+        role: inviteRole,
+      });
+      if (!res.ok) {
+        if (res.error.code === "org.forbidden") {
+          setInviteError(FORBIDDEN);
+        } else {
+          // Soft success path may still return ok; other errors surface message.
+          setInviteError(res.error.message || NETWORK_ERROR);
+        }
+        setInvitePending(false);
+        return;
+      }
+      setInviteEmail("");
+      setInviteRole("member");
+      setInviteSuccess("Invitation sent.");
+      setInvitePending(false);
+      await refreshInvites();
+    } catch {
+      setInviteError(NETWORK_ERROR);
+      setInvitePending(false);
+    }
+  }
+
+  async function confirmRevoke() {
+    if (!revokeTarget || revokePending) return;
+    setRevokeError("");
+    setRevokePending(true);
+    try {
+      const res = await apiClient.org.invites.revoke({
+        slug,
+        invite_id: revokeTarget.id,
+      });
+      if (!res.ok) {
+        setRevokeError(res.error.message || NETWORK_ERROR);
+        setRevokePending(false);
+        return;
+      }
+      setRevokePending(false);
+      setRevokeTarget(null);
+      await refreshInvites();
+    } catch {
+      setRevokeError(NETWORK_ERROR);
+      setRevokePending(false);
+    }
+  }
+
+  @if (!org) {
+    <div className="mx-auto max-w-3xl px-4 py-16">
+      <p className="text-[16px] text-muted-foreground">Loading…</p>
+    </div>
+  } @else {
+    <div className="mx-auto max-w-3xl px-4 py-12">
+      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
+        Members
+      </h1>
+      <p className="mt-1 text-[14px] text-muted-foreground">
+        {"@" + (slug as string)}
+      </p>
+
+      <div className="mt-6">
+        <OrgSettingsNav slug={slug} active="members" />
+      </div>
+
+      @if (rowError) {
+        <div className="mb-4">
+          <AuthErrorBanner message={rowError} />
+        </div>
+      }
+
+      <section aria-labelledby="members-table-heading" className="mb-12">
+        <h2
+          id="members-table-heading"
+          className="text-[18px] font-semibold text-foreground"
+        >
+          Organization members
+        </h2>
+        @if (membersQ.isPending) {
+          <p className="mt-4 text-[14px] text-muted-foreground">Loading members…</p>
+        } @else {
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[28rem] border-collapse text-left text-[14px]">
+              <thead>
+                <tr className="border-b border-border text-muted-foreground">
+                  <th className="py-2 pr-4 font-medium">User</th>
+                  <th className="py-2 pr-4 font-medium">Role</th>
+                  <th className="py-2 font-medium">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (const m of members; key m.user_id) {
+                  <tr className="border-b border-border">
+                    <td className="py-3 pr-4 font-medium text-foreground">
+                      {"@" + (m.username as string)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      @if (canAdmin) {
+                        <RoleSelect
+                          id={`role-${m.user_id}`}
+                          value={m.role}
+                          onChange={(role) => void updateRole(m, role)}
+                        />
+                      } @else {
+                        <span>{roleLabel(m.role) as string}</span>
+                      }
+                    </td>
+                    <td className="py-3">
+                      @if (canAdmin) {
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-11 text-destructive"
+                          onClick={() => void removeMember(m)}
+                        >
+                          Remove
+                        </Button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      @if (canAdmin) {
+        <div>
+        <section aria-labelledby="add-member-heading" className="mb-12">
+          <h2
+            id="add-member-heading"
+            className="text-[18px] font-semibold text-foreground"
+          >
+            Add member
+          </h2>
+          <p className="mt-1 text-[14px] text-muted-foreground">
+            Add an existing user by username. Works even when public sign-up is closed.
+          </p>
+          <form
+            className="mt-4 flex flex-col gap-4"
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void addMember();
+            }}
+          >
+            @if (addError) {
+              <AuthErrorBanner message={addError} />
+            }
+            <MemberLookup
+              value={addUsername}
+              onValueChange={setAddUsername}
+            />
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="add-member-role">Role</Label>
+              <RoleSelect
+                id="add-member-role"
+                value={addRole}
+                onChange={setAddRole}
+              />
+            </div>
+            <Button
+              type="button"
+              className="h-11 w-fit"
+              disabled={addPending}
+              onClick={() => void addMember()}
+            >
+              @if (addPending) {
+                <>Adding…</>
+              } @else {
+                <>Add member</>
+              }
+            </Button>
+          </form>
+        </section>
+
+        <section aria-labelledby="invites-heading">
+          <h2
+            id="invites-heading"
+            className="text-[18px] font-semibold text-foreground"
+          >
+            Email invitations
+          </h2>
+          <p className="mt-1 text-[14px] text-muted-foreground">
+            Invite someone by email. They can join even when public sign-up is closed.
+          </p>
+
+          <form
+            className="mt-4 flex flex-col gap-4"
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void createInvite();
+            }}
+          >
+            @if (inviteError) {
+              <AuthErrorBanner message={inviteError} />
+            }
+            @if (inviteSuccess) {
+              <p role="status" className="text-[14px] text-foreground">
+                {inviteSuccess as string}
+              </p>
+            }
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invite-email">Email</Label>
+              <Input
+                id="invite-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={inviteEmail}
+                onInput={(ev) =>
+                  setInviteEmail((ev.currentTarget as HTMLInputElement).value)
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invite-role">Role</Label>
+              <RoleSelect
+                id="invite-role"
+                value={inviteRole}
+                onChange={setInviteRole}
+              />
+            </div>
+            <Button
+              type="button"
+              className="h-11 w-fit"
+              disabled={invitePending}
+              onClick={() => void createInvite()}
+            >
+              @if (invitePending) {
+                <>Sending…</>
+              } @else {
+                <>Send invitation</>
+              }
+            </Button>
+          </form>
+
+          <h3 className="mt-8 text-[16px] font-semibold text-foreground">
+            Pending invitations
+          </h3>
+          @if (invitesQ.isPending) {
+            <p className="mt-2 text-[14px] text-muted-foreground">Loading…</p>
+          } @else {
+            @if (invites.length === 0) {
+              <p className="mt-2 text-[14px] text-muted-foreground">
+                No pending invitations.
+              </p>
+            } @else {
+              <ul className="mt-3 divide-y divide-border border-y border-border">
+                @for (const inv of invites; key inv.id) {
+                  <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+                    <div>
+                      <p className="text-[14px] font-medium text-foreground">
+                        {inv.email as string}
+                      </p>
+                      <p className="text-[13px] text-muted-foreground">
+                        {(roleLabel(inv.role) +
+                          " · expires " +
+                          inv.expires_at) as string}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11"
+                      onClick={() => {
+                        setRevokeError("");
+                        setRevokeTarget(inv);
+                      }}
+                    >
+                      Revoke
+                    </Button>
+                  </li>
+                }
+              </ul>
+            }
+          }
+        </section>
+        </div>
+      }
+
+      <AlertDialog
+        open={revokeTarget != null}
+        onOpenChange={(next) => {
+          if (revokePending) return;
+          if (!next) {
+            setRevokeError("");
+            setRevokeTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Revoke invite?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(revokeTarget
+                ? `Revokes the invitation for ${revokeTarget.email}. They will no longer be able to join with this link.`
+                : "Revoke this invitation?") as string}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          @if (revokeError) {
+            <p role="alert" className="text-[14px] text-destructive">
+              {revokeError as string}
+            </p>
+          }
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={revokePending}>
+              Keep invite
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={revokePending}
+              onClick={() => void confirmRevoke()}
+            >
+              @if (revokePending) {
+                <>Revoking…</>
+              } @else {
+                <>Revoke invite</>
+              }
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  }
+}
+
+/** Alias for Wave 0 import flexibility. */
+export const MembersPage = OrgMembersPage;
