@@ -50,6 +50,8 @@ services:
       RUST_LOG: ${RUST_LOG:-info}
       # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
       OCTANEST_REPOS_DIR: /var/repos
+      # Git LFS object store (D-LFS-01 / GIT-13) — absolute like REPOS_DIR.
+      OCTANEST_LFS_DIR: /var/lfs
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
@@ -65,6 +67,8 @@ services:
       - ./var/uploads:/var/uploads
       # Bare repos (D-30 / D-38)
       - ./var/repos:/var/repos
+      # Git LFS OID store (D-LFS-01) — instance-wide content-addressed objects
+      - ./var/lfs:/var/lfs
       # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)
       - ssh_host_keys:/var/ssh
     depends_on:
