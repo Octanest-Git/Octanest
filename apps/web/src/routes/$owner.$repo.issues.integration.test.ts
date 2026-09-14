@@ -1,6 +1,7 @@
 import { createElement } from "octane";
 import {
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -341,6 +342,101 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
   );
 
   it(
+    "author/label/assignee/text filters and Apply (D-ISS-17)",
+    async () => {
+      labelListForRepoMock.mockResolvedValue({
+        ok: true,
+        data: {
+          labels: [
+            {
+              id: "lab-bug",
+              name: "bug",
+              color: "d73a4a",
+              description: "",
+              scope: "repo",
+            },
+          ],
+        },
+      });
+      const mod = await loadIssuesListModule();
+      renderWithQueryClient(issuesListPage(mod));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("form", { name: /Issue filters/i }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText(/^Author$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Label$/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/^Assignee$/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/Search title or body/i)).toBeInTheDocument();
+
+      fireEvent.input(screen.getByLabelText(/^Author$/i), {
+        target: { value: "ada" },
+      });
+      fireEvent.input(screen.getByPlaceholderText(/Search title or body/i), {
+        target: { value: "uniquephrase" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: /Apply filters/i }));
+
+      await waitFor(() => {
+        expect(listMock).toHaveBeenCalled();
+        const calls = listMock.mock.calls.map(
+          (c) => c[0] as Record<string, unknown>,
+        );
+        expect(
+          calls.some(
+            (c) =>
+              c.author === "ada" &&
+              c.q === "uniquephrase" &&
+              (c.state === "open" || c.state == null),
+          ),
+        ).toBe(true);
+      });
+    },
+    15_000,
+  );
+
+  it(
+    "offset Previous/Next pagination controls (D-ISS-18)",
+    async () => {
+      listMock.mockResolvedValue({
+        ok: true,
+        data: {
+          issues: Array.from({ length: 25 }, (_, i) => ({
+            ...sampleIssue,
+            id: `iss-${i + 1}`,
+            number: i + 1,
+            title: `Issue ${i + 1}`,
+          })),
+          total: 40,
+        },
+      });
+      const mod = await loadIssuesListModule();
+      renderWithQueryClient(issuesListPage(mod));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("navigation", { name: /Issue list pagination/i }),
+        ).toBeInTheDocument();
+      });
+      const prev = screen.getByRole("button", { name: /^Previous$/i });
+      const next = screen.getByRole("button", { name: /^Next$/i });
+      expect(prev).toBeDisabled();
+      expect(next).not.toBeDisabled();
+
+      fireEvent.click(next);
+      await waitFor(() => {
+        const calls = listMock.mock.calls.map(
+          (c) => c[0] as { offset?: number },
+        );
+        expect(calls.some((c) => c.offset === 25)).toBe(true);
+      });
+    },
+    15_000,
+  );
+
+  it(
     "New issue from list when can_write (D-ISS-19 / D-ISS-20)",
     async () => {
       getMock.mockResolvedValue({
@@ -553,8 +649,8 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
 
       await waitFor(() => {
         expect(screen.getByTestId("issue-comments")).toBeInTheDocument();
+        expect(screen.getByTestId("issue-comment")).toBeInTheDocument();
       });
-      expect(screen.getByTestId("issue-comment")).toBeInTheDocument();
       await waitFor(() => {
         expect(screen.getByTestId("issue-comment").textContent).toMatch(
           /First comment/i,

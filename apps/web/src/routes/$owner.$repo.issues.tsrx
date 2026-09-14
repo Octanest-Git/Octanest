@@ -7,7 +7,9 @@ import { useQuery } from "@octanejs/tanstack-query";
 import type { IssueListResponse, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import {
+  ISSUE_LIST_PAGE_SIZE,
   IssuesList,
+  type IssueListFilters,
   type IssueListStateFilter,
 } from "@/components/repo/issues-list";
 import { RepoChrome } from "@/components/repo/repo-chrome";
@@ -43,7 +45,13 @@ async function loadIssuesPage(
     };
   }
   const listRes = await fetchIssueList({
-    data: { owner, name: repoName, state },
+    data: {
+      owner,
+      name: repoName,
+      state,
+      offset: 0,
+      limit: ISSUE_LIST_PAGE_SIZE,
+    },
   });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
@@ -80,7 +88,19 @@ export const Route = createFileRoute("/$owner/$repo/issues")({
   },
 });
 
-/** Issues list — Open default (D-ISS-16 / D-ISS-19). */
+function emptyFilters(state: IssueListStateFilter = "open"): IssueListFilters {
+  return {
+    state,
+    author: "",
+    label: "",
+    assignee: "",
+    q: "",
+    offset: 0,
+    limit: ISSUE_LIST_PAGE_SIZE,
+  };
+}
+
+/** Issues list — Open default + filters + offset pages (D-ISS-16..19). */
 export function IssuesListPage() @{
   const params = useParams({ strict: false }) as {
     owner?: string;
@@ -95,7 +115,13 @@ export function IssuesListPage() @{
     | IssuesLoaderData
     | undefined;
 
-  const [state, setState] = useState<IssueListStateFilter>("open");
+  const [filters, setFilters] = useState<IssueListFilters>(() =>
+    emptyFilters("open"),
+  );
+  const [draftAuthor, setDraftAuthor] = useState("");
+  const [draftLabel, setDraftLabel] = useState("");
+  const [draftAssignee, setDraftAssignee] = useState("");
+  const [draftQ, setDraftQ] = useState("");
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -113,20 +139,57 @@ export function IssuesListPage() @{
           : undefined,
   });
 
+  const labelsQ = useQuery({
+    queryKey: ["label", "listForRepo", owner, repoName] as const,
+    queryFn: async () => {
+      const res = await apiClient.label.listForRepo({
+        owner,
+        name: repoName,
+      });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data.labels;
+    },
+    enabled: !!owner && !!repoName,
+  });
+
   const listQ = useQuery({
-    queryKey: ["issue", "list", owner, repoName, state] as const,
+    queryKey: [
+      "issue",
+      "list",
+      owner,
+      repoName,
+      filters.state,
+      filters.author,
+      filters.label,
+      filters.assignee,
+      filters.q,
+      filters.offset,
+      filters.limit,
+    ] as const,
     queryFn: async () => {
       const res = await apiClient.issue.list({
         owner,
         name: repoName,
-        state,
+        state: filters.state,
+        author: filters.author || null,
+        label: filters.label || null,
+        assignee: filters.assignee || null,
+        q: filters.q || null,
+        offset: filters.offset,
+        limit: filters.limit,
       });
       if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
       return res.data;
     },
     enabled: !!owner && !!repoName,
     initialData:
-      routeLoader?.kind === "ready" && state === "open"
+      routeLoader?.kind === "ready" &&
+      filters.state === "open" &&
+      !filters.author &&
+      !filters.label &&
+      !filters.assignee &&
+      !filters.q &&
+      filters.offset === 0
         ? routeLoader.list
         : undefined,
   });
@@ -137,6 +200,35 @@ export function IssuesListPage() @{
     routeLoader?.kind === "not_found" ||
     (repoQ.isError &&
       String(repoQ.error?.message ?? "").includes("not found"));
+
+  const applyFilters = () => {
+    setFilters((prev) => ({
+      ...prev,
+      author: draftAuthor.trim(),
+      label: draftLabel.trim(),
+      assignee: draftAssignee.trim(),
+      q: draftQ.trim(),
+      offset: 0,
+    }));
+  };
+
+  const setState = (next: IssueListStateFilter) => {
+    setFilters((prev) => ({ ...prev, state: next, offset: 0 }));
+  };
+
+  const prevPage = () => {
+    setFilters((prev) => ({
+      ...prev,
+      offset: Math.max(0, prev.offset - prev.limit),
+    }));
+  };
+
+  const nextPage = () => {
+    setFilters((prev) => ({
+      ...prev,
+      offset: prev.offset + prev.limit,
+    }));
+  };
 
   @if (notFound || (!repoQ.isPending && !repo)) {
     <RepoNotFound />
@@ -156,8 +248,20 @@ export function IssuesListPage() @{
           repo={repo}
           issues={listQ.data?.issues ?? []}
           total={listQ.data?.total ?? 0}
-          state={state}
+          filters={filters}
+          labels={labelsQ.data ?? []}
+          draftAuthor={draftAuthor}
+          draftLabel={draftLabel}
+          draftAssignee={draftAssignee}
+          draftQ={draftQ}
           onStateChange={setState}
+          onDraftAuthor={setDraftAuthor}
+          onDraftLabel={setDraftLabel}
+          onDraftAssignee={setDraftAssignee}
+          onDraftQ={setDraftQ}
+          onApplyFilters={applyFilters}
+          onPrevPage={prevPage}
+          onNextPage={nextPage}
           pending={listQ.isPending}
         />
       }

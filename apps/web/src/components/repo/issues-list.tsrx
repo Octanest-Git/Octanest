@@ -1,6 +1,18 @@
-import type { IssuePublic, RepoPublic } from "@octanest/api-client";
+import type { IssuePublic, LabelPublic, RepoPublic } from "@octanest/api-client";
 
 export type IssueListStateFilter = "open" | "closed" | "all";
+
+export type IssueListFilters = {
+  state: IssueListStateFilter;
+  author: string;
+  label: string;
+  assignee: string;
+  q: string;
+  offset: number;
+  limit: number;
+};
+
+export const ISSUE_LIST_PAGE_SIZE = 25;
 
 type IssuesListProps = {
   owner: string;
@@ -8,8 +20,20 @@ type IssuesListProps = {
   repo: RepoPublic;
   issues: IssuePublic[];
   total: number;
-  state: IssueListStateFilter;
+  filters: IssueListFilters;
+  labels: LabelPublic[];
+  draftAuthor: string;
+  draftLabel: string;
+  draftAssignee: string;
+  draftQ: string;
   onStateChange: (next: IssueListStateFilter) => void;
+  onDraftAuthor: (next: string) => void;
+  onDraftLabel: (next: string) => void;
+  onDraftAssignee: (next: string) => void;
+  onDraftQ: (next: string) => void;
+  onApplyFilters: () => void;
+  onPrevPage: () => void;
+  onNextPage: () => void;
   pending?: boolean;
 };
 
@@ -19,26 +43,46 @@ function tabClass(active: boolean): string {
     : "rounded-md px-3 py-1.5 text-[14px] font-normal text-muted-foreground hover:text-foreground";
 }
 
-/** Open/Closed/All filter + issue rows (D-ISS-16 / D-ISS-19). */
+function fieldClass(): string {
+  return "h-10 rounded-md border border-border bg-background px-3 text-[14px] text-foreground";
+}
+
+/** Open/Closed/All + author/label/assignee/text filters + offset pages (D-ISS-16..19). */
 export function IssuesList({
   owner,
   repoName,
   repo,
   issues,
   total,
-  state,
+  filters,
+  labels,
+  draftAuthor,
+  draftLabel,
+  draftAssignee,
+  draftQ,
   onStateChange,
+  onDraftAuthor,
+  onDraftLabel,
+  onDraftAssignee,
+  onDraftQ,
+  onApplyFilters,
+  onPrevPage,
+  onNextPage,
   pending = false,
 }: IssuesListProps) @{
   const base = `/${owner}/${repoName}`;
   const canWrite = !!repo.can_write;
   const canAdmin = !!repo.can_admin;
   const emptyCopy =
-    state === "closed"
+    filters.state === "closed"
       ? "No closed issues"
-      : state === "all"
+      : filters.state === "all"
         ? "No issues"
         : "No open issues";
+  const from = total === 0 ? 0 : filters.offset + 1;
+  const to = Math.min(filters.offset + issues.length, total);
+  const canPrev = filters.offset > 0;
+  const canNext = filters.offset + filters.limit < total;
 
   <div className="flex flex-col gap-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -50,8 +94,8 @@ export function IssuesList({
         <button
           type="button"
           role="tab"
-          aria-selected={state === "open"}
-          className={tabClass(state === "open") as string}
+          aria-selected={filters.state === "open"}
+          className={tabClass(filters.state === "open") as string}
           onClick={() => onStateChange("open")}
         >
           Open
@@ -59,8 +103,8 @@ export function IssuesList({
         <button
           type="button"
           role="tab"
-          aria-selected={state === "closed"}
-          className={tabClass(state === "closed") as string}
+          aria-selected={filters.state === "closed"}
+          className={tabClass(filters.state === "closed") as string}
           onClick={() => onStateChange("closed")}
         >
           Closed
@@ -68,8 +112,8 @@ export function IssuesList({
         <button
           type="button"
           role="tab"
-          aria-selected={state === "all"}
-          className={tabClass(state === "all") as string}
+          aria-selected={filters.state === "all"}
+          className={tabClass(filters.state === "all") as string}
           onClick={() => onStateChange("all")}
         >
           All
@@ -95,6 +139,80 @@ export function IssuesList({
       </div>
     </div>
 
+    <form
+      method="post"
+      action="#"
+      aria-label="Issue filters"
+      className="flex flex-wrap items-end gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onApplyFilters();
+      }}
+    >
+      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+        Author
+        <input
+          type="text"
+          name="author"
+          autocomplete="off"
+          placeholder="username"
+          value={draftAuthor as string}
+          className={fieldClass() as string}
+          onInput={(e) => onDraftAuthor((e.target as HTMLInputElement).value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+        Label
+        <select
+          name="label"
+          aria-label="Label"
+          value={draftLabel as string}
+          className={fieldClass() as string}
+          onChange={(e) =>
+            onDraftLabel((e.target as HTMLSelectElement).value)
+          }
+        >
+          <option value="">Any label</option>
+          @for (const lab of labels; key lab.id) {
+            <option value={lab.id as string}>{lab.name as string}</option>
+          }
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+        Assignee
+        <input
+          type="text"
+          name="assignee"
+          autocomplete="off"
+          placeholder="username"
+          value={draftAssignee as string}
+          className={fieldClass() as string}
+          onInput={(e) =>
+            onDraftAssignee((e.target as HTMLInputElement).value)
+          }
+        />
+      </label>
+      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[13px] text-muted-foreground">
+        Search
+        <input
+          type="search"
+          name="q"
+          autocomplete="off"
+          placeholder="Search title or body"
+          value={draftQ as string}
+          className={fieldClass() as string}
+          onInput={(e) => onDraftQ((e.target as HTMLInputElement).value)}
+        />
+      </label>
+      <button
+        type="button"
+        className="inline-flex h-10 items-center rounded-md border border-border bg-muted px-4 text-[14px] font-medium text-foreground hover:bg-muted/80"
+        onClick={() => onApplyFilters()}
+      >
+        Apply filters
+      </button>
+    </form>
+
     @if (pending) {
       <p className="text-[16px] text-muted-foreground">Loading issues…</p>
     } @else {
@@ -117,9 +235,33 @@ export function IssuesList({
               </li>
             }
           </ul>
-          <p className="text-[13px] text-muted-foreground">
-            {`${total} issue${total === 1 ? "" : "s"}` as string}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-[13px] text-muted-foreground">
+              {`${from}–${to} of ${total} issue${total === 1 ? "" : "s"}` as string}
+            </p>
+            <div
+              className="flex items-center gap-2"
+              role="navigation"
+              aria-label="Issue list pagination"
+            >
+              <button
+                type="button"
+                disabled={!canPrev}
+                className="inline-flex h-10 items-center rounded-md border border-border px-3 text-[14px] font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => onPrevPage()}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={!canNext}
+                className="inline-flex h-10 items-center rounded-md border border-border px-3 text-[14px] font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => onNextPage()}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </>
       }
     }

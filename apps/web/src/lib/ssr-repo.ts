@@ -182,12 +182,26 @@ export const fetchRepoCompare = createServerFn({ method: "GET" })
 /** SSR: `issue.list` with Cookie forward. */
 export const fetchIssueList = createServerFn({ method: "GET" })
   .validator(
-    (data: OwnerName & { state?: string; offset?: number; limit?: number }) => ({
+    (
+      data: OwnerName & {
+        state?: string;
+        author?: string;
+        label?: string;
+        assignee?: string;
+        q?: string;
+        offset?: number;
+        limit?: number;
+      },
+    ) => ({
       owner: String(data?.owner ?? ""),
       name: String(data?.name ?? ""),
       state: data?.state ? String(data.state) : "open",
+      author: data?.author ? String(data.author) : "",
+      label: data?.label ? String(data.label) : "",
+      assignee: data?.assignee ? String(data.assignee) : "",
+      q: data?.q ? String(data.q) : "",
       offset: typeof data?.offset === "number" ? data.offset : 0,
-      limit: typeof data?.limit === "number" ? data.limit : 30,
+      limit: typeof data?.limit === "number" ? data.limit : 25,
     }),
   )
   .handler(async ({ data }) => {
@@ -196,6 +210,10 @@ export const fetchIssueList = createServerFn({ method: "GET" })
       owner: data.owner,
       name: data.name,
       state: data.state,
+      author: data.author || null,
+      label: data.label || null,
+      assignee: data.assignee || null,
+      q: data.q || null,
       offset: data.offset,
       limit: data.limit,
     });
