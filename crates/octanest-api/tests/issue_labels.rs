@@ -368,11 +368,144 @@ async fn issue_labels_effective_set_org_plus_repo_overrides() {
 }
 
 /// Write+ can assign/unassign labels on an issue (ISS-03 / D-ISS-07).
-/// Wired in Task 2 (11-06-T2).
 #[tokio::test]
 async fn issue_labels_write_assign_on_issue() {
-    assert!(
-        false,
-        "11-06-T2: Write+ issue.labels.set from effective set; reject Read/hidden (ISS-03 / D-ISS-07)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_labels_assign.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "asglbl@ex.com", "asglbl").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, owner_id).await;
+
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            r#"{"procedure":"org.create","input":{"slug":"asg-org"}}"#,
+        )
+        .await["ok"],
+        true
+    );
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            r#"{"procedure":"repo.create","input":{"name":"core","visibility":"public","owner":"asg-org"}}"#,
+        )
+        .await["ok"],
+        true
+    );
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            r#"{"procedure":"issue.create","input":{"owner":"asg-org","name":"core","title":"Labeled","body":""}}"#,
+        )
+        .await["ok"],
+        true
+    );
+
+    let lab = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"label.create","input":{"scope":"org","owner":"asg-org","name":"prio","color":"fbca04"}}"#,
+    )
+    .await;
+    assert_eq!(lab["ok"], true, "{lab}");
+    let label_id = lab["data"]["id"].as_str().expect("id").to_string();
+
+    let (writer_cookie, writer_v) =
+        signup_and_login(&app, "asgwrite@ex.com", "asgwrite").await;
+    let writer_id = writer_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, writer_id).await;
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"asg-org","name":"core","username":"asgwrite","permission":"write"}}"#,
+        )
+        .await["ok"],
+        true
+    );
+
+    let (reader_cookie, reader_v) =
+        signup_and_login(&app, "asgread@ex.com", "asgread").await;
+    let reader_id = reader_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, reader_id).await;
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"asg-org","name":"core","username":"asgread","permission":"read"}}"#,
+        )
+        .await["ok"],
+        true
+    );
+
+    let set_ok = rpc_json(
+        &app,
+        &writer_cookie,
+        &format!(
+            r#"{{"procedure":"issue.labels.set","input":{{"owner":"asg-org","name":"core","number":1,"labelIds":["{label_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(set_ok["ok"], true, "Write+ set labels — {set_ok}");
+    let assigned = set_ok["data"]["labels"].as_array().expect("labels");
+    assert_eq!(assigned.len(), 1);
+    assert_eq!(assigned[0]["id"], label_id);
+
+    let clear = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.labels.set","input":{"owner":"asg-org","name":"core","number":1,"labelIds":[]}}"#,
+    )
+    .await;
+    assert_eq!(clear["ok"], true, "clear labels — {clear}");
+    assert_eq!(clear["data"]["labels"].as_array().unwrap().len(), 0);
+
+    let read_denied = rpc_json(
+        &app,
+        &reader_cookie,
+        &format!(
+            r#"{{"procedure":"issue.labels.set","input":{{"owner":"asg-org","name":"core","number":1,"labelIds":["{label_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(read_denied["ok"], false, "Read cannot set — {read_denied}");
+    assert_eq!(read_denied["error"]["code"], "repo.not_found");
+
+    // Hide then reject assignment of hidden id.
+    assert_eq!(
+        rpc_json(
+            &app,
+            &owner_cookie,
+            &format!(
+                r#"{{"procedure":"label.update","input":{{"id":"{label_id}","owner":"asg-org","repo":"core","hidden":true}}}}"#
+            ),
+        )
+        .await["ok"],
+        true
+    );
+    let hidden_denied = rpc_json(
+        &app,
+        &writer_cookie,
+        &format!(
+            r#"{{"procedure":"issue.labels.set","input":{{"owner":"asg-org","name":"core","number":1,"labelIds":["{label_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(
+        hidden_denied["ok"], false,
+        "hidden label id rejected — {hidden_denied}"
+    );
+    assert_eq!(hidden_denied["error"]["code"], "rpc.bad_input");
 }

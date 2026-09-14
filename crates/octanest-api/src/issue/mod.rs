@@ -7,7 +7,7 @@ use octanest_core::{
     CreateIssueRequest, DeleteIssueCommentResponse, DeleteIssueRequest, DeleteIssueResponse,
     IssueCommentPublic, IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse,
     IssueListRequest, IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic,
-    IssueState, UpdateIssueCommentRequest, UpdateIssueRequest,
+    IssueState, SetIssueLabelsRequest, UpdateIssueCommentRequest, UpdateIssueRequest,
 };
 use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
@@ -498,4 +498,56 @@ pub async fn comments_history(
         });
     }
     Ok(CommentHistoryResponse { revisions })
+}
+
+/// `issue.labels.set` — Write+; replace label ids from effective repo set (D-ISS-07 / D-ISS-20).
+pub async fn labels_set(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePublic, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: SetIssueLabelsRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.labels.set input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+
+    let allowed = crate::label::effective_label_id_set(
+        ctx,
+        &accessible.row.id,
+        &accessible.row.owner_type,
+        &accessible.row.owner_id,
+    )
+    .await?;
+
+    let mut seen = std::collections::HashSet::new();
+    let mut unique_ids = Vec::new();
+    for id in &req.label_ids {
+        let id = id.trim();
+        if id.is_empty() {
+            return Err(AppError::new("rpc.bad_input", "label id must not be empty"));
+        }
+        if !allowed.contains(id) {
+            return Err(AppError::new(
+                "rpc.bad_input",
+                "label is not in the effective set for this repository",
+            ));
+        }
+        if seen.insert(id.to_string()) {
+            unique_ids.push(id.to_string());
+        }
+    }
+
+    ctx.db
+        .set_issue_labels(&issue.id, &unique_ids)
+        .await
+        .map_err(db_err)?;
+
+    let refreshed = ctx
+        .db
+        .find_issue_by_id(&issue.id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(issue_not_found)?;
+    to_public(ctx, &refreshed).await
 }
