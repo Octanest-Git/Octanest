@@ -1,8 +1,7 @@
 //! 10-02: `0010_orgs_acl` + organizations / members / invites / collaborators.
 
 use octanest_core::Role;
-use octanest_db::{resolve_dialect_from_env, Database, DbPool};
-use sqlx::Row;
+use octanest_db::Database;
 
 /// Expect sqlite `0010_orgs_acl.sql` with org ACL tables + repositories.owner_type,
 /// then insert organization + Owner membership round-trip.
@@ -92,25 +91,20 @@ async fn dialect_orgs_migrate_0010_schema_presence() {
         .expect("membership present");
     assert_eq!(found.role, "owner");
 
-    // Polymorphic owner_type column exists and defaults to user for legacy inserts.
+    // Polymorphic owner_type column exists and defaults via insert argument.
     let repo = db
-        .insert_repository("r-org-1", &owner.id, "demo", "private", "", "main")
+        .insert_repository("r-org-1", &owner.id, "user", "demo", "private", "", "main")
         .await
         .expect("insert user-owned repo after 0010");
     assert_eq!(repo.owner_id, owner.id);
+    assert_eq!(repo.owner_type, "user");
 
-    let dialect = resolve_dialect_from_env(&url).expect("dialect");
-    let pool = DbPool::connect(&url, dialect).await.expect("pool");
-    let DbPool::Sqlite(p) = pool else {
-        panic!("expected sqlite pool");
-    };
-    let row = sqlx::query("SELECT owner_type FROM repositories WHERE id = ?1")
-        .bind(&repo.id)
-        .fetch_one(&p)
+    let org_repo = db
+        .insert_repository("r-org-2", &org.id, "org", "org-demo", "public", "", "main")
         .await
-        .expect("select owner_type");
-    let owner_type: String = row.try_get("owner_type").expect("owner_type col");
-    assert_eq!(owner_type, "user");
+        .expect("insert org-owned repo");
+    assert_eq!(org_repo.owner_id, org.id);
+    assert_eq!(org_repo.owner_type, "org");
 }
 
 /// Tri-dialect parity: postgres and mysql siblings must exist alongside sqlite.

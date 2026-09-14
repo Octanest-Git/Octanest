@@ -58,6 +58,7 @@ async fn dialect_pats_migrate_0008_schema_presence() {
         .insert_repository(
             "r-pat-1",
             &owner.id,
+            "user",
             "pat_demo",
             "private",
             "pat demo",

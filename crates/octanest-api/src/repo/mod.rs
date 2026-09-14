@@ -4,7 +4,8 @@ mod acl;
 mod templates;
 
 pub use acl::{
-    can_read_as_owner, is_private_visibility, resolve_repo_for_read, AccessibleRepo,
+    can_read_as_owner, is_private_visibility, resolve_owner_slug, resolve_repo_for_read,
+    AccessibleRepo, OwnerRef,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
@@ -709,6 +710,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .insert_repository(
             &id,
             &user.id,
+            "user",
             &name,
             map_visibility(visibility),
             &description,

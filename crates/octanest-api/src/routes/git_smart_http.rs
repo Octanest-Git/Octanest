@@ -21,7 +21,7 @@ use crate::app::AppState;
 use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
-use crate::repo::{can_read_as_owner, is_private_visibility};
+use crate::repo::{can_read_as_owner, is_private_visibility, resolve_owner_slug};
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
 const PAT_HINT: &str =
@@ -257,17 +257,17 @@ async fn resolve_repo(
     owner: &str,
     name: &str,
 ) -> Result<ResolvedRepo, Response> {
-    let owner_user = match state.db.find_user_by_username(owner).await {
-        Ok(Some(u)) => u,
+    let owner_ref = match resolve_owner_slug(&state.db, owner).await {
+        Ok(Some(r)) => r,
         Ok(None) => return Err(unauthorized_basic()),
         Err(e) => {
-            tracing::error!(error = %e, "find_user_by_username");
+            tracing::error!(error = %e, "resolve_owner_slug");
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
     let row = match state
         .db
-        .find_repository_by_owner_name(&owner_user.id, name)
+        .find_repository_by_owner_name(owner_ref.id(), name)
         .await
     {
         Ok(Some(r)) => r,
@@ -279,7 +279,7 @@ async fn resolve_repo(
     };
     Ok(ResolvedRepo {
         row,
-        owner_id: owner_user.id,
+        owner_id: owner_ref.id().to_string(),
     })
 }
 

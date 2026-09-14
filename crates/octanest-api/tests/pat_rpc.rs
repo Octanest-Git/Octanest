@@ -332,7 +332,7 @@ async fn pat_create_fine_grained_selected_persists_repos() {
         .expect("verify");
 
     let repo = db
-        .insert_repository("r-fg-1", &user_id, "demo", "public", "", "main")
+        .insert_repository("r-fg-1", &user_id, "user", "demo", "public", "", "main")
         .await
         .expect("insert repo");
 
@@ -447,7 +447,7 @@ async fn pat_create_fine_grained_foreign_repo_rejected() {
         .expect("verify b");
 
     let foreign = db
-        .insert_repository("r-foreign", &user_a, "secrets", "private", "", "main")
+        .insert_repository("r-foreign", &user_a, "user", "secrets", "private", "", "main")
         .await
         .expect("foreign repo");
 

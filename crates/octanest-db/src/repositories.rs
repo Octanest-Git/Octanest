@@ -8,6 +8,8 @@ use crate::pool::DbPool;
 pub struct RepositoryRow {
     pub id: String,
     pub owner_id: String,
+    /// Polymorphic owner discriminant: `user` | `org` (D-ORG-01).
+    pub owner_type: String,
     pub name: String,
     pub visibility: String,
     pub description: String,
@@ -24,6 +26,9 @@ macro_rules! map_repo {
             id: row.try_get("id").map_err(|e| format!("repo row: {e}"))?,
             owner_id: row
                 .try_get("owner_id")
+                .map_err(|e| format!("repo row: {e}"))?,
+            owner_type: row
+                .try_get("owner_type")
                 .map_err(|e| format!("repo row: {e}"))?,
             name: row.try_get("name").map_err(|e| format!("repo row: {e}"))?,
             visibility: row
@@ -48,21 +53,21 @@ macro_rules! map_repo {
     }};
 }
 
-const REPO_SELECT_PG: &str = "SELECT id, owner_id, name, visibility, description, default_branch,
+const REPO_SELECT_PG: &str = "SELECT id, owner_id, owner_type, name, visibility, description, default_branch,
        CASE WHEN deleted_at IS NULL THEN NULL
             ELSE to_char(deleted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS deleted_at,
        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
        to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
 FROM repositories";
 
-const REPO_SELECT_MYSQL: &str = "SELECT id, owner_id, name, visibility, description, default_branch,
+const REPO_SELECT_MYSQL: &str = "SELECT id, owner_id, owner_type, name, visibility, description, default_branch,
        CASE WHEN deleted_at IS NULL THEN NULL
             ELSE DATE_FORMAT(deleted_at, '%Y-%m-%dT%H:%i:%sZ') END AS deleted_at,
        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
        DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
 FROM repositories";
 
-const REPO_SELECT_SQLITE: &str = "SELECT id, owner_id, name, visibility, description, default_branch,
+const REPO_SELECT_SQLITE: &str = "SELECT id, owner_id, owner_type, name, visibility, description, default_branch,
        CASE WHEN deleted_at IS NULL THEN NULL
             ELSE strftime('%Y-%m-%dT%H:%M:%SZ', deleted_at) END AS deleted_at,
        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
@@ -73,6 +78,7 @@ pub async fn insert_repository(
     pool: &DbPool,
     id: &str,
     owner_id: &str,
+    owner_type: &str,
     name: &str,
     visibility: &str,
     description: &str,
@@ -81,11 +87,12 @@ pub async fn insert_repository(
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
-                "INSERT INTO repositories (id, owner_id, name, visibility, description, default_branch)
-VALUES ($1, $2, $3, $4, $5, $6)",
+                "INSERT INTO repositories (id, owner_id, owner_type, name, visibility, description, default_branch)
+VALUES ($1, $2, $3, $4, $5, $6, $7)",
             )
             .bind(id)
             .bind(owner_id)
+            .bind(owner_type)
             .bind(name)
             .bind(visibility)
             .bind(description)
@@ -96,11 +103,12 @@ VALUES ($1, $2, $3, $4, $5, $6)",
         }
         DbPool::MySql(p) => {
             sqlx::query(
-                "INSERT INTO repositories (id, owner_id, name, visibility, description, default_branch)
-VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO repositories (id, owner_id, owner_type, name, visibility, description, default_branch)
+VALUES (?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(id)
             .bind(owner_id)
+            .bind(owner_type)
             .bind(name)
             .bind(visibility)
             .bind(description)
@@ -111,11 +119,12 @@ VALUES (?, ?, ?, ?, ?, ?)",
         }
         DbPool::Sqlite(p) => {
             sqlx::query(
-                "INSERT INTO repositories (id, owner_id, name, visibility, description, default_branch)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                "INSERT INTO repositories (id, owner_id, owner_type, name, visibility, description, default_branch)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             )
             .bind(id)
             .bind(owner_id)
+            .bind(owner_type)
             .bind(name)
             .bind(visibility)
             .bind(description)
@@ -338,20 +347,42 @@ pub struct RepoDiskRef {
     pub deleted_at: Option<String>,
 }
 
+/// Resolve disk-path slug for user- or org-owned repos (D-ORG-01).
+const DISK_REF_SELECT_PG: &str = "SELECT r.id,
+       CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+       r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE to_char(r.deleted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS deleted_at
+FROM repositories r
+LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id";
+
+const DISK_REF_SELECT_MYSQL: &str = "SELECT r.id,
+       CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+       r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE DATE_FORMAT(r.deleted_at, '%Y-%m-%dT%H:%i:%sZ') END AS deleted_at
+FROM repositories r
+LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id";
+
+const DISK_REF_SELECT_SQLITE: &str = "SELECT r.id,
+       CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+       r.name,
+       CASE WHEN r.deleted_at IS NULL THEN NULL
+            ELSE strftime('%Y-%m-%dT%H:%M:%SZ', r.deleted_at) END AS deleted_at
+FROM repositories r
+LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id";
+
 /// All repository rows that still own a disk path (active + soft-deleted).
 pub async fn list_repo_disk_refs(pool: &DbPool) -> Result<Vec<RepoDiskRef>, String> {
     match pool {
         DbPool::Postgres(p) => {
-            let rows = sqlx::query(
-                "SELECT r.id, u.username AS owner_username, r.name,
-       CASE WHEN r.deleted_at IS NULL THEN NULL
-            ELSE to_char(r.deleted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS deleted_at
-FROM repositories r
-JOIN users u ON u.id = r.owner_id",
-            )
-            .fetch_all(p)
-            .await
-            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            let rows = sqlx::query(DISK_REF_SELECT_PG)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list repo disk refs failed: {e}"))?;
             rows.into_iter()
                 .map(|row| {
                     Ok(RepoDiskRef {
@@ -368,16 +399,10 @@ JOIN users u ON u.id = r.owner_id",
                 .collect()
         }
         DbPool::MySql(p) => {
-            let rows = sqlx::query(
-                "SELECT r.id, u.username AS owner_username, r.name,
-       CASE WHEN r.deleted_at IS NULL THEN NULL
-            ELSE DATE_FORMAT(r.deleted_at, '%Y-%m-%dT%H:%i:%sZ') END AS deleted_at
-FROM repositories r
-JOIN users u ON u.id = r.owner_id",
-            )
-            .fetch_all(p)
-            .await
-            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            let rows = sqlx::query(DISK_REF_SELECT_MYSQL)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list repo disk refs failed: {e}"))?;
             rows.into_iter()
                 .map(|row| {
                     Ok(RepoDiskRef {
@@ -394,16 +419,10 @@ JOIN users u ON u.id = r.owner_id",
                 .collect()
         }
         DbPool::Sqlite(p) => {
-            let rows = sqlx::query(
-                "SELECT r.id, u.username AS owner_username, r.name,
-       CASE WHEN r.deleted_at IS NULL THEN NULL
-            ELSE strftime('%Y-%m-%dT%H:%M:%SZ', r.deleted_at) END AS deleted_at
-FROM repositories r
-JOIN users u ON u.id = r.owner_id",
-            )
-            .fetch_all(p)
-            .await
-            .map_err(|e| format!("list repo disk refs failed: {e}"))?;
+            let rows = sqlx::query(DISK_REF_SELECT_SQLITE)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list repo disk refs failed: {e}"))?;
             rows.into_iter()
                 .map(|row| {
                     Ok(RepoDiskRef {

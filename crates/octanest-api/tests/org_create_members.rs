@@ -145,7 +145,7 @@ async fn org_create_reserves_shared_slug_namespace() {
 
 /// Org-owned public repo resolves via org slug (D-ORG-01 / OwnerRef) — not user-only lookup.
 #[tokio::test]
-async fn org_owned_repo_resolves_by_org_slug() {
+async fn org_create_owned_repo_resolves_by_org_slug() {
     let dir = tempfile::tempdir().expect("tempdir");
     let url = format!(
         "sqlite:{}",
@@ -176,7 +176,7 @@ async fn org_owned_repo_resolves_by_org_slug() {
 
     // Fixture: org-owned row (owner_id = org). owner_type set via insert API once GREEN;
     // until then insert defaults owner_type=user but lookup keys on owner_id.
-    db.insert_repository("r-org-resolve", org_id, "widget", "public", "", "main")
+    db.insert_repository("r-org-resolve", org_id, "org", "widget", "public", "", "main")
         .await
         .expect("insert org-owned repo");
 

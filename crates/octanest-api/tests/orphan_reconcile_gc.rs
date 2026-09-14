@@ -99,7 +99,7 @@ async fn orphan_reconcile_keeps_soft_deleted_within_retention() {
     db.migrate().await.unwrap();
     let owner_id = seed_sys_admin(&db).await;
     let repo_id = Uuid::new_v4().to_string();
-    db.insert_repository(&repo_id, &owner_id, "soft", "public", "", "main")
+    db.insert_repository(&repo_id, &owner_id, "user", "soft", "public", "", "main")
         .await
         .expect("insert");
     db.soft_delete_repository(&repo_id).await.expect("soft");
@@ -129,7 +129,7 @@ async fn orphan_reconcile_purges_soft_deleted_past_retention() {
     db.migrate().await.unwrap();
     let owner_id = seed_sys_admin(&db).await;
     let repo_id = Uuid::new_v4().to_string();
-    db.insert_repository(&repo_id, &owner_id, "old", "public", "", "main")
+    db.insert_repository(&repo_id, &owner_id, "user", "old", "public", "", "main")
         .await
         .expect("insert");
     db.soft_delete_repository(&repo_id).await.expect("soft");
@@ -166,7 +166,7 @@ async fn admin_repos_gc_runs_for_one_and_all() {
     db.migrate().await.unwrap();
     let owner_id = seed_sys_admin(&db).await;
     let repo_id = Uuid::new_v4().to_string();
-    db.insert_repository(&repo_id, &owner_id, "gcme", "public", "", "main")
+    db.insert_repository(&repo_id, &owner_id, "user", "gcme", "public", "", "main")
         .await
         .expect("insert");
 

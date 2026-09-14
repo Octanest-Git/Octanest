@@ -66,6 +66,7 @@ async fn migrate_0007_repositories_schema_presence() {
         .insert_repository(
             "r-demo",
             &owner.id,
+            "user",
             "my_app",
             "public",
             "demo repo",

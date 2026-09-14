@@ -4,7 +4,7 @@
 //! stays separate (web → `repo.not_found`; git private unauth → 401, D-21).
 
 use octanest_core::AppError;
-use octanest_db::RepositoryRow;
+use octanest_db::{Database, RepositoryRow};
 
 use crate::rpc::RpcCtx;
 
@@ -18,12 +18,66 @@ pub fn is_private_visibility(visibility: &str) -> bool {
     visibility.eq_ignore_ascii_case("private")
 }
 
-/// Owner-only private read until Phase 10 collaborators.
+/// Owner-only private read until Phase 10 collaborators / plan 04 ACL rewrite.
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
     caller_user_id == Some(owner_id)
 }
 
-/// Repo row the caller is allowed to read, plus resolved owner username.
+/// Polymorphic owner resolved from a shared slug (D-ORG-01 / RESEARCH Pattern 3).
+#[derive(Debug, Clone)]
+pub enum OwnerRef {
+    User { id: String, username: String },
+    Org { id: String, slug: String },
+}
+
+impl OwnerRef {
+    pub fn id(&self) -> &str {
+        match self {
+            Self::User { id, .. } | Self::Org { id, .. } => id,
+        }
+    }
+
+    /// Public URL / disk path segment (username or org slug).
+    pub fn slug(&self) -> &str {
+        match self {
+            Self::User { username, .. } => username,
+            Self::Org { slug, .. } => slug,
+        }
+    }
+
+    pub fn owner_type(&self) -> &'static str {
+        match self {
+            Self::User { .. } => "user",
+            Self::Org { .. } => "org",
+        }
+    }
+}
+
+/// Resolve shared slug → user (first) or organization. Missing → `Ok(None)`.
+pub async fn resolve_owner_slug(
+    db: &Database,
+    slug: &str,
+) -> Result<Option<OwnerRef>, String> {
+    let slug = slug.trim();
+    if slug.is_empty() {
+        return Ok(None);
+    }
+    if let Some(u) = db.find_user_by_username(slug).await? {
+        return Ok(Some(OwnerRef::User {
+            id: u.id,
+            username: u.username,
+        }));
+    }
+    if let Some(o) = db.find_organization_by_slug(slug).await? {
+        return Ok(Some(OwnerRef::Org {
+            id: o.id,
+            slug: o.slug,
+        }));
+    }
+    Ok(None)
+}
+
+/// Repo row the caller is allowed to read, plus resolved owner username/slug.
 pub struct AccessibleRepo {
     pub row: RepositoryRow,
     pub owner_username: String,
@@ -41,18 +95,18 @@ pub async fn resolve_repo_for_read(
         return Err(not_found());
     }
 
-    let owner_user = match ctx.db.find_user_by_username(owner).await {
-        Ok(Some(u)) => u,
+    let owner_ref = match resolve_owner_slug(&ctx.db, owner).await {
+        Ok(Some(r)) => r,
         Ok(None) => return Err(not_found()),
         Err(e) => {
-            tracing::error!(error = %e, "find_user_by_username failed");
+            tracing::error!(error = %e, "resolve_owner_slug failed");
             return Err(AppError::new("repo.internal", "repository operation failed"));
         }
     };
 
     let row = match ctx
         .db
-        .find_repository_by_owner_name(&owner_user.id, name)
+        .find_repository_by_owner_name(owner_ref.id(), name)
         .await
     {
         Ok(Some(r)) => r,
@@ -65,14 +119,15 @@ pub async fn resolve_repo_for_read(
 
     if is_private_visibility(&row.visibility) {
         let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
-        if !can_read_as_owner(caller_id, &owner_user.id) {
+        // Temporary: personal owner_id match only (plan 04 rewrites ACL for org roles).
+        if !can_read_as_owner(caller_id, owner_ref.id()) {
             return Err(not_found());
         }
     }
 
     Ok(AccessibleRepo {
         row,
-        owner_username: owner_user.username,
+        owner_username: owner_ref.slug().to_string(),
     })
 }
 
