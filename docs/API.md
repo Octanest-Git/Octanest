@@ -82,6 +82,9 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); one-time plaintext in response | Session + verified email |
 | `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
 | `pat.revoke` | Soft-revoke a PAT by `id` | Session |
+| `sshKey.add` | Register an OpenSSH public key; returns fingerprint metadata | Session + verified email |
+| `sshKey.list` | List registered SSH public keys (no private keys) | Session |
+| `sshKey.revoke` | Hard-delete an SSH public key by `id` | Session |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -239,6 +242,22 @@ Create responses include a one-time plaintext `token` (store it immediately) plu
 
 Minting requires a verified email (`auth.email_unverified` otherwise). Empty note/name → `pat.note_required`. Selected fine-grained with no repositories → `pat.repos_required`. Invalid classic scopes or foreign/empty-id fine-grained `selected` repos → `pat.invalid_scope`. Unknown or non-owned revoke id → `pat.not_found`.
 
+### SSH public keys (`sshKey.*`)
+
+Register OpenSSH **public** keys for Git-over-SSH (session cookie; never send private keys to the API). Keys map to **full account identity** — there are no PAT-style scopes on SSH transport (D-SSH-03 / D-SSH-04 / D-SSH-05).
+
+`sshKey.add` input:
+
+```json
+{ "title": "laptop", "public_key": "ssh-ed25519 AAAA… comment" }
+```
+
+Accepted key types: `ssh-ed25519` and RSA ≥2048. Response is a list item with `id`, `title`, `fingerprint` (SHA256), `key_type`, optional `public_key`, `created_at`, and optional `last_used_*`. There is **no** one-time secret field (unlike PAT mint).
+
+`sshKey.list` returns the same item shape for the signed-in user. `sshKey.revoke` input: `{ "id": "…" }` (hard-delete).
+
+Add requires verified email (`auth.email_unverified` otherwise). Empty title → `sshKey.title_required`. Invalid/unsupported key → `sshKey.invalid_key`. Duplicate fingerprint → `sshKey.fingerprint_taken`. More than **25** keys → `sshKey.limit_exceeded`. Unknown or non-owned revoke id → `sshKey.not_found`.
+
 ### Git Smart HTTP
 
 Clone / fetch / push use Git Smart HTTP under `/{owner}/{repo}.git` (not `/api/rpc`):
@@ -263,6 +282,12 @@ git -c http.extraHeader="Authorization: Basic $(printf 'git:octanest_pat_REDACTE
   ls-remote https://example.com/alice/demo.git
 ```
 
+### Git over SSH
+
+Clone / fetch / push over SSH use an in-process listener (Compose TCP **2222** by default — not Traefik). Remotes are **scp-style** `git@{host}:{owner}/{repo}.git` (D-SSH-02). The SSH username must be `git`; identity comes only from a registered public-key fingerprint (full account ACL — no PAT scopes). When advertised port ≠ 22, clients set `Port` in `~/.ssh/config` (or `ssh -p`); do not treat `ssh://` as the primary CloneBox URL.
+
+Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprint buckets). See [CONFIGURATION.md](CONFIGURATION.md) for `OCTANEST_SSH_*`.
+
 ### TypeScript client
 
 ```ts
@@ -274,9 +299,11 @@ const me = await client.auth.me();
 const pats = await client.pat.list();
 const created = await client.pat.createClassic({ name: "laptop", scopes: ["repo"] });
 // created.data.token is shown once — never send it as RPC Bearer
+const keys = await client.sshKey.list();
+await client.sshKey.add({ title: "laptop", public_key: "ssh-ed25519 AAAA… comment" });
 ```
 
-TanStack Query helpers (`authMeQueryOptions`, `patListQueryOptions`, `adminAuthGetSettingsQueryOptions`, etc.) are exported from the same package.
+TanStack Query helpers (`authMeQueryOptions`, `patListQueryOptions`, `sshKeyListQueryOptions`, `adminAuthGetSettingsQueryOptions`, etc.) are exported from the same package.
 
 ## Error codes
 
@@ -299,7 +326,7 @@ Common `error.code` values:
 | `rpc.payload_too_large` | Echo message too large |
 | `rpc.unknown_procedure` | Unknown procedure name |
 | `auth.unauthenticated` | No valid session |
-| `auth.email_unverified` | Verified email required (PAT mint; Smart HTTP push) |
+| `auth.email_unverified` | Verified email required (PAT mint; SSH key add; Smart HTTP / SSH push) |
 | `auth.provider_mismatch` | Local auth disabled for current mode |
 | `auth.taken` / `auth.invalid_*` / `auth.weak_password` / `auth.reserved_username` | Signup/profile validation |
 | `auth.setup_required` | Empty instance must complete `/setup` before signup/SSO |
@@ -310,6 +337,11 @@ Common `error.code` values:
 | `pat.repos_required` | Fine-grained `selected` with no repository ids |
 | `pat.invalid_scope` | Classic scopes or fine-grained repo selection invalid |
 | `pat.not_found` | Revoke target missing or not owned |
+| `sshKey.title_required` | SSH key title/note empty |
+| `sshKey.invalid_key` | Public key parse/type/size rejected |
+| `sshKey.fingerprint_taken` | Fingerprint already registered |
+| `sshKey.limit_exceeded` | More than 25 SSH keys for the user |
+| `sshKey.not_found` | Revoke target missing or not owned |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |
 | `avatar.*` | Multipart/type/size/store failures on avatar upload |
 
@@ -317,7 +349,7 @@ Avatar and SSO JSON errors use the same `{ ok: false, error: { code, message } }
 
 ## Rate limits
 
-Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Client IP uses the rightmost `X-Forwarded-For` hop from a trusted proxy; do not expose the API without a proxy that sanitizes forwarded headers. Successful PAT auth clears the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
+Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Client IP uses the rightmost `X-Forwarded-For` hop from a trusted proxy; do not expose the API without a proxy that sanitizes forwarded headers. Successful PAT auth clears the user bucket. Git-over-SSH failed pubkey auth uses the same windows with the key **fingerprint** as the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
 
 ## Regenerating the TypeScript client
 
