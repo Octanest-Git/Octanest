@@ -450,6 +450,15 @@ impl Database {
         users::find_by_username(self.require_pool()?, username).await
     }
 
+    /// Username prefix autocomplete rows (no email) — ORG-01 / T-10-03.
+    pub async fn list_users_by_username_prefix(
+        &self,
+        prefix: &str,
+        limit: i64,
+    ) -> Result<Vec<users::UserLookupRow>, String> {
+        users::list_by_username_prefix(self.require_pool()?, prefix, limit).await
+    }
+
     pub async fn find_user_by_id(&self, id: &str) -> Result<Option<UserRow>, String> {
         users::find_by_id(self.require_pool()?, id).await
     }

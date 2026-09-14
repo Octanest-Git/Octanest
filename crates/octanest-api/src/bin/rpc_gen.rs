@@ -146,6 +146,20 @@ export type UpdateProfileRequest = {
   default_branch?: string | null;
 };
 
+export type UserLookupRequest = {
+  prefix: string;
+};
+
+export type UserLookupHit = {
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+};
+
+export type UserLookupResponse = {
+  users: UserLookupHit[];
+};
+
 export type AuthSettingsPublic = {
   provider_mode: ProviderMode;
   email_provider: EmailProviderKind;
@@ -645,6 +659,8 @@ export function createClient(opts: CreateClientOptions) {
       getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
       updateProfile: (input: UpdateProfileRequest) =>
         rpcCall<UserPublic>(opts, "user.update_profile", input),
+      lookup: (input: UserLookupRequest) =>
+        rpcCall<UserLookupResponse>(opts, "user.lookup", input),
     },
     repo: {
       listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
@@ -843,6 +859,20 @@ export function userGetProfileQueryOptions(client: OctanestClient) {
     queryKey: ["user", "getProfile"] as const,
     queryFn: async () => {
       const res = await client.user.getProfile();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function userLookupQueryOptions(
+  client: OctanestClient,
+  input: UserLookupRequest,
+) {
+  return {
+    queryKey: ["user", "lookup", input.prefix] as const,
+    queryFn: async () => {
+      const res = await client.user.lookup(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

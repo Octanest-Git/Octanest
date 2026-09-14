@@ -665,6 +665,9 @@ mod tests {
                 expires_at: Utc::now() + Duration::hours(1),
             }),
             set_cookie: None,
+            lookup_limiter: Arc::new(std::sync::Mutex::new(
+                crate::user::rate_limit::LookupLimiter::new(),
+            )),
         }
     }
 

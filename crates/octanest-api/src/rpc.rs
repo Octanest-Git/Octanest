@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use cookie::Cookie;
 use octanest_core::{
@@ -19,6 +19,8 @@ use crate::email::EmailSender;
 use crate::org;
 use crate::pat;
 use crate::repo;
+use crate::user;
+use crate::user::rate_limit::LookupLimiter;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
 
@@ -42,6 +44,8 @@ pub struct RpcCtx {
     pub env_name: String,
     pub session: Option<ResolvedSession>,
     pub set_cookie: Option<CookieChange>,
+    /// Per-session `user.lookup` rate limiter (T-10-03).
+    pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
 }
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
@@ -197,6 +201,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "user.update_profile" => match profile::update_profile(ctx, req.input).await {
             Ok(user) => RpcResponse::ok(user),
+            Err(e) => RpcResponse::err(e),
+        },
+        "user.lookup" => match user::lookup(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
         "admin.auth.get_settings" => match admin::get_settings(ctx).await {
