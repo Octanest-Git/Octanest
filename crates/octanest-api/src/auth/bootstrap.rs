@@ -7,7 +7,7 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use octanest_core::{
-    is_reserved_username, validate_username, AppError, BootstrapSetupRequest, BootstrapStatus,
+    validate_username, AppError, BootstrapSetupRequest, BootstrapStatus,
     ConfirmAdminCredentialsRequest, Role, UserPublic,
 };
 use octanest_db::Database;
@@ -108,13 +108,11 @@ pub async fn bootstrap_setup(
     }
 
     let username = req.username.trim().to_string();
-    // Reserved names (e.g. `admin`) are allowed for the empty-instance wizard only —
-    // ENV seed uses the same bypass via direct DB create.
-    match validate_username(&username) {
-        Ok(()) => {}
-        Err(e) if e.contains("reserved") && is_reserved_username(&username) => {}
-        Err(e) => return Err(map_username_err(e)),
-    }
+    // Do not bypass reserved usernames here: names like `admin` collide with
+    // first-party UI routes (`/admin/auth`, `/admin/lfs`, …) so `/{owner}/{repo}`
+    // never resolves for that account. ENV seed still uses direct DB create
+    // with `system-administrator` (also reserved, but not a route prefix).
+    validate_username(&username).map_err(map_username_err)?;
 
     let password_hash = hash_password_str(&req.password).map_err(|e| match e {
         PasswordError::TooShort => AppError::new(

@@ -165,6 +165,31 @@ async fn bootstrap_strict_rpc_allowlist_while_needs_setup() {
     );
 }
 
+/// Setup wizard must reject path-colliding reserved usernames (e.g. `admin` vs `/admin/*`).
+#[tokio::test]
+async fn bootstrap_rejects_reserved_admin_username() {
+    let _env = support::lock_admin_env();
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("reserved.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    std::env::remove_var("OCTANEST_ADMIN_EMAIL");
+    std::env::remove_var("OCTANEST_ADMIN_PASSWORD");
+
+    let app = test_app(db).await;
+    let res = rpc_json(
+        app,
+        r#"{"procedure":"auth.bootstrap_setup","input":{"email":"owner@example.com","username":"admin","password":"password1","allow_signup":false}}"#,
+    )
+    .await;
+    assert_eq!(res["ok"], false, "{res}");
+    assert_eq!(
+        res["error"]["code"], "auth.reserved_username",
+        "expected reserved username rejection, got {res}"
+    );
+}
+
 /// AUTH-07: second bootstrap_setup → auth.setup_unavailable.
 #[tokio::test]
 async fn bootstrap_second_setup_unavailable() {

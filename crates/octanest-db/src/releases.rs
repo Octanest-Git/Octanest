@@ -32,8 +32,25 @@ pub struct ReleaseAssetRow {
 macro_rules! map_rel {
     ($row:expr) => {{
         let row = $row;
-        let draft_i: i64 = row.try_get::<i64, _>("draft").or_else(|_| row.try_get::<bool, _>("draft").map(|b| if b {1} else {0})).map_err(|e| format!("draft: {e}"))?;
-        let pre_i: i64 = row.try_get::<i64, _>("prerelease").or_else(|_| row.try_get::<bool, _>("prerelease").map(|b| if b {1} else {0})).map_err(|e| format!("prerelease: {e}"))?;
+        // PG `CASE … THEN 1 ELSE 0` is INT4 (i32); MySQL/SQLite often i64; BOOLEAN also appears.
+        let draft_i: i64 = row
+            .try_get::<i32, _>("draft")
+            .map(|v| i64::from(v))
+            .or_else(|_| row.try_get::<i64, _>("draft"))
+            .or_else(|_| {
+                row.try_get::<bool, _>("draft")
+                    .map(|b| if b { 1 } else { 0 })
+            })
+            .map_err(|e| format!("draft: {e}"))?;
+        let pre_i: i64 = row
+            .try_get::<i32, _>("prerelease")
+            .map(|v| i64::from(v))
+            .or_else(|_| row.try_get::<i64, _>("prerelease"))
+            .or_else(|_| {
+                row.try_get::<bool, _>("prerelease")
+                    .map(|b| if b { 1 } else { 0 })
+            })
+            .map_err(|e| format!("prerelease: {e}"))?;
         ReleaseRow {
             id: row.try_get("id").map_err(|e| format!("id: {e}"))?,
             repo_id: row.try_get("repo_id").map_err(|e| format!("repo_id: {e}"))?,
@@ -65,7 +82,7 @@ macro_rules! map_asset {
     }};
 }
 
-const SEL_PG: &str = "SELECT id, repo_id, tag_name, title, body, CASE WHEN draft THEN 1 ELSE 0 END AS draft, CASE WHEN prerelease THEN 1 ELSE 0 END AS prerelease, author_id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at FROM releases";
+const SEL_PG: &str = "SELECT id, repo_id, tag_name, title, body, CASE WHEN draft THEN 1::bigint ELSE 0::bigint END AS draft, CASE WHEN prerelease THEN 1::bigint ELSE 0::bigint END AS prerelease, author_id, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at FROM releases";
 const SEL_MY: &str = "SELECT id, repo_id, tag_name, title, body, draft, prerelease, author_id, DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at, DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at FROM releases";
 const SEL_SQ: &str = "SELECT id, repo_id, tag_name, title, body, draft, prerelease, author_id, strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at, strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at FROM releases";
 
