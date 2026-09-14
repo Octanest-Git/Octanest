@@ -29,6 +29,8 @@ const commentsDeleteMock = vi.fn();
 const commentsHistoryMock = vi.fn();
 const labelListForRepoMock = vi.fn();
 const labelsSetMock = vi.fn();
+const assigneeCandidatesMock = vi.fn();
+const assigneesSetMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -54,6 +56,11 @@ vi.mock("@/lib/api-client", () => ({
       labels: {
         set: (...args: unknown[]) => labelsSetMock(...args),
       },
+      assignees: {
+        set: (...args: unknown[]) => assigneesSetMock(...args),
+      },
+      assigneeCandidates: (...args: unknown[]) =>
+        assigneeCandidatesMock(...args),
     },
     label: {
       listForRepo: (...args: unknown[]) => labelListForRepoMock(...args),
@@ -155,6 +162,8 @@ beforeEach(() => {
   commentsHistoryMock.mockReset();
   labelListForRepoMock.mockReset();
   labelsSetMock.mockReset();
+  assigneeCandidatesMock.mockReset();
+  assigneesSetMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -167,6 +176,16 @@ beforeEach(() => {
   commentsHistoryMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
   labelListForRepoMock.mockResolvedValue({ ok: true, data: { labels: [] } });
   labelsSetMock.mockResolvedValue({ ok: true, data: sampleIssue });
+  assigneeCandidatesMock.mockResolvedValue({
+    ok: true,
+    data: {
+      users: [
+        { user_id: "u1", username: "ada", display_name: "Ada" },
+        { user_id: "u2", username: "grace", display_name: "Grace" },
+      ],
+    },
+  });
+  assigneesSetMock.mockResolvedValue({ ok: true, data: sampleIssue });
 });
 
 afterEach(cleanup);
@@ -494,6 +513,38 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
           screen.getByText(/type.*(issue )?number|confirm/i),
         ).toBeInTheDocument();
       });
+    },
+    15_000,
+  );
+
+  it(
+    "Write+ multi-assignee picker from assigneeCandidates (ISS-03 / D-ISS-06 / D-ISS-08)",
+    async () => {
+      const mod = await loadIssueDetailModule();
+      renderWithQueryClient(issueDetailPage(mod));
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: /^Save assignees$/i }),
+        ).toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(assigneeCandidatesMock).toHaveBeenCalled();
+        expect(
+          screen.getByRole("checkbox", { name: /grace/i }),
+        ).toBeInTheDocument();
+      });
+
+      screen.getByRole("checkbox", { name: /grace/i }).click();
+      screen.getByRole("button", { name: /^Save assignees$/i }).click();
+
+      await waitFor(() => {
+        expect(assigneesSetMock).toHaveBeenCalled();
+      });
+      const arg = assigneesSetMock.mock.calls[0]?.[0] as {
+        userIds?: string[];
+      };
+      expect(arg.userIds).toContain("u2");
     },
     15_000,
   );

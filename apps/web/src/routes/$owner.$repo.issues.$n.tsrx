@@ -8,6 +8,7 @@ import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { IssuePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
+import { IssueAssigneesPanel } from "@/components/repo/issue-assignees-panel";
 import { IssueComments } from "@/components/repo/issue-comments";
 import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
 import { IssueHistoryPanel } from "@/components/repo/issue-history";
@@ -445,15 +446,13 @@ export function IssueDetailPage() @{
               issue={issue!}
               canWrite={canWrite}
             />
-            <section aria-labelledby="issue-assignees-heading">
-              <h2
-                id="issue-assignees-heading"
-                className="text-[14px] font-semibold text-foreground"
-              >
-                Assignees
-              </h2>
-              <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
-            </section>
+            <IssueAssigneesPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              issue={issue!}
+              canWrite={canWrite}
+            />
             <section aria-labelledby="issue-linked-prs-heading">
               <h2
                 id="issue-linked-prs-heading"
