@@ -96,6 +96,17 @@ pub async fn update_profile(
                     "email or username already taken",
                 ));
             }
+        } else if ctx
+            .db
+            .find_organization_by_slug(&username)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
+            return Err(AppError::new(
+                "auth.taken",
+                "email or username already taken",
+            ));
         }
         // FS-then-DB: move `{old}/` → `{new}/` before rewriting users.username.
         crate::git::rename_owner_repos_dir(&ctx.repos_dir, &existing.username, &username).await?;

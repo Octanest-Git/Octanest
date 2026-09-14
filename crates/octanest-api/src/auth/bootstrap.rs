@@ -273,6 +273,17 @@ pub async fn confirm_admin_credentials(
                     "email or username already taken",
                 ));
             }
+        } else if ctx
+            .db
+            .find_organization_by_slug(&username)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
+            return Err(AppError::new(
+                "auth.taken",
+                "email or username already taken",
+            ));
         }
     }
 

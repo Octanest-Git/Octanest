@@ -216,6 +216,21 @@ pub async fn resolve_owner_slug(
     Ok(None)
 }
 
+/// True when `slug` is already a username or organization slug (D-ORG-01 shared namespace).
+pub async fn login_slug_taken(db: &Database, slug: &str) -> Result<bool, String> {
+    let slug = slug.trim();
+    if slug.is_empty() {
+        return Ok(false);
+    }
+    if db.find_user_by_username(slug).await?.is_some() {
+        return Ok(true);
+    }
+    if db.find_organization_by_slug(slug).await?.is_some() {
+        return Ok(true);
+    }
+    Ok(false)
+}
+
 /// Load ACL sources and coalesce (D-ORG-05). Does not map HTTP status.
 pub async fn effective_capability(
     db: &Database,

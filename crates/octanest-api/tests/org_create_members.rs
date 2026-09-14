@@ -143,6 +143,48 @@ async fn org_create_reserves_shared_slug_namespace() {
     assert_eq!(dup_v["error"]["code"], "org.slug_taken");
 }
 
+
+/// Signup must not claim an existing org slug (D-ORG-01 reverse direction).
+#[tokio::test]
+async fn signup_rejects_existing_org_slug() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("signup_org_slug.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "owner@ex.com", "owner1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acme","display_name":"Acme"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+
+    let collide = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"attacker@ex.com","username":"acme","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(collide.status(), StatusCode::BAD_REQUEST);
+    let bytes = collide.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false);
+    assert_eq!(v["error"]["code"], "auth.taken");
+}
+
 /// Org-owned public repo resolves via org slug (D-ORG-01 / OwnerRef) — not user-only lookup.
 #[tokio::test]
 async fn org_create_owned_repo_resolves_by_org_slug() {

@@ -136,18 +136,9 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<OrgPublic,
         .to_string();
 
     // D-ORG-01 / T-10-04: shared namespace — reject collisions with users or orgs.
-    if ctx
-        .db
-        .find_user_by_username(&slug)
+    if crate::repo::login_slug_taken(&ctx.db, &slug)
         .await
         .map_err(db_err)?
-        .is_some()
-        || ctx
-            .db
-            .find_organization_by_slug(&slug)
-            .await
-            .map_err(db_err)?
-            .is_some()
     {
         return Err(AppError::new(
             "org.slug_taken",

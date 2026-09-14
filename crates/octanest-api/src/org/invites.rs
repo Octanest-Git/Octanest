@@ -422,12 +422,9 @@ pub async fn accept(
             }
         })?;
 
-        if ctx
-            .db
-            .find_user_by_username(username)
+        if crate::repo::login_slug_taken(&ctx.db, username)
             .await
             .map_err(db_err)?
-            .is_some()
         {
             return Err(AppError::new(
                 "auth.taken",

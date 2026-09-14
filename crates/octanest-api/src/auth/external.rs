@@ -107,8 +107,16 @@ pub async fn allocate_username(
 
     if try_name(&base) {
         match db.find_user_by_username(&base).await.map_err(ExternalAuthError::from_db)? {
-            None => return Ok((base, false)),
-            Some(_) => {
+            None
+                if db
+                    .find_organization_by_slug(&base)
+                    .await
+                    .map_err(ExternalAuthError::from_db)?
+                    .is_none() =>
+            {
+                return Ok((base, false));
+            }
+            _ => {
                 for i in 2..100 {
                     let suffix = format!("-{i}");
                     let max = 39usize.saturating_sub(suffix.len());
@@ -123,6 +131,11 @@ pub async fn allocate_username(
                     if try_name(&candidate)
                         && db
                             .find_user_by_username(&candidate)
+                            .await
+                            .map_err(ExternalAuthError::from_db)?
+                            .is_none()
+                        && db
+                            .find_organization_by_slug(&candidate)
                             .await
                             .map_err(ExternalAuthError::from_db)?
                             .is_none()
@@ -142,6 +155,11 @@ pub async fn allocate_username(
             .await
             .map_err(ExternalAuthError::from_db)?
             .is_none()
+            && db
+                .find_organization_by_slug(&ph)
+                .await
+                .map_err(ExternalAuthError::from_db)?
+                .is_none()
         {
             return Ok((ph, true));
         }
