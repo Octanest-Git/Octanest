@@ -538,30 +538,241 @@ async fn org_members_last_owner_demote_or_remove_rejected() {
 
 /// Member with member_base=none cannot read private org repo (ORG-02 / D-ORG-02b / T-10-02).
 #[tokio::test]
-#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_none_denies_private_repo_read() {
-    assert!(
-        false,
-        "Wave 0: Member + member_base none → deny private org repo read (ORG-02 / D-ORG-02b)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_base_none.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "basenone@ex.com", "basenone1").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().expect("id")).await;
+
+    let (_, mem_v) = signup_and_login(&app, "basemem@ex.com", "basemem1").await;
+    let mem_id = mem_v["data"]["id"].as_str().expect("id").to_string();
+    verify_user(&db, &mem_id).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"base-none-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+    assert_eq!(create_v["data"]["member_base_permission"], "none");
+
+    let (_, add_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"base-none-org","username":"basemem1","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add_v["ok"], true, "{add_v}");
+
+    let (_, repo_v) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","owner":"base-none-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(repo_v["ok"], true, "{repo_v}");
+
+    // Owner still admin despite member_base none.
+    let (_, owner_get) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"base-none-org","name":"secret"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(owner_get["ok"], true, "Owner unaffected — {owner_get}");
+    assert_eq!(owner_get["data"]["can_admin"], true);
+
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"basemem@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    let mem_cookie = session_cookie_from_response(&login);
+    let _ = login.into_body().collect().await;
+
+    let (_, mem_get) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"base-none-org","name":"secret"}}"#,
+        Some(&mem_cookie),
+    )
+    .await;
+    assert_eq!(
+        mem_get["error"]["code"], "repo.not_found",
+        "Member + base none → soft not_found — {mem_get}"
     );
 }
 
 /// Member with member_base=read can read private org repo (ORG-02 / D-ORG-02b).
 #[tokio::test]
-#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_read_allows_private_repo_read() {
-    assert!(
-        false,
-        "Wave 0: Member + member_base read → can read private org repo (ORG-02 / D-ORG-02b)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_base_read.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "baseread@ex.com", "baseread1").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().expect("id")).await;
+
+    let (_, mem_v) = signup_and_login(&app, "readmem@ex.com", "readmem1").await;
+    verify_user(&db, mem_v["data"]["id"].as_str().expect("id")).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"base-read-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (_, add_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"base-read-org","username":"readmem1","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add_v["ok"], true, "{add_v}");
+
+    let (_, repo_v) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","owner":"base-read-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(repo_v["ok"], true, "{repo_v}");
+
+    let (set_status, set_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.updateSettings","input":{"slug":"base-read-org","member_base_permission":"read"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(set_status, StatusCode::OK, "updateSettings — {set_v}");
+    assert_eq!(set_v["ok"], true, "{set_v}");
+    assert_eq!(set_v["data"]["member_base_permission"], "read");
+
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"readmem@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    let mem_cookie = session_cookie_from_response(&login);
+    let _ = login.into_body().collect().await;
+
+    let (_, mem_get) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"base-read-org","name":"secret"}}"#,
+        Some(&mem_cookie),
+    )
+    .await;
+    assert_eq!(mem_get["ok"], true, "Member + base read — {mem_get}");
+    assert_eq!(mem_get["data"]["can_write"], false, "read is not write — {mem_get}");
+    assert_eq!(mem_get["data"]["can_admin"], false);
 }
 
 /// Member with member_base=write can write private org repo (ORG-02 / D-ORG-02b).
 #[tokio::test]
-#[ignore = "deferred to 10-05-T2 member_base settings"]
 async fn org_member_base_write_allows_private_repo_write() {
-    assert!(
-        false,
-        "Wave 0: Member + member_base write → can write private org repo (ORG-02 / D-ORG-02b)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_base_write.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "basewrite@ex.com", "basewrite1").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().expect("id")).await;
+
+    let (_, mem_v) = signup_and_login(&app, "writemem@ex.com", "writemem1").await;
+    verify_user(&db, mem_v["data"]["id"].as_str().expect("id")).await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"base-write-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let (_, add_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"base-write-org","username":"writemem1","role":"member"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(add_v["ok"], true, "{add_v}");
+
+    let (_, repo_v) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","owner":"base-write-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(repo_v["ok"], true, "{repo_v}");
+
+    // Public org repo remains readable with any base (D-ORG-02b).
+    let (_, pub_v) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"open","visibility":"public","owner":"base-write-org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(pub_v["ok"], true, "{pub_v}");
+
+    let (set_status, set_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.updateSettings","input":{"slug":"base-write-org","member_base_permission":"write"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(set_status, StatusCode::OK, "{set_v}");
+    assert_eq!(set_v["data"]["member_base_permission"], "write");
+
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"writemem@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    let mem_cookie = session_cookie_from_response(&login);
+    let _ = login.into_body().collect().await;
+
+    let (_, mem_get) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"base-write-org","name":"secret"}}"#,
+        Some(&mem_cookie),
+    )
+    .await;
+    assert_eq!(mem_get["ok"], true, "Member + base write — {mem_get}");
+    assert_eq!(mem_get["data"]["can_write"], true, "{mem_get}");
+    assert_eq!(mem_get["data"]["can_admin"], false, "write is not admin — {mem_get}");
+
+    let (_, pub_get) = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"base-write-org","name":"open"}}"#,
+        Some(&mem_cookie),
+    )
+    .await;
+    assert_eq!(pub_get["ok"], true, "public readable — {pub_get}");
 }
