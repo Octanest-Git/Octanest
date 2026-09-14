@@ -127,8 +127,15 @@ wait_http "http://127.0.0.1:${WEB_PORT}/" "web" 90
 
 # Cold routes can sit in Vite dep-optimize/reload; warm signup/login before Playwright.
 echo "==> warming auth routes"
-curl -4 -fsS "http://127.0.0.1:${WEB_PORT}/signup" -o /dev/null || true
-curl -4 -fsS "http://127.0.0.1:${WEB_PORT}/login" -o /dev/null || true
+for path in /signup /login; do
+  for _ in 1 2 3 4 5; do
+    code=$(curl -4 -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${WEB_PORT}${path}" || echo 000)
+    if [[ "$code" =~ ^(200|302|303|307|308)$ ]]; then
+      break
+    fi
+    sleep 2
+  done
+done
 
 export E2E_STACK=1
 export OCTANEST_API_ORIGIN="http://127.0.0.1:${API_PORT}"
