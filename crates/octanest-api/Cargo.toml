@@ -48,6 +48,7 @@ image = { version = "0.25", features = ["jpeg", "png", "webp"] }
 include_dir = "0.7.4"
 tempfile = "3"
 ssh-key = { version = "=0.7.0-rc.11", features = ["std", "alloc"] }
+russh = { version = "0.63", features = ["aws-lc-rs"] }
 
 [dev-dependencies]
 http-body-util = "0.1"

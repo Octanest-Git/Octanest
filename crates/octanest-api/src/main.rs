@@ -76,6 +76,11 @@ async fn main() {
         }
     }
 
+    let repos_dir = std::env::var("OCTANEST_REPOS_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("var/repos"));
+    let _ssh_stop = octanest_api::ssh::maybe_spawn_from_env(db.clone(), repos_dir).await;
+
     let bind = std::env::var("API_BIND").unwrap_or_else(|_| "0.0.0.0:8080".into());
     let listener = tokio::net::TcpListener::bind(&bind)
         .await
