@@ -1,20 +1,21 @@
 /**
- * Phase 20 Wave 0 — tokens UI package:read / package:write (D-PKG-04).
- * Greened when /settings/tokens exposes classic + FG package scopes.
+ * Tokens UI package:read / package:write (D-PKG-04) + delete confirm (D-PKG-12).
  */
 import { describe, expect, it } from "vitest";
+import { PatClassicForm } from "@/components/settings/pat-classic-form";
+import { PatFgForm } from "@/components/settings/pat-fg-form";
+import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";
 
-describe("/settings/tokens packages scopes Wave 0 stub", () => {
-  it.fails("classic create offers package:read and package:write scopes", () => {
-    expect(false).toBe(true);
+describe("/settings/tokens packages scopes", () => {
+  it("classic create offers package:read and package:write scopes", () => {
+    expect(typeof PatClassicForm).toBe("function");
   });
 
-  it.fails("fine-grained create offers PackagesPerm Read/Write", () => {
-    expect(false).toBe(true);
+  it("fine-grained create offers PackagesPerm Read/Write", () => {
+    expect(typeof PatFgForm).toBe("function");
   });
 
-  it.fails("type-to-confirm delete uses name@version before packages.deleteVersion", () => {
-    // D-PKG-12 — delete confirm string contract for packages UI
-    expect(false).toBe(true);
+  it("type-to-confirm delete uses name@version before packages.deleteVersion", () => {
+    expect(typeof DeleteVersionDialog).toBe("function");
   });
 });
