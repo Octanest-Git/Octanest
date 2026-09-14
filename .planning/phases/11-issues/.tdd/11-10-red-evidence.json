@@ -1,0 +1,8 @@
+{
+  "command": "cd apps/web && bunx vitest run src/lib/markdown.issues.test.ts src/lib/markdown.test.ts",
+  "exitCode": 1,
+  "targetTest": "turns #N into /{owner}/{repo}/issues/{n} href (ISS-04 / D-ISS-13)",
+  "expected": "href=\"/ada/hello/issues/42\"",
+  "actual": "<p>See #42 for details</p>",
+  "output": "TAP version 13\n# Vitest RED run projected to node-test TAP for gsd check tdd-red-evidence\n# Source: bunx vitest run src/lib/markdown.issues.test.ts src/lib/markdown.test.ts\n# Raw vitest: 2 failed | 5 passed \u2014 #N / owner/repo#N not yet autolinked\nnot ok 1 - turns #N into /{owner}/{repo}/issues/{n} href (ISS-04 / D-ISS-13)\n  ---\n  error: AssertionError\n  message: expected '<p>See #42 for details</p>' to match /href=[\"']/ada/hello/issues/42[\"']/\n  expected: href=\"/ada/hello/issues/42\"\n  actual: <p>See #42 for details</p>\n  ...\nnot ok 2 - turns owner/repo#N into /owner/repo/issues/n href (ISS-04 / D-ISS-13)\n  ---\n  error: AssertionError\n  message: expected '<p>Related: bob/world#7</p>' to match /href=[\"']/bob/world/issues/7[\"']/\n  expected: href=\"/bob/world/issues/7\"\n  actual: <p>Related: bob/world#7</p>\n  ...\nok 3 - keeps rehype-sanitize last \u2014 script bodies neutralized (D-ISS-10 / T-11-03)\nok 4 - does not autolink @mentions (buildUrl false / Q1)\nok 5 - does not autolink commit SHAs (buildUrl false / Q1)\nok 6 - strips script tags and unsafe HTML\nok 7 - renders GFM tables without raw HTML passthrough\n1..7\n# tests 7\n# pass 5\n# fail 2\n# cancelled 0\n"
+}
