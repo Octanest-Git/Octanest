@@ -115,7 +115,7 @@ status: complete
 1. **Task 0: Confirm D-ISS-01 numbering + 0011 schema door** — decision only (`proceed_0011` from executor instructions; no code commit)
 2. **Task 1: 0011_issues + DB helpers + issue_types** — `044a081` (feat)
 
-**Plan metadata:** docs commit for `11-02-SUMMARY.md` only (STATE/ROADMAP intentionally untouched per orchestrator)
+**Plan metadata:** `87e3ad6` (docs: complete plan — STATE/ROADMAP intentionally untouched)
 
 ## Files Created/Modified
 
