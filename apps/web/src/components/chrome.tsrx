@@ -110,6 +110,14 @@ function AccountMenu({
       <DropdownMenuItem
         onClick={() => {
           onNavigated?.();
+          window.location.assign("/orgs/new");
+        }}
+      >
+        New organization
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
           window.location.assign("/settings/tokens");
         }}
       >
@@ -292,6 +300,13 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                 onClick={onClose}
               >
                 Profile
+              </a>
+              <a
+                href="/orgs/new"
+                className={mobileNavItemClass}
+                onClick={onClose}
+              >
+                New organization
               </a>
               @if (user.role === "sys-admin") {
                 <a

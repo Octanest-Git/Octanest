@@ -228,6 +228,10 @@ export type RepoListMineResponse = {
   repos: RepoPublic[];
 };
 
+export type RepoListByOwnerRequest = {
+  owner: string;
+};
+
 export type RepoGetRequest = {
   owner: string;
   name: string;
@@ -664,6 +668,8 @@ export function createClient(opts: CreateClientOptions) {
     },
     repo: {
       listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
+      listByOwner: (input: RepoListByOwnerRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "repo.listByOwner", input),
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
@@ -895,6 +901,20 @@ export function repoListMineQueryOptions(client: OctanestClient) {
     queryKey: ["repo", "listMine"] as const,
     queryFn: async () => {
       const res = await client.repo.listMine();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoListByOwnerQueryOptions(
+  client: OctanestClient,
+  input: RepoListByOwnerRequest,
+) {
+  return {
+    queryKey: ["repo", "listByOwner", input.owner] as const,
+    queryFn: async () => {
+      const res = await client.repo.listByOwner(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

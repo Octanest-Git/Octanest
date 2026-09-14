@@ -27,7 +27,8 @@ use octanest_core::{
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
     RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
-    RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse, RepoSoftDeleteRequest,
+    RepoListByOwnerRequest, RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse,
+    RepoSoftDeleteRequest,
     RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
     RepoUpdateVisibilityRequest, RepoVisibility,
 };
@@ -208,6 +209,61 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
             }
         })
         .collect();
+
+    Ok(RepoListMineResponse { repos })
+}
+
+/// `repo.listByOwner` — ACL-filtered repos under a user/org slug (D-ORG-06 org overview).
+/// Public repos are visible to any caller; private only when coalesce grants Read.
+pub async fn list_by_owner(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoListMineResponse, AppError> {
+    let req: RepoListByOwnerRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.listByOwner input: {e}"),
+        )
+    })?;
+    let owner_slug = req.owner.trim();
+    if owner_slug.is_empty() {
+        return Err(AppError::new("rpc.bad_input", "owner is required"));
+    }
+
+    let owner_ref = match resolve_owner_slug(&ctx.db, owner_slug).await {
+        Ok(Some(r)) => r,
+        Ok(None) => return Ok(RepoListMineResponse { repos: vec![] }),
+        Err(e) => {
+            tracing::error!(error = %e, "resolve_owner_slug failed");
+            return Err(AppError::new("repo.internal", "repository operation failed"));
+        }
+    };
+
+    let rows = ctx
+        .db
+        .list_repositories_by_owner(owner_ref.id())
+        .await
+        .map_err(db_err)?;
+
+    let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
+    let mut repos = Vec::with_capacity(rows.len());
+    for row in rows {
+        let capability = match effective_capability(&ctx.db, caller_id, &row, &owner_ref).await {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!(error = %e, "effective_capability failed");
+                return Err(AppError::new("repo.internal", "repository operation failed"));
+            }
+        };
+        if !meets(capability, Capability::Read) {
+            continue;
+        }
+        repos.push(to_public(&AccessibleRepo {
+            row,
+            owner_username: owner_ref.slug().to_string(),
+            capability,
+        }));
+    }
 
     Ok(RepoListMineResponse { repos })
 }

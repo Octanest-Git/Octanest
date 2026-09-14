@@ -275,6 +275,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.listByOwner" => match repo::list_by_owner(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.createDefaults" => match repo::create_defaults(ctx).await {
             Ok(defaults) => RpcResponse::ok(defaults),
             Err(e) => RpcResponse::err(e),

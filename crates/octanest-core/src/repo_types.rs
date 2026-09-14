@@ -103,6 +103,12 @@ pub struct RepoListMineResponse {
     pub repos: Vec<RepoPublic>,
 }
 
+/// `repo.listByOwner` — repos under a user/org slug the caller can read (D-ORG-06 overview).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoListByOwnerRequest {
+    pub owner: String,
+}
+
 /// `repo.get` / `repo.refs` input — owner + name (GIT-05).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoGetRequest {
