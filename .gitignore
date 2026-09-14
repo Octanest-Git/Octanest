@@ -16,3 +16,9 @@ playwright-report/
 .vitest/
 .env.sqlite
 dev-dist/
+
+# Local agent / UAT artifacts (do not ship)
+.cursor/gsd-core/
+diff-commit-*.png
+uat-*.png
+login-snap.md

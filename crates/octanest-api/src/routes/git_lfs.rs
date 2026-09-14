@@ -280,7 +280,8 @@ pub async fn batch(
                     error: None,
                 });
             }
-        } else if on_disk {
+        } else if on_disk && linked {
+            // Require per-repo link — global OID store must not cross-leak (D-LFS).
             let href = object_href(&owner, &repo_git, &obj.oid);
             objects.push(BatchObjectOut {
                 oid: obj.oid,
@@ -444,6 +445,17 @@ pub async fn get_object(
     }
 
     if store::validate_oid(&oid).is_err() {
+        return not_found_lfs("Object does not exist");
+    }
+
+    let linked = match state.db.has_lfs_link(&resolved.row.id, &oid).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!(error = %e, "has_lfs_link");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+    if !linked {
         return not_found_lfs("Object does not exist");
     }
 

@@ -8,7 +8,9 @@ use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tokio::process::Command;
 
 use crate::git::bare_repo_path;
-use crate::repo::{can_read_as_owner, is_private_visibility, lookup_repo_row_or_redirect};
+use crate::repo::{
+    effective_capability, is_private_visibility, lookup_repo_row_or_redirect, meets, Capability,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PackCommand {
@@ -112,11 +114,19 @@ pub async fn authorize_pack(
         }
     };
 
-    let is_owner = can_read_as_owner(Some(caller_user_id), owner_ref.id());
+    // Match Smart HTTP: Capability coalesce (personal owner / org role / collaborator / public).
+    let capability = match effective_capability(db, Some(caller_user_id), &row, &owner_ref).await {
+        Ok(c) => c,
+        Err(_) => {
+            return AuthzDecision::Deny {
+                message: "ERROR: Internal error.\n".into(),
+            };
+        }
+    };
 
     match action {
         PackAction::Fetch => {
-            if is_private_visibility(&row.visibility) && !is_owner {
+            if is_private_visibility(&row.visibility) && !meets(capability, Capability::Read) {
                 return AuthzDecision::Deny {
                     message: "ERROR: Permission denied to this repository.\n".into(),
                 };
@@ -124,7 +134,7 @@ pub async fn authorize_pack(
             AuthzDecision::Allow { bare }
         }
         PackAction::Push => {
-            if !is_owner {
+            if !meets(capability, Capability::Write) {
                 return AuthzDecision::Deny {
                     message: "ERROR: Permission denied to this repository.\n".into(),
                 };

@@ -750,7 +750,19 @@ async fn search_v1(
         if pkg.format != FORMAT {
             continue;
         }
-        if identity.is_none() && !acl::is_public(&pkg.visibility) {
+        // Authenticated callers must still pass Pull ACL — do not list private/linked-private.
+        let allowed = match authorize_pkg(
+            &state.db,
+            identity.as_ref(),
+            &pkg,
+            PackageAction::Pull,
+        )
+        .await
+        {
+            Ok(v) => v,
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        };
+        if !allowed {
             continue;
         }
         if !text.is_empty() && !pkg.name.to_ascii_lowercase().contains(&text) {
