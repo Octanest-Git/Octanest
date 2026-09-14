@@ -5,8 +5,10 @@ use std::sync::Arc;
 use std::path::Path;
 
 use octanest_core::{
-    AppError, AuthSettingsPublic, EmailProviderKind, FactoryResetRequest, FactoryResetResponse,
-    FactoryResetScope, ProviderMode, RepoVisibility, UpdateAuthSettingsRequest,
+    AdminLfsSettingsPublic, AdminLfsUpdateSettingsRequest, AdminLfsUsageResponse,
+    AdminLfsOwnerUsageEntry, AdminLfsRepoUsageEntry, AppError, AuthSettingsPublic,
+    EmailProviderKind, FactoryResetRequest, FactoryResetResponse, FactoryResetScope, ProviderMode,
+    RepoVisibility, UpdateAuthSettingsRequest,
 };
 use octanest_db::AuthSettingsRow;
 
@@ -209,6 +211,15 @@ pub async fn factory_reset(
 
     if matches!(req.scope, FactoryResetScope::DatabaseAndRepositories) {
         wipe_repos_dir_contents(&ctx.repos_dir).await?;
+        crate::jobs::wipe_lfs_dir_contents(&ctx.lfs_dir)
+            .await
+            .map_err(|e| {
+                tracing::error!(error = %e, "wipe lfs_dir failed");
+                AppError::new(
+                    "admin.factory_reset_lfs",
+                    "Failed to wipe LFS storage.",
+                )
+            })?;
     }
 
     ctx.set_cookie = Some(CookieChange::Clear);
@@ -352,6 +363,111 @@ pub async fn wipe_repos_dir_contents(repos_dir: &Path) -> Result<(), AppError> {
         }
     }
     Ok(())
+}
+
+/// `admin.lfs.getSettings` — effective limits + override flags (D-LFS-13).
+pub async fn lfs_get_settings(ctx: &RpcCtx) -> Result<AdminLfsSettingsPublic, AppError> {
+    require_admin(ctx).await?;
+    let row = ctx.db.get_lfs_settings().await.map_err(db_err)?;
+    let max = row.max_object_bytes.unwrap_or_else(|| {
+        std::env::var("OCTANEST_LFS_MAX_OBJECT_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(crate::lfs::quota::DEFAULT_MAX_OBJECT_BYTES)
+    });
+    let repo_q = row.quota_repo_bytes.unwrap_or_else(|| {
+        std::env::var("OCTANEST_LFS_QUOTA_REPO_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(crate::lfs::quota::DEFAULT_QUOTA_REPO_BYTES)
+    });
+    let user_q = row.quota_user_bytes.unwrap_or_else(|| {
+        std::env::var("OCTANEST_LFS_QUOTA_USER_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(crate::lfs::quota::DEFAULT_QUOTA_USER_BYTES)
+    });
+    Ok(AdminLfsSettingsPublic {
+        max_object_bytes: max,
+        quota_repo_bytes: repo_q,
+        quota_user_bytes: user_q,
+        max_object_bytes_overridden: row.max_object_bytes.is_some(),
+        quota_repo_bytes_overridden: row.quota_repo_bytes.is_some(),
+        quota_user_bytes_overridden: row.quota_user_bytes.is_some(),
+    })
+}
+
+/// `admin.lfs.updateSettings` — persist overrides (null clears when clear_overrides).
+pub async fn lfs_update_settings(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<AdminLfsSettingsPublic, AppError> {
+    require_admin(ctx).await?;
+    let req: AdminLfsUpdateSettingsRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid admin.lfs.updateSettings input: {e}"),
+        )
+    })?;
+    if req.clear_overrides {
+        ctx.db
+            .update_lfs_settings(None, None, None)
+            .await
+            .map_err(db_err)?;
+    } else {
+        let current = ctx.db.get_lfs_settings().await.map_err(db_err)?;
+        ctx.db
+            .update_lfs_settings(
+                req.max_object_bytes.or(current.max_object_bytes),
+                req.quota_repo_bytes.or(current.quota_repo_bytes),
+                req.quota_user_bytes.or(current.quota_user_bytes),
+            )
+            .await
+            .map_err(db_err)?;
+    }
+    lfs_get_settings(ctx).await
+}
+
+/// `admin.lfs.getUsage` — instance physical + logical breakdown (D-LFS-19).
+pub async fn lfs_get_usage(ctx: &RpcCtx) -> Result<AdminLfsUsageResponse, AppError> {
+    require_admin(ctx).await?;
+    let physical_bytes = ctx.db.lfs_physical_bytes().await.map_err(db_err)?;
+    let object_count = ctx.db.instance_lfs_object_count().await.map_err(db_err)?;
+    let logical_bytes = ctx.db.lfs_instance_logical_bytes().await.map_err(db_err)?;
+    let by_repo = ctx
+        .db
+        .lfs_usage_by_repo(100)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| AdminLfsRepoUsageEntry {
+            repository_id: r.repository_id,
+            owner: r.owner_slug,
+            name: r.name,
+            object_count: r.object_count,
+            logical_bytes: r.logical_bytes,
+        })
+        .collect();
+    let by_owner = ctx
+        .db
+        .lfs_usage_by_owner(100)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| AdminLfsOwnerUsageEntry {
+            owner_id: r.owner_id,
+            owner_slug: r.owner_slug,
+            object_count: r.object_count,
+            logical_bytes: r.logical_bytes,
+        })
+        .collect();
+    Ok(AdminLfsUsageResponse {
+        physical_bytes,
+        object_count,
+        logical_bytes,
+        by_repo,
+        by_owner,
+    })
 }
 
 fn path_is_under(path: &Path, root: &Path) -> bool {

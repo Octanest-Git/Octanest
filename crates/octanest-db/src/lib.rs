@@ -6,6 +6,7 @@ pub mod dialect;
 pub mod email_tokens;
 pub mod issue_labels;
 pub mod issues;
+pub mod lfs;
 pub mod migrate;
 pub mod org_invites;
 pub mod org_members;
@@ -24,6 +25,7 @@ pub use issue_labels::{IssueAssigneeRow, LabelRow};
 pub use issues::{
     CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
 };
+pub use lfs::LfsObjectRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -1147,6 +1149,114 @@ impl Database {
     /// links), organizations (cascades members / invites / org-scoped labels), then
     /// sessions, identities, email tokens, and users; resets auth settings to
     /// local/log defaults with signup closed.
+    // --- git LFS (D-LFS-02 / D-LFS-10) ---
+
+    pub async fn get_repo_lfs_enabled(&self, repo_id: &str) -> Result<bool, String> {
+        lfs::get_lfs_enabled(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_lfs_enabled(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        lfs::set_lfs_enabled(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn find_lfs_object(&self, oid: &str) -> Result<Option<LfsObjectRow>, String> {
+        lfs::find_lfs_object(self.require_pool()?, oid).await
+    }
+
+    pub async fn upsert_lfs_object(&self, oid: &str, size: i64) -> Result<(), String> {
+        lfs::upsert_lfs_object(self.require_pool()?, oid, size).await
+    }
+
+    pub async fn link_lfs_object(&self, repository_id: &str, oid: &str) -> Result<(), String> {
+        lfs::link_lfs_object(self.require_pool()?, repository_id, oid).await
+    }
+
+    pub async fn link_lfs_object_as(
+        &self,
+        repository_id: &str,
+        oid: &str,
+        uploaded_by: Option<&str>,
+    ) -> Result<(), String> {
+        lfs::link_lfs_object_as(self.require_pool()?, repository_id, oid, uploaded_by).await
+    }
+
+    pub async fn has_lfs_link(&self, repository_id: &str, oid: &str) -> Result<bool, String> {
+        lfs::has_lfs_link(self.require_pool()?, repository_id, oid).await
+    }
+
+    pub async fn get_lfs_settings(&self) -> Result<lfs::LfsSettingsRow, String> {
+        lfs::get_lfs_settings(self.require_pool()?).await
+    }
+
+    pub async fn update_lfs_settings(
+        &self,
+        max_object_bytes: Option<i64>,
+        quota_repo_bytes: Option<i64>,
+        quota_user_bytes: Option<i64>,
+    ) -> Result<lfs::LfsSettingsRow, String> {
+        lfs::update_lfs_settings(
+            self.require_pool()?,
+            max_object_bytes,
+            quota_repo_bytes,
+            quota_user_bytes,
+        )
+        .await
+    }
+
+    pub async fn lfs_repo_logical_bytes(&self, repository_id: &str) -> Result<i64, String> {
+        lfs::repo_logical_bytes(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn lfs_owner_logical_bytes(&self, owner_id: &str) -> Result<i64, String> {
+        lfs::owner_logical_bytes(self.require_pool()?, owner_id).await
+    }
+
+    pub async fn lfs_physical_bytes(&self) -> Result<i64, String> {
+        lfs::physical_bytes(self.require_pool()?).await
+    }
+
+    pub async fn list_unreferenced_lfs_oids(
+        &self,
+        created_before: &str,
+    ) -> Result<Vec<String>, String> {
+        lfs::list_unreferenced_lfs_oids(self.require_pool()?, created_before).await
+    }
+
+    pub async fn list_repo_lfs_objects(
+        &self,
+        repository_id: &str,
+        limit: i64,
+    ) -> Result<Vec<lfs::LfsLinkedObjectRow>, String> {
+        lfs::list_repo_lfs_objects(self.require_pool()?, repository_id, limit).await
+    }
+
+    pub async fn repo_lfs_object_count(&self, repository_id: &str) -> Result<i64, String> {
+        lfs::repo_lfs_object_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn instance_lfs_object_count(&self) -> Result<i64, String> {
+        lfs::instance_lfs_object_count(self.require_pool()?).await
+    }
+
+    pub async fn lfs_instance_logical_bytes(&self) -> Result<i64, String> {
+        lfs::instance_logical_bytes(self.require_pool()?).await
+    }
+
+    pub async fn lfs_usage_by_repo(&self, limit: i64) -> Result<Vec<lfs::LfsRepoUsageRow>, String> {
+        lfs::usage_by_repo(self.require_pool()?, limit).await
+    }
+
+    pub async fn lfs_usage_by_owner(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<lfs::LfsOwnerUsageRow>, String> {
+        lfs::usage_by_owner(self.require_pool()?, limit).await
+    }
+
+    pub async fn delete_lfs_object(&self, oid: &str) -> Result<(), String> {
+        lfs::delete_lfs_object(self.require_pool()?, oid).await
+    }
+
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {

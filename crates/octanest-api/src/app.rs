@@ -23,7 +23,7 @@ use crate::auth::session::{
 };
 use crate::email::{self, EmailSender};
 use crate::pat::rate_limit::FailedAuthLimiter;
-use crate::routes::{auth_callbacks, avatar, git_smart_http, repo_raw};
+use crate::routes::{auth_callbacks, avatar, git_lfs, git_smart_http, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 use crate::user::rate_limit::LookupLimiter;
 
@@ -35,6 +35,8 @@ pub struct AppState {
     pub uploads_dir: PathBuf,
     /// Bare repos root (`OCTANEST_REPOS_DIR`, default `var/repos`) — D-30 / D-31.
     pub repos_dir: PathBuf,
+    /// Instance LFS object store (`OCTANEST_LFS_DIR`, default `var/lfs`) — D-LFS-01.
+    pub lfs_dir: PathBuf,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -65,11 +67,22 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(repos_dir)
         };
+        let lfs_dir = std::env::var("OCTANEST_LFS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/lfs"));
+        let lfs_dir = if lfs_dir.is_absolute() {
+            lfs_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(lfs_dir)
+        };
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
             repos_dir,
+            lfs_dir,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
@@ -86,6 +99,11 @@ impl AppState {
 
     pub fn with_repos_dir(mut self, dir: PathBuf) -> Self {
         self.repos_dir = dir;
+        self
+    }
+
+    pub fn with_lfs_dir(mut self, dir: PathBuf) -> Self {
+        self.lfs_dir = dir;
         self
     }
 
@@ -150,6 +168,21 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/{owner}/{repo_git}/git-receive-pack",
             axum::routing::post(git_smart_http::receive_pack),
         )
+        // Git LFS — Batch + basic transfer (D-LFS-06 / D-LFS-07)
+        .route(
+            "/{owner}/{repo_git}/info/lfs/objects/batch",
+            axum::routing::post(git_lfs::batch),
+        )
+        .route(
+            "/{owner}/{repo_git}/info/lfs/objects/verify",
+            axum::routing::post(git_lfs::verify_object),
+        )
+        .route(
+            "/{owner}/{repo_git}/info/lfs/objects/{oid}",
+            axum::routing::get(git_lfs::get_object)
+                .put(git_lfs::put_object)
+                .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)),
+        )
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -190,6 +223,7 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         sessions: state.sessions.clone(),
         uploads_dir: state.uploads_dir.clone(),
         repos_dir: state.repos_dir.clone(),
+        lfs_dir: state.lfs_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,

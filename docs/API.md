@@ -55,6 +55,10 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-receive-pack` | Git push body | PAT Basic (verified email; write scope) |
+| `POST` | `/{owner}/{repo}.git/info/lfs/objects/batch` | Git LFS Batch API | PAT Basic (Read download / Write upload) |
+| `PUT` | `/{owner}/{repo}.git/info/lfs/objects/{oid}` | LFS basic transfer upload (streaming) | PAT Basic (Write) |
+| `GET` | `/{owner}/{repo}.git/info/lfs/objects/{oid}` | LFS basic transfer download (Range supported) | PAT Basic (Read) |
+| `POST` | `/{owner}/{repo}.git/info/lfs/objects/{oid}/verify` | Optional LFS verify | PAT Basic (Write) |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -327,6 +331,32 @@ git clone https://git:octanest_pat_REDACTED@example.com/alice/demo.git
 git -c http.extraHeader="Authorization: Basic $(printf 'git:octanest_pat_REDACTED' | base64 -w0)" \
   ls-remote https://example.com/alice/demo.git
 ```
+
+### Git LFS
+
+Phase 14 serves **Git LFS** over HTTPS under the same `{owner}/{repo}.git` surface (Traefik `.git` PathRegexp already covers `info/lfs`). Storage is the instance volume `OCTANEST_LFS_DIR` — see [CONFIGURATION.md](CONFIGURATION.md#git-lfs).
+
+| Method | Path | Role |
+| --- | --- | --- |
+| `POST` | `/{owner}/{repo}.git/info/lfs/objects/batch` | Batch discover upload/download actions (`transfer=basic`) |
+| `PUT` | `/{owner}/{repo}.git/info/lfs/objects/{oid}` | Streaming basic upload |
+| `GET` | `/{owner}/{repo}.git/info/lfs/objects/{oid}` | Download; optional `Range` |
+| `POST` | `/{owner}/{repo}.git/info/lfs/objects/{oid}/verify` | Optional post-upload verify |
+
+**Auth (D-LFS-09):** Same as Smart HTTP — HTTP Basic with password = **personal access token**. Username aliases `git` / `token` / `oauth2` work. **Session cookies are ignored** for LFS. Failed auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` (LFS clients also accept `LFS-Authenticate`). Read capability for download; Write + verified email for upload. Classic `repo` / fine-grained `contents` scopes (no dedicated `lfs` scope).
+
+**Enable:** Per-repo LFS must be enabled by a repository Admin before Batch issues upload actions. Quotas / max object size reject oversized uploads with clear LFS error JSON (no soft-warn-only).
+
+**Client setup:** Track patterns with `git lfs track` and commit `.gitattributes` (server does not auto-commit). Example:
+
+```bash
+git lfs install
+git lfs track "*.psd"
+git add .gitattributes
+# push with HTTPS remote + PAT, or SSH git remote + HTTPS LFS via credential helper
+```
+
+**SSH git remotes:** Pack protocol may use SSH, but LFS object transfer remains **HTTPS** in Phase 14. Configure a credential helper so `git-lfs` can present a PAT to `https://…/{owner}/{repo}.git/info/lfs`. LFS-over-SSH is not supported.
 
 ### Git over SSH
 

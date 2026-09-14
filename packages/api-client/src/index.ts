@@ -401,6 +401,104 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+export type RepoLfsSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type RepoLfsEnabledResponse = {
+  enabled: boolean;
+};
+
+export type RepoLfsGetEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoLfsStatusResponse = {
+  enabled: boolean;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type RepoLfsObjectEntry = {
+  oid: string;
+  size: number;
+  refcount: number;
+};
+
+export type RepoLfsUsageResponse = {
+  enabled: boolean;
+  object_count: number;
+  logical_bytes: number;
+  quota_repo_bytes: number;
+  objects: RepoLfsObjectEntry[];
+};
+
+export type RepoLfsListObjectsRequest = {
+  owner: string;
+  name: string;
+  limit?: number | null;
+};
+
+export type RepoLfsListObjectsResponse = {
+  enabled: boolean;
+  objects: RepoLfsObjectEntry[];
+};
+
+export type RepoLfsDownloadRequest = {
+  owner: string;
+  name: string;
+  oid: string;
+};
+
+export type RepoLfsDownloadResponse = {
+  oid: string;
+  size: number;
+  encoding: string;
+  content: string;
+};
+
+export type AdminLfsSettingsPublic = {
+  max_object_bytes: number;
+  quota_repo_bytes: number;
+  quota_user_bytes: number;
+  max_object_bytes_overridden: boolean;
+  quota_repo_bytes_overridden: boolean;
+  quota_user_bytes_overridden: boolean;
+};
+
+export type AdminLfsUpdateSettingsRequest = {
+  max_object_bytes?: number | null;
+  quota_repo_bytes?: number | null;
+  quota_user_bytes?: number | null;
+  clear_overrides?: boolean;
+};
+
+export type AdminLfsRepoUsageEntry = {
+  repository_id: string;
+  owner: string;
+  name: string;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type AdminLfsOwnerUsageEntry = {
+  owner_id: string;
+  owner_slug: string;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type AdminLfsUsageResponse = {
+  physical_bytes: number;
+  object_count: number;
+  logical_bytes: number;
+  by_repo: AdminLfsRepoUsageEntry[];
+  by_owner: AdminLfsOwnerUsageEntry[];
+};
+
 /** Per-repo collaborator permission ladder (D-ORG-02c). */
 export type CollaboratorPermission = "read" | "write" | "admin";
 
@@ -989,6 +1087,20 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+      lfs: {
+        setEnabled: (input: RepoLfsSetEnabledRequest) =>
+          rpcCall<RepoLfsEnabledResponse>(opts, "repo.lfs.setEnabled", input),
+        getEnabled: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsEnabledResponse>(opts, "repo.lfs.getEnabled", input),
+        getStatus: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsStatusResponse>(opts, "repo.lfs.getStatus", input),
+        getUsage: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsUsageResponse>(opts, "repo.lfs.getUsage", input),
+        listObjects: (input: RepoLfsListObjectsRequest) =>
+          rpcCall<RepoLfsListObjectsResponse>(opts, "repo.lfs.listObjects", input),
+        download: (input: RepoLfsDownloadRequest) =>
+          rpcCall<RepoLfsDownloadResponse>(opts, "repo.lfs.download", input),
+      },
       collaborators: {
         list: (input: RepoGetRequest) =>
           rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),
@@ -1118,6 +1230,13 @@ export function createClient(opts: CreateClientOptions) {
       repos: {
         gc: (input: RepoGcRequest) =>
           rpcCall<RepoGcResponse>(opts, "admin.repos.gc", input),
+      },
+      lfs: {
+        getSettings: () =>
+          rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.getSettings", {}),
+        updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
+          rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
+        getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
       },
     },
   };

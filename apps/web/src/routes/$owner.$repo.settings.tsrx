@@ -6,6 +6,8 @@ import {
 import type { RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
+import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
+import { LfsBrowser } from "@/components/repo/lfs-browser";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import {
@@ -189,6 +191,14 @@ export function RepoSettingsPage() @{
         </section>
 
         <CollaboratorsPanel owner={owner} name={repoName} />
+
+        <LfsSettingsPanel
+          owner={owner}
+          name={repoName}
+          can_admin={canAdmin}
+        />
+
+        <LfsBrowser owner={owner} name={repoName} />
 
         <section
           className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4"

@@ -345,6 +345,115 @@ pub struct RepoUpdateVisibilityRequest {
     pub visibility: RepoVisibility,
 }
 
+/// `repo.lfs.setEnabled` input — Admin-only per-repo LFS toggle (D-LFS-10).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsSetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
+/// `repo.lfs.setEnabled` / `repo.lfs.getEnabled` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsEnabledResponse {
+    pub enabled: bool,
+}
+
+/// `repo.lfs.getEnabled` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsGetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+/// `repo.lfs.getStatus` — enable flag + light usage snapshot for Settings (D-LFS-16/19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsStatusResponse {
+    pub enabled: bool,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// Top / listed LFS object row for usage + browser.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsObjectEntry {
+    pub oid: String,
+    pub size: i64,
+    pub refcount: i64,
+}
+
+/// `repo.lfs.getUsage` — this-repo breakdown (D-LFS-19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsUsageResponse {
+    pub enabled: bool,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+    pub quota_repo_bytes: i64,
+    pub objects: Vec<RepoLfsObjectEntry>,
+}
+
+/// `repo.lfs.listObjects` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsListObjectsRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `repo.lfs.listObjects` response — in-app LFS browser (D-LFS-16).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsListObjectsResponse {
+    pub enabled: bool,
+    pub objects: Vec<RepoLfsObjectEntry>,
+}
+
+/// `repo.lfs.download` input — session Read path (D-LFS-18 / A2).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsDownloadRequest {
+    pub owner: String,
+    pub name: String,
+    pub oid: String,
+}
+
+/// Soft-capped base64 payload for browser Download (not git-lfs PAT path).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsDownloadResponse {
+    pub oid: String,
+    pub size: i64,
+    pub encoding: String,
+    pub content: String,
+}
+
+/// Per-repo row in admin instance usage breakdown.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsRepoUsageEntry {
+    pub repository_id: String,
+    pub owner: String,
+    pub name: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// Per-owner (user/org) row in admin instance usage breakdown.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsOwnerUsageEntry {
+    pub owner_id: String,
+    pub owner_slug: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// `admin.lfs.getUsage` — instance breakdown (D-LFS-19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsUsageResponse {
+    pub physical_bytes: i64,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+    pub by_repo: Vec<AdminLfsRepoUsageEntry>,
+    pub by_owner: Vec<AdminLfsOwnerUsageEntry>,
+}
+
 /// `repo.softDelete` input — typed confirm name required (D-35 / T-07-24).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteRequest {
@@ -358,6 +467,32 @@ pub struct RepoSoftDeleteRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteResponse {
     pub name: String,
+}
+
+/// Effective instance LFS limits (Admin override or env default) — D-LFS-13.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsSettingsPublic {
+    pub max_object_bytes: i64,
+    pub quota_repo_bytes: i64,
+    pub quota_user_bytes: i64,
+    /// True when DB override is set for each field.
+    pub max_object_bytes_overridden: bool,
+    pub quota_repo_bytes_overridden: bool,
+    pub quota_user_bytes_overridden: bool,
+}
+
+/// `admin.lfs.updateSettings` — null fields clear override (revert to env).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsUpdateSettingsRequest {
+    #[serde(default)]
+    pub max_object_bytes: Option<i64>,
+    #[serde(default)]
+    pub quota_repo_bytes: Option<i64>,
+    #[serde(default)]
+    pub quota_user_bytes: Option<i64>,
+    /// When true, clear all overrides (use env defaults).
+    #[serde(default)]
+    pub clear_overrides: bool,
 }
 
 /// Public collaborator row — no email (ORG-03 / D-ORG-02c).

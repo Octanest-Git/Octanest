@@ -39,6 +39,12 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `MYSQL_DATABASE_URL` | MySQL profile | `mysql://octanest:octanest@mysql:3306/octanest` | Overrides API `DATABASE_URL` when using the MySQL Compose overlay. |
 | `OCTANEST_SQLITE_HOST_DIR` | SQLite overlay | `./var` | Host path bind-mounted to `/app/var` for SQLite file storage. |
 | `OCTANEST_REPOS_DIR` | Optional | `var/repos` | Root for bare git repositories (`{owner}/{name}.git`). Compose binds `./var/repos:/var/repos`; with API CWD `/` the default resolves to `/var/repos` without overriding the env var. |
+| `OCTANEST_LFS_DIR` | Optional | `var/lfs` | Instance-wide Git LFS object store (OID-sharded). Compose binds `./var/lfs:/var/lfs` and sets `OCTANEST_LFS_DIR=/var/lfs`. |
+| `OCTANEST_LFS_MAX_OBJECT_BYTES` | Optional | `2147483648` (2 GiB) | Max single LFS object size. `0` disables. Admin UI can override. |
+| `OCTANEST_LFS_QUOTA_REPO_BYTES` | Optional | `10737418240` (10 GiB) | Default per-repo logical LFS quota. `0` disables. Admin UI can override. |
+| `OCTANEST_LFS_QUOTA_USER_BYTES` | Optional | `53687091200` (50 GiB) | Default per-user (repo-owner) logical LFS quota. `0` disables. Admin UI can override. |
+| `OCTANEST_LFS_GC_INTERVAL_SECS` | Optional | `86400` (24h) | Periodic GC of unreferenced LFS OIDs. Set `0` to disable. |
+| `OCTANEST_LFS_GC_GRACE_SECS` | Optional | `604800` (7d) | Grace period after refcount reaches 0 before OID delete. |
 | `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
@@ -72,7 +78,34 @@ Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTA
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | 14 | Soft-delete grace period before disk + row removal |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | 604800 | Scheduled `git gc --auto` on active repos |
 
-Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`). Reset always wipes issue-domain rows via repository/org CASCADE (no extra env knobs).
+Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR` **and** `OCTANEST_LFS_DIR`). Reset always wipes issue-domain rows via repository/org CASCADE (no extra env knobs).
+
+## Git LFS
+
+Phase 14 adds filesystem-backed **Git LFS** over HTTPS (batch + basic transfer). Architecture: [ARCHITECTURE.md](ARCHITECTURE.md#git-lfs). Client paths and auth: [API.md](API.md#git-lfs).
+
+| Env | Default | Role |
+| --- | --- | --- |
+| `OCTANEST_LFS_DIR` | `var/lfs` | Content-addressed OID store (`{ab}/{cd}/{oid}`) |
+| `OCTANEST_LFS_MAX_OBJECT_BYTES` | 2 GiB | Reject oversized uploads |
+| `OCTANEST_LFS_QUOTA_REPO_BYTES` | 10 GiB | Per-repo logical quota |
+| `OCTANEST_LFS_QUOTA_USER_BYTES` | 50 GiB | Per-user (repo-owner) logical quota |
+| `OCTANEST_LFS_GC_INTERVAL_SECS` | 86400 | Unreferenced OID GC interval (`0` = off) |
+| `OCTANEST_LFS_GC_GRACE_SECS` | 604800 | Grace after refcount=0 before delete |
+
+**Compose volume (D-LFS-01 / GIT-13):** Default stack mounts `./var/lfs:/var/lfs` and sets `OCTANEST_LFS_DIR=/var/lfs` (API CWD is `/`). Keep the bind mount in sync if you change the path.
+
+**Admin overrides (D-LFS-13):** Instance Admin UI can override max-object / quota defaults without restart. Env values remain the fallback when Admin fields are unset.
+
+**Per-repo enable (D-LFS-10):** Only repository **Admin** may enable/disable LFS for a repo (Settings → LFS). Disabled repos reject Batch uploads.
+
+**Auth (D-LFS-09):** Same as Smart HTTP — **personal access token** via HTTP Basic; **session cookies are ignored**. Read for download; Write + verified email for upload. Classic `repo` / fine-grained `contents` scopes (no dedicated `lfs` scope).
+
+**Discovery path:** Clients use `/{owner}/{repo}.git/info/lfs` under the same Traefik `.git` PathRegexp as Smart HTTP — no extra router is required.
+
+**SSH remotes (D-LFS-05):** Git-over-SSH does **not** carry LFS bytes in Phase 14. When the git remote is SSH, `git-lfs` still transfers objects over **HTTPS** using a credential helper / stored PAT. LFS-over-SSH is deferred.
+
+**Client attributes (D-LFS-17):** Operators/users track patterns with `git lfs track` and commit `.gitattributes` themselves. The server does **not** auto-commit attributes when LFS is enabled.
 
 ## Issues
 
@@ -170,7 +203,7 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | Both `OCTANEST_ADMIN_*` set and empty-instance seed returns error | Fail closed: printed to stderr; process exits (no wizard fallback) |
 | `git` missing or version &lt; 2.5.0 | `git version gate failed: …`; process exits (D-33) |
 
-**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false), `OCTANEST_REPOS_DIR` (defaults `var/repos`), orphan/gc interval vars (use documented defaults; `0` disables that job).
+**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false), `OCTANEST_REPOS_DIR` (defaults `var/repos`), `OCTANEST_LFS_DIR` (defaults `var/lfs`), orphan/gc/LFS interval vars (use documented defaults; `0` disables that job).
 
 ## Defaults
 
@@ -187,9 +220,14 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | Compose CORS | `http://localhost,http://127.0.0.1` | `docker-compose.yml` |
 | Dialect | Inferred from `DATABASE_URL` scheme | `crates/octanest-db/src/dialect.rs` |
 | `OCTANEST_REPOS_DIR` | `var/repos` | `crates/octanest-api/src/app.rs` |
+| `OCTANEST_LFS_DIR` | `var/lfs` | `crates/octanest-api/src/app.rs` |
+| `OCTANEST_LFS_MAX_OBJECT_BYTES` | 2147483648 | `crates/octanest-api/src/lfs/quota.rs` |
+| `OCTANEST_LFS_QUOTA_REPO_BYTES` | 10737418240 | `lfs/quota.rs` |
+| `OCTANEST_LFS_QUOTA_USER_BYTES` | 53687091200 | `lfs/quota.rs` |
 | Orphan reconcile interval | 86400s | `crates/octanest-api/src/jobs/schedule.rs` |
 | Soft-delete retention | 14 days | `crates/octanest-api/src/jobs/reconcile.rs` |
 | Git gc interval | 604800s | `crates/octanest-api/src/jobs/schedule.rs` |
+| LFS GC interval | 86400s | `jobs/schedule.rs` / `jobs/lfs_gc.rs` |
 
 Email sender selection when building from ENV: Resend key → SMTP URL → log sink.
 

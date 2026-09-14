@@ -43,6 +43,7 @@ pub struct RpcCtx {
     pub sessions: SessionService,
     pub uploads_dir: PathBuf,
     pub repos_dir: PathBuf,
+    pub lfs_dir: PathBuf,
     pub git: Arc<dyn GitBackend>,
     pub env_name: String,
     pub session: Option<ResolvedSession>,
@@ -218,6 +219,18 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
         },
+        "admin.lfs.getSettings" => match admin::lfs_get_settings(ctx).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.lfs.updateSettings" => match admin::lfs_update_settings(ctx, req.input).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.lfs.getUsage" => match admin::lfs_get_usage(ctx).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
         "admin.instance.factory_reset" => match admin::factory_reset(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
@@ -336,6 +349,30 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "repo.updateVisibility" => match repo::update_visibility(ctx, req.input).await {
             Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.setEnabled" => match repo::lfs_set_enabled(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.getEnabled" => match repo::lfs_get_enabled(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.getStatus" => match repo::lfs_get_status(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.getUsage" => match repo::lfs_get_usage(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.listObjects" => match repo::lfs_list_objects(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.lfs.download" => match repo::lfs_download(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
         "repo.softDelete" => match repo::soft_delete(ctx, req.input).await {

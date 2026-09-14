@@ -22,6 +22,7 @@ import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as OwnerSettingsRouteImport } from './routes/$owner.settings'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
+import { Route as AdminLfsRouteImport } from './routes/admin/lfs'
 import { Route as InvitesTokenRouteImport } from './routes/invites.$token'
 import { Route as OrgsNewRouteImport } from './routes/orgs.new'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
@@ -111,6 +112,11 @@ const OwnerSettingsRoute = OwnerSettingsRouteImport.update({
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLfsRoute = AdminLfsRouteImport.update({
+  id: '/admin/lfs',
+  path: '/admin/lfs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvitesTokenRoute = InvitesTokenRouteImport.update({
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/admin/lfs': typeof AdminLfsRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/verify': typeof VerifyRoute
   '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/admin/lfs': typeof AdminLfsRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -333,6 +341,7 @@ export interface FileRoutesById {
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/admin/lfs': typeof AdminLfsRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -375,6 +384,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/$owner/settings'
     | '/admin/auth'
+    | '/admin/lfs'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
@@ -413,6 +423,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/$owner/settings'
     | '/admin/auth'
+    | '/admin/lfs'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
@@ -453,6 +464,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo'
     | '/$owner/settings'
     | '/admin/auth'
+    | '/admin/lfs'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
@@ -492,6 +504,7 @@ export interface RootRouteChildren {
   StatusRoute: typeof StatusRoute
   VerifyRoute: typeof VerifyRoute
   AdminAuthRoute: typeof AdminAuthRoute
+  AdminLfsRoute: typeof AdminLfsRoute
   InvitesTokenRoute: typeof InvitesTokenRoute
   OrgsNewRoute: typeof OrgsNewRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -590,6 +603,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/admin/auth'
       fullPath: '/admin/auth'
       preLoaderRoute: typeof AdminAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/lfs': {
+      id: '/admin/lfs'
+      path: '/admin/lfs'
+      fullPath: '/admin/lfs'
+      preLoaderRoute: typeof AdminLfsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invites/$token': {
@@ -891,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatusRoute: StatusRoute,
   VerifyRoute: VerifyRoute,
   AdminAuthRoute: AdminAuthRoute,
+  AdminLfsRoute: AdminLfsRoute,
   InvitesTokenRoute: InvitesTokenRoute,
   OrgsNewRoute: OrgsNewRoute,
   SettingsProfileRoute: SettingsProfileRoute,

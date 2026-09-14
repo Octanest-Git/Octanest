@@ -12,6 +12,7 @@ describe("resolveAppAccessRedirect path matrix (06-05)", () => {
     "/reset-password",
     "/settings/profile",
     "/admin/auth",
+    "/admin/lfs",
     "/dashboard",
     "/signup",
     "/",

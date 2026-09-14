@@ -17,15 +17,22 @@ pub struct JobConfig {
     pub orphan_interval: Duration,
     /// Default 7d. Set `OCTANEST_GIT_GC_INTERVAL_SECS=0` to disable.
     pub gc_interval: Duration,
+    /// Default 24h. Set `OCTANEST_LFS_GC_INTERVAL_SECS=0` to disable.
+    pub lfs_gc_interval: Duration,
 }
 
 impl JobConfig {
     pub fn from_env() -> Self {
         let orphan_secs = parse_u64_env("OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS", 86_400);
         let gc_secs = parse_u64_env("OCTANEST_GIT_GC_INTERVAL_SECS", 604_800);
+        let lfs_gc_secs = parse_u64_env(
+            "OCTANEST_LFS_GC_INTERVAL_SECS",
+            super::lfs_gc::DEFAULT_GC_INTERVAL_SECS,
+        );
         Self {
             orphan_interval: Duration::from_secs(orphan_secs),
             gc_interval: Duration::from_secs(gc_secs),
+            lfs_gc_interval: Duration::from_secs(lfs_gc_secs),
         }
     }
 }
@@ -37,11 +44,12 @@ fn parse_u64_env(key: &str, default: u64) -> u64 {
         .unwrap_or(default)
 }
 
-/// Spawn in-process orphan reconcile + scheduled gc loops (A3 RESEARCH).
+/// Spawn in-process orphan reconcile + scheduled gc + LFS GC loops.
 pub fn spawn_background_jobs(
     db: Database,
     git: Arc<dyn GitBackend>,
     repos_dir: PathBuf,
+    lfs_dir: PathBuf,
     config: JobConfig,
 ) {
     if config.orphan_interval.as_secs() > 0 {
@@ -83,7 +91,7 @@ pub fn spawn_background_jobs(
     }
 
     if config.gc_interval.as_secs() > 0 {
-        let db_g = db;
+        let db_g = db.clone();
         let git_g = git;
         let repos_g = repos_dir;
         let period = config.gc_interval;
@@ -110,5 +118,40 @@ pub fn spawn_background_jobs(
         );
     } else {
         tracing::info!("git gc job disabled (interval 0)");
+    }
+
+    if config.lfs_gc_interval.as_secs() > 0 {
+        let db_l = db;
+        let lfs_l = lfs_dir;
+        let period = config.lfs_gc_interval;
+        let grace = super::lfs_gc::gc_grace_from_env();
+        tokio::spawn(async move {
+            let mut ticker = interval(period);
+            ticker.set_missed_tick_behavior(MissedTickBehavior::Delay);
+            loop {
+                ticker.tick().await;
+                match super::lfs_gc::run_lfs_gc(&db_l, &lfs_l, grace).await {
+                    Ok(stats) => {
+                        if stats.deleted > 0 || stats.errors > 0 || stats.skipped_locked {
+                            tracing::info!(
+                                deleted = stats.deleted,
+                                errors = stats.errors,
+                                skipped_locked = stats.skipped_locked,
+                                "lfs gc completed"
+                            );
+                        } else {
+                            tracing::debug!("lfs gc: nothing to do");
+                        }
+                    }
+                    Err(e) => tracing::error!(error = %e, "lfs gc failed"),
+                }
+            }
+        });
+        tracing::info!(
+            secs = config.lfs_gc_interval.as_secs(),
+            "lfs gc job scheduled"
+        );
+    } else {
+        tracing::info!("lfs gc job disabled (interval 0)");
     }
 }

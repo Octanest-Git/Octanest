@@ -3,17 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 11
 current_phase_name: Issues
+current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 11-12-PLAN.md
-last_updated: "2026-09-14T16:50:00.000Z"
+stopped_at: Completed 14-12-PLAN.md — Phase 14 execute complete
+last_updated: "2026-09-14T18:04:54.656Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: b64317dd97767b03239ab3d5bca6bc4fd9c83cc8
+state_head: 73322f53cd2b4b91427751ed70103ec0992ae39c
 progress:
   total_phases: 22
-  completed_phases: 10
+  completed_phases: 0
   total_plans: 147
-  completed_plans: 115
+  completed_plans: 127
 milestone_name: milestone
 ---
 
@@ -129,6 +130,19 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 11 P12 | 5min | 2 tasks | 7 files |
+| Phase 14 P00 | 12min | 2 tasks | 6 files |
+| Phase 14 P01 | 8min | 2 tasks | 6 files |
+| Phase 14 P02 | 45min | 2 tasks | 15 files |
+| Phase 14 P03 | 35min | 2 tasks | 7 files |
+| Phase 14 P04 | 40min | 2 tasks | 13 files |
+| Phase 14 P05 | 25min | 2 tasks | 4 files |
+| Phase 14 P06 | 30min | 2 tasks | 13 files |
+| Phase 14 P07 | 2min | 2 tasks | 5 files |
+| Phase 14 P08 | 12min | 2 tasks | 8 files |
+| Phase 14 P09 | 8min | 2 tasks | 3 files |
+| Phase 14 P10 | 10min | 2 tasks | 6 files |
+| Phase 14 P11 | 12min | 2 tasks | 7 files |
+| Phase 14 P12 | 15min | 2 tasks | 2 files |
 
 # Project State
 
@@ -484,6 +498,15 @@ Recent decisions affecting current work:
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 - [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
 - [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
+- [Phase 11]: Wave 0 LFS stubs use empty passing tests so nextest list filters work without --run-ignored
+- [Phase 11]: LFS tracer ships Batch+basic only (D-LFS-07); OCTANEST_LFS_DIR OID shards ab/cd/oid
+- [Phase 11]: LFS auth mirrors Smart HTTP; Cookie ignored; Admin soft-deny for setEnabled
+- [Phase 11]: LFS quotas: logical per-repo/owner; Admin override via instance_lfs_settings
+- [Phase 11]: Document SSH remotes still use HTTPS LFS; no LFS-over-SSH claim
+- [Phase 11]: Reuse existing Traefik .git PathRegexp for info/lfs
+- [Phase 11]: repo.lfs.download returns soft-capped base64; oversized → lfs.too_large_for_rpc
+- [Phase 11]: Docs link points at CONFIGURATION.md#git-lfs; no auto-commit of .gitattributes
+- [Phase 11]: Health unreachable → smoke-git-lfs skip exit 0 (operator runs make up for full client smoke)
 
 ### Pending Todos
 
@@ -505,8 +528,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T16:48:03.945Z
-Stopped at: Completed 11-12-PLAN.md
+Last session: 2026-09-14T18:04:54.557Z
+Stopped at: Completed 14-12-PLAN.md — Phase 14 execute complete
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |

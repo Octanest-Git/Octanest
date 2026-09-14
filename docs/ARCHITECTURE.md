@@ -135,6 +135,23 @@ Phase 9 adds SSH clone/fetch/push beside Smart HTTP:
 
 RPC: `sshKey.add` / `list` / `revoke` (session + verified email for add). Smoke: `make smoke-git-ssh`. See [CONFIGURATION.md](CONFIGURATION.md#git-over-ssh).
 
+### Git LFS
+
+Phase 14 adds volume-backed Git LFS beside Smart HTTP:
+
+| Concern | Contract |
+| --- | --- |
+| **Storage (D-LFS-01/02/03)** | Instance `OCTANEST_LFS_DIR` with OID shards `{ab}/{cd}/{oid}` + DB refcounts (dedup across repos). |
+| **Wire (D-LFS-06/07)** | Batch + basic transfer under `/{owner}/{repo}.git/info/lfs/…` (streaming PUT, optional verify, Range GET). No multipart adapter. |
+| **Auth (D-LFS-09)** | PAT Basic only — same as Smart HTTP; cookies ignored. Read download / Write upload. |
+| **Enable (D-LFS-10)** | Per-repo flag; **Admin** only. |
+| **Quotas (D-LFS-12/13/14)** | Env defaults + Admin overrides; reject oversize / over-quota uploads. |
+| **GC / reset (D-LFS-15/04)** | Periodic unreferenced OID GC; factory reset `database_and_repositories` wipes LFS_DIR children. |
+| **Edge** | Existing Traefik `.git` PathRegexp covers `info/lfs` — no extra router. |
+| **SSH** | LFS-over-SSH deferred; SSH git remotes still use HTTPS LFS + credential helper. |
+
+Operator knobs: [CONFIGURATION.md](CONFIGURATION.md#git-lfs). Client paths: [API.md](API.md#git-lfs).
+
 ### Auth sessions
 
 - Cookie name: `octanest_session` (HttpOnly; `Secure` except `OCTANEST_ENV=development`/`dev`).
@@ -189,4 +206,4 @@ octanest/
 - **Same-origin Traefik** — Avoids cross-origin cookie issues in Compose; local Vite proxies mirror that path layout.
 - **`deploy/`** — Holds operator Traefik notes; primary routing is Compose labels on `web` and `api` (see root `docker-compose.yml`).
 - **Stack presets** — Day-one `/new` templates are in-repo packs under `crates/octanest-api/assets/stack-presets/` (community PRs; no marketplace UI yet). See [guides/stack-presets.md](guides/stack-presets.md).
-- **Repos volume** — Compose binds `./var/repos` for bare git objects; knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, orphan/gc intervals).
+- **Repos volume** — Compose binds `./var/repos` for bare git objects and `./var/lfs` for Git LFS OIDs; knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, `OCTANEST_LFS_DIR`, orphan/gc/LFS intervals).
