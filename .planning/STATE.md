@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
-current_phase_name: Orgs & Permissions
-current_plan: 12
-status: executing
-stopped_at: Completed 10-11-PLAN.md
-last_updated: "2026-09-14T01:54:05.739Z"
+current_plan: 14
+status: completed
+stopped_at: Completed 10-12-PLAN.md (Phase 10 last plan)
+last_updated: "2026-09-14T02:03:59.692Z"
 last_activity: 2026-09-14
-last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: e0c89f1538285c62f30ed5965f4f85c594a17df8
+last_activity_desc: Phase 10 marked complete
+state_head: 678783d9467d3af1d35da1b07a332edc0d0790fa
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 90
+  completed_plans: 91
 milestone_name: milestone
+current_phase_name: Orgs & Permissions
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 12
+Phase: 10 — COMPLETE
+Current Plan: 14
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Ready to execute
-Last activity: 2026-09-14 — Completed 10-13 org.create tracer + /orgs/new
+Status: Phase 10 complete
+Last activity: 2026-09-14 — Phase 10 marked complete
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
 
@@ -143,6 +143,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P09 | 6min | 2 tasks | 16 files |
 | Phase 10 P10 | 10min | 2 tasks | 14 files |
 | Phase 10 P11 | 8min | 2 tasks | 6 files |
+| Phase 10 P12 | 7min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -329,6 +330,9 @@ Recent decisions affecting current work:
 - [Phase 10]: Load eligible /new owner orgs in SSR loader filtered to Owner/Admin
 - [Phase 10]: Gate repo settings on repo.can_admin not owner_id equality
 - [Phase 10]: Reuse MemberLookup for collaborator username add (no email)
+- [Phase 10]: factory_reset deletes repositories then organizations before users (polymorphic owner_id)
+- [Phase 10]: No new org env vars; invites reuse EmailSender + OCTANEST_PUBLIC_ORIGIN
+- [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 
 ### Pending Todos
 
@@ -350,6 +354,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:54:05.666Z
-Stopped at: Completed 10-11-PLAN.md
+Last session: 2026-09-14T02:03:59.618Z
+Stopped at: Completed 10-12-PLAN.md (Phase 10 last plan)
 Resume file: None
