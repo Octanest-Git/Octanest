@@ -99,6 +99,17 @@ pub async fn insert_owner_membership(
     insert_member(pool, org_id, user_id, "owner").await
 }
 
+/// Membership role for ACL (`owner` | `admin` | `member`), or `None` if not a member.
+pub async fn find_member_role(
+    pool: &DbPool,
+    org_id: &str,
+    user_id: &str,
+) -> Result<Option<String>, String> {
+    Ok(find_member(pool, org_id, user_id)
+        .await?
+        .map(|m| m.role))
+}
+
 pub async fn find_member(
     pool: &DbPool,
     org_id: &str,

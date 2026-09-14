@@ -51,6 +51,16 @@ const ORG_SELECT_SQLITE: &str = "SELECT id, slug, display_name, member_base_perm
        strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
 FROM organizations";
 
+/// Org-level Member base permission string (`none` | `read` | `write`), if org exists.
+pub async fn find_member_base_permission(
+    pool: &DbPool,
+    org_id: &str,
+) -> Result<Option<String>, String> {
+    Ok(find_by_id(pool, org_id)
+        .await?
+        .map(|o| o.member_base_permission))
+}
+
 /// Insert an organization. Default `member_base_permission` is `none` (D-ORG-02b).
 pub async fn insert_organization(
     pool: &DbPool,

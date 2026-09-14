@@ -10,6 +10,7 @@ pub mod organizations;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod users;
@@ -20,6 +21,7 @@ pub use pool::DbPool;
 pub use org_members::OrgMemberRow;
 pub use organizations::OrganizationRow;
 pub use pats::PatRow;
+pub use repo_collaborators::RepoCollaboratorRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
@@ -161,6 +163,29 @@ impl Database {
         user_id: &str,
     ) -> Result<Option<OrgMemberRow>, String> {
         org_members::find_member(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn find_org_member_role(
+        &self,
+        org_id: &str,
+        user_id: &str,
+    ) -> Result<Option<String>, String> {
+        org_members::find_member_role(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn find_org_member_base_permission(
+        &self,
+        org_id: &str,
+    ) -> Result<Option<String>, String> {
+        organizations::find_member_base_permission(self.require_pool()?, org_id).await
+    }
+
+    pub async fn find_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+    ) -> Result<Option<RepoCollaboratorRow>, String> {
+        repo_collaborators::find_collaborator(self.require_pool()?, repo_id, user_id).await
     }
 
     // --- repositories ---

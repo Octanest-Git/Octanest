@@ -1,7 +1,8 @@
-//! Owner-only private ACL stub + unified not_found (D-23–D-25 / T-07-13).
+//! Central Capability ACL (ORG-02 / ORG-04 / D-ORG-05).
 //!
 //! Shared *decision* helpers are reused by Smart HTTP; web vs git *status mapping*
 //! stays separate (web → `repo.not_found`; git private unauth → 401, D-21).
+//! Callers map HTTP status — this module never embeds 401.
 
 use octanest_core::AppError;
 use octanest_db::{Database, RepositoryRow};
@@ -18,7 +19,96 @@ pub fn is_private_visibility(visibility: &str) -> bool {
     visibility.eq_ignore_ascii_case("private")
 }
 
-/// Owner-only private read until Phase 10 collaborators / plan 04 ACL rewrite.
+/// Effective forge permission ladder (D-ORG-05).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Capability {
+    Read = 1,
+    Write = 2,
+    Admin = 3,
+}
+
+/// Org membership role (D-ORG-02a) — Collaborator is per-repo, not an org role.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OrgRole {
+    Owner,
+    Admin,
+    Member,
+}
+
+/// Org-level Member base on private org repos (D-ORG-02b).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MemberBasePermission {
+    None,
+    Read,
+    Write,
+}
+
+/// Whether `have` satisfies `need` (inclusive ladder).
+pub fn meets(have: Option<Capability>, need: Capability) -> bool {
+    have.map(|h| h >= need).unwrap_or(false)
+}
+
+/// Highest-wins among applicable sources (D-ORG-05 / ASSUME A1).
+/// Collaborator raises but cannot lower Owner/Admin; Member uses member_base.
+pub fn coalesce(
+    personal_owner: bool,
+    org_role: Option<OrgRole>,
+    member_base: MemberBasePermission,
+    collaborator: Option<Capability>,
+    public_repo: bool,
+) -> Option<Capability> {
+    let mut best: Option<Capability> = None;
+    let bump = |b: &mut Option<Capability>, c: Capability| {
+        *b = Some(b.map(|x| x.max(c)).unwrap_or(c));
+    };
+    if personal_owner {
+        bump(&mut best, Capability::Admin);
+    }
+    match org_role {
+        Some(OrgRole::Owner) | Some(OrgRole::Admin) => bump(&mut best, Capability::Admin),
+        Some(OrgRole::Member) => match member_base {
+            MemberBasePermission::None => {}
+            MemberBasePermission::Read => bump(&mut best, Capability::Read),
+            MemberBasePermission::Write => bump(&mut best, Capability::Write),
+        },
+        None => {}
+    }
+    if let Some(c) = collaborator {
+        bump(&mut best, c);
+    }
+    if public_repo {
+        bump(&mut best, Capability::Read);
+    }
+    best
+}
+
+fn parse_org_role(role: &str) -> Option<OrgRole> {
+    match role.trim().to_ascii_lowercase().as_str() {
+        "owner" => Some(OrgRole::Owner),
+        "admin" => Some(OrgRole::Admin),
+        "member" => Some(OrgRole::Member),
+        _ => None,
+    }
+}
+
+fn parse_member_base(perm: &str) -> MemberBasePermission {
+    match perm.trim().to_ascii_lowercase().as_str() {
+        "read" => MemberBasePermission::Read,
+        "write" => MemberBasePermission::Write,
+        _ => MemberBasePermission::None,
+    }
+}
+
+fn parse_collaborator_capability(perm: &str) -> Option<Capability> {
+    match perm.trim().to_ascii_lowercase().as_str() {
+        "read" => Some(Capability::Read),
+        "write" => Some(Capability::Write),
+        "admin" => Some(Capability::Admin),
+        _ => None,
+    }
+}
+
+/// Thin legacy helper for Smart HTTP until it switches to [`effective_capability`].
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
     caller_user_id == Some(owner_id)
 }
@@ -77,6 +167,48 @@ pub async fn resolve_owner_slug(
     Ok(None)
 }
 
+/// Load ACL sources and coalesce (D-ORG-05). Does not map HTTP status.
+pub async fn effective_capability(
+    db: &Database,
+    caller_user_id: Option<&str>,
+    repo: &RepositoryRow,
+    owner: &OwnerRef,
+) -> Result<Option<Capability>, String> {
+    let personal_owner = matches!(owner, OwnerRef::User { .. })
+        && caller_user_id.is_some_and(|id| id == owner.id());
+
+    let mut org_role: Option<OrgRole> = None;
+    let mut member_base = MemberBasePermission::None;
+    if matches!(owner, OwnerRef::Org { .. }) {
+        if let Some(caller) = caller_user_id {
+            if let Some(role) = db.find_org_member_role(owner.id(), caller).await? {
+                org_role = parse_org_role(&role);
+            }
+        }
+        if let Some(base) = db.find_org_member_base_permission(owner.id()).await? {
+            member_base = parse_member_base(&base);
+        }
+    }
+
+    let collaborator = if let Some(caller) = caller_user_id {
+        match db.find_repo_collaborator(&repo.id, caller).await? {
+            Some(row) => parse_collaborator_capability(&row.permission),
+            None => None,
+        }
+    } else {
+        None
+    };
+
+    let public_repo = !is_private_visibility(&repo.visibility);
+    Ok(coalesce(
+        personal_owner,
+        org_role,
+        member_base,
+        collaborator,
+        public_repo,
+    ))
+}
+
 /// Repo row the caller is allowed to read, plus resolved owner username/slug.
 pub struct AccessibleRepo {
     pub row: RepositoryRow,
@@ -119,7 +251,7 @@ pub async fn resolve_repo_for_read(
 
     if is_private_visibility(&row.visibility) {
         let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());
-        // Temporary: personal owner_id match only (plan 04 rewrites ACL for org roles).
+        // Temporary: personal owner_id match only (plan 04 Task 2 rewrites ACL for org roles).
         if !can_read_as_owner(caller_id, owner_ref.id()) {
             return Err(not_found());
         }
@@ -132,88 +264,116 @@ pub async fn resolve_repo_for_read(
 }
 
 #[cfg(test)]
-mod coalesce_stubs {
-    //! Wave 0 / ORG-02 / D-ORG-05: highest-wins coalesce matrix stubs.
-    //! RED until Capability + coalesce land — do not change production can_read_as_owner yet.
+mod coalesce_tests {
+    //! ORG-02 / D-ORG-05: highest-wins coalesce matrix.
 
-    /// Personal owner → admin (D-ORG-05).
+    use super::{coalesce, Capability, MemberBasePermission, OrgRole};
+
     #[test]
     fn coalesce_personal_owner_is_admin() {
-        assert!(
-            false,
-            "Wave 0: personal owner coalesce → Capability::Admin (ORG-02 / D-ORG-05)"
+        assert_eq!(
+            coalesce(true, None, MemberBasePermission::None, None, false),
+            Some(Capability::Admin)
         );
     }
 
-    /// Org Owner → admin regardless of member_base.
     #[test]
     fn coalesce_org_owner_is_admin() {
-        assert!(
-            false,
-            "Wave 0: org Owner coalesce → Admin (ORG-02 / D-ORG-02a)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Owner),
+                MemberBasePermission::None,
+                None,
+                false
+            ),
+            Some(Capability::Admin)
         );
     }
 
-    /// Org Admin → admin regardless of member_base.
     #[test]
     fn coalesce_org_admin_is_admin() {
-        assert!(
-            false,
-            "Wave 0: org Admin coalesce → Admin (ORG-02 / D-ORG-02a)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Admin),
+                MemberBasePermission::Read,
+                None,
+                false
+            ),
+            Some(Capability::Admin)
         );
     }
 
-    /// Member × member_base=none → no capability from org role alone.
     #[test]
     fn coalesce_member_base_none_yields_none() {
-        assert!(
-            false,
-            "Wave 0: Member + member_base none → no org capability (ORG-02 / D-ORG-02b)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Member),
+                MemberBasePermission::None,
+                None,
+                false
+            ),
+            None
         );
     }
 
-    /// Member × member_base=read → Read.
     #[test]
     fn coalesce_member_base_read_is_read() {
-        assert!(
-            false,
-            "Wave 0: Member + member_base read → Read (ORG-02 / D-ORG-02b)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Member),
+                MemberBasePermission::Read,
+                None,
+                false
+            ),
+            Some(Capability::Read)
         );
     }
 
-    /// Member × member_base=write → Write.
     #[test]
     fn coalesce_member_base_write_is_write() {
-        assert!(
-            false,
-            "Wave 0: Member + member_base write → Write (ORG-02 / D-ORG-02b)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Member),
+                MemberBasePermission::Write,
+                None,
+                false
+            ),
+            Some(Capability::Write)
         );
     }
 
-    /// Collaborator grant raises Member with base none.
     #[test]
     fn coalesce_collaborator_raises_member_base_none() {
-        assert!(
-            false,
-            "Wave 0: Collaborator raise over Member base none (ORG-02/03 / D-ORG-05)"
+        assert_eq!(
+            coalesce(
+                false,
+                Some(OrgRole::Member),
+                MemberBasePermission::None,
+                Some(Capability::Write),
+                false
+            ),
+            Some(Capability::Write)
         );
     }
 
-    /// Public visibility grants at least Read.
     #[test]
     fn coalesce_public_repo_grants_read() {
-        assert!(
-            false,
-            "Wave 0: public_repo bump → Read (ORG-02 / D-ORG-05)"
+        assert_eq!(
+            coalesce(false, None, MemberBasePermission::None, None, true),
+            Some(Capability::Read)
         );
     }
 
-    /// Anonymous private → none (no grant sources).
     #[test]
     fn coalesce_anonymous_private_is_none() {
-        assert!(
-            false,
-            "Wave 0: anonymous private coalesce → None (ORG-04 / D-ORG-05)"
+        assert_eq!(
+            coalesce(false, None, MemberBasePermission::None, None, false),
+            None
         );
     }
 }
