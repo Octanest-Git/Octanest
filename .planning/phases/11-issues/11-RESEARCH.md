@@ -407,22 +407,25 @@ pub can_write: bool,
 
 **If empty of blocking assumptions:** A1–A4 are non-blocking for planning; A2 is the only product-sense checkpoint.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should `@mention` autolinks ship with remark-github or be disabled via `buildUrl → false`?**
    - What we know: remark-github also transforms mentions/commits.
    - What's unclear: Phase 11 CONTEXT only locks `#N` and `owner/repo#N`.
    - Recommendation: Enable issue refs only; return `false` for mention/commit until a later social phase.
+   - RESOLVED: Disable mention/commit autolinks via `buildUrl → false`; ship issue refs only (`#N` / `owner/repo#N`). Locked in plan 11-10 (and Wave 0 stub note in 11-01).
 
 2. **Org label settings UI placement**
    - What we know: Org settings routes exist under `/{owner}/settings`.
    - What's unclear: Exact nav entry copy.
    - Recommendation: “Labels” under org settings + repo Issues → Labels (Admin).
+   - RESOLVED: Nav copy “Labels” under org settings plus repo Issues → Labels (Admin). Locked in plan 11-06.
 
 3. **Cross-repo `owner/repo#N` when viewer lacks Read on target**
    - What we know: Autolink is client-side href generation.
    - What's unclear: Whether clicking should soft-404.
    - Recommendation: Link anyway; destination RPC returns soft not-found (no enumeration leak).
+   - RESOLVED: Emit the href anyway; destination `issue.get` / list ACL returns soft not-found (no enumeration leak), per D-ISS-20. Locked in plans 11-03 tracer + 11-00 `repo_private_404` stubs / link ACL path.
 
 ## Environment Availability
 

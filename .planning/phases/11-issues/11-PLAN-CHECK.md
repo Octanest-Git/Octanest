@@ -238,4 +238,20 @@ Minimal path to re-check:
 2. Tighten 11-04-T3 / 11-08-T2 verifies (and optionally 11-01 Wave 0 verify).
 3. Optionally re-slice 11-03 / 11-06 file load.
 
-Then re-run plan-checker.
+---
+
+### Revision follow-up (2026-09-14)
+
+Planner revision after this check (`docs(11): revise plans from check`):
+
+| Issue | Disposition |
+|-------|-------------|
+| Blocker research_resolution | Fixed — `11-RESEARCH.md` `## Open Questions (RESOLVED)` with Q1–Q3 `RESOLVED:` locks (11-10 / 11-06 / 11-03+ACL) |
+| Warning verify_command_format (11-01) | Fixed — Wave 0 uses `test -f && vitest list` (no `\|\| true`) |
+| Warning nyquist UI verify (11-04-T3, 11-08-T2) | Fixed — build + green `issues.integration.test.ts` cases |
+| Warning scope_sanity 11-00 (10 files) | Accepted — Wave 0 Rust stubs stay one plan; split cost outweighs benefit |
+| Warning scope_sanity 11-03 (13 files) | Accepted — tracer vertical slice kept intact; splitting UI routes would explode plan count |
+| Warning scope_sanity 11-06 (11 files) | Accepted — org+repo Labels + assign UI stay together per D-ISS-05; split deferred |
+| Info fails_when / estimate confidence | No action — advisory only |
+
+Re-run plan-checker after this revision.
