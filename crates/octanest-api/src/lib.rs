@@ -8,6 +8,7 @@ pub mod jobs;
 pub mod label;
 pub mod lfs;
 pub mod org;
+pub mod packages;
 pub mod pat;
 pub mod release;
 pub mod ssh;

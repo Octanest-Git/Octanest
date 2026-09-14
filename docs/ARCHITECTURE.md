@@ -21,6 +21,7 @@ graph TD
   Browser --> Traefik
   Traefik -->|"Host localhost"| Web
   Traefik -->|"/api /uploads /health"| Api
+  Traefik -->|"/v2 /npm /generic PathPrefix"| Api
   Traefik -->|"/{owner}/{repo}.git PathRegexp"| Api
   Web -->|"Vite proxy in local dev"| Api
   Client -.->|"typed RPC calls"| Api
@@ -28,9 +29,10 @@ graph TD
   Api --> Db
   Api --> Git
   Git --> Repos
+  Api --> Packages["Package blobs<br/>OCTANEST_PACKAGES_DIR"]
 ```
 
-Local development without Compose runs the API on `127.0.0.1:8080` and the Vite dev server on `:3000`, with proxies for `/api/*`, `/uploads`, and `/health` (see `apps/web/vite.config.ts`). Smart HTTP on `/{owner}/{repo}.git` is served by the API directly in local `make` workflows (no Traefik PathRegexp required).
+Local development without Compose runs the API on `127.0.0.1:8080` and the Vite dev server on `:3000`, with proxies for `/api/*`, `/uploads`, `/health`, and package prefixes `/v2`, `/npm`, `/generic` (see `apps/web/vite.config.ts`). Smart HTTP on `/{owner}/{repo}.git` is served by the API directly in local `make` workflows (no Traefik PathRegexp required).
 
 ## Data flow
 
@@ -38,10 +40,10 @@ Typical authenticated request path:
 
 1. **Entry** — Browser loads UI from Traefik → `web`, or Vite in local `make dev`. Session cookie `octanest_session` is same-origin.
 2. **RPC call** — `@octanest/api-client` `createClient` POSTs to `/api/rpc` with `Octanest-RPC-Version: 1`, `credentials: "include"`, and body `{ procedure, input }`. WebSocket upgrades use `/api/rpc/ws` for the same procedure dispatch.
-3. **Edge** — Traefik (priority **110**) routes `/{owner}/{repo}.git` (PathRegexp) to `api` for Smart HTTP; priority **100** routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
-4. **Axum** — For RPC, `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name. Smart HTTP uses a separate route stack (Basic + PAT) — see [Git Smart HTTP & PATs](#git-smart-http--pats).
-5. **Domain + storage** — Handlers in `auth/`, `repo/`, `pat/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, PATs, auth settings). Dialect branching stays inside `octanest-db` only. Forge browse/create ops go through `octanest_git::GitBackend`; Smart HTTP wire protocol goes through `git-http-backend` CGI.
-6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)). Git clients speak Smart HTTP under `/{owner}/{repo}.git/...`.
+3. **Edge** — Traefik (priority **110+**) routes `/v2`, `/npm`, `/generic` PathPrefix and `/{owner}/{repo}.git` PathRegexp to `api`; priority **100** routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
+4. **Axum** — For RPC, `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name. Smart HTTP uses a separate route stack (Basic + PAT) — see [Git Smart HTTP & PATs](#git-smart-http--pats). Package registry mounts (`/v2`, `/npm`, `/generic`) use PAT∩ACL (cookies ignored) and content-addressed blobs under `OCTANEST_PACKAGES_DIR`.
+5. **Domain + storage** — Handlers in `auth/`, `repo/`, `pat/`, `packages/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, PATs, packages, auth settings). Dialect branching stays inside `octanest-db` only. Forge browse/create ops go through `octanest_git::GitBackend`; Smart HTTP wire protocol goes through `git-http-backend` CGI.
+6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)). Git clients speak Smart HTTP under `/{owner}/{repo}.git/...`. Registry clients speak OCI/npm/generic under their path prefixes.
 
 OAuth/OIDC browser flows leave the SPA for `/api/auth/workos/start|callback` and `/api/auth/oidc/start|callback`, then return with a session cookie.
 

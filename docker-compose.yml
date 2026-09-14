@@ -53,6 +53,10 @@ services:
       # Git LFS object store (D-LFS-01 / GIT-13) — absolute like REPOS_DIR.
       OCTANEST_LFS_DIR: /var/lfs
       OCTANEST_RELEASE_ASSETS_DIR: /var/release-assets
+      # Package registry blob store (D-PKG-07) — distinct from repos / LFS / release-assets.
+      OCTANEST_PACKAGES_DIR: /var/packages
+      OCTANEST_PACKAGES_MAX_BLOB_BYTES: ${OCTANEST_PACKAGES_MAX_BLOB_BYTES:-2147483648}
+      OCTANEST_PACKAGES_OWNER_QUOTA_BYTES: ${OCTANEST_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
@@ -72,6 +76,8 @@ services:
       - ./var/lfs:/var/lfs
       # Release assets volume (GIT-14 / D-REL-04) — distinct from LFS
       - ./var/release-assets:/var/release-assets
+      # Package blobs (D-PKG-07) — content-addressed; not LFS or release-assets
+      - ./var/packages:/var/packages
       # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)
       - ssh_host_keys:/var/ssh
     depends_on:
@@ -91,6 +97,11 @@ services:
       - traefik.http.routers.api-git.entrypoints=web
       - traefik.http.routers.api-git.priority=110
       - traefik.http.routers.api-git.service=api
+      # Packages registry (D-PKG-01): /v2|/npm|/generic → API before SPA (priority 110).
+      - traefik.http.routers.api-packages.rule=Host(`localhost`) && (PathPrefix(`/v2`) || PathPrefix(`/npm`) || PathPrefix(`/generic`))
+      - traefik.http.routers.api-packages.entrypoints=web
+      - traefik.http.routers.api-packages.priority=110
+      - traefik.http.routers.api-packages.service=api
       - traefik.http.routers.api.rule=Host(`localhost`) && (PathPrefix(`/api`) || PathPrefix(`/uploads`) || Path(`/health`))
       - traefik.http.routers.api.entrypoints=web
       - traefik.http.routers.api.priority=100

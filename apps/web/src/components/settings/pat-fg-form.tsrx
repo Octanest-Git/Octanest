@@ -39,6 +39,9 @@ export function PatFgForm({ onCreated }: PatFgFormProps) @{
   const [repoAccess, setRepoAccess] = useState<"all" | "selected">("selected");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [contents, setContents] = useState<"read" | "write">("read");
+  const [packagesPerm, setPackagesPerm] = useState<"none" | "read" | "write">(
+    "none",
+  );
   const [expiryMode, setExpiryMode] = useState<"none" | "date">("none");
   const [expiryDate, setExpiryDate] = useState(tomorrowDateValue);
   const [noteError, setNoteError] = useState("");
@@ -102,6 +105,7 @@ export function PatFgForm({ onCreated }: PatFgFormProps) @{
         repository_ids:
           repoAccess === "selected" ? selectedIds : undefined,
         contents,
+        packages: packagesPerm === "none" ? null : packagesPerm,
         expires_at:
           expiryMode === "date" && expiryDate
             ? expiryToIso(expiryDate)
@@ -282,6 +286,36 @@ export function PatFgForm({ onCreated }: PatFgFormProps) @{
       </RadioGroup>
       <p className="text-[14px] text-muted-foreground">
         Read-only allows clone and fetch. Read and write also allows push.
+      </p>
+    </div>
+
+    <div className="flex flex-col gap-3" data-testid="fg-packages-perm">
+      <p className="text-[14px] font-medium text-foreground">
+        Packages permission
+      </p>
+      <RadioGroup
+        value={packagesPerm}
+        disabled={pending}
+        onValueChange={(v) => {
+          if (v === "none" || v === "read" || v === "write") setPackagesPerm(v);
+        }}
+        className="gap-3"
+      >
+        <label className="flex cursor-pointer items-center gap-3">
+          <RadioGroupItem value="none" />
+          <span className="text-[14px] text-foreground">No package access</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-3">
+          <RadioGroupItem value="read" />
+          <span className="text-[14px] text-foreground">Packages read</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-3">
+          <RadioGroupItem value="write" />
+          <span className="text-[14px] text-foreground">Packages write</span>
+        </label>
+      </RadioGroup>
+      <p className="text-[14px] text-muted-foreground">
+        Repo scope alone does not grant package registry access.
       </p>
     </div>
 

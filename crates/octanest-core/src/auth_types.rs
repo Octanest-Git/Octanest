@@ -299,6 +299,10 @@ const RESERVED_USERNAMES: &[&str] = &[
     "git",
     "token",
     "oauth2",
+    // Phase 20 registry path prefixes (D-PKG-01) — must not collide with owners
+    "v2",
+    "npm",
+    "generic",
 ];
 
 /// Returns true if `u` matches a reserved username (case-insensitive).

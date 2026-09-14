@@ -5,17 +5,18 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Merged Phase 15 Releases into forge-core (with Phase 14 LFS); renumbered releases migration to 0014
-last_updated: "2026-09-14T20:15:00.000Z"
+stopped_at: Merged Phase 20 Packages into forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
+last_updated: "2026-09-14T20:30:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: e94f5ba
+last_activity_desc: Merged Phase 20 packages into forge-core with Phase 14 LFS + Phase 15 Releases
+state_head: merge-forge-core-phase-20
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 134
+  completed_plans: 147
 milestone_name: milestone
+current_phase_name: Issues
 ---
 
 # Project State
@@ -29,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 11 — Issues
+Phase: 11 — COMPLETE
 Current Plan: 13
 Total Plans in Phase: 13
-Status: Phase plans complete — ready for verify-work
-Last activity: 2026-09-14 — Completed 11-12 factory reset + docs + VALIDATION gate
+Status: Phase complete — ready for verification
+Last activity: 2026-09-14 — Phase 11 marked complete
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
 
@@ -150,6 +151,12 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 15 P02 | 20min | 2 tasks | 17 files |
 | Phase 15 P04 | 25min | 2 tasks | 8 files |
 | Phase 15 P05 | 20min | 3 tasks | 4 files |
+| Phase 20 P00 | 6min | 2 tasks | 6 files |
+| Phase 20 P01 | 4min | 2 tasks | 6 files |
+| Phase 20 P02 | 12min | 3 tasks | 9 files |
+| Phase 20 P03 | 25min | 3 tasks | 11 files |
+| Phase 20 P04 | 12min | 2 tasks | 8 files |
+| Phase 20 P05 | 15min | 3 tasks | 2 files |
 
 # Project State
 
@@ -520,6 +527,10 @@ Recent decisions affecting current work:
 - [Phase 11]: 15-06: Releases notes UI; assets deferred to 15-02
 - [Phase 11]: Immediate transfer after type-confirm; user→user former owner becomes admin collaborator
 - [Phase 11]: Settings chrome uses can_admin; factory reset repos scope wipes release-assets
+- [Phase 11]: Wave 0 stubs use assert!(false) without #[ignore] for nextest list discoverability
+- [Phase 11]: Per-file immutability within generic versions (409 on same filename)
+- [Phase 11]: GET /v2 and /v2/ discovery on app router; nest serves OCI subpaths only
+- [Phase 11]: OCI repo path is {owner}/{image}; nested names deferred
 
 ### Pending Todos
 
@@ -541,8 +552,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:15:00.000Z
-Stopped at: Merged Phase 15 into feat/forge-core (LFS 0012/0013 + releases 0014)
+Last session: 2026-09-14T20:30:00.000Z
+Stopped at: Merged Phase 20 into feat/forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
 Resume file: None
 ## Accumulated Context
 

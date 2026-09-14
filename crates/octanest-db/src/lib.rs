@@ -11,6 +11,7 @@ pub mod migrate;
 pub mod org_invites;
 pub mod org_members;
 pub mod organizations;
+pub mod packages;
 pub mod pats;
 pub mod pool;
 pub mod probe;
@@ -33,6 +34,7 @@ pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
+pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
@@ -1051,6 +1053,192 @@ impl Database {
         last_used_ip: Option<&str>,
     ) -> Result<(), String> {
         pats::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
+    }
+
+    // --- packages registry ---
+
+    pub async fn upsert_package_blob(&self, digest: &str, size_bytes: i64) -> Result<(), String> {
+        packages::upsert_blob(self.require_pool()?, digest, size_bytes).await
+    }
+
+    pub async fn adjust_package_blob_refcount(
+        &self,
+        digest: &str,
+        delta: i64,
+    ) -> Result<i64, String> {
+        packages::adjust_blob_refcount(self.require_pool()?, digest, delta).await
+    }
+
+    pub async fn find_package(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+        name: &str,
+        format: &str,
+    ) -> Result<Option<packages::PackageRow>, String> {
+        packages::find_package(self.require_pool()?, owner_type, owner_id, name, format).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_package(
+        &self,
+        id: &str,
+        owner_type: &str,
+        owner_id: &str,
+        name: &str,
+        format: &str,
+        visibility: &str,
+        repository_id: Option<&str>,
+        description: &str,
+    ) -> Result<(), String> {
+        packages::insert_package(
+            self.require_pool()?,
+            id,
+            owner_type,
+            owner_id,
+            name,
+            format,
+            visibility,
+            repository_id,
+            description,
+        )
+        .await
+    }
+
+    pub async fn find_package_version(
+        &self,
+        package_id: &str,
+        version: &str,
+    ) -> Result<Option<packages::PackageVersionRow>, String> {
+        packages::find_version(self.require_pool()?, package_id, version).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_package_version(
+        &self,
+        id: &str,
+        package_id: &str,
+        version: &str,
+        digest: Option<&str>,
+        metadata_json: &str,
+        published_by: Option<&str>,
+    ) -> Result<(), String> {
+        packages::insert_version(
+            self.require_pool()?,
+            id,
+            package_id,
+            version,
+            digest,
+            metadata_json,
+            published_by,
+        )
+        .await
+    }
+
+    pub async fn add_package_blob_ref(
+        &self,
+        version_id: &str,
+        digest: &str,
+        role: &str,
+    ) -> Result<(), String> {
+        packages::add_blob_ref(self.require_pool()?, version_id, digest, role).await
+    }
+
+    pub async fn list_package_version_blob_digests(
+        &self,
+        version_id: &str,
+    ) -> Result<Vec<String>, String> {
+        packages::list_version_blob_digests(self.require_pool()?, version_id).await
+    }
+
+    pub async fn update_package_version_metadata(
+        &self,
+        version_id: &str,
+        metadata_json: &str,
+    ) -> Result<(), String> {
+        packages::update_version_metadata(self.require_pool()?, version_id, metadata_json).await
+    }
+
+    pub async fn delete_package_version(&self, version_id: &str) -> Result<(), String> {
+        packages::delete_version(self.require_pool()?, version_id).await
+    }
+
+
+
+
+    pub async fn find_package_quota_override(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Option<i64>, String> {
+        packages::find_package_quota_override(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn upsert_package_quota_override(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+        max_bytes: i64,
+    ) -> Result<(), String> {
+        packages::upsert_package_quota_override(self.require_pool()?, owner_type, owner_id, max_bytes).await
+    }
+
+    pub async fn sum_package_blob_bytes_for_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<i64, String> {
+        packages::sum_package_blob_bytes_for_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn list_package_usage_for_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Vec<packages::PackageUsageBreakdownRow>, String> {
+        packages::list_package_usage_for_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn list_unref_package_blobs(&self, grace_secs: i64) -> Result<Vec<String>, String> {
+        packages::list_unref_package_blobs(self.require_pool()?, grace_secs).await
+    }
+
+    pub async fn delete_package_blob(&self, digest: &str) -> Result<(), String> {
+        packages::delete_package_blob(self.require_pool()?, digest).await
+    }
+
+    pub async fn find_package_by_id(&self, id: &str) -> Result<Option<packages::PackageRow>, String> {
+        packages::find_package_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_packages_by_repository(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<packages::PackageRow>, String> {
+        packages::list_packages_by_repository(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_packages_by_owner(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+    ) -> Result<Vec<packages::PackageRow>, String> {
+        packages::list_packages_by_owner(self.require_pool()?, owner_type, owner_id).await
+    }
+
+    pub async fn update_package_description(
+        &self,
+        id: &str,
+        description: &str,
+    ) -> Result<(), String> {
+        packages::update_package_description(self.require_pool()?, id, description).await
+    }
+
+    pub async fn list_package_versions(
+        &self,
+        package_id: &str,
+    ) -> Result<Vec<packages::PackageVersionRow>, String> {
+        packages::list_versions_for_package(self.require_pool()?, package_id).await
     }
 
     // --- ssh public keys ---

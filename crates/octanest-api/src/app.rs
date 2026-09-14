@@ -43,6 +43,8 @@ pub struct AppState {
     pub release_asset_max_bytes: usize,
     /// Days to retain repository redirects after rename/transfer (default 90) — D-REL-08.
     pub repo_redirect_retention_days: u32,
+    /// Package blob store root (`OCTANEST_PACKAGES_DIR`, default `var/packages`) — D-PKG-07.
+    pub packages_dir: PathBuf,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -101,6 +103,16 @@ impl AppState {
             .ok()
             .and_then(|s| s.parse().ok())
             .unwrap_or(90u32);
+        let packages_dir = std::env::var("OCTANEST_PACKAGES_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/packages"));
+        let packages_dir = if packages_dir.is_absolute() {
+            packages_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(packages_dir)
+        };
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
@@ -110,6 +122,7 @@ impl AppState {
             release_assets_dir,
             release_asset_max_bytes,
             repo_redirect_retention_days,
+            packages_dir,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
@@ -141,6 +154,11 @@ impl AppState {
 
     pub fn with_release_asset_max_bytes(mut self, max: usize) -> Self {
         self.release_asset_max_bytes = max;
+        self
+    }
+
+    pub fn with_packages_dir(mut self, dir: PathBuf) -> Self {
+        self.packages_dir = dir;
         self
     }
 
@@ -229,6 +247,12 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
                 .put(git_lfs::put_object)
                 .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)),
         )
+        // Package registry (D-PKG-01) — path prefixes must outrank SPA at the edge.
+        .route("/v2", get(crate::packages::oci::discovery))
+        .route("/v2/", get(crate::packages::oci::discovery))
+        .nest("/v2", crate::packages::oci::router())
+        .nest("/npm", crate::packages::npm::router())
+        .nest("/generic", crate::packages::generic::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

@@ -43,24 +43,57 @@ impl PatKind {
     }
 }
 
-/// Classic scope catalog (Phase 8): `repo` only — full HTTPS fetch+push where ACL allows.
+/// Classic scope catalog: `repo` (git) + `package:read` / `package:write` (D-PKG-04).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum ClassicPatScope {
+    #[serde(rename = "repo")]
     Repo,
+    #[serde(rename = "package:read")]
+    PackageRead,
+    #[serde(rename = "package:write")]
+    PackageWrite,
 }
 
 impl ClassicPatScope {
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Repo => "repo",
+            Self::PackageRead => "package:read",
+            Self::PackageWrite => "package:write",
         }
     }
 
     pub fn parse(s: &str) -> Result<Self, String> {
         match s.trim() {
             "repo" => Ok(Self::Repo),
+            "package:read" => Ok(Self::PackageRead),
+            "package:write" => Ok(Self::PackageWrite),
             other => Err(format!("invalid classic scope: {other}")),
+        }
+    }
+}
+
+/// Fine-grained Packages permission (D-PKG-04).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PackagesPerm {
+    Read,
+    Write,
+}
+
+impl PackagesPerm {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Read => "read",
+            Self::Write => "write",
+        }
+    }
+
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s.trim() {
+            "read" => Ok(Self::Read),
+            "write" => Ok(Self::Write),
+            other => Err(format!("invalid packages_perm: {other}")),
         }
     }
 }
@@ -137,6 +170,9 @@ pub struct CreateFineGrainedPatRequest {
     #[serde(default)]
     pub repository_ids: Vec<String>,
     pub contents: ContentsPerm,
+    /// Optional packages permission for FG tokens (D-PKG-04).
+    #[serde(default)]
+    pub packages: Option<PackagesPerm>,
     #[serde(default)]
     pub expires_at: Option<String>,
 }
@@ -152,6 +188,8 @@ pub struct PatListItem {
     pub scopes: Option<Vec<ClassicPatScope>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub contents: Option<ContentsPerm>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub packages: Option<PackagesPerm>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub repo_access: Option<FgRepoAccess>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -205,6 +243,7 @@ mod tests {
             token_prefix: CLASSIC_PAT_PREFIX.into(),
             scopes: Some(vec![ClassicPatScope::Repo]),
             contents: None,
+            packages: None,
             repo_access: None,
             repository_ids: vec![],
             expires_at: None,
@@ -228,6 +267,7 @@ mod tests {
                 token_prefix: CLASSIC_PAT_PREFIX.into(),
                 scopes: Some(vec![ClassicPatScope::Repo]),
                 contents: None,
+                packages: None,
                 repo_access: None,
                 repository_ids: vec![],
                 expires_at: None,

@@ -31,6 +31,8 @@ function expiryToIso(dateValue: string): string {
 export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
   const [note, setNote] = useState("");
   const [repoChecked, setRepoChecked] = useState(true);
+  const [packageRead, setPackageRead] = useState(false);
+  const [packageWrite, setPackageWrite] = useState(false);
   const [expiryMode, setExpiryMode] = useState<"none" | "date">("none");
   const [expiryDate, setExpiryDate] = useState(tomorrowDateValue);
   const [noteError, setNoteError] = useState("");
@@ -53,9 +55,15 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
     }
     setPending(true);
     try {
+      const scopes: string[] = ["repo"];
+      if (packageWrite) {
+        scopes.push("package:write");
+      } else if (packageRead) {
+        scopes.push("package:read");
+      }
       const res = await apiClient.pat.createClassic({
         name: trimmed,
-        scopes: ["repo"],
+        scopes: scopes as ("repo" | "package:read" | "package:write")[],
         expires_at:
           expiryMode === "date" && expiryDate
             ? expiryToIso(expiryDate)
@@ -122,6 +130,34 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
         />
         <span className="text-[14px] text-foreground">
           Full control of private repositories
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-start gap-3">
+        <Checkbox
+          checked={packageRead || packageWrite}
+          disabled={pending || packageWrite}
+          aria-label="package:read"
+          data-testid="scope-package-read"
+          onCheckedChange={(checked) => setPackageRead(checked === true)}
+        />
+        <span className="text-[14px] text-foreground">
+          package:read — download packages (does not include repo alone)
+        </span>
+      </label>
+      <label className="flex cursor-pointer items-start gap-3">
+        <Checkbox
+          checked={packageWrite}
+          disabled={pending}
+          aria-label="package:write"
+          data-testid="scope-package-write"
+          onCheckedChange={(checked) => {
+            const on = checked === true;
+            setPackageWrite(on);
+            if (on) setPackageRead(true);
+          }}
+        />
+        <span className="text-[14px] text-foreground">
+          package:write — publish and manage packages
         </span>
       </label>
       @if (scopeError) {
