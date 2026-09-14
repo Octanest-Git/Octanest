@@ -5,6 +5,7 @@ pub mod auth;
 pub mod generic;
 pub mod npm;
 pub mod oci;
+pub mod rpc;
 pub mod store;
 
 use axum::Router;

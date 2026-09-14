@@ -564,6 +564,42 @@ export type CreateFineGrainedPatRequest = {
   expires_at?: string | null;
 };
 
+export type PackagesListRequest = {
+  owner?: string | null;
+  repository_id?: string | null;
+};
+
+export type PackageVersionPublic = {
+  version: string;
+  digest?: string | null;
+  created_at: string;
+};
+
+export type PackagePublic = {
+  id: string;
+  owner_type: string;
+  owner_id: string;
+  name: string;
+  format: string;
+  visibility: string;
+  repository_id?: string | null;
+  versions: PackageVersionPublic[];
+};
+
+export type PackagesListResponse = {
+  packages: PackagePublic[];
+};
+
+export type PackagesDeleteVersionRequest = {
+  package_id: string;
+  version: string;
+  confirm: string;
+};
+
+export type PackagesDeleteVersionResponse = {
+  ok: boolean;
+};
+
 export type PatListItem = {
   id: string;
   kind: PatKind;
@@ -1090,6 +1126,12 @@ export function createClient(opts: CreateClientOptions) {
       delete: (input: DeleteLabelRequest) =>
         rpcCall<{ ok: boolean }>(opts, "label.delete", input),
     },
+    packages: {
+      list: (input: PackagesListRequest) =>
+        rpcCall<PackagesListResponse>(opts, "packages.list", input),
+      deleteVersion: (input: PackagesDeleteVersionRequest) =>
+        rpcCall<PackagesDeleteVersionResponse>(opts, "packages.deleteVersion", input),
+    },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
         rpcCall<CreatePatResponse>(opts, "pat.createClassic", input),
@@ -1439,6 +1481,31 @@ export function repoBlameQueryOptions(
     ] as const,
     queryFn: async () => {
       const res = await client.repo.blame(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesListQueryOptions(
+  client: OctanestClient,
+  input: PackagesListRequest,
+) {
+  return {
+    queryKey: ["packages", "list", input] as const,
+    queryFn: async () => {
+      const res = await client.packages.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesDeleteVersionMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["packages", "deleteVersion"] as const,
+    mutationFn: async (input: PackagesDeleteVersionRequest) => {
+      const res = await client.packages.deleteVersion(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

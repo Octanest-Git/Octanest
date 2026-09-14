@@ -1141,6 +1141,18 @@ impl Database {
     }
 
 
+
+    pub async fn find_package_by_id(&self, id: &str) -> Result<Option<packages::PackageRow>, String> {
+        packages::find_package_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_packages_by_repository(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<packages::PackageRow>, String> {
+        packages::list_packages_by_repository(self.require_pool()?, repository_id).await
+    }
+
     pub async fn list_packages_by_owner(
         &self,
         owner_type: &str,

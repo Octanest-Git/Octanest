@@ -657,6 +657,142 @@ pub async fn list_versions_for_package(
 }
 
 
+
+pub async fn find_package_by_id(pool: &DbPool, id: &str) -> Result<Option<PackageRow>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description, created_at, updated_at
+                   FROM packages WHERE id = ?"#,
+            )
+            .bind(id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(row.map(|r| map_package_sqlite(&r)))
+        }
+        DbPool::Postgres(p) => {
+            let row = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          created_at::text AS created_at, updated_at::text AS updated_at
+                   FROM packages WHERE id = $1"#,
+            )
+            .bind(id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(row.map(|r| PackageRow {
+                id: r.get("id"),
+                owner_type: r.get("owner_type"),
+                owner_id: r.get("owner_id"),
+                name: r.get("name"),
+                format: r.get("format"),
+                visibility: r.get("visibility"),
+                repository_id: r.get("repository_id"),
+                description: r.get("description"),
+                created_at: r.get("created_at"),
+                updated_at: r.get("updated_at"),
+            }))
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          CAST(created_at AS CHAR) AS created_at,
+                          CAST(updated_at AS CHAR) AS updated_at
+                   FROM packages WHERE id = ?"#,
+            )
+            .bind(id)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(row.map(|r| PackageRow {
+                id: r.get("id"),
+                owner_type: r.get("owner_type"),
+                owner_id: r.get("owner_id"),
+                name: r.get("name"),
+                format: r.get("format"),
+                visibility: r.get("visibility"),
+                repository_id: r.get("repository_id"),
+                description: r.get("description"),
+                created_at: r.get("created_at"),
+                updated_at: r.get("updated_at"),
+            }))
+        }
+    }
+}
+
+pub async fn list_packages_by_repository(
+    pool: &DbPool,
+    repository_id: &str,
+) -> Result<Vec<PackageRow>, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description, created_at, updated_at
+                   FROM packages WHERE repository_id = ? ORDER BY name"#,
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| map_package_sqlite(&r)).collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          created_at::text AS created_at, updated_at::text AS updated_at
+                   FROM packages WHERE repository_id = $1 ORDER BY name"#,
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| PackageRow {
+                id: r.get("id"),
+                owner_type: r.get("owner_type"),
+                owner_id: r.get("owner_id"),
+                name: r.get("name"),
+                format: r.get("format"),
+                visibility: r.get("visibility"),
+                repository_id: r.get("repository_id"),
+                description: r.get("description"),
+                created_at: r.get("created_at"),
+                updated_at: r.get("updated_at"),
+            }).collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, owner_type, owner_id, name, format, visibility,
+                          repository_id, description,
+                          CAST(created_at AS CHAR) AS created_at,
+                          CAST(updated_at AS CHAR) AS updated_at
+                   FROM packages WHERE repository_id = ? ORDER BY name"#,
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows.into_iter().map(|r| PackageRow {
+                id: r.get("id"),
+                owner_type: r.get("owner_type"),
+                owner_id: r.get("owner_id"),
+                name: r.get("name"),
+                format: r.get("format"),
+                visibility: r.get("visibility"),
+                repository_id: r.get("repository_id"),
+                description: r.get("description"),
+                created_at: r.get("created_at"),
+                updated_at: r.get("updated_at"),
+            }).collect())
+        }
+    }
+}
+
 pub async fn list_packages_by_owner(
     pool: &DbPool,
     owner_type: &str,

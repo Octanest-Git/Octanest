@@ -458,6 +458,14 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "packages.list" => match crate::packages::rpc::list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "packages.deleteVersion" => match crate::packages::rpc::delete_version(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "pat.createClassic" => match pat::create_classic(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
