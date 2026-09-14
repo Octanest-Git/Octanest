@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 11
+current_plan: 12
 status: executing
-stopped_at: Completed 10-10-PLAN.md
-last_updated: "2026-09-14T01:44:33.381Z"
+stopped_at: Completed 10-11-PLAN.md
+last_updated: "2026-09-14T01:54:05.739Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: 1593875df5b0b002672fb116c60c08d57a79741a
+state_head: e0c89f1538285c62f30ed5965f4f85c594a17df8
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 89
+  completed_plans: 90
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 11
+Current Plan: 12
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
@@ -142,6 +142,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P08 | 8min | 2 tasks | 7 files |
 | Phase 10 P09 | 6min | 2 tasks | 16 files |
 | Phase 10 P10 | 10min | 2 tasks | 14 files |
+| Phase 10 P11 | 8min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,9 @@ Recent decisions affecting current work:
 - [Phase 10]: user.lookup under user/ module with 60/session/60s limiter; short/email-shaped → empty ok
 - [Phase 10]: Added repo.listByOwner for org overview ACL-filtered repo lists
 - [Phase 10]: Admin+ org settings/members gated via org.listMine role
+- [Phase 10]: Load eligible /new owner orgs in SSR loader filtered to Owner/Admin
+- [Phase 10]: Gate repo settings on repo.can_admin not owner_id equality
+- [Phase 10]: Reuse MemberLookup for collaborator username add (no email)
 
 ### Pending Todos
 
@@ -346,6 +350,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:44:33.307Z
-Stopped at: Completed 10-10-PLAN.md
+Last session: 2026-09-14T01:54:05.666Z
+Stopped at: Completed 10-11-PLAN.md
 Resume file: None
