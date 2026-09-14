@@ -7,6 +7,7 @@ pub mod issue;
 pub mod jobs;
 pub mod label;
 pub mod org;
+pub mod packages;
 pub mod pat;
 pub mod ssh;
 pub mod ssh_keys;

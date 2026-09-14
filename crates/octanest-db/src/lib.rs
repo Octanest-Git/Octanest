@@ -10,6 +10,7 @@ pub mod migrate;
 pub mod org_invites;
 pub mod org_members;
 pub mod organizations;
+pub mod packages;
 pub mod pats;
 pub mod pool;
 pub mod probe;
@@ -29,6 +30,7 @@ pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
+pub use packages::{PackageRow, PackageVersionRow};
 pub use pats::PatRow;
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
@@ -1028,6 +1030,113 @@ impl Database {
         last_used_ip: Option<&str>,
     ) -> Result<(), String> {
         pats::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
+    }
+
+    // --- packages registry ---
+
+    pub async fn upsert_package_blob(&self, digest: &str, size_bytes: i64) -> Result<(), String> {
+        packages::upsert_blob(self.require_pool()?, digest, size_bytes).await
+    }
+
+    pub async fn adjust_package_blob_refcount(
+        &self,
+        digest: &str,
+        delta: i64,
+    ) -> Result<i64, String> {
+        packages::adjust_blob_refcount(self.require_pool()?, digest, delta).await
+    }
+
+    pub async fn find_package(
+        &self,
+        owner_type: &str,
+        owner_id: &str,
+        name: &str,
+        format: &str,
+    ) -> Result<Option<packages::PackageRow>, String> {
+        packages::find_package(self.require_pool()?, owner_type, owner_id, name, format).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_package(
+        &self,
+        id: &str,
+        owner_type: &str,
+        owner_id: &str,
+        name: &str,
+        format: &str,
+        visibility: &str,
+        repository_id: Option<&str>,
+        description: &str,
+    ) -> Result<(), String> {
+        packages::insert_package(
+            self.require_pool()?,
+            id,
+            owner_type,
+            owner_id,
+            name,
+            format,
+            visibility,
+            repository_id,
+            description,
+        )
+        .await
+    }
+
+    pub async fn find_package_version(
+        &self,
+        package_id: &str,
+        version: &str,
+    ) -> Result<Option<packages::PackageVersionRow>, String> {
+        packages::find_version(self.require_pool()?, package_id, version).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_package_version(
+        &self,
+        id: &str,
+        package_id: &str,
+        version: &str,
+        digest: Option<&str>,
+        metadata_json: &str,
+        published_by: Option<&str>,
+    ) -> Result<(), String> {
+        packages::insert_version(
+            self.require_pool()?,
+            id,
+            package_id,
+            version,
+            digest,
+            metadata_json,
+            published_by,
+        )
+        .await
+    }
+
+    pub async fn add_package_blob_ref(
+        &self,
+        version_id: &str,
+        digest: &str,
+        role: &str,
+    ) -> Result<(), String> {
+        packages::add_blob_ref(self.require_pool()?, version_id, digest, role).await
+    }
+
+    pub async fn list_package_version_blob_digests(
+        &self,
+        version_id: &str,
+    ) -> Result<Vec<String>, String> {
+        packages::list_version_blob_digests(self.require_pool()?, version_id).await
+    }
+
+    pub async fn delete_package_version(&self, version_id: &str) -> Result<(), String> {
+        packages::delete_version(self.require_pool()?, version_id).await
+    }
+
+    pub async fn list_package_versions(
+        &self,
+        package_id: &str,
+    ) -> Result<Vec<packages::PackageVersionRow>, String> {
+        packages::list_versions_for_package(self.require_pool()?, package_id).await
     }
 
     // --- ssh public keys ---

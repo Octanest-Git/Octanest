@@ -35,6 +35,8 @@ pub struct AppState {
     pub uploads_dir: PathBuf,
     /// Bare repos root (`OCTANEST_REPOS_DIR`, default `var/repos`) — D-30 / D-31.
     pub repos_dir: PathBuf,
+    /// Package blob store root (`OCTANEST_PACKAGES_DIR`, default `var/packages`) — D-PKG-07.
+    pub packages_dir: PathBuf,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -65,11 +67,22 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(repos_dir)
         };
+        let packages_dir = std::env::var("OCTANEST_PACKAGES_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/packages"));
+        let packages_dir = if packages_dir.is_absolute() {
+            packages_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(packages_dir)
+        };
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
             repos_dir,
+            packages_dir,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
@@ -86,6 +99,11 @@ impl AppState {
 
     pub fn with_repos_dir(mut self, dir: PathBuf) -> Self {
         self.repos_dir = dir;
+        self
+    }
+
+    pub fn with_packages_dir(mut self, dir: PathBuf) -> Self {
+        self.packages_dir = dir;
         self
     }
 
