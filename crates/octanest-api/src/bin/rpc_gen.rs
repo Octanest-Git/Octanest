@@ -723,6 +723,59 @@ export type IssueHistoryResponse = {
   revisions: IssueRevisionPublic[];
 };
 
+export type IssueCommentPublic = {
+  id: string;
+  issue_id: string;
+  author_id: string;
+  author_username: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateIssueCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  body: string;
+};
+
+export type IssueCommentRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  commentId: string;
+};
+
+export type UpdateIssueCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  commentId: string;
+  body: string;
+};
+
+export type IssueCommentsListResponse = {
+  comments: IssueCommentPublic[];
+};
+
+export type DeleteIssueCommentResponse = {
+  ok: boolean;
+};
+
+export type CommentRevisionPublic = {
+  id: string;
+  comment_id: string;
+  editor_id: string;
+  editor_username: string;
+  body: string;
+  created_at: string;
+};
+
+export type CommentHistoryResponse = {
+  revisions: CommentRevisionPublic[];
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -872,6 +925,18 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<IssueHistoryResponse>(opts, "issue.history", input),
       delete: (input: DeleteIssueRequest) =>
         rpcCall<DeleteIssueResponse>(opts, "issue.delete", input),
+      comments: {
+        list: (input: IssueRefRequest) =>
+          rpcCall<IssueCommentsListResponse>(opts, "issue.comments.list", input),
+        create: (input: CreateIssueCommentRequest) =>
+          rpcCall<IssueCommentPublic>(opts, "issue.comments.create", input),
+        update: (input: UpdateIssueCommentRequest) =>
+          rpcCall<IssueCommentPublic>(opts, "issue.comments.update", input),
+        delete: (input: IssueCommentRefRequest) =>
+          rpcCall<DeleteIssueCommentResponse>(opts, "issue.comments.delete", input),
+        history: (input: IssueCommentRefRequest) =>
+          rpcCall<CommentHistoryResponse>(opts, "issue.comments.history", input),
+      },
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
@@ -1404,6 +1469,82 @@ export function issueDeleteMutationOptions(client: OctanestClient) {
     mutationKey: ["issue", "delete"] as const,
     mutationFn: async (input: DeleteIssueRequest) => {
       const res = await client.issue.delete(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsListQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "comments",
+      "list",
+      input.owner,
+      input.name,
+      input.number,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.comments.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "create"] as const,
+    mutationFn: async (input: CreateIssueCommentRequest) => {
+      const res = await client.issue.comments.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "update"] as const,
+    mutationFn: async (input: UpdateIssueCommentRequest) => {
+      const res = await client.issue.comments.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "delete"] as const,
+    mutationFn: async (input: IssueCommentRefRequest) => {
+      const res = await client.issue.comments.delete(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsHistoryQueryOptions(
+  client: OctanestClient,
+  input: IssueCommentRefRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "comments",
+      "history",
+      input.owner,
+      input.name,
+      input.number,
+      input.commentId,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.comments.history(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

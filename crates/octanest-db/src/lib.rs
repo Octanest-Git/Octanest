@@ -21,7 +21,7 @@ pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::LabelRow;
-pub use issues::{IssueRevisionRow, IssueRow};
+pub use issues::{CommentRevisionRow, IssueCommentRow, IssueRevisionRow, IssueRow};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -521,6 +521,60 @@ impl Database {
 
     pub async fn reopen_issue(&self, id: &str) -> Result<IssueRow, String> {
         issues::reopen_issue(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_issue_comment(
+        &self,
+        id: &str,
+        issue_id: &str,
+        author_id: &str,
+        body: &str,
+    ) -> Result<IssueCommentRow, String> {
+        issues::insert_issue_comment(self.require_pool()?, id, issue_id, author_id, body).await
+    }
+
+    pub async fn find_issue_comment_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<IssueCommentRow>, String> {
+        issues::find_issue_comment_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_issue_comments(
+        &self,
+        issue_id: &str,
+    ) -> Result<Vec<IssueCommentRow>, String> {
+        issues::list_issue_comments(self.require_pool()?, issue_id).await
+    }
+
+    pub async fn update_issue_comment_body(
+        &self,
+        id: &str,
+        body: &str,
+    ) -> Result<IssueCommentRow, String> {
+        issues::update_issue_comment_body(self.require_pool()?, id, body).await
+    }
+
+    pub async fn delete_issue_comment(&self, id: &str) -> Result<(), String> {
+        issues::delete_issue_comment(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_comment_revision(
+        &self,
+        id: &str,
+        comment_id: &str,
+        editor_id: &str,
+        body: &str,
+    ) -> Result<CommentRevisionRow, String> {
+        issues::insert_comment_revision(self.require_pool()?, id, comment_id, editor_id, body)
+            .await
+    }
+
+    pub async fn list_comment_revisions(
+        &self,
+        comment_id: &str,
+    ) -> Result<Vec<CommentRevisionRow>, String> {
+        issues::list_comment_revisions(self.require_pool()?, comment_id).await
     }
 
     pub async fn insert_label(

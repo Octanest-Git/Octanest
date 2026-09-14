@@ -43,3 +43,17 @@ pub async fn resolve_for_admin(
 pub fn can_edit_issue(user_id: &str, issue: &IssueRow, capability: Option<Capability>) -> bool {
     issue.author_id == user_id || meets(capability, Capability::Write)
 }
+
+/// Author may edit own comment body (D-ISS-09).
+pub fn can_edit_comment(user_id: &str, author_id: &str) -> bool {
+    user_id == author_id
+}
+
+/// Author **or** Write+ may delete a comment (D-ISS-09 / T-11-10).
+pub fn can_delete_comment(
+    user_id: &str,
+    author_id: &str,
+    capability: Option<Capability>,
+) -> bool {
+    user_id == author_id || meets(capability, Capability::Write)
+}

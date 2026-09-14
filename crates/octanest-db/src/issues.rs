@@ -894,3 +894,418 @@ pub async fn reopen_issue(pool: &DbPool, id: &str) -> Result<IssueRow, String> {
         .await?
         .ok_or_else(|| "reopen issue failed: row missing".into())
 }
+
+#[derive(Debug, Clone)]
+pub struct IssueCommentRow {
+    pub id: String,
+    pub issue_id: String,
+    pub author_id: String,
+    pub body: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+macro_rules! map_comment {
+    ($row:expr) => {{
+        let row = $row;
+        IssueCommentRow {
+            id: row.try_get("id").map_err(|e| format!("comment row: {e}"))?,
+            issue_id: row
+                .try_get("issue_id")
+                .map_err(|e| format!("comment row: {e}"))?,
+            author_id: row
+                .try_get("author_id")
+                .map_err(|e| format!("comment row: {e}"))?,
+            body: row.try_get("body").map_err(|e| format!("comment row: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("comment row: {e}"))?,
+            updated_at: row
+                .try_get("updated_at")
+                .map_err(|e| format!("comment row: {e}"))?,
+        }
+    }};
+}
+
+const COMMENT_SELECT_PG: &str = "SELECT id, issue_id, author_id, body,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
+FROM issue_comments";
+
+const COMMENT_SELECT_MYSQL: &str = "SELECT id, issue_id, author_id, body,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+       DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
+FROM issue_comments";
+
+const COMMENT_SELECT_SQLITE: &str = "SELECT id, issue_id, author_id, body,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
+FROM issue_comments";
+
+pub async fn insert_issue_comment(
+    pool: &DbPool,
+    id: &str,
+    issue_id: &str,
+    author_id: &str,
+    body: &str,
+) -> Result<IssueCommentRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO issue_comments (id, issue_id, author_id, body)
+VALUES ($1, $2, $3, $4)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(author_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue comment failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO issue_comments (id, issue_id, author_id, body)
+VALUES (?, ?, ?, ?)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(author_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue comment failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO issue_comments (id, issue_id, author_id, body)
+VALUES (?1, ?2, ?3, ?4)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(author_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue comment failed: {e}"))?;
+        }
+    }
+    find_issue_comment_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "insert issue comment failed: row missing after insert".into())
+}
+
+pub async fn find_issue_comment_by_id(
+    pool: &DbPool,
+    id: &str,
+) -> Result<Option<IssueCommentRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{COMMENT_SELECT_PG} WHERE id = $1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_comment!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{COMMENT_SELECT_MYSQL} WHERE id = ?");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_comment!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{COMMENT_SELECT_SQLITE} WHERE id = ?1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_comment!(&r)),
+                None => None,
+            })
+        }
+    }
+}
+
+pub async fn list_issue_comments(
+    pool: &DbPool,
+    issue_id: &str,
+) -> Result<Vec<IssueCommentRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{COMMENT_SELECT_PG} WHERE issue_id = $1 ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{COMMENT_SELECT_MYSQL} WHERE issue_id = ? ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{COMMENT_SELECT_SQLITE} WHERE issue_id = ?1 ORDER BY created_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+pub async fn update_issue_comment_body(
+    pool: &DbPool,
+    id: &str,
+    body: &str,
+) -> Result<IssueCommentRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE issue_comments SET body = $2, updated_at = NOW() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue comment failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE issue_comments SET body = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?",
+            )
+            .bind(body)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue comment failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE issue_comments SET body = ?2,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue comment failed: {e}"))?;
+        }
+    }
+    find_issue_comment_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update issue comment failed: row missing".into())
+}
+
+pub async fn delete_issue_comment(pool: &DbPool, id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM issue_comments WHERE id = $1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue comment failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM issue_comments WHERE id = ?")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue comment failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM issue_comments WHERE id = ?1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue comment failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct CommentRevisionRow {
+    pub id: String,
+    pub comment_id: String,
+    pub editor_id: String,
+    pub body: String,
+    pub created_at: String,
+}
+
+macro_rules! map_comment_revision {
+    ($row:expr) => {{
+        let row = $row;
+        CommentRevisionRow {
+            id: row.try_get("id").map_err(|e| format!("comment revision row: {e}"))?,
+            comment_id: row
+                .try_get("comment_id")
+                .map_err(|e| format!("comment revision row: {e}"))?,
+            editor_id: row
+                .try_get("editor_id")
+                .map_err(|e| format!("comment revision row: {e}"))?,
+            body: row
+                .try_get("body")
+                .map_err(|e| format!("comment revision row: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("comment revision row: {e}"))?,
+        }
+    }};
+}
+
+const COMMENT_REV_SELECT_PG: &str = "SELECT id, comment_id, editor_id, body,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at
+FROM comment_revisions";
+
+const COMMENT_REV_SELECT_MYSQL: &str = "SELECT id, comment_id, editor_id, body,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at
+FROM comment_revisions";
+
+const COMMENT_REV_SELECT_SQLITE: &str = "SELECT id, comment_id, editor_id, body,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+FROM comment_revisions";
+
+/// Insert a prior comment body snapshot (D-ISS-12). Call before applying the new body.
+pub async fn insert_comment_revision(
+    pool: &DbPool,
+    id: &str,
+    comment_id: &str,
+    editor_id: &str,
+    body: &str,
+) -> Result<CommentRevisionRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO comment_revisions (id, comment_id, editor_id, body, created_at)
+VALUES ($1, $2, $3, $4, NOW())",
+            )
+            .bind(id)
+            .bind(comment_id)
+            .bind(editor_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert comment revision failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO comment_revisions (id, comment_id, editor_id, body, created_at)
+VALUES (?, ?, ?, ?, UTC_TIMESTAMP(6))",
+            )
+            .bind(id)
+            .bind(comment_id)
+            .bind(editor_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert comment revision failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            // Fractional seconds so rapid edits stay oldest-first under ORDER BY created_at.
+            sqlx::query(
+                "INSERT INTO comment_revisions (id, comment_id, editor_id, body, created_at)
+VALUES (?1, ?2, ?3, ?4, strftime('%Y-%m-%d %H:%M:%f','now'))",
+            )
+            .bind(id)
+            .bind(comment_id)
+            .bind(editor_id)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert comment revision failed: {e}"))?;
+        }
+    }
+    list_comment_revisions(pool, comment_id)
+        .await?
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| "insert comment revision failed: row missing after insert".into())
+}
+
+pub async fn list_comment_revisions(
+    pool: &DbPool,
+    comment_id: &str,
+) -> Result<Vec<CommentRevisionRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!(
+                "{COMMENT_REV_SELECT_PG} WHERE comment_id = $1 ORDER BY created_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(comment_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list comment revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment_revision!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let q = format!(
+                "{COMMENT_REV_SELECT_MYSQL} WHERE comment_id = ? ORDER BY created_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(comment_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list comment revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment_revision!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{COMMENT_REV_SELECT_SQLITE} WHERE comment_id = ?1 ORDER BY created_at ASC, rowid ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(comment_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list comment revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_comment_revision!(&r));
+            }
+            Ok(out)
+        }
+    }
+}

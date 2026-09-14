@@ -253,6 +253,11 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
         }
         RpcResponse::Err { error, .. } if error.code == "repo.not_found" => StatusCode::NOT_FOUND,
         RpcResponse::Err { error, .. } if error.code == "issue.not_found" => StatusCode::NOT_FOUND,
+        RpcResponse::Err { error, .. }
+            if error.code == "issue.comment_not_found" =>
+        {
+            StatusCode::NOT_FOUND
+        }
         RpcResponse::Err { error, .. } if error.code == "repo.path_not_found" => {
             StatusCode::NOT_FOUND
         }

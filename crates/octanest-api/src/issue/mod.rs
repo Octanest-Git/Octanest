@@ -1,13 +1,15 @@
-//! Issue RPC handlers — lifecycle + history (ISS-01 / D-ISS-01..04 / D-ISS-20).
+//! Issue RPC handlers — lifecycle + comments + history (ISS-01..02 / D-ISS-01..04 / D-ISS-09 / D-ISS-12 / D-ISS-20).
 
 mod acl;
 
 use octanest_core::{
-    AppError, CreateIssueRequest, DeleteIssueRequest, DeleteIssueResponse, IssueHistoryResponse,
+    AppError, CommentHistoryResponse, CommentRevisionPublic, CreateIssueCommentRequest,
+    CreateIssueRequest, DeleteIssueCommentResponse, DeleteIssueRequest, DeleteIssueResponse,
+    IssueCommentPublic, IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse,
     IssueListRequest, IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic,
-    IssueState, UpdateIssueRequest,
+    IssueState, UpdateIssueCommentRequest, UpdateIssueRequest,
 };
-use octanest_db::IssueRow;
+use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
@@ -302,4 +304,192 @@ pub async fn delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<DeleteIssu
     Ok(DeleteIssueResponse {
         number: row.number,
     })
+}
+
+fn comment_not_found() -> AppError {
+    AppError::new("issue.comment_not_found", "Comment not found")
+}
+
+async fn comment_to_public(
+    ctx: &RpcCtx,
+    row: &IssueCommentRow,
+) -> Result<IssueCommentPublic, AppError> {
+    let author_username = match ctx.db.find_user_by_id(&row.author_id).await {
+        Ok(Some(u)) => u.username,
+        Ok(None) => String::new(),
+        Err(e) => return Err(db_err(e)),
+    };
+    Ok(IssueCommentPublic {
+        id: row.id.clone(),
+        issue_id: row.issue_id.clone(),
+        author_id: row.author_id.clone(),
+        author_username,
+        body: row.body.clone(),
+        created_at: row.created_at.clone(),
+        updated_at: row.updated_at.clone(),
+    })
+}
+
+async fn load_comment_in_issue(
+    ctx: &RpcCtx,
+    issue_id: &str,
+    comment_id: &str,
+) -> Result<IssueCommentRow, AppError> {
+    let row = ctx
+        .db
+        .find_issue_comment_by_id(comment_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(comment_not_found)?;
+    if row.issue_id != issue_id {
+        return Err(comment_not_found());
+    }
+    Ok(row)
+}
+
+/// `issue.comments.list` — Read+; oldest-first (ISS-02 / D-ISS-20).
+pub async fn comments_list(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssueCommentsListResponse, AppError> {
+    let req: IssueRefRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.comments.list input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let rows = ctx
+        .db
+        .list_issue_comments(&issue.id)
+        .await
+        .map_err(db_err)?;
+    let mut comments = Vec::with_capacity(rows.len());
+    for row in &rows {
+        comments.push(comment_to_public(ctx, row).await?);
+    }
+    Ok(IssueCommentsListResponse { comments })
+}
+
+/// `issue.comments.create` — Write+ (ISS-02 / D-ISS-20).
+pub async fn comments_create(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssueCommentPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: CreateIssueCommentRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.comments.create input: {e}"),
+        )
+    })?;
+    let body = validate_body(Some(req.body.as_str()))?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let id = Uuid::new_v4().to_string();
+    let row = ctx
+        .db
+        .insert_issue_comment(&id, &issue.id, &user.id, &body)
+        .await
+        .map_err(db_err)?;
+    comment_to_public(ctx, &row).await
+}
+
+/// `issue.comments.update` — author only; appends full revision (D-ISS-09 / D-ISS-12).
+pub async fn comments_update(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssueCommentPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: UpdateIssueCommentRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.comments.update input: {e}"),
+        )
+    })?;
+    let new_body = validate_body(Some(req.body.as_str()))?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let row = load_comment_in_issue(ctx, &issue.id, &req.comment_id).await?;
+    if !acl::can_edit_comment(&user.id, &row.author_id) {
+        return Err(not_found());
+    }
+    if new_body == row.body {
+        return comment_to_public(ctx, &row).await;
+    }
+    let rev_id = Uuid::new_v4().to_string();
+    ctx.db
+        .insert_comment_revision(&rev_id, &row.id, &user.id, &row.body)
+        .await
+        .map_err(db_err)?;
+    let updated = ctx
+        .db
+        .update_issue_comment_body(&row.id, &new_body)
+        .await
+        .map_err(db_err)?;
+    comment_to_public(ctx, &updated).await
+}
+
+/// `issue.comments.delete` — author or Write+ moderation (D-ISS-09 / T-11-10).
+pub async fn comments_delete(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<DeleteIssueCommentResponse, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: IssueCommentRefRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.comments.delete input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let row = load_comment_in_issue(ctx, &issue.id, &req.comment_id).await?;
+    if !acl::can_delete_comment(&user.id, &row.author_id, accessible.capability) {
+        return Err(not_found());
+    }
+    ctx.db
+        .delete_issue_comment(&row.id)
+        .await
+        .map_err(db_err)?;
+    Ok(DeleteIssueCommentResponse { ok: true })
+}
+
+/// `issue.comments.history` — Read+; prior body revisions oldest-first (D-ISS-12).
+pub async fn comments_history(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<CommentHistoryResponse, AppError> {
+    let req: IssueCommentRefRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.comments.history input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let row = load_comment_in_issue(ctx, &issue.id, &req.comment_id).await?;
+    let revs = ctx
+        .db
+        .list_comment_revisions(&row.id)
+        .await
+        .map_err(db_err)?;
+    let mut revisions = Vec::with_capacity(revs.len());
+    for rev in &revs {
+        let editor_username = match ctx.db.find_user_by_id(&rev.editor_id).await {
+            Ok(Some(u)) => u.username,
+            Ok(None) => String::new(),
+            Err(e) => return Err(db_err(e)),
+        };
+        revisions.push(CommentRevisionPublic {
+            id: rev.id.clone(),
+            comment_id: rev.comment_id.clone(),
+            editor_id: rev.editor_id.clone(),
+            editor_username,
+            body: rev.body.clone(),
+            created_at: rev.created_at.clone(),
+        });
+    }
+    Ok(CommentHistoryResponse { revisions })
 }

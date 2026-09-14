@@ -261,6 +261,62 @@ pub struct IssueCommentPublic {
     pub updated_at: String,
 }
 
+/// Create comment on an issue (Write+).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateIssueCommentRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    pub body: String,
+}
+
+/// Update / delete / history for a comment on an issue.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IssueCommentRefRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "commentId", alias = "comment_id")]
+    pub comment_id: String,
+}
+
+/// Update comment body (author only; D-ISS-09).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateIssueCommentRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "commentId", alias = "comment_id")]
+    pub comment_id: String,
+    pub body: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IssueCommentsListResponse {
+    pub comments: Vec<IssueCommentPublic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteIssueCommentResponse {
+    pub ok: bool,
+}
+
+/// One prior comment body snapshot (D-ISS-12).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommentRevisionPublic {
+    pub id: String,
+    pub comment_id: String,
+    pub editor_id: String,
+    pub editor_username: String,
+    pub body: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommentHistoryResponse {
+    pub revisions: Vec<CommentRevisionPublic>,
+}
+
 /// Linked issue / PR stub row (D-ISS-13).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IssueLinkPublic {
