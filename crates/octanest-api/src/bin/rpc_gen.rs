@@ -395,6 +395,8 @@ export type RepoSoftDeleteResponse = {
 
 export type MemberBasePermission = "none" | "read" | "write";
 
+export type OrgRole = "owner" | "admin" | "member";
+
 export type OrgPublic = {
   id: string;
   slug: string;
@@ -407,6 +409,58 @@ export type OrgPublic = {
 export type CreateOrgRequest = {
   slug: string;
   display_name?: string | null;
+};
+
+export type OrgSlugRequest = {
+  slug: string;
+};
+
+export type OrgUpdateSettingsRequest = {
+  slug: string;
+  member_base_permission?: MemberBasePermission | null;
+  display_name?: string | null;
+};
+
+export type OrgMineEntry = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  role: OrgRole;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrgListMineResponse = {
+  orgs: OrgMineEntry[];
+};
+
+export type OrgMemberPublic = {
+  user_id: string;
+  username: string;
+  role: OrgRole;
+  created_at: string;
+};
+
+export type OrgMembersListResponse = {
+  members: OrgMemberPublic[];
+};
+
+export type OrgMembersAddRequest = {
+  slug: string;
+  username: string;
+  role: OrgRole;
+};
+
+export type OrgMembersUpdateRoleRequest = {
+  slug: string;
+  user_id: string;
+  role: OrgRole;
+};
+
+export type OrgMembersRemoveRequest = {
+  slug: string;
+  user_id: string;
 };
 
 /** Classic PAT string prefix (octanest_pat_). */
@@ -552,6 +606,20 @@ export function createClient(opts: CreateClientOptions) {
     },
     org: {
       create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
+      get: (input: OrgSlugRequest) => rpcCall<OrgPublic>(opts, "org.get", input),
+      listMine: () => rpcCall<OrgListMineResponse>(opts, "org.listMine", {}),
+      updateSettings: (input: OrgUpdateSettingsRequest) =>
+        rpcCall<OrgPublic>(opts, "org.updateSettings", input),
+      members: {
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgMembersListResponse>(opts, "org.members.list", input),
+        add: (input: OrgMembersAddRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.add", input),
+        updateRole: (input: OrgMembersUpdateRoleRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.updateRole", input),
+        remove: (input: OrgMembersRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.members.remove", input),
+      },
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>

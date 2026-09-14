@@ -115,6 +115,65 @@ VALUES (?1, ?2, ?3, ?4)",
         .ok_or_else(|| "insert organization failed: row missing after insert".into())
 }
 
+/// Update org profile settings (`member_base_permission` / `display_name`).
+pub async fn update_settings(
+    pool: &DbPool,
+    id: &str,
+    member_base_permission: Option<&str>,
+    display_name: Option<&str>,
+) -> Result<OrganizationRow, String> {
+    let current = find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "organization not found".to_string())?;
+    let base = member_base_permission.unwrap_or(current.member_base_permission.as_str());
+    let name = display_name.unwrap_or(current.display_name.as_str());
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE organizations
+SET member_base_permission = $2, display_name = $3, updated_at = now()
+WHERE id = $1",
+            )
+            .bind(id)
+            .bind(base)
+            .bind(name)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update organization failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE organizations
+SET member_base_permission = ?, display_name = ?, updated_at = NOW()
+WHERE id = ?",
+            )
+            .bind(base)
+            .bind(name)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update organization failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE organizations
+SET member_base_permission = ?2, display_name = ?3,
+    updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(base)
+            .bind(name)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update organization failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update organization failed: row missing after update".into())
+}
+
 pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<OrganizationRow>, String> {
     match pool {
         DbPool::Postgres(p) => {

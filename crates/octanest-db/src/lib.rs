@@ -18,7 +18,7 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
-pub use org_members::OrgMemberRow;
+pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use pats::PatRow;
 pub use repo_collaborators::RepoCollaboratorRow;
@@ -178,6 +178,46 @@ impl Database {
         org_id: &str,
     ) -> Result<Option<String>, String> {
         organizations::find_member_base_permission(self.require_pool()?, org_id).await
+    }
+
+    pub async fn update_organization_settings(
+        &self,
+        id: &str,
+        member_base_permission: Option<&str>,
+        display_name: Option<&str>,
+    ) -> Result<OrganizationRow, String> {
+        organizations::update_settings(
+            self.require_pool()?,
+            id,
+            member_base_permission,
+            display_name,
+        )
+        .await
+    }
+
+    pub async fn count_org_owners(&self, org_id: &str) -> Result<i64, String> {
+        org_members::count_owners(self.require_pool()?, org_id).await
+    }
+
+    pub async fn update_org_member_role(
+        &self,
+        org_id: &str,
+        user_id: &str,
+        role: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::update_member_role(self.require_pool()?, org_id, user_id, role).await
+    }
+
+    pub async fn remove_org_member(&self, org_id: &str, user_id: &str) -> Result<(), String> {
+        org_members::remove_member(self.require_pool()?, org_id, user_id).await
+    }
+
+    pub async fn list_org_members(&self, org_id: &str) -> Result<Vec<OrgMemberListRow>, String> {
+        org_members::list_members(self.require_pool()?, org_id).await
+    }
+
+    pub async fn list_orgs_for_user(&self, user_id: &str) -> Result<Vec<OrgMineRow>, String> {
+        org_members::list_orgs_for_user(self.require_pool()?, user_id).await
     }
 
     pub async fn find_repo_collaborator(

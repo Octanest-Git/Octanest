@@ -219,6 +219,34 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(org) => RpcResponse::ok(org),
             Err(e) => RpcResponse::err(e),
         },
+        "org.get" => match org::get(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.listMine" => match org::list_mine(ctx).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.updateSettings" => match org::update_settings(ctx, req.input).await {
+            Ok(org) => RpcResponse::ok(org),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.list" => match org::members_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.add" => match org::members_add(ctx, req.input).await {
+            Ok(member) => RpcResponse::ok(member),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.updateRole" => match org::members_update_role(ctx, req.input).await {
+            Ok(member) => RpcResponse::ok(member),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.members.remove" => match org::members_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.listMine" => match repo::list_mine(ctx).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
