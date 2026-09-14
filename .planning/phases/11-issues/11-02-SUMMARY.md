@@ -22,7 +22,7 @@ affects:
 actuals:
   tokens: 16498
   tasks: 2
-  commits: 2
+  commits: 5
 
 plan_head_before: 85e1260adcfd295d207c7266dd61d8ad6b0dd174
 
@@ -115,7 +115,7 @@ status: complete
 1. **Task 0: Confirm D-ISS-01 numbering + 0011 schema door** — decision only (`proceed_0011` from executor instructions; no code commit)
 2. **Task 1: 0011_issues + DB helpers + issue_types** — `044a081` (feat)
 
-**Plan metadata:** `87e3ad6` (docs: complete plan — STATE/ROADMAP intentionally untouched)
+**Plan metadata:** `87e3ad6` (+ follow-up docs for actuals; STATE/ROADMAP untouched)
 
 ## Files Created/Modified
 
