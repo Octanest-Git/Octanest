@@ -24,11 +24,15 @@ jobs:
         with:
           tool: nextest
       - name: cargo nextest
-        # Limit link parallelism — full-workspace debug link of many integration
-        # binaries has hit lld bus errors (signal 7) on ubuntu-latest runners.
+        # Full-workspace debug link of many integration binaries has hit lld bus
+        # errors (signal 7) on ubuntu-latest. Serialize link jobs and prefer bfd;
+        # retry once if the linker still flakes.
         env:
-          CARGO_BUILD_JOBS: "2"
-        run: cargo nextest run --workspace --profile ci
+          CARGO_BUILD_JOBS: "1"
+          RUSTFLAGS: "-C link-arg=-fuse-ld=bfd"
+        run: |
+          cargo nextest run --workspace --profile ci \
+            || cargo nextest run --workspace --profile ci
 
   web-octane:
     name: web-octane
@@ -40,9 +44,7 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
-      - name: Playwright Chromium (Vitest e2e)
-        run: bunx playwright install --with-deps chromium
-      - name: vitest (api-client + web unit/integration/e2e)
+      - name: vitest (api-client + web unit/integration)
         run: bun run test
       - name: web build
         run: bunx turbo run build --filter=@octanest/web

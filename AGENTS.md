@@ -54,6 +54,11 @@ See [docs/TESTING.md](docs/TESTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMEN
 
 Active milestone plans live under `.planning/`. Do not invent roadmap phases; follow `STATE.md` / `ROADMAP.md`. Post-Phase-06 polish (Query session cache, setup auth stack, factory reset) is recorded in `phases/06-self-host-admin-bootstrap/deferred-items.md`.
 
+
+## Scratch files (`tmp/`)
+
+Use repo-root [`tmp/`](tmp/README.md) for agent and local scratch (screenshots, dumps, one-off scripts, debug logs). The directory is gitignored except `tmp/README.md`. **Never** drop temporary files in the repository root or inside `apps/` / `crates/` / `packages/` source trees.
+
 ## Contribution standards
 
 Follow [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md). Cursor rules under `.cursor/rules/` encode the same expectations for agents.

@@ -135,9 +135,11 @@ export const signupThroughUi: BrowserCommand<
   await context.clearCookies();
   const page = await context.newPage();
   try {
-    // Prefer load over networkidle — Vite HMR / long-poll keeps network busy in CI.
+    // Prefer domcontentloaded — `load` hangs in CI while Vite finishes dep
+    // optimize/reload after the harness marks the origin "ready".
     await page.goto(`${webOrigin()}/signup`, {
-      waitUntil: "load",
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
     });
     await page
       .getByRole("heading", { name: "Create your account" })
@@ -192,7 +194,7 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
   await context.clearCookies();
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/login`, { waitUntil: "load" });
+    await page.goto(`${webOrigin()}/login`, { waitUntil: "domcontentloaded" });
     try {
       await page
         .getByRole("button", { name: /continue with workos/i })
@@ -227,7 +229,7 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
 
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/login`, { waitUntil: "load" });
+    await page.goto(`${webOrigin()}/login`, { waitUntil: "domcontentloaded" });
     await new Promise((r) => setTimeout(r, 750));
     const html = await page.content();
     // Chrome may pulse account skeletons; form must be the real SSO CTA (no AuthFormSkeleton).
@@ -268,7 +270,7 @@ export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/status`, { waitUntil: "load" });
+    await page.goto(`${webOrigin()}/status`, { waitUntil: "domcontentloaded" });
     await page
       .getByRole("heading", { name: "System status" })
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -316,7 +318,7 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
       }
     });
 
-    await page.goto(`${webOrigin()}/`, { waitUntil: "load" });
+    await page.goto(`${webOrigin()}/`, { waitUntil: "domcontentloaded" });
     await page
       .getByRole("button", { name: /account menu/i })
       .waitFor({ state: "visible", timeout: 30_000 });

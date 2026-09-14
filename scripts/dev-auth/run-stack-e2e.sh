@@ -125,6 +125,11 @@ echo "==> starting Vite web on :$WEB_PORT (proxies /api → API)"
 WEB_PID=$!
 wait_http "http://127.0.0.1:${WEB_PORT}/" "web" 90
 
+# Cold routes can sit in Vite dep-optimize/reload; warm signup/login before Playwright.
+echo "==> warming auth routes"
+curl -4 -fsS "http://127.0.0.1:${WEB_PORT}/signup" -o /dev/null || true
+curl -4 -fsS "http://127.0.0.1:${WEB_PORT}/login" -o /dev/null || true
+
 export E2E_STACK=1
 export OCTANEST_API_ORIGIN="http://127.0.0.1:${API_PORT}"
 export OCTANEST_E2E_API_ORIGIN="http://127.0.0.1:${API_PORT}"

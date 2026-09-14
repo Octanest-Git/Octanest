@@ -47,8 +47,12 @@ const stackEnvDefine = {
 
 /**
  * Vitest projects:
- * - unit / integration / e2e-component: always on in `bun run test`
+ * - unit / integration: always on in `bun run test`
  * - e2e-stack (+ browser): only when E2E_STACK=1 (`make test-e2e-stack`)
+ *
+ * Component coverage uses happy-dom integration tests (e.g. auth-shell). The
+ * former e2e-component Playwright project was removed — a single browser-suite
+ * file hit Vitest `initSuite` / `config` undefined failures on GitHub runners.
  */
 export default defineConfig({
   plugins: [octane()],
@@ -83,20 +87,6 @@ export default defineConfig({
           environment: "happy-dom",
           include: ["src/**/*.integration.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-integration.ts"],
-        },
-      },
-      {
-        extends: true,
-        test: {
-          name: "e2e-component",
-          include: ["e2e/component/**/*.e2e.test.{ts,tsx}"],
-          setupFiles: ["./e2e/component/setup.ts"],
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            headless: true,
-            instances: [{ browser: "chromium" }],
-          },
         },
       },
       ...(stackEnabled

@@ -17,7 +17,14 @@ const apiProxyTarget =
   "http://127.0.0.1:8080";
 
 export default defineConfig({
-  plugins: [tanstackStart(), tailwindcss()],
+  plugins: [
+    tanstackStart({
+      // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
+      // (avoids noisy warnings and extra SSR work during stack e2e).
+      routeFileIgnorePattern: '\\.(test|spec)\\.',
+    }),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
