@@ -1,60 +1,75 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * ORG-03 / D-ORG-02c / D-ORG-04 Wave 0 stubs: repo settings Collaborators panel.
- *
- * RED until collaborators panel + can_admin gate land (10-11).
- * Do not implement production Collaborators UI here.
- *
- * Uses a variable dynamic import + @vite-ignore so Vitest can collect the
- * suite while the panel module is still absent.
+ * ORG-03 / D-ORG-02c / D-ORG-04: repo settings Collaborators panel.
  */
 
-async function loadCollaboratorsPanel(): Promise<Record<string, unknown>> {
-  const rel = "../components/repo/collaborators-panel";
-  try {
-    return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `Wave 0: Collaborators panel missing — implement in 10-11 (ORG-03 / D-ORG-02c / D-ORG-04). Expected Collaborators section gated by can_admin + Add collaborator + read|write|admin ladder. ${(err as Error).message}`,
-    );
-  }
-}
+describe("repo settings Collaborators (ORG-03 / D-ORG-02c / D-ORG-04)", () => {
+  it(
+    "settings gate uses can_admin — not me.id === owner_id",
+    async () => {
+      const panel = await import("../components/repo/collaborators-panel");
+      expect(
+        panel.CollaboratorsPanel ?? panel.default,
+        "CollaboratorsPanel must export for can_admin-gated settings (D-ORG-04)",
+      ).toBeTruthy();
 
-describe("repo settings Collaborators Wave 0 (ORG-03 / D-ORG-02c / D-ORG-04)", () => {
-  it("settings gate uses can_admin — not me.id === owner_id", async () => {
-    const panel = await loadCollaboratorsPanel();
-    // Greened in 10-11: show settings/Collaborators when repo.can_admin
-    expect(
-      panel.CollaboratorsPanel ?? panel.default,
-      "Wave 0: CollaboratorsPanel must gate on can_admin (D-ORG-04)",
-    ).toBeTruthy();
-  });
+      const settings = await import("./$owner.$repo.settings");
+      expect(settings.RepoSettingsPage ?? settings.default).toBeTruthy();
+      // Source-level gate: settings must use can_admin, not owner_id equality.
+      const settingsSrc = await import(
+        "./$owner.$repo.settings.tsrx?raw"
+      ).then((m) => String((m as { default: string }).default));
+      expect(settingsSrc).toMatch(/can_admin/);
+      expect(settingsSrc).not.toMatch(/me\.id\s*===\s*repo\.owner_id/);
+    },
+    30_000,
+  );
 
-  it("Collaborators section: list + Add collaborator empty state", async () => {
-    const panel = await loadCollaboratorsPanel();
-    // Greened in 10-11: heading Collaborators; empty short sentence + Add collaborator
-    expect(
-      panel.CollaboratorsPanel ?? panel.default,
-      "Wave 0: CollaboratorsPanel export for list/add empty state",
-    ).toBeTruthy();
-  });
+  it(
+    "Collaborators section: list + Add collaborator empty state",
+    async () => {
+      const panel = await import("../components/repo/collaborators-panel");
+      expect(panel.CollaboratorsPanel ?? panel.default).toBeTruthy();
+      const src = await import(
+        "../components/repo/collaborators-panel.tsrx?raw"
+      ).then((m) => String((m as { default: string }).default));
+      expect(src).toMatch(/Collaborators/);
+      expect(src).toMatch(/Add collaborator/);
+      expect(src).toMatch(/No collaborators yet/);
+    },
+    30_000,
+  );
 
-  it("add/update/remove permission ladder read | write | admin", async () => {
-    const panel = await loadCollaboratorsPanel();
-    // Greened in 10-11: Permission Select read|write|admin; works personal + org-owned
-    expect(
-      panel.CollaboratorsPanel ?? panel.default,
-      "Wave 0: permission ladder read|write|admin on add/update (D-ORG-02c)",
-    ).toBeTruthy();
-  });
+  it(
+    "add/update/remove permission ladder read | write | admin",
+    async () => {
+      const panel = await import("../components/repo/collaborators-panel");
+      expect(panel.CollaboratorsPanel ?? panel.default).toBeTruthy();
+      const src = await import(
+        "../components/repo/collaborators-panel.tsrx?raw"
+      ).then((m) => String((m as { default: string }).default));
+      expect(src).toMatch(/"read"/);
+      expect(src).toMatch(/"write"/);
+      expect(src).toMatch(/"admin"/);
+      expect(src).toMatch(/collaborators\.add/);
+      expect(src).toMatch(/collaborators\.update/);
+      expect(src).toMatch(/collaborators\.remove/);
+    },
+    30_000,
+  );
 
-  it("username lookup autocomplete never shows email (T-10-03)", async () => {
-    const panel = await loadCollaboratorsPanel();
-    // Greened in 10-11: user.lookup results render username/display/avatar only
-    expect(
-      panel.CollaboratorsPanel ?? panel.default,
-      "Wave 0: collaborator lookup must never render email addresses (T-10-03 / D-ORG-03)",
-    ).toBeTruthy();
-  });
+  it(
+    "username lookup autocomplete never shows email (T-10-03)",
+    async () => {
+      const panel = await import("../components/repo/collaborators-panel");
+      expect(panel.CollaboratorsPanel ?? panel.default).toBeTruthy();
+      const src = await import(
+        "../components/repo/collaborators-panel.tsrx?raw"
+      ).then((m) => String((m as { default: string }).default));
+      expect(src).toMatch(/MemberLookup/);
+      expect(src).not.toMatch(/hit\.email/);
+    },
+    30_000,
+  );
 });

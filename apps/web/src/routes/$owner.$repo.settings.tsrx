@@ -5,6 +5,7 @@ import {
 } from "@octanejs/tanstack-router";
 import type { RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
+import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import {
@@ -39,11 +40,11 @@ export const Route = createFileRoute("/$owner/$repo/settings")({
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const PRIVATE_HELPER =
-  "Only you can see this repository until organizations and collaborators ship.";
+  "Only people with access can see this private repository.";
 const SOFT_DELETE_BODY =
   "Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm.";
 
-/** Owner-only visibility + soft-delete — SSR from parent layout loader (D-26 / D-35). */
+/** Admin settings — visibility, collaborators, soft-delete (D-ORG-04 / ORG-03). */
 export function RepoSettingsPage() @{
   const params = useParams({ from: "/$owner/$repo/settings" }) as {
     owner: string;
@@ -57,13 +58,13 @@ export function RepoSettingsPage() @{
   const setRepo = useRepoStore((s) => s.setRepo);
 
   const repo = layout?.repo ?? null;
-  const me = layout?.me ?? null;
   const layoutError = layout?.status === "error" ? layout.message : "";
-  const isOwner = !!repo && !!me && me.id === repo.owner_id;
+  // Gate on API can_admin — not me.id === owner_id (D-ORG-04 / T-10-02).
+  const canAdmin = !!repo?.can_admin;
   const showNotFound =
     !layout ||
     layout.status === "not_found" ||
-    (layout.status === "ok" && !!repo && !isOwner);
+    (layout.status === "ok" && !!repo && !canAdmin);
 
   const [visibility, setVisibility] = useState<RepoVisibility>(
     () => repo?.visibility ?? "public",
@@ -130,7 +131,7 @@ export function RepoSettingsPage() @{
         {layoutError as string}
       </p>
     </div>
-  } @else if (repo && isOwner) {
+  } @else if (repo && canAdmin) {
     <>
       <RepoChrome
         repo={repo}
@@ -186,6 +187,8 @@ export function RepoSettingsPage() @{
             {(visPending ? "Saving…" : "Save visibility") as string}
           </Button>
         </section>
+
+        <CollaboratorsPanel owner={owner} name={repoName} />
 
         <section
           className="mt-12 flex flex-col gap-4 rounded-md border border-destructive/40 p-4"
