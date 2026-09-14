@@ -3,8 +3,9 @@
 mod acl;
 
 use octanest_core::{
-    AppError, CreateIssueRequest, IssueHistoryResponse, IssueListRequest, IssueListResponse,
-    IssuePublic, IssueRefRequest, IssueRevisionPublic, IssueState, UpdateIssueRequest,
+    AppError, CreateIssueRequest, DeleteIssueRequest, DeleteIssueResponse, IssueHistoryResponse,
+    IssueListRequest, IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic,
+    IssueState, UpdateIssueRequest,
 };
 use octanest_db::IssueRow;
 use uuid::Uuid;
@@ -277,4 +278,28 @@ pub async fn history(
         });
     }
     Ok(IssueHistoryResponse { revisions })
+}
+
+/// `issue.delete` — Admin + confirmNumber; does not reclaim `#N` (D-ISS-02 / D-ISS-20).
+pub async fn delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<DeleteIssueResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: DeleteIssueRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.delete input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_admin(ctx, &req.owner, &req.name).await?;
+    let row = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    if req.confirm_number != row.number {
+        return Err(AppError::new(
+            "issue.confirm_mismatch",
+            "Type the issue number exactly to confirm deletion.",
+        ));
+    }
+    // Cascades comments/reactions/links/revisions via FK ON DELETE CASCADE.
+    ctx.db.delete_issue(&row.id).await.map_err(db_err)?;
+    Ok(DeleteIssueResponse {
+        number: row.number,
+    })
 }
