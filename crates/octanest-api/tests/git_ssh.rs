@@ -1,5 +1,4 @@
-//! GIT-03 tracer: Git-over-SSH auth + public upload-pack (09-03).
-//! Private/push/rate-limit cases stay RED until 09-04.
+//! GIT-03: Git-over-SSH auth, ACL, pack allowlist, and failed-auth rate limits.
 
 mod support;
 
@@ -9,6 +8,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use octanest_api::ssh::{spawn_listener, SshState};
+use octanest_api::ssh::rate_limit::SshAuthLimiter;
+use std::sync::Mutex;
 use octanest_core::Role;
 use octanest_db::Database;
 use russh::client;
@@ -17,6 +18,14 @@ use russh::keys::ssh_key::{Algorithm, HashAlg, LineEnding};
 use ssh_key::PublicKey;
 use tempfile::TempDir;
 use uuid::Uuid;
+
+fn ssh_state(db: Database, repos_dir: PathBuf) -> SshState {
+    SshState {
+        db,
+        repos_dir,
+        auth_limiter: Arc::new(Mutex::new(SshAuthLimiter::new())),
+    }
+}
 
 struct AcceptingClient;
 
@@ -171,10 +180,7 @@ async fn git_ssh_username_other_than_git_rejected() {
     .unwrap();
 
     let (addr, _stop) = spawn_listener(
-        SshState {
-            db,
-            repos_dir: repos,
-        },
+        ssh_state(db, repos),
         "127.0.0.1:0".parse().unwrap(),
     )
     .await
@@ -222,10 +228,7 @@ async fn git_ssh_registered_key_user_git_accepted() {
     .unwrap();
 
     let (addr, _stop) = spawn_listener(
-        SshState {
-            db,
-            repos_dir: repos,
-        },
+        ssh_state(db, repos),
         "127.0.0.1:0".parse().unwrap(),
     )
     .await
@@ -273,12 +276,19 @@ async fn git_ssh_public_upload_pack_happy_path() {
     )
     .await
     .unwrap();
+    db.insert_repository(
+        "r-demo",
+        &user_id,
+        "demo",
+        "public",
+        "demo",
+        "main",
+    )
+    .await
+    .unwrap();
 
     let (addr, _stop) = spawn_listener(
-        SshState {
-            db,
-            repos_dir: repos,
-        },
+        ssh_state(db, repos),
         "127.0.0.1:0".parse().unwrap(),
     )
     .await
@@ -320,18 +330,145 @@ async fn git_ssh_public_upload_pack_happy_path() {
     );
 }
 
-/// Private non-owner denied — deferred to 09-04.
+/// Private non-owner denied with clear git stderr (D-SSH-04).
 #[tokio::test]
-#[ignore = "09-04 ACL expansion"]
 async fn git_ssh_private_non_owner_git_stderr_deny() {
-    assert!(false);
+    let tmp = TempDir::new().unwrap();
+    std::env::set_var("OCTANEST_SSH_HOST_KEY_DIR", tmp.path().join("host"));
+    let url = format!("sqlite:{}", tmp.path().join("ssh.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let repos = tmp.path().join("repos");
+
+    let owner_id = Uuid::new_v4().to_string();
+    db.create_user(
+        &owner_id,
+        "own@ex.com",
+        "owneru",
+        Some("hash"),
+        "O",
+        "",
+        None,
+        Role::User,
+    )
+    .await
+    .unwrap();
+    let other_id = Uuid::new_v4().to_string();
+    db.create_user(
+        &other_id,
+        "oth@ex.com",
+        "otheru",
+        Some("hash"),
+        "O",
+        "",
+        None,
+        Role::User,
+    )
+    .await
+    .unwrap();
+    let bare = repos.join("owneru").join("secret.git");
+    init_bare_repo(&bare);
+    db.insert_repository("r-sec", &owner_id, "secret", "private", "sec", "main")
+        .await
+        .unwrap();
+
+    let (priv_path, pub_line, fp) = write_keypair(tmp.path());
+    db.create_ssh_key("k-priv", &other_id, "laptop", &pub_line, &fp, "ssh-ed25519")
+        .await
+        .unwrap();
+
+    let (addr, _stop) = spawn_listener(ssh_state(db, repos), "127.0.0.1:0".parse().unwrap())
+        .await
+        .expect("listen");
+    let key = Arc::new(load_secret_key(&priv_path, None).unwrap());
+    let session = connect_auth(addr, "git", key).await.expect("auth");
+    let mut channel = session.channel_open_session().await.expect("open");
+    channel
+        .exec(true, "git-upload-pack 'owneru/secret.git'")
+        .await
+        .expect("exec");
+
+    let mut saw_deny = false;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while tokio::time::Instant::now() < deadline {
+        match tokio::time::timeout(Duration::from_millis(400), channel.wait()).await {
+            Ok(Some(russh::ChannelMsg::ExtendedData { ref data, .. }))
+            | Ok(Some(russh::ChannelMsg::Data { ref data })) => {
+                let s = String::from_utf8_lossy(data);
+                if s.contains("Permission denied") || s.contains("ERROR:") {
+                    saw_deny = true;
+                    break;
+                }
+            }
+            Ok(None) | Ok(Some(russh::ChannelMsg::Eof)) => break,
+            _ => {}
+        }
+    }
+    assert!(saw_deny, "expected git stderr permission deny");
 }
 
-/// Unverified push deny — deferred to 09-04.
+/// Unverified email cannot push (`git-receive-pack`) (D-SSH-04).
 #[tokio::test]
-#[ignore = "09-04 ACL expansion"]
 async fn git_ssh_push_unverified_email_denied() {
-    assert!(false);
+    let tmp = TempDir::new().unwrap();
+    std::env::set_var("OCTANEST_SSH_HOST_KEY_DIR", tmp.path().join("host"));
+    let url = format!("sqlite:{}", tmp.path().join("ssh.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let repos = tmp.path().join("repos");
+
+    let user_id = Uuid::new_v4().to_string();
+    db.create_user(
+        &user_id,
+        "push@ex.com",
+        "pushu",
+        Some("hash"),
+        "P",
+        "",
+        None,
+        Role::User,
+    )
+    .await
+    .unwrap();
+    let bare = repos.join("pushu").join("demo.git");
+    init_bare_repo(&bare);
+    db.insert_repository("r-push", &user_id, "demo", "public", "d", "main")
+        .await
+        .unwrap();
+
+    let (priv_path, pub_line, fp) = write_keypair(tmp.path());
+    db.create_ssh_key("k-push", &user_id, "laptop", &pub_line, &fp, "ssh-ed25519")
+        .await
+        .unwrap();
+
+    let (addr, _stop) = spawn_listener(ssh_state(db, repos), "127.0.0.1:0".parse().unwrap())
+        .await
+        .expect("listen");
+    let key = Arc::new(load_secret_key(&priv_path, None).unwrap());
+    let session = connect_auth(addr, "git", key).await.expect("auth");
+    let mut channel = session.channel_open_session().await.expect("open");
+    channel
+        .exec(true, "git-receive-pack 'pushu/demo.git'")
+        .await
+        .expect("exec");
+
+    let mut saw = false;
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
+    while tokio::time::Instant::now() < deadline {
+        match tokio::time::timeout(Duration::from_millis(400), channel.wait()).await {
+            Ok(Some(russh::ChannelMsg::ExtendedData { ref data, .. }))
+            | Ok(Some(russh::ChannelMsg::Data { ref data })) => {
+                let s = String::from_utf8_lossy(data);
+                if s.contains("Email verification") || s.contains("ERROR:") {
+                    saw = true;
+                    break;
+                }
+            }
+            Ok(None) | Ok(Some(russh::ChannelMsg::Eof)) => break,
+            _ => {}
+        }
+    }
+    assert!(saw, "expected email verification deny on receive-pack");
 }
 
 /// Non-pack exec rejected.
@@ -371,10 +508,7 @@ async fn git_ssh_non_pack_exec_shell_rejected() {
     .unwrap();
 
     let (addr, _stop) = spawn_listener(
-        SshState {
-            db,
-            repos_dir: repos,
-        },
+        ssh_state(db, repos),
         "127.0.0.1:0".parse().unwrap(),
     )
     .await
@@ -399,9 +533,36 @@ async fn git_ssh_non_pack_exec_shell_rejected() {
     assert!(failed, "shell exec must receive channel failure");
 }
 
-/// Failed pubkey rate-limit — deferred to 09-04.
+/// Failed pubkey auth over limit is rate-limited (D-SSH-07).
 #[tokio::test]
-#[ignore = "09-04 rate limit"]
 async fn git_ssh_failed_pubkey_rate_limited() {
-    assert!(false);
+    let tmp = TempDir::new().unwrap();
+    std::env::set_var("OCTANEST_SSH_HOST_KEY_DIR", tmp.path().join("host"));
+    let url = format!("sqlite:{}", tmp.path().join("ssh.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let repos = tmp.path().join("repos");
+    std::fs::create_dir_all(&repos).unwrap();
+
+    let (priv_path, _pub_line, _fp) = write_keypair(tmp.path());
+    let limiter = Arc::new(Mutex::new(SshAuthLimiter::new()));
+    let state = SshState {
+        db,
+        repos_dir: repos,
+        auth_limiter: limiter.clone(),
+    };
+    let (addr, _stop) = spawn_listener(state, "127.0.0.1:0".parse().unwrap())
+        .await
+        .expect("listen");
+
+    let key = Arc::new(load_secret_key(&priv_path, None).unwrap());
+    for _ in 0..11 {
+        let _ = connect_auth(addr, "git", key.clone()).await;
+    }
+    let err = connect_auth(addr, "git", key).await;
+    assert!(
+        err.is_err(),
+        "expected rate limit after fingerprint spray: {}",
+        err.err().unwrap()
+    );
 }

@@ -1,8 +1,8 @@
-//! In-process russh Git SSH listener (D-SSH-01 / D-SSH-03).
+//! In-process russh Git SSH listener (D-SSH-01 / D-SSH-03 / D-SSH-04 / D-SSH-07).
 
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use octanest_db::Database;
@@ -13,13 +13,15 @@ use tokio::sync::oneshot;
 
 use super::auth;
 use super::host_keys;
-use super::pack::{self, PackCommand};
+use super::pack::{self, AuthzDecision, PackCommand};
+use super::rate_limit::SshAuthLimiter;
 
 /// Shared state for all SSH connections.
 #[derive(Clone)]
 pub struct SshState {
     pub db: Database,
     pub repos_dir: PathBuf,
+    pub auth_limiter: Arc<Mutex<SshAuthLimiter>>,
 }
 
 #[derive(Clone)]
@@ -29,6 +31,7 @@ struct SshServer {
 
 struct SshHandler {
     state: SshState,
+    peer: Option<SocketAddr>,
     user_id: Option<String>,
     key_id: Option<String>,
     session_channel: Option<Channel<Msg>>,
@@ -37,9 +40,10 @@ struct SshHandler {
 impl RusshServer for SshServer {
     type Handler = SshHandler;
 
-    fn new_client(&mut self, _: Option<SocketAddr>) -> Self::Handler {
+    fn new_client(&mut self, peer: Option<SocketAddr>) -> Self::Handler {
         SshHandler {
             state: self.state.clone(),
+            peer,
             user_id: None,
             key_id: None,
             session_channel: None,
@@ -55,8 +59,27 @@ impl Handler for SshHandler {
         user: &str,
         public_key: &ssh_key::PublicKey,
     ) -> Result<Auth, Self::Error> {
+        let ip = self
+            .peer
+            .map(|p| p.ip().to_string())
+            .unwrap_or_else(|| "unknown".into());
+        let fp = auth::fingerprint_of(public_key);
+
+        {
+            let mut lim = self.state.auth_limiter.lock().unwrap_or_else(|e| e.into_inner());
+            if lim.check_ip(&ip).is_err() || lim.check_user(&fp).is_err() {
+                return Ok(Auth::Reject {
+                    proceed_with_methods: None,
+                    partial_success: false,
+                });
+            }
+        }
+
         if user != "git" {
             tracing::debug!(%user, "SSH reject: username must be git");
+            let mut lim = self.state.auth_limiter.lock().unwrap_or_else(|e| e.into_inner());
+            lim.record_ip(&ip);
+            lim.record_user(&fp);
             return Ok(Auth::Reject {
                 proceed_with_methods: None,
                 partial_success: false,
@@ -71,16 +94,28 @@ impl Handler for SshHandler {
                 let _ = self
                     .state
                     .db
-                    .touch_ssh_key_last_used(&row.id, &now, None)
+                    .touch_ssh_key_last_used(&row.id, &now, Some(&ip))
                     .await;
+                {
+                    let mut lim = self.state.auth_limiter.lock().unwrap_or_else(|e| e.into_inner());
+                    lim.clear_user(&fp);
+                }
                 Ok(Auth::Accept)
             }
-            Ok(None) => Ok(Auth::Reject {
-                proceed_with_methods: None,
-                partial_success: false,
-            }),
+            Ok(None) => {
+                let mut lim = self.state.auth_limiter.lock().unwrap_or_else(|e| e.into_inner());
+                lim.record_ip(&ip);
+                lim.record_user(&fp);
+                Ok(Auth::Reject {
+                    proceed_with_methods: None,
+                    partial_success: false,
+                })
+            }
             Err(e) => {
                 tracing::error!(error = %e, "SSH fingerprint lookup failed");
+                let mut lim = self.state.auth_limiter.lock().unwrap_or_else(|e| e.into_inner());
+                lim.record_ip(&ip);
+                lim.record_user(&fp);
                 Ok(Auth::Reject {
                     proceed_with_methods: None,
                     partial_success: false,
@@ -111,53 +146,51 @@ impl Handler for SshHandler {
             return Ok(());
         };
 
-        let parsed = pack::parse_pack_exec(data);
-        match parsed {
-            Some(PackCommand::UploadPack { owner, name }) => {
-                let bare = match pack::resolve_bare(&self.state.repos_dir, &owner, &name) {
-                    Ok(p) => p,
-                    Err(_) => {
-                        session.channel_failure(channel)?;
-                        return Ok(());
-                    }
-                };
-                if !bare.exists() {
-                    session.channel_failure(channel)?;
-                    return Ok(());
-                }
+        let Some(cmd) = pack::parse_pack_exec(data) else {
+            session.channel_failure(channel)?;
+            return Ok(());
+        };
 
-                // Tracer ACL: allow upload-pack for any authenticated key (public repos).
-                // Private/non-owner deny lands in 09-04.
-                let _ = user_id;
+        let decision = pack::authorize_pack(
+            &self.state.db,
+            &self.state.repos_dir,
+            &user_id,
+            &cmd,
+        )
+        .await;
+
+        match decision {
+            AuthzDecision::Deny { message } => {
                 session.channel_success(channel)?;
-
+                let handle = session.handle();
+                tokio::spawn(async move {
+                    pack::write_git_stderr_deny(&handle, channel, &message).await;
+                });
+                Ok(())
+            }
+            AuthzDecision::Allow { bare } => {
+                let program = match &cmd {
+                    PackCommand::UploadPack { .. } => "upload-pack",
+                    PackCommand::ReceivePack { .. } => "receive-pack",
+                };
+                session.channel_success(channel)?;
                 let Some(mut ch) = self.session_channel.take() else {
                     session.channel_failure(channel)?;
                     return Ok(());
                 };
-
                 let handle = session.handle();
                 tokio::spawn(async move {
-                    // Writers are `'static`; create them before the mut reader borrow.
                     let writer = ch.make_writer();
                     let stderr_writer = ch.make_writer_ext(Some(1));
                     let reader = ch.make_reader();
-                    let code = pack::run_upload_pack(&bare, reader, writer, stderr_writer)
-                        .await
-                        .unwrap_or(1);
+                    let code =
+                        pack::run_pack_command(program, &bare, reader, writer, stderr_writer)
+                            .await
+                            .unwrap_or(1);
                     let _ = handle.exit_status_request(channel, code as u32).await;
                     let _ = handle.eof(channel).await;
                     let _ = handle.close(channel).await;
                 });
-                Ok(())
-            }
-            Some(PackCommand::ReceivePack { .. }) => {
-                // Tracer: receive-pack deferred to 09-04.
-                session.channel_failure(channel)?;
-                Ok(())
-            }
-            None => {
-                session.channel_failure(channel)?;
                 Ok(())
             }
         }
@@ -253,9 +286,7 @@ pub async fn spawn_listener(
         }
     });
 
-    // Give the accept loop a tick to start.
     tokio::task::yield_now().await;
-
     tracing::info!(%local, "Git SSH listener ready");
     Ok((local, stop_tx))
 }
@@ -270,7 +301,12 @@ pub async fn maybe_spawn_from_env(db: Database, repos_dir: PathBuf) -> Option<on
     let bind: SocketAddr = format!("0.0.0.0:{port}")
         .parse()
         .expect("SSH bind parse");
-    match spawn_listener(SshState { db, repos_dir }, bind).await {
+    let state = SshState {
+        db,
+        repos_dir,
+        auth_limiter: Arc::new(Mutex::new(SshAuthLimiter::new())),
+    };
+    match spawn_listener(state, bind).await {
         Ok((_addr, stop)) => Some(stop),
         Err(e) => {
             tracing::error!(error = %e, "failed to start SSH listener");
