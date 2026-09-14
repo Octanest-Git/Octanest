@@ -231,7 +231,22 @@ pub async fn update_settings(
         ));
     }
 
-    // RED probe (10-05-T2): intentionally ignore settings until GREEN restores persistence.
-    let _ = (req.member_base_permission, req.display_name);
-    to_public(&org)
+    let base = req.member_base_permission.map(|p| p.as_str().to_string());
+    let display = req
+        .display_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
+    if base.is_none() && display.is_none() {
+        return to_public(&org);
+    }
+
+    let row = ctx
+        .db
+        .update_organization_settings(&org.id, base.as_deref(), display.as_deref())
+        .await
+        .map_err(db_err)?;
+    to_public(&row)
 }
