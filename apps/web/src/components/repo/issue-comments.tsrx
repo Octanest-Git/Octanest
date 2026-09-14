@@ -5,6 +5,7 @@ import type {
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
+import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
@@ -255,11 +256,21 @@ function CommentItem(props: {
         </div>
       </div>
     } @else {
-      <div className="mt-2 flex flex-col gap-1">
+      <div className="mt-2 flex flex-col gap-2">
         <CommentBody
           body={comment.body}
           owner={props.owner}
           repoName={props.repoName}
+        />
+        <IssueReactionsBar
+          owner={props.owner}
+          repoName={props.repoName}
+          number={props.number}
+          target="comment"
+          commentId={comment.id}
+          reactions={comment.reactions ?? []}
+          canWrite={props.canWrite}
+          onToggled={props.onChanged}
         />
         <CommentHistoryDisclosure
           owner={props.owner}

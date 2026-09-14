@@ -13,6 +13,7 @@ import { IssueComments } from "@/components/repo/issue-comments";
 import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
 import { IssueHistoryPanel } from "@/components/repo/issue-history";
 import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
+import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -423,6 +424,15 @@ export function IssueDetailPage() @{
                 dangerouslySetInnerHTML={{ __html: bodyHtml }}
               />
             }
+
+            <IssueReactionsBar
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              target="issue"
+              reactions={issue?.reactions ?? []}
+              canWrite={canWrite}
+            />
 
             <IssueHistoryPanel
               owner={owner}

@@ -9,8 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 /**
- * Phase 11 Issues UI — create/list/detail lifecycle greened through 11-04;
- * remaining RED via `it.fails` for reactions (11-08) and later panels.
+ * Phase 11 Issues UI — create/list/detail lifecycle greened through 11-07;
+ * remaining RED via later plans for Linked PRs / factory wipe as needed.
  */
 
 const getMock = vi.fn();
@@ -31,6 +31,7 @@ const labelListForRepoMock = vi.fn();
 const labelsSetMock = vi.fn();
 const assigneeCandidatesMock = vi.fn();
 const assigneesSetMock = vi.fn();
+const reactionsToggleMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -61,6 +62,9 @@ vi.mock("@/lib/api-client", () => ({
       },
       assigneeCandidates: (...args: unknown[]) =>
         assigneeCandidatesMock(...args),
+      reactions: {
+        toggle: (...args: unknown[]) => reactionsToggleMock(...args),
+      },
     },
     label: {
       listForRepo: (...args: unknown[]) => labelListForRepoMock(...args),
@@ -143,6 +147,7 @@ const sampleIssue = {
   updated_at: "2026-09-14T00:00:00Z",
   labels: [],
   assignees: [],
+  reactions: [],
 };
 
 beforeEach(() => {
@@ -164,6 +169,7 @@ beforeEach(() => {
   labelsSetMock.mockReset();
   assigneeCandidatesMock.mockReset();
   assigneesSetMock.mockReset();
+  reactionsToggleMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -186,6 +192,15 @@ beforeEach(() => {
     },
   });
   assigneesSetMock.mockResolvedValue({ ok: true, data: sampleIssue });
+  reactionsToggleMock.mockResolvedValue({
+    ok: true,
+    data: {
+      reactions: [
+        { content: "+1", count: 1, viewerHasReacted: true },
+      ],
+      reacted: true,
+    },
+  });
 });
 
 afterEach(cleanup);
@@ -549,20 +564,52 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
     15_000,
   );
 
-  it.fails(
-    "reaction bar visibility + Write+ toggle on issue and comments (D-ISS-11) — green in 11-08",
+  it(
+    "reaction bar visibility + Write+ toggle on issue and comments (D-ISS-11)",
     async () => {
+      commentsListMock.mockResolvedValue({
+        ok: true,
+        data: {
+          comments: [
+            {
+              id: "c1",
+              issue_id: "i1",
+              author_id: "u1",
+              author_username: "ada",
+              body: "Nice work",
+              created_at: "2026-09-14T00:00:00Z",
+              updated_at: "2026-09-14T00:00:00Z",
+              reactions: [],
+            },
+          ],
+        },
+      });
+
       const mod = await loadIssueDetailModule();
       renderWithQueryClient(issueDetailPage(mod));
 
       await waitFor(() => {
         expect(
-          screen.getByRole("toolbar", { name: /[Rr]eactions?/ }) ??
-            screen.getByLabelText(/[Rr]eactions?/),
-        ).toBeTruthy();
+          screen.getAllByRole("toolbar", { name: /^Reactions$/i }).length,
+        ).toBeGreaterThanOrEqual(2);
       });
-      // Eight GitHub contents represented somehow in the bar
       expect(document.body.textContent).toMatch(/\+1|👍|react/i);
+
+      const plusOne = await screen.findAllByRole("button", {
+        name: /React \+1/i,
+      });
+      expect(plusOne.length).toBeGreaterThanOrEqual(1);
+      plusOne[0]!.click();
+
+      await waitFor(() => {
+        expect(reactionsToggleMock).toHaveBeenCalled();
+      });
+      const arg = reactionsToggleMock.mock.calls[0]?.[0] as {
+        target?: string;
+        content?: string;
+      };
+      expect(arg.target).toBe("issue");
+      expect(arg.content).toBe("+1");
     },
     15_000,
   );
