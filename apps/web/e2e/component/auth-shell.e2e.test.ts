@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 let root: Root | null = null;
 let host: HTMLElement | null = null;
 
-afterEach(() => {
-  root?.unmount();
-  host?.remove();
-  root = null;
-  host = null;
-});
-
 function mount(Component: ComponentBody, props?: Record<string, unknown>) {
   host = document.createElement("div");
   document.body.appendChild(host);
@@ -22,6 +15,15 @@ function mount(Component: ComponentBody, props?: Record<string, unknown>) {
 }
 
 describe("auth shell (browser e2e)", () => {
+  // Register hooks inside describe — top-level afterEach breaks Vitest browser
+  // collect ("failed to find the current suite") on CI.
+  afterEach(() => {
+    root?.unmount();
+    host?.remove();
+    root = null;
+    host = null;
+  });
+
   it("shows Octanest brand mark and primary CTA", async () => {
     mount(AuthShell, {
       title: "Sign in to Octanest",

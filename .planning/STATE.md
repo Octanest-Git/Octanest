@@ -1,22 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 11
-current_phase_name: Issues
-current_plan: 13
-status: ready_for_verification
-stopped_at: Merged Phase 20 Packages into forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
-last_updated: "2026-09-14T20:30:00.000Z"
+current_phase: 12
+current_phase_name: Pull Requests
+current_plan: 0
+status: discuss
+stopped_at: "forge-core PR #2 — CI green + docs refresh before /gsd-ship; Phase 12 discuss paused (Area 1 locked)"
+last_updated: "2026-09-14T22:05:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Merged Phase 20 packages into forge-core with Phase 14 LFS + Phase 15 Releases
-state_head: merge-forge-core-phase-20
+last_activity_desc: "Closed verify for 11/14/15/20 on forge-core; next is Phase 12 discuss then ship PR #2"
+state_head: forge-core-pre-ship-docs
 progress:
   total_phases: 22
-  completed_phases: 0
+  completed_phases: 14
   total_plans: 147
   completed_plans: 147
 milestone_name: milestone
-current_phase_name: Issues
 ---
 
 # Project State
@@ -26,17 +25,19 @@ current_phase_name: Issues
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 11 — Issues (Phases 9 Git SSH and 10 Orgs executed in parallel and merged)
+**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
 
 ## Current Position
 
-Phase: 11 — COMPLETE
-Current Plan: 13
-Total Plans in Phase: 13
-Status: Phase complete — ready for verification
-Last activity: 2026-09-14 — Phase 11 marked complete
+Phase: 12 — Pull Requests (discuss)
+Current Plan: —
+Total Plans in Phase: TBD
+Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
+Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
 
-See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
+Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
+
+See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
 
 ## Performance Metrics
 
@@ -165,17 +166,19 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 11 — Issues (Phases 9 Git SSH and 10 Orgs executed in parallel and merged)
+**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
 
 ## Current Position
 
-Phase: 11 — Issues
-Current Plan: 13
-Total Plans in Phase: 13
-Status: Phase plans complete — ready for verify-work
-Last activity: 2026-09-14 — Completed 11-12 factory reset + docs + VALIDATION gate
+Phase: 12 — Pull Requests (discuss)
+Current Plan: —
+Total Plans in Phase: TBD
+Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
+Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
 
-See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
+Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
+
+See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
 
 ## Performance Metrics
 

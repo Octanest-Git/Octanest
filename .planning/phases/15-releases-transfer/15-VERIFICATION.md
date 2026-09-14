@@ -208,7 +208,7 @@ No orphaned Phase 15 requirements.
 
 ### Gaps Summary
 
-No goal-blocking gaps. Roadmap success criteria 1–3 are implemented and covered by named API/integration tests. Migration remains **`0014_releases_redirects`**. Status is `human_needed` solely for end-of-phase browser UAT (and the non-blocking Vitest import-style WARNING above).
+No goal-blocking gaps. Roadmap success criteria 1–3 are implemented and covered by named API/integration tests. Migration remains **`0014_releases_redirects`**. End-of-phase browser UAT is closed (see UAT closure below). Non-blocking Vitest import-style WARNING above remains advisory only.
 
 ---
 

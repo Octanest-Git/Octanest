@@ -265,7 +265,7 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (20/20). Non
 
 ### Gaps Summary
 
-No automated gaps. All roadmap success criteria and plan must-have truths are present, wired, data-flowing, and backed by passing named tests. Status is `human_needed` solely for end-of-phase UAT from `11-VALIDATION.md` Manual / UAT Backstops (user-facing Issues UI).
+No automated gaps. All roadmap success criteria and plan must-have truths are present, wired, data-flowing, and backed by passing named tests. End-of-phase UAT from `11-VALIDATION.md` Manual / UAT Backstops is closed (see UAT closure below).
 
 ---
 

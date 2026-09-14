@@ -6,12 +6,12 @@
     {
       "number": "1",
       "name": "Monorepo Scaffold",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "2",
       "name": "Multi-DB Storage",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "3",
@@ -56,12 +56,12 @@
     {
       "number": "11",
       "name": "Issues",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "number": "12",
       "name": "Pull Requests",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "13",
@@ -71,12 +71,12 @@
     {
       "number": "14",
       "name": "Git LFS",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "15",
       "name": "Releases & Transfer",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "16",
@@ -101,7 +101,7 @@
     {
       "number": "20",
       "name": "Packages Registry",
-      "status": "pending"
+      "status": "complete"
     },
     {
       "number": "21",
@@ -115,9 +115,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step (verify)",
-    "reason": "Phase 11 of 22 · ready to verify"
+    "command": "/gsd-ship",
+    "label": "Ship feat/forge-core after CI green",
+    "reason": "Phases 11/14/15/20 verified on integration branch; Phase 12 discuss paused"
   },
-  "updated_at": "2026-09-14T17:01:29.318Z"
+  "updated_at": "2026-09-14T22:05:00.000Z"
 }

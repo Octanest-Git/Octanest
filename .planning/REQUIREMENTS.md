@@ -262,4 +262,4 @@ Deferred; not in the current roadmap until promoted.
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-09 — roadmap traceability (85/85 mapped)*
+*Last updated: 2026-09-14 — forge-core pre-ship: ISS/GIT-12…17/PKG marked Complete; Phase 12 next*
