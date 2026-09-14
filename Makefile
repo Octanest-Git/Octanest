@@ -129,7 +129,7 @@ smoke:
 smoke-git-https:
 	@./scripts/smoke-git-https.sh
 
-# Wave 0 stub until 09-05 greens ls-remote/push over TCP 2222 (D-SSH-02 / D-SSH-07).
+# Compose TCP 2222 + ls-remote/push over scp-style remotes (D-SSH-02 / D-SSH-07).
 # Requires stack with SSH listener; docker-missing skips exit 0. See scripts/smoke-git-ssh.sh.
 smoke-git-ssh:
 	@./scripts/smoke-git-ssh.sh
