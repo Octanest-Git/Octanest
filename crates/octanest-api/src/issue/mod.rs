@@ -185,7 +185,7 @@ pub async fn get(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePublic, 
     to_public(ctx, &row).await
 }
 
-/// `issue.list` — Read+; default state filter `open` (D-ISS-16).
+/// `issue.list` — Read+; default state filter `open` (D-ISS-16..18).
 pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssueListResponse, AppError> {
     let req: IssueListRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid issue.list input: {e}"))
@@ -193,10 +193,54 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssueListRes
     let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
     let state = req.state.as_deref().unwrap_or("open");
     let offset = req.offset.unwrap_or(0);
-    let limit = req.limit.unwrap_or(30);
+    let limit = req.limit.unwrap_or(25);
+
+    // Resolve author/assignee usernames → ids; unknown → empty page (not an error).
+    let author_id = resolve_username_filter(ctx, req.author.as_deref()).await?;
+    if req.author.as_deref().map(str::trim).is_some_and(|s| !s.is_empty()) && author_id.is_none() {
+        return Ok(IssueListResponse {
+            issues: vec![],
+            total: 0,
+        });
+    }
+    let assignee_id = resolve_username_filter(ctx, req.assignee.as_deref()).await?;
+    if req
+        .assignee
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|s| !s.is_empty())
+        && assignee_id.is_none()
+    {
+        return Ok(IssueListResponse {
+            issues: vec![],
+            total: 0,
+        });
+    }
+    let label_id = req
+        .label
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let q = req
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
+    let filters = octanest_db::IssueListFilters {
+        state,
+        author_id: author_id.as_deref(),
+        label_id: label_id.as_deref(),
+        assignee_id: assignee_id.as_deref(),
+        q: q.as_deref(),
+        offset,
+        limit,
+    };
     let (rows, total) = ctx
         .db
-        .list_issues_for_repo(&accessible.row.id, state, offset, limit)
+        .list_issues_for_repo(&accessible.row.id, filters)
         .await
         .map_err(db_err)?;
     let mut issues = Vec::with_capacity(rows.len());
@@ -204,6 +248,22 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssueListRes
         issues.push(to_public(ctx, row).await?);
     }
     Ok(IssueListResponse { issues, total })
+}
+
+async fn resolve_username_filter(
+    ctx: &RpcCtx,
+    raw: Option<&str>,
+) -> Result<Option<String>, AppError> {
+    let Some(raw) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let username = raw.strip_prefix('@').unwrap_or(raw);
+    let user = ctx
+        .db
+        .find_user_by_username(username)
+        .await
+        .map_err(db_err)?;
+    Ok(user.map(|u| u.id))
 }
 
 /// `issue.update` — Author or Write+; appends full revision on title/body change (D-ISS-03 / D-ISS-04).

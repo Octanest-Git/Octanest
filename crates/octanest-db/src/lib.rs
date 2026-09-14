@@ -21,7 +21,9 @@ pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
-pub use issues::{CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueRevisionRow, IssueRow};
+pub use issues::{
+    CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
+};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -457,22 +459,14 @@ impl Database {
         issues::find_by_repo_number(self.require_pool()?, repo_id, number).await
     }
 
-    /// List issues (`state`: open|closed|all). Returns `(rows, total)`.
+    /// List issues with state/author/label/assignee/text filters (D-ISS-16..18).
+    /// Returns `(rows, total)`.
     pub async fn list_issues_for_repo(
         &self,
         repo_id: &str,
-        state_filter: &str,
-        offset: i64,
-        limit: i64,
+        filters: issues::IssueListFilters<'_>,
     ) -> Result<(Vec<IssueRow>, i64), String> {
-        issues::list_for_repo(
-            self.require_pool()?,
-            repo_id,
-            state_filter,
-            offset,
-            limit,
-        )
-        .await
+        issues::list_for_repo(self.require_pool()?, repo_id, filters).await
     }
 
     /// Hard-delete; does not reclaim `#N` (D-ISS-01).

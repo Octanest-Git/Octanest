@@ -396,73 +396,106 @@ pub async fn find_by_repo_number(
     }
 }
 
-/// List issues for a repo. `state_filter`: `open` | `closed` | `all` (default open).
+/// Optional filters for `list_for_repo` (D-ISS-16..18). Ids are resolved by the API layer.
+#[derive(Debug, Clone, Default)]
+pub struct IssueListFilters<'a> {
+    /// `open` | `closed` | `all` (empty → open).
+    pub state: &'a str,
+    pub author_id: Option<&'a str>,
+    pub label_id: Option<&'a str>,
+    pub assignee_id: Option<&'a str>,
+    /// Simple substring match on title/body (dialect LIKE/ILIKE — not GitHub search grammar).
+    pub q: Option<&'a str>,
+    pub offset: i64,
+    pub limit: i64,
+}
+
+fn normalize_list_paging(offset: i64, limit: i64) -> (i64, i64) {
+    let offset = offset.max(0);
+    // Default ~25 (plan ASSUME); cap at 100.
+    let limit = if limit <= 0 { 25 } else { limit.min(100) };
+    (offset, limit)
+}
+
+fn normalize_list_state(state_filter: &str) -> Result<Option<&'static str>, String> {
+    match state_filter.trim() {
+        "" | "open" => Ok(Some("open")),
+        "closed" => Ok(Some("closed")),
+        "all" => Ok(None),
+        other => Err(format!("invalid issue state filter: {other}")),
+    }
+}
+
+fn like_pattern(q: &str) -> String {
+    format!("%{q}%")
+}
+
+/// List issues for a repo with state/author/label/assignee/text filters.
 /// Sorted newest-updated first (D-ISS-18). Returns `(rows, total)`.
 pub async fn list_for_repo(
     pool: &DbPool,
     repo_id: &str,
-    state_filter: &str,
-    offset: i64,
-    limit: i64,
+    filters: IssueListFilters<'_>,
 ) -> Result<(Vec<IssueRow>, i64), String> {
-    let offset = offset.max(0);
-    let limit = if limit <= 0 { 30 } else { limit.min(100) };
-    let state = match state_filter.trim() {
-        "" | "open" => Some("open"),
-        "closed" => Some("closed"),
-        "all" => None,
-        other => return Err(format!("invalid issue state filter: {other}")),
-    };
+    let (offset, limit) = normalize_list_paging(filters.offset, filters.limit);
+    let state = normalize_list_state(filters.state)?;
+    let author_id = filters.author_id.filter(|s| !s.is_empty());
+    let label_id = filters.label_id.filter(|s| !s.is_empty());
+    let assignee_id = filters.assignee_id.filter(|s| !s.is_empty());
+    let q = filters
+        .q
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(like_pattern);
 
     match pool {
         DbPool::Postgres(p) => {
-            let total: i64 = match state {
-                Some(s) => sqlx::query_scalar(
-                    "SELECT COUNT(*)::bigint FROM issues WHERE repo_id = $1 AND state = $2",
-                )
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*)::bigint FROM issues
+WHERE repo_id = $1
+  AND ($2::text IS NULL OR state = $2)
+  AND ($3::text IS NULL OR author_id = $3)
+  AND ($4::text IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = $4))
+  AND ($5::text IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = $5))
+  AND ($6::text IS NULL OR title ILIKE $6 OR body ILIKE $6)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(label_id)
+            .bind(assignee_id)
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count issues failed: {e}"))?;
+
+            let sql = format!(
+                r#"{ISSUE_SELECT_PG}
+WHERE repo_id = $1
+  AND ($2::text IS NULL OR state = $2)
+  AND ($3::text IS NULL OR author_id = $3)
+  AND ($4::text IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = $4))
+  AND ($5::text IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = $5))
+  AND ($6::text IS NULL OR title ILIKE $6 OR body ILIKE $6)
+ORDER BY updated_at DESC
+OFFSET $7 LIMIT $8"#
+            );
+            let rows = sqlx::query(&sql)
                 .bind(repo_id)
-                .bind(s)
-                .fetch_one(p)
+                .bind(state)
+                .bind(author_id)
+                .bind(label_id)
+                .bind(assignee_id)
+                .bind(q.as_deref())
+                .bind(offset)
+                .bind(limit)
+                .fetch_all(p)
                 .await
-                .map_err(|e| format!("count issues failed: {e}"))?,
-                None => sqlx::query_scalar(
-                    "SELECT COUNT(*)::bigint FROM issues WHERE repo_id = $1",
-                )
-                .bind(repo_id)
-                .fetch_one(p)
-                .await
-                .map_err(|e| format!("count issues failed: {e}"))?,
-            };
-            let sql = match state {
-                Some(_) => format!(
-                    "{ISSUE_SELECT_PG} WHERE repo_id = $1 AND state = $2
- ORDER BY updated_at DESC OFFSET $3 LIMIT $4"
-                ),
-                None => format!(
-                    "{ISSUE_SELECT_PG} WHERE repo_id = $1
- ORDER BY updated_at DESC OFFSET $2 LIMIT $3"
-                ),
-            };
-            let rows = match state {
-                Some(s) => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(s)
-                        .bind(offset)
-                        .bind(limit)
-                        .fetch_all(p)
-                        .await
-                }
-                None => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(offset)
-                        .bind(limit)
-                        .fetch_all(p)
-                        .await
-                }
-            }
-            .map_err(|e| format!("list issues failed: {e}"))?;
+                .map_err(|e| format!("list issues failed: {e}"))?;
             let mut out = Vec::with_capacity(rows.len());
             for r in rows {
                 out.push(map_issue!(&r));
@@ -470,51 +503,64 @@ pub async fn list_for_repo(
             Ok((out, total))
         }
         DbPool::MySql(p) => {
-            let total: i64 = match state {
-                Some(s) => sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM issues WHERE repo_id = ? AND state = ?",
-                )
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM issues
+WHERE repo_id = ?
+  AND (? IS NULL OR state = ?)
+  AND (? IS NULL OR author_id = ?)
+  AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = ?))
+  AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = ?))
+  AND (? IS NULL OR title LIKE ? OR body LIKE ?)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(state)
+            .bind(author_id)
+            .bind(author_id)
+            .bind(label_id)
+            .bind(label_id)
+            .bind(assignee_id)
+            .bind(assignee_id)
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count issues failed: {e}"))?;
+
+            let sql = format!(
+                r#"{ISSUE_SELECT_MYSQL}
+WHERE repo_id = ?
+  AND (? IS NULL OR state = ?)
+  AND (? IS NULL OR author_id = ?)
+  AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = ?))
+  AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = ?))
+  AND (? IS NULL OR title LIKE ? OR body LIKE ?)
+ORDER BY updated_at DESC
+LIMIT ? OFFSET ?"#
+            );
+            let rows = sqlx::query(&sql)
                 .bind(repo_id)
-                .bind(s)
-                .fetch_one(p)
+                .bind(state)
+                .bind(state)
+                .bind(author_id)
+                .bind(author_id)
+                .bind(label_id)
+                .bind(label_id)
+                .bind(assignee_id)
+                .bind(assignee_id)
+                .bind(q.as_deref())
+                .bind(q.as_deref())
+                .bind(q.as_deref())
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
                 .await
-                .map_err(|e| format!("count issues failed: {e}"))?,
-                None => sqlx::query_scalar("SELECT COUNT(*) FROM issues WHERE repo_id = ?")
-                    .bind(repo_id)
-                    .fetch_one(p)
-                    .await
-                    .map_err(|e| format!("count issues failed: {e}"))?,
-            };
-            let sql = match state {
-                Some(_) => format!(
-                    "{ISSUE_SELECT_MYSQL} WHERE repo_id = ? AND state = ?
- ORDER BY updated_at DESC LIMIT ? OFFSET ?"
-                ),
-                None => format!(
-                    "{ISSUE_SELECT_MYSQL} WHERE repo_id = ?
- ORDER BY updated_at DESC LIMIT ? OFFSET ?"
-                ),
-            };
-            let rows = match state {
-                Some(s) => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(s)
-                        .bind(limit)
-                        .bind(offset)
-                        .fetch_all(p)
-                        .await
-                }
-                None => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(limit)
-                        .bind(offset)
-                        .fetch_all(p)
-                        .await
-                }
-            }
-            .map_err(|e| format!("list issues failed: {e}"))?;
+                .map_err(|e| format!("list issues failed: {e}"))?;
             let mut out = Vec::with_capacity(rows.len());
             for r in rows {
                 out.push(map_issue!(&r));
@@ -522,51 +568,52 @@ pub async fn list_for_repo(
             Ok((out, total))
         }
         DbPool::Sqlite(p) => {
-            let total: i64 = match state {
-                Some(s) => sqlx::query_scalar(
-                    "SELECT COUNT(*) FROM issues WHERE repo_id = ?1 AND state = ?2",
-                )
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM issues
+WHERE repo_id = ?1
+  AND (?2 IS NULL OR state = ?2)
+  AND (?3 IS NULL OR author_id = ?3)
+  AND (?4 IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = ?4))
+  AND (?5 IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = ?5))
+  AND (?6 IS NULL OR title LIKE ?6 COLLATE NOCASE OR body LIKE ?6 COLLATE NOCASE)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(label_id)
+            .bind(assignee_id)
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count issues failed: {e}"))?;
+
+            let sql = format!(
+                r#"{ISSUE_SELECT_SQLITE}
+WHERE repo_id = ?1
+  AND (?2 IS NULL OR state = ?2)
+  AND (?3 IS NULL OR author_id = ?3)
+  AND (?4 IS NULL OR EXISTS (
+        SELECT 1 FROM issue_labels il WHERE il.issue_id = issues.id AND il.label_id = ?4))
+  AND (?5 IS NULL OR EXISTS (
+        SELECT 1 FROM issue_assignees ia WHERE ia.issue_id = issues.id AND ia.user_id = ?5))
+  AND (?6 IS NULL OR title LIKE ?6 COLLATE NOCASE OR body LIKE ?6 COLLATE NOCASE)
+ORDER BY updated_at DESC
+LIMIT ?7 OFFSET ?8"#
+            );
+            let rows = sqlx::query(&sql)
                 .bind(repo_id)
-                .bind(s)
-                .fetch_one(p)
+                .bind(state)
+                .bind(author_id)
+                .bind(label_id)
+                .bind(assignee_id)
+                .bind(q.as_deref())
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
                 .await
-                .map_err(|e| format!("count issues failed: {e}"))?,
-                None => sqlx::query_scalar("SELECT COUNT(*) FROM issues WHERE repo_id = ?1")
-                    .bind(repo_id)
-                    .fetch_one(p)
-                    .await
-                    .map_err(|e| format!("count issues failed: {e}"))?,
-            };
-            let sql = match state {
-                Some(_) => format!(
-                    "{ISSUE_SELECT_SQLITE} WHERE repo_id = ?1 AND state = ?2
- ORDER BY updated_at DESC LIMIT ?3 OFFSET ?4"
-                ),
-                None => format!(
-                    "{ISSUE_SELECT_SQLITE} WHERE repo_id = ?1
- ORDER BY updated_at DESC LIMIT ?2 OFFSET ?3"
-                ),
-            };
-            let rows = match state {
-                Some(s) => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(s)
-                        .bind(limit)
-                        .bind(offset)
-                        .fetch_all(p)
-                        .await
-                }
-                None => {
-                    sqlx::query(&sql)
-                        .bind(repo_id)
-                        .bind(limit)
-                        .bind(offset)
-                        .fetch_all(p)
-                        .await
-                }
-            }
-            .map_err(|e| format!("list issues failed: {e}"))?;
+                .map_err(|e| format!("list issues failed: {e}"))?;
             let mut out = Vec::with_capacity(rows.len());
             for r in rows {
                 out.push(map_issue!(&r));
