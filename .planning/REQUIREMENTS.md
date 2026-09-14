@@ -52,7 +52,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **GIT-10**: Architecture docs and code boundaries keep `GitBackend` swappable — CLI is the current adapter; gitoxide/`gix` is a future adapter, not a Phase 7 primary
 - [x] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
 - [x] **GIT-12**: User can push and fetch Git LFS objects for a repository
-- [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
+- [x] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
 - [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
 - [ ] **GIT-15**: User can download release assets from the web UI
 - [ ] **GIT-16**: User with permission can rename a repository
@@ -203,7 +203,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-10 | Phase 7 | Complete |
 | GIT-11 | Phase 8 | Complete |
 | GIT-12 | Phase 14 | Complete |
-| GIT-13 | Phase 14 | Pending |
+| GIT-13 | Phase 14 | Complete |
 | GIT-14 | Phase 15 | Pending |
 | GIT-15 | Phase 15 | Pending |
 | GIT-16 | Phase 15 | Pending |
