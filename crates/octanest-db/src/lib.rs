@@ -146,6 +146,15 @@ impl Database {
         org_members::insert_owner_membership(self.require_pool()?, org_id, user_id).await
     }
 
+    pub async fn insert_org_member(
+        &self,
+        org_id: &str,
+        user_id: &str,
+        role: &str,
+    ) -> Result<OrgMemberRow, String> {
+        org_members::insert_member(self.require_pool()?, org_id, user_id, role).await
+    }
+
     pub async fn find_org_member(
         &self,
         org_id: &str,

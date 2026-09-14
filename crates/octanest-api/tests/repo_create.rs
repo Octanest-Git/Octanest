@@ -408,3 +408,149 @@ async fn repo_create_git_failure_soft_deletes_row_allows_recreate() {
     );
     assert_eq!(retry_v["data"]["name"], "retry-me");
 }
+
+/// Org Owner/Admin can create under org slug (A5 / D-ORG-01).
+#[tokio::test]
+async fn repo_create_under_org_as_owner() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_org.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "orgowner@ex.com", "orgowner1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(user_id, &now).await.expect("verify");
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acme-create"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let org_bytes = org.into_body().collect().await.unwrap().to_bytes();
+    let org_v: serde_json::Value = serde_json::from_slice(&org_bytes).unwrap();
+    let org_id = org_v["data"]["id"].as_str().expect("org id").to_string();
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"widgets","visibility":"public","owner":"acme-create"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK, "Owner must create under org");
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "{v}");
+    assert_eq!(v["data"]["name"], "widgets");
+    assert_eq!(v["data"]["owner_username"], "acme-create");
+    assert_eq!(v["data"]["owner_id"], org_id);
+    assert_eq!(v["data"]["owner_type"], "org");
+
+    let bare = repos.join("acme-create").join("widgets.git");
+    assert!(
+        bare.is_dir(),
+        "disk path must use org slug segment (D-ORG-01): {}",
+        bare.display()
+    );
+}
+
+/// Org Member cannot create repos under the org (A5 / T-10-06).
+#[tokio::test]
+async fn repo_create_under_org_as_member_denied() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_member.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "boss@ex.com", "boss2").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now).await.expect("verify");
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"member-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let org_bytes = org.into_body().collect().await.unwrap().to_bytes();
+    let org_v: serde_json::Value = serde_json::from_slice(&org_bytes).unwrap();
+    let org_id = org_v["data"]["id"].as_str().expect("org id");
+
+    let (member_cookie, member_v) = signup_and_login(&app, "peon@ex.com", "peon1").await;
+    let member_id = member_v["data"]["id"].as_str().expect("id");
+    db.set_email_verified_at(member_id, &now).await.expect("verify");
+    db.insert_org_member(org_id, member_id, "member")
+        .await
+        .expect("add member");
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"public","owner":"member-org"}}"#,
+            &member_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::FORBIDDEN);
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false);
+    assert_eq!(
+        v["error"]["code"], "repo.create_forbidden",
+        "Members must not create org repos — {v}"
+    );
+}
+
+/// Cannot create under another user's username (T-10-06).
+#[tokio::test]
+async fn repo_create_under_other_user_denied() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_create_other.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (_a_cookie, _) = signup_and_login(&app, "alice@ex.com", "alice1").await;
+    let (b_cookie, b_v) = signup_and_login(&app, "bob@ex.com", "bob1").await;
+    let bob_id = b_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(bob_id, &now).await.expect("verify");
+
+    let create = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"stolen","visibility":"public","owner":"alice1"}}"#,
+            &b_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::FORBIDDEN);
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false);
+    assert_eq!(v["error"]["code"], "repo.create_forbidden", "{v}");
+}
+
