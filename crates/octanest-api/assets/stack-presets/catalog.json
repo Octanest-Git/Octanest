@@ -1,0 +1,261 @@
+{
+  "packs": [
+    {
+      "id": "empty",
+      "label": "Empty with README",
+      "group": "General",
+      "description": "Bare README only \u2014 start from a blank tree and push your own layout."
+    },
+    {
+      "id": "rust",
+      "label": "Rust",
+      "group": "Systems",
+      "description": "Cargo binary crate with src/main.rs \u2014 idiomatic for CLIs and services.",
+      "default_gitignore": "Rust"
+    },
+    {
+      "id": "cmake-cpp",
+      "label": "C / C++ (CMake)",
+      "group": "Systems",
+      "description": "CMake project with a hello main.cpp ready to configure and build.",
+      "default_gitignore": "C++"
+    },
+    {
+      "id": "zig",
+      "label": "Zig",
+      "group": "Systems",
+      "description": "Minimal Zig entrypoint for systems tooling and embeddable runtimes.",
+      "default_gitignore": "Zig"
+    },
+    {
+      "id": "wasm",
+      "label": "WebAssembly (Rust)",
+      "group": "Systems",
+      "description": "Rust lib crate aimed at wasm32 \u2014 stub for browser or WASI targets.",
+      "default_gitignore": "Rust"
+    },
+    {
+      "id": "go",
+      "label": "Go",
+      "group": "Backend",
+      "description": "Go module with main.go \u2014 go run ready for APIs and workers.",
+      "default_gitignore": "Go"
+    },
+    {
+      "id": "node-typescript",
+      "label": "Node + TypeScript",
+      "group": "Backend",
+      "description": "package.json + tsconfig and a typed src/index.ts entry.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "bun",
+      "label": "Bun",
+      "group": "Backend",
+      "description": "Bun-first TypeScript starter with a fast local script entrypoint.",
+      "default_gitignore": "Bun"
+    },
+    {
+      "id": "deno",
+      "label": "Deno",
+      "group": "Backend",
+      "description": "Deno TypeScript main with permission-friendly defaults.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "python",
+      "label": "Python",
+      "group": "Backend",
+      "description": "requirements.txt and main.py for scripts and small services.",
+      "default_gitignore": "Python"
+    },
+    {
+      "id": "flask",
+      "label": "Flask",
+      "group": "Backend",
+      "description": "Minimal Flask app.py with a health route \u2014 Python web API starter.",
+      "default_gitignore": "Python"
+    },
+    {
+      "id": "django",
+      "label": "Django",
+      "group": "Backend",
+      "description": "Django project skeleton with manage.py and a starter settings module.",
+      "default_gitignore": "Python"
+    },
+    {
+      "id": "java",
+      "label": "Java",
+      "group": "Backend",
+      "description": "Maven-style src/main/java layout with a Main entry class.",
+      "default_gitignore": "Java"
+    },
+    {
+      "id": "spring-boot",
+      "label": "Spring Boot",
+      "group": "Backend",
+      "description": "Spring Boot Application class and application.properties stub.",
+      "default_gitignore": "Maven"
+    },
+    {
+      "id": "csharp",
+      "label": "C#",
+      "group": "Backend",
+      "description": ".NET console project with Program.cs and a csproj.",
+      "default_gitignore": "VisualStudio"
+    },
+    {
+      "id": "ruby",
+      "label": "Ruby",
+      "group": "Backend",
+      "description": "Gemfile + main.rb for scripts and lightweight services.",
+      "default_gitignore": "Ruby"
+    },
+    {
+      "id": "rails",
+      "label": "Rails",
+      "group": "Backend",
+      "description": "Rails-flavored Gemfile and config/application.rb stub to grow into.",
+      "default_gitignore": "Ruby"
+    },
+    {
+      "id": "php",
+      "label": "PHP",
+      "group": "Backend",
+      "description": "index.php hello endpoint \u2014 plain PHP without a framework.",
+      "default_gitignore": "PHP"
+    },
+    {
+      "id": "laravel",
+      "label": "Laravel",
+      "group": "Backend",
+      "description": "Composer-oriented Laravel stub with public/index.php bootstrap.",
+      "default_gitignore": "Composer"
+    },
+    {
+      "id": "elixir",
+      "label": "Elixir",
+      "group": "Backend",
+      "description": "Elixir script entry for Mix-friendly backends and BEAM services.",
+      "default_gitignore": "Elixir"
+    },
+    {
+      "id": "react",
+      "label": "React",
+      "group": "Frontend",
+      "description": "Vite-style React JSX app with package.json and src/App.jsx.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "nextjs",
+      "label": "Next.js",
+      "group": "Frontend",
+      "description": "App Router page.jsx starter for React on the server.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "vue",
+      "label": "Vue",
+      "group": "Frontend",
+      "description": "Vue SFC App.vue with a package.json for Vite tooling.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "svelte",
+      "label": "Svelte",
+      "group": "Frontend",
+      "description": "Svelte component starter with package.json for SvelteKit/Vite.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "vite-vanilla-ts",
+      "label": "Vanilla TS + Vite",
+      "group": "Frontend",
+      "description": "TypeScript Vite SPA \u2014 index.html + main.ts, no framework.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "vite-vanilla-js",
+      "label": "Vanilla JS + Vite",
+      "group": "Frontend",
+      "description": "Plain JavaScript Vite SPA \u2014 index.html + main.js, no framework.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "ripple",
+      "label": "Ripple",
+      "group": "Frontend",
+      "description": "Ripple + Vite with fine-grained reactivity and .tsrx templates.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "octanejs",
+      "label": "Octane",
+      "group": "Frontend",
+      "description": "Octane + Vite with a .tsrx App \u2014 React-style hooks, compiler-first TSRX.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "solid",
+      "label": "Solid",
+      "group": "Frontend",
+      "description": "SolidJS App.tsx fine-grained reactivity starter.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "astro",
+      "label": "Astro",
+      "group": "Frontend",
+      "description": "Content-focused Astro page with package.json for static sites.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "angular",
+      "label": "Angular",
+      "group": "Frontend",
+      "description": "Angular standalone component stub and package.json.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "remix",
+      "label": "Remix",
+      "group": "Frontend",
+      "description": "Remix app/root.tsx stub for nested routes and loaders.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "tauri",
+      "label": "Tauri",
+      "group": "Desktop",
+      "description": "Tauri v2-ish layout: web UI plus src-tauri Cargo stub.",
+      "default_gitignore": "Node"
+    },
+    {
+      "id": "flutter",
+      "label": "Flutter",
+      "group": "Mobile",
+      "description": "Flutter lib/main.dart hello counter-style starter.",
+      "default_gitignore": "Flutter"
+    },
+    {
+      "id": "terraform",
+      "label": "Terraform",
+      "group": "Infra",
+      "description": "main.tf with a null_resource placeholder for IaC repos.",
+      "default_gitignore": "Terraform"
+    },
+    {
+      "id": "docker",
+      "label": "Docker",
+      "group": "Infra",
+      "description": "Dockerfile + compose.yml skeleton for containerized apps.",
+      "default_gitignore": "Docker"
+    },
+    {
+      "id": "nix",
+      "label": "Nix flake",
+      "group": "Infra",
+      "description": "flake.nix stub for reproducible shells and packages."
+    }
+  ]
+}

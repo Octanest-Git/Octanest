@@ -4,6 +4,7 @@ members = [
   "crates/octanest-api",
   "crates/octanest-core",
   "crates/octanest-db",
+  "crates/octanest-git",
 ]
 
 [workspace.package]

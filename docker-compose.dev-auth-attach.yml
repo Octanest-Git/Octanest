@@ -1,0 +1,65 @@
+# Attach the main `make up` API to Mailpit / OIDC mock / HTTP stubs.
+#
+# Prerequisites: stub services running (`make up-dev-auth` or included below).
+#
+# Usage:
+#   make up-with-dev-auth
+# Or:
+#   docker compose -f docker-compose.yml \
+#     -f docker-compose.dev-auth.yml \
+#     -f docker-compose.dev-auth-attach.yml \
+#     --profile dev-auth up --build -d
+#
+# Defaults wire SMTP → Mailpit over Docker DNS. Resend / WorkOS / OIDC stay
+# optional via .env (see docs/dev-auth.env.compose.example).
+#
+# Docs: docs/dev-auth.md
+
+services:
+  mailpit:
+    networks:
+      - octanest-dev-auth
+      - octanest
+
+  stubs:
+    networks:
+      - octanest-dev-auth
+      - octanest
+
+  oidc-mock:
+    networks:
+      - octanest-dev-auth
+      - octanest
+
+  api:
+    extra_hosts:
+      # OIDC discovery from API container to published host port (:9090).
+      - "host.docker.internal:host-gateway"
+    environment:
+      # Traefik serves the app on :80 → http://localhost (not vite :3000).
+      # Use OCTANEST_COMPOSE_PUBLIC_ORIGIN so host `.env` OCTANEST_PUBLIC_ORIGIN
+      # for `make dev` does not rewrite magic-link hosts.
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      OCTANEST_MAIL_FROM: ${OCTANEST_MAIL_FROM:-Octanest <noreply@localhost>}
+      # Prefer Compose-specific override so a host-oriented OCTANEST_SMTP_URL=127.0.0.1
+      # in `.env` (for `make dev`) does not break the API container.
+      OCTANEST_SMTP_URL: ${OCTANEST_COMPOSE_SMTP_URL:-smtp://mailpit:1025}
+      # Optional Resend stub (set OCTANEST_RESEND_API_KEY=re_dev_local in .env to prefer Resend):
+      OCTANEST_RESEND_API_KEY: ${OCTANEST_RESEND_API_KEY:-}
+      OCTANEST_RESEND_BASE_URL: ${OCTANEST_COMPOSE_RESEND_BASE_URL:-http://stubs:9092}
+      # Optional WorkOS stub — API hits stubs; browser authorize uses published port:
+      WORKOS_API_KEY: ${WORKOS_API_KEY:-}
+      WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID:-}
+      OCTANEST_WORKOS_BASE_URL: ${OCTANEST_COMPOSE_WORKOS_BASE_URL:-http://stubs:9092}
+      OCTANEST_WORKOS_AUTHORIZE_BASE_URL: ${OCTANEST_WORKOS_AUTHORIZE_BASE_URL:-http://127.0.0.1:9092}
+      # Optional OIDC mock — issuer via host gateway so API can reach published :9090.
+      OCTANEST_OIDC_ALLOW_INSECURE: ${OCTANEST_OIDC_ALLOW_INSECURE:-1}
+      OCTANEST_OIDC_ISSUER: ${OCTANEST_COMPOSE_OIDC_ISSUER:-http://host.docker.internal:9090/default}
+      OCTANEST_OIDC_CLIENT_ID: ${OCTANEST_OIDC_CLIENT_ID:-octanest-dev}
+      OCTANEST_OIDC_CLIENT_SECRET: ${OCTANEST_OIDC_CLIENT_SECRET:-octanest-dev}
+
+networks:
+  octanest:
+    name: octanest_octanest
+  octanest-dev-auth:
+    name: octanest_dev_auth

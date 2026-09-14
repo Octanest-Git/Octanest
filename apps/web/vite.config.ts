@@ -17,7 +17,14 @@ const apiProxyTarget =
   "http://127.0.0.1:8080";
 
 export default defineConfig({
-  plugins: [tanstackStart(), tailwindcss()],
+  plugins: [
+    tanstackStart({
+      // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
+      // (avoids noisy warnings and extra SSR work during stack e2e).
+      routeFileIgnorePattern: '\\.(test|spec)\\.',
+    }),
+    tailwindcss(),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
@@ -30,8 +37,14 @@ export default defineConfig({
       "/api/rpc": { target: apiProxyTarget, changeOrigin: true },
       "/api/auth": { target: apiProxyTarget, changeOrigin: true },
       "/api/user": { target: apiProxyTarget, changeOrigin: true },
+      "/api/repos": { target: apiProxyTarget, changeOrigin: true },
+      "/api/releases": { target: apiProxyTarget, changeOrigin: true },
       "/uploads": { target: apiProxyTarget, changeOrigin: true },
       "/health": { target: apiProxyTarget, changeOrigin: true },
+      // Phase 20 package registry (D-PKG-01) — same-host path prefixes → API
+      "/v2": { target: apiProxyTarget, changeOrigin: true },
+      "/npm": { target: apiProxyTarget, changeOrigin: true },
+      "/generic": { target: apiProxyTarget, changeOrigin: true },
     },
   },
 });

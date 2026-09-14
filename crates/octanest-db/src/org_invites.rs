@@ -1,0 +1,520 @@
+//! Organization invite helpers via `DbPool` match — token_hash at rest only (T-10-11).
+
+use sqlx::Row;
+
+use crate::pool::DbPool;
+
+#[derive(Debug, Clone)]
+pub struct OrgInviteRow {
+    pub id: String,
+    pub org_id: String,
+    pub email: String,
+    pub role: String,
+    pub token_hash: String,
+    pub expires_at: String,
+    pub invited_by: String,
+    pub created_at: String,
+    pub accepted_at: Option<String>,
+    pub revoked_at: Option<String>,
+}
+
+macro_rules! map_opt_str {
+    ($row:expr, $name:expr) => {{
+        $row.try_get::<Option<String>, _>($name)
+            .map_err(|e| format!("org invite row: {e}"))?
+    }};
+}
+
+macro_rules! map_invite {
+    ($row:expr) => {{
+        let row = $row;
+        OrgInviteRow {
+            id: row.try_get("id").map_err(|e| format!("org invite row: {e}"))?,
+            org_id: row
+                .try_get("org_id")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            email: row
+                .try_get("email")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            role: row.try_get("role").map_err(|e| format!("org invite row: {e}"))?,
+            token_hash: row
+                .try_get("token_hash")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            expires_at: row
+                .try_get("expires_at")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            invited_by: row
+                .try_get("invited_by")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("org invite row: {e}"))?,
+            accepted_at: map_opt_str!(row, "accepted_at"),
+            revoked_at: map_opt_str!(row, "revoked_at"),
+        }
+    }};
+}
+
+const INVITE_SELECT_PG: &str = "SELECT id, org_id, email, role, token_hash, invited_by,
+       to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS expires_at,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+       CASE WHEN accepted_at IS NULL THEN NULL ELSE
+         to_char(accepted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS accepted_at,
+       CASE WHEN revoked_at IS NULL THEN NULL ELSE
+         to_char(revoked_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS revoked_at
+FROM organization_invites";
+
+const INVITE_SELECT_MYSQL: &str = "SELECT id, org_id, email, role, token_hash, invited_by,
+       DATE_FORMAT(expires_at, '%Y-%m-%dT%H:%i:%sZ') AS expires_at,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+       CASE WHEN accepted_at IS NULL THEN NULL ELSE
+         DATE_FORMAT(accepted_at, '%Y-%m-%dT%H:%i:%sZ') END AS accepted_at,
+       CASE WHEN revoked_at IS NULL THEN NULL ELSE
+         DATE_FORMAT(revoked_at, '%Y-%m-%dT%H:%i:%sZ') END AS revoked_at
+FROM organization_invites";
+
+const INVITE_SELECT_SQLITE: &str = "SELECT id, org_id, email, role, token_hash, invited_by,
+       strftime('%Y-%m-%dT%H:%M:%SZ', expires_at) AS expires_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+       CASE WHEN accepted_at IS NULL THEN NULL ELSE
+         strftime('%Y-%m-%dT%H:%M:%SZ', accepted_at) END AS accepted_at,
+       CASE WHEN revoked_at IS NULL THEN NULL ELSE
+         strftime('%Y-%m-%dT%H:%M:%SZ', revoked_at) END AS revoked_at
+FROM organization_invites";
+
+/// Insert a pending invite (hash-at-rest only).
+pub async fn insert_invite(
+    pool: &DbPool,
+    id: &str,
+    org_id: &str,
+    email: &str,
+    role: &str,
+    token_hash: &str,
+    expires_at: &str,
+    invited_by: &str,
+) -> Result<OrgInviteRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO organization_invites
+(id, org_id, email, role, token_hash, expires_at, invited_by)
+VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7)",
+            )
+            .bind(id)
+            .bind(org_id)
+            .bind(email)
+            .bind(role)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(invited_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert org invite failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO organization_invites
+(id, org_id, email, role, token_hash, expires_at, invited_by)
+VALUES (?, ?, ?, ?, ?, ?, ?)",
+            )
+            .bind(id)
+            .bind(org_id)
+            .bind(email)
+            .bind(role)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(invited_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert org invite failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO organization_invites
+(id, org_id, email, role, token_hash, expires_at, invited_by)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            )
+            .bind(id)
+            .bind(org_id)
+            .bind(email)
+            .bind(role)
+            .bind(token_hash)
+            .bind(expires_at)
+            .bind(invited_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert org invite failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "insert org invite failed: row missing after insert".into())
+}
+
+pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<OrgInviteRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{INVITE_SELECT_PG} WHERE id = $1");
+            let row = sqlx::query(&q).bind(id).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite failed: {e}")),
+            }
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{INVITE_SELECT_MYSQL} WHERE id = ?");
+            let row = sqlx::query(&q).bind(id).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite failed: {e}")),
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{INVITE_SELECT_SQLITE} WHERE id = ?1");
+            let row = sqlx::query(&q).bind(id).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite failed: {e}")),
+            }
+        }
+    }
+}
+
+pub async fn find_by_token_hash(
+    pool: &DbPool,
+    token_hash: &str,
+) -> Result<Option<OrgInviteRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{INVITE_SELECT_PG} WHERE token_hash = $1");
+            let row = sqlx::query(&q).bind(token_hash).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite by token failed: {e}")),
+            }
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{INVITE_SELECT_MYSQL} WHERE token_hash = ?");
+            let row = sqlx::query(&q).bind(token_hash).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite by token failed: {e}")),
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{INVITE_SELECT_SQLITE} WHERE token_hash = ?1");
+            let row = sqlx::query(&q).bind(token_hash).fetch_optional(p).await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find org invite by token failed: {e}")),
+            }
+        }
+    }
+}
+
+/// Pending (not accepted, not revoked) invite for org+email, if any.
+pub async fn find_pending_by_org_email(
+    pool: &DbPool,
+    org_id: &str,
+    email: &str,
+) -> Result<Option<OrgInviteRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!(
+                "{INVITE_SELECT_PG}
+WHERE org_id = $1 AND lower(email) = lower($2)
+  AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1"
+            );
+            let row = sqlx::query(&q)
+                .bind(org_id)
+                .bind(email)
+                .fetch_optional(p)
+                .await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find pending org invite failed: {e}")),
+            }
+        }
+        DbPool::MySql(p) => {
+            let q = format!(
+                "{INVITE_SELECT_MYSQL}
+WHERE org_id = ? AND lower(email) = lower(?)
+  AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1"
+            );
+            let row = sqlx::query(&q)
+                .bind(org_id)
+                .bind(email)
+                .fetch_optional(p)
+                .await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find pending org invite failed: {e}")),
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{INVITE_SELECT_SQLITE}
+WHERE org_id = ?1 AND lower(email) = lower(?2)
+  AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC
+LIMIT 1"
+            );
+            let row = sqlx::query(&q)
+                .bind(org_id)
+                .bind(email)
+                .fetch_optional(p)
+                .await;
+            match row {
+                Ok(Some(r)) => Ok(Some(map_invite!(r))),
+                Ok(None) => Ok(None),
+                Err(e) => Err(format!("find pending org invite failed: {e}")),
+            }
+        }
+    }
+}
+
+/// Pending invites for an org (list UI — no token).
+pub async fn list_pending(pool: &DbPool, org_id: &str) -> Result<Vec<OrgInviteRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!(
+                "{INVITE_SELECT_PG}
+WHERE org_id = $1 AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(org_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list org invites failed: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_invite!(r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let q = format!(
+                "{INVITE_SELECT_MYSQL}
+WHERE org_id = ? AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(org_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list org invites failed: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_invite!(r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{INVITE_SELECT_SQLITE}
+WHERE org_id = ?1 AND accepted_at IS NULL AND revoked_at IS NULL
+ORDER BY created_at DESC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(org_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list org invites failed: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_invite!(r))).collect()
+        }
+    }
+}
+
+/// Soft-revoke a pending invite.
+pub async fn revoke(pool: &DbPool, id: &str, revoked_at: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET revoked_at = $2::timestamptz
+WHERE id = $1 AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(id)
+            .bind(revoked_at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("revoke org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET revoked_at = ?
+WHERE id = ? AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(revoked_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("revoke org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET revoked_at = ?1
+WHERE id = ?2 AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(revoked_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("revoke org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Mark invite accepted (single-use).
+pub async fn mark_accepted(pool: &DbPool, id: &str, accepted_at: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET accepted_at = $2::timestamptz
+WHERE id = $1 AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(id)
+            .bind(accepted_at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("accept org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET accepted_at = ?
+WHERE id = ? AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(accepted_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("accept org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE organization_invites
+SET accepted_at = ?1
+WHERE id = ?2 AND accepted_at IS NULL AND revoked_at IS NULL",
+            )
+            .bind(accepted_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("accept org invite failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("org invite not found".into());
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Count invites created by a user in the last hour (rate limit).
+pub async fn count_created_by_since(
+    pool: &DbPool,
+    invited_by: &str,
+    since: &str,
+) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let row = sqlx::query_scalar::<_, i64>(
+                "SELECT COUNT(*)::bigint FROM organization_invites
+WHERE invited_by = $1 AND created_at >= $2::timestamptz",
+            )
+            .bind(invited_by)
+            .bind(since)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count org invites failed: {e}"))?;
+            Ok(row)
+        }
+        DbPool::MySql(p) => {
+            let row: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM organization_invites
+WHERE invited_by = ? AND created_at >= ?",
+            )
+            .bind(invited_by)
+            .bind(since)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count org invites failed: {e}"))?;
+            Ok(row)
+        }
+        DbPool::Sqlite(p) => {
+            let row: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM organization_invites
+WHERE invited_by = ?1 AND created_at >= ?2",
+            )
+            .bind(invited_by)
+            .bind(since)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count org invites failed: {e}"))?;
+            Ok(row)
+        }
+    }
+}
+
+/// Test helper: backdate expires_at.
+pub async fn set_expires_at(pool: &DbPool, id: &str, expires_at: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE organization_invites SET expires_at = $2::timestamptz WHERE id = $1",
+            )
+            .bind(id)
+            .bind(expires_at)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set org invite expires_at failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE organization_invites SET expires_at = ? WHERE id = ?")
+                .bind(expires_at)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("set org invite expires_at failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE organization_invites SET expires_at = ?1 WHERE id = ?2")
+                .bind(expires_at)
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("set org invite expires_at failed: {e}"))?;
+        }
+    }
+    Ok(())
+}

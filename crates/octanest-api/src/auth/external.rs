@@ -12,6 +12,8 @@ pub struct ExternalIdentity {
     pub provider_subject: String,
     pub email: String,
     pub display_name: Option<String>,
+    /// IdP-trust: when true, mark `users.email_verified_at` on link/create (D-03, D-15).
+    pub email_verified: bool,
 }
 
 #[derive(Debug, Error)]
@@ -105,8 +107,16 @@ pub async fn allocate_username(
 
     if try_name(&base) {
         match db.find_user_by_username(&base).await.map_err(ExternalAuthError::from_db)? {
-            None => return Ok((base, false)),
-            Some(_) => {
+            None
+                if db
+                    .find_organization_by_slug(&base)
+                    .await
+                    .map_err(ExternalAuthError::from_db)?
+                    .is_none() =>
+            {
+                return Ok((base, false));
+            }
+            _ => {
                 for i in 2..100 {
                     let suffix = format!("-{i}");
                     let max = 39usize.saturating_sub(suffix.len());
@@ -121,6 +131,11 @@ pub async fn allocate_username(
                     if try_name(&candidate)
                         && db
                             .find_user_by_username(&candidate)
+                            .await
+                            .map_err(ExternalAuthError::from_db)?
+                            .is_none()
+                        && db
+                            .find_organization_by_slug(&candidate)
                             .await
                             .map_err(ExternalAuthError::from_db)?
                             .is_none()
@@ -140,6 +155,11 @@ pub async fn allocate_username(
             .await
             .map_err(ExternalAuthError::from_db)?
             .is_none()
+            && db
+                .find_organization_by_slug(&ph)
+                .await
+                .map_err(ExternalAuthError::from_db)?
+                .is_none()
         {
             return Ok((ph, true));
         }
@@ -151,6 +171,7 @@ pub async fn allocate_username(
 
 /// Find existing identity or create user + link `auth_identities`.
 /// No welcome email (D-20 — local signup only).
+/// When `identity.email_verified`, sets `email_verified_at` (D-03, D-15 IdP-trust).
 pub async fn link_or_create_user(
     db: &Database,
     identity: &ExternalIdentity,
@@ -181,6 +202,7 @@ pub async fn link_or_create_user(
             .await
             .map_err(ExternalAuthError::from_db)?;
         let incomplete = is_placeholder_username(&user.username);
+        let user = apply_idp_email_verified(db, user, identity.email_verified).await?;
         return Ok((user, incomplete));
     }
 
@@ -208,7 +230,7 @@ pub async fn link_or_create_user(
                 &display,
                 "",
                 None,
-                false,
+                octanest_core::Role::User,
             )
             .await
             .map_err(ExternalAuthError::from_db)?;
@@ -226,20 +248,36 @@ pub async fn link_or_create_user(
     .await
     .map_err(ExternalAuthError::from_db)?;
 
+    let user = apply_idp_email_verified(db, user, identity.email_verified).await?;
     Ok((user, incomplete))
 }
 
+/// IdP-trust: mark verified when the provider asserts a verified email (D-03, D-15).
+async fn apply_idp_email_verified(
+    db: &Database,
+    user: UserRow,
+    email_verified: bool,
+) -> Result<UserRow, ExternalAuthError> {
+    if !email_verified || user.email_verified_at.is_some() {
+        return Ok(user);
+    }
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user.id, &now)
+        .await
+        .map_err(ExternalAuthError::from_db)
+}
+
 /// Safe relative return path (D-15). Reject open redirects.
+/// Default home is `/` (signed-in shell lives there). Legacy `/dashboard` → `/`.
 pub fn sanitize_return_to(raw: Option<&str>) -> String {
     let Some(s) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
-        return "/dashboard".into();
+        return "/".into();
     };
     if !s.starts_with('/') || s.starts_with("//") || s.contains('\\') || s.contains('\n') {
-        return "/dashboard".into();
+        return "/".into();
     }
-    // Homepage → dashboard
-    if s == "/" {
-        return "/dashboard".into();
+    if s == "/dashboard" || s.starts_with("/dashboard?") {
+        return "/".into();
     }
     s.to_string()
 }
@@ -248,12 +286,23 @@ pub fn sanitize_return_to(raw: Option<&str>) -> String {
 mod tests {
     use super::*;
 
+    async fn test_db() -> Database {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!("sqlite:{}", dir.path().join("external.db").display());
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+        db
+    }
+
     #[test]
     fn sanitize_rejects_open_redirect() {
-        assert_eq!(sanitize_return_to(Some("https://evil.example")), "/dashboard");
-        assert_eq!(sanitize_return_to(Some("//evil.example")), "/dashboard");
+        assert_eq!(sanitize_return_to(Some("https://evil.example")), "/");
+        assert_eq!(sanitize_return_to(Some("//evil.example")), "/");
         assert_eq!(sanitize_return_to(Some("/settings/profile")), "/settings/profile");
-        assert_eq!(sanitize_return_to(Some("/")), "/dashboard");
+        assert_eq!(sanitize_return_to(Some("/")), "/");
+        assert_eq!(sanitize_return_to(Some("/dashboard")), "/");
+        assert_eq!(sanitize_return_to(None), "/");
     }
 
     #[test]
@@ -266,5 +315,45 @@ mod tests {
     #[test]
     fn candidate_sanitizes_local_part() {
         assert_eq!(candidate_from_email("Alice.Bob_tag@ex.com"), "alice-bob-tag");
+    }
+
+    /// D-03/D-15: IdP-asserted verified email marks users.email_verified_at on SSO link/create.
+    #[tokio::test]
+    async fn link_or_create_marks_verified_when_idp_asserts() {
+        let db = test_db().await;
+        let identity = ExternalIdentity {
+            provider: "workos".into(),
+            provider_subject: "user_verified_1".into(),
+            email: "verified-sso@ex.com".into(),
+            display_name: Some("Verified SSO".into()),
+            email_verified: true,
+        };
+        let (user, _) = link_or_create_user(&db, &identity)
+            .await
+            .expect("link_or_create");
+        assert!(
+            user.email_verified_at.is_some(),
+            "IdP email_verified=true must set email_verified_at"
+        );
+    }
+
+    /// D-15 edge: absent/false IdP verification leaves local verify flows required.
+    #[tokio::test]
+    async fn link_or_create_leaves_unverified_when_idp_does_not_assert() {
+        let db = test_db().await;
+        let identity = ExternalIdentity {
+            provider: "oidc".into(),
+            provider_subject: "sub_unverified_1".into(),
+            email: "unverified-sso@ex.com".into(),
+            display_name: None,
+            email_verified: false,
+        };
+        let (user, _) = link_or_create_user(&db, &identity)
+            .await
+            .expect("link_or_create");
+        assert!(
+            user.email_verified_at.is_none(),
+            "IdP email_verified=false must leave email_verified_at null"
+        );
     }
 }

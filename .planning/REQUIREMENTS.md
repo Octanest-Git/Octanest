@@ -26,43 +26,45 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **AUTH-01**: User can sign up with email and password
 - [x] **AUTH-02**: User can log in with email and password and stay logged in across browser refresh
 - [x] **AUTH-03**: User can log out from the web UI
-- [ ] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
-- [ ] **AUTH-05**: On Octanest Cloud, signup is open (no invite required)
-- [ ] **AUTH-06**: On self-host, if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
-- [ ] **AUTH-07**: On self-host, if those env vars are absent, empty instance shows a one-time setup wizard to create the admin
+- [x] **AUTH-04**: On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository)
+- [x] **AUTH-05**: On Octanest Cloud, signup is open (no invite required) — *v1 note: after empty-instance bootstrap, local signup is governed by instance `allow_signup` (ENV `OCTANEST_ALLOW_SIGNUP`, default false). Cloud deploys that want open signup set it true; no invite codes in v1.*
+- [x] **AUTH-06**: Empty instance: if `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account (`system-administrator`, forced credential change on first visit)
+- [x] **AUTH-07**: Empty instance: if those env vars are absent (either/both unset), the instance shows a one-time setup wizard to create the admin
+- [x] **AUTH-07a**: Setup wizard can choose instance auth stack (local / WorkOS / OIDC public fields); secrets remain ENV-only — *landed post-Phase 06 close (2026-09-12)*
+- [x] **AUTH-07b**: Sys-admin can factory-reset the instance database (confirm phrase) back to empty setup — *landed post-Phase 06 close (2026-09-12)*
 - [x] **AUTH-08**: User can view and edit their own profile (display name, avatar, bio)
 - [x] **AUTH-09**: When no email provider is configured, outbound mail is written to a log/dev sink (no external send)
 - [x] **AUTH-10**: Operator can configure SMTP as the email provider
 - [x] **AUTH-11**: Operator can configure Resend as the email provider
-- [ ] **AUTH-12**: User can reset password via email link when an email provider is configured
+- [x] **AUTH-12**: User can reset password via email link when an email provider is configured
 
 ### Git hosting
 
-- [ ] **GIT-01**: User can create a repository (public or private)
-- [ ] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
-- [ ] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
-- [ ] **GIT-04**: User can add, list, and revoke SSH public keys on their account
-- [ ] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
-- [ ] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
-- [ ] **GIT-07**: User can download a source archive for a ref
-- [ ] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
-- [ ] **GIT-09**: Git operations are implemented primarily via gitoxide (pure Rust)
-- [ ] **GIT-10**: Architecture docs and code boundaries allow swapping to a `git` CLI backend if gitoxide cannot meet smart HTTP/SSH compatibility
-- [ ] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
-- [ ] **GIT-12**: User can push and fetch Git LFS objects for a repository
-- [ ] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
-- [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
-- [ ] **GIT-15**: User can download release assets from the web UI
-- [ ] **GIT-16**: User with permission can rename a repository
-- [ ] **GIT-17**: User with permission can transfer a repository to another user or organization
+- [x] **GIT-01**: User can create a repository (public or private)
+- [x] **GIT-02**: User can clone, fetch, and push over HTTPS using a personal access token (not account password)
+- [x] **GIT-03**: User can clone, fetch, and push over SSH with a registered public key
+- [x] **GIT-04**: User can add, list, and revoke SSH public keys on their account
+- [x] **GIT-05**: User can browse files, commits, branches, and tags in the web UI
+- [x] **GIT-06**: User can create, rename, and delete branches from the web UI (where permitted)
+- [x] **GIT-07**: User can download a source archive for a ref
+- [x] **GIT-08**: Repository objects are stored on the local filesystem (volume-backed in Compose/cloud)
+- [x] **GIT-09**: Git operations use the system `git` CLI (≥2.5) behind a `GitBackend` abstraction (`CliGitBackend` shipped); a future gitoxide/`gix` (`GixGitBackend`) adapter is documented for when feature coverage allows
+- [x] **GIT-10**: Architecture docs and code boundaries keep `GitBackend` swappable — CLI is the current adapter; gitoxide/`gix` is a future adapter, not a Phase 7 primary
+- [x] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
+- [x] **GIT-12**: User can push and fetch Git LFS objects for a repository
+- [x] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
+- [x] **GIT-14**: User can create a release for a tag with notes and downloadable assets
+- [x] **GIT-15**: User can download release assets from the web UI
+- [x] **GIT-16**: User with permission can rename a repository
+- [x] **GIT-17**: User with permission can transfer a repository to another user or organization
 - [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
 ### Organizations & permissions
 
-- [ ] **ORG-01**: User can create an organization and invite/add members
-- [ ] **ORG-02**: Org owner can assign member roles that control repo access
-- [ ] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
-- [ ] **ORG-04**: Unauthorized users cannot read private repos or push without permission
+- [x] **ORG-01**: User can create an organization and invite/add members
+- [x] **ORG-02**: Org owner can assign member roles that control repo access
+- [x] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
+- [x] **ORG-04**: Unauthorized users cannot read private repos or push without permission
 - [ ] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
 - [ ] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
 
@@ -79,10 +81,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Issues
 
-- [ ] **ISS-01**: User can create, edit, close, and reopen issues
-- [ ] **ISS-02**: User can comment on issues
-- [ ] **ISS-03**: User can assign labels and assignees to issues
-- [ ] **ISS-04**: User can link issues and PRs by reference
+- [x] **ISS-01**: User can create, edit, close, and reopen issues
+- [x] **ISS-02**: User can comment on issues
+- [x] **ISS-03**: User can assign labels and assignees to issues
+- [x] **ISS-04**: User can link issues and PRs by reference
 
 ### Notifications & webhooks
 
@@ -104,11 +106,11 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Packages & registry
 
-- [ ] **PKG-01**: User can publish and pull OCI container images from an instance registry scoped to a repo or org
-- [ ] **PKG-02**: User can publish and pull npm packages from an instance registry scoped to a repo or org
-- [ ] **PKG-03**: User can publish and pull generic/raw packages from an instance registry scoped to a repo or org
-- [ ] **PKG-04**: Registry packages respect the same auth/visibility rules as their owning repo/org
-- [ ] **PKG-05**: User can list and delete package versions they are permitted to manage
+- [x] **PKG-01**: User can publish and pull OCI container images from an instance registry scoped to a repo or org
+- [x] **PKG-02**: User can publish and pull npm packages from an instance registry scoped to a repo or org
+- [x] **PKG-03**: User can publish and pull generic/raw packages from an instance registry scoped to a repo or org
+- [x] **PKG-04**: Registry packages respect the same auth/visibility rules as their owning repo/org
+- [x] **PKG-05**: User can list and delete package versions they are permitted to manage
 
 ### Social & explore
 
@@ -158,7 +160,7 @@ Deferred; not in the current roadmap until promoted.
 | Separate cloud-only vs self-host feature forks | One product, one release train |
 | Vercel as forge app runtime | Stateful git needs containers; Docker is the unit |
 | OAuth in v1 | Explicitly deferred after email/password |
-| Invite-only cloud gate in v1 | Cloud is open signup + email verify |
+| Invite-only cloud gate in v1 | Signup openness is `allow_signup` after bootstrap (cloud sets `OCTANEST_ALLOW_SIGNUP=true` when open signup desired); invite codes deferred |
 
 ## Traceability
 
@@ -178,37 +180,39 @@ Deferred; not in the current roadmap until promoted.
 | AUTH-01 | Phase 4 | Complete |
 | AUTH-02 | Phase 4 | Complete |
 | AUTH-03 | Phase 4 | Complete |
-| AUTH-04 | Phase 5 | Pending |
-| AUTH-05 | Phase 5 | Pending |
-| AUTH-06 | Phase 6 | Pending |
-| AUTH-07 | Phase 6 | Pending |
+| AUTH-04 | Phase 5 | Complete |
+| AUTH-05 | Phase 5 | Complete |
+| AUTH-06 | Phase 6 | Complete |
+| AUTH-07 | Phase 6 | Complete |
+| AUTH-07a | Phase 6 (post-close) | Complete |
+| AUTH-07b | Phase 6 (post-close) | Complete |
 | AUTH-08 | Phase 4 | Complete |
 | AUTH-09 | Phase 4 | Complete |
 | AUTH-10 | Phase 4 | Complete |
 | AUTH-11 | Phase 4 | Complete |
-| AUTH-12 | Phase 5 | Pending |
-| GIT-01 | Phase 7 | Pending |
-| GIT-02 | Phase 8 | Pending |
-| GIT-03 | Phase 9 | Pending |
-| GIT-04 | Phase 9 | Pending |
-| GIT-05 | Phase 7 | Pending |
-| GIT-06 | Phase 7 | Pending |
-| GIT-07 | Phase 7 | Pending |
-| GIT-08 | Phase 7 | Pending |
-| GIT-09 | Phase 7 | Pending |
-| GIT-10 | Phase 7 | Pending |
-| GIT-11 | Phase 8 | Pending |
-| GIT-12 | Phase 14 | Pending |
-| GIT-13 | Phase 14 | Pending |
-| GIT-14 | Phase 15 | Pending |
-| GIT-15 | Phase 15 | Pending |
-| GIT-16 | Phase 15 | Pending |
-| GIT-17 | Phase 15 | Pending |
+| AUTH-12 | Phase 5 | Complete |
+| GIT-01 | Phase 7 | Complete |
+| GIT-02 | Phase 8 | Complete |
+| GIT-03 | Phase 9 | Complete |
+| GIT-04 | Phase 9 | Complete |
+| GIT-05 | Phase 7 | Complete |
+| GIT-06 | Phase 7 | Complete |
+| GIT-07 | Phase 7 | Complete |
+| GIT-08 | Phase 7 | Complete |
+| GIT-09 | Phase 7 | Complete |
+| GIT-10 | Phase 7 | Complete |
+| GIT-11 | Phase 8 | Complete |
+| GIT-12 | Phase 14 | Complete |
+| GIT-13 | Phase 14 | Complete |
+| GIT-14 | Phase 15 | Complete |
+| GIT-15 | Phase 15 | Complete |
+| GIT-16 | Phase 15 | Complete |
+| GIT-17 | Phase 15 | Complete |
 | GIT-18 | Phase 16 | Pending |
-| ORG-01 | Phase 10 | Pending |
-| ORG-02 | Phase 10 | Pending |
-| ORG-03 | Phase 10 | Pending |
-| ORG-04 | Phase 10 | Pending |
+| ORG-01 | Phase 10 | Complete |
+| ORG-02 | Phase 10 | Complete |
+| ORG-03 | Phase 10 | Complete |
+| ORG-04 | Phase 10 | Complete |
 | ORG-05 | Phase 13 | Pending |
 | ORG-06 | Phase 13 | Pending |
 | PR-01 | Phase 12 | Pending |
@@ -219,10 +223,10 @@ Deferred; not in the current roadmap until promoted.
 | PR-06 | Phase 12 | Pending |
 | PR-07 | Phase 12 | Pending |
 | PR-08 | Phase 13 | Pending |
-| ISS-01 | Phase 11 | Pending |
-| ISS-02 | Phase 11 | Pending |
-| ISS-03 | Phase 11 | Pending |
-| ISS-04 | Phase 11 | Pending |
+| ISS-01 | Phase 11 | Complete |
+| ISS-02 | Phase 11 | Complete |
+| ISS-03 | Phase 11 | Complete |
+| ISS-04 | Phase 11 | Complete |
 | NOTF-01 | Phase 17 | Pending |
 | NOTF-02 | Phase 17 | Pending |
 | HOOK-01 | Phase 18 | Pending |
@@ -235,11 +239,11 @@ Deferred; not in the current roadmap until promoted.
 | ACT-05 | Phase 19 | Pending |
 | ACT-06 | Phase 19 | Pending |
 | ACT-07 | Phase 19 | Pending |
-| PKG-01 | Phase 20 | Pending |
-| PKG-02 | Phase 20 | Pending |
-| PKG-03 | Phase 20 | Pending |
-| PKG-04 | Phase 20 | Pending |
-| PKG-05 | Phase 20 | Pending |
+| PKG-01 | Phase 20 | Complete |
+| PKG-02 | Phase 20 | Complete |
+| PKG-03 | Phase 20 | Complete |
+| PKG-04 | Phase 20 | Complete |
+| PKG-05 | Phase 20 | Complete |
 | SOC-01 | Phase 21 | Pending |
 | SOC-02 | Phase 21 | Pending |
 | SOC-03 | Phase 21 | Pending |
@@ -251,10 +255,11 @@ Deferred; not in the current roadmap until promoted.
 | BRAND-05 | Phase 3 | Complete |
 
 **Coverage:**
+
 - v1 requirements: 85 total
 - Mapped to phases: 85
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-09 — roadmap traceability (85/85 mapped)*
+*Last updated: 2026-09-14 — forge-core pre-ship: ISS/GIT-12…17/PKG marked Complete; Phase 12 next*

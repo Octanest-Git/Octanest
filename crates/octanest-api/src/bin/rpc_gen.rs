@@ -43,6 +43,8 @@ export type ProviderMode = "local" | "workos" | "oidc";
 
 export type EmailProviderKind = "log" | "smtp" | "resend";
 
+export type UserRole = "user" | "admin" | "sys-admin";
+
 export type UserPublic = {
   id: string;
   email: string;
@@ -50,8 +52,55 @@ export type UserPublic = {
   display_name: string;
   bio: string;
   avatar_url?: string | null;
-  is_admin: boolean;
+  role: UserRole;
   profile_incomplete: boolean;
+  email_verified: boolean;
+  must_change_credentials: boolean;
+  default_branch: string;
+};
+
+export type BootstrapStatus = {
+  needs_setup: boolean;
+};
+
+export type BootstrapSetupRequest = {
+  email: string;
+  username: string;
+  password: string;
+  allow_signup?: boolean;
+  provider_mode?: ProviderMode;
+  oidc_issuer?: string | null;
+  oidc_client_id?: string | null;
+  workos_client_id?: string | null;
+};
+
+export type FactoryResetRequest = {
+  confirmation: string;
+  /** Omit → database_only (D-34). */
+  scope?: "database_only" | "database_and_repositories";
+};
+
+export type FactoryResetResponse = {
+  ok: boolean;
+  needs_setup: boolean;
+};
+
+export type RepoGcRequest = {
+  owner?: string | null;
+  name?: string | null;
+};
+
+export type RepoGcResponse = {
+  ok: boolean;
+  gc_count: number;
+  error_count: number;
+};
+
+export type ConfirmAdminCredentialsRequest = {
+  username: string;
+  email?: string | null;
+  password?: string | null;
+  keep_password?: boolean;
 };
 
 export type SignupRequest = {
@@ -66,14 +115,49 @@ export type LoginRequest = {
   remember_me: boolean;
 };
 
+export type VerifyRequest = {
+  token?: string | null;
+  code?: string | null;
+};
+
+export type RequestPasswordResetRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token?: string | null;
+  code?: string | null;
+  password: string;
+};
+
 export type ProviderConfigPublic = {
   mode: ProviderMode;
+  allow_signup: boolean;
 };
+
+export type RepoVisibility = "public" | "private";
+
+export type OwnerType = "user" | "org";
 
 export type UpdateProfileRequest = {
   display_name: string;
   username: string;
   bio: string;
+  default_branch?: string | null;
+};
+
+export type UserLookupRequest = {
+  prefix: string;
+};
+
+export type UserLookupHit = {
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+};
+
+export type UserLookupResponse = {
+  users: UserLookupHit[];
 };
 
 export type AuthSettingsPublic = {
@@ -87,6 +171,8 @@ export type AuthSettingsPublic = {
   resend_configured: boolean;
   workos_api_key_configured: boolean;
   oidc_client_secret_configured: boolean;
+  allow_signup: boolean;
+  default_visibility: RepoVisibility;
 };
 
 export type UpdateAuthSettingsRequest = {
@@ -96,6 +182,997 @@ export type UpdateAuthSettingsRequest = {
   oidc_issuer?: string | null;
   oidc_client_id?: string | null;
   workos_client_id?: string | null;
+  allow_signup?: boolean;
+  default_visibility?: RepoVisibility;
+};
+
+export type CreateRepoRequest = {
+  name: string;
+  description?: string | null;
+  visibility?: RepoVisibility | null;
+  stack_id?: string | null;
+  license_id?: string | null;
+  gitignore_id?: string | null;
+  owner?: string | null;
+};
+
+export type RepoTemplateOption = {
+  id: string;
+  label: string;
+  group: string;
+  description: string;
+  default_gitignore?: string | null;
+};
+
+export type RepoCreateDefaults = {
+  default_visibility: RepoVisibility;
+  stacks: RepoTemplateOption[];
+  gitignores: RepoTemplateOption[];
+};
+
+export type RepoPublic = {
+  id: string;
+  owner_id: string;
+  owner_type: OwnerType;
+  owner_username: string;
+  name: string;
+  description: string;
+  visibility: RepoVisibility;
+  default_branch: string;
+  updated_at: string;
+  can_admin: boolean;
+  can_write: boolean;
+};
+
+export type RepoListMineResponse = {
+  repos: RepoPublic[];
+};
+
+export type RepoListByOwnerRequest = {
+  owner: string;
+};
+
+export type RepoGetRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoTreeRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path?: string | null;
+};
+
+export type RepoTreeEntry = {
+  mode: string;
+  kind: string;
+  oid: string;
+  name: string;
+};
+
+export type RepoTreeResponse = {
+  empty: boolean;
+  ref: string;
+  path: string;
+  entries: RepoTreeEntry[];
+};
+
+export type RepoBlobRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path: string;
+};
+
+export type RepoBlobResponse = {
+  path: string;
+  ref: string;
+  size: number;
+  truncated: boolean;
+  is_binary: boolean;
+  encoding: string;
+  content?: string | null;
+  soft_max_bytes: number;
+};
+
+export type RepoRefEntry = {
+  name: string;
+  oid: string;
+};
+
+export type RepoRefsResponse = {
+  refs: RepoRefEntry[];
+};
+
+export type RepoCommitsRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  skip?: number;
+  limit?: number;
+};
+
+export type RepoCommitSummary = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+};
+
+export type RepoCommitsResponse = {
+  ref: string;
+  commits: RepoCommitSummary[];
+  skip: number;
+  limit: number;
+};
+
+export type RepoCommitRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+};
+
+export type RepoDiffFile = {
+  path: string;
+  status: string;
+  patch: string;
+};
+
+export type RepoCommitResponse = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  body: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+  parents: string[];
+  files: RepoDiffFile[];
+  truncated: boolean;
+};
+
+export type RepoCompareRequest = {
+  owner: string;
+  name: string;
+  base: string;
+  head: string;
+};
+
+export type RepoCompareResponse = {
+  base: string;
+  head: string;
+  empty: boolean;
+  truncated: boolean;
+  files: RepoDiffFile[];
+};
+
+export type RepoBlameRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path: string;
+};
+
+export type RepoBlameLine = {
+  sha: string;
+  author_name: string;
+  authored_at: string;
+  line_number: number;
+  content: string;
+};
+
+export type RepoBlameResponse = {
+  path: string;
+  ref: string;
+  lines: RepoBlameLine[];
+  truncated: boolean;
+};
+
+export type RepoBranchCreateRequest = {
+  owner: string;
+  name: string;
+  branch: string;
+  start?: string | null;
+};
+
+export type RepoBranchRenameRequest = {
+  owner: string;
+  name: string;
+  from: string;
+  to: string;
+};
+
+export type RepoBranchDeleteRequest = {
+  owner: string;
+  name: string;
+  branch: string;
+};
+
+export type RepoBranchMutationResponse = {
+  branch: string;
+};
+
+export type RepoUpdateVisibilityRequest = {
+  owner: string;
+  name: string;
+  visibility: RepoVisibility;
+};
+
+export type RepoSoftDeleteRequest = {
+  owner: string;
+  name: string;
+  confirmName: string;
+};
+
+export type RepoSoftDeleteResponse = {
+  name: string;
+};
+
+export type RepoLfsSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type RepoLfsEnabledResponse = {
+  enabled: boolean;
+};
+
+export type RepoLfsGetEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoLfsStatusResponse = {
+  enabled: boolean;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type RepoLfsObjectEntry = {
+  oid: string;
+  size: number;
+  refcount: number;
+};
+
+export type RepoLfsUsageResponse = {
+  enabled: boolean;
+  object_count: number;
+  logical_bytes: number;
+  quota_repo_bytes: number;
+  objects: RepoLfsObjectEntry[];
+};
+
+export type RepoLfsListObjectsRequest = {
+  owner: string;
+  name: string;
+  limit?: number | null;
+};
+
+export type RepoLfsListObjectsResponse = {
+  enabled: boolean;
+  objects: RepoLfsObjectEntry[];
+};
+
+export type RepoLfsDownloadRequest = {
+  owner: string;
+  name: string;
+  oid: string;
+};
+
+export type RepoLfsDownloadResponse = {
+  oid: string;
+  size: number;
+  encoding: string;
+  content: string;
+};
+
+export type AdminLfsSettingsPublic = {
+  max_object_bytes: number;
+  quota_repo_bytes: number;
+  quota_user_bytes: number;
+  max_object_bytes_overridden: boolean;
+  quota_repo_bytes_overridden: boolean;
+  quota_user_bytes_overridden: boolean;
+};
+
+export type AdminLfsUpdateSettingsRequest = {
+  max_object_bytes?: number | null;
+  quota_repo_bytes?: number | null;
+  quota_user_bytes?: number | null;
+  clear_overrides?: boolean;
+};
+
+export type AdminLfsRepoUsageEntry = {
+  repository_id: string;
+  owner: string;
+  name: string;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type AdminLfsOwnerUsageEntry = {
+  owner_id: string;
+  owner_slug: string;
+  object_count: number;
+  logical_bytes: number;
+};
+
+export type AdminLfsUsageResponse = {
+  physical_bytes: number;
+  object_count: number;
+  logical_bytes: number;
+  by_repo: AdminLfsRepoUsageEntry[];
+  by_owner: AdminLfsOwnerUsageEntry[];
+};
+export type RepoRenameRequest = {
+  owner: string;
+  name: string;
+  newName: string;
+};
+
+export type RepoRenameResponse = {
+  repo: RepoPublic;
+};
+
+export type RepoTransferRequest = {
+  owner: string;
+  name: string;
+  destOwner: string;
+  destOwnerType: OwnerType;
+  confirmName: string;
+};
+
+export type RepoTransferResponse = {
+  repo: RepoPublic;
+};
+/** Per-repo collaborator permission ladder (D-ORG-02c). */
+export type CollaboratorPermission = "read" | "write" | "admin";
+
+export type RepoCollaboratorPublic = {
+  user_id: string;
+  username: string;
+  permission: CollaboratorPermission;
+  created_at: string;
+};
+
+export type RepoCollaboratorsListResponse = {
+  collaborators: RepoCollaboratorPublic[];
+};
+
+export type RepoCollaboratorsAddRequest = {
+  owner: string;
+  name: string;
+  username: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsUpdateRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsRemoveRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+};
+
+export type MemberBasePermission = "none" | "read" | "write";
+
+export type OrgRole = "owner" | "admin" | "member";
+
+export type OrgPublic = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreateOrgRequest = {
+  slug: string;
+  display_name?: string | null;
+};
+
+export type OrgSlugRequest = {
+  slug: string;
+};
+
+export type OrgUpdateSettingsRequest = {
+  slug: string;
+  member_base_permission?: MemberBasePermission | null;
+  display_name?: string | null;
+};
+
+export type OrgMineEntry = {
+  id: string;
+  slug: string;
+  display_name: string;
+  member_base_permission: MemberBasePermission;
+  role: OrgRole;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrgListMineResponse = {
+  orgs: OrgMineEntry[];
+};
+
+export type OrgMemberPublic = {
+  user_id: string;
+  username: string;
+  role: OrgRole;
+  created_at: string;
+};
+
+export type OrgMembersListResponse = {
+  members: OrgMemberPublic[];
+};
+
+export type OrgMembersAddRequest = {
+  slug: string;
+  username: string;
+  role: OrgRole;
+};
+
+export type OrgMembersUpdateRoleRequest = {
+  slug: string;
+  user_id: string;
+  role: OrgRole;
+};
+
+export type OrgMembersRemoveRequest = {
+  slug: string;
+  user_id: string;
+};
+
+export type OrgInvitePublic = {
+  id: string;
+  email: string;
+  role: OrgRole;
+  expires_at: string;
+  invited_by: string;
+  created_at: string;
+};
+
+export type OrgInvitesListResponse = {
+  invites: OrgInvitePublic[];
+};
+
+export type OrgInvitesCreateRequest = {
+  slug: string;
+  email: string;
+  role: OrgRole;
+};
+
+export type OrgInvitesRevokeRequest = {
+  slug: string;
+  invite_id: string;
+};
+
+export type OrgInvitesAcceptRequest = {
+  token: string;
+  username?: string | null;
+  password?: string | null;
+};
+
+export type OrgInvitesAcceptResponse = {
+  org: OrgPublic;
+  member: OrgMemberPublic;
+};
+
+/** Classic PAT string prefix (octanest_pat_). */
+export const CLASSIC_PAT_PREFIX = "octanest_pat_" as const;
+/** Fine-grained PAT string prefix (octanest_fg_). */
+export const FINE_GRAINED_PAT_PREFIX = "octanest_fg_" as const;
+
+export type PatKind = "classic" | "fine_grained";
+export type ClassicPatScope = "repo";
+export type FgRepoAccess = "selected" | "all";
+export type ContentsPerm = "read" | "write";
+
+export type CreateClassicPatRequest = {
+  name: string;
+  scopes: ClassicPatScope[];
+  expires_at?: string | null;
+};
+
+export type CreateFineGrainedPatRequest = {
+  name: string;
+  repo_access: FgRepoAccess;
+  repository_ids?: string[];
+  contents: ContentsPerm;
+  expires_at?: string | null;
+};
+
+export type PackagesListRequest = {
+  owner?: string | null;
+  repository_id?: string | null;
+};
+
+export type PackageVersionPublic = {
+  version: string;
+  digest?: string | null;
+  created_at: string;
+};
+
+export type PackagePublic = {
+  id: string;
+  owner_type: string;
+  owner_id: string;
+  name: string;
+  format: string;
+  visibility: string;
+  repository_id?: string | null;
+  versions: PackageVersionPublic[];
+};
+
+export type PackagesListResponse = {
+  packages: PackagePublic[];
+};
+
+export type PackagesDeleteVersionRequest = {
+  package_id: string;
+  version: string;
+  confirm: string;
+};
+
+export type PackagesDeleteVersionResponse = {
+  ok: boolean;
+};
+
+export type PackagesAdminUsageRequest = {
+  owner: string;
+};
+
+export type PackageUsageByFormat = {
+  format: string;
+  bytes: number;
+};
+
+export type PackageUsageRow = {
+  package_id: string;
+  name: string;
+  format: string;
+  bytes: number;
+};
+
+export type PackagesAdminUsageResponse = {
+  owner_type: string;
+  owner_id: string;
+  used_bytes: number;
+  quota_bytes: number;
+  default_quota_bytes: number;
+  by_format: PackageUsageByFormat[];
+  packages: PackageUsageRow[];
+};
+
+export type PackagesAdminSetQuotaRequest = {
+  owner: string;
+  max_bytes: number;
+};
+
+export type PackagesAdminSetQuotaResponse = {
+  ok: boolean;
+  max_bytes: number;
+};
+
+export type PatListItem = {
+  id: string;
+  kind: PatKind;
+  name: string;
+  token_prefix: string;
+  scopes?: ClassicPatScope[];
+  contents?: ContentsPerm;
+  repo_access?: FgRepoAccess;
+  repository_ids?: string[];
+  expires_at?: string | null;
+  last_used_at?: string | null;
+  last_used_ip?: string | null;
+  created_at: string;
+};
+
+/** One-time create response — plaintext `token` only on create. */
+export type CreatePatResponse = {
+  token: string;
+  item: PatListItem;
+};
+
+export type RevokePatRequest = {
+  id: string;
+};
+
+/** `sshKey.add` input — OpenSSH one-line public key (not a private key). */
+export type AddSshKeyRequest = {
+  title: string;
+  public_key: string;
+};
+
+export type SshKeyListItem = {
+  id: string;
+  title: string;
+  fingerprint: string;
+  key_type: string;
+  public_key?: string;
+  last_used_at?: string | null;
+  last_used_ip?: string | null;
+  created_at: string;
+};
+
+export type RevokeSshKeyRequest = {
+  id: string;
+};
+
+export type IssueState = "open" | "closed";
+
+export type LabelScope = "org" | "repo";
+
+export type IssueLinkKind = "issue" | "pr_stub";
+
+export type IssueLinkPublic = {
+  id: string;
+  kind: IssueLinkKind;
+  target_repo_id?: string | null;
+  target_number?: number | null;
+  target_opaque_id?: string | null;
+  title?: string | null;
+  created_at: string;
+};
+
+export type AddIssueLinkRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  kind: IssueLinkKind;
+  targetNumber?: number | null;
+  targetRepoId?: string | null;
+  title?: string | null;
+};
+
+export type RemoveIssueLinkRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  linkId: string;
+};
+
+export type IssueLinksListResponse = {
+  links: IssueLinkPublic[];
+};
+
+export type RemoveIssueLinkResponse = {
+  ok: boolean;
+};
+
+export type IssueAssigneePublic = {
+  user_id: string;
+  username: string;
+  display_name: string;
+};
+
+export type LabelPublic = {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
+  scope: LabelScope;
+  org_id?: string | null;
+  repo_id?: string | null;
+  hidden?: boolean;
+};
+
+export type CreateLabelRequest = {
+  scope: LabelScope;
+  owner: string;
+  repo?: string | null;
+  name: string;
+  color: string;
+  description?: string | null;
+};
+
+export type UpdateLabelRequest = {
+  id: string;
+  owner: string;
+  repo?: string | null;
+  name?: string | null;
+  color?: string | null;
+  description?: string | null;
+  hidden?: boolean | null;
+};
+
+export type DeleteLabelRequest = {
+  id: string;
+  owner: string;
+  repo?: string | null;
+};
+
+export type ListLabelsForRepoRequest = {
+  owner: string;
+  name: string;
+  includeHidden?: boolean | null;
+};
+
+export type LabelsListResponse = {
+  labels: LabelPublic[];
+};
+
+export type SetIssueLabelsRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  labelIds: string[];
+};
+
+export type SetIssueAssigneesRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  userIds: string[];
+};
+
+export type AssigneeCandidatesRequest = {
+  owner: string;
+  name: string;
+  prefix?: string | null;
+};
+
+export type AssigneeCandidatesResponse = {
+  users: IssueAssigneePublic[];
+};
+
+export type ReactionContent =
+  | "+1"
+  | "-1"
+  | "laugh"
+  | "confused"
+  | "heart"
+  | "hooray"
+  | "rocket"
+  | "eyes";
+
+export type ReactionTarget = "issue" | "comment";
+
+export type ToggleReactionRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  target: ReactionTarget;
+  commentId?: string | null;
+  content: ReactionContent;
+};
+
+export type ReactionGroupPublic = {
+  content: string;
+  count: number;
+  viewerHasReacted: boolean;
+};
+
+export type ToggleReactionResponse = {
+  reactions: ReactionGroupPublic[];
+  reacted: boolean;
+};
+
+export type IssuePublic = {
+  id: string;
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: IssueState;
+  author_id: string;
+  author_username: string;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  labels?: LabelPublic[];
+  assignees?: IssueAssigneePublic[];
+  reactions?: ReactionGroupPublic[];
+};
+
+export type CreateIssueRequest = {
+  owner: string;
+  name: string;
+  title: string;
+  body?: string | null;
+};
+
+export type IssueRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+};
+
+export type IssueListRequest = {
+  owner: string;
+  name: string;
+  state?: string | null;
+  author?: string | null;
+  label?: string | null;
+  assignee?: string | null;
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type IssueListResponse = {
+  issues: IssuePublic[];
+  total: number;
+};
+
+export type UpdateIssueRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  title?: string | null;
+  body?: string | null;
+};
+
+export type DeleteIssueRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  confirmNumber: number;
+};
+
+export type DeleteIssueResponse = {
+  number: number;
+};
+
+export type ReleaseAssetPublic = {
+  id: string;
+  release_id: string;
+  filename: string;
+  content_type: string;
+  byte_size: number;
+  uploader_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReleasePublic = {
+  id: string;
+  repo_id: string;
+  tag_name: string;
+  title: string;
+  body: string;
+  draft: boolean;
+  prerelease: boolean;
+  author_id: string;
+  author_username: string;
+  created_at: string;
+  updated_at: string;
+  assets?: ReleaseAssetPublic[];
+};
+
+export type CreateReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+  title?: string;
+  body?: string;
+  draft?: boolean;
+  prerelease?: boolean;
+};
+
+export type ReleaseListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ReleaseListResponse = {
+  releases: ReleasePublic[];
+};
+
+export type ReleaseGetRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+};
+
+export type UpdateReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+  title?: string | null;
+  body?: string | null;
+  draft?: boolean | null;
+  prerelease?: boolean | null;
+};
+
+export type DeleteReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+};
+
+export type DeleteReleaseResponse = {
+  ok: boolean;
+};
+
+export type DeleteReleaseAssetRequest = {
+  owner: string;
+  name: string;
+  asset_id: string;
+};
+
+export type DeleteReleaseAssetResponse = {
+  ok: boolean;
+};
+
+export type IssueRevisionPublic = {
+  id: string;
+  issue_id: string;
+  editor_id: string;
+  editor_username: string;
+  title: string;
+  body: string;
+  created_at: string;
+};
+
+export type IssueHistoryResponse = {
+  revisions: IssueRevisionPublic[];
+};
+
+export type IssueCommentPublic = {
+  id: string;
+  issue_id: string;
+  author_id: string;
+  author_username: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  reactions?: ReactionGroupPublic[];
+};
+
+export type CreateIssueCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  body: string;
+};
+
+export type IssueCommentRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  commentId: string;
+};
+
+export type UpdateIssueCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  commentId: string;
+  body: string;
+};
+
+export type IssueCommentsListResponse = {
+  comments: IssueCommentPublic[];
+};
+
+export type DeleteIssueCommentResponse = {
+  ok: boolean;
+};
+
+export type CommentRevisionPublic = {
+  id: string;
+  comment_id: string;
+  editor_id: string;
+  editor_username: string;
+  body: string;
+  created_at: string;
+};
+
+export type CommentHistoryResponse = {
+  revisions: CommentRevisionPublic[];
 };
 
 export type RpcOk<T> = { ok: true; data: T };
@@ -142,11 +1219,215 @@ export function createClient(opts: CreateClientOptions) {
       me: () => rpcCall<UserPublic>(opts, "auth.me", {}),
       providerConfig: () =>
         rpcCall<ProviderConfigPublic>(opts, "auth.provider_config", {}),
+      bootstrapStatus: () =>
+        rpcCall<BootstrapStatus>(opts, "auth.bootstrap_status", {}),
+      bootstrapSetup: (input: BootstrapSetupRequest) =>
+        rpcCall<UserPublic>(opts, "auth.bootstrap_setup", input),
+      confirmAdminCredentials: (input: ConfirmAdminCredentialsRequest) =>
+        rpcCall<UserPublic>(opts, "auth.confirm_admin_credentials", input),
+      verify: (input: VerifyRequest) => rpcCall<UserPublic>(opts, "auth.verify", input),
+      requestVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.request_verify", {}),
+      resendVerify: () => rpcCall<{ ok: boolean }>(opts, "auth.resend_verify", {}),
+      requestPasswordReset: (input: RequestPasswordResetRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "auth.request_password_reset", input),
+      resetPassword: (input: ResetPasswordRequest) =>
+        rpcCall<UserPublic>(opts, "auth.reset_password", input),
+      privilegedPing: () =>
+        rpcCall<{ ok: boolean }>(opts, "auth.dev.privileged_ping", {}),
     },
     user: {
       getProfile: () => rpcCall<UserPublic>(opts, "user.get_profile", {}),
       updateProfile: (input: UpdateProfileRequest) =>
         rpcCall<UserPublic>(opts, "user.update_profile", input),
+      lookup: (input: UserLookupRequest) =>
+        rpcCall<UserLookupResponse>(opts, "user.lookup", input),
+    },
+    repo: {
+      listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
+      listByOwner: (input: RepoListByOwnerRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "repo.listByOwner", input),
+      createDefaults: () =>
+        rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
+      create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
+      get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
+      tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
+      blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
+      refs: (input: RepoGetRequest) => rpcCall<RepoRefsResponse>(opts, "repo.refs", input),
+      commits: (input: RepoCommitsRequest) =>
+        rpcCall<RepoCommitsResponse>(opts, "repo.commits", input),
+      commit: (input: RepoCommitRequest) =>
+        rpcCall<RepoCommitResponse>(opts, "repo.commit", input),
+      compare: (input: RepoCompareRequest) =>
+        rpcCall<RepoCompareResponse>(opts, "repo.compare", input),
+      blame: (input: RepoBlameRequest) => rpcCall<RepoBlameResponse>(opts, "repo.blame", input),
+      branchCreate: (input: RepoBranchCreateRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchCreate", input),
+      branchRename: (input: RepoBranchRenameRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchRename", input),
+      branchDelete: (input: RepoBranchDeleteRequest) =>
+        rpcCall<RepoBranchMutationResponse>(opts, "repo.branchDelete", input),
+      updateVisibility: (input: RepoUpdateVisibilityRequest) =>
+        rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
+      softDelete: (input: RepoSoftDeleteRequest) =>
+        rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+      lfs: {
+        setEnabled: (input: RepoLfsSetEnabledRequest) =>
+          rpcCall<RepoLfsEnabledResponse>(opts, "repo.lfs.setEnabled", input),
+        getEnabled: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsEnabledResponse>(opts, "repo.lfs.getEnabled", input),
+        getStatus: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsStatusResponse>(opts, "repo.lfs.getStatus", input),
+        getUsage: (input: RepoLfsGetEnabledRequest) =>
+          rpcCall<RepoLfsUsageResponse>(opts, "repo.lfs.getUsage", input),
+        listObjects: (input: RepoLfsListObjectsRequest) =>
+          rpcCall<RepoLfsListObjectsResponse>(opts, "repo.lfs.listObjects", input),
+        download: (input: RepoLfsDownloadRequest) =>
+          rpcCall<RepoLfsDownloadResponse>(opts, "repo.lfs.download", input),
+      },
+      rename: (input: RepoRenameRequest) =>
+        rpcCall<RepoRenameResponse>(opts, "repo.rename", input),
+      transfer: (input: RepoTransferRequest) =>
+        rpcCall<RepoTransferResponse>(opts, "repo.transfer", input),
+      collaborators: {
+        list: (input: RepoGetRequest) =>
+          rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),
+        add: (input: RepoCollaboratorsAddRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.add", input),
+        update: (input: RepoCollaboratorsUpdateRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.update", input),
+        remove: (input: RepoCollaboratorsRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "repo.collaborators.remove", input),
+      },
+    },
+    org: {
+      create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
+      get: (input: OrgSlugRequest) => rpcCall<OrgPublic>(opts, "org.get", input),
+      listMine: () => rpcCall<OrgListMineResponse>(opts, "org.listMine", {}),
+      updateSettings: (input: OrgUpdateSettingsRequest) =>
+        rpcCall<OrgPublic>(opts, "org.updateSettings", input),
+      members: {
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgMembersListResponse>(opts, "org.members.list", input),
+        add: (input: OrgMembersAddRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.add", input),
+        updateRole: (input: OrgMembersUpdateRoleRequest) =>
+          rpcCall<OrgMemberPublic>(opts, "org.members.updateRole", input),
+        remove: (input: OrgMembersRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.members.remove", input),
+      },
+      invites: {
+        create: (input: OrgInvitesCreateRequest) =>
+          rpcCall<OrgInvitePublic>(opts, "org.invites.create", input),
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgInvitesListResponse>(opts, "org.invites.list", input),
+        revoke: (input: OrgInvitesRevokeRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.invites.revoke", input),
+        accept: (input: OrgInvitesAcceptRequest) =>
+          rpcCall<OrgInvitesAcceptResponse>(opts, "org.invites.accept", input),
+      },
+    },
+    issue: {
+      create: (input: CreateIssueRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.create", input),
+      get: (input: IssueRefRequest) => rpcCall<IssuePublic>(opts, "issue.get", input),
+      list: (input: IssueListRequest) =>
+        rpcCall<IssueListResponse>(opts, "issue.list", input),
+      update: (input: UpdateIssueRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.update", input),
+      close: (input: IssueRefRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.close", input),
+      reopen: (input: IssueRefRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.reopen", input),
+      history: (input: IssueRefRequest) =>
+        rpcCall<IssueHistoryResponse>(opts, "issue.history", input),
+      delete: (input: DeleteIssueRequest) =>
+        rpcCall<DeleteIssueResponse>(opts, "issue.delete", input),
+      comments: {
+        list: (input: IssueRefRequest) =>
+          rpcCall<IssueCommentsListResponse>(opts, "issue.comments.list", input),
+        create: (input: CreateIssueCommentRequest) =>
+          rpcCall<IssueCommentPublic>(opts, "issue.comments.create", input),
+        update: (input: UpdateIssueCommentRequest) =>
+          rpcCall<IssueCommentPublic>(opts, "issue.comments.update", input),
+        delete: (input: IssueCommentRefRequest) =>
+          rpcCall<DeleteIssueCommentResponse>(opts, "issue.comments.delete", input),
+        history: (input: IssueCommentRefRequest) =>
+          rpcCall<CommentHistoryResponse>(opts, "issue.comments.history", input),
+      },
+      labels: {
+        set: (input: SetIssueLabelsRequest) =>
+          rpcCall<IssuePublic>(opts, "issue.labels.set", input),
+      },
+      assignees: {
+        set: (input: SetIssueAssigneesRequest) =>
+          rpcCall<IssuePublic>(opts, "issue.assignees.set", input),
+      },
+      assigneeCandidates: (input: AssigneeCandidatesRequest) =>
+        rpcCall<AssigneeCandidatesResponse>(opts, "issue.assigneeCandidates", input),
+      reactions: {
+        toggle: (input: ToggleReactionRequest) =>
+          rpcCall<ToggleReactionResponse>(opts, "issue.reactions.toggle", input),
+      },
+      links: {
+        list: (input: IssueRefRequest) =>
+          rpcCall<IssueLinksListResponse>(opts, "issue.links.list", input),
+        add: (input: AddIssueLinkRequest) =>
+          rpcCall<IssueLinkPublic>(opts, "issue.links.add", input),
+        remove: (input: RemoveIssueLinkRequest) =>
+          rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
+      },
+    },
+    release: {
+      create: (input: CreateReleaseRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.create", input),
+      list: (input: ReleaseListRequest) =>
+        rpcCall<ReleaseListResponse>(opts, "release.list", input),
+      get: (input: ReleaseGetRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.get", input),
+      update: (input: UpdateReleaseRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.update", input),
+      delete: (input: DeleteReleaseRequest) =>
+        rpcCall<DeleteReleaseResponse>(opts, "release.delete", input),
+      deleteAsset: (input: DeleteReleaseAssetRequest) =>
+        rpcCall<DeleteReleaseAssetResponse>(opts, "release.deleteAsset", input),
+    },
+    label: {
+      listForRepo: (input: ListLabelsForRepoRequest) =>
+        rpcCall<LabelsListResponse>(opts, "label.listForRepo", input),
+      listForOrg: (input: OrgSlugRequest) =>
+        rpcCall<LabelsListResponse>(opts, "label.listForOrg", input),
+      create: (input: CreateLabelRequest) =>
+        rpcCall<LabelPublic>(opts, "label.create", input),
+      update: (input: UpdateLabelRequest) =>
+        rpcCall<LabelPublic>(opts, "label.update", input),
+      delete: (input: DeleteLabelRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "label.delete", input),
+    },
+    packages: {
+      list: (input: PackagesListRequest) =>
+        rpcCall<PackagesListResponse>(opts, "packages.list", input),
+      deleteVersion: (input: PackagesDeleteVersionRequest) =>
+        rpcCall<PackagesDeleteVersionResponse>(opts, "packages.deleteVersion", input),
+      adminUsage: (input: PackagesAdminUsageRequest) =>
+        rpcCall<PackagesAdminUsageResponse>(opts, "packages.adminUsage", input),
+      adminSetQuota: (input: PackagesAdminSetQuotaRequest) =>
+        rpcCall<PackagesAdminSetQuotaResponse>(opts, "packages.adminSetQuota", input),
+    },
+    pat: {
+      createClassic: (input: CreateClassicPatRequest) =>
+        rpcCall<CreatePatResponse>(opts, "pat.createClassic", input),
+      createFineGrained: (input: CreateFineGrainedPatRequest) =>
+        rpcCall<CreatePatResponse>(opts, "pat.createFineGrained", input),
+      list: () => rpcCall<PatListItem[]>(opts, "pat.list", {}),
+      revoke: (input: RevokePatRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "pat.revoke", input),
+    },
+    sshKey: {
+      add: (input: AddSshKeyRequest) =>
+        rpcCall<SshKeyListItem>(opts, "sshKey.add", input),
+      list: () => rpcCall<SshKeyListItem[]>(opts, "sshKey.list", {}),
+      revoke: (input: RevokeSshKeyRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "sshKey.revoke", input),
     },
     admin: {
       auth: {
@@ -154,6 +1435,19 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<AuthSettingsPublic>(opts, "admin.auth.get_settings", {}),
         updateSettings: (input: UpdateAuthSettingsRequest) =>
           rpcCall<AuthSettingsPublic>(opts, "admin.auth.update_settings", input),
+        factoryReset: (input: FactoryResetRequest) =>
+          rpcCall<FactoryResetResponse>(opts, "admin.instance.factory_reset", input),
+      },
+      repos: {
+        gc: (input: RepoGcRequest) =>
+          rpcCall<RepoGcResponse>(opts, "admin.repos.gc", input),
+      },
+      lfs: {
+        getSettings: () =>
+          rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.getSettings", {}),
+        updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
+          rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
+        getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
       },
     },
   };
@@ -272,11 +1566,673 @@ export function userGetProfileQueryOptions(client: OctanestClient) {
   };
 }
 
+export function userLookupQueryOptions(
+  client: OctanestClient,
+  input: UserLookupRequest,
+) {
+  return {
+    queryKey: ["user", "lookup", input.prefix] as const,
+    queryFn: async () => {
+      const res = await client.user.lookup(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function userUpdateProfileMutationOptions(client: OctanestClient) {
   return {
     mutationKey: ["user", "updateProfile"] as const,
     mutationFn: async (input: UpdateProfileRequest) => {
       const res = await client.user.updateProfile(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoListMineQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["repo", "listMine"] as const,
+    queryFn: async () => {
+      const res = await client.repo.listMine();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoListByOwnerQueryOptions(
+  client: OctanestClient,
+  input: RepoListByOwnerRequest,
+) {
+  return {
+    queryKey: ["repo", "listByOwner", input.owner] as const,
+    queryFn: async () => {
+      const res = await client.repo.listByOwner(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "create"] as const,
+    mutationFn: async (input: CreateRepoRequest) => {
+      const res = await client.repo.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoGetQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "get", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoTreeQueryOptions(
+  client: OctanestClient,
+  input: RepoTreeRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "tree",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.tree(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoBlobQueryOptions(
+  client: OctanestClient,
+  input: RepoBlobRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "blob",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.blob(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoRefsQueryOptions(
+  client: OctanestClient,
+  input: RepoGetRequest,
+) {
+  return {
+    queryKey: ["repo", "refs", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.refs(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCommitsQueryOptions(
+  client: OctanestClient,
+  input: RepoCommitsRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "commits",
+      input.owner,
+      input.name,
+      input.ref,
+      input.skip ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.commits(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCommitQueryOptions(
+  client: OctanestClient,
+  input: RepoCommitRequest,
+) {
+  return {
+    queryKey: ["repo", "commit", input.owner, input.name, input.sha] as const,
+    queryFn: async () => {
+      const res = await client.repo.commit(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoCompareQueryOptions(
+  client: OctanestClient,
+  input: RepoCompareRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "compare",
+      input.owner,
+      input.name,
+      input.base,
+      input.head,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.compare(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoBlameQueryOptions(
+  client: OctanestClient,
+  input: RepoBlameRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "blame",
+      input.owner,
+      input.name,
+      input.ref,
+      input.path,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.blame(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesListQueryOptions(
+  client: OctanestClient,
+  input: PackagesListRequest,
+) {
+  return {
+    queryKey: ["packages", "list", input] as const,
+    queryFn: async () => {
+      const res = await client.packages.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesDeleteVersionMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["packages", "deleteVersion"] as const,
+    mutationFn: async (input: PackagesDeleteVersionRequest) => {
+      const res = await client.packages.deleteVersion(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesAdminUsageQueryOptions(
+  client: OctanestClient,
+  input: PackagesAdminUsageRequest,
+) {
+  return {
+    queryKey: ["packages", "adminUsage", input] as const,
+    queryFn: async () => {
+      const res = await client.packages.adminUsage(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function packagesAdminSetQuotaMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["packages", "adminSetQuota"] as const,
+    mutationFn: async (input: PackagesAdminSetQuotaRequest) => {
+      const res = await client.packages.adminSetQuota(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["pat", "list"] as const,
+    queryFn: async () => {
+      const res = await client.pat.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patCreateClassicMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "createClassic"] as const,
+    mutationFn: async (input: CreateClassicPatRequest) => {
+      const res = await client.pat.createClassic(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patCreateFineGrainedMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "createFineGrained"] as const,
+    mutationFn: async (input: CreateFineGrainedPatRequest) => {
+      const res = await client.pat.createFineGrained(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function patRevokeMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["pat", "revoke"] as const,
+    mutationFn: async (input: RevokePatRequest) => {
+      const res = await client.pat.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function sshKeyListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["sshKey", "list"] as const,
+    queryFn: async () => {
+      const res = await client.sshKey.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function sshKeyAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["sshKey", "add"] as const,
+    mutationFn: async (input: AddSshKeyRequest) => {
+      const res = await client.sshKey.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function sshKeyRevokeMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["sshKey", "revoke"] as const,
+    mutationFn: async (input: RevokeSshKeyRequest) => {
+      const res = await client.sshKey.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueListQueryOptions(
+  client: OctanestClient,
+  input: IssueListRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "list",
+      input.owner,
+      input.name,
+      input.state ?? "open",
+      input.offset ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueGetQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "get", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "create"] as const,
+    mutationFn: async (input: CreateIssueRequest) => {
+      const res = await client.issue.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "update"] as const,
+    mutationFn: async (input: UpdateIssueRequest) => {
+      const res = await client.issue.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCloseMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "close"] as const,
+    mutationFn: async (input: IssueRefRequest) => {
+      const res = await client.issue.close(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueReopenMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "reopen"] as const,
+    mutationFn: async (input: IssueRefRequest) => {
+      const res = await client.issue.reopen(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueHistoryQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "history", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.history(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "delete"] as const,
+    mutationFn: async (input: DeleteIssueRequest) => {
+      const res = await client.issue.delete(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsListQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "comments",
+      "list",
+      input.owner,
+      input.name,
+      input.number,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.comments.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "create"] as const,
+    mutationFn: async (input: CreateIssueCommentRequest) => {
+      const res = await client.issue.comments.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "update"] as const,
+    mutationFn: async (input: UpdateIssueCommentRequest) => {
+      const res = await client.issue.comments.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "comments", "delete"] as const,
+    mutationFn: async (input: IssueCommentRefRequest) => {
+      const res = await client.issue.comments.delete(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCommentsHistoryQueryOptions(
+  client: OctanestClient,
+  input: IssueCommentRefRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "comments",
+      "history",
+      input.owner,
+      input.name,
+      input.number,
+      input.commentId,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.comments.history(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLabelsSetMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "labels", "set"] as const,
+    mutationFn: async (input: SetIssueLabelsRequest) => {
+      const res = await client.issue.labels.set(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueAssigneesSetMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "assignees", "set"] as const,
+    mutationFn: async (input: SetIssueAssigneesRequest) => {
+      const res = await client.issue.assignees.set(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueAssigneeCandidatesQueryOptions(
+  client: OctanestClient,
+  input: AssigneeCandidatesRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "assigneeCandidates",
+      input.owner,
+      input.name,
+      input.prefix ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.assigneeCandidates(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueReactionsToggleMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "reactions", "toggle"] as const,
+    mutationFn: async (input: ToggleReactionRequest) => {
+      const res = await client.issue.reactions.toggle(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksListQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "links", "list", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.links.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "links", "add"] as const,
+    mutationFn: async (input: AddIssueLinkRequest) => {
+      const res = await client.issue.links.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksRemoveMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "links", "remove"] as const,
+    mutationFn: async (input: RemoveIssueLinkRequest) => {
+      const res = await client.issue.links.remove(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelListForRepoQueryOptions(
+  client: OctanestClient,
+  input: ListLabelsForRepoRequest,
+) {
+  return {
+    queryKey: [
+      "label",
+      "listForRepo",
+      input.owner,
+      input.name,
+      input.includeHidden ?? false,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.label.listForRepo(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelListForOrgQueryOptions(
+  client: OctanestClient,
+  input: OrgSlugRequest,
+) {
+  return {
+    queryKey: ["label", "listForOrg", input.slug] as const,
+    queryFn: async () => {
+      const res = await client.label.listForOrg(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "create"] as const,
+    mutationFn: async (input: CreateLabelRequest) => {
+      const res = await client.label.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "update"] as const,
+    mutationFn: async (input: UpdateLabelRequest) => {
+      const res = await client.label.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "delete"] as const,
+    mutationFn: async (input: DeleteLabelRequest) => {
+      const res = await client.label.delete(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },
@@ -312,6 +2268,17 @@ export const queryOptions = {
   authMe: authMeQueryOptions,
   authProviderConfig: authProviderConfigQueryOptions,
   userGetProfile: userGetProfileQueryOptions,
+  repoListMine: repoListMineQueryOptions,
+  repoGet: repoGetQueryOptions,
+  repoTree: repoTreeQueryOptions,
+  repoBlob: repoBlobQueryOptions,
+  repoRefs: repoRefsQueryOptions,
+  repoCommits: repoCommitsQueryOptions,
+  repoCommit: repoCommitQueryOptions,
+  repoCompare: repoCompareQueryOptions,
+  repoBlame: repoBlameQueryOptions,
+  patList: patListQueryOptions,
+  sshKeyList: sshKeyListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
@@ -321,6 +2288,12 @@ export const mutationOptions = {
   authLogout: authLogoutMutationOptions,
   authLogoutAll: authLogoutAllMutationOptions,
   userUpdateProfile: userUpdateProfileMutationOptions,
+  repoCreate: repoCreateMutationOptions,
+  patCreateClassic: patCreateClassicMutationOptions,
+  patCreateFineGrained: patCreateFineGrainedMutationOptions,
+  patRevoke: patRevokeMutationOptions,
+  sshKeyAdd: sshKeyAddMutationOptions,
+  sshKeyRevoke: sshKeyRevokeMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };
 "#;

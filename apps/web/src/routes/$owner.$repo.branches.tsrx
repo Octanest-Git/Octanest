@@ -1,0 +1,533 @@
+import {
+  createFileRoute,
+  useLoaderData,
+  useParams,
+  useRouter,
+} from "@octanejs/tanstack-router";
+import { useQuery } from "@octanejs/tanstack-query";
+import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import { useEffect, useState } from "octane";
+import { RepoChrome } from "@/components/repo/repo-chrome";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { apiClient } from "@/lib/api-client";
+import {
+  isBranchRef,
+  shortOid,
+  shortRefName,
+  treeHref,
+} from "@/lib/repo-browse";
+import { authSessionQueryOptions } from "@/lib/session-queries";
+import { useRepoStore } from "@/lib/repo-store";
+import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
+
+export type BranchesLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; repo: RepoPublic; branches: RepoRefEntry[] };
+
+type Phase = { kind: "loading" } | BranchesLoaderData;
+
+type DialogState =
+  | { kind: "none" }
+  | { kind: "create" }
+  | { kind: "rename"; from: string }
+  | { kind: "delete"; branch: string };
+
+const DEFAULT_SOFT_PROTECT_TITLE =
+  "Default branch can’t be renamed or deleted here.";
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
+
+function sortBranches(refs: RepoRefEntry[]): RepoRefEntry[] {
+  return refs
+    .filter((r) => isBranchRef(r.name))
+    .sort((a, b) =>
+      shortRefName(a.name).localeCompare(shortRefName(b.name), undefined, {
+        sensitivity: "base",
+      }),
+    );
+}
+
+async function loadBranchesPage(
+  owner: string,
+  repoName: string,
+): Promise<BranchesLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load repository.",
+    };
+  }
+  const refsRes = await fetchRepoRefs({ data: { owner, name: repoName } });
+  if (!refsRes.ok) {
+    if (refsRes.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: refsRes.error.message || "Could not load branches.",
+    };
+  }
+  return {
+    kind: "ready",
+    repo: got.data,
+    branches: sortBranches(refsRes.data.refs),
+  };
+}
+
+export const Route = createFileRoute("/$owner/$repo/branches")({
+  component: RepoBranchesPage,
+  head: ({ params }) => ({
+    meta: [
+      {
+        title: `Branches · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+      },
+    ],
+  }),
+  loader: async ({ params }): Promise<BranchesLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    try {
+      return await loadBranchesPage(owner, repoName);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
+});
+
+export function RepoBranchesPage() @{
+  const params = useParams({ from: "/$owner/$repo/branches" }) as {
+    owner: string;
+    repo: string;
+  };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const router = useRouter();
+  const loaderData = useLoaderData({ from: "/$owner/$repo/branches" }) as
+    | BranchesLoaderData
+    | undefined;
+  const storeMe = useRepoStore((s) => s.me);
+  const me = useQuery(authSessionQueryOptions());
+  const sessionUser = me.isSuccess ? me.data : storeMe;
+
+  const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
+  const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
+  const [branchName, setBranchName] = useState("");
+  const [startRef, setStartRef] = useState("");
+  const [confirmName, setConfirmName] = useState("");
+  const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (loaderData) {
+      setPhase(loaderData);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setPhase({ kind: "loading" });
+      try {
+        const next = await loadBranchesPage(owner, repoName);
+        if (!cancelled) setPhase(next);
+      } catch {
+        if (!cancelled) setPhase({ kind: "error", message: NETWORK_ERROR });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, repoName, loaderData]);
+
+  const isOwner =
+    phase.kind === "ready" &&
+    sessionUser != null &&
+    sessionUser.id === phase.repo.owner_id;
+
+  function openCreate() {
+    if (phase.kind !== "ready") return;
+    setFormError("");
+    setBranchName("");
+    setStartRef(phase.repo.default_branch || "main");
+    setDialog({ kind: "create" });
+  }
+
+  function openRename(from: string) {
+    setFormError("");
+    setBranchName(from);
+    setDialog({ kind: "rename", from });
+  }
+
+  function openDelete(branch: string) {
+    setFormError("");
+    setConfirmName("");
+    setDialog({ kind: "delete", branch });
+  }
+
+  function closeDialog() {
+    if (pending) return;
+    setDialog({ kind: "none" });
+    setFormError("");
+    setConfirmName("");
+  }
+
+  async function refreshBranches() {
+    await router.invalidate();
+  }
+
+  async function submitCreate() {
+    if (phase.kind !== "ready") return;
+    const name = branchName.trim();
+    if (!name) {
+      setFormError("Enter a branch name.");
+      return;
+    }
+    setPending(true);
+    setFormError("");
+    try {
+      const res = await apiClient.repo.branchCreate({
+        owner,
+        name: repoName,
+        branch: name,
+        start: startRef.trim() || phase.repo.default_branch,
+      });
+      if (!res.ok) {
+        setFormError(res.error.message || "Could not create branch.");
+        setPending(false);
+        return;
+      }
+      setPending(false);
+      setDialog({ kind: "none" });
+      await refreshBranches();
+    } catch {
+      setFormError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function submitRename() {
+    if (phase.kind !== "ready" || dialog.kind !== "rename") return;
+    const to = branchName.trim();
+    if (!to) {
+      setFormError("Enter a new branch name.");
+      return;
+    }
+    setPending(true);
+    setFormError("");
+    try {
+      const res = await apiClient.repo.branchRename({
+        owner,
+        name: repoName,
+        from: dialog.from,
+        to,
+      });
+      if (!res.ok) {
+        setFormError(res.error.message || "Could not rename branch.");
+        setPending(false);
+        return;
+      }
+      setPending(false);
+      setDialog({ kind: "none" });
+      await refreshBranches();
+    } catch {
+      setFormError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function submitDelete() {
+    if (phase.kind !== "ready" || dialog.kind !== "delete") return;
+    if (confirmName.trim() !== dialog.branch) return;
+    setPending(true);
+    setFormError("");
+    try {
+      const res = await apiClient.repo.branchDelete({
+        owner,
+        name: repoName,
+        branch: dialog.branch,
+      });
+      if (!res.ok) {
+        setFormError(res.error.message || "Could not delete branch.");
+        setPending(false);
+        return;
+      }
+      setPending(false);
+      setDialog({ kind: "none" });
+      setConfirmName("");
+      await refreshBranches();
+    } catch {
+      setFormError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  @if (phase.kind === "not_found") {
+    <RepoNotFound />
+  } @else if (phase.kind === "loading") {
+    <p className="text-[16px] text-muted-foreground">Loading branches…</p>
+  } @else if (phase.kind === "error") {
+    <div className="flex flex-col gap-4">
+      <p role="alert" className="text-[16px] text-destructive">
+        {phase.message as string}
+      </p>
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => void refreshBranches()}
+      >
+        Try again
+      </Button>
+    </div>
+  } @else {
+    <>
+      <RepoChrome repo={phase.repo} active="branches" />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-semibold text-foreground">Branches</h2>
+        @if (isOwner) {
+          <Button type="button" onClick={() => openCreate()}>
+            New branch
+          </Button>
+        }
+      </div>
+
+      @if (phase.branches.length === 0) {
+        <p className="text-[16px] text-muted-foreground">No branches yet.</p>
+      } @else {
+        <ul className="divide-y divide-border border-y border-border">
+          @for (const b of phase.branches; key b.name) {
+            <BranchRow
+              owner={owner}
+              repo={repoName}
+              branch={b}
+              defaultBranch={phase.repo.default_branch}
+              isOwner={isOwner}
+              onRename={(name) => openRename(name)}
+              onDelete={(name) => openDelete(name)}
+            />
+          }
+        </ul>
+      }
+
+      <Dialog
+        open={dialog.kind === "create" || dialog.kind === "rename"}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <DialogContent showCloseButton={!pending}>
+          <DialogHeader>
+            <DialogTitle>
+              {(dialog.kind === "rename"
+                ? "Rename branch"
+                : "New branch") as string}
+            </DialogTitle>
+            <DialogDescription>
+              {(dialog.kind === "rename"
+                ? `Rename “${dialog.from}” to a new name.`
+                : "Create a branch from an existing ref.") as string}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="branch-name-input">Branch name</Label>
+              <Input
+                id="branch-name-input"
+                value={branchName}
+                onInput={(e) =>
+                  setBranchName((e.currentTarget as HTMLInputElement).value)
+                }
+                autoComplete="off"
+                disabled={pending}
+              />
+            </div>
+            @if (dialog.kind === "create") {
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="branch-start-input">Start point</Label>
+                <Input
+                  id="branch-start-input"
+                  value={startRef}
+                  onInput={(e) =>
+                    setStartRef((e.currentTarget as HTMLInputElement).value)
+                  }
+                  autoComplete="off"
+                  disabled={pending}
+                />
+              </div>
+            }
+            @if (formError) {
+              <p role="alert" className="text-[14px] text-destructive">
+                {formError as string}
+              </p>
+            }
+          </div>
+          <DialogFooter>
+            <DialogClose
+              disabled={pending}
+              className="inline-flex h-11 items-center justify-center rounded-md border-2 border-secondary bg-secondary/5 px-4 text-[14px] font-semibold text-secondary"
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              disabled={pending}
+              onClick={() =>
+                void (dialog.kind === "rename" ? submitRename() : submitCreate())
+              }
+            >
+              {(pending
+                ? "Working…"
+                : dialog.kind === "rename"
+                  ? "Rename branch"
+                  : "Create branch") as string}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={dialog.kind === "delete"}
+        onOpenChange={(open) => {
+          if (!open) closeDialog();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete branch?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This deletes the branch from the repository. Type the branch name
+              to confirm.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="delete-branch-confirm">
+              {(dialog.kind === "delete"
+                ? `Type ${dialog.branch} to confirm`
+                : "Confirm") as string}
+            </Label>
+            <Input
+              id="delete-branch-confirm"
+              value={confirmName}
+              onInput={(e) =>
+                setConfirmName((e.currentTarget as HTMLInputElement).value)
+              }
+              autoComplete="off"
+              disabled={pending}
+            />
+            @if (formError) {
+              <p role="alert" className="text-[14px] text-destructive">
+                {formError as string}
+              </p>
+            }
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={
+                pending ||
+                dialog.kind !== "delete" ||
+                confirmName.trim() !== dialog.branch
+              }
+              onClick={() => void submitDelete()}
+            >
+              {(pending ? "Deleting…" : "Delete branch") as string}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  }
+}
+
+function BranchRow({
+  owner,
+  repo,
+  branch,
+  defaultBranch,
+  isOwner,
+  onRename,
+  onDelete,
+}: {
+  owner: string;
+  repo: string;
+  branch: RepoRefEntry;
+  defaultBranch: string;
+  isOwner: boolean;
+  onRename: (name: string) => void;
+  onDelete: (name: string) => void;
+}) @{
+  const name = shortRefName(branch.name);
+  const isDefault = name === defaultBranch;
+  const tip = shortOid(branch.oid);
+  const href = treeHref(owner, repo, name, "");
+
+  <li className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+    <div className="min-w-0 flex-1">
+      <a
+        href={href as string}
+        className="block truncate text-[16px] font-semibold text-primary no-underline hover:underline"
+        title={name as string}
+      >
+        {name as string}
+      </a>
+      <p
+        className="mt-0.5 font-mono text-[13px] text-muted-foreground"
+        title={branch.oid as string}
+      >
+        {tip as string}
+        @if (isDefault) {
+          <span className="ml-2 font-sans text-[13px] text-muted-foreground">
+            · default
+          </span>
+        }
+      </p>
+    </div>
+    @if (isOwner) {
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={isDefault}
+          title={isDefault ? DEFAULT_SOFT_PROTECT_TITLE : undefined}
+          onClick={() => {
+            if (!isDefault) onRename(name);
+          }}
+        >
+          Rename
+        </Button>
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={isDefault}
+          title={isDefault ? DEFAULT_SOFT_PROTECT_TITLE : undefined}
+          onClick={() => {
+            if (!isDefault) onDelete(name);
+          }}
+        >
+          Delete
+        </Button>
+      </div>
+    }
+  </li>
+}

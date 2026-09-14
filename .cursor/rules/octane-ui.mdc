@@ -1,0 +1,15 @@
+---
+description: Octane .tsrx / web UI authoring rules for Octanest
+globs: apps/web/**/*.{tsrx,tsx,ts}
+alwaysApply: false
+---
+
+# Octane UI (`apps/web`)
+
+- Prefer `.tsrx` with `function Comp() @{ … }`. Do not mix `return (` JSX with `@if` / `@{`.
+- Control flow: `@if` / `@else` only (no `@else if`); `@for (…; key …)`; `@switch`.
+- Text inputs: `onInput` + `value`. Not React synthetic `onChange` for per-edit typing.
+- Server/session data: `@octanejs/tanstack-query` via `src/lib/session-queries.ts` and cache helpers. Local `useState` for forms only.
+- Auth forms: `method="post" action="#"`, submit controls `type="button"` when handling in JS.
+- Bindings: use existing `@octanejs/*` packages. Do not alias `react` → Octane.
+- Full skill: `.agents/skills/octane/SKILL.md` · reference: https://octanejs.dev/llms.txt

@@ -88,7 +88,24 @@ pub fn build_email_sender_for_settings(settings: &AuthSettingsRow) -> Arc<dyn Em
             );
             Arc::new(LogSink)
         }
-        _ => Arc::new(LogSink),
+        other => {
+            let smtp_set = std::env::var("OCTANEST_SMTP_URL")
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false);
+            let resend_set = std::env::var("OCTANEST_RESEND_API_KEY")
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false);
+            if other == "log" && (smtp_set || resend_set) {
+                tracing::warn!(
+                    target: "octanest.mail",
+                    email_provider = %other,
+                    smtp_configured = smtp_set,
+                    resend_configured = resend_set,
+                    "email_provider is log — outbound mail will not use SMTP/Resend ENV; set Admin → Auth to smtp/resend, or run make up-with-dev-auth (promotes log→smtp)"
+                );
+            }
+            Arc::new(LogSink)
+        }
     }
 }
 

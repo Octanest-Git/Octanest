@@ -96,10 +96,23 @@ pub async fn update_profile(
                     "email or username already taken",
                 ));
             }
+        } else if ctx
+            .db
+            .find_organization_by_slug(&username)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
+            return Err(AppError::new(
+                "auth.taken",
+                "email or username already taken",
+            ));
         }
+        // FS-then-DB: move `{old}/` → `{new}/` before rewriting users.username.
+        crate::git::rename_owner_repos_dir(&ctx.repos_dir, &existing.username, &username).await?;
     }
 
-    let updated = ctx
+    let updated = match ctx
         .db
         .update_user_profile(
             &session.user_id,
@@ -109,7 +122,46 @@ pub async fn update_profile(
             existing.avatar_path.as_deref(),
         )
         .await
-        .map_err(db_err)?;
+    {
+        Ok(u) => u,
+        Err(e) => {
+            if username != existing.username {
+                // Best-effort compensate: put owner dir back if DB write failed.
+                let _ = crate::git::rename_owner_repos_dir(
+                    &ctx.repos_dir,
+                    &username,
+                    &existing.username,
+                )
+                .await;
+            }
+            return Err(db_err(e));
+        }
+    };
+
+    let updated = if let Some(branch) = req.default_branch {
+        let branch = branch.trim().to_string();
+        if branch.is_empty() || branch.len() > 100 {
+            return Err(AppError::new(
+                "auth.invalid_default_branch",
+                "default branch name must be 1–100 characters",
+            ));
+        }
+        if !branch
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '/' || c == '.')
+        {
+            return Err(AppError::new(
+                "auth.invalid_default_branch",
+                "default branch name has invalid characters",
+            ));
+        }
+        ctx.db
+            .set_user_default_branch(&session.user_id, &branch)
+            .await
+            .map_err(db_err)?
+    } else {
+        updated
+    };
 
     Ok(user_to_public(&updated))
 }

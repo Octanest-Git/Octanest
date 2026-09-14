@@ -17,22 +17,22 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Multi-DB Storage** - SQLite, PostgreSQL, and MySQL via one storage abstraction
 - [x] **Phase 3: Brand Shell & Theme** - Octanest mark, chrome, light/dark with system default (completed 2026-09-09)
 - [x] **Phase 4: Auth Sessions & Email** - Signup, login, logout, sessions, profile, email providers (completed 2026-09-10)
-- [ ] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset
-- [ ] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard
-- [ ] **Phase 7: Git Repos & Browse** - gitoxide filesystem repos, create, browse, branches, archives
-- [ ] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens
-- [ ] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
-- [ ] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement
-- [ ] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
+- [x] **Phase 5: Cloud Verify & Reset** - Open cloud signup, email verify gate, password reset (completed 2026-09-11)
+- [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
+- [x] **Phase 7: Git Repos & Browse** - system git CLI filesystem repos, create, browse, branches, archives (completed 2026-09-13)
+- [x] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens (completed 2026-09-13)
+- [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
+- [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
+- [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
-- [ ] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
-- [ ] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
+- [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
+- [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
 - [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
-- [ ] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth
+- [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth
 - [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
@@ -140,7 +140,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. On Octanest Cloud, unverified users cannot perform privileged actions (at minimum: create repository) until email is verified
   3. When an email provider is configured, user can reset password via an email link
 
-**Plans**: TBD
+**Plans**: 7/7 plans executed
+
+- [x] 05-01-PLAN.md
+- [x] 05-02-PLAN.md
+- [x] 05-03-PLAN.md
+- [x] 05-04-PLAN.md
+- [x] 05-05-PLAN.md
+- [x] 05-06-PLAN.md
+- [x] 05-07-PLAN.md
+
+- [x] `05-01-PLAN.md` — Token schema/CRUD + UserPublic.email_verified field
+- [x] `05-02-PLAN.md` — Tracer: OTP verify → require_verified / privileged_ping
+- [x] `05-03-PLAN.md` — Verify issue/resend/rate limits, signup auto-send, admin seed, AUTH-05
+- [x] `05-04-PLAN.md` — Password reset request/redeem RPCs (AUTH-12)
+- [x] `05-05-PLAN.md` — IdP-trust verified marking + clear_email_verification helper
+- [x] `05-06-PLAN.md` — rpc-gen, input-otp gate, `/verify`, VerifyBanner
+- [x] `05-07-PLAN.md` — `/reset-password`, forgot link, disabled New repository CTA
+
 **UI hint**: yes
 
 ### Phase 6: Self-Host Admin Bootstrap
@@ -153,12 +170,48 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. On self-host, when `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin account
   2. On self-host, when those env vars are absent, an empty instance shows a one-time wizard to create the admin, then continues with normal signup rules
 
-**Plans**: TBD
+**Plans**: 10/10 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 06-00-PLAN.md — Wave 0 Nyquist stubs (API/web/dialect + index SSR gate)
+- [x] 06-01-PLAN.md — 0006 bootstrap flags schema + DTOs
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 06-02-PLAN.md — Tracer AUTH-06 ENV seed + confirm credentials (D-14 gate)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 06-03-PLAN.md — AUTH-07 wizard + strict RPC allowlist + SSO reject
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 06-04-PLAN.md — allow_signup RPC/admin/provider_config enforcement
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 06-05-PLAN.md — SSR Cookie-forward + shared root access gate + `/` tree
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 06-06-PLAN.md — `/setup`, `/setup/credentials`, Switch
+- [x] 06-09-PLAN.md — `/dashboard` notFound + closed `/signup` SSR gate
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 06-08-PLAN.md — chrome omit + admin allow_signup Switch
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [x] 06-07-PLAN.md — Docs, REQUIREMENTS reframe, rpc-gen, COVERAGE
+
 **UI hint**: yes
 
 ### Phase 7: Git Repos & Browse
 
-**Goal**: Users can create filesystem-backed repos and browse history in the UI, powered primarily by gitoxide with a documented CLI fallback boundary
+**Goal**: Users can create filesystem-backed repos and browse history in the UI via system `git` CLI behind a `GitBackend` seam, with a documented future gitoxide path
 **Depends on**: Phase 5, Phase 6
 **Requirements**: GIT-01, GIT-05, GIT-06, GIT-07, GIT-08, GIT-09, GIT-10
 **Success Criteria** (what must be TRUE):
@@ -166,9 +219,80 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Authenticated (and verified, on cloud) user can create a public or private repository
   2. User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref
   3. User can create, rename, and delete branches from the web UI where permitted
-  4. Repository objects live on the local filesystem (volume-backed), and git operations use gitoxide with architecture docs allowing a `git` CLI backend swap
+  4. Repository objects live on the local filesystem (volume-backed), and git operations use the system `git` CLI with architecture docs allowing a future gitoxide backend swap
 
-**Plans**: TBD
+**Plans**: 19/19 executed + 3 gap-closure planned (07-19..07-21)
+Plans:
+**Wave 16 (gap closure)** *(blocked on verification gaps CR-01/CR-02)*
+
+- [x] 07-19-PLAN.md — CR-02 branch argv injection + soft-protect integrity
+- [x] 07-20-PLAN.md — CR-01 archive/--output injection + WR-02 raw slash parity
+- [x] 07-21-PLAN.md — WR-01 create compensate + WR-03 hierarchical ref parse
+
+**Wave 1**
+
+- [x] 07-00-PLAN.md — Wave 0 Nyquist Rust stubs (git crate, repo_*, dialect)
+- [x] 07-16-PLAN.md — Wave 0 web stubs (/new + home CTA)
+- [x] 07-01-PLAN.md — One-way gates D-14/D-33 + REQUIREMENTS/ROADMAP amend + COVERAGE
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 07-02-PLAN.md — Schema 0007 + validators + proceed gate
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 07-12-PLAN.md — Tracer: GitBackend CLI create → bare disk
+- [x] 07-17-PLAN.md — Fail-boot git gate + Dockerfile/Compose repos volume
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 07-13-PLAN.md — Minimal /new + empty Code Quick setup
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 07-03-PLAN.md — Create templates, SPDX/gitignore, duplicate inline error
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 07-04-PLAN.md — Dashboard home + default branch/visibility settings
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 07-05-PLAN.md — Browse APIs + ACL 404 + raw HTTP
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [x] 07-14-PLAN.md — Markdown sanitize + Shiki + tsrx/ripple grammars
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [x] 07-15-PLAN.md — Code/tree/blob Octane routes + integration tests
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [x] 07-06-PLAN.md — Commits, commit detail, compare, blame
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [x] 07-07-PLAN.md — Branch CRUD soft-protect API
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [x] 07-18-PLAN.md — Branches/Tags UI + dialogs
+- [x] 07-08-PLAN.md — Archives zip/tar.gz + clone box
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
+- [x] 07-09-PLAN.md — Repo settings visibility + soft-delete
+
+**Wave 14** *(blocked on Wave 13 completion)*
+
+- [x] 07-10-PLAN.md — Factory reset scope + orphan reconcile + gc + CONFIGURATION
+
+**Wave 15** *(blocked on Wave 14 completion)*
+
+- [x] 07-11-PLAN.md — ARCHITECTURE GitBackend docs + VALIDATION + rpc-gen smoke
+
 **UI hint**: yes
 
 ### Phase 8: Git HTTPS & PATs
@@ -181,7 +305,44 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can create, list, and revoke personal access tokens for HTTPS git (and RPC/API where applicable)
   2. User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth
 
-**Plans**: TBD
+**Plans**: 14/14 plans executed (waves 0–7)
+
+- [x] 08-00-PLAN.md
+- [x] 08-01-PLAN.md
+- [x] 08-02-PLAN.md
+- [x] 08-03-PLAN.md
+- [x] 08-04-PLAN.md
+- [x] 08-05-PLAN.md
+- [x] 08-06-PLAN.md
+- [x] 08-07-PLAN.md
+- [x] 08-08-PLAN.md
+- [x] 08-09-PLAN.md
+- [x] 08-10-PLAN.md
+- [x] 08-11-PLAN.md
+- [x] 08-12-PLAN.md
+- [x] 08-13-PLAN.md
+
+- [x] `08-00-PLAN.md` — Wave 0 RED: pat_rpc + git_smart_http + dialect_pats stubs
+- [x] `08-01-PLAN.md` — Wave 0 RED: tokens + CloneBox how-to Vitest stubs
+- [x] `08-02-PLAN.md` — Reversibility gates D-08/D-18/D-21 (+ D-01 PAT HTTPS-only)
+- [x] `08-03-PLAN.md` — Schema 0008_pats + pat_types + DB CRUD + reserved aliases
+- [x] `08-04-PLAN.md` — **Tracer**: classic PAT RPC + Smart HTTP public fetch + password reject
+- [x] `08-05-PLAN.md` — Fine-grained PAT create RPC
+- [x] `08-06-PLAN.md` — Smart HTTP ACL/push/403/429/unverified push
+- [x] `08-07-PLAN.md` — Traefik `.git` PathRegexp + smoke-git-https
+- [x] `08-08-PLAN.md` — make rpc-gen + API.md
+- [x] `08-09-PLAN.md` — `/settings/tokens` list/nav/revoke
+- [x] `08-10-PLAN.md` — Classic create + one-time reveal
+- [x] `08-11-PLAN.md` — Fine-grained create UI
+- [x] `08-12-PLAN.md` — CloneBox/QuickSetup PAT how-to
+- [ ] `08-13-PLAN.md` — Docs + phase gate sweep
+
+**Cross-cutting constraints:**
+
+- Token list empty state shows empty hero and Generate new token entry (GitHub-shaped)
+- HTTPS how-to teaches username + PAT-as-password with aliases username / git / token / oauth2
+- Classic and fine-grained are separate create flows with distinct routes (GitHub dual model)
+
 **UI hint**: yes
 
 ### Phase 9: Git SSH
@@ -194,7 +355,40 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**Plans**: TBD
+**Plans**: 10/10 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 09-00-PLAN.md — Wave 0 Rust/smoke stubs (ssh_key + git_ssh + dialect + smoke)
+- [x] 09-01-PLAN.md — Wave 0 web stubs (settings ssh-keys + CloneBox SSH)
+- [x] 09-02-PLAN.md — Confirm D-SSH-02 + migration 0009 + DB CRUD + types
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 09-03-PLAN.md — Tracer: sshKey RPC + russh public upload-pack
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 09-04-PLAN.md — ACL parity, receive-pack, rate-limit, key caps
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 09-05-PLAN.md — Compose TCP 2222 + host keys + smoke-git-ssh
+- [x] 09-06-PLAN.md — make rpc-gen + API.md SSH docs
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 09-07-PLAN.md — /settings/ssh-keys UI + nav + revoke confirm
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 09-08-PLAN.md — CloneBox scp-style SSH URL + how-to CTA
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 09-09-PLAN.md — CONFIGURATION/ARCHITECTURE + VALIDATION phase gate
+
 **UI hint**: yes
 
 ### Phase 10: Orgs & Permissions
@@ -208,7 +402,53 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Org owner can assign member roles that control repo access; repo owner can set visibility and collaborator permissions
   3. Unauthorized users cannot read private repos or push without permission
 
-**Plans**: TBD
+**Plans**: 14/14 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 10-00-PLAN.md — Wave 0 Rust stubs (org_/collab/dialect_orgs/coalesce)
+- [x] 10-01-PLAN.md — Wave 0 web stubs (/orgs/new, owner picker, members, collaborators)
+- [x] 10-02-PLAN.md — Confirm 0010 schema door + DB helpers + org_types
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 10-13-PLAN.md — Tracer org.create RPC + /orgs/new
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 10-03-PLAN.md — Polymorphic OwnerRef + repo.create owner slug
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 10-04-PLAN.md — Central Capability ACL + resolve_repo_for_read + can_admin
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [x] 10-05-PLAN.md — Org members/roles + member_base_permission
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [x] 10-06-PLAN.md — Email invites + closed-signup accept + /invites/$token
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [x] 10-07-PLAN.md — Repo collaborators CRUD (personal + org) + visibility admin gate
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [x] 10-08-PLAN.md — Mutate/Smart HTTP/PAT ∩ ACL consumers
+- [x] 10-09-PLAN.md — user.lookup live username autocomplete
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [x] 10-10-PLAN.md — Org overview/settings/members/invites UI
+- [x] 10-11-PLAN.md — /new owner picker + collaborators settings panel
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [x] 10-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
+
 **UI hint**: yes
 
 ### Phase 11: Issues
@@ -222,7 +462,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User can comment on issues and assign labels and assignees
   3. User can link issues and PRs by reference
 
-**Plans**: TBD
+**Plans**: 13/13 plans executed
+
+Plans:
+
+- [x] 11-00-PLAN.md — Wave 0 Rust Nyquist stubs (issue_*/dialect/factory_reset)
+- [x] 11-01-PLAN.md — Wave 0 Vitest stubs (Issues UI + markdown.issues)
+- [x] 11-02-PLAN.md — Schema door: 0011_issues + counters + issue_types
+- [x] 11-03-PLAN.md — Tracer: create/get/list + Issues tab + list/new/detail
+- [x] 11-04-PLAN.md — Lifecycle: edit/close/reopen/history/Admin delete
+- [x] 11-05-PLAN.md — Comments + Write|Preview + comment history
+- [x] 11-06-PLAN.md — Org/repo labels defs + issue assignment
+- [x] 11-07-PLAN.md — Multi-assignees + Read+ eligibility
+- [x] 11-08-PLAN.md — GitHub eight emoji reactions
+- [x] 11-09-PLAN.md — Linked PR stubs + manual link control
+- [x] 11-10-PLAN.md — remark-github #N / owner/repo#N autolink
+- [x] 11-11-PLAN.md — List filters + Open/Closed/All + offset pages
+- [x] 11-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
+
 **UI hint**: yes
 
 ### Phase 12: Pull Requests
@@ -264,7 +521,23 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. Operator can configure LFS storage on the filesystem (volume-backed) for the instance
   2. User can push and fetch Git LFS objects for a repository
 
-**Plans**: TBD
+**Plans**: 13/13 plans executed
+
+Plans:
+
+- [x] 14-00-PLAN.md — Wave 0 Rust/smoke stubs (lfs_batch, store, dialect, factory reset)
+- [x] 14-01-PLAN.md — Wave 0 Vitest stubs (pointer, Settings, Admin, browser)
+- [x] 14-02-PLAN.md — Tracer: Batch + basic transfer into OCTANEST_LFS_DIR
+- [x] 14-03-PLAN.md — PAT Basic/ACL + Admin per-repo enable
+- [x] 14-04-PLAN.md — Max object size + quotas + Admin overrides
+- [x] 14-05-PLAN.md — OID dedup/refcount + verify + Range GET
+- [x] 14-06-PLAN.md — LFS GC job + factory reset wipe LFS_DIR
+- [x] 14-07-PLAN.md — Compose OCTANEST_LFS_DIR + operator docs
+- [x] 14-08-PLAN.md — repo.lfs / admin.lfs RPC + rpc-gen
+- [x] 14-09-PLAN.md — Repo Settings LFS toggle + usage breakdown
+- [x] 14-10-PLAN.md — Admin quotas + instance usage UI
+- [x] 14-11-PLAN.md — Pointer badge, Download, LFS browser
+- [x] 14-12-PLAN.md — smoke-git-lfs + phase gate
 
 ### Phase 15: Releases & Transfer
 
@@ -277,7 +550,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. User with permission can rename a repository
   3. User with permission can transfer a repository to another user or organization
 
-**Plans**: TBD
+**Plans:** 7/7 plans executed
+
+Plans:
+
+- [x] 15-00-PLAN.md — Wave 0 Nyquist stubs (release/rename/transfer/dialect/web)
+- [x] 15-01-PLAN.md — Tracer: tag-bound releases RPC + shared migration
+- [x] 15-06-PLAN.md — Releases tab + list/create/detail notes UI
+- [x] 15-02-PLAN.md — Release assets volume, upload/download, Compose/Vite
+- [x] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
+- [x] 15-04-PLAN.md — Admin transfer with type-confirm + cascade
+- [x] 15-05-PLAN.md — Settings danger zone UI, can_admin chrome, factory reset, docs
+
 **UI hint**: yes
 
 ### Phase 16: In-Repo Search
@@ -347,7 +631,24 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Registry packages respect the same auth/visibility rules as their owning repo/org
   4. User can list and delete package versions they are permitted to manage
 
-**Plans**: TBD
+**Plans:** 13/13 plans executed
+
+Plans:
+
+- [x] 20-00-PLAN.md — Wave 0 Rust RED stubs (oci/npm/generic/acl/rpc/dialect)
+- [x] 20-01-PLAN.md — Wave 0 web Vitest stubs + smoke-packages
+- [x] 20-02-PLAN.md — Schema, PACKAGES_DIR, Traefik/Vite, reserved slugs
+- [x] 20-03-PLAN.md — CA blob store + package ACL + PAT package scopes
+- [x] 20-04-PLAN.md — Tracer: generic PUT/GET/DELETE + mount /v2|/npm|/generic
+- [x] 20-05-PLAN.md — OCI Distribution Spec push/pull/tags/delete + Bearer realm
+- [x] 20-06-PLAN.md — npm publish/install packument + tarball
+- [x] 20-07-PLAN.md — npm dist-tags, deprecate, search
+- [x] 20-08-PLAN.md — Session RPC list/delete with type-to-confirm
+- [x] 20-09-PLAN.md — Quotas reject + Admin quota RPC + blob GC
+- [x] 20-10-PLAN.md — Owner/repo packages UI + delete dialog
+- [x] 20-11-PLAN.md — Admin quota UI + tokens package scopes
+- [x] 20-12-PLAN.md — Docs + smoke + phase gate
+
 **UI hint**: yes
 
 ### Phase 21: Social & Explore
@@ -387,29 +688,30 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Monorepo Scaffold | 0/TBD | Not started | - |
-| 2. Multi-DB Storage | 0/4 | Planned | - |
+| 1. Monorepo Scaffold | 5/5 | Complete    | 2026-09-09 |
+| 2. Multi-DB Storage | 5/5 | Complete    | 2026-09-09 |
 | 3. Brand Shell & Theme | 6/6 | Complete    | 2026-09-09 |
 | 4. Auth Sessions & Email | 8/8 | Complete    | 2026-09-10 |
-| 5. Cloud Verify & Reset | 0/TBD | Not started | - |
-| 6. Self-Host Admin Bootstrap | 0/TBD | Not started | - |
-| 7. Git Repos & Browse | 0/TBD | Not started | - |
-| 8. Git HTTPS & PATs | 0/TBD | Not started | - |
-| 9. Git SSH | 0/TBD | Not started | - |
-| 10. Orgs & Permissions | 0/TBD | Not started | - |
-| 11. Issues | 0/TBD | Not started | - |
+| 5. Cloud Verify & Reset | 7/7 | Complete    | 2026-09-11 |
+| 6. Self-Host Admin Bootstrap | 10/10 | Complete    | 2026-09-12 |
+| 7. Git Repos & Browse | 22/22 | Complete    | 2026-09-13 |
+| 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
+| 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
+| 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
+| 11. Issues | 13/13 | Complete    | 2026-09-14 |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
-| 14. Git LFS | 0/TBD | Not started | - |
-| 15. Releases & Transfer | 0/TBD | Not started | - |
+| 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
+| 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |
-| 20. Packages Registry | 0/TBD | Not started | - |
+| 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 0/TBD | Not started | - |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-09-09*
+*Last updated: 2026-09-14 — forge-core pre-ship: phases 11/14/15/20 Complete*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*

@@ -1,11 +1,11 @@
 ---
 phase: 2
 slug: multi-db-storage
-status: complete
+status: validated
 nyquist_compliant: true
 wave_0_complete: true
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-13
 ---
 
 # Phase 2 — Validation Strategy
@@ -101,3 +101,16 @@ updated: 2026-09-09
 | Resolved | 3 + docker smoke simplified to plain `docker` |
 | Escalated / manual | 1 (live Compose smoke bring-up — by design) |
 | Notes | Dropped WSL `docker.exe` / temp `DOCKER_CONFIG` hacks from `scripts/compose-smoke.sh` |
+
+---
+
+## Validation Audit 2026-09-13
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 1 (frontmatter lifecycle `#2117`: `status: complete` → `validated`) |
+| Resolved | 1 — frontmatter set `status: validated`, `nyquist_compliant: true` retained, `updated: 2026-09-13` |
+| Re-verified green | `cargo test -p octanest-db --lib resolve_dialect` (4 ok); `cargo test -p octanest-db --lib migration_parity` (1 ok); `cargo test -p octanest-api --test rpc_db_probe` (3 ok, no `DATABASE_URL` required) |
+| PLAT-07 / PLAT-08 | COVERED in Per-Task Verification Map (all rows green except 02-04-T3) |
+| Escalated / manual | 1 kept by design — live Compose smoke (`make smoke*`) remains Manual-Only |
+| Implementation files modified | none |

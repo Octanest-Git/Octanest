@@ -1,0 +1,9 @@
+{
+  "command": "bunx vitest run src/routes/dashboard.integration.test.ts --reporter=tap",
+  "exitCode": 1,
+  "targetTest": "resolves to notFound instead of soft-redirect",
+  "targetFile": "src/routes/dashboard.integration.test.ts",
+  "expected": "/dashboard beforeLoad throws notFound() — hard 404, no soft redirect to / or login",
+  "actual": "beforeLoad is undefined; DashboardRedirect soft-redirects via window.location.replace(\"/\")",
+  "output": "TAP version 13\n# tests 1\n# pass 0\n# fail 1\nnot ok 1 - resolves to notFound instead of soft-redirect\n  ---\n  error:\n    name: \"AssertionError\"\n    message: \"dashboard beforeLoad must invoke notFound(): expected undefined to be type of 'function'\"\n  ...\n"
+}

@@ -2,8 +2,8 @@
 
 use cookie::Cookie;
 use octanest_core::{
-    is_reserved_username, validate_username, AppError, LoginRequest, ProviderMode, SignupRequest,
-    UserPublic,
+    is_reserved_username, validate_username, AppError, LoginRequest, ProviderMode, Role,
+    SignupRequest, UserPublic,
 };
 use octanest_db::UserRow;
 use uuid::Uuid;
@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::auth::external::is_placeholder_username;
 use crate::auth::password::{hash_password_str, verify_password, PasswordError, MIN_PASSWORD_LEN};
 use crate::auth::session::clear_session_cookie;
+use crate::auth::verify_reset;
 use crate::email::OutboundEmail;
 use crate::rpc::{CookieChange, RpcCtx};
 
@@ -23,8 +24,15 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
         display_name: row.display_name.clone(),
         bio: row.bio.clone(),
         avatar_url: row.avatar_path.clone(),
-        is_admin: row.is_admin,
+        role: row.role,
         profile_incomplete: is_placeholder_username(&row.username),
+        email_verified: row.email_verified_at.is_some(),
+        must_change_credentials: row.must_change_credentials,
+        default_branch: if row.default_branch.trim().is_empty() {
+            "main".into()
+        } else {
+            row.default_branch.clone()
+        },
     }
 }
 
@@ -46,7 +54,7 @@ fn map_username_err(msg: String) -> AppError {
     }
 }
 
-fn normalize_email(raw: &str) -> Result<String, AppError> {
+pub(crate) fn normalize_email(raw: &str) -> Result<String, AppError> {
     let email = raw.trim().to_ascii_lowercase();
     if email.is_empty() || !email.contains('@') || email.starts_with('@') || email.ends_with('@') {
         return Err(AppError::new("auth.invalid_email", "invalid email address"));
@@ -109,7 +117,7 @@ fn session_err(e: crate::auth::session::AuthError) -> AppError {
     }
 }
 
-async fn issue_session(
+pub(crate) async fn issue_session(
     ctx: &mut RpcCtx,
     user_id: &str,
     remember_me: bool,
@@ -126,6 +134,26 @@ async fn issue_session(
 pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPublic, AppError> {
     let mode = resolve_provider_mode(ctx).await?;
     require_local(mode)?;
+
+    // Empty instance without ENV seed must use `/setup` (AUTH-07) — never open signup.
+    if crate::auth::bootstrap::needs_setup(&ctx.db).await? {
+        return Err(AppError::new(
+            "auth.setup_required",
+            "Complete instance setup before signing up.",
+        ));
+    }
+
+    // Post-bootstrap: allow_signup governs local registration (D-05/D-07); fail closed.
+    let allow_signup = match ctx.db.get_auth_settings().await {
+        Ok(s) => s.allow_signup,
+        Err(_) => false,
+    };
+    if !allow_signup {
+        return Err(AppError::new(
+            "auth.signup_closed",
+            "Sign-up is closed for this instance.",
+        ));
+    }
 
     let req: SignupRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid signup input: {e}"))
@@ -159,12 +187,9 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
         .await
         .map_err(db_err)?
         .is_some()
-        || ctx
-            .db
-            .find_user_by_username(&username)
+        || crate::repo::login_slug_taken(&ctx.db, &username)
             .await
             .map_err(db_err)?
-            .is_some()
     {
         return Err(AppError::new(
             "auth.taken",
@@ -184,7 +209,7 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
             &display_name,
             "",
             None,
-            false,
+            Role::User,
         )
         .await
         .map_err(db_err)?;
@@ -202,6 +227,11 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
     };
     if let Err(e) = ctx.email.send(welcome).await {
         tracing::error!(error = %e, "welcome email failed");
+    }
+
+    // Auto-send verify email on local signup (D-23); mail/issue errors must not fail signup (T-05-08).
+    if let Err(e) = verify_reset::issue_and_send_verify(ctx, &row.id, &email, &username).await {
+        tracing::error!(code = %e.code, "signup verify email issue failed");
     }
 
     Ok(user_to_public(&row))
@@ -314,7 +344,15 @@ pub async fn me(ctx: &RpcCtx) -> Result<UserPublic, AppError> {
 /// Public provider mode for UI (D-14–D-16); no auth required.
 pub async fn provider_config(ctx: &RpcCtx) -> Result<octanest_core::ProviderConfigPublic, AppError> {
     let mode = resolve_provider_mode(ctx).await.unwrap_or(ProviderMode::Local);
-    Ok(octanest_core::ProviderConfigPublic { mode })
+    // Fail closed: missing/error settings → allow_signup false (D-07 / T-06-01).
+    let allow_signup = match ctx.db.get_auth_settings().await {
+        Ok(s) => s.allow_signup,
+        Err(_) => false,
+    };
+    Ok(octanest_core::ProviderConfigPublic {
+        mode,
+        allow_signup,
+    })
 }
 
 /// Clear-cookie helper for HTTP layer when CookieChange::Clear is set.

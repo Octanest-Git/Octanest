@@ -18,13 +18,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: free disk for Rust link
+        # ubuntu-latest fills quickly linking many debug integration binaries.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/share/swift || true
+          df -h /
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest
+      - name: install mold linker
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mold
       - name: cargo nextest
-        run: cargo nextest run --workspace --profile ci
+        # Full-workspace debug link has hit lld bus errors (signal 7) on GHA.
+        # mold + modest job count + thinner debuginfo keeps link stable/disk-safe;
+        # retry once on flake.
+        env:
+          CARGO_BUILD_JOBS: "2"
+          CARGO_INCREMENTAL: "0"
+          CARGO_PROFILE_DEV_DEBUG: "line-tables-only"
+          CARGO_PROFILE_TEST_DEBUG: "line-tables-only"
+          RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+        run: |
+          cargo nextest run --workspace --profile ci \
+            || cargo nextest run --workspace --profile ci
 
   web-octane:
     name: web-octane
@@ -36,9 +55,7 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
-      - name: Playwright Chromium (Vitest e2e)
-        run: bunx playwright install --with-deps chromium
-      - name: vitest (api-client + web unit/integration/e2e)
+      - name: vitest (api-client + web unit/integration)
         run: bun run test
       - name: web build
         run: bunx turbo run build --filter=@octanest/web

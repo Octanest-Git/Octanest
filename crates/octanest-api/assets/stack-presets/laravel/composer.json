@@ -1,0 +1,6 @@
+{
+  "name": "app/laravel-stub",
+  "require": {
+    "php": "^8.2"
+  }
+}
