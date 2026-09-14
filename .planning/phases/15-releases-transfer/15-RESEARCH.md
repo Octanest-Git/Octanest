@@ -489,24 +489,23 @@ HTTP (non-RPC) for large bodies:
 
 **If wrong:** Discuss-phase / planner checkpoint before locking ENV defaults and transfer collaborator policy.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact migration number**
+1. **Exact migration number** — RESOLVED
    - What we know: SQLite migrations currently end at `0010_orgs_acl`.
-   - What's unclear: Numbers claimed by Phases 11–14.
-   - Recommendation: Plan as “next free `00NN_releases_redirects` after LFS/issues land”; do not hardcode `0011`.
+   - Resolution: Use next free `00NN_releases_redirects` across sqlite/postgres/mysql at execute time; do not hardcode `0011` (matches plan 15-01 assumptions).
 
-2. **Rename confirmation**
+2. **Rename confirmation** — RESOLVED
    - What we know: Transfer locks type-confirm; rename does not.
-   - Recommendation: Rename can be a simple Admin form (GitHub); transfer keeps type-confirm.
+   - Resolution: Rename is a simple Admin form (no type-confirm); transfer keeps type-the-repo-name confirm (D-REL-10; plans 15-03/15-05).
 
-3. **SSH redirect scope**
+3. **SSH redirect scope** — RESOLVED
    - What we know: Gitea HTTP redirects existed first; SSH followed later.
-   - Recommendation: Ship HTTPS + web redirects in core plans; include SSH redirect in same phase if cheap (shared resolve helper), else note as PE.
+   - Resolution: Include SSH redirect in Phase 15 via the shared resolve helper alongside HTTPS/web/git Smart HTTP (plan 15-03; not deferred).
 
-4. **Latest release semantics**
+4. **Latest release semantics** — RESOLVED
    - GitHub “latest” excludes draft/prerelease.
-   - Recommendation: Optional `release.latest` later; Phase 15 list/detail sufficient for GIT-14/15.
+   - Resolution: No `release.latest` in Phase 15; list/get/detail suffice for GIT-14/15 (deferred).
 
 ## Environment Availability
 
@@ -656,7 +655,7 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 | Pitfalls | HIGH | Reconcile races, draft leak, redirect supersede documented |
 
 ### Open Questions
-- Migration number after Phases 11–14; SSH redirect as PE vs must-have; ENV default confirmation (90d / 512MiB).
+- RESOLVED: next-free `00NN` migration; rename without type-confirm; SSH via shared helper in 15-03; no `release.latest`; ENV defaults 90d / 512 MiB locked in plans.
 
 ### Ready for Planning
-Research complete. Planner can now create PLAN.md files.
+Research complete. Plans created; open questions closed to match plan locks.
