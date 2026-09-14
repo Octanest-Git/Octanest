@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 09
 current_phase_name: Git SSH
-current_plan: 9
+current_plan: 10
 status: executing
-stopped_at: Completed 09-07-PLAN.md
-last_updated: "2026-09-14T00:18:17.362Z"
+stopped_at: Completed 09-08-PLAN.md
+last_updated: "2026-09-14T00:20:44.293Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 09 execution started
-state_head: 9f9f25cfce1af80f127f8b729c9d255f8c10eaff
+state_head: 07b828bf680eedbb039be7cc03c56e7323a7c5e3
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 85
+  completed_plans: 86
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Current Plan: 9
+Current Plan: 10
 Total Plans in Phase: 10
 Phase: 09 (Git SSH) — EXECUTING
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
@@ -138,6 +138,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 09 P05 | 15min | 2 tasks | 5 files |
 | Phase 09 P06 | 12min | 1 tasks | 3 files |
 | Phase 09 P07 | 25min | 2 tasks | 8 files |
+| Phase 09 P08 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -305,6 +306,7 @@ Recent decisions affecting current work:
 - [Phase 09]: SSH ACL reuses Smart HTTP helpers; denials via git stderr
 - [Phase 09]: SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket
 - [Phase 09]: Compose publishes SSH on TCP 2222 only; never Traefik for SSH
+- [Phase 09]: CloneBox SSH is scp-style; Port hint when OCTANEST_SSH_PORT ≠ 22
 
 ### Pending Todos
 
@@ -326,6 +328,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T00:18:17.276Z
-Stopped at: Completed 09-07-PLAN.md
+Last session: 2026-09-14T00:20:44.210Z
+Stopped at: Completed 09-08-PLAN.md
 Resume file: None
