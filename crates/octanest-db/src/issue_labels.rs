@@ -167,6 +167,364 @@ pub async fn find_label_by_id(pool: &DbPool, id: &str) -> Result<Option<LabelRow
     }
 }
 
+pub async fn update_label(
+    pool: &DbPool,
+    id: &str,
+    name: &str,
+    color: &str,
+    description: &str,
+) -> Result<LabelRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE labels SET name = $2, color = $3, description = $4, updated_at = NOW()
+WHERE id = $1",
+            )
+            .bind(id)
+            .bind(name)
+            .bind(color)
+            .bind(description)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update label failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE labels SET name = ?, color = ?, description = ?, updated_at = UTC_TIMESTAMP()
+WHERE id = ?",
+            )
+            .bind(name)
+            .bind(color)
+            .bind(description)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update label failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE labels SET name = ?2, color = ?3, description = ?4,
+       updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(name)
+            .bind(color)
+            .bind(description)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update label failed: {e}"))?;
+        }
+    }
+    find_label_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update label failed: row missing after update".into())
+}
+
+pub async fn delete_label(pool: &DbPool, id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM labels WHERE id = $1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete label failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM labels WHERE id = ?")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete label failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM labels WHERE id = ?1")
+                .bind(id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete label failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn list_labels_for_org(pool: &DbPool, org_id: &str) -> Result<Vec<LabelRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_PG} WHERE org_id = $1 ORDER BY lower(name)"
+            ))
+            .bind(org_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list org labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_MYSQL} WHERE org_id = ? ORDER BY LOWER(name)"
+            ))
+            .bind(org_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list org labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_SQLITE} WHERE org_id = ?1 ORDER BY lower(name)"
+            ))
+            .bind(org_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list org labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+pub async fn list_labels_for_repo(pool: &DbPool, repo_id: &str) -> Result<Vec<LabelRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_PG} WHERE repo_id = $1 ORDER BY lower(name)"
+            ))
+            .bind(repo_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_MYSQL} WHERE repo_id = ? ORDER BY LOWER(name)"
+            ))
+            .bind(repo_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_SQLITE} WHERE repo_id = ?1 ORDER BY lower(name)"
+            ))
+            .bind(repo_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list repo labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+pub async fn list_hidden_label_ids(
+    pool: &DbPool,
+    repo_id: &str,
+) -> Result<Vec<String>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query("SELECT label_id FROM repo_hidden_labels WHERE repo_id = $1")
+                .bind(repo_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list hidden labels failed: {e}"))?;
+            rows.iter()
+                .map(|r| {
+                    r.try_get::<String, _>("label_id")
+                        .map_err(|e| format!("hidden label row: {e}"))
+                })
+                .collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query("SELECT label_id FROM repo_hidden_labels WHERE repo_id = ?")
+                .bind(repo_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list hidden labels failed: {e}"))?;
+            rows.iter()
+                .map(|r| {
+                    r.try_get::<String, _>("label_id")
+                        .map_err(|e| format!("hidden label row: {e}"))
+                })
+                .collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query("SELECT label_id FROM repo_hidden_labels WHERE repo_id = ?1")
+                .bind(repo_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list hidden labels failed: {e}"))?;
+            rows.iter()
+                .map(|r| {
+                    r.try_get::<String, _>("label_id")
+                        .map_err(|e| format!("hidden label row: {e}"))
+                })
+                .collect()
+        }
+    }
+}
+
+pub async fn set_repo_label_hidden(
+    pool: &DbPool,
+    repo_id: &str,
+    label_id: &str,
+    hidden: bool,
+) -> Result<(), String> {
+    if hidden {
+        match pool {
+            DbPool::Postgres(p) => {
+                sqlx::query(
+                    "INSERT INTO repo_hidden_labels (repo_id, label_id) VALUES ($1, $2)
+ON CONFLICT DO NOTHING",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hide label failed: {e}"))?;
+            }
+            DbPool::MySql(p) => {
+                sqlx::query(
+                    "INSERT IGNORE INTO repo_hidden_labels (repo_id, label_id) VALUES (?, ?)",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hide label failed: {e}"))?;
+            }
+            DbPool::Sqlite(p) => {
+                sqlx::query(
+                    "INSERT OR IGNORE INTO repo_hidden_labels (repo_id, label_id) VALUES (?1, ?2)",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("hide label failed: {e}"))?;
+            }
+        }
+    } else {
+        match pool {
+            DbPool::Postgres(p) => {
+                sqlx::query(
+                    "DELETE FROM repo_hidden_labels WHERE repo_id = $1 AND label_id = $2",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("unhide label failed: {e}"))?;
+            }
+            DbPool::MySql(p) => {
+                sqlx::query(
+                    "DELETE FROM repo_hidden_labels WHERE repo_id = ? AND label_id = ?",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("unhide label failed: {e}"))?;
+            }
+            DbPool::Sqlite(p) => {
+                sqlx::query(
+                    "DELETE FROM repo_hidden_labels WHERE repo_id = ?1 AND label_id = ?2",
+                )
+                .bind(repo_id)
+                .bind(label_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("unhide label failed: {e}"))?;
+            }
+        }
+    }
+    Ok(())
+}
+
+pub async fn list_labels_for_issue(
+    pool: &DbPool,
+    issue_id: &str,
+) -> Result<Vec<LabelRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_PG}
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id = $1
+ORDER BY lower(labels.name)"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_MYSQL}
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id = ?
+ORDER BY LOWER(labels.name)"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(&format!(
+                "{LABEL_SELECT_SQLITE}
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id = ?1
+ORDER BY lower(labels.name)"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue labels failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in &rows {
+                out.push(map_label!(r));
+            }
+            Ok(out)
+        }
+    }
+}
+
 /// Replace the label set on an issue (M:N via `issue_labels`).
 pub async fn set_issue_labels(
     pool: &DbPool,

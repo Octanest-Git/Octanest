@@ -633,6 +633,48 @@ export type LabelPublic = {
   hidden?: boolean;
 };
 
+export type CreateLabelRequest = {
+  scope: LabelScope;
+  owner: string;
+  repo?: string | null;
+  name: string;
+  color: string;
+  description?: string | null;
+};
+
+export type UpdateLabelRequest = {
+  id: string;
+  owner: string;
+  repo?: string | null;
+  name?: string | null;
+  color?: string | null;
+  description?: string | null;
+  hidden?: boolean | null;
+};
+
+export type DeleteLabelRequest = {
+  id: string;
+  owner: string;
+  repo?: string | null;
+};
+
+export type ListLabelsForRepoRequest = {
+  owner: string;
+  name: string;
+  includeHidden?: boolean | null;
+};
+
+export type LabelsListResponse = {
+  labels: LabelPublic[];
+};
+
+export type SetIssueLabelsRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  labelIds: string[];
+};
+
 export type IssuePublic = {
   id: string;
   repo_id: string;
@@ -927,6 +969,22 @@ export function createClient(opts: CreateClientOptions) {
         history: (input: IssueCommentRefRequest) =>
           rpcCall<CommentHistoryResponse>(opts, "issue.comments.history", input),
       },
+      labels: {
+        set: (input: SetIssueLabelsRequest) =>
+          rpcCall<IssuePublic>(opts, "issue.labels.set", input),
+      },
+    },
+    label: {
+      listForRepo: (input: ListLabelsForRepoRequest) =>
+        rpcCall<LabelsListResponse>(opts, "label.listForRepo", input),
+      listForOrg: (input: OrgSlugRequest) =>
+        rpcCall<LabelsListResponse>(opts, "label.listForOrg", input),
+      create: (input: CreateLabelRequest) =>
+        rpcCall<LabelPublic>(opts, "label.create", input),
+      update: (input: UpdateLabelRequest) =>
+        rpcCall<LabelPublic>(opts, "label.update", input),
+      delete: (input: DeleteLabelRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "label.delete", input),
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
@@ -1535,6 +1593,84 @@ export function issueCommentsHistoryQueryOptions(
     ] as const,
     queryFn: async () => {
       const res = await client.issue.comments.history(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLabelsSetMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "labels", "set"] as const,
+    mutationFn: async (input: SetIssueLabelsRequest) => {
+      const res = await client.issue.labels.set(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelListForRepoQueryOptions(
+  client: OctanestClient,
+  input: ListLabelsForRepoRequest,
+) {
+  return {
+    queryKey: [
+      "label",
+      "listForRepo",
+      input.owner,
+      input.name,
+      input.includeHidden ?? false,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.label.listForRepo(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelListForOrgQueryOptions(
+  client: OctanestClient,
+  input: OrgSlugRequest,
+) {
+  return {
+    queryKey: ["label", "listForOrg", input.slug] as const,
+    queryFn: async () => {
+      const res = await client.label.listForOrg(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "create"] as const,
+    mutationFn: async (input: CreateLabelRequest) => {
+      const res = await client.label.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "update"] as const,
+    mutationFn: async (input: UpdateLabelRequest) => {
+      const res = await client.label.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function labelDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["label", "delete"] as const,
+    mutationFn: async (input: DeleteLabelRequest) => {
+      const res = await client.label.delete(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

@@ -159,6 +159,75 @@ pub struct LabelPublic {
     pub hidden: bool,
 }
 
+/// Create org or repo label definition (Admin — D-ISS-07).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateLabelRequest {
+    pub scope: LabelScope,
+    /// Org slug (scope=org) or repo owner slug/username (scope=repo).
+    pub owner: String,
+    /// Repo name when `scope` is `repo`.
+    #[serde(default)]
+    pub repo: Option<String>,
+    pub name: String,
+    pub color: String,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+/// Update label fields and/or repo hide override for an org label.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateLabelRequest {
+    pub id: String,
+    /// Org slug or repo owner (auth context).
+    pub owner: String,
+    /// Repo name when mutating a repo-local label or toggling hide.
+    #[serde(default)]
+    pub repo: Option<String>,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub color: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    /// Hide/unhide an org label for a repo (requires `repo`).
+    #[serde(default)]
+    pub hidden: Option<bool>,
+}
+
+/// Delete a label definition (Admin).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteLabelRequest {
+    pub id: String,
+    pub owner: String,
+    #[serde(default)]
+    pub repo: Option<String>,
+}
+
+/// List effective (or include-hidden) labels for a repo.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListLabelsForRepoRequest {
+    pub owner: String,
+    pub name: String,
+    /// When true (Admin), include hidden org labels with `hidden: true`.
+    #[serde(default, rename = "includeHidden", alias = "include_hidden")]
+    pub include_hidden: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LabelsListResponse {
+    pub labels: Vec<LabelPublic>,
+}
+
+/// Replace issue label set by id (Write+ — D-ISS-07).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SetIssueLabelsRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "labelIds", alias = "label_ids")]
+    pub label_ids: Vec<String>,
+}
+
 /// Create-issue input (RPC wired in 11-03).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateIssueRequest {

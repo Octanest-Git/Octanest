@@ -1,6 +1,6 @@
 //! Issue RPC handlers — lifecycle + comments + history (ISS-01..02 / D-ISS-01..04 / D-ISS-09 / D-ISS-12 / D-ISS-20).
 
-mod acl;
+pub(crate) mod acl;
 
 use octanest_core::{
     AppError, CommentHistoryResponse, CommentRevisionPublic, CreateIssueCommentRequest,
@@ -74,6 +74,12 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         Ok(None) => String::new(),
         Err(e) => return Err(db_err(e)),
     };
+    let label_rows = ctx
+        .db
+        .list_labels_for_issue(&row.id)
+        .await
+        .map_err(db_err)?;
+    let labels = crate::label::label_rows_to_public(&label_rows);
     Ok(IssuePublic {
         id: row.id.clone(),
         repo_id: row.repo_id.clone(),
@@ -87,7 +93,7 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         closed_by: row.closed_by.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
-        labels: Vec::new(),
+        labels,
         assignees: Vec::new(),
     })
 }

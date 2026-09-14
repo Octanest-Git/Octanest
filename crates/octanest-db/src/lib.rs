@@ -598,6 +598,49 @@ impl Database {
         .await
     }
 
+    pub async fn find_label_by_id(&self, id: &str) -> Result<Option<LabelRow>, String> {
+        issue_labels::find_label_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn update_label(
+        &self,
+        id: &str,
+        name: &str,
+        color: &str,
+        description: &str,
+    ) -> Result<LabelRow, String> {
+        issue_labels::update_label(self.require_pool()?, id, name, color, description).await
+    }
+
+    pub async fn delete_label(&self, id: &str) -> Result<(), String> {
+        issue_labels::delete_label(self.require_pool()?, id).await
+    }
+
+    pub async fn list_labels_for_org(&self, org_id: &str) -> Result<Vec<LabelRow>, String> {
+        issue_labels::list_labels_for_org(self.require_pool()?, org_id).await
+    }
+
+    pub async fn list_labels_for_repo(&self, repo_id: &str) -> Result<Vec<LabelRow>, String> {
+        issue_labels::list_labels_for_repo(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn list_hidden_label_ids(&self, repo_id: &str) -> Result<Vec<String>, String> {
+        issue_labels::list_hidden_label_ids(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_label_hidden(
+        &self,
+        repo_id: &str,
+        label_id: &str,
+        hidden: bool,
+    ) -> Result<(), String> {
+        issue_labels::set_repo_label_hidden(self.require_pool()?, repo_id, label_id, hidden).await
+    }
+
+    pub async fn list_labels_for_issue(&self, issue_id: &str) -> Result<Vec<LabelRow>, String> {
+        issue_labels::list_labels_for_issue(self.require_pool()?, issue_id).await
+    }
+
     pub async fn set_issue_labels(
         &self,
         issue_id: &str,

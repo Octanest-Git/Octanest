@@ -17,6 +17,7 @@ use crate::auth::session::{ResolvedSession, SessionService};
 use crate::auth::verify_reset;
 use crate::email::EmailSender;
 use crate::issue;
+use crate::label;
 use crate::org;
 use crate::pat;
 use crate::ssh_keys;
@@ -406,6 +407,26 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "issue.comments.history" => match issue::comments_history(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "label.listForRepo" => match label::list_for_repo(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "label.listForOrg" => match label::list_for_org(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "label.create" => match label::create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "label.update" => match label::update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "label.delete" => match label::delete(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

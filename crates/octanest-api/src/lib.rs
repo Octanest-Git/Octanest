@@ -5,6 +5,7 @@ pub mod email;
 pub mod git;
 pub mod issue;
 pub mod jobs;
+pub mod label;
 pub mod org;
 pub mod pat;
 pub mod ssh;
