@@ -512,26 +512,195 @@ async fn repo_private_404_collaborator_granted_read() {
 /// Wave 0 / D-ISS-20: unauthorized private `issue.list` → soft not-found (T-11-01).
 #[tokio::test]
 async fn repo_private_404_issue_list_unauthorized_soft_not_found() {
-    assert!(
-        false,
-        "Wave 0: unauthorized private issue.list → soft not_found identical to repo (D-ISS-20 / T-11-01)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_list_soft404.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "isspriv@ex.com", "isspriv").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create_repo = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_repo.status(), StatusCode::OK);
+    let _ = create_repo.into_body().collect().await;
+
+    let create_issue = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.create","input":{"owner":"isspriv","name":"secret","title":"hidden"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let cib = create_issue.into_body().collect().await.unwrap().to_bytes();
+    let civ: serde_json::Value = serde_json::from_slice(&cib).unwrap();
+    assert_eq!(civ["ok"], true, "owner create issue — {civ}");
+
+    let (stranger_cookie, _) = signup_and_login(&app, "issstranger@ex.com", "issstranger").await;
+
+    let missing = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.list","input":{"owner":"isspriv","name":"no-such-repo"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let missing_bytes = missing.into_body().collect().await.unwrap().to_bytes();
+    let missing_v: serde_json::Value = serde_json::from_slice(&missing_bytes).unwrap();
+    assert_eq!(missing_v["ok"], false, "missing — {missing_v}");
+    assert_eq!(missing_v["error"]["code"], "repo.not_found");
+
+    let private = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.list","input":{"owner":"isspriv","name":"secret"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let private_bytes = private.into_body().collect().await.unwrap().to_bytes();
+    let private_v: serde_json::Value = serde_json::from_slice(&private_bytes).unwrap();
+    assert_eq!(private_v["ok"], false, "private stranger — {private_v}");
+    assert_eq!(
+        private_v["error"]["code"], "repo.not_found",
+        "unauthorized private issue.list → soft not_found — {private_v}"
     );
 }
 
 /// Wave 0 / D-ISS-20: unauthorized private `issue.get` → soft not-found (T-11-01).
 #[tokio::test]
 async fn repo_private_404_issue_get_unauthorized_soft_not_found() {
-    assert!(
-        false,
-        "Wave 0: unauthorized private issue.get → soft not_found identical to repo (D-ISS-20 / T-11-01)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_get_soft404.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "issget@ex.com", "issget").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create_repo = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"vault","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let _ = create_repo.into_body().collect().await;
+
+    let create_issue = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.create","input":{"owner":"issget","name":"vault","title":"secret issue"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let cib = create_issue.into_body().collect().await.unwrap().to_bytes();
+    let civ: serde_json::Value = serde_json::from_slice(&cib).unwrap();
+    assert_eq!(civ["ok"], true, "{civ}");
+    assert_eq!(civ["data"]["number"], 1);
+
+    let (stranger_cookie, _) = signup_and_login(&app, "getstranger@ex.com", "getstranger").await;
+
+    let missing = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.get","input":{"owner":"issget","name":"nope","number":1}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let missing_bytes = missing.into_body().collect().await.unwrap().to_bytes();
+    let missing_v: serde_json::Value = serde_json::from_slice(&missing_bytes).unwrap();
+    assert_eq!(missing_v["error"]["code"], "repo.not_found");
+
+    let private = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.get","input":{"owner":"issget","name":"vault","number":1}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let private_bytes = private.into_body().collect().await.unwrap().to_bytes();
+    let private_v: serde_json::Value = serde_json::from_slice(&private_bytes).unwrap();
+    assert_eq!(private_v["ok"], false, "{private_v}");
+    assert_eq!(
+        private_v["error"]["code"], "repo.not_found",
+        "unauthorized private issue.get → soft not_found — {private_v}"
     );
 }
 
-/// Wave 0 / D-ISS-20: issue_private alias — private issue enumeration must not leak.
+/// D-ISS-20: issue_private alias — private issue enumeration must not leak.
 #[tokio::test]
 async fn issue_private_unauthorized_soft_not_found() {
-    assert!(
-        false,
-        "Wave 0: private issue ACL soft not_found for unauthorized viewers (D-ISS-20 / T-11-01)"
+    // Covered by list + get soft-not-found cases above; keep alias name for Wave 0 filter.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_private_alias.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "aliasown@ex.com", "aliasown").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create_repo = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"locked","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let _ = create_repo.into_body().collect().await;
+
+    let anon = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"issue.list","input":{"owner":"aliasown","name":"locked"}}"#,
+        ))
+        .await
+        .unwrap();
+    let bytes = anon.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], false, "{v}");
+    assert_eq!(
+        v["error"]["code"], "repo.not_found",
+        "anonymous private issue.list → soft not_found — {v}"
     );
 }
