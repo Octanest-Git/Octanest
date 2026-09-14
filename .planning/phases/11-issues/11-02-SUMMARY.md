@@ -22,7 +22,7 @@ affects:
 actuals:
   tokens: 16498
   tasks: 2
-  commits: 1
+  commits: 2
 
 plan_head_before: 85e1260adcfd295d207c7266dd61d8ad6b0dd174
 
@@ -115,7 +115,7 @@ status: complete
 1. **Task 0: Confirm D-ISS-01 numbering + 0011 schema door** — decision only (`proceed_0011` from executor instructions; no code commit)
 2. **Task 1: 0011_issues + DB helpers + issue_types** — `044a081` (feat)
 
-**Plan metadata:** (pending docs commit for SUMMARY only; STATE/ROADMAP intentionally untouched per orchestrator)
+**Plan metadata:** docs commit for `11-02-SUMMARY.md` only (STATE/ROADMAP intentionally untouched per orchestrator)
 
 ## Files Created/Modified
 
@@ -148,3 +148,8 @@ None for this plan’s goal (schema door). RPC handlers and UI remain intentiona
 - `cargo test -p octanest-db --lib migration_parity` — pass
 - `cargo test -p octanest-db --test dialect_issues` — pass
 - `cargo test -p octanest-core --lib issue_types` — pass
+
+## Self-Check: PASSED
+
+- Found: tri-dialect `0011_issues.sql`, `issues.rs`, `issue_labels.rs`, `issue_types.rs`, `11-02-SUMMARY.md`
+- Found: task commit `044a081`
