@@ -6,6 +6,7 @@ pub mod dialect;
 pub mod email_tokens;
 pub mod issue_labels;
 pub mod issues;
+pub mod lfs;
 pub mod migrate;
 pub mod org_invites;
 pub mod org_members;
@@ -24,6 +25,7 @@ pub use issue_labels::{IssueAssigneeRow, LabelRow};
 pub use issues::{
     CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
 };
+pub use lfs::LfsObjectRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -1147,6 +1149,32 @@ impl Database {
     /// links), organizations (cascades members / invites / org-scoped labels), then
     /// sessions, identities, email tokens, and users; resets auth settings to
     /// local/log defaults with signup closed.
+    // --- git LFS (D-LFS-02 / D-LFS-10) ---
+
+    pub async fn get_repo_lfs_enabled(&self, repo_id: &str) -> Result<bool, String> {
+        lfs::get_lfs_enabled(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_lfs_enabled(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        lfs::set_lfs_enabled(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn find_lfs_object(&self, oid: &str) -> Result<Option<LfsObjectRow>, String> {
+        lfs::find_lfs_object(self.require_pool()?, oid).await
+    }
+
+    pub async fn upsert_lfs_object(&self, oid: &str, size: i64) -> Result<(), String> {
+        lfs::upsert_lfs_object(self.require_pool()?, oid, size).await
+    }
+
+    pub async fn link_lfs_object(&self, repository_id: &str, oid: &str) -> Result<(), String> {
+        lfs::link_lfs_object(self.require_pool()?, repository_id, oid).await
+    }
+
+    pub async fn has_lfs_link(&self, repository_id: &str, oid: &str) -> Result<bool, String> {
+        lfs::has_lfs_link(self.require_pool()?, repository_id, oid).await
+    }
+
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {

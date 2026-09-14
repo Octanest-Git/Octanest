@@ -1,26 +1,61 @@
-//! Wave 0 stubs for LFS OID store layout, verify, and GC (GIT-13, D-LFS-01/03/15).
-//! Bodies are placeholders; greened by plans 14-05 / 14-06.
+//! LFS OID store layout + hash safety (GIT-13 / D-LFS-01 / D-LFS-03 / T-14-04).
 
-/// D-LFS-01 / D-LFS-03: OID-sharded path under OCTANEST_LFS_DIR — `{ab}/{cd}/{oid}`.
+use futures_util::stream;
+use octanest_api::auth::session::sha256_hex;
+use octanest_api::lfs::store;
+
 #[tokio::test]
 async fn lfs_store_oid_sharded_path_under_lfs_dir() {
-    // Wave 0: PUT must write OCTANEST_LFS_DIR/ab/cd/<64-hex-oid> (14-05).
+    let dir = tempfile::tempdir().expect("tempdir");
+    let lfs = dir.path().join("lfs");
+    let payload = b"shard-me";
+    let oid = sha256_hex(payload);
+    let stream = stream::iter(vec![Ok::<_, std::io::Error>(
+        axum::body::Bytes::from_static(b"shard-me"),
+    )]);
+    let written = store::put_stream(&lfs, &oid, Some(payload.len() as u64), stream)
+        .await
+        .expect("put");
+    assert_eq!(written, payload.len() as u64);
+    let path = store::shard_path(&lfs, &oid).unwrap();
+    assert_eq!(
+        path,
+        lfs.join(&oid[0..2]).join(&oid[2..4]).join(&oid)
+    );
+    assert!(path.is_file());
+    assert_eq!(std::fs::read(&path).unwrap(), payload);
 }
 
-/// Hash mismatch on PUT must reject (object not committed).
 #[tokio::test]
 async fn lfs_store_put_hash_mismatch_rejected() {
-    // Wave 0: PUT body SHA-256 ≠ oid → reject; no durable object row.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let lfs = dir.path().join("lfs");
+    let wrong_oid = "a".repeat(64);
+    let stream = stream::iter(vec![Ok::<_, std::io::Error>(
+        axum::body::Bytes::from_static(b"not-matching"),
+    )]);
+    let err = store::put_stream(&lfs, &wrong_oid, None, stream)
+        .await
+        .expect_err("must reject");
+    assert!(err.contains("hash mismatch"), "{err}");
+    let path = store::shard_path(&lfs, &wrong_oid).unwrap();
+    assert!(!path.exists(), "no final object on mismatch");
 }
 
-/// Optional verify endpoint / size check (D-LFS-07 resumable-within-basic).
+#[tokio::test]
+async fn lfs_store_rejects_non_hex_oid_before_join() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    assert!(store::validate_oid("ABC").is_err());
+    assert!(store::validate_oid(&("A".repeat(64))).is_err());
+    assert!(store::shard_path(dir.path(), "../escape").is_err());
+}
+
 #[tokio::test]
 async fn lfs_verify_post_checks_size_and_oid() {
-    // Wave 0: POST verify action confirms size+oid before marking complete.
+    // Optional verify endpoint greens in 14-05; keep discoverable name.
 }
 
-/// D-LFS-15: refcount GC removes unreferenced OIDs (lfs_gc filter).
 #[tokio::test]
 async fn lfs_gc_unreferenced_oid_removed() {
-    // Wave 0: OID with refcount 0 deleted from disk + lfs_objects on GC (14-06).
+    // GC greens in 14-06; keep discoverable name.
 }
