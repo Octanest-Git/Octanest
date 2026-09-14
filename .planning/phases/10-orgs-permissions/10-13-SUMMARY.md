@@ -106,7 +106,7 @@ status: complete
 
 1. **Task 1: End-to-end org.create — RPC + /orgs/new** - `5d7a6d3` (feat)
 
-**Plan metadata:** (pending docs commit)
+**Plan metadata:** `ebe0571` (docs: complete plan); `96a4141` (docs: WINDOWS ledger)
 
 ## Tracer feedback gate
 
