@@ -50,9 +50,23 @@ async fn lfs_store_rejects_non_hex_oid_before_join() {
     assert!(store::shard_path(dir.path(), "../escape").is_err());
 }
 
+/// Discoverable name — HTTP verify covered in `lfs_batch::lfs_verify_post_checks_size_and_oid`.
 #[tokio::test]
 async fn lfs_verify_post_checks_size_and_oid() {
-    // Optional verify endpoint greens in 14-05; keep discoverable name.
+    let dir = tempfile::tempdir().expect("tempdir");
+    let lfs = dir.path().join("lfs");
+    let payload = b"verify-store";
+    let oid = sha256_hex(payload);
+    let stream = stream::iter(vec![Ok::<_, std::io::Error>(
+        axum::body::Bytes::from_static(b"verify-store"),
+    )]);
+    store::put_stream(&lfs, &oid, None, stream)
+        .await
+        .expect("put");
+    let on_disk = std::fs::metadata(store::shard_path(&lfs, &oid).unwrap())
+        .unwrap()
+        .len();
+    assert_eq!(on_disk, payload.len() as u64);
 }
 
 #[tokio::test]

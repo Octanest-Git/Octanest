@@ -84,6 +84,10 @@ fn object_href(owner: &str, repo_git: &str, oid: &str) -> String {
     format!("/{owner}/{repo_git}/info/lfs/objects/{oid}")
 }
 
+fn verify_href(owner: &str, repo_git: &str) -> String {
+    format!("/{owner}/{repo_git}/info/lfs/objects/verify")
+}
+
 async fn require_lfs_enabled(state: &AppState, repo_id: &str) -> Result<(), Response> {
     let enabled = match state.db.get_repo_lfs_enabled(repo_id).await {
         Ok(v) => v,
@@ -184,6 +188,56 @@ pub async fn batch(
                     actions: None,
                     error: None,
                 });
+            } else if on_disk {
+                // Global OID present — link this repo without re-upload (D-LFS-02).
+                if let Err(rej) = quota::check_upload(
+                    &state,
+                    &resolved.row.id,
+                    resolved.owner.id(),
+                    obj.size,
+                    false,
+                )
+                .await
+                {
+                    objects.push(BatchObjectOut {
+                        oid: obj.oid,
+                        size: obj.size,
+                        actions: None,
+                        error: Some(LfsObjectError {
+                            code: rej.object_code(),
+                            message: rej.object_message(),
+                        }),
+                    });
+                    continue;
+                }
+                let uploader = crate::lfs::auth::authenticate_pat(&state, &headers)
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|a| a.owner.id);
+                if let Err(e) = state
+                    .db
+                    .link_lfs_object_as(&resolved.row.id, &obj.oid, uploader.as_deref())
+                    .await
+                {
+                    tracing::error!(error = %e, "link existing lfs oid");
+                    objects.push(BatchObjectOut {
+                        oid: obj.oid,
+                        size: obj.size,
+                        actions: None,
+                        error: Some(LfsObjectError {
+                            code: 500,
+                            message: "failed to link existing object".into(),
+                        }),
+                    });
+                    continue;
+                }
+                objects.push(BatchObjectOut {
+                    oid: obj.oid,
+                    size: obj.size,
+                    actions: None,
+                    error: None,
+                });
             } else {
                 if let Err(rej) = quota::check_upload(
                     &state,
@@ -216,7 +270,12 @@ pub async fn batch(
                             expires_in: Some(3600),
                         }),
                         download: None,
-                        verify: None,
+                        // Optional verify after PUT (D-LFS-07 resumable-within-basic).
+                        verify: Some(BatchAction {
+                            href: verify_href(&owner, &repo_git),
+                            header: None,
+                            expires_in: Some(3600),
+                        }),
                     }),
                     error: None,
                 });
@@ -393,10 +452,117 @@ pub async fn get_object(
         Err(_) => return not_found_lfs("Object does not exist"),
     };
 
-    (
+    // Range GET for resumable download within basic transfer (D-LFS-07 locked).
+    if let Some(range) = headers.get(header::RANGE).and_then(|v| v.to_str().ok()) {
+        if let Some((start, end)) = parse_bytes_range(range, bytes.len() as u64) {
+            let end_inclusive = end.min(bytes.len() as u64 - 1);
+            if start > end_inclusive || start >= bytes.len() as u64 {
+                return StatusCode::RANGE_NOT_SATISFIABLE.into_response();
+            }
+            let slice = bytes[start as usize..=end_inclusive as usize].to_vec();
+            let content_range = format!("bytes {start}-{end_inclusive}/{}", bytes.len());
+            let mut res = (
+                StatusCode::PARTIAL_CONTENT,
+                [(header::CONTENT_TYPE, "application/octet-stream")],
+                slice,
+            )
+                .into_response();
+            res.headers_mut().insert(
+                header::CONTENT_RANGE,
+                HeaderValue::from_str(&content_range).unwrap(),
+            );
+            res.headers_mut().insert(
+                header::ACCEPT_RANGES,
+                HeaderValue::from_static("bytes"),
+            );
+            return res;
+        }
+    }
+
+    let mut res = (
         StatusCode::OK,
         [(header::CONTENT_TYPE, "application/octet-stream")],
         bytes,
     )
-        .into_response()
+        .into_response();
+    res.headers_mut().insert(
+        header::ACCEPT_RANGES,
+        HeaderValue::from_static("bytes"),
+    );
+    res
+}
+
+/// `POST /{owner}/{repo}.git/info/lfs/objects/verify` — optional basic verify (D-LFS-07).
+pub async fn verify_object(
+    State(state): State<AppState>,
+    AxumPath((owner, repo_git)): AxumPath<(String, String)>,
+    headers: HeaderMap,
+    Json(body): Json<serde_json::Value>,
+) -> Response {
+    let Some(repo_name) = strip_git_suffix(&repo_git) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+    let resolved = match resolve_repo(&state, &owner, repo_name).await {
+        Ok(r) => r,
+        Err(r) => return r,
+    };
+    if let Err(r) = require_lfs_enabled(&state, &resolved.row.id).await {
+        return r;
+    }
+    // Verify is part of upload flow → Write.
+    if let Err(r) = authorize_lfs(&state, &headers, &resolved.row, &resolved.owner, true).await {
+        return r;
+    }
+
+    let oid = body.get("oid").and_then(|v| v.as_str()).unwrap_or("");
+    let size = body.get("size").and_then(|v| v.as_i64()).unwrap_or(-1);
+    if store::validate_oid(oid).is_err() {
+        return (
+            StatusCode::BAD_REQUEST,
+            lfs_json_headers(),
+            Json(LfsErrorBody {
+                message: "invalid oid".into(),
+                request_id: None,
+            }),
+        )
+            .into_response();
+    }
+    let meta = match state.db.find_lfs_object(oid).await {
+        Ok(Some(m)) => m,
+        Ok(None) => {
+            return not_found_lfs("Object does not exist");
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "find_lfs_object");
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        }
+    };
+    if meta.size != size {
+        return (
+            StatusCode::BAD_REQUEST,
+            lfs_json_headers(),
+            Json(LfsErrorBody {
+                message: format!("size mismatch: expected {}, got {size}", meta.size),
+                request_id: None,
+            }),
+        )
+            .into_response();
+    }
+    if !store::object_exists(&state.lfs_dir, oid).unwrap_or(false) {
+        return not_found_lfs("Object does not exist on disk");
+    }
+    StatusCode::OK.into_response()
+}
+
+/// Parse `bytes=START-END` (END optional). Returns inclusive end.
+fn parse_bytes_range(header: &str, total: u64) -> Option<(u64, u64)> {
+    let rest = header.strip_prefix("bytes=")?;
+    let (start_s, end_s) = rest.split_once('-')?;
+    let start: u64 = start_s.parse().ok()?;
+    let end: u64 = if end_s.is_empty() {
+        total.saturating_sub(1)
+    } else {
+        end_s.parse().ok()?
+    };
+    Some((start, end))
 }

@@ -174,6 +174,10 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             axum::routing::post(git_lfs::batch),
         )
         .route(
+            "/{owner}/{repo_git}/info/lfs/objects/verify",
+            axum::routing::post(git_lfs::verify_object),
+        )
+        .route(
             "/{owner}/{repo_git}/info/lfs/objects/{oid}",
             axum::routing::get(git_lfs::get_object)
                 .put(git_lfs::put_object)

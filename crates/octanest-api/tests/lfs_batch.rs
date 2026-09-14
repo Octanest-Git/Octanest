@@ -848,6 +848,286 @@ async fn lfs_quota_admin_override_affects_enforcement() {
     assert_eq!(v["objects"][0]["error"]["code"], 422, "{v}");
 }
 
-/// Dedup stub remains for 14-05.
+/// Dedup: second repo linking existing OID omits upload actions (D-LFS-02).
 #[tokio::test]
-async fn lfs_dedup_existing_oid_omits_upload_actions() {}
+async fn lfs_dedup_existing_oid_omits_upload_actions() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_dedup.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos, lfs.clone()).await;
+
+    let (cookie_a, login_a) = signup_and_login(&app, "a@ex.com", "aown").await;
+    verify_user(&db, login_a["data"]["id"].as_str().unwrap()).await;
+    let (cookie_b, login_b) = signup_and_login(&app, "b@ex.com", "bown").await;
+    verify_user(&db, login_b["data"]["id"].as_str().unwrap()).await;
+
+    async fn create_enabled(
+        app: &axum::Router,
+        db: &Database,
+        cookie: &str,
+        name: &str,
+    ) -> String {
+        let body = format!(
+            r#"{{"procedure":"repo.create","input":{{"name":"{name}","visibility":"public","description":""}}}}"#
+        );
+        let create = app
+            .clone()
+            .oneshot(rpc_req_with_cookie(&body, cookie))
+            .await
+            .unwrap();
+        assert_eq!(create.status(), StatusCode::OK);
+        let bytes = create.into_body().collect().await.unwrap().to_bytes();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let id = v["data"]["id"].as_str().unwrap().to_string();
+        db.set_repo_lfs_enabled(&id, true).await.unwrap();
+        id
+    }
+
+    create_enabled(&app, &db, &cookie_a, "one").await;
+    let repo_b = create_enabled(&app, &db, &cookie_b, "two").await;
+
+    let pat_a = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"a","scopes":["repo"]}}"#,
+            &cookie_a,
+        ))
+        .await
+        .unwrap();
+    let token_a = {
+        let b = pat_a.into_body().collect().await.unwrap().to_bytes();
+        let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+        v["data"]["token"].as_str().unwrap().to_string()
+    };
+    let pat_b = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"b","scopes":["repo"]}}"#,
+            &cookie_b,
+        ))
+        .await
+        .unwrap();
+    let token_b = {
+        let b = pat_b.into_body().collect().await.unwrap().to_bytes();
+        let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+        v["data"]["token"].as_str().unwrap().to_string()
+    };
+
+    let payload = b"shared-lfs-bytes";
+    let oid = sha256_hex(payload);
+    let size = payload.len() as i64;
+
+    let batch1 = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid, "size": size }]
+    });
+    let r1 = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/aown/one.git/info/lfs/objects/batch")
+                .header(header::AUTHORIZATION, basic_header("git", &token_a))
+                .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+                .body(Body::from(batch1.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let b1 = r1.into_body().collect().await.unwrap().to_bytes();
+    let v1: serde_json::Value = serde_json::from_slice(&b1).unwrap();
+    let href = v1["objects"][0]["actions"]["upload"]["href"]
+        .as_str()
+        .expect("upload href");
+    let put = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(href)
+                .header(header::AUTHORIZATION, basic_header("git", &token_a))
+                .body(Body::from(payload.as_slice()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(put.status(), StatusCode::OK);
+
+    let batch2 = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid, "size": size }]
+    });
+    let r2 = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/bown/two.git/info/lfs/objects/batch")
+                .header(header::AUTHORIZATION, basic_header("git", &token_b))
+                .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+                .body(Body::from(batch2.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(r2.status(), StatusCode::OK);
+    let b2 = r2.into_body().collect().await.unwrap().to_bytes();
+    let v2: serde_json::Value = serde_json::from_slice(&b2).unwrap();
+    assert!(
+        v2["objects"][0]["actions"].is_null()
+            || v2["objects"][0]["actions"]["upload"].is_null(),
+        "second repo must omit upload — {v2}"
+    );
+    assert!(
+        db.has_lfs_link(&repo_b, &oid).await.unwrap(),
+        "link must exist after dedup batch"
+    );
+}
+
+/// Verify endpoint checks oid+size (D-LFS-07).
+#[tokio::test]
+async fn lfs_verify_post_checks_size_and_oid() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_verify.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos, lfs).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "v@ex.com", "vown").await;
+    verify_user(&db, login_v["data"]["id"].as_str().unwrap()).await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"blobs","visibility":"public","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    db.set_repo_lfs_enabled(create_v["data"]["id"].as_str().unwrap(), true)
+        .await
+        .unwrap();
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"lfs","scopes":["repo"]}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().unwrap();
+
+    let payload = b"hello-verify";
+    let oid = sha256_hex(payload);
+    let size = payload.len() as i64;
+
+    let batch_body = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid, "size": size }]
+    });
+    let batch_res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/vown/blobs.git/info/lfs/objects/batch")
+                .header(header::AUTHORIZATION, basic_header("git", token))
+                .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+                .body(Body::from(batch_body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let batch_bytes = batch_res.into_body().collect().await.unwrap().to_bytes();
+    let batch_v: serde_json::Value = serde_json::from_slice(&batch_bytes).unwrap();
+    let href = batch_v["objects"][0]["actions"]["upload"]["href"]
+        .as_str()
+        .unwrap();
+    assert!(
+        batch_v["objects"][0]["actions"]["verify"]["href"]
+            .as_str()
+            .unwrap_or("")
+            .contains("/verify"),
+        "verify action — {batch_v}"
+    );
+
+    let put = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("PUT")
+                .uri(href)
+                .header(header::AUTHORIZATION, basic_header("git", token))
+                .body(Body::from(payload.as_slice()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(put.status(), StatusCode::OK);
+
+    let ok = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/vown/blobs.git/info/lfs/objects/verify")
+                .header(header::AUTHORIZATION, basic_header("git", token))
+                .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+                .body(Body::from(
+                    serde_json::json!({"oid": oid, "size": size}).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(ok.status(), StatusCode::OK);
+
+    let bad = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/vown/blobs.git/info/lfs/objects/verify")
+                .header(header::AUTHORIZATION, basic_header("git", token))
+                .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+                .body(Body::from(
+                    serde_json::json!({"oid": oid, "size": 999}).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(bad.status(), StatusCode::BAD_REQUEST);
+
+    // Range GET
+    let get = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/vown/blobs.git/info/lfs/objects/{oid}"))
+                .header(header::AUTHORIZATION, basic_header("git", token))
+                .header(header::RANGE, "bytes=0-4")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(get.status(), StatusCode::PARTIAL_CONTENT);
+    let got = get.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&got[..], &payload[0..=4]);
+}
