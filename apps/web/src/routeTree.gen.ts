@@ -20,6 +20,7 @@ import { Route as StatusRouteImport } from './routes/status'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
 import { Route as AdminAuthRouteImport } from './routes/admin/auth'
+import { Route as InvitesTokenRouteImport } from './routes/invites.$token'
 import { Route as OrgsNewRouteImport } from './routes/orgs.new'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
@@ -91,6 +92,11 @@ const OwnerRepoRoute = OwnerRepoRouteImport.update({
 const AdminAuthRoute = AdminAuthRouteImport.update({
   id: '/admin/auth',
   path: '/admin/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InvitesTokenRoute = InvitesTokenRouteImport.update({
+  id: '/invites/$token',
+  path: '/invites/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrgsNewRoute = OrgsNewRouteImport.update({
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -251,6 +259,7 @@ export interface FileRoutesById {
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
+  '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/$owner/$repo'
     | '/admin/auth'
+    | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
@@ -311,6 +321,7 @@ export interface FileRouteTypes {
     | '/status'
     | '/verify'
     | '/admin/auth'
+    | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/verify'
     | '/$owner/$repo'
     | '/admin/auth'
+    | '/invites/$token'
     | '/orgs/new'
     | '/settings/profile'
     | '/settings/tokens'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   VerifyRoute: typeof VerifyRoute
   OwnerRepoRoute: typeof OwnerRepoRouteWithChildren
   AdminAuthRoute: typeof AdminAuthRoute
+  InvitesTokenRoute: typeof InvitesTokenRoute
   OrgsNewRoute: typeof OrgsNewRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
@@ -454,6 +467,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/admin/auth'
       fullPath: '/admin/auth'
       preLoaderRoute: typeof AdminAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invites/$token': {
+      id: '/invites/$token'
+      path: '/invites/$token'
+      fullPath: '/invites/$token'
+      preLoaderRoute: typeof InvitesTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/orgs/new': {
@@ -655,6 +675,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyRoute: VerifyRoute,
   OwnerRepoRoute: OwnerRepoRouteWithChildren,
   AdminAuthRoute: AdminAuthRoute,
+  InvitesTokenRoute: InvitesTokenRoute,
   OrgsNewRoute: OrgsNewRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTokensRoute: SettingsTokensRouteWithChildren,
