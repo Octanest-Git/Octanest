@@ -279,6 +279,7 @@ async fn git_ssh_public_upload_pack_happy_path() {
     db.insert_repository(
         "r-demo",
         &user_id,
+        "user",
         "demo",
         "public",
         "demo",
@@ -368,7 +369,7 @@ async fn git_ssh_private_non_owner_git_stderr_deny() {
     .unwrap();
     let bare = repos.join("owneru").join("secret.git");
     init_bare_repo(&bare);
-    db.insert_repository("r-sec", &owner_id, "secret", "private", "sec", "main")
+    db.insert_repository("r-sec", &owner_id, "user", "secret", "private", "sec", "main")
         .await
         .unwrap();
 
@@ -432,7 +433,7 @@ async fn git_ssh_push_unverified_email_denied() {
     .unwrap();
     let bare = repos.join("pushu").join("demo.git");
     init_bare_repo(&bare);
-    db.insert_repository("r-push", &user_id, "demo", "public", "d", "main")
+    db.insert_repository("r-push", &user_id, "user", "demo", "public", "d", "main")
         .await
         .unwrap();
 
