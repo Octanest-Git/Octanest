@@ -1,0 +1,95 @@
+---
+phase: "14"
+slug: "git-lfs"
+# status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
+status: draft
+nyquist_compliant: false
+wave_0_complete: false
+created: "2026-09-14"
+---
+
+# Phase 14 — Validation Strategy
+
+> Per-phase validation contract for feedback sampling during execution.
+> Seeded by plan-phase from 14-RESEARCH.md Validation Architecture. `nyquist_compliant` remains false until `/gsd-validate-phase`.
+
+---
+
+## Test Infrastructure
+
+| Property | Value |
+|----------|-------|
+| **Framework** | Rust: cargo-nextest / `cargo test`; Web: Vitest via Bun |
+| **Config file** | workspace Cargo; `.config/nextest.toml`; `apps/web/vitest.config.ts` |
+| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(lfs)'` |
+| **Full suite command** | `make test` (+ `make smoke-git-lfs` when Docker available) |
+| **Estimated runtime** | ~60–180 seconds (quick); full suite longer with smoke |
+
+---
+
+## Sampling Rate
+
+- **After every task commit:** Run targeted nextest `test(lfs)` and/or Vitest for the plan’s files
+- **After every plan wave:** Run `make test` + `make rpc-sync-check` (after 14-08)
+- **Before `/gsd-verify-work`:** Full suite green + `make smoke-git-lfs` when Compose is up
+- **Max feedback latency:** 180 seconds
+
+---
+
+## Per-Task Verification Map
+
+| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
+|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
+| 14-00-T1 | 00 | 0 | GIT-12, GIT-13 | T-14-01, T-14-02 | Wave 0 RED stubs batch/auth/store | integration | `cargo nextest list -p octanest-api -E 'test(lfs)'` | ❌ W0 | ⬜ pending |
+| 14-00-T2 | 00 | 0 | GIT-13 | T-14-04 | dialect + factory_reset LFS wipe stubs | integration | `cargo nextest list -p octanest-db -E 'test(dialect_lfs)'` | ❌ W0 | ⬜ pending |
+| 14-01-T1 | 01 | 0 | GIT-12 | T-14-05 | Wave 0 web stubs pointer/settings/admin/browser | component | `test -f apps/web/src/lib/lfs-pointer.test.ts` | ❌ W0 | ⬜ pending |
+| 14-02-T1 | 02 | 1 | GIT-12, GIT-13 | T-14-01, T-14-03 | Tracer batch+basic → LFS_DIR shard | integration | `cargo nextest run -p octanest-api -E 'test(lfs_batch) \| test(lfs_store)'` | ❌ W0 | ⬜ pending |
+| 14-03-T1 | 03 | 2 | GIT-12 | T-14-01, T-14-02 | PAT Basic; cookie ignore; Read/Write | integration | `cargo nextest run -p octanest-api -E 'test(lfs)'` | ❌ W0 | ⬜ pending |
+| 14-03-T2 | 03 | 2 | GIT-12 | T-14-02 | Admin-only enable; disabled rejects | integration | `cargo nextest run -p octanest-api -E 'test(lfs_enable)'` | ❌ W0 | ⬜ pending |
+| 14-04-T1 | 04 | 3 | GIT-12, GIT-13 | T-14-03 | Max size + quotas reject upload | integration | `cargo nextest run -p octanest-api -E 'test(lfs_quota)'` | ❌ W0 | ⬜ pending |
+| 14-05-T1 | 05 | 4 | GIT-12 | T-14-04 | Dedup skip actions; verify; Range GET | integration | `cargo nextest run -p octanest-api -E 'test(lfs_dedup) \| test(lfs_verify)'` | ❌ W0 | ⬜ pending |
+| 14-06-T1 | 06 | 5 | GIT-13 | T-14-04 | GC unreferenced + factory reset wipe | integration | `cargo nextest run -p octanest-api -E 'test(lfs_gc) \| test(factory_reset)'` | ❌ W0 | ⬜ pending |
+| 14-07-T1 | 07 | 5 | GIT-13 | T-14-SC | Compose `OCTANEST_LFS_DIR` + CONFIGURATION | docs/smoke | `rg -n 'OCTANEST_LFS_DIR' docker-compose.yml docs/CONFIGURATION.md` | ❌ | ⬜ pending |
+| 14-08-T1 | 08 | 6 | GIT-12, GIT-13 | T-14-05 | rpc-gen repo.lfs / admin.lfs | codegen | `make rpc-gen && make rpc-sync-check` | ❌ | ⬜ pending |
+| 14-09-T1 | 09 | 7 | GIT-12 | T-14-02 | Repo Settings toggle + usage breakdown | component | `bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.settings.lfs.integration.test.ts` | ❌ W0 | ⬜ pending |
+| 14-10-T1 | 10 | 7 | GIT-13 | T-14-03 | Admin quotas + instance usage | component | `bun --cwd apps/web exec vitest run src/routes/admin/lfs.integration.test.ts` | ❌ W0 | ⬜ pending |
+| 14-11-T1 | 11 | 8 | GIT-12 | T-14-05 | Pointer badge + Download + browser | component | `bun --cwd apps/web exec vitest run src/lib/lfs-pointer.test.ts src/components/repo/blob-viewer.lfs.integration.test.ts src/components/repo/lfs-browser.integration.test.ts` | ❌ W0 | ⬜ pending |
+| 14-12-T1 | 12 | 9 | GIT-12, GIT-13 | T-14-01 | smoke-git-lfs + docs + phase gate | smoke/mixed | `make smoke-git-lfs` (or skip-if-no-docker) + nextest `test(lfs)` | ❌ | ⬜ pending |
+
+*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+
+---
+
+## Wave 0 Requirements
+
+- [ ] `crates/octanest-api/tests/lfs_batch.rs` — GIT-12 batch/auth matrix stubs — **14-00**
+- [ ] `crates/octanest-api/tests/lfs_store.rs` — GIT-13 layout + hash mismatch stubs — **14-00**
+- [ ] `crates/octanest-db/tests/dialect_lfs.rs` — next-free LFS migration parity stub — **14-00**
+- [ ] Extend `crates/octanest-api/tests/factory_reset_scope.rs` — LFS_DIR wipe expectation — **14-00**
+- [ ] `apps/web/src/lib/lfs-pointer.test.ts` (+ settings/admin/browser stubs) — **14-01**
+- [ ] `scripts/smoke-git-lfs.sh` + `make smoke-git-lfs` — scaffold **14-00** / green **14-12**
+
+*Existing nextest/Vitest/`make test` infrastructure covers runners; no new test frameworks.*
+
+---
+
+## Manual-Only Verifications
+
+| Behavior | Requirement | Why Manual | Test Instructions |
+|----------|-------------|------------|-------------------|
+| Settings enable copy + docs link | GIT-12 / D-LFS-16 | Visual copy | Enable LFS in repo Settings; confirm docs link for `.gitattributes` / `git lfs track` |
+| Admin quota dashboard readability | GIT-13 / D-LFS-19 | Visual layout | Open Admin LFS usage; confirm breakdown by repo/user and physical bytes |
+| Blob Download via session | GIT-12 / D-LFS-18 | Browser download UX | Open LFS pointer blob; badge visible; Download fetches bytes while logged in with Read |
+
+---
+
+## Validation Sign-Off
+
+- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
+- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
+- [ ] Wave 0 covers all MISSING references
+- [ ] No watch-mode flags
+- [ ] Feedback latency < 180s
+- [ ] `nyquist_compliant: true` set in frontmatter — **owned by `/gsd-validate-phase`**
+
+**Approval:** pending validate-phase

@@ -504,7 +504,22 @@ Plans:
   1. Operator can configure LFS storage on the filesystem (volume-backed) for the instance
   2. User can push and fetch Git LFS objects for a repository
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+- [ ] 14-00-PLAN.md — Wave 0 Rust/smoke stubs (lfs_batch, store, dialect, factory reset)
+- [ ] 14-01-PLAN.md — Wave 0 Vitest stubs (pointer, Settings, Admin, browser)
+- [ ] 14-02-PLAN.md — Tracer: Batch + basic transfer into OCTANEST_LFS_DIR
+- [ ] 14-03-PLAN.md — PAT Basic/ACL + Admin per-repo enable
+- [ ] 14-04-PLAN.md — Max object size + quotas + Admin overrides
+- [ ] 14-05-PLAN.md — OID dedup/refcount + verify + Range GET
+- [ ] 14-06-PLAN.md — LFS GC job + factory reset wipe LFS_DIR
+- [ ] 14-07-PLAN.md — Compose OCTANEST_LFS_DIR + operator docs
+- [ ] 14-08-PLAN.md — repo.lfs / admin.lfs RPC + rpc-gen
+- [ ] 14-09-PLAN.md — Repo Settings LFS toggle + usage breakdown
+- [ ] 14-10-PLAN.md — Admin quotas + instance usage UI
+- [ ] 14-11-PLAN.md — Pointer badge, Download, LFS browser
+- [ ] 14-12-PLAN.md — smoke-git-lfs + phase gate
 
 ### Phase 15: Releases & Transfer
 
