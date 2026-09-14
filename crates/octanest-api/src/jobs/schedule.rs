@@ -58,11 +58,13 @@ pub fn spawn_background_jobs(
                     Ok(stats) => {
                         if stats.orphans_removed > 0
                             || stats.purged_soft_deleted > 0
+                            || stats.purged_expired_redirects > 0
                             || stats.errors > 0
                         {
                             tracing::info!(
                                 orphans = stats.orphans_removed,
                                 purged = stats.purged_soft_deleted,
+                                redirects = stats.purged_expired_redirects,
                                 errors = stats.errors,
                                 "orphan reconcile completed"
                             );

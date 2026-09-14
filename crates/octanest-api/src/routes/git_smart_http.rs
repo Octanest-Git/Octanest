@@ -22,8 +22,8 @@ use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
 use crate::repo::{
-    effective_capability, fg_all_covers_repo, is_private_visibility, meets, resolve_owner_slug,
-    Capability, OwnerRef,
+    effective_capability, fg_all_covers_repo, is_private_visibility, lookup_repo_row_or_redirect,
+    meets, Capability, OwnerRef,
 };
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
@@ -253,6 +253,9 @@ async fn authenticate_pat(
 struct ResolvedRepo {
     row: RepositoryRow,
     owner: OwnerRef,
+    /// Disk path segments for CGI (current owner/name after redirect).
+    disk_owner: String,
+    disk_name: String,
 }
 
 async fn resolve_repo(
@@ -260,29 +263,22 @@ async fn resolve_repo(
     owner: &str,
     name: &str,
 ) -> Result<ResolvedRepo, Response> {
-    let owner_ref = match resolve_owner_slug(&state.db, owner).await {
-        Ok(Some(r)) => r,
+    let pair = match lookup_repo_row_or_redirect(&state.db, owner, name).await {
+        Ok(Some(p)) => p,
         Ok(None) => return Err(unauthorized_basic()),
         Err(e) => {
-            tracing::error!(error = %e, "resolve_owner_slug");
+            tracing::error!(error = %e, "lookup_repo_row_or_redirect");
             return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
         }
     };
-    let row = match state
-        .db
-        .find_repository_by_owner_name(owner_ref.id(), name)
-        .await
-    {
-        Ok(Some(r)) => r,
-        Ok(None) => return Err(unauthorized_basic()),
-        Err(e) => {
-            tracing::error!(error = %e, "find_repository_by_owner_name");
-            return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
-        }
-    };
+    let (row, owner_ref) = pair;
+    let disk_owner = owner_ref.slug().to_string();
+    let disk_name = row.name.clone();
     Ok(ResolvedRepo {
         row,
         owner: owner_ref,
+        disk_owner,
+        disk_name,
     })
 }
 
@@ -471,7 +467,10 @@ async fn authorize_and_cgi(
         touch_last_used(state, &auth.pat.id, headers).await;
     }
 
-    let path_info = format!("/{owner}/{repo_git}/{path_tail}");
+    let path_info = format!(
+        "/{}/{}.git/{}",
+        resolved.disk_owner, resolved.disk_name, path_tail
+    );
     let git_protocol = headers
         .get("Git-Protocol")
         .and_then(|v| v.to_str().ok())

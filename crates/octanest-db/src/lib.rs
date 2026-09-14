@@ -414,6 +414,14 @@ impl Database {
         repositories::update_visibility(self.require_pool()?, id, visibility).await
     }
 
+    pub async fn update_repository_name(
+        &self,
+        id: &str,
+        name: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_name(self.require_pool()?, id, name).await
+    }
+
     pub async fn soft_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::soft_delete(self.require_pool()?, id).await
     }

@@ -206,6 +206,16 @@ pub async fn orphan_reconcile_with_retention(
         }
     }
 
+    // 3) Purge expired repository redirects (D-REL-08).
+    let now_rfc = now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    match db.purge_expired_repository_redirects(&now_rfc).await {
+        Ok(n) => stats.purged_expired_redirects = n as u32,
+        Err(e) => {
+            tracing::error!(error = %e, "purge expired repository redirects failed");
+            stats.errors += 1;
+        }
+    }
+
     Ok(stats)
 }
 
@@ -213,6 +223,7 @@ pub async fn orphan_reconcile_with_retention(
 pub struct ReconcileStats {
     pub orphans_removed: u32,
     pub purged_soft_deleted: u32,
+    pub purged_expired_redirects: u32,
     pub errors: u32,
 }
 

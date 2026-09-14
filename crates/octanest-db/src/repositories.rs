@@ -230,6 +230,60 @@ pub async fn list_by_owner(
     }
 }
 
+/// Update repository name for a non-deleted row (GIT-16 / D-REL-07).
+pub async fn update_name(pool: &DbPool, id: &str, name: &str) -> Result<RepositoryRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET name = $2, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(name)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository name failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET name = ?, updated_at = NOW()
+WHERE id = ? AND deleted_at IS NULL",
+            )
+            .bind(name)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository name failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET name = ?2, updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(name)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update repository name failed: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "repository not found after name update".into())
+}
+
 /// Update visibility for a non-deleted repository (D-26).
 pub async fn update_visibility(
     pool: &DbPool,

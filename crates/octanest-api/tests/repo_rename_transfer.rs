@@ -1,7 +1,4 @@
-//! Wave 0 / Phase 15: GIT-16/17 rename, transfer, redirect stubs (D-REL-07..11).
-//! Intentionally ignored until plans 15-03 / 15-04 turn them green.
-
-#![allow(dead_code)]
+//! Phase 15: GIT-16/17 rename, transfer, redirect tests (D-REL-07..11).
 
 mod support;
 
@@ -11,13 +8,17 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use octanest_api::email::{EmailSender, LogSink};
+use octanest_api::jobs::orphan_reconcile;
 use octanest_api::{build_cors, router_with_state, AppState};
 use octanest_db::Database;
+use octanest_git::CliGitBackend;
 use tower::ServiceExt;
+use uuid::Uuid;
 
 async fn test_app(db: Database, repos_dir: std::path::PathBuf) -> axum::Router {
     let state = AppState::new(db, Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
-        .with_repos_dir(repos_dir);
+        .with_repos_dir(repos_dir)
+        .with_git(Arc::new(CliGitBackend::new()));
     let cors = build_cors("development", None).expect("cors");
     router_with_state(state, cors)
 }
@@ -76,55 +77,238 @@ async fn signup_and_login(
     (cookie, v)
 }
 
+async fn rpc_json(app: &axum::Router, body: &str, cookie: &str) -> serde_json::Value {
+    let res = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(body, cookie))
+        .await
+        .unwrap();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).expect("rpc json body")
+}
+
+async fn setup_empty_repo(
+    app: &axum::Router,
+    cookie: &str,
+    repo: &str,
+) -> serde_json::Value {
+    let create = rpc_json(
+        app,
+        &format!(
+            r#"{{"procedure":"repo.create","input":{{"name":"{repo}","visibility":"public","description":""}}}}"#
+        ),
+        cookie,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+    create
+}
+
 /// GIT-16 / D-REL-07 / D-REL-08: Admin rename moves disk+DB and inserts redirect.
 #[tokio::test]
-#[ignore = "Wave 0: green in 15-03"]
 async fn repo_rename_admin_moves_disk_and_inserts_redirect() {
-    let _ = (test_app, signup_and_login);
-    assert!(
-        false,
-        "Wave 0 stub: Admin rename moves bare dir + DB name and inserts repository_redirects (GIT-16, D-REL-07, D-REL-08)"
-    );
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("rename_ok.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let (cookie, login_v) = signup_and_login(&app, "ren@ex.com", "renowner").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+
+    setup_empty_repo(&app, &cookie, "oldname").await;
+    let old_bare = repos.join("renowner").join("oldname.git");
+    assert!(old_bare.exists(), "bare should exist before rename");
+
+    let renamed = rpc_json(
+        &app,
+        r#"{"procedure":"repo.rename","input":{"owner":"renowner","name":"oldname","newName":"newname"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(renamed["ok"], true, "{renamed}");
+    assert_eq!(renamed["data"]["repo"]["name"], "newname");
+
+    let new_bare = repos.join("renowner").join("newname.git");
+    assert!(new_bare.exists(), "bare should exist at new path");
+    assert!(!old_bare.exists(), "old bare path should be gone");
+
+    let redir = db
+        .find_repository_redirect("renowner", "oldname")
+        .await
+        .expect("find redirect")
+        .expect("redirect row");
+    assert_eq!(redir.repo_id, renamed["data"]["repo"]["id"].as_str().unwrap());
 }
 
 /// D-REL-07: non-admin rename → soft repo.not_found.
 #[tokio::test]
-#[ignore = "Wave 0: green in 15-03"]
 async fn repo_rename_non_admin_soft_not_found() {
-    assert!(
-        false,
-        "Wave 0 stub: non-Admin rename returns identical soft repo.not_found (D-REL-07, T-15-01)"
-    );
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("rename_deny.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let (cookie, login_v) = signup_and_login(&app, "own@ex.com", "ownadmin").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_empty_repo(&app, &cookie, "hello").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "w@ex.com", "writer1").await;
+    let writer_id = writer_v["data"]["id"].as_str().unwrap().to_string();
+    db.set_email_verified_at(&writer_id, &now)
+        .await
+        .expect("verify writer");
+    let add = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"ownadmin","name":"hello","username":"writer1","permission":"write"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let denied = rpc_json(
+        &app,
+        r#"{"procedure":"repo.rename","input":{"owner":"ownadmin","name":"hello","newName":"nope"}}"#,
+        &writer_cookie,
+    )
+    .await;
+    assert_eq!(denied["ok"], false, "{denied}");
+    assert_eq!(denied["error"]["code"], "repo.not_found");
 }
 
 /// D-REL-08: redirect resolve on old path within retention.
 #[tokio::test]
-#[ignore = "Wave 0: green in 15-03"]
 async fn redirect_resolve_old_path_within_retention() {
-    assert!(
-        false,
-        "Wave 0 stub: old owner/name resolves via repository_redirects within retention (D-REL-08)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("redir_ok.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let (cookie, login_v) = signup_and_login(&app, "r2@ex.com", "rediruser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_empty_repo(&app, &cookie, "alpha").await;
+
+    let renamed = rpc_json(
+        &app,
+        r#"{"procedure":"repo.rename","input":{"owner":"rediruser","name":"alpha","newName":"beta"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(renamed["ok"], true, "{renamed}");
+
+    let old_get = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"rediruser","name":"alpha"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(old_get["ok"], true, "{old_get}");
+    assert_eq!(old_get["data"]["name"], "beta");
+    assert_eq!(
+        old_get["data"]["id"],
+        renamed["data"]["repo"]["id"].as_str().unwrap()
     );
 }
 
 /// Live repo at old path supersedes redirect.
 #[tokio::test]
-#[ignore = "Wave 0: green in 15-03"]
 async fn redirect_supersede_when_new_repo_occupies_old_path() {
-    assert!(
-        false,
-        "Wave 0 stub: creating a repo at old path deletes matching redirect (live wins)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("redir_sup.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let (cookie, login_v) = signup_and_login(&app, "s@ex.com", "supuser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_empty_repo(&app, &cookie, "gamma").await;
+
+    let renamed = rpc_json(
+        &app,
+        r#"{"procedure":"repo.rename","input":{"owner":"supuser","name":"gamma","newName":"delta"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(renamed["ok"], true, "{renamed}");
+    assert!(db
+        .find_repository_redirect("supuser", "gamma")
+        .await
+        .unwrap()
+        .is_some());
+
+    let recreated = setup_empty_repo(&app, &cookie, "gamma").await;
+    assert!(db
+        .find_repository_redirect("supuser", "gamma")
+        .await
+        .unwrap()
+        .is_none());
+
+    let get_old = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"supuser","name":"gamma"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(get_old["ok"], true, "{get_old}");
+    assert_eq!(
+        get_old["data"]["id"],
+        recreated["data"]["id"].as_str().unwrap()
+    );
+    assert_ne!(
+        get_old["data"]["id"],
+        renamed["data"]["repo"]["id"].as_str().unwrap()
     );
 }
 
-/// Expired redirects purge via job.
+/// Expired redirects purge via orphan reconcile.
 #[tokio::test]
-#[ignore = "Wave 0: green in 15-03"]
 async fn redirect_purge_expired_rows() {
-    assert!(
-        false,
-        "Wave 0 stub: reconcile/purge deletes repository_redirects where expires_at < now (D-REL-08)"
-    );
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("redir_purge.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let (cookie, login_v) = signup_and_login(&app, "p@ex.com", "purgeuser").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    let created = setup_empty_repo(&app, &cookie, "eps").await;
+    let repo_id = created["data"]["id"].as_str().unwrap();
+
+    let past = (chrono::Utc::now() - chrono::Duration::days(1))
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.insert_repository_redirect(&Uuid::new_v4().to_string(), "purgeuser", "old-eps", repo_id, &past)
+        .await
+        .expect("insert expired redirect");
+    assert!(db
+        .find_repository_redirect("purgeuser", "old-eps")
+        .await
+        .unwrap()
+        .is_some());
+
+    let stats = orphan_reconcile(&db, &repos).await.expect("reconcile");
+    assert!(stats.purged_expired_redirects >= 1);
+    assert!(db
+        .find_repository_redirect("purgeuser", "old-eps")
+        .await
+        .unwrap()
+        .is_none());
 }
 
 /// GIT-17 / D-REL-09 / D-REL-10: Admin transfer to user/org with type-confirm.

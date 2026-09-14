@@ -2,16 +2,21 @@
 
 mod acl;
 mod collaborators;
+mod rename_transfer;
 mod templates;
 
 pub use acl::{
     can_read_as_owner, effective_capability, fg_all_covers_repo, is_private_visibility, meets,
-    not_found, owner_ref_for_repo, resolve_owner_slug, resolve_repo_for_read, AccessibleRepo,
-    Capability, OwnerRef,
+    not_found, owner_ref_for_repo, resolve_owner_slug, resolve_repo_for_read,
+    lookup_repo_row_or_redirect, AccessibleRepo, Capability, OwnerRef,
 };
 pub use collaborators::{
     add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
     resolve_repo_for_admin, update as collaborators_update,
+};
+pub use rename_transfer::{
+    redirect_retention_days, rename, resolve_repo_or_redirect, supersede_redirect_on_create,
+    DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
@@ -280,6 +285,7 @@ pub async fn create_defaults(ctx: &RpcCtx) -> Result<RepoCreateDefaults, AppErro
 }
 
 /// `repo.get` — ACL-safe metadata (D-23–D-25). Anonymous OK for public.
+/// Honors unexpired repository redirects (D-REL-08).
 pub async fn get(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
     let req: RepoGetRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid repo.get input: {e}"))
@@ -906,6 +912,12 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
                 "failed to seed initial commit from templates",
             ));
         }
+    }
+
+    // Live repo at this slug/name supersedes any redirect (D-REL-08).
+    if let Err(e) = rename_transfer::supersede_redirect_on_create(&ctx.db, &owner_slug, &name).await
+    {
+        tracing::warn!(error = %e, "delete matching redirect after create failed");
     }
 
     Ok(RepoPublic {

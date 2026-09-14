@@ -45,6 +45,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_SSH_HOST_KEY_DIR` | Optional | `var/ssh` (Compose `/var/ssh`) | Persist Ed25519 host keys across restarts (TOFU). Compose uses a named volume. |
 | `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | Optional | `86400` (24h) | In-process orphan reconcile interval. Removes bare dirs with no DB row and purges soft-deleted repos past retention. Set `0` to disable. |
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | Optional | `14` | Days to keep soft-deleted repository rows/files before orphan reconcile hard-deletes them. |
+| `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` | Optional | `90` | Days to keep `repository_redirects` after rename/transfer so old `/{owner}/{repo}` and Smart HTTP/SSH paths keep resolving. Expired rows are purged by orphan reconcile. |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | Optional | `604800` (7d) | In-process scheduled `git gc --auto` across active repos. Set `0` to disable. Sys-admins can also trigger `admin.repos.gc` manually. |
 
 \* Strongly recommended for any real instance; without it the API runs with a skipped DB pool.  
@@ -70,6 +71,7 @@ Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTA
 |------|---------|--------|
 | `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | 86400 | Periodic scan: delete orphan bare dirs; purge soft-deletes past retention |
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | 14 | Soft-delete grace period before disk + row removal |
+| `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` | 90 | Rename/transfer redirect TTL before purge |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | 604800 | Scheduled `git gc --auto` on active repos |
 
 Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`). Reset always wipes issue-domain rows via repository/org CASCADE (no extra env knobs).
@@ -189,6 +191,7 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | `OCTANEST_REPOS_DIR` | `var/repos` | `crates/octanest-api/src/app.rs` |
 | Orphan reconcile interval | 86400s | `crates/octanest-api/src/jobs/schedule.rs` |
 | Soft-delete retention | 14 days | `crates/octanest-api/src/jobs/reconcile.rs` |
+| Repo redirect retention | 90 days | `crates/octanest-api/src/repo/rename_transfer.rs` / `app.rs` |
 | Git gc interval | 604800s | `crates/octanest-api/src/jobs/schedule.rs` |
 
 Email sender selection when building from ENV: Resend key → SMTP URL → log sink.

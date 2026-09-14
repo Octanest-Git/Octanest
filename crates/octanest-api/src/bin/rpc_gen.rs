@@ -411,6 +411,28 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+export type RepoRenameRequest = {
+  owner: string;
+  name: string;
+  newName: string;
+};
+
+export type RepoRenameResponse = {
+  repo: RepoPublic;
+};
+
+export type RepoTransferRequest = {
+  owner: string;
+  name: string;
+  destOwner: string;
+  destOwnerType: OwnerType;
+  confirmName: string;
+};
+
+export type RepoTransferResponse = {
+  repo: RepoPublic;
+};
+
 /** Per-repo collaborator permission ladder (D-ORG-02c). */
 export type CollaboratorPermission = "read" | "write" | "admin";
 
@@ -1070,6 +1092,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+      rename: (input: RepoRenameRequest) =>
+        rpcCall<RepoRenameResponse>(opts, "repo.rename", input),
       collaborators: {
         list: (input: RepoGetRequest) =>
           rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),
