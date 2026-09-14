@@ -21,7 +21,9 @@ use crate::app::AppState;
 use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
-use crate::repo::{can_read_as_owner, is_private_visibility, resolve_owner_slug};
+use crate::repo::{
+    effective_capability, is_private_visibility, meets, resolve_owner_slug, Capability, OwnerRef,
+};
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
 const PAT_HINT: &str =
@@ -249,7 +251,7 @@ async fn authenticate_pat(
 
 struct ResolvedRepo {
     row: RepositoryRow,
-    owner_id: String,
+    owner: OwnerRef,
 }
 
 async fn resolve_repo(
@@ -279,11 +281,14 @@ async fn resolve_repo(
     };
     Ok(ResolvedRepo {
         row,
-        owner_id: owner_ref.id().to_string(),
+        owner: owner_ref,
     })
 }
 
 /// Classic `repo` / FG contents+selection checks — insufficient → 403 (D-23).
+/// ACL capability is checked separately via [`effective_capability`]; this only
+/// validates PAT scope/contents (T-10-13 / D-ORG-05). Classic push no longer
+/// requires `pat.user_id == repositories.owner_id`.
 fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, receive: bool) -> bool {
     let kind = match PatKind::parse(&pat.kind) {
         Ok(k) => k,
@@ -299,7 +304,6 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
             scopes
                 .iter()
                 .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo))
-                && (!receive || pat.user_id == owner_id)
         }
         PatKind::FineGrained => {
             let access = match pat
@@ -310,6 +314,7 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
                 Some(a) => a,
                 None => return false,
             };
+            // FG All still owner-id until Task 2 (A4: personal + org Owner/Admin).
             let repo_ok = match access {
                 FgRepoAccess::All => pat.user_id == owner_id,
                 FgRepoAccess::Selected => pat.repository_ids.iter().any(|id| id == &repo.id),
@@ -416,19 +421,38 @@ async fn authorize_and_cgi(
 
     if let Some(ref auth) = authed {
         let caller_id = auth.owner.id.as_str();
-        // Private + authenticated non-owner → 401 (ASSUME A5).
-        if is_private && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+        let capability = match effective_capability(
+            &state.db,
+            Some(caller_id),
+            &resolved.row,
+            &resolved.owner,
+        )
+        .await
+        {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::error!(error = %e, "effective_capability");
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
+        };
+        // Private + no Read → 401 (D-21 / T-10-01), not web not_found.
+        if is_private && !meets(capability, Capability::Read) {
             return unauthorized_basic();
         }
-        // Push is owner-only until Phase 10.
-        if receive && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
+        // Push needs Write capability (ORG-04 / D-ORG-05).
+        if receive && !meets(capability, Capability::Write) {
             return unauthorized_basic();
         }
         // D-24 / Open Q2: unverified may fetch; push denied with email_unverified.
         if receive && auth.owner.email_verified_at.is_none() {
             return email_unverified_push();
         }
-        if !pat_allows_operation(&auth.pat, &resolved.row, &resolved.owner_id, receive) {
+        if !pat_allows_operation(
+            &auth.pat,
+            &resolved.row,
+            resolved.owner.id(),
+            receive,
+        ) {
             return forbidden_insufficient_scope();
         }
         touch_last_used(state, &auth.pat.id, headers).await;

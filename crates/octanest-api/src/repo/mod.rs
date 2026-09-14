@@ -5,8 +5,8 @@ mod collaborators;
 mod templates;
 
 pub use acl::{
-    can_read_as_owner, is_private_visibility, meets, resolve_owner_slug, resolve_repo_for_read,
-    AccessibleRepo, Capability, OwnerRef,
+    can_read_as_owner, effective_capability, is_private_visibility, meets, resolve_owner_slug,
+    resolve_repo_for_read, AccessibleRepo, Capability, OwnerRef,
 };
 pub use collaborators::{
     add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
@@ -491,17 +491,17 @@ fn soft_protect_err() -> AppError {
     )
 }
 
-/// Resolve repo for owner-only mutate (D-27 branch CRUD). Non-owner → identical [`acl::not_found`].
-/// Visibility / soft-delete use [`resolve_repo_for_admin`] (Admin capability) instead.
+/// Resolve repo for Write mutate (D-27 branch CRUD / T-10-14).
+/// Insufficient capability → identical [`acl::not_found`].
+/// Visibility / soft-delete use [`resolve_repo_for_admin`] (Admin) instead.
 async fn resolve_repo_for_owner_mutate(
     ctx: &RpcCtx,
     owner: &str,
     name: &str,
 ) -> Result<AccessibleRepo, AppError> {
     let _ = require_verified(ctx).await?;
-    let session = require_session_user(ctx)?;
     let accessible = resolve_repo_for_read(ctx, owner, name).await?;
-    if session.user_id != accessible.row.owner_id {
+    if !meets(accessible.capability, Capability::Write) {
         return Err(acl::not_found());
     }
     Ok(accessible)

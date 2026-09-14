@@ -108,7 +108,8 @@ fn parse_collaborator_capability(perm: &str) -> Option<Capability> {
     }
 }
 
-/// Thin legacy helper for Smart HTTP until it switches to [`effective_capability`].
+/// Legacy personal-owner equality helper retained for any remaining call sites.
+/// Smart HTTP and mutate gates use [`effective_capability`] + [`meets`] instead.
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
     caller_user_id == Some(owner_id)
 }
