@@ -70,6 +70,8 @@ export default defineConfig({
             "src/**/*.gate.test.ts",
             // Plan 07-14: markdown/highlight libs use *.test.ts (not *.unit.test.ts)
             "src/lib/markdown.test.ts",
+            // Plan 11-01: ISS-04 issue autolink Wave 0 stubs
+            "src/lib/markdown.issues.test.ts",
             "src/lib/highlight.test.ts",
           ],
         },
