@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 46
-waived_count: 0
-fixed_count: 1
-total_count: 47
-last_updated: 2026-09-14T15:54:38.280Z
+open_count: 47
+waived_count: 1
+fixed_count: 2
+total_count: 50
+last_updated: 2026-09-14T16:29:16.369Z
 ---
 
 # Broken Windows Ledger
@@ -62,6 +62,9 @@ last_updated: 2026-09-14T15:54:38.280Z
 | 45 | 11 | stub | apps/web/src/lib/markdown.issues.test.ts |  | Wave 0 it.fails #N autolink stubs pending 11-10 greens | open |  | 2026-09-14T14:24:49.422Z |  |
 | 46 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Comments/Labels/Assignees/Linked PRs empty shells until later plans | open |  | 2026-09-14T14:53:54.977Z |  |
 | 47 | 11 | deviation | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Rule 2: wired detail route owner/repo into renderGfm despite plan 'without editing detail route files' | open |  | 2026-09-14T15:54:38.280Z |  |
+| 48 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Assignees panel shipped in 11-07; Linked PRs shell remains until 11-09 | fixed |  | 2026-09-14T16:05:16.873Z | 2026-09-14T16:29:16.369Z |
+| 49 | 11 | stub | apps/web/src/components/repo/issue-linked-prs.tsrx |  | Linked PRs panel shows pr_stub placeholders until Phase 12 replaces kind (D-ISS-13 intentional) | open |  | 2026-09-14T16:28:25.592Z |  |
+| 50 | 11 | unmet-truth | crates/octanest-api/src/issue/mod.rs |  | Closing-keyword auto-close deferred to Phase 12 (D-ISS-15) — verified not enforced in issue_links_no_closing_keyword_enforcement | waived | Intentional Phase 12 deferral (D-ISS-15), not a defect | 2026-09-14T16:28:25.718Z | 2026-09-14T16:29:16.230Z |
 
 ````json
 [
@@ -628,6 +631,42 @@ last_updated: 2026-09-14T15:54:38.280Z
     "reason": "",
     "recorded_at": "2026-09-14T15:54:38.280Z",
     "resolved_at": null
+  },
+  {
+    "id": 48,
+    "kind": "stub",
+    "phase": "11",
+    "file": "apps/web/src/routes/$owner.$repo.issues.$n.tsrx",
+    "line": null,
+    "description": "Assignees panel shipped in 11-07; Linked PRs shell remains until 11-09",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-09-14T16:05:16.873Z",
+    "resolved_at": "2026-09-14T16:29:16.369Z"
+  },
+  {
+    "id": 49,
+    "kind": "stub",
+    "phase": "11",
+    "file": "apps/web/src/components/repo/issue-linked-prs.tsrx",
+    "line": null,
+    "description": "Linked PRs panel shows pr_stub placeholders until Phase 12 replaces kind (D-ISS-13 intentional)",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T16:28:25.592Z",
+    "resolved_at": null
+  },
+  {
+    "id": 50,
+    "kind": "unmet-truth",
+    "phase": "11",
+    "file": "crates/octanest-api/src/issue/mod.rs",
+    "line": null,
+    "description": "Closing-keyword auto-close deferred to Phase 12 (D-ISS-15) — verified not enforced in issue_links_no_closing_keyword_enforcement",
+    "status": "waived",
+    "reason": "Intentional Phase 12 deferral (D-ISS-15), not a defect",
+    "recorded_at": "2026-09-14T16:28:25.718Z",
+    "resolved_at": "2026-09-14T16:29:16.230Z"
   }
 ]
 ````
