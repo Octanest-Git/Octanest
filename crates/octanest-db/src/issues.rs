@@ -603,3 +603,294 @@ pub async fn delete_issue(pool: &DbPool, id: &str) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[derive(Debug, Clone)]
+pub struct IssueRevisionRow {
+    pub id: String,
+    pub issue_id: String,
+    pub editor_id: String,
+    pub title: String,
+    pub body: String,
+    pub created_at: String,
+}
+
+macro_rules! map_revision {
+    ($row:expr) => {{
+        let row = $row;
+        IssueRevisionRow {
+            id: row.try_get("id").map_err(|e| format!("revision row: {e}"))?,
+            issue_id: row
+                .try_get("issue_id")
+                .map_err(|e| format!("revision row: {e}"))?,
+            editor_id: row
+                .try_get("editor_id")
+                .map_err(|e| format!("revision row: {e}"))?,
+            title: row
+                .try_get("title")
+                .map_err(|e| format!("revision row: {e}"))?,
+            body: row.try_get("body").map_err(|e| format!("revision row: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("revision row: {e}"))?,
+        }
+    }};
+}
+
+const REV_SELECT_PG: &str = "SELECT id, issue_id, editor_id, title, body,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at
+FROM issue_revisions";
+
+const REV_SELECT_MYSQL: &str = "SELECT id, issue_id, editor_id, title, body,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at
+FROM issue_revisions";
+
+const REV_SELECT_SQLITE: &str = "SELECT id, issue_id, editor_id, title, body,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+FROM issue_revisions";
+
+/// Insert a prior title/body snapshot (D-ISS-04). Call before applying the new values.
+pub async fn insert_issue_revision(
+    pool: &DbPool,
+    id: &str,
+    issue_id: &str,
+    editor_id: &str,
+    title: &str,
+    body: &str,
+) -> Result<IssueRevisionRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO issue_revisions (id, issue_id, editor_id, title, body)
+VALUES ($1, $2, $3, $4, $5)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(editor_id)
+            .bind(title)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue revision failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO issue_revisions (id, issue_id, editor_id, title, body)
+VALUES (?, ?, ?, ?, ?)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(editor_id)
+            .bind(title)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue revision failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO issue_revisions (id, issue_id, editor_id, title, body)
+VALUES (?1, ?2, ?3, ?4, ?5)",
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(editor_id)
+            .bind(title)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue revision failed: {e}"))?;
+        }
+    }
+    list_issue_revisions(pool, issue_id)
+        .await?
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| "insert issue revision failed: row missing after insert".into())
+}
+
+/// Revisions oldest-first (chronological trail).
+pub async fn list_issue_revisions(
+    pool: &DbPool,
+    issue_id: &str,
+) -> Result<Vec<IssueRevisionRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{REV_SELECT_PG} WHERE issue_id = $1 ORDER BY created_at ASC, id ASC"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_revision!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(&format!(
+                "{REV_SELECT_MYSQL} WHERE issue_id = ? ORDER BY created_at ASC, id ASC"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_revision!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(&format!(
+                "{REV_SELECT_SQLITE} WHERE issue_id = ?1 ORDER BY created_at ASC, rowid ASC"
+            ))
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue revisions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_revision!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+/// Update title/body and bump `updated_at`.
+pub async fn update_issue_content(
+    pool: &DbPool,
+    id: &str,
+    title: &str,
+    body: &str,
+) -> Result<IssueRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE issues SET title = $2, body = $3, updated_at = NOW() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(title)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue content failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE issues SET title = ?, body = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?",
+            )
+            .bind(title)
+            .bind(body)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue content failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE issues SET title = ?2, body = ?3,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(title)
+            .bind(body)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update issue content failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "update issue content failed: row missing".into())
+}
+
+/// Close an open issue.
+pub async fn close_issue(
+    pool: &DbPool,
+    id: &str,
+    closed_by: &str,
+) -> Result<IssueRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'closed', closed_at = NOW(), closed_by = $2,
+ updated_at = NOW() WHERE id = $1 AND state = 'open'",
+            )
+            .bind(id)
+            .bind(closed_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("close issue failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'closed', closed_at = UTC_TIMESTAMP(), closed_by = ?,
+ updated_at = UTC_TIMESTAMP() WHERE id = ? AND state = 'open'",
+            )
+            .bind(closed_by)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("close issue failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'closed',
+ closed_at = strftime('%Y-%m-%d %H:%M:%S','now'), closed_by = ?2,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+ WHERE id = ?1 AND state = 'open'",
+            )
+            .bind(id)
+            .bind(closed_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("close issue failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "close issue failed: row missing".into())
+}
+
+/// Reopen a closed issue.
+pub async fn reopen_issue(pool: &DbPool, id: &str) -> Result<IssueRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'open', closed_at = NULL, closed_by = NULL,
+ updated_at = NOW() WHERE id = $1 AND state = 'closed'",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("reopen issue failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'open', closed_at = NULL, closed_by = NULL,
+ updated_at = UTC_TIMESTAMP() WHERE id = ? AND state = 'closed'",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("reopen issue failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE issues SET state = 'open', closed_at = NULL, closed_by = NULL,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+ WHERE id = ?1 AND state = 'closed'",
+            )
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("reopen issue failed: {e}"))?;
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "reopen issue failed: row missing".into())
+}

@@ -177,6 +177,50 @@ pub struct IssueRefRequest {
     pub number: i64,
 }
 
+/// Update title and/or body (D-ISS-03). Omitted fields keep current values.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateIssueRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub body: Option<String>,
+}
+
+/// Admin hard-delete with typed confirm (D-ISS-02).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteIssueRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "confirmNumber", alias = "confirm_number")]
+    pub confirm_number: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteIssueResponse {
+    pub number: i64,
+}
+
+/// One prior title/body snapshot (D-ISS-04).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IssueRevisionPublic {
+    pub id: String,
+    pub issue_id: String,
+    pub editor_id: String,
+    pub editor_username: String,
+    pub title: String,
+    pub body: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IssueHistoryResponse {
+    pub revisions: Vec<IssueRevisionPublic>,
+}
+
 /// List filters (D-ISS-16..18).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IssueListRequest {

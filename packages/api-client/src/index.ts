@@ -680,6 +680,39 @@ export type IssueListResponse = {
   total: number;
 };
 
+export type UpdateIssueRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  title?: string | null;
+  body?: string | null;
+};
+
+export type DeleteIssueRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  confirmNumber: number;
+};
+
+export type DeleteIssueResponse = {
+  number: number;
+};
+
+export type IssueRevisionPublic = {
+  id: string;
+  issue_id: string;
+  editor_id: string;
+  editor_username: string;
+  title: string;
+  body: string;
+  created_at: string;
+};
+
+export type IssueHistoryResponse = {
+  revisions: IssueRevisionPublic[];
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -819,6 +852,16 @@ export function createClient(opts: CreateClientOptions) {
       get: (input: IssueRefRequest) => rpcCall<IssuePublic>(opts, "issue.get", input),
       list: (input: IssueListRequest) =>
         rpcCall<IssueListResponse>(opts, "issue.list", input),
+      update: (input: UpdateIssueRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.update", input),
+      close: (input: IssueRefRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.close", input),
+      reopen: (input: IssueRefRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.reopen", input),
+      history: (input: IssueRefRequest) =>
+        rpcCall<IssueHistoryResponse>(opts, "issue.history", input),
+      delete: (input: DeleteIssueRequest) =>
+        rpcCall<DeleteIssueResponse>(opts, "issue.delete", input),
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
@@ -1293,6 +1336,64 @@ export function issueCreateMutationOptions(client: OctanestClient) {
     mutationKey: ["issue", "create"] as const,
     mutationFn: async (input: CreateIssueRequest) => {
       const res = await client.issue.create(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueUpdateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "update"] as const,
+    mutationFn: async (input: UpdateIssueRequest) => {
+      const res = await client.issue.update(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCloseMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "close"] as const,
+    mutationFn: async (input: IssueRefRequest) => {
+      const res = await client.issue.close(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueReopenMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "reopen"] as const,
+    mutationFn: async (input: IssueRefRequest) => {
+      const res = await client.issue.reopen(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueHistoryQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "history", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.history(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueDeleteMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "delete"] as const,
+    mutationFn: async (input: DeleteIssueRequest) => {
+      const res = await client.issue.delete(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

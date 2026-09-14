@@ -21,7 +21,7 @@ pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::LabelRow;
-pub use issues::IssueRow;
+pub use issues::{IssueRevisionRow, IssueRow};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -478,6 +478,49 @@ impl Database {
     /// Hard-delete; does not reclaim `#N` (D-ISS-01).
     pub async fn delete_issue(&self, id: &str) -> Result<(), String> {
         issues::delete_issue(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_issue_revision(
+        &self,
+        id: &str,
+        issue_id: &str,
+        editor_id: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<IssueRevisionRow, String> {
+        issues::insert_issue_revision(
+            self.require_pool()?,
+            id,
+            issue_id,
+            editor_id,
+            title,
+            body,
+        )
+        .await
+    }
+
+    pub async fn list_issue_revisions(
+        &self,
+        issue_id: &str,
+    ) -> Result<Vec<IssueRevisionRow>, String> {
+        issues::list_issue_revisions(self.require_pool()?, issue_id).await
+    }
+
+    pub async fn update_issue_content(
+        &self,
+        id: &str,
+        title: &str,
+        body: &str,
+    ) -> Result<IssueRow, String> {
+        issues::update_issue_content(self.require_pool()?, id, title, body).await
+    }
+
+    pub async fn close_issue(&self, id: &str, closed_by: &str) -> Result<IssueRow, String> {
+        issues::close_issue(self.require_pool()?, id, closed_by).await
+    }
+
+    pub async fn reopen_issue(&self, id: &str) -> Result<IssueRow, String> {
+        issues::reopen_issue(self.require_pool()?, id).await
     }
 
     pub async fn insert_label(

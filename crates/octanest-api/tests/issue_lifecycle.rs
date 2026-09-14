@@ -1,6 +1,6 @@
-//! ISS-01 create/list/get + per-repo #N (D-ISS-01 / D-ISS-20).
+//! ISS-01 create/list/get/edit/close/reopen/history (D-ISS-01..04 / D-ISS-20).
 //!
-//! Edit/close/reopen/history remain Wave 0 RED until 11-04.
+//! Hard-delete covered in `issue_delete.rs` (11-04-T2).
 
 mod support;
 
@@ -221,26 +221,206 @@ async fn issue_lifecycle_second_create_monotonic_number() {
 /// Author or Write+ may edit title/body after create (ISS-01 / D-ISS-03).
 #[tokio::test]
 async fn issue_lifecycle_edit_title_body() {
-    assert!(
-        false,
-        "Wave 0: issue.edit must allow author + Write+ to change title/body (ISS-01 / D-ISS-03)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_edit.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, login_v) = signup_and_login(&app, "editown@ex.com", "editown").await;
+    let owner_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, owner_id).await;
+    create_repo(&app, &owner_cookie, "edits", "public").await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.create","input":{"owner":"editown","name":"edits","title":"Original","body":"v1"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let create_b = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_b).unwrap();
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    let update = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.update","input":{"owner":"editown","name":"edits","number":1,"title":"Edited","body":"v2"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let update_b = update.into_body().collect().await.unwrap().to_bytes();
+    let update_v: serde_json::Value = serde_json::from_slice(&update_b).unwrap();
+    assert_eq!(update_v["ok"], true, "author can update — {update_v}");
+    assert_eq!(update_v["data"]["title"], "Edited");
+    assert_eq!(update_v["data"]["body"], "v2");
+
+    // Read collaborator cannot update (D-ISS-03 / D-ISS-20).
+    let (reader_cookie, reader_v) =
+        signup_and_login(&app, "editread@ex.com", "editread").await;
+    let reader_id = reader_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, reader_id).await;
+    let add = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"editown","name":"edits","username":"editread","permission":"read"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let add_b = add.into_body().collect().await.unwrap().to_bytes();
+    let add_v: serde_json::Value = serde_json::from_slice(&add_b).unwrap();
+    assert_eq!(add_v["ok"], true, "add read collab — {add_v}");
+
+    let denied = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.update","input":{"owner":"editown","name":"edits","number":1,"title":"Nope"}}"#,
+            &reader_cookie,
+        ))
+        .await
+        .unwrap();
+    let denied_b = denied.into_body().collect().await.unwrap().to_bytes();
+    let denied_v: serde_json::Value = serde_json::from_slice(&denied_b).unwrap();
+    assert_eq!(denied_v["ok"], false, "read cannot update — {denied_v}");
+    assert_eq!(
+        denied_v["error"]["code"], "repo.not_found",
+        "soft deny — {denied_v}"
     );
 }
 
 /// Lifecycle is open ↔ closed; reopen allowed (ISS-01 / D-ISS-02).
 #[tokio::test]
 async fn issue_lifecycle_close_and_reopen() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_close.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "closeown@ex.com", "closeown").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+    create_repo(&app, &cookie, "cycle", "public").await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.create","input":{"owner":"closeown","name":"cycle","title":"Toggle me"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let create_b = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_b).unwrap();
+    assert_eq!(create_v["ok"], true, "{create_v}");
+    assert_eq!(create_v["data"]["state"], "open");
+
+    let close = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.close","input":{"owner":"closeown","name":"cycle","number":1}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let close_b = close.into_body().collect().await.unwrap().to_bytes();
+    let close_v: serde_json::Value = serde_json::from_slice(&close_b).unwrap();
+    assert_eq!(close_v["ok"], true, "close — {close_v}");
+    assert_eq!(close_v["data"]["state"], "closed");
+    assert!(close_v["data"]["closed_at"].as_str().is_some());
+
+    let reopen = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.reopen","input":{"owner":"closeown","name":"cycle","number":1}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let reopen_b = reopen.into_body().collect().await.unwrap().to_bytes();
+    let reopen_v: serde_json::Value = serde_json::from_slice(&reopen_b).unwrap();
+    assert_eq!(reopen_v["ok"], true, "reopen — {reopen_v}");
+    assert_eq!(reopen_v["data"]["state"], "open");
     assert!(
-        false,
-        "Wave 0: issue.close / issue.reopen must toggle open↔closed (ISS-01 / D-ISS-02)"
+        reopen_v["data"]["closed_at"].is_null()
+            || reopen_v["data"].get("closed_at").is_none()
     );
 }
 
 /// Full edit history trail for title/body (ISS-01 / D-ISS-04).
 #[tokio::test]
 async fn issue_history_full_title_body_trail() {
-    assert!(
-        false,
-        "Wave 0: issue.history must return full title/body revision trail (ISS-01 / D-ISS-04)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("issue_hist.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "histown@ex.com", "histown").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+    create_repo(&app, &cookie, "trail", "public").await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.create","input":{"owner":"histown","name":"trail","title":"T0","body":"B0"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let create_b = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_b).unwrap();
+    assert_eq!(create_v["ok"], true, "{create_v}");
+
+    for (title, body) in [("T1", "B1"), ("T2", "B2")] {
+        let body_json = format!(
+            r#"{{"procedure":"issue.update","input":{{"owner":"histown","name":"trail","number":1,"title":"{title}","body":"{body}"}}}}"#
+        );
+        let upd = app
+            .clone()
+            .oneshot(rpc_req_with_cookie(&body_json, &cookie))
+            .await
+            .unwrap();
+        let upd_b = upd.into_body().collect().await.unwrap().to_bytes();
+        let upd_v: serde_json::Value = serde_json::from_slice(&upd_b).unwrap();
+        assert_eq!(upd_v["ok"], true, "update {title} — {upd_v}");
+    }
+
+    let hist = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"issue.history","input":{"owner":"histown","name":"trail","number":1}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let hist_b = hist.into_body().collect().await.unwrap().to_bytes();
+    let hist_v: serde_json::Value = serde_json::from_slice(&hist_b).unwrap();
+    assert_eq!(hist_v["ok"], true, "history — {hist_v}");
+    let revs = hist_v["data"]["revisions"]
+        .as_array()
+        .expect("revisions array");
+    assert_eq!(revs.len(), 2, "two prior snapshots — {hist_v}");
+    assert_eq!(revs[0]["title"], "T0");
+    assert_eq!(revs[0]["body"], "B0");
+    assert_eq!(revs[1]["title"], "T1");
+    assert_eq!(revs[1]["body"], "B1");
+    assert_eq!(revs[0]["editor_username"], "histown");
 }
