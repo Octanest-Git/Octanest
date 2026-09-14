@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 48
+open_count: 49
 waived_count: 1
 fixed_count: 2
-total_count: 51
-last_updated: 2026-09-14T16:59:15.548Z
+total_count: 52
+last_updated: 2026-09-14T17:31:23.559Z
 ---
 
 # Broken Windows Ledger
@@ -66,6 +66,7 @@ last_updated: 2026-09-14T16:59:15.548Z
 | 49 | 11 | stub | apps/web/src/components/repo/issue-linked-prs.tsrx |  | Linked PRs panel shows pr_stub placeholders until Phase 12 replaces kind (D-ISS-13 intentional) | open |  | 2026-09-14T16:28:25.592Z |  |
 | 50 | 11 | unmet-truth | crates/octanest-api/src/issue/mod.rs |  | Closing-keyword auto-close deferred to Phase 12 (D-ISS-15) — verified not enforced in issue_links_no_closing_keyword_enforcement | waived | Intentional Phase 12 deferral (D-ISS-15), not a defect | 2026-09-14T16:28:25.718Z | 2026-09-14T16:29:16.230Z |
 | 51 | 15 | stub | crates/octanest-api/tests/release_rpc.rs |  | release_* tests #[ignore] until 15-01/15-02 | open |  | 2026-09-14T16:59:15.548Z |  |
+| 52 | 15 | deviation | crates/octanest-api/src/repo/rename_transfer.rs |  | 15-03 combined T1-T3 into single commit due to shared redirect wiring | open |  | 2026-09-14T17:31:23.559Z |  |
 
 ````json
 [
@@ -679,6 +680,18 @@ last_updated: 2026-09-14T16:59:15.548Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T16:59:15.548Z",
+    "resolved_at": null
+  },
+  {
+    "id": 52,
+    "kind": "deviation",
+    "phase": "15",
+    "file": "crates/octanest-api/src/repo/rename_transfer.rs",
+    "line": null,
+    "description": "15-03 combined T1-T3 into single commit due to shared redirect wiring",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T17:31:23.559Z",
     "resolved_at": null
   }
 ]
