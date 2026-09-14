@@ -1,0 +1,10 @@
+{
+  "plan": "10-03",
+  "task": "10-03-T1",
+  "command": "cargo nextest run -p octanest-api -E 'test(org_owned_repo_resolves)'",
+  "exit_code": 1,
+  "failing_test": "org_owned_repo_resolves_by_org_slug",
+  "expected": "repo.get under org slug returns 200 with owner_username=acme-resolve",
+  "actual": "HTTP 404 (user-only find_user_by_username → not_found)",
+  "intentional": true
+}

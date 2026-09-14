@@ -143,6 +143,61 @@ async fn org_create_reserves_shared_slug_namespace() {
     assert_eq!(dup_v["error"]["code"], "org.slug_taken");
 }
 
+/// Org-owned public repo resolves via org slug (D-ORG-01 / OwnerRef) — not user-only lookup.
+#[tokio::test]
+async fn org_owned_repo_resolves_by_org_slug() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_resolve_slug.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "resolve@ex.com", "resolve1").await;
+    let user_id = login_v["data"]["id"].as_str().expect("id");
+    verify_user(&db, user_id).await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"acme-resolve"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "{v}");
+    let org_id = v["data"]["id"].as_str().expect("org id");
+
+    // Fixture: org-owned row (owner_id = org). owner_type set via insert API once GREEN;
+    // until then insert defaults owner_type=user but lookup keys on owner_id.
+    db.insert_repository("r-org-resolve", org_id, "widget", "public", "", "main")
+        .await
+        .expect("insert org-owned repo");
+
+    let get = app
+        .oneshot(rpc_req(
+            r#"{"procedure":"repo.get","input":{"owner":"acme-resolve","name":"widget"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(get.status(), StatusCode::OK, "org slug must resolve like username");
+    let get_bytes = get.into_body().collect().await.unwrap().to_bytes();
+    let get_v: serde_json::Value = serde_json::from_slice(&get_bytes).unwrap();
+    assert_eq!(get_v["ok"], true, "repo.get under org slug — {get_v}");
+    assert_eq!(get_v["data"]["name"], "widget");
+    assert_eq!(
+        get_v["data"]["owner_username"], "acme-resolve",
+        "AccessibleRepo.owner_username is the org slug"
+    );
+    assert_eq!(get_v["data"]["owner_id"], org_id);
+}
+
 /// Creator of an org is Owner (ORG-01 / D-ORG-02a).
 #[tokio::test]
 async fn org_create_creator_is_owner() {
