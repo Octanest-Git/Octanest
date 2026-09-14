@@ -3,6 +3,7 @@ pub mod auth;
 pub mod cors;
 pub mod email;
 pub mod git;
+pub mod issue;
 pub mod jobs;
 pub mod org;
 pub mod pat;

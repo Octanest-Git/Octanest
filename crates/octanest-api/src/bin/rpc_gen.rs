@@ -620,6 +620,76 @@ export type RevokeSshKeyRequest = {
   id: string;
 };
 
+export type IssueState = "open" | "closed";
+
+export type LabelScope = "org" | "repo";
+
+export type IssueLinkKind = "issue" | "pr_stub";
+
+export type IssueAssigneePublic = {
+  user_id: string;
+  username: string;
+  display_name: string;
+};
+
+export type LabelPublic = {
+  id: string;
+  name: string;
+  color: string;
+  description: string;
+  scope: LabelScope;
+  org_id?: string | null;
+  repo_id?: string | null;
+  hidden?: boolean;
+};
+
+export type IssuePublic = {
+  id: string;
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: IssueState;
+  author_id: string;
+  author_username: string;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  labels?: LabelPublic[];
+  assignees?: IssueAssigneePublic[];
+};
+
+export type CreateIssueRequest = {
+  owner: string;
+  name: string;
+  title: string;
+  body?: string | null;
+};
+
+export type IssueRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+};
+
+export type IssueListRequest = {
+  owner: string;
+  name: string;
+  state?: string | null;
+  author?: string | null;
+  label?: string | null;
+  assignee?: string | null;
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type IssueListResponse = {
+  issues: IssuePublic[];
+  total: number;
+};
+
 export type RpcOk<T> = { ok: true; data: T };
 export type RpcErr = { ok: false; error: AppError };
 export type RpcResult<T> = RpcOk<T> | RpcErr;
@@ -752,6 +822,13 @@ export function createClient(opts: CreateClientOptions) {
         accept: (input: OrgInvitesAcceptRequest) =>
           rpcCall<OrgInvitesAcceptResponse>(opts, "org.invites.accept", input),
       },
+    },
+    issue: {
+      create: (input: CreateIssueRequest) =>
+        rpcCall<IssuePublic>(opts, "issue.create", input),
+      get: (input: IssueRefRequest) => rpcCall<IssuePublic>(opts, "issue.get", input),
+      list: (input: IssueListRequest) =>
+        rpcCall<IssueListResponse>(opts, "issue.list", input),
     },
     pat: {
       createClassic: (input: CreateClassicPatRequest) =>
@@ -1179,6 +1256,53 @@ export function sshKeyRevokeMutationOptions(client: OctanestClient) {
     mutationKey: ["sshKey", "revoke"] as const,
     mutationFn: async (input: RevokeSshKeyRequest) => {
       const res = await client.sshKey.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueListQueryOptions(
+  client: OctanestClient,
+  input: IssueListRequest,
+) {
+  return {
+    queryKey: [
+      "issue",
+      "list",
+      input.owner,
+      input.name,
+      input.state ?? "open",
+      input.offset ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.issue.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueGetQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "get", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueCreateMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "create"] as const,
+    mutationFn: async (input: CreateIssueRequest) => {
+      const res = await client.issue.create(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

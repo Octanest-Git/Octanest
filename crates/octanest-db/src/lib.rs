@@ -449,6 +449,32 @@ impl Database {
         issues::find_by_id(self.require_pool()?, id).await
     }
 
+    pub async fn find_issue_by_repo_number(
+        &self,
+        repo_id: &str,
+        number: i64,
+    ) -> Result<Option<IssueRow>, String> {
+        issues::find_by_repo_number(self.require_pool()?, repo_id, number).await
+    }
+
+    /// List issues (`state`: open|closed|all). Returns `(rows, total)`.
+    pub async fn list_issues_for_repo(
+        &self,
+        repo_id: &str,
+        state_filter: &str,
+        offset: i64,
+        limit: i64,
+    ) -> Result<(Vec<IssueRow>, i64), String> {
+        issues::list_for_repo(
+            self.require_pool()?,
+            repo_id,
+            state_filter,
+            offset,
+            limit,
+        )
+        .await
+    }
+
     /// Hard-delete; does not reclaim `#N` (D-ISS-01).
     pub async fn delete_issue(&self, id: &str) -> Result<(), String> {
         issues::delete_issue(self.require_pool()?, id).await
