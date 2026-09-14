@@ -13,6 +13,7 @@ import { IssueComments } from "@/components/repo/issue-comments";
 import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
 import { IssueHistoryPanel } from "@/components/repo/issue-history";
 import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
+import { IssueLinkedPrsPanel } from "@/components/repo/issue-linked-prs";
 import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoChrome } from "@/components/repo/repo-chrome";
@@ -463,17 +464,12 @@ export function IssueDetailPage() @{
               issue={issue!}
               canWrite={canWrite}
             />
-            <section aria-labelledby="issue-linked-prs-heading">
-              <h2
-                id="issue-linked-prs-heading"
-                className="text-[14px] font-semibold text-foreground"
-              >
-                Linked PRs
-              </h2>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                No linked pull requests yet.
-              </p>
-            </section>
+            <IssueLinkedPrsPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+            />
           </aside>
         </div>
 

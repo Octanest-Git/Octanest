@@ -9,8 +9,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 /**
- * Phase 11 Issues UI — create/list/detail lifecycle greened through 11-07;
- * remaining RED via later plans for Linked PRs / factory wipe as needed.
+ * Phase 11 Issues UI — create/list/detail lifecycle greened through 11-09
+ * (Linked PRs stubs + manual link). Factory wipe remains later as needed.
  */
 
 const getMock = vi.fn();
@@ -32,6 +32,9 @@ const labelsSetMock = vi.fn();
 const assigneeCandidatesMock = vi.fn();
 const assigneesSetMock = vi.fn();
 const reactionsToggleMock = vi.fn();
+const linksListMock = vi.fn();
+const linksAddMock = vi.fn();
+const linksRemoveMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -64,6 +67,11 @@ vi.mock("@/lib/api-client", () => ({
         assigneeCandidatesMock(...args),
       reactions: {
         toggle: (...args: unknown[]) => reactionsToggleMock(...args),
+      },
+      links: {
+        list: (...args: unknown[]) => linksListMock(...args),
+        add: (...args: unknown[]) => linksAddMock(...args),
+        remove: (...args: unknown[]) => linksRemoveMock(...args),
       },
     },
     label: {
@@ -170,6 +178,9 @@ beforeEach(() => {
   assigneeCandidatesMock.mockReset();
   assigneesSetMock.mockReset();
   reactionsToggleMock.mockReset();
+  linksListMock.mockReset();
+  linksAddMock.mockReset();
+  linksRemoveMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -201,6 +212,18 @@ beforeEach(() => {
       reacted: true,
     },
   });
+  linksListMock.mockResolvedValue({ ok: true, data: { links: [] } });
+  linksAddMock.mockResolvedValue({
+    ok: true,
+    data: {
+      id: "lnk1",
+      kind: "pr_stub",
+      target_number: 42,
+      title: "Stub PR",
+      created_at: "2026-09-14T00:00:00Z",
+    },
+  });
+  linksRemoveMock.mockResolvedValue({ ok: true, data: { ok: true } });
 });
 
 afterEach(cleanup);
@@ -437,6 +460,49 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
       ).toBeInTheDocument();
       expect(
         screen.getByRole("heading", { name: /^Linked PRs$/i }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId("issue-linked-prs")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText(/No linked pull requests yet/i),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.getByRole("button", { name: /^Link$/i }),
+      ).toBeInTheDocument();
+    },
+    15_000,
+  );
+
+  it(
+    "Linked PRs panel lists stub rows and Link control (ISS-04 / D-ISS-13 / D-ISS-14)",
+    async () => {
+      linksListMock.mockResolvedValue({
+        ok: true,
+        data: {
+          links: [
+            {
+              id: "lnk-stub",
+              kind: "pr_stub",
+              target_number: 7,
+              title: "Panel stub",
+              created_at: "2026-09-14T00:00:00Z",
+            },
+          ],
+        },
+      });
+      const mod = await loadIssueDetailModule();
+      renderWithQueryClient(issueDetailPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByTestId("issue-linked-prs-list")).toBeInTheDocument();
+      });
+      expect(screen.getByText(/PR stub #7: Panel stub/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /^Link$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Unlink PR stub #7/i }),
       ).toBeInTheDocument();
     },
     15_000,
