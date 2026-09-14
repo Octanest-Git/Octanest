@@ -364,7 +364,7 @@ Add sibling routes, e.g. `…/info/lfs/objects/batch`, `…/info/lfs/objects/{oi
 | A2 | Browser “Download via LFS” uses session RPC, not PAT Basic in browser | Code Examples | XSS/token leakage if wrong |
 | A3 | Migration id `0011_lfs` if Phase 14 lands before later phase migrations | Structure | Collision — resolve at execute via next free number |
 | A4 | Charge logical bytes per repo link; physical bytes for disk/GC | Pitfalls | Quota unfairness |
-| A5 | File Locking API out of scope (not in CONTEXT) | Open Questions | Users expecting lock may be disappointed |
+| A5 | File Locking API out of scope (CONTEXT Deferred Ideas) | Open Questions (RESOLVED) | Users expecting lock may be disappointed |
 
 **If wrong:** Discuss-phase can adjust A1/A2/A5 before plan lock; A3 is execute-time bookkeeping.
 
