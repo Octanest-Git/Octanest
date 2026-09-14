@@ -826,6 +826,77 @@ export type DeleteIssueResponse = {
   number: number;
 };
 
+export type ReleaseAssetPublic = {
+  id: string;
+  release_id: string;
+  filename: string;
+  content_type: string;
+  byte_size: number;
+  uploader_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ReleasePublic = {
+  id: string;
+  repo_id: string;
+  tag_name: string;
+  title: string;
+  body: string;
+  draft: boolean;
+  prerelease: boolean;
+  author_id: string;
+  author_username: string;
+  created_at: string;
+  updated_at: string;
+  assets?: ReleaseAssetPublic[];
+};
+
+export type CreateReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+  title?: string;
+  body?: string;
+  draft?: boolean;
+  prerelease?: boolean;
+};
+
+export type ReleaseListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ReleaseListResponse = {
+  releases: ReleasePublic[];
+};
+
+export type ReleaseGetRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+};
+
+export type UpdateReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+  title?: string | null;
+  body?: string | null;
+  draft?: boolean | null;
+  prerelease?: boolean | null;
+};
+
+export type DeleteReleaseRequest = {
+  owner: string;
+  name: string;
+  tag_name: string;
+};
+
+export type DeleteReleaseResponse = {
+  ok: boolean;
+};
+
 export type IssueRevisionPublic = {
   id: string;
   issue_id: string;
@@ -1077,6 +1148,18 @@ export function createClient(opts: CreateClientOptions) {
         remove: (input: RemoveIssueLinkRequest) =>
           rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
       },
+    },
+    release: {
+      create: (input: CreateReleaseRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.create", input),
+      list: (input: ReleaseListRequest) =>
+        rpcCall<ReleaseListResponse>(opts, "release.list", input),
+      get: (input: ReleaseGetRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.get", input),
+      update: (input: UpdateReleaseRequest) =>
+        rpcCall<ReleasePublic>(opts, "release.update", input),
+      delete: (input: DeleteReleaseRequest) =>
+        rpcCall<DeleteReleaseResponse>(opts, "release.delete", input),
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>

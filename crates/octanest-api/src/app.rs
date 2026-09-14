@@ -35,6 +35,12 @@ pub struct AppState {
     pub uploads_dir: PathBuf,
     /// Bare repos root (`OCTANEST_REPOS_DIR`, default `var/repos`) — D-30 / D-31.
     pub repos_dir: PathBuf,
+    /// Release asset binaries (`OCTANEST_RELEASE_ASSETS_DIR`, default `var/release-assets`) — D-REL-04.
+    pub release_assets_dir: PathBuf,
+    /// Max upload bytes for a single release asset (default 512 MiB) — D-REL-05.
+    pub release_asset_max_bytes: usize,
+    /// Days to retain repository redirects after rename/transfer (default 90) — D-REL-08.
+    pub repo_redirect_retention_days: u32,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -65,11 +71,32 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(repos_dir)
         };
+        let release_assets_dir = std::env::var("OCTANEST_RELEASE_ASSETS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/release-assets"));
+        let release_assets_dir = if release_assets_dir.is_absolute() {
+            release_assets_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(release_assets_dir)
+        };
+        let release_asset_max_bytes = std::env::var("OCTANEST_RELEASE_ASSET_MAX_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(536_870_912usize);
+        let repo_redirect_retention_days = std::env::var("OCTANEST_REPO_REDIRECT_RETENTION_DAYS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(90u32);
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
             repos_dir,
+            release_assets_dir,
+            release_asset_max_bytes,
+            repo_redirect_retention_days,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
