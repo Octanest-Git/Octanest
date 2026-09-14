@@ -1,4 +1,4 @@
--- logical: 0012_releases_redirects — releases, assets metadata, rename redirects (GIT-14..17 / D-REL-*)
+-- logical: 0013_releases_redirects — releases, assets metadata, rename redirects (GIT-14..17 / D-REL-*)
 
 CREATE TABLE IF NOT EXISTS releases (
   id          CHAR(36)       PRIMARY KEY,

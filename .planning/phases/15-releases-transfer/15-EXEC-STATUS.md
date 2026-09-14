@@ -13,7 +13,7 @@
 
 ### Delivered so far
 - Discoverable Wave 0 stubs (release/rename/transfer/redirect/dialect + web)
-- Tri-dialect `0012_releases_redirects` (`releases`, `release_assets`, `repository_redirects`)
+- Tri-dialect `0013_releases_redirects` (`releases`, `release_assets`, `repository_redirects`)
 - `release.create/list/get/update/delete` with D-REL-01/02/03/12
 - Generated `@octanest/api-client` release surface
 - Green: `dialect_releases`, `release_create|tag|draft|update|delete|write`
@@ -42,4 +42,4 @@ git checkout feat/execute-15-releases
 /gsd-execute-phase 15   # continues incomplete plans (next: 15-03 and 15-06)
 ```
 
-Honor `15-CONTEXT.md` / `15-RESEARCH.md` (D-REL-*). This branch owns `0012_releases_redirects` — if LFS later ships `0012_lfs` elsewhere, reconcile migration numbers on merge.
+Honor `15-CONTEXT.md` / `15-RESEARCH.md` (D-REL-*). This branch owns `0013_releases_redirects` — if LFS later ships `0012_lfs` elsewhere, reconcile migration numbers on merge.

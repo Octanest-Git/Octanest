@@ -1,4 +1,4 @@
-//! Phase 15: `0012_releases_redirects` tri-dialect parity + round-trip.
+//! Phase 15: `0013_releases_redirects` tri-dialect parity + round-trip.
 
 use octanest_core::Role;
 use octanest_db::Database;
@@ -7,16 +7,16 @@ use octanest_db::Database;
 async fn dialect_releases_migrate_schema_presence() {
     let migration_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/migrations/sqlite/0012_releases_redirects.sql"
+        "/migrations/sqlite/0013_releases_redirects.sql"
     );
-    let sql = std::fs::read_to_string(migration_path).expect("0012_releases_redirects.sql");
+    let sql = std::fs::read_to_string(migration_path).expect("0013_releases_redirects.sql");
     assert!(sql.contains("releases"));
     assert!(sql.contains("release_assets"));
     assert!(sql.contains("repository_redirects"));
 
     for dialect in ["sqlite", "postgres", "mysql"] {
         let p = format!(
-            "{}/migrations/{}/0012_releases_redirects.sql",
+            "{}/migrations/{}/0013_releases_redirects.sql",
             env!("CARGO_MANIFEST_DIR"),
             dialect
         );
@@ -92,7 +92,7 @@ async fn dialect_releases_migrate_schema_presence() {
 fn dialect_releases_tri_dialect_files() {
     for dialect in ["sqlite", "postgres", "mysql"] {
         let p = format!(
-            "{}/migrations/{}/0012_releases_redirects.sql",
+            "{}/migrations/{}/0013_releases_redirects.sql",
             env!("CARGO_MANIFEST_DIR"),
             dialect
         );

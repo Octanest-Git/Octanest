@@ -8,7 +8,7 @@ requires:
     provides: "Wave 0 release_rpc + dialect_releases stubs"
 provides:
   - "release.create/list/get/update/delete RPC"
-  - "0012_releases_redirects schema (releases, release_assets, repository_redirects)"
+  - "0013_releases_redirects schema (releases, release_assets, repository_redirects)"
   - "generated release.* api-client"
 affects: [15-02, 15-03, 15-04, 15-06]
 actuals:
@@ -24,7 +24,7 @@ tech-stack:
 key-files:
   created:
     - crates/octanest-core/src/release_types.rs
-    - crates/octanest-db/migrations/sqlite/0012_releases_redirects.sql
+    - crates/octanest-db/migrations/sqlite/0013_releases_redirects.sql
     - crates/octanest-db/src/releases.rs
     - crates/octanest-db/src/redirects.rs
     - crates/octanest-api/src/release/mod.rs
@@ -82,7 +82,7 @@ status: complete
 
 ## Accomplishments
 
-- Tri-dialect `0012_releases_redirects` with `releases`, `release_assets`, `repository_redirects`
+- Tri-dialect `0013_releases_redirects` with `releases`, `release_assets`, `repository_redirects`
 - `release.*` RPC: tag must exist; Write+ create/update; Admin delete; drafts Write+-only on list/get
 - AppState ENV knobs for release-assets dir, max bytes, redirect retention (for later plans)
 - Green `dialect_releases` + six release nextest cases; asset tests remain ignored for 15-02
@@ -121,6 +121,6 @@ None.
 ## Self-Check: PASSED
 
 - FOUND: crates/octanest-api/src/release/mod.rs
-- FOUND: crates/octanest-db/migrations/sqlite/0012_releases_redirects.sql
+- FOUND: crates/octanest-db/migrations/sqlite/0013_releases_redirects.sql
 - FOUND: commit 4e1b5d1
 - TESTS: dialect_releases 2/2; release create/tag/draft/update/delete/write 6/6
