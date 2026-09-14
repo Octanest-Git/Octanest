@@ -115,6 +115,14 @@ function AccountMenu({
       >
         Personal access tokens
       </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/settings/ssh-keys");
+        }}
+      >
+        SSH keys
+      </DropdownMenuItem>
       @if (user.role === "sys-admin") {
         <DropdownMenuItem
           onClick={() => {

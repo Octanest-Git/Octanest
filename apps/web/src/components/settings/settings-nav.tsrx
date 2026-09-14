@@ -1,5 +1,5 @@
 type SettingsNavProps = {
-  active: "profile" | "tokens";
+  active: "profile" | "tokens" | "ssh-keys";
 };
 
 function navClass(isActive: boolean): string {
@@ -8,7 +8,7 @@ function navClass(isActive: boolean): string {
     : "pb-2 text-[14px] font-normal text-muted-foreground no-underline hover:text-foreground";
 }
 
-/** Settings secondary link-row: Profile | Personal access tokens (D-14). */
+/** Settings secondary link-row: Profile | Personal access tokens | SSH keys (D-SSH-06). */
 export function SettingsNav({ active }: SettingsNavProps) @{
   <nav
     className="mb-6 flex flex-wrap gap-4 border-b border-border pb-0"
@@ -27,6 +27,13 @@ export function SettingsNav({ active }: SettingsNavProps) @{
       aria-current={active === "tokens" ? "page" : undefined}
     >
       Personal access tokens
+    </a>
+    <a
+      href="/settings/ssh-keys"
+      className={navClass(active === "ssh-keys") as string}
+      aria-current={active === "ssh-keys" ? "page" : undefined}
+    >
+      SSH keys
     </a>
   </nav>
 }
