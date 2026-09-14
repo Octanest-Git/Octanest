@@ -14,7 +14,7 @@ provides:
 affects: [14-09, 14-10, 14-11]
 
 actuals:
-  tokens: 28000
+  tokens: 11852
   tasks: 2
   commits: 2
 
