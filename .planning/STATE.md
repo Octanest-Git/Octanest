@@ -5,15 +5,15 @@ current_phase: 11
 current_plan: 13
 status: verifying
 stopped_at: Completed 20-04-PLAN.md
-last_updated: "2026-09-14T17:27:35.837Z"
+last_updated: "2026-09-14T17:33:12.377Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 11 marked complete
-state_head: e1bc3f51bfbb40ffea303d5bc7e5998fa70e5930
+state_head: 240ade98c89d176e0eb2af062e7457fc582a7a2f
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 119
+  completed_plans: 120
 milestone_name: milestone
 current_phase_name: Issues
 ---
@@ -135,6 +135,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 20 P02 | 12min | 3 tasks | 9 files |
 | Phase 20 P03 | 25min | 3 tasks | 11 files |
 | Phase 20 P04 | 12min | 2 tasks | 8 files |
+| Phase 20 P05 | 15min | 3 tasks | 2 files |
 
 # Project State
 
@@ -493,6 +494,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Wave 0 stubs use assert!(false) without #[ignore] for nextest list discoverability
 - [Phase 11]: Per-file immutability within generic versions (409 on same filename)
 - [Phase 11]: GET /v2 and /v2/ discovery on app router; nest serves OCI subpaths only
+- [Phase 11]: OCI repo path is {owner}/{image}; nested names deferred
 
 ### Pending Todos
 
