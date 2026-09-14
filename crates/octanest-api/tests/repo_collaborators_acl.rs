@@ -394,9 +394,9 @@ async fn collab_permission_read_write_admin() {
 }
 
 /// Unauthorized private → soft `repo.not_found` on web RPC (ORG-04 / D-ORG-05 / T-10-01).
-/// Covered by `repo_private_404` org Owner vs stranger cases in plan 04; grant path in plan 07-T2.
+/// Covered by `repo_private_404` org Owner vs stranger cases in plan 04; grant path below.
 #[tokio::test]
-#[ignore = "covered by repo_private_404; collaborator grant path in task 2"]
+#[ignore = "covered by repo_private_404 stranger cases"]
 async fn collab_unauthorized_private_soft_not_found_web() {
     assert!(
         false,
@@ -406,20 +406,163 @@ async fn collab_unauthorized_private_soft_not_found_web() {
 
 /// Collaborator grant raises Member with member_base=none on private org repo (ORG-02/03 / T-10-02).
 #[tokio::test]
-#[ignore = "collaborator ACL raise lands in plan 07 task 2"]
 async fn collab_raises_member_base_none_on_private_org_repo() {
-    assert!(
-        false,
-        "Wave 0: Collaborator raise over Member base none on private org repo (ORG-02/03 / D-ORG-02b)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("collab_raise.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "raiseown@ex.com", "raiseown1").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().unwrap()).await;
+
+    let (member_cookie, member_v) = signup_and_login(&app, "raisemem@ex.com", "raisemem1").await;
+    let member_id = member_v["data"]["id"].as_str().unwrap().to_string();
+    verify_user(&db, &member_id).await;
+
+    let org = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"raise-org"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(org["ok"], true, "{org}");
+
+    // member_base defaults to none — Member alone cannot read private org repos.
+    let add_member = rpc_json(
+        &app,
+        r#"{"procedure":"org.members.add","input":{"slug":"raise-org","username":"raisemem1","role":"member"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(add_member["ok"], true, "{add_member}");
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"secret","visibility":"private","owner":"raise-org"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+
+    let denied = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"raise-org","name":"secret"}}"#,
+        &member_cookie,
+    )
+    .await;
+    assert_eq!(denied["ok"], false, "member base none → deny — {denied}");
+    assert_eq!(denied["error"]["code"], "repo.not_found");
+
+    let grant = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"raise-org","name":"secret","username":"raisemem1","permission":"read"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(grant["ok"], true, "collab grant — {grant}");
+
+    let raised = rpc_json(
+        &app,
+        r#"{"procedure":"repo.get","input":{"owner":"raise-org","name":"secret"}}"#,
+        &member_cookie,
+    )
+    .await;
+    assert_eq!(raised["ok"], true, "collaborator raise — {raised}");
+    assert_eq!(raised["data"]["can_admin"], false);
+    assert_eq!(raised["data"]["can_write"], false);
 }
 
 /// Visibility changes remain admin-gated with collaborators present (ORG-03).
 #[tokio::test]
-#[ignore = "visibility admin gate lands in plan 07 task 2"]
 async fn collab_visibility_change_requires_admin() {
-    assert!(
-        false,
-        "Wave 0: visibility mutate still requires admin when collaborators exist (ORG-03)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("collab_vis.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "visorg@ex.com", "visorg1").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().unwrap()).await;
+
+    let (read_cookie, read_v) = signup_and_login(&app, "visread@ex.com", "visread1").await;
+    verify_user(&db, read_v["data"]["id"].as_str().unwrap()).await;
+
+    let (admin_cookie, admin_v) = signup_and_login(&app, "visadmin@ex.com", "visadmin1").await;
+    verify_user(&db, admin_v["data"]["id"].as_str().unwrap()).await;
+
+    let org = rpc_json(
+        &app,
+        r#"{"procedure":"org.create","input":{"slug":"vis-org"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(org["ok"], true, "{org}");
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"vis-repo","visibility":"private","owner":"vis-org"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"vis-org","name":"vis-repo","username":"visread1","permission":"read"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"vis-org","name":"vis-repo","username":"visadmin1","permission":"admin"}}"#,
+        &owner_cookie,
+    )
+    .await;
+
+    // Org Owner (capability Admin) can toggle visibility — not mere owner_id equality.
+    let owner_vis = rpc_json(
+        &app,
+        r#"{"procedure":"repo.updateVisibility","input":{"owner":"vis-org","name":"vis-repo","visibility":"public"}}"#,
+        &owner_cookie,
+    )
+    .await;
+    assert_eq!(
+        owner_vis["ok"], true,
+        "org Owner must update visibility via Admin capability — {owner_vis}"
+    );
+    assert_eq!(owner_vis["data"]["visibility"], "public");
+
+    // Read collaborator cannot change visibility → soft not_found.
+    let read_deny = rpc_json(
+        &app,
+        r#"{"procedure":"repo.updateVisibility","input":{"owner":"vis-org","name":"vis-repo","visibility":"private"}}"#,
+        &read_cookie,
+    )
+    .await;
+    assert_eq!(read_deny["ok"], false, "read collab deny — {read_deny}");
+    assert_eq!(read_deny["error"]["code"], "repo.not_found");
+
+    // Admin collaborator can change visibility.
+    let admin_vis = rpc_json(
+        &app,
+        r#"{"procedure":"repo.updateVisibility","input":{"owner":"vis-org","name":"vis-repo","visibility":"private"}}"#,
+        &admin_cookie,
+    )
+    .await;
+    assert_eq!(
+        admin_vis["ok"], true,
+        "admin collab must update visibility — {admin_vis}"
+    );
+    assert_eq!(admin_vis["data"]["visibility"], "private");
 }

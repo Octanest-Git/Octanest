@@ -401,12 +401,110 @@ async fn repo_private_404_org_public_anonymous_ok() {
     assert_eq!(v["data"]["can_write"], false);
 }
 
-/// Collaborator-granted read deferred to plan 07 (collaborator CRUD RPCs).
+/// Collaborator-granted read on private org repo (ORG-03/04).
 #[tokio::test]
-#[ignore = "collaborator CRUD + grant path lands in plan 07"]
 async fn repo_private_404_collaborator_granted_read() {
-    assert!(
-        false,
-        "Deferred: collaborator read grant must allow private org repo read (ORG-03/04)"
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("repo_collab_grant_read.db").display()
     );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "cown@ex.com", "cown1").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify");
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "cread@ex.com", "cread1").await;
+    let collab_id = collab_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let (stranger_cookie, _) = signup_and_login(&app, "cstranger@ex.com", "cstranger1").await;
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"grant-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let _ = org.into_body().collect().await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"locked","visibility":"private","owner":"grant-org"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let _ = create.into_body().collect().await;
+
+    // Before grant: collaborator (outside) → not_found.
+    let before = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    let before_bytes = before.into_body().collect().await.unwrap().to_bytes();
+    let before_v: serde_json::Value = serde_json::from_slice(&before_bytes).unwrap();
+    assert_eq!(before_v["ok"], false, "pre-grant — {before_v}");
+    assert_eq!(before_v["error"]["code"], "repo.not_found");
+
+    let grant = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"grant-org","name":"locked","username":"cread1","permission":"read"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    let grant_bytes = grant.into_body().collect().await.unwrap().to_bytes();
+    let grant_v: serde_json::Value = serde_json::from_slice(&grant_bytes).unwrap();
+    assert_eq!(grant_v["ok"], true, "grant — {grant_v}");
+
+    // After grant: read collaborator can get; write not required.
+    let after = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(after.status(), StatusCode::OK);
+    let after_bytes = after.into_body().collect().await.unwrap().to_bytes();
+    let after_v: serde_json::Value = serde_json::from_slice(&after_bytes).unwrap();
+    assert_eq!(after_v["ok"], true, "granted read — {after_v}");
+    assert_eq!(after_v["data"]["name"], "locked");
+    assert_eq!(after_v["data"]["can_write"], false);
+    assert_eq!(after_v["data"]["can_admin"], false);
+
+    // Stranger still soft not_found.
+    let stranger = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.get","input":{"owner":"grant-org","name":"locked"}}"#,
+            &stranger_cookie,
+        ))
+        .await
+        .unwrap();
+    let stranger_bytes = stranger.into_body().collect().await.unwrap().to_bytes();
+    let stranger_v: serde_json::Value = serde_json::from_slice(&stranger_bytes).unwrap();
+    assert_eq!(stranger_v["ok"], false, "stranger — {stranger_v}");
+    assert_eq!(stranger_v["error"]["code"], "repo.not_found");
 }
