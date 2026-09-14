@@ -1,40 +1,48 @@
 # Phase 14 Git LFS — Execution Status
 
-**Branch:** `feat/execute-14-lfs`  
+**Branch:** `feat/execute-14-lfs-cont`  
 **Updated:** 2026-09-14
 
-## Status: BLOCKED (partial)
+## Status: IN PROGRESS (blocked mid-phase)
 
-Wave 0 + tracer landed; remaining plans (14-03…14-12) not executed in this run.
+Continuation session completed **14-03 → 14-06**. Remaining: **14-07 → 14-12**.
 
 ### Completed
 
-| Plan | Summary | Notes |
-|------|---------|-------|
-| 14-00 | `14-00-SUMMARY.md` | Wave 0 Rust/smoke stubs |
-| 14-01 | `14-01-SUMMARY.md` | Wave 0 Vitest UI stubs |
-| 14-02 | `14-02-SUMMARY.md` | Tracer: Batch + basic PUT/GET → `OCTANEST_LFS_DIR` |
+| Plan | Summary | Tip commit |
+|------|---------|------------|
+| 14-00 | Wave 0 Rust/smoke stubs | (prior) |
+| 14-01 | Wave 0 Vitest UI stubs | (prior) |
+| 14-02 | Tracer Batch + basic PUT/GET | `545515a` |
+| 14-03 | PAT/ACL + Admin enable RPC | `ec72b71` |
+| 14-04 | Quotas + Admin overrides | `6c32a13` |
+| 14-05 | Dedup + verify + Range GET | `09ab3c6` |
+| 14-06 | LFS GC + factory reset wipe | `622adff` |
 
-**Tip commit:** `0b7e45c` (docs 14-02) / feature `545515a`
+**Continuation tip:** `f6858f4` (docs 14-06)
 
-### Not started
+### Remaining
 
-14-03 (auth/enable), 14-04 (quotas), 14-05 (Range/verify), 14-06 (GC), 14-07 (Compose/env), 14-08 (rpc-gen + factory reset wipe), 14-09…14-12 (UI/docs).
-
-### Blockers
-
-1. **Shared worktree contention** — Parallel Phase 15/20 agents switched the main checkout off `feat/execute-14-lfs` and deleted/overwrote untracked LFS files mid-implementation (competing `0012_releases_*` migrations). Cannot attach a second worktree to the same branch.
-2. **Remaining scope** — 10 plans after tracer (auth, quotas, GC, Compose, rpc-gen, Settings/Admin/blob UI, docs) need an isolated executor session.
+| Plan | Focus |
+|------|--------|
+| 14-07 | Compose / `OCTANEST_LFS_*` env / CONFIGURATION |
+| 14-08 | `make rpc-gen` + usage RPCs |
+| 14-09 | Repo Settings LFS UI (Octane) |
+| 14-10 | Admin LFS quotas UI |
+| 14-11 | Blob pointer badge + LFS browser |
+| 14-12 | smoke-git-lfs + phase gate |
 
 ### Resume
 
 ```bash
-git checkout feat/execute-14-lfs
-# Confirm 0012_lfs migrations present; park any 0012_releases_* aliens
-/gsd-execute-phase 14   # or continue from 14-03-PLAN.md
+cd /home/jesse/wsl-projects/personal/typescript/octanest-wt-14-lfs
+git checkout feat/execute-14-lfs-cont
+# Continue from 14-07-PLAN.md through 14-12
 ```
 
-### Locks honored so far
+### Locks honored
 
-- D-LFS-01/02/03: instance `OCTANEST_LFS_DIR`, content-addressed OID shards `ab/cd/oid`
-- D-LFS-07: **basic** transfer only (+ streaming PUT); no `transfer=multipart`
+- D-LFS-07: basic + streaming PUT + Range/verify (no multipart)
+- D-LFS-09/10/11: PAT Basic, Admin enable, classic/FG scopes
+- D-LFS-12/13/14: quotas + Admin override
+- D-LFS-15/04: GC + factory wipe LFS_DIR
