@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 28
+open_count: 29
 waived_count: 0
 fixed_count: 1
-total_count: 29
-last_updated: 2026-09-13T23:38:48.269Z
+total_count: 30
+last_updated: 2026-09-14T00:11:24.344Z
 ---
 
 # Broken Windows Ledger
@@ -44,6 +44,7 @@ last_updated: 2026-09-13T23:38:48.269Z
 | 27 | 09 | stub | apps/web/src/routes/settings/ssh-keys.integration.test.ts |  | Wave 0 RED ssh-keys integration stubs until 09-07 | open |  | 2026-09-13T23:38:48.019Z |  |
 | 28 | 09 | stub | apps/web/src/components/repo/clone-box.ssh.integration.test.ts |  | Wave 0 RED CloneBox SSH integration stubs until 09-08 | open |  | 2026-09-13T23:38:48.151Z |  |
 | 29 | 09 | unrun-verify | apps/web/src/routes/settings/ssh-keys.integration.test.ts |  | Wave 0 vitest intentionally RED (exit 1) until production routes — verify ran, stubs fail by design | open |  | 2026-09-13T23:38:48.269Z |  |
+| 30 | 09 | stub | scripts/smoke-git-ssh.sh |  | RESOLVED: smoke-git-ssh greened in 09-05 | open |  | 2026-09-14T00:11:24.344Z |  |
 
 ````json
 [
@@ -393,6 +394,18 @@ last_updated: 2026-09-13T23:38:48.269Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-13T23:38:48.269Z",
+    "resolved_at": null
+  },
+  {
+    "id": 30,
+    "kind": "stub",
+    "phase": "09",
+    "file": "scripts/smoke-git-ssh.sh",
+    "line": null,
+    "description": "RESOLVED: smoke-git-ssh greened in 09-05",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T00:11:24.344Z",
     "resolved_at": null
   }
 ]
