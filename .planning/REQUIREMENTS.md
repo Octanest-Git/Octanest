@@ -81,10 +81,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Issues
 
-- [ ] **ISS-01**: User can create, edit, close, and reopen issues
-- [ ] **ISS-02**: User can comment on issues
-- [ ] **ISS-03**: User can assign labels and assignees to issues
-- [ ] **ISS-04**: User can link issues and PRs by reference
+- [x] **ISS-01**: User can create, edit, close, and reopen issues
+- [x] **ISS-02**: User can comment on issues
+- [x] **ISS-03**: User can assign labels and assignees to issues
+- [x] **ISS-04**: User can link issues and PRs by reference
 
 ### Notifications & webhooks
 
@@ -223,10 +223,10 @@ Deferred; not in the current roadmap until promoted.
 | PR-06 | Phase 12 | Pending |
 | PR-07 | Phase 12 | Pending |
 | PR-08 | Phase 13 | Pending |
-| ISS-01 | Phase 11 | Pending |
-| ISS-02 | Phase 11 | Pending |
-| ISS-03 | Phase 11 | Pending |
-| ISS-04 | Phase 11 | Pending |
+| ISS-01 | Phase 11 | Complete |
+| ISS-02 | Phase 11 | Complete |
+| ISS-03 | Phase 11 | Complete |
+| ISS-04 | Phase 11 | Complete |
 | NOTF-01 | Phase 17 | Pending |
 | NOTF-02 | Phase 17 | Pending |
 | HOOK-01 | Phase 18 | Pending |

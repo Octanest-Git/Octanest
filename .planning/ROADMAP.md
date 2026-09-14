@@ -462,22 +462,23 @@ Plans:
   2. User can comment on issues and assign labels and assignees
   3. User can link issues and PRs by reference
 
-**Plans**: 13 plans
+**Plans**: 13/13 plans executed
 
 Plans:
-- [ ] 11-00-PLAN.md — Wave 0 Rust Nyquist stubs (issue_*/dialect/factory_reset)
-- [ ] 11-01-PLAN.md — Wave 0 Vitest stubs (Issues UI + markdown.issues)
-- [ ] 11-02-PLAN.md — Schema door: 0011_issues + counters + issue_types
-- [ ] 11-03-PLAN.md — Tracer: create/get/list + Issues tab + list/new/detail
-- [ ] 11-04-PLAN.md — Lifecycle: edit/close/reopen/history/Admin delete
-- [ ] 11-05-PLAN.md — Comments + Write|Preview + comment history
-- [ ] 11-06-PLAN.md — Org/repo labels defs + issue assignment
-- [ ] 11-07-PLAN.md — Multi-assignees + Read+ eligibility
-- [ ] 11-08-PLAN.md — GitHub eight emoji reactions
-- [ ] 11-09-PLAN.md — Linked PR stubs + manual link control
-- [ ] 11-10-PLAN.md — remark-github #N / owner/repo#N autolink
-- [ ] 11-11-PLAN.md — List filters + Open/Closed/All + offset pages
-- [ ] 11-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
+
+- [x] 11-00-PLAN.md — Wave 0 Rust Nyquist stubs (issue_*/dialect/factory_reset)
+- [x] 11-01-PLAN.md — Wave 0 Vitest stubs (Issues UI + markdown.issues)
+- [x] 11-02-PLAN.md — Schema door: 0011_issues + counters + issue_types
+- [x] 11-03-PLAN.md — Tracer: create/get/list + Issues tab + list/new/detail
+- [x] 11-04-PLAN.md — Lifecycle: edit/close/reopen/history/Admin delete
+- [x] 11-05-PLAN.md — Comments + Write|Preview + comment history
+- [x] 11-06-PLAN.md — Org/repo labels defs + issue assignment
+- [x] 11-07-PLAN.md — Multi-assignees + Read+ eligibility
+- [x] 11-08-PLAN.md — GitHub eight emoji reactions
+- [x] 11-09-PLAN.md — Linked PR stubs + manual link control
+- [x] 11-10-PLAN.md — remark-github #N / owner/repo#N autolink
+- [x] 11-11-PLAN.md — List filters + Open/Closed/All + offset pages
+- [x] 11-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
 
 **UI hint**: yes
 
@@ -523,6 +524,7 @@ Plans:
 **Plans**: 13 plans
 
 Plans:
+
 - [ ] 14-00-PLAN.md — Wave 0 Rust/smoke stubs (lfs_batch, store, dialect, factory reset)
 - [ ] 14-01-PLAN.md — Wave 0 Vitest stubs (pointer, Settings, Admin, browser)
 - [ ] 14-02-PLAN.md — Tracer: Batch + basic transfer into OCTANEST_LFS_DIR
@@ -551,6 +553,7 @@ Plans:
 **Plans:** 7 plans
 
 Plans:
+
 - [ ] 15-00-PLAN.md — Wave 0 Nyquist stubs (release/rename/transfer/dialect/web)
 - [ ] 15-01-PLAN.md — Tracer: tag-bound releases RPC + shared migration
 - [ ] 15-06-PLAN.md — Releases tab + list/create/detail notes UI
@@ -631,6 +634,7 @@ Plans:
 **Plans:** 13 plans
 
 Plans:
+
 - [ ] 20-00-PLAN.md — Wave 0 Rust RED stubs (oci/npm/generic/acl/rpc/dialect)
 - [ ] 20-01-PLAN.md — Wave 0 web Vitest stubs + smoke-packages
 - [ ] 20-02-PLAN.md — Schema, PACKAGES_DIR, Traefik/Vite, reserved slugs
@@ -694,7 +698,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
 | 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
 | 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
-| 11. Issues | 0/TBD | Not started | - |
+| 11. Issues | 13/13 | In Progress|  |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
 | 14. Git LFS | 0/TBD | Not started | - |

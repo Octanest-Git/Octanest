@@ -3,19 +3,20 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 11
 current_phase_name: Issues
-status: ready_to_plan
-stopped_at: Phases 9 and 10 executed and merged — ready to plan Phase 11
-last_updated: "2026-09-14T04:15:00.000Z"
+status: ready_for_verification
+stopped_at: Completed 11-12-PLAN.md
+last_updated: "2026-09-14T16:50:00.000Z"
 last_activity: 2026-09-14
-last_activity_desc: Merged feat/execute-09-ssh + feat/execute-10-orgs into feat/forge-core
-state_head: 7e6eed5
+last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
+state_head: b64317dd97767b03239ab3d5bca6bc4fd9c83cc8
 progress:
   total_phases: 22
   completed_phases: 10
-  total_plans: 101
-  completed_plans: 101
+  total_plans: 147
+  completed_plans: 115
 milestone_name: milestone
 ---
+
 # Project State
 
 ## Project Reference
@@ -27,13 +28,13 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 11 — Issues (next)
-Phases 9 & 10: **complete** (merged from `feat/execute-09-ssh` + `feat/execute-10-orgs`)
-Status: Ready to plan Phase 11
-Last activity: 2026-09-14 — Merged parallel Phase 9+10 execution into feat/forge-core
+Phase: 11 — Issues
+Current Plan: 13
+Total Plans in Phase: 13
+Status: Phase plans complete — ready for verify-work
+Last activity: 2026-09-14 — Completed 11-12 factory reset + docs + VALIDATION gate
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
-
 
 ## Performance Metrics
 
@@ -127,7 +128,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08-git-https-pats P10 | 14min | 1 tasks | 5 files |
 | Phase 08 P12 | 2min | 1 tasks | 4 files |
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
-
+| Phase 11 P12 | 5min | 2 tasks | 7 files |
 
 # Project State
 
@@ -140,13 +141,13 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 11 — Issues (next)
-Phases 9 & 10: **complete** (merged from `feat/execute-09-ssh` + `feat/execute-10-orgs`)
-Status: Ready to plan Phase 11
-Last activity: 2026-09-14 — Merged parallel Phase 9+10 execution into feat/forge-core
+Phase: 11 — Issues
+Current Plan: 13
+Total Plans in Phase: 13
+Status: Phase plans complete — ready for verify-work
+Last activity: 2026-09-14 — Completed 11-12 factory reset + docs + VALIDATION gate
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04 · Phase 11
-
 
 ## Performance Metrics
 
@@ -481,6 +482,8 @@ Recent decisions affecting current work:
 - [Phase 10]: factory_reset deletes repositories then organizations before users (polymorphic owner_id)
 - [Phase 10]: No new org env vars; invites reuse EmailSender + OCTANEST_PUBLIC_ORIGIN
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
+- [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
+- [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
 
 ### Pending Todos
 
@@ -502,8 +505,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T02:09:39.092Z
-Stopped at: Phase 10 complete, ready to plan Phase 9
+Last session: 2026-09-14T16:48:03.945Z
+Stopped at: Completed 11-12-PLAN.md
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
