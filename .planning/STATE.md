@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 10
+current_plan: 11
 status: executing
-stopped_at: Completed 10-09-PLAN.md
-last_updated: "2026-09-14T01:34:38.394Z"
+stopped_at: Completed 10-10-PLAN.md
+last_updated: "2026-09-14T01:44:33.381Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: 217cd28a1f85ee3e52cd74b430449482f9482037
+state_head: 1593875df5b0b002672fb116c60c08d57a79741a
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 88
+  completed_plans: 89
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 10
+Current Plan: 11
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
@@ -141,6 +141,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P07 | 12min | 2 tasks | 12 files |
 | Phase 10 P08 | 8min | 2 tasks | 7 files |
 | Phase 10 P09 | 6min | 2 tasks | 16 files |
+| Phase 10 P10 | 10min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -322,6 +323,8 @@ Recent decisions affecting current work:
 - [Phase 10]: FG All = personal-owned + org Owner/Admin (A4); collaborators use Selected
 - [Phase 10]: Classic PAT push = repo scope ∩ meets(Write), not owner_id equality
 - [Phase 10]: user.lookup under user/ module with 60/session/60s limiter; short/email-shaped → empty ok
+- [Phase 10]: Added repo.listByOwner for org overview ACL-filtered repo lists
+- [Phase 10]: Admin+ org settings/members gated via org.listMine role
 
 ### Pending Todos
 
@@ -343,6 +346,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:34:38.321Z
-Stopped at: Completed 10-09-PLAN.md
+Last session: 2026-09-14T01:44:33.307Z
+Stopped at: Completed 10-10-PLAN.md
 Resume file: None
