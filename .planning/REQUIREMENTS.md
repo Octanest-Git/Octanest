@@ -61,7 +61,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Organizations & permissions
 
-- [ ] **ORG-01**: User can create an organization and invite/add members
+- [x] **ORG-01**: User can create an organization and invite/add members
 - [ ] **ORG-02**: Org owner can assign member roles that control repo access
 - [ ] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
 - [ ] **ORG-04**: Unauthorized users cannot read private repos or push without permission
@@ -209,7 +209,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-16 | Phase 15 | Pending |
 | GIT-17 | Phase 15 | Pending |
 | GIT-18 | Phase 16 | Pending |
-| ORG-01 | Phase 10 | Pending |
+| ORG-01 | Phase 10 | Complete |
 | ORG-02 | Phase 10 | Pending |
 | ORG-03 | Phase 10 | Pending |
 | ORG-04 | Phase 10 | Pending |
