@@ -146,7 +146,7 @@ Each task was committed atomically:
 1. **Task 1: Issue domain Wave 0 API + dialect stubs** - `007956d` (test)
 2. **Task 2: Private ACL + factory_reset issue stub names** - `035208d` (test)
 
-**Plan metadata:** (docs commit after SUMMARY)
+**Plan metadata:** `eb41dc6` (docs: complete plan)
 
 ## Files Created/Modified
 
