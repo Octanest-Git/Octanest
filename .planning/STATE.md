@@ -5,16 +5,16 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-09-14T17:41:56.347Z"
+stopped_at: Completed 15-04-PLAN.md
+last_updated: "2026-09-14T17:45:45.018Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: 833640b0d537a0cfc497bc06b4cda358dfee981d
+state_head: e6d21c46108a183ad274b0f574a56faff04c8ef2
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 119
+  completed_plans: 120
 milestone_name: milestone
 ---
 
@@ -135,6 +135,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 15 P03 | 11min | 3 tasks | 16 files |
 | Phase 15 P06 | 8min | 2 tasks | 5 files |
 | Phase 15 P02 | 20min | 2 tasks | 17 files |
+| Phase 15 P04 | 25min | 2 tasks | 8 files |
 
 # Project State
 
@@ -494,6 +495,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Release ENV defaults: assets dir var/release-assets, max 512MiB, redirect retention 90d
 - [Phase 11]: 15-03: combined rename/redirect/purge commit; 90-day redirect retention; Smart HTTP rewrites path_info after redirect
 - [Phase 11]: 15-06: Releases notes UI; assets deferred to 15-02
+- [Phase 11]: Immediate transfer after type-confirm; user→user former owner becomes admin collaborator
 
 ### Pending Todos
 
@@ -515,8 +517,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T17:41:56.229Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-09-14T17:45:44.914Z
+Stopped at: Completed 15-04-PLAN.md
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
