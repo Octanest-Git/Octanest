@@ -21,7 +21,7 @@ pub mod users;
 
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
-pub use issues::{CommentRevisionRow, IssueCommentRow, IssueRevisionRow, IssueRow};
+pub use issues::{CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueRevisionRow, IssueRow};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -699,6 +699,53 @@ impl Database {
         content: &str,
     ) -> Result<bool, String> {
         issues::toggle_comment_reaction(self.require_pool()?, comment_id, user_id, content).await
+    }
+
+    pub async fn insert_issue_link(
+        &self,
+        id: &str,
+        issue_id: &str,
+        kind: &str,
+        target_repo_id: Option<&str>,
+        target_number: Option<i64>,
+        target_opaque_id: Option<&str>,
+        title: Option<&str>,
+        created_by: &str,
+    ) -> Result<issues::IssueLinkRow, String> {
+        issues::insert_issue_link(
+            self.require_pool()?,
+            id,
+            issue_id,
+            kind,
+            target_repo_id,
+            target_number,
+            target_opaque_id,
+            title,
+            created_by,
+        )
+        .await
+    }
+
+    pub async fn find_issue_link_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<issues::IssueLinkRow>, String> {
+        issues::find_issue_link_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_issue_links(
+        &self,
+        issue_id: &str,
+    ) -> Result<Vec<issues::IssueLinkRow>, String> {
+        issues::list_issue_links(self.require_pool()?, issue_id).await
+    }
+
+    pub async fn delete_issue_link(
+        &self,
+        issue_id: &str,
+        link_id: &str,
+    ) -> Result<bool, String> {
+        issues::delete_issue_link(self.require_pool()?, issue_id, link_id).await
     }
 
     // --- users ---

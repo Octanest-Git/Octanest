@@ -470,6 +470,41 @@ pub struct IssueLinkPublic {
     pub created_at: String,
 }
 
+/// Manual add link / PR stub (D-ISS-14).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddIssueLinkRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    pub kind: IssueLinkKind,
+    #[serde(default, rename = "targetNumber", alias = "target_number")]
+    pub target_number: Option<i64>,
+    #[serde(default, rename = "targetRepoId", alias = "target_repo_id")]
+    pub target_repo_id: Option<String>,
+    #[serde(default)]
+    pub title: Option<String>,
+}
+
+/// Manual remove link by opaque id (D-ISS-14).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveIssueLinkRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    #[serde(rename = "linkId", alias = "link_id")]
+    pub link_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IssueLinksListResponse {
+    pub links: Vec<IssueLinkPublic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoveIssueLinkResponse {
+    pub ok: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

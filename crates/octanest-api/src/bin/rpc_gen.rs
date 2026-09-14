@@ -626,6 +626,41 @@ export type LabelScope = "org" | "repo";
 
 export type IssueLinkKind = "issue" | "pr_stub";
 
+export type IssueLinkPublic = {
+  id: string;
+  kind: IssueLinkKind;
+  target_repo_id?: string | null;
+  target_number?: number | null;
+  target_opaque_id?: string | null;
+  title?: string | null;
+  created_at: string;
+};
+
+export type AddIssueLinkRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  kind: IssueLinkKind;
+  targetNumber?: number | null;
+  targetRepoId?: string | null;
+  title?: string | null;
+};
+
+export type RemoveIssueLinkRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  linkId: string;
+};
+
+export type IssueLinksListResponse = {
+  links: IssueLinkPublic[];
+};
+
+export type RemoveIssueLinkResponse = {
+  ok: boolean;
+};
+
 export type IssueAssigneePublic = {
   user_id: string;
   username: string;
@@ -1043,6 +1078,14 @@ export function createClient(opts: CreateClientOptions) {
       reactions: {
         toggle: (input: ToggleReactionRequest) =>
           rpcCall<ToggleReactionResponse>(opts, "issue.reactions.toggle", input),
+      },
+      links: {
+        list: (input: IssueRefRequest) =>
+          rpcCall<IssueLinksListResponse>(opts, "issue.links.list", input),
+        add: (input: AddIssueLinkRequest) =>
+          rpcCall<IssueLinkPublic>(opts, "issue.links.add", input),
+        remove: (input: RemoveIssueLinkRequest) =>
+          rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
       },
     },
     label: {
@@ -1717,6 +1760,42 @@ export function issueReactionsToggleMutationOptions(client: OctanestClient) {
     mutationKey: ["issue", "reactions", "toggle"] as const,
     mutationFn: async (input: ToggleReactionRequest) => {
       const res = await client.issue.reactions.toggle(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksListQueryOptions(
+  client: OctanestClient,
+  input: IssueRefRequest,
+) {
+  return {
+    queryKey: ["issue", "links", "list", input.owner, input.name, input.number] as const,
+    queryFn: async () => {
+      const res = await client.issue.links.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "links", "add"] as const,
+    mutationFn: async (input: AddIssueLinkRequest) => {
+      const res = await client.issue.links.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueLinksRemoveMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "links", "remove"] as const,
+    mutationFn: async (input: RemoveIssueLinkRequest) => {
+      const res = await client.issue.links.remove(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

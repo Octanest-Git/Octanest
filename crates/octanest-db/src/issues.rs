@@ -1726,3 +1726,270 @@ pub async fn toggle_comment_reaction(
         }
     }
 }
+
+/// Linked issue / PR stub row (D-ISS-13).
+#[derive(Debug, Clone)]
+pub struct IssueLinkRow {
+    pub id: String,
+    pub issue_id: String,
+    pub kind: String,
+    pub target_repo_id: Option<String>,
+    pub target_number: Option<i64>,
+    pub target_opaque_id: Option<String>,
+    pub title: Option<String>,
+    pub created_by: String,
+    pub created_at: String,
+}
+
+macro_rules! map_issue_link {
+    ($row:expr) => {{
+        let row = $row;
+        IssueLinkRow {
+            id: row.try_get("id").map_err(|e| format!("issue link: {e}"))?,
+            issue_id: row
+                .try_get("issue_id")
+                .map_err(|e| format!("issue link: {e}"))?,
+            kind: row.try_get("kind").map_err(|e| format!("issue link: {e}"))?,
+            target_repo_id: row
+                .try_get("target_repo_id")
+                .map_err(|e| format!("issue link: {e}"))?,
+            target_number: row
+                .try_get::<Option<i64>, _>("target_number")
+                .or_else(|_| {
+                    row.try_get::<Option<i32>, _>("target_number")
+                        .map(|v| v.map(i64::from))
+                })
+                .map_err(|e| format!("issue link: {e}"))?,
+            target_opaque_id: row
+                .try_get("target_opaque_id")
+                .map_err(|e| format!("issue link: {e}"))?,
+            title: row
+                .try_get("title")
+                .map_err(|e| format!("issue link: {e}"))?,
+            created_by: row
+                .try_get("created_by")
+                .map_err(|e| format!("issue link: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("issue link: {e}"))?,
+        }
+    }};
+}
+
+const LINK_SELECT_PG: &str = r#"SELECT id, issue_id, kind, target_repo_id, target_number,
+       target_opaque_id, title, created_by,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at
+FROM issue_links"#;
+
+const LINK_SELECT_MYSQL: &str = r#"SELECT id, issue_id, kind, target_repo_id, target_number,
+       target_opaque_id, title, created_by,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at
+FROM issue_links"#;
+
+const LINK_SELECT_SQLITE: &str = r#"SELECT id, issue_id, kind, target_repo_id, target_number,
+       target_opaque_id, title, created_by,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
+FROM issue_links"#;
+
+/// Insert a stub or issue link row; returns the stored row.
+pub async fn insert_issue_link(
+    pool: &DbPool,
+    id: &str,
+    issue_id: &str,
+    kind: &str,
+    target_repo_id: Option<&str>,
+    target_number: Option<i64>,
+    target_opaque_id: Option<&str>,
+    title: Option<&str>,
+    created_by: &str,
+) -> Result<IssueLinkRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                r#"INSERT INTO issue_links
+                   (id, issue_id, kind, target_repo_id, target_number, target_opaque_id, title, created_by)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(kind)
+            .bind(target_repo_id)
+            .bind(target_number)
+            .bind(target_opaque_id)
+            .bind(title)
+            .bind(created_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue link failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                r#"INSERT INTO issue_links
+                   (id, issue_id, kind, target_repo_id, target_number, target_opaque_id, title, created_by)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(kind)
+            .bind(target_repo_id)
+            .bind(target_number)
+            .bind(target_opaque_id)
+            .bind(title)
+            .bind(created_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue link failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                r#"INSERT INTO issue_links
+                   (id, issue_id, kind, target_repo_id, target_number, target_opaque_id, title, created_by)
+                   VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)"#,
+            )
+            .bind(id)
+            .bind(issue_id)
+            .bind(kind)
+            .bind(target_repo_id)
+            .bind(target_number)
+            .bind(target_opaque_id)
+            .bind(title)
+            .bind(created_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert issue link failed: {e}"))?;
+        }
+    }
+    find_issue_link_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "issue link missing after insert".to_string())
+}
+
+pub async fn find_issue_link_by_id(
+    pool: &DbPool,
+    id: &str,
+) -> Result<Option<IssueLinkRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{LINK_SELECT_PG} WHERE id = $1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue link failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_issue_link!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{LINK_SELECT_MYSQL} WHERE id = ?");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue link failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_issue_link!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{LINK_SELECT_SQLITE} WHERE id = ?1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find issue link failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_issue_link!(&r)),
+                None => None,
+            })
+        }
+    }
+}
+
+pub async fn list_issue_links(
+    pool: &DbPool,
+    issue_id: &str,
+) -> Result<Vec<IssueLinkRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{LINK_SELECT_PG} WHERE issue_id = $1 ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue links failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_issue_link!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{LINK_SELECT_MYSQL} WHERE issue_id = ? ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue links failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_issue_link!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{LINK_SELECT_SQLITE} WHERE issue_id = ?1 ORDER BY created_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(issue_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue links failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_issue_link!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+/// Delete a link belonging to `issue_id`. Returns true if a row was deleted.
+pub async fn delete_issue_link(
+    pool: &DbPool,
+    issue_id: &str,
+    link_id: &str,
+) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let res = sqlx::query("DELETE FROM issue_links WHERE id = $1 AND issue_id = $2")
+                .bind(link_id)
+                .bind(issue_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue link failed: {e}"))?;
+            Ok(res.rows_affected() > 0)
+        }
+        DbPool::MySql(p) => {
+            let res = sqlx::query("DELETE FROM issue_links WHERE id = ? AND issue_id = ?")
+                .bind(link_id)
+                .bind(issue_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue link failed: {e}"))?;
+            Ok(res.rows_affected() > 0)
+        }
+        DbPool::Sqlite(p) => {
+            let res = sqlx::query("DELETE FROM issue_links WHERE id = ?1 AND issue_id = ?2")
+                .bind(link_id)
+                .bind(issue_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue link failed: {e}"))?;
+            Ok(res.rows_affected() > 0)
+        }
+    }
+}

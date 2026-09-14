@@ -3,13 +3,15 @@
 pub(crate) mod acl;
 
 use octanest_core::{
-    AppError, AssigneeCandidatesRequest, AssigneeCandidatesResponse, CommentHistoryResponse,
-    CommentRevisionPublic, CreateIssueCommentRequest, CreateIssueRequest, DeleteIssueCommentResponse,
-    DeleteIssueRequest, DeleteIssueResponse, IssueAssigneePublic, IssueCommentPublic,
-    IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse, IssueListRequest,
-    IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic, IssueState,
-    ReactionGroupPublic, ReactionTarget, SetIssueAssigneesRequest, SetIssueLabelsRequest,
-    ToggleReactionRequest, ToggleReactionResponse, UpdateIssueCommentRequest, UpdateIssueRequest,
+    AddIssueLinkRequest, AppError, AssigneeCandidatesRequest, AssigneeCandidatesResponse,
+    CommentHistoryResponse, CommentRevisionPublic, CreateIssueCommentRequest, CreateIssueRequest,
+    DeleteIssueCommentResponse, DeleteIssueRequest, DeleteIssueResponse, IssueAssigneePublic,
+    IssueCommentPublic, IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse,
+    IssueLinkKind, IssueLinkPublic, IssueLinksListResponse, IssueListRequest, IssueListResponse,
+    IssuePublic, IssueRefRequest, IssueRevisionPublic, IssueState, ReactionGroupPublic,
+    ReactionTarget, RemoveIssueLinkRequest, RemoveIssueLinkResponse, SetIssueAssigneesRequest,
+    SetIssueLabelsRequest, ToggleReactionRequest, ToggleReactionResponse, UpdateIssueCommentRequest,
+    UpdateIssueRequest,
 };
 use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
@@ -834,4 +836,175 @@ pub async fn reactions_toggle(
         reactions: reaction_groups_to_public(reaction_rows),
         reacted,
     })
+}
+
+fn link_row_to_public(row: octanest_db::IssueLinkRow) -> Result<IssueLinkPublic, AppError> {
+    let kind = IssueLinkKind::parse(&row.kind).map_err(|e| {
+        tracing::error!(error = %e, "invalid issue link kind in db");
+        AppError::new("issue.internal", "issue operation failed")
+    })?;
+    Ok(IssueLinkPublic {
+        id: row.id,
+        kind,
+        target_repo_id: row.target_repo_id,
+        target_number: row.target_number,
+        target_opaque_id: row.target_opaque_id,
+        title: row.title,
+        created_at: row.created_at,
+    })
+}
+
+/// `issue.links.list` — Read+ on accessible issues (D-ISS-13 / D-ISS-20).
+pub async fn links_list(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssueLinksListResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: IssueRefRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.links.list input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let rows = ctx
+        .db
+        .list_issue_links(&issue.id)
+        .await
+        .map_err(db_err)?;
+    let mut links = Vec::with_capacity(rows.len());
+    for row in rows {
+        links.push(link_row_to_public(row)?);
+    }
+    Ok(IssueLinksListResponse { links })
+}
+
+/// `issue.links.add` — Write+; stub-capable rows (D-ISS-13 / D-ISS-14 / D-ISS-20).
+pub async fn links_add(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<IssueLinkPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: AddIssueLinkRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.links.add input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+
+    let target_number = req.target_number.ok_or_else(|| {
+        AppError::new("rpc.bad_input", "targetNumber is required")
+    })?;
+    if target_number < 1 {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "targetNumber must be a positive integer",
+        ));
+    }
+
+    let title = match req.title.as_deref() {
+        None => None,
+        Some(t) => {
+            let trimmed = t.trim();
+            if trimmed.is_empty() {
+                None
+            } else if trimmed.chars().count() > TITLE_MAX_CHARS {
+                return Err(AppError::new(
+                    "rpc.bad_input",
+                    format!("title exceeds {TITLE_MAX_CHARS} characters"),
+                ));
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+    };
+
+    let target_repo_id = match req.kind {
+        IssueLinkKind::Issue => Some(
+            req.target_repo_id
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .unwrap_or(accessible.row.id.as_str())
+                .to_string(),
+        ),
+        IssueLinkKind::PrStub => req
+            .target_repo_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string()),
+    };
+
+    // Optional resolve for issue links in the same repo — soft fill opaque id when found.
+    let target_opaque_id = if req.kind == IssueLinkKind::Issue {
+        if let Some(ref repo_id) = target_repo_id {
+            if repo_id == &accessible.row.id {
+                match ctx
+                    .db
+                    .find_issue_by_repo_number(repo_id, target_number)
+                    .await
+                    .map_err(db_err)?
+                {
+                    Some(target) => Some(target.id),
+                    None => None,
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    let id = Uuid::new_v4().to_string();
+    let row = ctx
+        .db
+        .insert_issue_link(
+            &id,
+            &issue.id,
+            req.kind.as_str(),
+            target_repo_id.as_deref(),
+            Some(target_number),
+            target_opaque_id.as_deref(),
+            title.as_deref(),
+            &user.id,
+        )
+        .await
+        .map_err(db_err)?;
+    link_row_to_public(row)
+}
+
+/// `issue.links.remove` — Write+; delete stub by opaque id (D-ISS-14 / D-ISS-20).
+pub async fn links_remove(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RemoveIssueLinkResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: RemoveIssueLinkRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.links.remove input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let link_id = req.link_id.trim();
+    if link_id.is_empty() {
+        return Err(AppError::new("rpc.bad_input", "linkId is required"));
+    }
+    let deleted = ctx
+        .db
+        .delete_issue_link(&issue.id, link_id)
+        .await
+        .map_err(db_err)?;
+    if !deleted {
+        return Err(AppError::new("issue.link_not_found", "Link not found"));
+    }
+    Ok(RemoveIssueLinkResponse { ok: true })
 }
