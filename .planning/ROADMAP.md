@@ -27,7 +27,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [ ] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
-- [ ] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
+- [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
 - [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
@@ -702,7 +702,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
 | 14. Git LFS | 0/TBD | Not started | - |
-| 15. Releases & Transfer | 7/7 | In Progress|  |
+| 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
