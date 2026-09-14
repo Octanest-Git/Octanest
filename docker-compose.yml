@@ -50,6 +50,10 @@ services:
       RUST_LOG: ${RUST_LOG:-info}
       # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
       OCTANEST_REPOS_DIR: /var/repos
+      # Package registry blob store (D-PKG-07) — distinct from repos / LFS / release-assets.
+      OCTANEST_PACKAGES_DIR: /var/packages
+      OCTANEST_PACKAGES_MAX_BLOB_BYTES: ${OCTANEST_PACKAGES_MAX_BLOB_BYTES:-2147483648}
+      OCTANEST_PACKAGES_OWNER_QUOTA_BYTES: ${OCTANEST_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
@@ -65,6 +69,8 @@ services:
       - ./var/uploads:/var/uploads
       # Bare repos (D-30 / D-38)
       - ./var/repos:/var/repos
+      # Package blobs (D-PKG-07) — content-addressed; not LFS or release-assets
+      - ./var/packages:/var/packages
       # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)
       - ssh_host_keys:/var/ssh
     depends_on:
