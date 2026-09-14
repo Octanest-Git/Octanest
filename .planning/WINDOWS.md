@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 45
+open_count: 46
 waived_count: 0
 fixed_count: 1
-total_count: 46
-last_updated: 2026-09-14T14:53:54.977Z
+total_count: 47
+last_updated: 2026-09-14T15:54:38.280Z
 ---
 
 # Broken Windows Ledger
@@ -61,6 +61,7 @@ last_updated: 2026-09-14T14:53:54.977Z
 | 44 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.integration.test.ts |  | Wave 0 it.fails Issues UI stubs pending 11-03..11-09 greens | open |  | 2026-09-14T14:24:49.338Z |  |
 | 45 | 11 | stub | apps/web/src/lib/markdown.issues.test.ts |  | Wave 0 it.fails #N autolink stubs pending 11-10 greens | open |  | 2026-09-14T14:24:49.422Z |  |
 | 46 | 11 | stub | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Comments/Labels/Assignees/Linked PRs empty shells until later plans | open |  | 2026-09-14T14:53:54.977Z |  |
+| 47 | 11 | deviation | apps/web/src/routes/$owner.$repo.issues.$n.tsrx |  | Rule 2: wired detail route owner/repo into renderGfm despite plan 'without editing detail route files' | open |  | 2026-09-14T15:54:38.280Z |  |
 
 ````json
 [
@@ -614,6 +615,18 @@ last_updated: 2026-09-14T14:53:54.977Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T14:53:54.977Z",
+    "resolved_at": null
+  },
+  {
+    "id": 47,
+    "kind": "deviation",
+    "phase": "11",
+    "file": "apps/web/src/routes/$owner.$repo.issues.$n.tsrx",
+    "line": null,
+    "description": "Rule 2: wired detail route owner/repo into renderGfm despite plan 'without editing detail route files'",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T15:54:38.280Z",
     "resolved_at": null
   }
 ]

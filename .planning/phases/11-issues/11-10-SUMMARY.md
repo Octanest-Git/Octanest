@@ -15,7 +15,7 @@ affects: [issues-detail, comments, markdown-preview]
 actuals:
   tokens: 3155
   tasks: 2
-  commits: 5
+  commits: 6
 
 plan_head_before: 4527719b54514f5a23dcb1da17b4d8e9f33d742e
 
