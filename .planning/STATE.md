@@ -5,16 +5,16 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 15-00-PLAN.md
-last_updated: "2026-09-14T16:59:15.122Z"
+stopped_at: Completed 15-01-PLAN.md; continuing phase
+last_updated: "2026-09-14T17:16:12.937Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: 4b21443849be304520233e17ee9c1d55f00f66f2
+state_head: 4e1b5d1050fb6f1e99f8fbd2da19fc8afbfb65e5
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 115
+  completed_plans: 116
 milestone_name: milestone
 ---
 
@@ -131,6 +131,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 08-git-https-pats P11 | 6min | 1 tasks | 5 files |
 | Phase 11 P12 | 5min | 2 tasks | 7 files |
 | Phase 15 P00 | 2min | 2 tasks | 5 files |
+| Phase 15 P01 | 10min | 2 tasks | 16 files |
 
 # Project State
 
@@ -487,6 +488,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
 - [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
 - [Phase 11]: Wave 0 stubs use #[ignore] until 15-01..15-05 turn them green
+- [Phase 11]: Release ENV defaults: assets dir var/release-assets, max 512MiB, redirect retention 90d
 
 ### Pending Todos
 
@@ -508,8 +510,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T16:59:14.671Z
-Stopped at: Completed 15-00-PLAN.md
+Last session: 2026-09-14T17:16:12.820Z
+Stopped at: Completed 15-01-PLAN.md; continuing phase
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
