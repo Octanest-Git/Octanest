@@ -72,7 +72,11 @@ Bare repos live under `OCTANEST_REPOS_DIR` (default `var/repos`). Layout: `{OCTA
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | 14 | Soft-delete grace period before disk + row removal |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | 604800 | Scheduled `git gc --auto` on active repos |
 
-Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`).
+Factory reset (Admin → Auth danger zone) offers **Database only** (keep files) vs **Database and repositories** (wipe children under `OCTANEST_REPOS_DIR`). Reset always wipes issue-domain rows via repository/org CASCADE (no extra env knobs).
+
+## Issues
+
+Phase 11 issues/labels reuse existing forge ACL and `OCTANEST_PUBLIC_ORIGIN` for markdown autolink targets. **No new environment variables.** Closing-keyword auto-close from commits/PRs remains deferred (D-ISS-15) until Phase 12.
 
 ## Git Smart HTTP & personal access tokens
 

@@ -1,9 +1,9 @@
 ---
 phase: "11"
 slug: "issues"
-status: pending
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: "2026-09-14"
 updated: "2026-09-14"
 ---
@@ -40,38 +40,38 @@ updated: "2026-09-14"
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| ISS-01 | create/edit/close/reopen + ACL | API integration | `cargo nextest run -p octanest-api -E 'test(issue_lifecycle)'` | ❌ Wave 0 |
-| ISS-01 | per-repo `#N` monotonic / no reuse | dialect + API | `cargo nextest run -p octanest-db -E 'test(dialect_issues)'` | ❌ Wave 0 |
-| ISS-01 | Admin hard-delete + confirmNumber | API | `cargo nextest run -p octanest-api -E 'test(issue_delete)'` | ❌ Wave 0 |
-| ISS-01 | issue edit history trail | API | `cargo nextest run -p octanest-api -E 'test(issue_history)'` | ❌ Wave 0 |
-| ISS-02 | comment CRUD + moderation delete | API | `cargo nextest run -p octanest-api -E 'test(issue_comments)'` | ❌ Wave 0 |
-| ISS-02 | comment edit history | API | `cargo nextest run -p octanest-api -E 'test(issue_comments)'` | ❌ Wave 0 |
-| ISS-02 | Write\|Preview uses renderGfm sanitize | unit | `bun --cwd apps/web exec vitest run src/lib/markdown.test.ts` | ✅ extend |
-| ISS-03 | labels assign Write+ / defs Admin | API | `cargo nextest run -p octanest-api -E 'test(issue_labels)'` | ❌ Wave 0 |
-| ISS-03 | assignees Read+ eligibility | API | `cargo nextest run -p octanest-api -E 'test(issue_assignees)'` | ❌ Wave 0 |
-| ISS-04 | markdown `#N` / `owner/repo#N` autolink | unit | `bun --cwd apps/web exec vitest run src/lib/markdown.issues.test.ts` | ❌ Wave 0 |
-| ISS-04 | link stubs CRUD | API | `cargo nextest run -p octanest-api -E 'test(issue_links)'` | ❌ Wave 0 |
-| ISS-* | reactions toggle (issue + comment) | API | `cargo nextest run -p octanest-api -E 'test(issue_reactions)'` | ❌ Wave 0 |
-| ISS-01..04 | private ACL soft not-found | API | extend `repo_private_404` / `test(issue_private)` | ❌ Wave 0 |
-| UI | Issues tab + list/detail/new routes | web integration | `bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.issues.integration.test.ts` | ❌ Wave 0 |
-| OPS | factory reset cascades issue tables | DB | `cargo nextest run -p octanest-db -E 'test(factory_reset_issues)'` | ❌ Wave 0 |
+| ISS-01 | create/edit/close/reopen + ACL | API integration | `cargo nextest run -p octanest-api -E 'test(issue_lifecycle)'` | ✅ |
+| ISS-01 | per-repo `#N` monotonic / no reuse | dialect + API | `cargo nextest run -p octanest-db -E 'test(dialect_issues)'` | ✅ |
+| ISS-01 | Admin hard-delete + confirmNumber | API | `cargo nextest run -p octanest-api -E 'test(issue_delete)'` | ✅ |
+| ISS-01 | issue edit history trail | API | `cargo nextest run -p octanest-api -E 'test(issue_lifecycle)'` | ✅ |
+| ISS-02 | comment CRUD + moderation delete | API | `cargo nextest run -p octanest-api -E 'test(issue_comments)'` | ✅ |
+| ISS-02 | comment edit history | API | `cargo nextest run -p octanest-api -E 'test(issue_comments)'` | ✅ |
+| ISS-02 | Write\|Preview uses renderGfm sanitize | unit | `bun --cwd apps/web exec vitest run src/lib/markdown.test.ts` | ✅ |
+| ISS-03 | labels assign Write+ / defs Admin | API | `cargo nextest run -p octanest-api -E 'test(issue_labels)'` | ✅ |
+| ISS-03 | assignees Read+ eligibility | API | `cargo nextest run -p octanest-api -E 'test(issue_assignees)'` | ✅ |
+| ISS-04 | markdown `#N` / `owner/repo#N` autolink | unit | `bun --cwd apps/web exec vitest run src/lib/markdown.issues.test.ts` | ✅ |
+| ISS-04 | link stubs CRUD | API | `cargo nextest run -p octanest-api -E 'test(issue_links)'` | ✅ |
+| ISS-* | reactions toggle (issue + comment) | API | `cargo nextest run -p octanest-api -E 'test(issue_reactions)'` | ✅ |
+| ISS-01..04 | private ACL soft not-found | API | `cargo nextest run -p octanest-api -E 'test(issue_private) | test(repo_private_404_issue)'` | ✅ |
+| UI | Issues tab + list/detail/new routes | web integration | `bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.issues.integration.test.ts` | ✅ |
+| OPS | factory reset cascades issue tables | DB | `cargo nextest run -p octanest-db -E 'test(factory_reset_issues)'` | ✅ |
 
 ---
 
 ## Wave 0 Gaps
 
-- [ ] `crates/octanest-api/tests/issue_lifecycle.rs` — ISS-01 create/edit/close/reopen + history
-- [ ] `crates/octanest-api/tests/issue_delete.rs` — Admin hard-delete + confirmNumber
-- [ ] `crates/octanest-api/tests/issue_comments.rs` — ISS-02 comments + moderation + history
-- [ ] `crates/octanest-api/tests/issue_labels.rs` — ISS-03 label defs + assign
-- [ ] `crates/octanest-api/tests/issue_assignees.rs` — ISS-03 multi-assignee + Read+ eligibility
-- [ ] `crates/octanest-api/tests/issue_links.rs` — ISS-04 stubs + manual link
-- [ ] `crates/octanest-api/tests/issue_reactions.rs` — D-ISS-11 eight reactions
-- [ ] Extend private soft not-found for unauthorized issue access (D-ISS-20)
-- [ ] `crates/octanest-db/tests/dialect_issues.rs` — `0011_issues` tri-dialect
-- [ ] `crates/octanest-db/tests/factory_reset_issues.rs` — cascade wipe
-- [ ] `apps/web/src/routes/$owner.$repo.issues.integration.test.ts` — Issues tab + list/detail/new
-- [ ] `apps/web/src/lib/markdown.issues.test.ts` — `#N` / `owner/repo#N` + sanitize regression
+- [x] `crates/octanest-api/tests/issue_lifecycle.rs` — ISS-01 create/edit/close/reopen + history
+- [x] `crates/octanest-api/tests/issue_delete.rs` — Admin hard-delete + confirmNumber
+- [x] `crates/octanest-api/tests/issue_comments.rs` — ISS-02 comments + moderation + history
+- [x] `crates/octanest-api/tests/issue_labels.rs` — ISS-03 label defs + assign
+- [x] `crates/octanest-api/tests/issue_assignees.rs` — ISS-03 multi-assignee + Read+ eligibility
+- [x] `crates/octanest-api/tests/issue_links.rs` — ISS-04 stubs + manual link
+- [x] `crates/octanest-api/tests/issue_reactions.rs` — D-ISS-11 eight reactions
+- [x] Extend private soft not-found for unauthorized issue access (D-ISS-20) — `repo_private_404.rs` issue_* cases
+- [x] `crates/octanest-db/tests/dialect_issues.rs` — `0011_issues` tri-dialect
+- [x] `crates/octanest-db/tests/factory_reset_issues.rs` — cascade wipe
+- [x] `apps/web/src/routes/$owner.$repo.issues.integration.test.ts` — Issues tab + list/detail/new
+- [x] `apps/web/src/lib/markdown.issues.test.ts` — `#N` / `owner/repo#N` + sanitize regression
 
 ---
 

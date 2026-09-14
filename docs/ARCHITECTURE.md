@@ -87,7 +87,21 @@ Phase 10 ships orgs + ACL (ORG-01…04) on migration `0010_orgs_acl`:
 | **Roles** | Org Owner/Admin manage membership (only Owner grants/changes Owner). Members inherit org `member_base_permission` (`none` \| `read` \| `write`) on org-owned private repos. |
 | **Invites** | Email magic links via existing `EmailSender` + `OCTANEST_PUBLIC_ORIGIN`. Accepting a valid invite can create a verified local user **even when `allow_signup` is closed**. Existing invite-email accounts must sign in (`org.invite_login_required`) — no password steal on accept. |
 | **Lookup** | `user.lookup` username autocomplete (no emails); rate-limited per session. |
-| **Factory reset** | `factory_reset_instance` deletes repositories (cascades collaborators / PAT-repo links) and organizations (cascades members / invites) before wiping auth users. |
+| **Factory reset** | `factory_reset_instance` deletes repositories (cascades collaborators / PAT-repo links / **issue domain**) and organizations (cascades members / invites / org-scoped labels) before wiping auth users. |
+
+### Issues & labels
+
+Phase 11 ships issues + labels (ISS-01…04) on migration `0011_issues`:
+
+| Concern | Contract |
+| --- | --- |
+| **Tables** | `issues`, `issue_counters`, `issue_comments`, `issue_revisions`, `comment_revisions`, `labels`, `repo_hidden_labels`, `issue_labels`, `issue_assignees`, `issue_reactions`, `comment_reactions`, `issue_links`. FK `ON DELETE CASCADE` from repositories / issues / orgs. |
+| **Numbering** | Per-repo monotonic `#N` (`issue_counters.max_number`); hard-delete never reclaims. |
+| **ACL** | Same Capability model as forge browse: Read+ view; Write+ mutate; Admin for label defs / hard-delete. Private soft not-found. |
+| **UI** | Repo **Issues** tab (`/$owner/$repo/issues`); Write\|Preview markdown with `#N` autolink; Linked PRs panel for `pr_stub` rows. |
+| **Deferred** | Closing keywords wait for Phase 12 PR merge (D-ISS-15). |
+
+RPC: `issue.*` / `label.*` — see [API.md](API.md#issues-issue--labels-label).
 
 ### Git Smart HTTP & PATs
 

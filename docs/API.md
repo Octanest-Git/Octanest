@@ -90,7 +90,13 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `repo.collaborators.list` / `add` / `update` / `remove` | Per-repo collaborator grants | Repo Admin |
 | `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
 | `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
-| `admin.instance.factory_reset` | Wipe users, orgs, repos (DB); optional disk wipe via `scope` | Sys-admin |
+| `admin.instance.factory_reset` | Wipe users, orgs, repos + issue domain (DB); optional disk wipe via `scope` | Sys-admin |
+| `issue.create` / `get` / `list` / `update` / `close` / `reopen` / `history` / `delete` | Per-repo issues (`#N`); Capability ACL | Session (+ capability) |
+| `issue.comments.*` | Comment CRUD + history; author or Write+ moderate-delete | Session (+ capability) |
+| `issue.labels.set` / `assignees.set` / `assigneeCandidates` | Assign labels / assignees (Write+; assignees must have Read+) | Session (+ capability) |
+| `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
+| `issue.links.list` / `add` / `remove` | Linked PR stubs + manual links (`pr_stub`) | Session (+ capability) |
+| `label.listForRepo` / `listForOrg` / `create` / `update` / `delete` | Org/repo label definitions (Admin for defs) | Session (+ capability) |
 | `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response | Session + verified email |
 | `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); one-time plaintext in response | Session + verified email |
 | `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
@@ -282,7 +288,21 @@ Organizations share the username slug namespace. `org.create` rejects reserved /
 
 `repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
 
-`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories, organizations (members/invites cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears `OCTANEST_REPOS_DIR` children.
+`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories (cascades collaborators, PAT-repo links, and **issue domain** tables), organizations (members/invites/org-scoped labels cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears `OCTANEST_REPOS_DIR` children.
+
+### Issues (`issue.*`) & labels (`label.*`)
+
+Phase 11 ships per-repository issues (ISS-01…04) on migration `0011_issues`:
+
+| Concern | Contract |
+| --- | --- |
+| **Numbering** | Each repo allocates monotonic `#N` via `issue_counters`. Hard-delete does **not** reclaim numbers. |
+| **ACL** | Capability gates: Read+ to view; Write+ to create/comment/assign/react/link; author or Write+ to edit own issue/comment; Admin (or typed confirm) for hard-delete. Private unauthorized access returns soft `repo.not_found` / `issue.not_found` (no enumeration). |
+| **Markdown** | Web Write\|Preview uses `renderGfm` with `#N` / `owner/repo#N` autolink and sanitize-last. `@mention` / commit SHA autolink are off. |
+| **Linked PRs** | `issue.links.*` stores stub rows (`pr_stub`) until Phase 12 PR objects exist. Manual add/remove only. |
+| **Deferred** | Closing keywords (`fixes` / `closes` `#N`) are **not** enforced (D-ISS-15 → Phase 12). |
+
+Client surface: `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
 
 ### Git Smart HTTP
 
@@ -341,7 +361,7 @@ HTTP status for `/api/rpc` is derived from the RPC error:
 | `400` | Most RPC errors (validation, provider mismatch, version mismatch, etc.) |
 | `401` | `auth.unauthenticated` |
 | `403` | `admin.forbidden`, `auth.email_unverified` |
-| `404` | `rpc.unknown_procedure`, `repo.not_found` |
+| `404` | `rpc.unknown_procedure`, `repo.not_found`, `issue.not_found` |
 
 Common `error.code` values:
 
@@ -374,6 +394,9 @@ Common `error.code` values:
 | `org.invite_*` | Invite expired / revoked / invalid |
 | `repo.not_found` | Missing or unauthorized private (web/RPC soft 404) |
 | `repo.create_forbidden` | Org Member cannot create under that org |
+| `issue.not_found` / `issue.comment_not_found` / `issue.link_not_found` | Missing issue/comment/link (private soft-404 where applicable) |
+| `issue.confirm_mismatch` | Admin hard-delete confirmation number mismatch |
+| `label.not_found` | Missing label definition |
 | `db.not_configured` / `db.probe_failed` | Database unavailable |
 | `avatar.*` | Multipart/type/size/store failures on avatar upload |
 
