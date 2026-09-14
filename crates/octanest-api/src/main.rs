@@ -1,57 +1,20 @@
-use octanest_api::auth::hash_password_str;
+use octanest_api::auth::seed;
 use octanest_api::build_cors;
 use octanest_db::Database;
+use octanest_git::assert_git_version;
 use tracing_subscriber::EnvFilter;
-use uuid::Uuid;
-
-/// Create a single `is_admin` user when `OCTANEST_ADMIN_EMAIL` + `OCTANEST_ADMIN_PASSWORD`
-/// are both set and `count_users() == 0`. Username `admin` if free else `admin1`.
-async fn maybe_seed_admin(db: &Database) -> Result<(), String> {
-    let email = match std::env::var("OCTANEST_ADMIN_EMAIL") {
-        Ok(v) if !v.is_empty() => v.trim().to_ascii_lowercase(),
-        _ => return Ok(()),
-    };
-    let password = match std::env::var("OCTANEST_ADMIN_PASSWORD") {
-        Ok(v) if !v.is_empty() => v,
-        _ => return Ok(()),
-    };
-
-    let count = db.count_users().await?;
-    if count > 0 {
-        return Ok(());
-    }
-
-    let username = match db.find_user_by_username("admin").await? {
-        None => "admin".to_string(),
-        Some(_) => "admin1".to_string(),
-    };
-
-    let password_hash = hash_password_str(&password).map_err(|e| e.to_string())?;
-    let id = Uuid::new_v4().to_string();
-    db.create_user(
-        &id,
-        &email,
-        &username,
-        Some(&password_hash),
-        &username,
-        "",
-        None,
-        true,
-    )
-    .await?;
-    tracing::info!(
-        username = %username,
-        email = %email,
-        "seeded initial admin user from OCTANEST_ADMIN_* (Phase 6 wizard owns interactive bootstrap)"
-    );
-    Ok(())
-}
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();
+
+    // D-33 / GIT-09: refuse to serve if system git is missing or older than 2.5.0.
+    if let Err(e) = assert_git_version((2, 5, 0)) {
+        eprintln!("git version gate failed: {e}");
+        std::process::exit(1);
+    }
 
     let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
     let cors_origins = std::env::var("OCTANEST_CORS_ORIGINS").ok();
@@ -106,11 +69,17 @@ async fn main() {
 
         // Optional first-admin seed (T-04-13). Phase 6 owns the interactive wizard —
         // this path only runs when both env vars are set and the users table is empty.
-        if let Err(e) = maybe_seed_admin(&db).await {
+        // D-04: maybe_seed_admin sets email_verified_at after create_user.
+        if let Err(e) = seed::maybe_seed_admin(&db).await {
             eprintln!("admin seed failed: {e}");
             std::process::exit(1);
         }
     }
+
+    let repos_dir = std::env::var("OCTANEST_REPOS_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("var/repos"));
+    let _ssh_stop = octanest_api::ssh::maybe_spawn_from_env(db.clone(), repos_dir).await;
 
     let bind = std::env::var("API_BIND").unwrap_or_else(|_| "0.0.0.0:8080".into());
     let listener = tokio::net::TcpListener::bind(&bind)
@@ -133,6 +102,15 @@ async fn main() {
         octanest_api::email::build_email_sender_from_env()
     };
     let state = octanest_api::AppState::new(db, email, env_name);
+    let job_cfg = octanest_api::jobs::JobConfig::from_env();
+    octanest_api::jobs::spawn_background_jobs(
+        state.db.clone(),
+        state.git.clone(),
+        state.repos_dir.clone(),
+        state.lfs_dir.clone(),
+        state.packages_dir.clone(),
+        job_cfg,
+    );
     let app = octanest_api::router_with_state(state, cors);
     axum::serve(listener, app).await.expect("server error");
 }

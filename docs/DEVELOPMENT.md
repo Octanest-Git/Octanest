@@ -3,7 +3,7 @@
 
 Guide for working on Octanest locally: Bun + Turborepo for the web app and packages, Cargo for the API and database crates, and Make targets for RPC codegen, Compose overlays, and tests.
 
-Related: [ARCHITECTURE.md](ARCHITECTURE.md), [CONFIGURATION.md](CONFIGURATION.md), [database.md](database.md), [dev-auth.md](dev-auth.md).
+Related: [ARCHITECTURE.md](ARCHITECTURE.md), [CONFIGURATION.md](CONFIGURATION.md), [database.md](database.md), [dev-auth.md](dev-auth.md), [CODE_PRACTICES.md](CODE_PRACTICES.md), [CONTRIBUTING.md](../CONTRIBUTING.md), [AGENTS.md](../AGENTS.md).
 
 ## Local setup
 
@@ -84,7 +84,7 @@ Root Compose files (validated in CI `compose` job):
 | `make up-mysql` | `docker-compose.yml` + `docker-compose.mysql.yml` (`--profile mysql`) |
 | `make up-sqlite` | `docker-compose.yml` + `docker-compose.sqlite.yml`; writes `.env.sqlite` with `OCTANEST_SQLITE_HOST_DIR` |
 | `make up-dev-auth` | `docker-compose.dev-auth.yml` (`--profile dev-auth`) — Mailpit, OIDC mock, Resend/WorkOS stubs |
-| `make down` / `down-mysql` / `down-sqlite` / `down-dev-auth` | Matching teardown |
+| `make down` / `down-mysql` / `down-sqlite` / `down-dev-auth` / `down-with-dev-auth` | Matching teardown |
 | `make smoke` / `smoke-mysql` / `smoke-sqlite` | Bring-up smoke asserting dialect |
 | `make logs` | Follow Compose logs |
 

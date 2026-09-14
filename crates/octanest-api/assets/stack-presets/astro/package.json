@@ -1,0 +1,8 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "astro": "^4.0.0"
+  }
+}

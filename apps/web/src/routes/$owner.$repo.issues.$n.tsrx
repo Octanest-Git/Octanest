@@ -1,0 +1,489 @@
+import {
+  createFileRoute,
+  useLoaderData,
+  useNavigate,
+  useParams,
+} from "@octanejs/tanstack-router";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import type { IssuePublic, RepoPublic } from "@octanest/api-client";
+import { useEffect, useState } from "octane";
+import { AuthErrorBanner } from "@/components/auth-shell";
+import { IssueAssigneesPanel } from "@/components/repo/issue-assignees-panel";
+import { IssueComments } from "@/components/repo/issue-comments";
+import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
+import { IssueHistoryPanel } from "@/components/repo/issue-history";
+import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
+import { IssueLinkedPrsPanel } from "@/components/repo/issue-linked-prs";
+import { IssueReactionsBar } from "@/components/repo/issue-reactions";
+import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
+import { RepoChrome } from "@/components/repo/repo-chrome";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { apiClient } from "@/lib/api-client";
+import { renderGfm } from "@/lib/markdown";
+import type { RepoLayoutLoaderData } from "@/lib/repo-store";
+import { useChromeAccountState } from "@/lib/use-chrome-account";
+import { fetchIssueGet, fetchRepoGet } from "@/lib/ssr-repo";
+
+export type IssueDetailLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; repo: RepoPublic; issue: IssuePublic };
+
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
+
+async function loadIssueDetail(
+  owner: string,
+  repoName: string,
+  number: number,
+): Promise<IssueDetailLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load repository.",
+    };
+  }
+  const issueRes = await fetchIssueGet({
+    data: { owner, name: repoName, number },
+  });
+  if (!issueRes.ok) {
+    if (
+      issueRes.error.code === "repo.not_found" ||
+      issueRes.error.code === "issue.not_found"
+    ) {
+      return { kind: "not_found" };
+    }
+    return {
+      kind: "error",
+      message: issueRes.error.message || "Could not load issue.",
+    };
+  }
+  return { kind: "ready", repo: got.data, issue: issueRes.data };
+}
+
+export const Route = createFileRoute("/$owner/$repo/issues/$n")({
+  component: IssueDetailPage,
+  head: ({ params }) => ({
+    meta: [
+      {
+        title: `Issue #${(params as { n: string }).n} · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+      },
+    ],
+  }),
+  loader: async ({ params }): Promise<IssueDetailLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    const n = Number((params as { n?: string }).n ?? "0");
+    try {
+      return await loadIssueDetail(owner, repoName, n);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
+});
+
+/** Issue detail — edit/close/reopen/history/Admin delete (ISS-01 / D-ISS-02..04). */
+export function IssueDetailPage() @{
+  const params = useParams({ strict: false }) as {
+    owner?: string;
+    repo?: string;
+    n?: string;
+  };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const number = Number(params.n ?? "0");
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const account = useChromeAccountState();
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as
+    | RepoLayoutLoaderData
+    | undefined;
+  const routeLoader = useLoaderData({ from: "/$owner/$repo/issues/$n" }) as
+    | IssueDetailLoaderData
+    | undefined;
+
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const repoQ = useQuery({
+    queryKey: ["repo", "get", owner, repoName] as const,
+    queryFn: async () => {
+      const res = await apiClient.repo.get({ owner, name: repoName });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data;
+    },
+    enabled: !!owner && !!repoName,
+    initialData:
+      routeLoader?.kind === "ready"
+        ? routeLoader.repo
+        : layout?.status === "ok"
+          ? (layout.repo ?? undefined)
+          : undefined,
+  });
+
+  const issueQ = useQuery({
+    queryKey: ["issue", "get", owner, repoName, number] as const,
+    queryFn: async () => {
+      const res = await apiClient.issue.get({
+        owner,
+        name: repoName,
+        number,
+      });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data;
+    },
+    enabled: !!owner && !!repoName && number > 0,
+    initialData:
+      routeLoader?.kind === "ready" ? routeLoader.issue : undefined,
+  });
+
+  const repo = repoQ.data ?? null;
+  const issue = issueQ.data ?? null;
+  const userId = account.user?.id ?? "";
+  const canEdit =
+    !!issue &&
+    (!!repo?.can_write || (!!userId && issue.author_id === userId));
+  const canWrite = !!repo?.can_write;
+  const canAdmin = !!repo?.can_admin;
+  const showClose = canWrite && issue?.state === "open";
+  const showReopen = canWrite && issue?.state === "closed";
+  const notFound =
+    layout?.status === "not_found" ||
+    routeLoader?.kind === "not_found" ||
+    (!repoQ.isPending && !repo) ||
+    (!issueQ.isPending && !issue && !issueQ.isError);
+  const loading = !notFound && (!repo || !issue);
+
+  useEffect(() => {
+    if (!issue || editing) return;
+    let cancelled = false;
+    (async () => {
+      const html = await renderGfm(issue.body || "", {
+        owner,
+        repo: repoName,
+      });
+      if (!cancelled) setBodyHtml(html);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [issue?.id, issue?.body, editing, owner, repoName]);
+
+  async function invalidateIssueCaches() {
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "get", owner, repoName, number],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "history", owner, repoName, number],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "list", owner, repoName],
+    });
+  }
+
+  function startEdit() {
+    if (!issue) return;
+    setEditTitle(issue.title);
+    setEditBody(issue.body);
+    setActionError("");
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!issue) return;
+    setActionError("");
+    if (!editTitle.trim()) {
+      setActionError("Title is required.");
+      return;
+    }
+    setPending(true);
+    try {
+      const res = await apiClient.issue.update({
+        owner,
+        name: repoName,
+        number: issue.number,
+        title: editTitle.trim(),
+        body: editBody,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not update issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setEditing(false);
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function closeIssue() {
+    if (!issue) return;
+    setActionError("");
+    setPending(true);
+    try {
+      const res = await apiClient.issue.close({
+        owner,
+        name: repoName,
+        number: issue.number,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not close issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function reopenIssue() {
+    if (!issue) return;
+    setActionError("");
+    setPending(true);
+    try {
+      const res = await apiClient.issue.reopen({
+        owner,
+        name: repoName,
+        number: issue.number,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not reopen issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function confirmDelete(confirmNumber: number) {
+    if (!issue) return;
+    setDeleteError("");
+    setDeletePending(true);
+    try {
+      const res = await apiClient.issue.delete({
+        owner,
+        name: repoName,
+        number: issue.number,
+        confirmNumber,
+      });
+      if (!res.ok) {
+        setDeleteError(res.error.message || "Could not delete issue.");
+        setDeletePending(false);
+        return;
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["issue", "list", owner, repoName],
+      });
+      setDeleteOpen(false);
+      setDeletePending(false);
+      await navigate({
+        to: "/$owner/$repo/issues",
+        params: { owner, repo: repoName },
+      });
+    } catch {
+      setDeleteError(NETWORK_ERROR);
+      setDeletePending(false);
+    }
+  }
+
+  @if (notFound) {
+    <RepoNotFound />
+  } @else {
+    @if (loading) {
+      <p className="text-[16px] text-muted-foreground">Loading issue…</p>
+    } @else {
+      <>
+        <RepoChrome repo={repo!} active="issues" />
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div className="flex flex-col gap-4">
+            @if (actionError) {
+              <AuthErrorBanner message={actionError} />
+            }
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] text-muted-foreground">
+                  {`#${issue!.number} · ${issue!.state}` as string}
+                </p>
+                @if (editing) {
+                  <div className="mt-2 flex flex-col gap-2">
+                    <Label htmlFor="issue-edit-title">Title</Label>
+                    <Input
+                      id="issue-edit-title"
+                      value={editTitle}
+                      onInput={(e) =>
+                        setEditTitle((e.target as HTMLInputElement).value)
+                      }
+                      disabled={pending}
+                    />
+                  </div>
+                } @else {
+                  <h1
+                    data-testid="issue-title"
+                    className="mt-1 text-[24px] font-semibold text-foreground"
+                  >
+                    {issue!.title as string}
+                  </h1>
+                }
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {`opened by @${issue!.author_username}` as string}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                @if (canEdit && !editing) {
+                  <Button type="button" variant="outline" onClick={startEdit}>
+                    Edit
+                  </Button>
+                }
+                @if (showClose) {
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={closeIssue}
+                  >
+                    Close issue
+                  </Button>
+                }
+                @if (showReopen) {
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={reopenIssue}
+                  >
+                    Reopen
+                  </Button>
+                }
+                @if (canAdmin) {
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    Delete issue
+                  </Button>
+                }
+              </div>
+            </div>
+
+            @if (editing) {
+              <div className="flex flex-col gap-2">
+                <MarkdownWritePreview
+                  id="issue-edit-body"
+                  value={editBody}
+                  onValueChange={setEditBody}
+                  rows={10}
+                  disabled={pending}
+                  owner={owner}
+                  repo={repoName}
+                />
+                <div className="flex gap-2">
+                  <Button type="button" disabled={pending} onClick={saveEdit}>
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => {
+                      setEditing(false);
+                      setActionError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            } @else {
+              <div
+                className="prose prose-sm max-w-none rounded-md border border-border px-4 py-3"
+                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+              />
+            }
+
+            <IssueReactionsBar
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              target="issue"
+              reactions={issue?.reactions ?? []}
+              canWrite={canWrite}
+            />
+
+            <IssueHistoryPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+            />
+
+            <IssueComments
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+              currentUserId={userId}
+            />
+          </div>
+          <aside className="flex flex-col gap-6">
+            <IssueLabelsPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              issue={issue!}
+              canWrite={canWrite}
+            />
+            <IssueAssigneesPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              issue={issue!}
+              canWrite={canWrite}
+            />
+            <IssueLinkedPrsPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+            />
+          </aside>
+        </div>
+
+        <IssueDeleteDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          issueNumber={issue!.number}
+          pending={deletePending}
+          error={deleteError}
+          onConfirm={confirmDelete}
+        />
+      </>
+    }
+  }
+}
+
+export default IssueDetailPage;

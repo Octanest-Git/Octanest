@@ -1,0 +1,226 @@
+import {
+  createFileRoute,
+  useLoaderData,
+  useParams,
+} from "@octanejs/tanstack-router";
+import type {
+  RepoBlobResponse,
+  RepoPublic,
+  RepoRefEntry,
+} from "@octanest/api-client";
+import { useEffect, useState } from "octane";
+import { BlobViewer } from "@/components/repo/blob-viewer";
+import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
+import { RefSelect } from "@/components/repo/ref-select";
+import { RepoChrome } from "@/components/repo/repo-chrome";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { highlightCode, languageIdForPath, type HighlightTheme } from "@/lib/highlight";
+import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
+import { resolveSsrHighlightTheme } from "@/lib/ssr-auth";
+import {
+  fetchRepoBlob,
+  fetchRepoGet,
+  fetchRepoRefs,
+} from "@/lib/ssr-repo";
+
+export type BlobLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      repo: RepoPublic;
+      refName: string;
+      path: string;
+      blob: RepoBlobResponse;
+      refs: RepoRefEntry[];
+      /** Pre-rendered Shiki HTML (SSR). */
+      highlightedHtml: string | null;
+      highlightTheme: HighlightTheme | null;
+    };
+
+type Phase = { kind: "loading" } | BlobLoaderData;
+
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
+
+async function highlightBlob(
+  path: string,
+  content: string,
+): Promise<{ html: string; theme: HighlightTheme }> {
+  const theme = await resolveSsrHighlightTheme();
+  const html = await highlightCode(content, {
+    lang: languageIdForPath(path),
+    theme,
+  });
+  return { html, theme };
+}
+
+async function loadBlobPage(
+  owner: string,
+  repoName: string,
+  splat: string | undefined,
+): Promise<BlobLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load repository.",
+    };
+  }
+  const repo = got.data;
+  const refsRes = await fetchRepoRefs({ data: { owner, name: repoName } });
+  const refs = refsRes.ok ? refsRes.data.refs : [];
+  const knownRefs = refs.map((r) => shortRefName(r.name));
+  const parsed = parseRefAndPath(splat, knownRefs);
+  const refName = parsed.ref || repo.default_branch || "main";
+  if (!parsed.path) {
+    return { kind: "not_found" };
+  }
+  const blobRes = await fetchRepoBlob({
+    data: { owner, name: repoName, ref: refName, path: parsed.path },
+  });
+  if (!blobRes.ok) {
+    if (
+      blobRes.error.code === "repo.not_found" ||
+      blobRes.error.code === "git.not_found"
+    ) {
+      return { kind: "not_found" };
+    }
+    return {
+      kind: "error",
+      message: blobRes.error.message || "Could not load file.",
+    };
+  }
+
+  let highlightedHtml: string | null = null;
+  let highlightTheme: HighlightTheme | null = null;
+  const blob = blobRes.data;
+  if (
+    !blob.is_binary &&
+    !blob.truncated &&
+    blob.encoding === "utf-8" &&
+    blob.content
+  ) {
+    try {
+      const hl = await highlightBlob(blob.path || parsed.path, blob.content);
+      highlightedHtml = hl.html;
+      highlightTheme = hl.theme;
+    } catch {
+      highlightedHtml = null;
+      highlightTheme = null;
+    }
+  }
+
+  return {
+    kind: "ready",
+    repo,
+    refName: shortRefName(blob.ref) || refName,
+    path: blob.path || parsed.path,
+    blob,
+    refs,
+    highlightedHtml,
+    highlightTheme,
+  };
+}
+
+export const Route = createFileRoute("/$owner/$repo/blob/$")({
+  component: RepoBlobPage,
+  head: ({ params }) => {
+    const { path } = parseRefAndPath(
+      (params as { _splat?: string })._splat,
+    );
+    const owner = (params as { owner: string }).owner;
+    const repo = (params as { repo: string }).repo;
+    const base = path.split("/").pop() || path || "file";
+    const trunc = base.length > 40 ? `…${base.slice(-36)}` : base;
+    return {
+      meta: [{ title: `${trunc} · ${owner}/${repo} · Octanest` }],
+    };
+  },
+  loader: async ({ params }): Promise<BlobLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    const splat = (params as { _splat?: string })._splat;
+    try {
+      return await loadBlobPage(owner, repoName, splat);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
+});
+
+export function RepoBlobPage() @{
+  const params = useParams({ from: "/$owner/$repo/blob/$" }) as {
+    owner: string;
+    repo: string;
+    _splat?: string;
+  };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const splat = params._splat;
+  const loaderData = useLoaderData({ from: "/$owner/$repo/blob/$" }) as
+    | BlobLoaderData
+    | undefined;
+
+  const [phase, setPhase] = useState<Phase>(() =>
+    loaderData ?? { kind: "loading" },
+  );
+
+  useEffect(() => {
+    if (loaderData) {
+      setPhase(loaderData);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setPhase({ kind: "loading" });
+      try {
+        const next = await loadBlobPage(owner, repoName, splat);
+        if (!cancelled) setPhase(next);
+      } catch {
+        if (!cancelled) setPhase({ kind: "error", message: NETWORK_ERROR });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [owner, repoName, splat, loaderData]);
+
+  @if (phase.kind === "not_found") {
+    <RepoNotFound />
+  } @else if (phase.kind === "loading") {
+    <p className="text-[16px] text-muted-foreground">Loading file…</p>
+  } @else if (phase.kind === "error") {
+    <p role="alert" className="text-[16px] text-destructive">
+      {phase.message as string}
+    </p>
+  } @else {
+    <>
+      <RepoChrome repo={phase.repo} active="code" />
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <RefSelect
+          owner={owner}
+          repo={repoName}
+          refs={phase.refs}
+          value={phase.refName}
+          pathUnderRef={phase.path}
+          mode="blob"
+        />
+        <PathBreadcrumb
+          owner={owner}
+          repo={repoName}
+          refName={phase.refName}
+          path={phase.path}
+        />
+      </div>
+      <BlobViewer
+        owner={owner}
+        repo={repoName}
+        blob={phase.blob}
+        highlightedHtml={phase.highlightedHtml}
+        highlightTheme={phase.highlightTheme}
+      />
+    </>
+  }
+}

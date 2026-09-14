@@ -1,0 +1,1 @@
+{"content":"Standard approach: front auth proxy then git-http-backend CGI — not hand-rolled pkt-line. Auth/ACL at Axum; stream CGI stdin/stdout. Avoid dumb HTTP object AliasMatch without ACL.","source":"web","provider":"websearch","confidence":"LOW","fetched_at":"2026-09-13T16:42:04.342Z","ttl":86400000,"kind":"web"}

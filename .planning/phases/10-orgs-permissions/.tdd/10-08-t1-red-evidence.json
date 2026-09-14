@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-api --test git_smart_http git_smart_collaborator_classic_pat_push -- --nocapture",
+  "exitCode": 101,
+  "targetTest": "git_smart_collaborator_classic_pat_push",
+  "targetFile": "crates/octanest-api/tests/git_smart_http.rs",
+  "expected": "Write collaborator classic PAT with repo scope allows receive-pack (ORG-04)",
+  "actual": "receive-pack returned 401 Unauthorized \u2014 owner-only ACL / pat.user_id==owner_id (expected StatusCode::OK)",
+  "output": "\nrunning 1 test\ntest git_smart_collaborator_classic_pat_push ... FAILED\n\nfailures:\n\nfailures:\n    git_smart_collaborator_classic_pat_push\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 1.44s\n\n\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s\n     Running tests/git_smart_http.rs (target/debug/build/octanest-api/9de2ad39e39dbeaa/out/git_smart_http-9de2ad39e39dbeaa)\n\nthread 'git_smart_collaborator_classic_pat_push' (1263021) panicked at crates/octanest-api/tests/git_smart_http.rs:677:5:\nassertion `left == right` failed: write collaborator classic PAT must allow receive-pack (ORG-04)\n  left: 401\n right: 200\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `-p octanest-api --test git_smart_http`\n\n\nnot ok 1 - git_smart_collaborator_classic_pat_push\n  ---\n  message: 'receive-pack returned 401 Unauthorized \u2014 owner-only ACL / pat.user_id==owner_id (expected StatusCode::OK)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n"
+}

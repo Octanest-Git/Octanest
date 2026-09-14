@@ -1,0 +1,16 @@
+---
+description: Rust crate practices for octanest-api / core / db
+globs: crates/**/*.rs
+alwaysApply: false
+---
+
+# Rust crates
+
+- `octanest-core`: shared types / pure domain — no SQL, no Axum.
+- `octanest-db`: migrations + `Database` API; all dialect branching stays here.
+- `octanest-api`: HTTP/RPC/auth/email; call `Database`, do not fork SQL per dialect.
+- Prefer `Result` + structured errors; no `unwrap`/`expect` outside tests.
+- Preserve auth gates (`require_verified`, admin, bootstrap). Destructive RPCs keep explicit confirmations.
+- After RPC or shared DTO changes: `make rpc-gen` and keep `packages/api-client` in the same change.
+- Tests: unit colocated; cross-cutting in `crates/*/tests/`. CI uses nextest (`--profile ci`).
+- See [docs/CODE_PRACTICES.md](../../docs/CODE_PRACTICES.md) and `.agents/skills/rust-best-practices`.

@@ -1,0 +1,9 @@
+{
+  "command": "DATABASE_URL=sqlite:///tmp/octanest-tdd-red4.sqlite cargo test -p octanest-db --test dialect_auth migrate_email_token_and_verified_helpers -- --nocapture",
+  "exitCode": 101,
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.11s\n     Running tests/dialect_auth.rs (target/debug/build/octanest-db/1562ee3dbe890ce9/out/dialect_auth-1562ee3dbe890ce9)\n\nrunning 1 test\n\nthread 'migrate_email_token_and_verified_helpers' (493677) panicked at crates/octanest-db/tests/dialect_auth.rs:139:5:\nassertion failed: verified.email_verified_at.is_some()\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest migrate_email_token_and_verified_helpers ... FAILED\n\nfailures:\n\nfailures:\n    migrate_email_token_and_verified_helpers\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.01s\n\nerror: test failed, to rerun pass `-p octanest-db --test dialect_auth`\n\nnot ok 1 - migrate_email_token_and_verified_helpers\n# tests 1\n# pass 0\n# fail 1\n",
+  "targetTest": "migrate_email_token_and_verified_helpers",
+  "targetFile": "crates/octanest-db/tests/dialect_auth.rs",
+  "expected": "email_verified_at is Some after set_email_verified_at",
+  "actual": "assertion failed: verified.email_verified_at.is_some()"
+}

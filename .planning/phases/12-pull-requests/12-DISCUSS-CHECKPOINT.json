@@ -1,0 +1,61 @@
+{
+  "phase": "12",
+  "phase_name": "Pull Requests",
+  "timestamp": "2026-09-14T21:51:00+02:00",
+  "areas_completed": ["PR identity & forks"],
+  "areas_remaining": [
+    "Review model",
+    "Line comments & diff UX",
+    "Merge strategies",
+    "Closing keywords",
+    "UI chrome & list"
+  ],
+  "decisions": {
+    "PR identity & forks": [
+      {
+        "question": "Where can a PR head come from?",
+        "answer": "Same-repo and fork PRs (GitHub/Gitea parity)",
+        "options_presented": [
+          "Same-repo only",
+          "Same-repo and fork PRs",
+          "You decide"
+        ]
+      },
+      {
+        "question": "How are PR numbers assigned?",
+        "answer": "Shared per-repo #N with issues (GitHub-style)",
+        "options_presented": [
+          "Shared sequence with issues",
+          "Separate PR sequence",
+          "You decide"
+        ]
+      },
+      {
+        "question": "Cross-fork head rules?",
+        "answer": "Head must be fork of this repo or same-repo branch; base on this repo",
+        "options_presented": [
+          "Fork-of-this or same-repo (GitHub)",
+          "Any readable repo as head",
+          "You decide"
+        ]
+      },
+      {
+        "question": "Updating head after open?",
+        "answer": "Allow force-push head and change base; mark outdated line comments",
+        "options_presented": [
+          "GitHub-like retarget + force-push",
+          "Force-push only, fixed base",
+          "Immutable after create",
+          "You decide"
+        ]
+      }
+    ]
+  },
+  "deferred_ideas": [],
+  "canonical_refs": [
+    ".planning/ROADMAP.md",
+    ".planning/REQUIREMENTS.md",
+    ".planning/phases/11-issues/11-CONTEXT.md",
+    ".planning/phases/10-orgs-permissions/10-CONTEXT.md"
+  ]
+}

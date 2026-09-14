@@ -30,13 +30,12 @@ Integration-style Rust tests live under `crates/octanest-api/tests/` and `crates
 
 ### Vitest projects (`apps/web`)
 
-`apps/web/vitest.config.ts` defines projects. Default `bun run test` / `vitest run` always includes **unit**, **integration**, and **e2e-component**. Projects **e2e-stack** and **e2e-stack-browser** are included only when `E2E_STACK=1` (used by `make test-e2e-stack`).
+`apps/web/vitest.config.ts` defines projects. Default `bun run test` / `vitest run` always includes **unit** and **integration**. Projects **e2e-stack** and **e2e-stack-browser** are included only when `E2E_STACK=1` (used by `make test-e2e-stack`).
 
 | Project | Environment | Include pattern | Notes |
 |---------|-------------|-----------------|-------|
 | `unit` | `node` | `src/**/*.unit.test.ts` | Fast pure logic |
 | `integration` | `happy-dom` | `src/**/*.integration.test.{ts,tsx}` | Setup: `src/test/setup-integration.ts` |
-| `e2e-component` | Playwright Chromium (headless) | `e2e/component/**/*.e2e.test.{ts,tsx}` | Setup: `e2e/component/setup.ts` |
 | `e2e-stack` | `node` | `e2e/stack/**/*.stack.test.ts` | Only if `E2E_STACK=1`; 60s timeout; no file parallelism |
 | `e2e-stack-browser` | Playwright Chromium | `e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}` | Only if `E2E_STACK=1`; 60s timeout |
 
@@ -53,7 +52,7 @@ make test
 ```
 
 1. `cargo nextest run --workspace` if `cargo-nextest` is on `PATH`, else `cargo test --workspace`.
-2. `bun run test` → Turbo → Vitest for `@octanest/web` (unit / integration / e2e-component) and `@octanest/api-client`.
+2. `bun run test` → Turbo → Vitest for `@octanest/web` (unit / integration) and `@octanest/api-client`.
 
 Does **not** start Docker stubs or the live API/Vite stack.
 
@@ -61,10 +60,9 @@ Does **not** start Docker stubs or the live API/Vite stack.
 
 ```bash
 bun run test                                    # turbo: all packages with a test script
-bun run --filter @octanest/web test             # web: unit + integration + e2e-component
+bun run --filter @octanest/web test             # web: unit + integration
 bun run --filter @octanest/web test:unit
 bun run --filter @octanest/web test:integration
-bun run --filter @octanest/web test:e2e         # e2e-component only
 bun run --filter @octanest/api-client test
 ```
 
@@ -74,7 +72,6 @@ From `apps/web`:
 bun run test
 bun run test:unit
 bun run test:integration
-bun run test:e2e
 ```
 
 ### Full stack e2e (`make test-e2e-stack`)
@@ -143,7 +140,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | Job | What it runs |
 |-----|----------------|
 | `api-rust` | Install nextest → `cargo nextest run --workspace --profile ci` |
-| `web-octane` | `bun install --frozen-lockfile` → Playwright Chromium → `bun run test` (api-client + web unit/integration/e2e-component) → Turbo build `@octanest/web` |
+| `web-octane` | `bun install --frozen-lockfile` → Playwright Chromium → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` |

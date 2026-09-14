@@ -1,0 +1,36 @@
+{
+  "phase": "09",
+  "status": "complete",
+  "updated": "2026-09-13T22:24:00Z",
+  "selected_areas": ["1-topology", "2-url-port", "3-principal", "5-acl-parity"],
+  "deferred_to_defaults": ["4-key-registration", "6-settings-clonebox", "7-ops-smoke"],
+  "completed_areas": ["1-topology", "2-url-port", "3-principal", "5-acl-parity"],
+  "pending_areas": [],
+  "context_path": ".planning/phases/09-git-ssh/09-CONTEXT.md",
+  "decisions": [
+    {
+      "area": "1-topology",
+      "id": "D-SSH-01",
+      "decision": "Rust SSH service + system git-*-pack; no OpenSSH; git-only",
+      "source": "user"
+    },
+    {
+      "area": "2-url-port",
+      "id": "D-SSH-02",
+      "decision": "scp-style git@host:owner/repo.git; Compose 2222; prod prefer 22; configurable host/port",
+      "source": "user"
+    },
+    {
+      "area": "3-principal",
+      "id": "D-SSH-03",
+      "decision": "Force login user git; identity from key fingerprint",
+      "source": "user"
+    },
+    {
+      "area": "5-acl-parity",
+      "id": "D-SSH-04",
+      "decision": "Account powers via key; public fetch when authed; private owner-only until P10; push requires verified email; git errors not HTTP codes",
+      "source": "user"
+    }
+  ]
+}

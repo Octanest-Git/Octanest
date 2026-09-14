@@ -1,11 +1,14 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import react from "@vitejs/plugin-react";
+import { octane } from "@octanejs/vite-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
   ensureAuthSettings,
+  expectAuthMeDedupedOnHome,
+  expectStatusHealthy,
   expectWorkosCta,
+  loginThroughOidc,
   restoreLocalAuthCommand,
   signupThroughUi,
 } from "./e2e/stack-browser/commands";
@@ -44,11 +47,15 @@ const stackEnvDefine = {
 
 /**
  * Vitest projects:
- * - unit / integration / e2e-component: always on in `bun run test`
+ * - unit / integration: always on in `bun run test`
  * - e2e-stack (+ browser): only when E2E_STACK=1 (`make test-e2e-stack`)
+ *
+ * Component coverage uses happy-dom integration tests (e.g. auth-shell). The
+ * former e2e-component Playwright project was removed — a single browser-suite
+ * file hit Vitest `initSuite` / `config` undefined failures on GitHub runners.
  */
 export default defineConfig({
-  plugins: [react()],
+  plugins: [octane()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
@@ -62,7 +69,15 @@ export default defineConfig({
         test: {
           name: "unit",
           environment: "node",
-          include: ["src/**/*.unit.test.ts"],
+          include: [
+            "src/**/*.unit.test.ts",
+            "src/**/*.gate.test.ts",
+            // Plan 07-14: markdown/highlight libs use *.test.ts (not *.unit.test.ts)
+            "src/lib/markdown.test.ts",
+            // Plan 11-01: ISS-04 issue autolink Wave 0 stubs
+            "src/lib/markdown.issues.test.ts",
+            "src/lib/highlight.test.ts",
+          ],
         },
       },
       {
@@ -72,20 +87,6 @@ export default defineConfig({
           environment: "happy-dom",
           include: ["src/**/*.integration.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-integration.ts"],
-        },
-      },
-      {
-        extends: true,
-        test: {
-          name: "e2e-component",
-          include: ["e2e/component/**/*.e2e.test.{ts,tsx}"],
-          setupFiles: ["./e2e/component/setup.ts"],
-          browser: {
-            enabled: true,
-            provider: playwright(),
-            headless: true,
-            instances: [{ browser: "chromium" }],
-          },
         },
       },
       ...(stackEnabled
@@ -121,6 +122,9 @@ export default defineConfig({
                     restoreLocalAuthCommand,
                     signupThroughUi,
                     expectWorkosCta,
+                    loginThroughOidc,
+                    expectStatusHealthy,
+                    expectAuthMeDedupedOnHome,
                   },
                 },
               },

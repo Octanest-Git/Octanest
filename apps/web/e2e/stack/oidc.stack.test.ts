@@ -17,7 +17,7 @@ describe("stack e2e: OIDC → mock-oauth2-server", () => {
         oidc_client_id: "octanest-dev",
       });
 
-      const start = `${apiOrigin()}/api/auth/oidc/start?return_to=${encodeURIComponent("/dashboard")}`;
+      const start = `${apiOrigin()}/api/auth/oidc/start?return_to=${encodeURIComponent("/")}`;
       const result = await followRedirects(start, { maxHops: 16 });
 
       const session = result.cookies.find((c) =>
@@ -30,7 +30,7 @@ describe("stack e2e: OIDC → mock-oauth2-server", () => {
         );
       }
 
-      expect(result.finalUrl).toMatch(/dashboard|localhost|127\.0\.0\.1/);
+      expect(new URL(result.finalUrl).pathname).toBe("/");
 
       const me = await rpc("auth.me", {}, session);
       expect(me.ok).toBe(true);

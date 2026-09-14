@@ -1,5 +1,7 @@
 //! AUTH-02/03: login cookie → auth.me; logout; logout_all across devices.
 
+
+mod support;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -70,6 +72,7 @@ async fn login_me_logout_round_trip() {
     let url = format!("sqlite:{}", dir.path().join("session.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db).await;
     seed_user(&app).await;
 
@@ -132,6 +135,7 @@ async fn login_by_username_works() {
     let url = format!("sqlite:{}", dir.path().join("userlogin.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db).await;
     seed_user(&app).await;
 
@@ -153,6 +157,7 @@ async fn logout_all_revokes_other_sessions() {
     let url = format!("sqlite:{}", dir.path().join("logoutall.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
     let app = test_app(db).await;
     seed_user(&app).await;
 

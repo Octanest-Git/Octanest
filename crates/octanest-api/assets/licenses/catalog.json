@@ -1,0 +1,40 @@
+{
+  "licenses": [
+    {
+      "id": "0BSD"
+    },
+    {
+      "id": "AGPL-3.0-only"
+    },
+    {
+      "id": "Apache-2.0"
+    },
+    {
+      "id": "BSD-2-Clause"
+    },
+    {
+      "id": "BSD-3-Clause"
+    },
+    {
+      "id": "CC0-1.0"
+    },
+    {
+      "id": "GPL-3.0-only"
+    },
+    {
+      "id": "ISC"
+    },
+    {
+      "id": "LGPL-3.0-only"
+    },
+    {
+      "id": "MIT"
+    },
+    {
+      "id": "MPL-2.0"
+    },
+    {
+      "id": "Unlicense"
+    }
+  ]
+}

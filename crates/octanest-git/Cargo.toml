@@ -1,0 +1,15 @@
+[package]
+name = "octanest-git"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Git forge backend (CLI primary; gitoxide path deferred)"
+
+[dependencies]
+async-trait = "0.1.92"
+tempfile = "3"
+thiserror = "2"
+tokio = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

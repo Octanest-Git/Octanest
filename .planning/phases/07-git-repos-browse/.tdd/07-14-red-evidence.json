@@ -1,0 +1,9 @@
+{
+  "command": "bunx vitest run --reporter=tap src/lib/markdown.test.ts src/lib/highlight.test.ts",
+  "exitCode": 1,
+  "targetTest": "strips script tags and unsafe HTML",
+  "targetFile": "apps/web/src/lib/markdown.test.ts",
+  "expected": "sanitized HTML without <script>; strong for **world**",
+  "actual": "raw markdown passthrough including <script>alert(...)</script>",
+  "output": "TAP version 13\n# Vitest RED run projected to node-test TAP for gsd check tdd-red-evidence\n# Source command: bunx vitest run --reporter=tap src/lib/markdown.test.ts src/lib/highlight.test.ts\n# Raw vitest exit: 1 \u2014 AssertionError on sanitize + grammar id mapping (stub implementations)\nnot ok 1 - strips script tags and unsafe HTML\n  ---\n  error: AssertionError\n  message: expected raw markdown not to match /<script/i\n  actual: 'Hello <script>alert(\"xss\")</script> **world**'\n  expected: sanitized HTML without script\n  ...\nnot ok 2 - renders GFM tables without raw HTML passthrough\n  ---\n  error: AssertionError\n  message: expected raw markdown to match /<table/i\n  ...\nnot ok 3 - maps .tsrx and .ripple via in-repo grammars not TS/JS alias alone\n  ---\n  error: AssertionError\n  message: expected 'typescript' to be 'tsrx'\n  ...\nok 4 - highlights tsrx source with registered language id\n1..4\n# tests 4\n# pass 1\n# fail 3\n# cancelled 0\n"
+}

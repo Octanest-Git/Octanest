@@ -36,13 +36,8 @@ need_cmd() {
 }
 
 # Prefer a credential-helper-free Docker config in CI/WSL when desktop helper is missing.
-if [[ -z "${DOCKER_CONFIG:-}" ]] && ! command -v docker-credential-desktop.exe >/dev/null 2>&1; then
-  if [[ -f "${HOME}/.docker/config.json" ]] && grep -q docker-credential-desktop "${HOME}/.docker/config.json" 2>/dev/null; then
-    export DOCKER_CONFIG="${ROOT}/var/e2e/docker-config"
-    mkdir -p "$DOCKER_CONFIG"
-    echo '{}' >"$DOCKER_CONFIG/config.json"
-  fi
-fi
+# shellcheck source=../docker-wsl-creds.sh
+source "${ROOT}/scripts/docker-wsl-creds.sh"
 
 need_cmd cargo
 need_cmd bun
@@ -96,7 +91,7 @@ export OCTANEST_ENV=development
 export API_BIND="127.0.0.1:${API_PORT}"
 export DATABASE_URL="sqlite:${DB_PATH}"
 export OCTANEST_AUTO_MIGRATE=true
-export OCTANEST_PUBLIC_ORIGIN="http://127.0.0.1:${API_PORT}"
+export OCTANEST_PUBLIC_ORIGIN="http://127.0.0.1:${WEB_PORT}"
 export OCTANEST_CORS_ORIGINS="http://127.0.0.1:${WEB_PORT},http://localhost:${WEB_PORT},http://127.0.0.1:${API_PORT}"
 export OCTANEST_MAIL_FROM="Octanest <noreply@localhost>"
 export OCTANEST_SMTP_URL="smtp://127.0.0.1:1025"
@@ -120,17 +115,33 @@ wait_http "http://127.0.0.1:${API_PORT}/health" "octanest-api" 90
 echo "==> starting Vite web on :$WEB_PORT (proxies /api → API)"
 (
   cd apps/web
-  # Point Vite proxy at e2e API port
+  # Point Vite proxy + SSR server fns at e2e API port
   export OCTANEST_E2E_API_ORIGIN="http://127.0.0.1:${API_PORT}"
+  export OCTANEST_API_ORIGIN="http://127.0.0.1:${API_PORT}"
+  export OCTANEST_PUBLIC_ORIGIN="http://127.0.0.1:${WEB_PORT}"
   # Bind IPv4 explicitly — default localhost can be ::1-only on CI, while we poll 127.0.0.1.
   bunx vite --host 127.0.0.1 --port "$WEB_PORT" --strictPort >"$ROOT/var/e2e/web.log" 2>&1
 ) &
 WEB_PID=$!
 wait_http "http://127.0.0.1:${WEB_PORT}/" "web" 90
 
+# Cold routes can sit in Vite dep-optimize/reload; warm signup/login before Playwright.
+echo "==> warming auth routes"
+for path in /signup /login; do
+  for _ in 1 2 3 4 5; do
+    code=$(curl -4 -sS -o /dev/null -w "%{http_code}" "http://127.0.0.1:${WEB_PORT}${path}" || echo 000)
+    if [[ "$code" =~ ^(200|302|303|307|308)$ ]]; then
+      break
+    fi
+    sleep 2
+  done
+done
+
 export E2E_STACK=1
+export OCTANEST_API_ORIGIN="http://127.0.0.1:${API_PORT}"
 export OCTANEST_E2E_API_ORIGIN="http://127.0.0.1:${API_PORT}"
 export OCTANEST_E2E_WEB_ORIGIN="http://127.0.0.1:${WEB_PORT}"
+export OCTANEST_PUBLIC_ORIGIN="http://127.0.0.1:${WEB_PORT}"
 export OCTANEST_E2E_MAILPIT_ORIGIN="http://127.0.0.1:8025"
 export OCTANEST_E2E_STUBS_ORIGIN="http://127.0.0.1:9092"
 export OCTANEST_E2E_OIDC_ISSUER="http://127.0.0.1:9090/default"

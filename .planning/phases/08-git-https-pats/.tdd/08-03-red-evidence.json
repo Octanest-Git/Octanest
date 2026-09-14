@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-db --test dialect_pats",
+  "exitCode": 101,
+  "targetTest": "dialect_pats_migrate_0008_schema_presence",
+  "targetFile": "crates/octanest-db/tests/dialect_pats.rs",
+  "expected": "0008_pats.sql exists with personal_access_tokens, personal_access_token_repos, token_hash",
+  "actual": "0008_pats.sql missing — empty read, assert on non-empty SQL failed",
+  "output": "running 2 tests\ntest dialect_pats_migrate_0008_schema_presence ... FAILED\ntest dialect_pats_tri_dialect_files ... FAILED\n\nfailures:\n    dialect_pats_migrate_0008_schema_presence\n    dialect_pats_tri_dialect_files\n\ntest result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\nnot ok 1 - dialect_pats_migrate_0008_schema_presence\n  ---\n  message: '0008_pats.sql must exist (personal_access_tokens + personal_access_token_repos)'\n  ...\nnot ok 2 - dialect_pats_tri_dialect_files\n  ---\n  message: 'missing 0008_pats.sql — tri-dialect 0008_pats required'\n  ...\n# tests 2\n# pass 0\n# fail 2\n# cancelled 0\n"
+}

@@ -6,12 +6,17 @@ use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
 use crate::app::AppState;
+use crate::auth::bootstrap;
 use crate::auth::external::{link_or_create_user, sanitize_return_to, ExternalAuthError};
-use crate::auth::session::SESSION_COOKIE_NAME;
+use crate::auth::session::{
+    build_session_presence_cookie, SESSION_COOKIE_NAME, SESSION_IDLE, SESSION_PRESENCE_COOKIE_NAME,
+};
 use crate::auth::{oidc, workos};
 
 #[derive(Debug, Deserialize)]
 pub struct StartQuery {
+    /// Preferred snake_case (stack e2e / docs).
+    #[serde(alias = "returnTo")]
     pub return_to: Option<String>,
 }
 
@@ -53,10 +58,24 @@ fn sso_error_redirect() -> Response {
     Redirect::temporary("/login?error=sso").into_response()
 }
 
-fn redirect_with_cookie(return_to: &str, cookie: &str) -> Response {
+/// Empty instance without ENV seed must complete `/setup` before SSO can create users.
+async fn reject_if_setup_required(state: &AppState) -> Option<Response> {
+    match bootstrap::needs_setup(&state.db).await {
+        Ok(true) => Some(Redirect::temporary("/setup").into_response()),
+        Ok(false) => None,
+        Err(e) => {
+            tracing::error!(error = %e.message, "bootstrap needs_setup check failed");
+            Some(sso_error_redirect())
+        }
+    }
+}
+
+fn redirect_with_cookies(return_to: &str, cookies: &[String]) -> Response {
     let mut res = Redirect::temporary(return_to).into_response();
-    if let Ok(hv) = HeaderValue::from_str(cookie) {
-        res.headers_mut().append(header::SET_COOKIE, hv);
+    for cookie in cookies {
+        if let Ok(hv) = HeaderValue::from_str(cookie) {
+            res.headers_mut().append(header::SET_COOKIE, hv);
+        }
     }
     res
 }
@@ -71,6 +90,9 @@ pub async fn workos_start(
     headers: HeaderMap,
     Query(q): Query<StartQuery>,
 ) -> Response {
+    if let Some(res) = reject_if_setup_required(&state).await {
+        return res;
+    }
     let mode = match current_mode(&state).await {
         Ok(m) => m,
         Err(e) => {
@@ -146,6 +168,9 @@ pub async fn oidc_start(
     headers: HeaderMap,
     Query(q): Query<StartQuery>,
 ) -> Response {
+    if let Some(res) = reject_if_setup_required(&state).await {
+        return res;
+    }
     let mode = match current_mode(&state).await {
         Ok(m) => m,
         Err(e) => {
@@ -219,6 +244,9 @@ async fn mint_session_and_redirect(
     identity: &crate::auth::external::ExternalIdentity,
     return_to: &str,
 ) -> Response {
+    if let Some(res) = reject_if_setup_required(state).await {
+        return res;
+    }
     let (user, _incomplete) = match link_or_create_user(&state.db, identity).await {
         Ok(v) => v,
         Err(e) => {
@@ -237,7 +265,10 @@ async fn mint_session_and_redirect(
     };
 
     let path = sanitize_return_to(Some(return_to));
-    let cookie_header = cookie.to_string();
-    debug_assert!(cookie_header.contains(SESSION_COOKIE_NAME));
-    redirect_with_cookie(&path, &cookie_header)
+    let session_header = cookie.to_string();
+    let presence =
+        build_session_presence_cookie(SESSION_IDLE, &state.env_name).to_string();
+    debug_assert!(session_header.contains(SESSION_COOKIE_NAME));
+    debug_assert!(presence.contains(SESSION_PRESENCE_COOKIE_NAME));
+    redirect_with_cookies(&path, &[session_header, presence])
 }

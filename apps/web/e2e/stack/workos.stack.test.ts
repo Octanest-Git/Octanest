@@ -22,10 +22,10 @@ describe("stack e2e: WorkOS → AuthKit stub", () => {
       });
       await stubsReset();
 
-      const start = `${apiOrigin()}/api/auth/workos/start?return_to=${encodeURIComponent("/dashboard")}`;
+      const start = `${apiOrigin()}/api/auth/workos/start?return_to=${encodeURIComponent("/")}`;
       const result = await followRedirects(start);
 
-      expect(result.finalUrl).toContain("/dashboard");
+      expect(new URL(result.finalUrl).pathname).toBe("/");
       const session = result.cookies.find((c) =>
         c.startsWith("octanest_session="),
       );

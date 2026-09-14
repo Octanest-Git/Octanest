@@ -37,12 +37,13 @@ async fn migrate_auth_and_user_round_trip() {
             "Round Trip",
             "",
             None,
-            false,
+            octanest_core::Role::User,
         )
         .await
         .expect("insert user");
     assert_eq!(user.email, "roundtrip@example.com");
     assert_eq!(user.password_hash.as_deref(), Some("$argon2id$test"));
+    assert_eq!(user.role, octanest_core::Role::User);
 
     let token_hash = "abc0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
     db.create_session(
@@ -73,4 +74,160 @@ async fn migrate_auth_and_user_round_trip() {
         .await
         .expect("find after delete");
     assert!(gone.is_none());
+}
+
+#[tokio::test]
+async fn migrate_email_token_and_verified_helpers() {
+    let Some(url) = database_url() else {
+        eprintln!("skipping: DATABASE_URL unset");
+        return;
+    };
+    let _guard = SERIAL.lock().await;
+
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let user_id = "00000000-0000-4000-8000-000000000002";
+    db.create_user(
+        user_id,
+        "verify-helpers@example.com",
+        "verify-helpers",
+        Some("$argon2id$test"),
+        "Verify Helpers",
+        "",
+        None,
+        octanest_core::Role::User,
+    )
+    .await
+    .expect("insert user");
+
+    let token_hash = "def0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
+    let otp_hash = "fed0123456789abcdef0123456789abcdef0123456789abcdef0123456789ab";
+    let token = db
+        .upsert_email_token(
+            "00000000-0000-4000-8000-0000000000bb",
+            user_id,
+            "verify",
+            token_hash,
+            otp_hash,
+            "2099-06-01T12:00:00Z",
+            1,
+        )
+        .await
+        .expect("upsert email token");
+    assert_eq!(token.purpose, "verify");
+    assert_eq!(token.user_id, user_id);
+    assert_eq!(token.attempt_count, 0);
+    assert_eq!(token.issue_count, 1);
+
+    let by_token = db
+        .find_email_token_by_token_hash(token_hash)
+        .await
+        .expect("find by token_hash")
+        .expect("token row present");
+    assert_eq!(by_token.id, token.id);
+    assert_eq!(by_token.otp_hash, otp_hash);
+
+    let by_otp = db
+        .find_email_token_by_otp_hash(otp_hash)
+        .await
+        .expect("find by otp_hash")
+        .expect("otp row present");
+    assert_eq!(by_otp.token_hash, token_hash);
+
+    let verified = db
+        .set_email_verified_at(user_id, "2099-06-01T12:30:00Z")
+        .await
+        .expect("set email_verified_at");
+    assert!(verified.email_verified_at.is_some());
+
+    let cleared = db
+        .clear_email_verified_at(user_id)
+        .await
+        .expect("clear email_verified_at");
+    assert!(cleared.email_verified_at.is_none());
+}
+
+/// Wave 0 / 06-01: `0006_bootstrap_flags` columns round-trip after migrate.
+#[tokio::test]
+async fn migrate_0006_bootstrap_flags_columns() {
+    let migration_path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/migrations/sqlite/0006_bootstrap_flags.sql"
+    );
+    let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
+    assert!(
+        !sql.is_empty(),
+        "0006_bootstrap_flags.sql must exist (allow_signup + must_change_credentials)"
+    );
+    assert!(
+        sql.contains("allow_signup"),
+        "0006 must add instance_auth_settings.allow_signup"
+    );
+    assert!(
+        sql.contains("must_change_credentials"),
+        "0006 must add users.must_change_credentials"
+    );
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("bootstrap_flags.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let settings = db.get_auth_settings().await.expect("settings");
+    assert!(
+        !settings.allow_signup,
+        "after migrate, allow_signup default false must be readable"
+    );
+
+    let updated = db
+        .update_auth_settings(
+            &settings.provider_mode,
+            &settings.email_provider,
+            settings.from_address.as_deref(),
+            settings.oidc_issuer.as_deref(),
+            settings.oidc_client_id.as_deref(),
+            settings.workos_client_id.as_deref(),
+            true,
+            &settings.default_visibility,
+        )
+        .await
+        .expect("set allow_signup");
+    assert!(updated.allow_signup);
+
+    let user = db
+        .create_user(
+            "u-bootstrap-flags",
+            "flags@example.com",
+            "flaguser",
+            Some("hash"),
+            "Flag User",
+            "",
+            None,
+            octanest_core::Role::User,
+        )
+        .await
+        .expect("insert user");
+    assert!(
+        !user.must_change_credentials,
+        "must_change_credentials defaults false"
+    );
+
+    let flagged = db
+        .set_must_change_credentials(&user.id, true)
+        .await
+        .expect("set must_change");
+    assert!(flagged.must_change_credentials);
+
+    let cleared = db
+        .clear_must_change_credentials(&user.id)
+        .await
+        .expect("clear must_change");
+    assert!(!cleared.must_change_credentials);
+
+    let renamed = db
+        .update_user_email(&user.id, "flags-renamed@example.com")
+        .await
+        .expect("update email");
+    assert_eq!(renamed.email, "flags-renamed@example.com");
 }

@@ -3,7 +3,9 @@
 Run Mailpit + an OIDC mock + thin Resend/WorkOS HTTP stubs so you can exercise
 SMTP, Resend, WorkOS, and OIDC paths without Dashboards or API keys.
 
-## Quick start (recommended)
+## Quick start
+
+### A — Host API + Vite (`make dev`)
 
 ```bash
 cp docs/dev-auth.env.example .env.dev-auth
@@ -18,14 +20,39 @@ OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin
 bun run --filter @octanest/web dev
 ```
 
-| Service | URL / port | Purpose |
-|---------|------------|---------|
-| Mailpit UI | http://127.0.0.1:8025 | Capture SMTP mail |
-| Mailpit SMTP | `smtp://127.0.0.1:1025` | `OCTANEST_SMTP_URL` |
-| OIDC mock | http://127.0.0.1:9090/default | Issuer for `OCTANEST_OIDC_*` |
-| Stubs | http://127.0.0.1:9092 | Resend `POST /emails` + WorkOS AuthKit |
+### B — Compose stack (`make up`) + stubs (SMTP → Mailpit)
 
-Tear down: `make down-dev-auth`.
+Keep Traefik / web / API / Postgres from Compose, and point the **API container** at Mailpit over Docker DNS:
+
+```bash
+make up-with-dev-auth
+```
+
+Then open:
+
+| Surface | URL |
+|---------|-----|
+| App | http://localhost |
+| Mailpit UI | http://127.0.0.1:8025 |
+
+Defaults set `OCTANEST_SMTP_URL=smtp://mailpit:1025` via `OCTANEST_COMPOSE_SMTP_URL` (so a host `.env` with `127.0.0.1:1025` for `make dev` does not break the API container). Magic links use `OCTANEST_COMPOSE_PUBLIC_ORIGIN` → `http://localhost` (Traefik), so a host `OCTANEST_PUBLIC_ORIGIN=http://localhost:3000` for Vite does not leak into mail. Optional Resend / WorkOS / OIDC stub vars: `docs/dev-auth.env.compose.example` (merge into `.env`).
+
+Tear down stubs only: `make down-dev-auth`. Full stack from `up-with-dev-auth`: `make down-with-dev-auth`.
+
+| Service | Host URL / port | Compose API URL |
+|---------|-----------------|-----------------|
+| Mailpit UI | http://127.0.0.1:8025 | — |
+| Mailpit SMTP | `smtp://127.0.0.1:1025` | `smtp://mailpit:1025` |
+| OIDC mock | http://127.0.0.1:9090/default | `http://host.docker.internal:9090/default` |
+| Stubs | http://127.0.0.1:9092 | `http://stubs:9092` |
+
+If `make up-dev-auth` fails with `docker-credential-desktop.exe: executable file not found` (common on WSL), re-run after pulling this Makefile fix, or temporarily:
+
+```bash
+DOCKER_CONFIG=$(mktemp -d) && echo '{}' >"$DOCKER_CONFIG/config.json" && export DOCKER_CONFIG && make up-dev-auth
+```
+
+`make up-dev-auth` / `make up-with-dev-auth` auto-fall back to a local empty Docker config when that helper is missing.
 
 ## Automated stack e2e
 
@@ -40,15 +67,20 @@ This boots the stub stack, SQLite API on `:18080`, Vite on `:13000`, then runs V
 | Project | What it proves |
 |---------|----------------|
 | `e2e-stack` | SMTP→Mailpit, Resend→stub, WorkOS AuthKit stub login, OIDC mock login (HTTP) |
-| `e2e-stack-browser` | Signup UI + WorkOS CTA against live web/API (Chromium) |
+| `e2e-stack-browser` | Signup UI, WorkOS CTA, OIDC SSO click-through (Chromium) |
 
 CI runs the same via the `e2e-stack` job. Default `bun run test` / `web-octane` stays fast (unit + integration + component e2e only).
 
 ## SMTP (Mailpit)
 
-1. Keep `OCTANEST_SMTP_URL=smtp://127.0.0.1:1025` and leave `OCTANEST_RESEND_API_KEY` unset.
-2. Sign up (local provider mode) and open Mailpit — welcome mail should appear.
-3. In **Admin → Auth**, set email provider to **smtp** if you previously selected resend/log (boot already prefers ENV SMTP when Resend is unset).
+**Host API (`make dev`):** keep `OCTANEST_SMTP_URL=smtp://127.0.0.1:1025` and leave `OCTANEST_RESEND_API_KEY` unset.
+
+**Compose API (`make up-with-dev-auth`):** defaults to `smtp://mailpit:1025` via `OCTANEST_COMPOSE_SMTP_URL` — do not point the API container at `127.0.0.1`. The Makefile also promotes DB `email_provider` from `log` → `smtp` (seed default is log, which would otherwise keep mail in the API log sink).
+
+Then:
+
+1. Sign up or click **Resend email**, then open Mailpit — verify mail should appear.
+2. Or set **Admin → Auth → email provider** to **smtp** if you previously chose log/resend.
 
 ## Resend stub
 
@@ -66,10 +98,12 @@ CI runs the same via the `e2e-stack` job. Default `bun run test` / `web-octane` 
 
 ## OIDC mock
 
-1. Set provider mode to **oidc**.
+1. Set provider mode to **oidc** (Admin → Auth, or choose OIDC during `/setup`).
 2. Requires `OCTANEST_OIDC_ALLOW_INSECURE=1` and `OCTANEST_ENV` in `development` / `dev` / `compose` (never honored in production-like envs).
-3. Issuer `http://127.0.0.1:9090/default` — any client id/secret accepted by the mock server.
-4. Use Sign in with OIDC; the mock issues tokens without a real IdP account.
+3. Host issuer `http://127.0.0.1:9090/default` — any client id/secret accepted by the mock server.
+4. Compose API must use `OCTANEST_COMPOSE_OIDC_ISSUER=http://host.docker.internal:9090/default` (never `127.0.0.1` inside the API container). On Linux without Docker Desktop, ensure `host.docker.internal` resolves (often `extra_hosts` / `/etc/hosts`).
+5. Use Sign in with SSO; the mock issues tokens without a real IdP account.
+6. If discovery hangs, check the mock is up (`curl -4 -m 3 http://127.0.0.1:9090/default/.well-known/openid-configuration`) — the API now fails OIDC HTTP within ~10s instead of spinning forever.
 
 ## Production safety
 

@@ -12,6 +12,17 @@ var/
 coverage/
 test-results/
 playwright-report/
+.playwright-mcp/
 .vitest/
 .env.sqlite
 dev-dist/
+
+# Agent / local scratch — keep tmp/README.md tracked; ignore everything else under tmp/
+tmp/*
+!tmp/README.md
+
+# Local agent / UAT artifacts (do not ship)
+.cursor/gsd-core/
+diff-commit-*.png
+uat-*.png
+login-snap.md

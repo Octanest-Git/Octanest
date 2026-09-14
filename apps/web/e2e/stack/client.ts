@@ -119,6 +119,7 @@ export async function updateAuthSettings(
     oidc_issuer?: string | null;
     oidc_client_id?: string | null;
     workos_client_id?: string | null;
+    allow_signup?: boolean;
   },
 ): Promise<void> {
   const res = await rpc(
@@ -130,6 +131,8 @@ export async function updateAuthSettings(
       oidc_issuer: patch.oidc_issuer ?? null,
       oidc_client_id: patch.oidc_client_id ?? null,
       workos_client_id: patch.workos_client_id ?? null,
+      // Seeded ENV admin defaults allow_signup=false; stack signup tests need it on.
+      allow_signup: patch.allow_signup ?? true,
     },
     cookie,
   );
@@ -186,6 +189,7 @@ export async function followRedirects(
       method: "GET",
       headers,
       redirect: "manual",
+      signal: AbortSignal.timeout(15_000),
     });
 
     const sc = res.headers.getSetCookie?.() ?? [];

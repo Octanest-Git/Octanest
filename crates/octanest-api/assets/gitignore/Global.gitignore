@@ -1,0 +1,12 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini
+*.stackdump
+*~
+*.swp
+.idea/
+.vscode/*
+!.vscode/settings.json
+
