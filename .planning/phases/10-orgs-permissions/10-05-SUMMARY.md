@@ -19,7 +19,7 @@ affects:
 actuals:
   tokens: 17395
   tasks: 2
-  commits: 4
+  commits: 5
 
 plan_head_before: 98c580f9ad7eb064d78621e83c7d68d3cdc1e393
 
@@ -123,6 +123,8 @@ Each task was committed atomically (TDD RED → GREEN):
 2. **Task 1 GREEN:** `24f8856` — members CRUD + get/listMine + rpc-gen
 3. **Task 2 RED:** `fcdec04` — failing member_base ACL tests + no-op updateSettings stub
 4. **Task 2 GREEN:** `d2c562f` — persist updateSettings member_base
+
+**Plan metadata:** `4c92558` (docs: complete plan)
 
 ## Files Created/Modified
 
