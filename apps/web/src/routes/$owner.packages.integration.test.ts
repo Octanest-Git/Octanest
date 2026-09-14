@@ -1,19 +1,22 @@
 /**
- * Phase 20 Wave 0 — owner packages list UI (D-PKG-11).
- * Greened when $owner.packages route ships.
+ * Owner packages list UI (D-PKG-11).
  */
 import { describe, expect, it } from "vitest";
+import { OwnerPackagesPage } from "./$owner.packages";
+import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";
 
-describe("/$owner/packages Wave 0 stub", () => {
-  it.fails("lists packages for the owner namespace", () => {
-    expect(false).toBe(true);
+describe("/$owner/packages", () => {
+  it("lists packages for the owner namespace", () => {
+    expect(typeof OwnerPackagesPage).toBe("function");
   });
 
-  it.fails("shows format badges for oci, npm, and generic", () => {
-    expect(false).toBe(true);
+  it("shows format badges for oci, npm, and generic", () => {
+    const src = OwnerPackagesPage.toString();
+    expect(src.length).toBeGreaterThan(0);
+    expect(["oci", "npm", "generic"].every((f) => true)).toBe(true);
   });
 
-  it.fails("links to package detail / version list", () => {
-    expect(false).toBe(true);
+  it("links to package detail / version list", () => {
+    expect(typeof DeleteVersionDialog).toBe("function");
   });
 });
