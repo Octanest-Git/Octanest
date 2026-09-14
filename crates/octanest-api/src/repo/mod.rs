@@ -1,11 +1,16 @@
 //! Repository RPC handlers (`repo.create` + browse ACL — GIT-01 / GIT-05 / D-23–D-25).
 
 mod acl;
+mod collaborators;
 mod templates;
 
 pub use acl::{
     can_read_as_owner, is_private_visibility, meets, resolve_owner_slug, resolve_repo_for_read,
     AccessibleRepo, Capability, OwnerRef,
+};
+pub use collaborators::{
+    add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
+    resolve_repo_for_admin, update as collaborators_update,
 };
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).

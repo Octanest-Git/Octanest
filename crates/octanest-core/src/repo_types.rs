@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::auth_types::is_reserved_username;
-use crate::org_types::OwnerType;
+use crate::org_types::{CollaboratorPermission, OwnerType};
 
 /// Repo visibility. Serialized lowercase: `public` | `private`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -352,6 +352,47 @@ pub struct RepoSoftDeleteRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteResponse {
     pub name: String,
+}
+
+/// Public collaborator row — no email (ORG-03 / D-ORG-02c).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorPublic {
+    pub user_id: String,
+    pub username: String,
+    pub permission: CollaboratorPermission,
+    pub created_at: String,
+}
+
+/// `repo.collaborators.list` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsListResponse {
+    pub collaborators: Vec<RepoCollaboratorPublic>,
+}
+
+/// `repo.collaborators.add` — existing instance user by username.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsAddRequest {
+    pub owner: String,
+    pub name: String,
+    pub username: String,
+    pub permission: CollaboratorPermission,
+}
+
+/// `repo.collaborators.update`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsUpdateRequest {
+    pub owner: String,
+    pub name: String,
+    pub user_id: String,
+    pub permission: CollaboratorPermission,
+}
+
+/// `repo.collaborators.remove`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCollaboratorsRemoveRequest {
+    pub owner: String,
+    pub name: String,
+    pub user_id: String,
 }
 
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;

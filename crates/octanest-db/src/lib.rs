@@ -23,7 +23,7 @@ pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use pats::PatRow;
-pub use repo_collaborators::RepoCollaboratorRow;
+pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
@@ -303,6 +303,51 @@ impl Database {
         user_id: &str,
     ) -> Result<Option<RepoCollaboratorRow>, String> {
         repo_collaborators::find_collaborator(self.require_pool()?, repo_id, user_id).await
+    }
+
+    pub async fn list_repo_collaborators(
+        &self,
+        repo_id: &str,
+    ) -> Result<Vec<RepoCollaboratorListRow>, String> {
+        repo_collaborators::list_collaborators(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn insert_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+        permission: &str,
+    ) -> Result<RepoCollaboratorRow, String> {
+        repo_collaborators::insert_collaborator(
+            self.require_pool()?,
+            repo_id,
+            user_id,
+            permission,
+        )
+        .await
+    }
+
+    pub async fn update_repo_collaborator_permission(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+        permission: &str,
+    ) -> Result<RepoCollaboratorRow, String> {
+        repo_collaborators::update_collaborator_permission(
+            self.require_pool()?,
+            repo_id,
+            user_id,
+            permission,
+        )
+        .await
+    }
+
+    pub async fn remove_repo_collaborator(
+        &self,
+        repo_id: &str,
+        user_id: &str,
+    ) -> Result<(), String> {
+        repo_collaborators::remove_collaborator(self.require_pool()?, repo_id, user_id).await
     }
 
     // --- repositories ---

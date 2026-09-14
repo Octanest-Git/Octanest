@@ -393,6 +393,40 @@ export type RepoSoftDeleteResponse = {
   name: string;
 };
 
+/** Per-repo collaborator permission ladder (D-ORG-02c). */
+export type CollaboratorPermission = "read" | "write" | "admin";
+
+export type RepoCollaboratorPublic = {
+  user_id: string;
+  username: string;
+  permission: CollaboratorPermission;
+  created_at: string;
+};
+
+export type RepoCollaboratorsListResponse = {
+  collaborators: RepoCollaboratorPublic[];
+};
+
+export type RepoCollaboratorsAddRequest = {
+  owner: string;
+  name: string;
+  username: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsUpdateRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+  permission: CollaboratorPermission;
+};
+
+export type RepoCollaboratorsRemoveRequest = {
+  owner: string;
+  name: string;
+  user_id: string;
+};
+
 export type MemberBasePermission = "none" | "read" | "write";
 
 export type OrgRole = "owner" | "admin" | "member";
@@ -638,6 +672,16 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoPublic>(opts, "repo.updateVisibility", input),
       softDelete: (input: RepoSoftDeleteRequest) =>
         rpcCall<RepoSoftDeleteResponse>(opts, "repo.softDelete", input),
+      collaborators: {
+        list: (input: RepoGetRequest) =>
+          rpcCall<RepoCollaboratorsListResponse>(opts, "repo.collaborators.list", input),
+        add: (input: RepoCollaboratorsAddRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.add", input),
+        update: (input: RepoCollaboratorsUpdateRequest) =>
+          rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.update", input),
+        remove: (input: RepoCollaboratorsRemoveRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "repo.collaborators.remove", input),
+      },
     },
     org: {
       create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),

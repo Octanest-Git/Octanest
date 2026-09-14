@@ -327,6 +327,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.collaborators.list" => match repo::collaborators_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.add" => match repo::collaborators_add(ctx, req.input).await {
+            Ok(c) => RpcResponse::ok(c),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.update" => match repo::collaborators_update(ctx, req.input).await {
+            Ok(c) => RpcResponse::ok(c),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.collaborators.remove" => match repo::collaborators_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "pat.createClassic" => match pat::create_classic(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),

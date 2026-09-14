@@ -81,13 +81,24 @@ async fn rpc_json(app: &axum::Router, body: &str, cookie: &str) -> serde_json::V
         .oneshot(rpc_req_with_cookie(body, cookie))
         .await
         .unwrap();
-    assert_eq!(
-        res.status(),
-        StatusCode::OK,
-        "rpc http status for {body}"
-    );
+    let status = res.status();
     let bytes = res.into_body().collect().await.unwrap().to_bytes();
-    serde_json::from_slice(&bytes).expect("rpc json body")
+    let v: serde_json::Value = serde_json::from_slice(&bytes).expect("rpc json body");
+    // Success → 200; soft `repo.not_found` → 404. Other AppErrors may be 400.
+    if status != StatusCode::OK && status != StatusCode::NOT_FOUND {
+        // Allow domain errors used by these tests (exists / bad input) as JSON 400.
+        let code = v["error"]["code"].as_str().unwrap_or("");
+        assert!(
+            code == "repo.collaborator_exists"
+                || code == "rpc.bad_input"
+                || code == "repo.invalid_permission"
+                || code == "repo.user_not_found"
+                || code == "repo.collaborator_not_found",
+            "rpc http status {:?} for {body} — {v}",
+            status
+        );
+    }
+    v
 }
 
 async fn verify_user(db: &Database, user_id: &str) {
@@ -316,11 +327,10 @@ async fn collab_permission_read_write_admin() {
     let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
     verify_user(&db, &owner_id).await;
 
-    for (i, name) in ["u_read", "u_write", "u_admin"].iter().enumerate() {
+    for name in ["uread1", "uwrite1", "uadmin1"] {
         let (_c, v) = signup_and_login(&app, &format!("{name}@ex.com"), name).await;
         let id = v["data"]["id"].as_str().expect("id").to_string();
         verify_user(&db, &id).await;
-        let _ = i;
     }
 
     let create = rpc_json(
@@ -332,9 +342,9 @@ async fn collab_permission_read_write_admin() {
     assert_eq!(create["ok"], true, "create — {create}");
 
     for (username, permission) in [
-        ("u_read", "read"),
-        ("u_write", "write"),
-        ("u_admin", "admin"),
+        ("uread1", "read"),
+        ("uwrite1", "write"),
+        ("uadmin1", "admin"),
     ] {
         let add = rpc_json(
             &app,
@@ -350,7 +360,7 @@ async fn collab_permission_read_write_admin() {
 
     let bad = rpc_json(
         &app,
-        r#"{"procedure":"repo.collaborators.add","input":{"owner":"permowner1","name":"ladder","username":"u_read","permission":"triage"}}"#,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"permowner1","name":"ladder","username":"uread1","permission":"triage"}}"#,
         &owner_cookie,
     )
     .await;
