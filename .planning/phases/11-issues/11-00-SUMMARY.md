@@ -195,4 +195,8 @@ Intentional Wave 0 RED stubs (`assert!(false)` until later plans green them):
 
 None beyond plan register — stubs only encode T-11-01 / T-11-02 expectations; no new network endpoints.
 
-## Self-Check: PENDING
+## Self-Check: PASSED
+
+- All Wave 0 stub files present
+- Commits `007956d` and `035208d` present on `feat/forge-core`
+- nextest list discovers `issue_`, `dialect_issues`, `factory_reset`, `repo_private` / `issue_private`
