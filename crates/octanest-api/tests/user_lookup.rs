@@ -202,3 +202,63 @@ async fn user_lookup_email_shaped_prefix_returns_empty() {
         "email-shaped prefix must not search — {v}"
     );
 }
+
+/// Empty / whitespace-only prefix returns empty (anti-enumeration).
+#[tokio::test]
+async fn user_lookup_empty_prefix_returns_empty() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("lookup_empty.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "empty@ex.com", "empty1").await;
+    verify_user(&db, login_v["data"]["id"].as_str().expect("id")).await;
+    let (_, _) = signup_and_login(&app, "zeta@ex.com", "zeta").await;
+
+    let (status, v) = rpc_json(
+        &app,
+        r#"{"procedure":"user.lookup","input":{"prefix":"  "}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(v["ok"], true, "{v}");
+    let users = v["data"]["users"].as_array().expect("users");
+    assert!(users.is_empty(), "whitespace prefix must be empty — {v}");
+}
+
+/// Prefix match is case-insensitive on username.
+#[tokio::test]
+async fn user_lookup_prefix_is_case_insensitive() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("lookup_case.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "case@ex.com", "casecaller").await;
+    verify_user(&db, login_v["data"]["id"].as_str().expect("id")).await;
+    let (_, _) = signup_and_login(&app, "mix@ex.com", "CamelCase").await;
+
+    let (status, v) = rpc_json(
+        &app,
+        r#"{"procedure":"user.lookup","input":{"prefix":"cam"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK, "{v}");
+    assert_eq!(v["ok"], true, "{v}");
+    let users = v["data"]["users"].as_array().expect("users");
+    assert_eq!(users.len(), 1, "case-insensitive match — {v}");
+    assert_eq!(users[0]["username"], "CamelCase");
+    assert!(users[0].get("email").is_none());
+}

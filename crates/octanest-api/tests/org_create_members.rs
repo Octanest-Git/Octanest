@@ -776,3 +776,74 @@ async fn org_member_base_write_allows_private_repo_write() {
     .await;
     assert_eq!(pub_get["ok"], true, "public readable — {pub_get}");
 }
+
+/// Wave 0 / ORG-01: live lookup shape for member add — prefix/limit/no-email (D-ORG-03).
+#[tokio::test]
+async fn org_lookup_shape_prefix_limit_no_email() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_lookup_shape.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), dir.path().join("repos")).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "lookupowner@ex.com", "lookupown").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().expect("id")).await;
+
+    for i in 0..3 {
+        let uname = format!("orghit{i}");
+        let (_, _) = signup_and_login(&app, &format!("{uname}@ex.com"), &uname).await;
+    }
+
+    // Short prefix → empty
+    let (_, short_v) = rpc_json(
+        &app,
+        r#"{"procedure":"user.lookup","input":{"prefix":"o"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(short_v["ok"], true, "{short_v}");
+    assert!(
+        short_v["data"]["users"]
+            .as_array()
+            .expect("users")
+            .is_empty(),
+        "short prefix empty — {short_v}"
+    );
+
+    // Valid prefix → hits without email, capped
+    let (_, hit_v) = rpc_json(
+        &app,
+        r#"{"procedure":"user.lookup","input":{"prefix":"org"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(hit_v["ok"], true, "{hit_v}");
+    let users = hit_v["data"]["users"].as_array().expect("users");
+    assert!(!users.is_empty(), "org* prefix should match — {hit_v}");
+    assert!(users.len() <= 10, "≤10 — {hit_v}");
+    for hit in users {
+        assert!(hit.get("email").is_none(), "no email — {hit}");
+        assert!(hit.get("username").is_some());
+        assert!(hit.get("display_name").is_some());
+    }
+
+    // Email-shaped → empty
+    let (_, email_v) = rpc_json(
+        &app,
+        r#"{"procedure":"user.lookup","input":{"prefix":"orghit0@ex.com"}}"#,
+        Some(&owner_cookie),
+    )
+    .await;
+    assert_eq!(email_v["ok"], true, "{email_v}");
+    assert!(
+        email_v["data"]["users"]
+            .as_array()
+            .expect("users")
+            .is_empty(),
+        "email-shaped empty — {email_v}"
+    );
+}
