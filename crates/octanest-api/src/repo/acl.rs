@@ -108,6 +108,53 @@ fn parse_collaborator_capability(perm: &str) -> Option<Capability> {
     }
 }
 
+/// Resolve [`OwnerRef`] from a repository's polymorphic owner columns.
+pub async fn owner_ref_for_repo(
+    db: &Database,
+    repo: &RepositoryRow,
+) -> Result<Option<OwnerRef>, String> {
+    match repo.owner_type.trim().to_ascii_lowercase().as_str() {
+        "user" => {
+            let Some(u) = db.find_user_by_id(&repo.owner_id).await? else {
+                return Ok(None);
+            };
+            Ok(Some(OwnerRef::User {
+                id: u.id,
+                username: u.username,
+            }))
+        }
+        "org" => {
+            let Some(o) = db.find_organization_by_id(&repo.owner_id).await? else {
+                return Ok(None);
+            };
+            Ok(Some(OwnerRef::Org {
+                id: o.id,
+                slug: o.slug,
+            }))
+        }
+        _ => Ok(None),
+    }
+}
+
+/// FG All coverage (ASSUME A4): personal-owned repos + org repos where the
+/// subject is Org Owner or Admin. Collaborator-only subjects must use Selected.
+pub async fn fg_all_covers_repo(
+    db: &Database,
+    user_id: &str,
+    owner: &OwnerRef,
+) -> Result<bool, String> {
+    match owner {
+        OwnerRef::User { id, .. } => Ok(user_id == id),
+        OwnerRef::Org { id, .. } => match db.find_org_member_role(id, user_id).await? {
+            Some(role) => {
+                let r = role.trim().to_ascii_lowercase();
+                Ok(r == "owner" || r == "admin")
+            }
+            None => Ok(false),
+        },
+    }
+}
+
 /// Legacy personal-owner equality helper retained for any remaining call sites.
 /// Smart HTTP and mutate gates use [`effective_capability`] + [`meets`] instead.
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {

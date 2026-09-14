@@ -22,7 +22,8 @@ use crate::auth::session::sha256_hex;
 use crate::git::bare_repo_path;
 use crate::git::http_backend::{self, CgiRequest};
 use crate::repo::{
-    effective_capability, is_private_visibility, meets, resolve_owner_slug, Capability, OwnerRef,
+    effective_capability, fg_all_covers_repo, is_private_visibility, meets, resolve_owner_slug,
+    Capability, OwnerRef,
 };
 
 const WWW_AUTHENTICATE: &str = r#"Basic realm="Octanest Git""#;
@@ -289,21 +290,29 @@ async fn resolve_repo(
 /// ACL capability is checked separately via [`effective_capability`]; this only
 /// validates PAT scope/contents (T-10-13 / D-ORG-05). Classic push no longer
 /// requires `pat.user_id == repositories.owner_id`.
-fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, receive: bool) -> bool {
+///
+/// FG All (ASSUME A4): personal-owned + org repos where subject is Owner/Admin.
+async fn pat_allows_operation(
+    state: &AppState,
+    pat: &PatRow,
+    repo: &RepositoryRow,
+    owner: &OwnerRef,
+    receive: bool,
+) -> Result<bool, Response> {
     let kind = match PatKind::parse(&pat.kind) {
         Ok(k) => k,
-        Err(_) => return false,
+        Err(_) => return Ok(false),
     };
     match kind {
         PatKind::Classic => {
             let scopes: Vec<String> =
                 match pat.scopes_json.as_deref().map(serde_json::from_str) {
                     Some(Ok(v)) => v,
-                    Some(Err(_)) | None => return false,
+                    Some(Err(_)) | None => return Ok(false),
                 };
-            scopes
+            Ok(scopes
                 .iter()
-                .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo))
+                .any(|s| ClassicPatScope::parse(s).ok() == Some(ClassicPatScope::Repo)))
         }
         PatKind::FineGrained => {
             let access = match pat
@@ -312,15 +321,21 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
                 .and_then(|s| FgRepoAccess::parse(s).ok())
             {
                 Some(a) => a,
-                None => return false,
+                None => return Ok(false),
             };
-            // FG All still owner-id until Task 2 (A4: personal + org Owner/Admin).
             let repo_ok = match access {
-                FgRepoAccess::All => pat.user_id == owner_id,
+                FgRepoAccess::All => match fg_all_covers_repo(&state.db, &pat.user_id, owner).await
+                {
+                    Ok(v) => v,
+                    Err(e) => {
+                        tracing::error!(error = %e, "fg_all_covers_repo");
+                        return Err(StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                    }
+                },
                 FgRepoAccess::Selected => pat.repository_ids.iter().any(|id| id == &repo.id),
             };
             if !repo_ok {
-                return false;
+                return Ok(false);
             }
             let contents = match pat
                 .contents_perm
@@ -328,12 +343,12 @@ fn pat_allows_operation(pat: &PatRow, repo: &RepositoryRow, owner_id: &str, rece
                 .and_then(|s| ContentsPerm::parse(s).ok())
             {
                 Some(c) => c,
-                None => return false,
+                None => return Ok(false),
             };
-            match contents {
+            Ok(match contents {
                 ContentsPerm::Read => !receive,
                 ContentsPerm::Write => true,
-            }
+            })
         }
     }
 }
@@ -447,13 +462,11 @@ async fn authorize_and_cgi(
         if receive && auth.owner.email_verified_at.is_none() {
             return email_unverified_push();
         }
-        if !pat_allows_operation(
-            &auth.pat,
-            &resolved.row,
-            resolved.owner.id(),
-            receive,
-        ) {
-            return forbidden_insufficient_scope();
+        match pat_allows_operation(state, &auth.pat, &resolved.row, &resolved.owner, receive).await
+        {
+            Ok(true) => {}
+            Ok(false) => return forbidden_insufficient_scope(),
+            Err(r) => return r,
         }
         touch_last_used(state, &auth.pat.id, headers).await;
     }
