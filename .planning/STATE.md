@@ -4,17 +4,17 @@ milestone: v1.0
 current_phase: 09
 current_phase_name: Git SSH
 current_plan: 10
-status: executing
-stopped_at: Completed 09-08-PLAN.md
-last_updated: "2026-09-14T00:20:44.293Z"
+status: verifying
+stopped_at: Completed 09-09-PLAN.md — Phase 09 plans done
+last_updated: "2026-09-14T00:22:38.356Z"
 last_activity: 2026-09-14
 last_activity_desc: Phase 09 execution started
-state_head: 07b828bf680eedbb039be7cc03c56e7323a7c5e3
+state_head: 93eda87f0bbd024f790fbd2681275e4104e2a547
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 86
+  completed_plans: 87
 milestone_name: milestone
 ---
 
@@ -33,7 +33,7 @@ Current Plan: 10
 Total Plans in Phase: 10
 Phase: 09 (Git SSH) — EXECUTING
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-13 — Completed 09-01-PLAN.md
 
 See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01…04
@@ -139,6 +139,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 09 P06 | 12min | 1 tasks | 3 files |
 | Phase 09 P07 | 25min | 2 tasks | 8 files |
 | Phase 09 P08 | 15min | 2 tasks | 5 files |
+| Phase 09 P09 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -307,6 +308,7 @@ Recent decisions affecting current work:
 - [Phase 09]: SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket
 - [Phase 09]: Compose publishes SSH on TCP 2222 only; never Traefik for SSH
 - [Phase 09]: CloneBox SSH is scp-style; Port hint when OCTANEST_SSH_PORT ≠ 22
+- [Phase 09]: SSH documented as russh in-api + Compose TCP 2222; never Traefik
 
 ### Pending Todos
 
@@ -328,6 +330,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T00:20:44.210Z
-Stopped at: Completed 09-08-PLAN.md
+Last session: 2026-09-14T00:22:38.272Z
+Stopped at: Completed 09-09-PLAN.md — Phase 09 plans done
 Resume file: None
