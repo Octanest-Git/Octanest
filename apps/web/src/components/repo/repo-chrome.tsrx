@@ -5,12 +5,12 @@ import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 type RepoChromeProps = {
   repo: RepoPublic;
-  active: "code" | "commits" | "branches" | "tags" | "settings";
+  active: "code" | "commits" | "branches" | "tags" | "issues" | "settings";
   /** Force Settings nav (e.g. settings page). Owners also see it via session. */
   showSettings?: boolean;
 };
 
-/** Title row + Code/Commits/Branches/Tags/(Settings) link-row. Issues/PRs omitted until later phases. */
+/** Title row + Code/Commits/Branches/Tags/Issues/(Settings) link-row. */
 export function RepoChrome({
   repo,
   active,
@@ -28,6 +28,7 @@ export function RepoChrome({
   const commitsHref = `${base}/commits/${encodeURIComponent(repo.default_branch)}`;
   const branchesHref = `${base}/branches`;
   const tagsHref = `${base}/tags`;
+  const issuesHref = `${base}/issues`;
   const settingsHref = `${base}/settings`;
 
   function navClass(isActive: boolean): string {
@@ -89,6 +90,13 @@ export function RepoChrome({
         aria-current={active === "tags" ? "page" : undefined}
       >
         Tags
+      </a>
+      <a
+        href={issuesHref as string}
+        className={navClass(active === "issues") as string}
+        aria-current={active === "issues" ? "page" : undefined}
+      >
+        Issues
       </a>
       @if (settingsVisible) {
         <a

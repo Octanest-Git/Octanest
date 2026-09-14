@@ -1,0 +1,168 @@
+import {
+  createFileRoute,
+  useLoaderData,
+  useParams,
+} from "@octanejs/tanstack-router";
+import { useQuery } from "@octanejs/tanstack-query";
+import type { IssueListResponse, RepoPublic } from "@octanest/api-client";
+import { useState } from "octane";
+import {
+  IssuesList,
+  type IssueListStateFilter,
+} from "@/components/repo/issues-list";
+import { RepoChrome } from "@/components/repo/repo-chrome";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { apiClient } from "@/lib/api-client";
+import type { RepoLayoutLoaderData } from "@/lib/repo-store";
+import { fetchIssueList, fetchRepoGet } from "@/lib/ssr-repo";
+
+export type IssuesLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      repo: RepoPublic;
+      list: IssueListResponse;
+      state: IssueListStateFilter;
+    };
+
+const NETWORK_ERROR =
+  "Can't reach Octanest. Check your connection and try again.";
+
+async function loadIssuesPage(
+  owner: string,
+  repoName: string,
+  state: IssueListStateFilter,
+): Promise<IssuesLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load repository.",
+    };
+  }
+  const listRes = await fetchIssueList({
+    data: { owner, name: repoName, state },
+  });
+  if (!listRes.ok) {
+    if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: listRes.error.message || "Could not load issues.",
+    };
+  }
+  return {
+    kind: "ready",
+    repo: got.data,
+    list: listRes.data,
+    state,
+  };
+}
+
+export const Route = createFileRoute("/$owner/$repo/issues")({
+  component: IssuesListPage,
+  head: ({ params }) => ({
+    meta: [
+      {
+        title: `Issues · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+      },
+    ],
+  }),
+  loader: async ({ params }): Promise<IssuesLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    try {
+      return await loadIssuesPage(owner, repoName, "open");
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
+});
+
+/** Issues list — Open default (D-ISS-16 / D-ISS-19). */
+export function IssuesListPage() @{
+  const params = useParams({ strict: false }) as {
+    owner?: string;
+    repo?: string;
+  };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as
+    | RepoLayoutLoaderData
+    | undefined;
+  const routeLoader = useLoaderData({ from: "/$owner/$repo/issues" }) as
+    | IssuesLoaderData
+    | undefined;
+
+  const [state, setState] = useState<IssueListStateFilter>("open");
+
+  const repoQ = useQuery({
+    queryKey: ["repo", "get", owner, repoName] as const,
+    queryFn: async () => {
+      const res = await apiClient.repo.get({ owner, name: repoName });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data;
+    },
+    enabled: !!owner && !!repoName,
+    initialData:
+      routeLoader?.kind === "ready"
+        ? routeLoader.repo
+        : layout?.status === "ok"
+          ? (layout.repo ?? undefined)
+          : undefined,
+  });
+
+  const listQ = useQuery({
+    queryKey: ["issue", "list", owner, repoName, state] as const,
+    queryFn: async () => {
+      const res = await apiClient.issue.list({
+        owner,
+        name: repoName,
+        state,
+      });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data;
+    },
+    enabled: !!owner && !!repoName,
+    initialData:
+      routeLoader?.kind === "ready" && state === "open"
+        ? routeLoader.list
+        : undefined,
+  });
+
+  const repo = repoQ.data ?? null;
+  const notFound =
+    layout?.status === "not_found" ||
+    routeLoader?.kind === "not_found" ||
+    (repoQ.isError &&
+      String(repoQ.error?.message ?? "").includes("not found"));
+
+  @if (notFound || (!repoQ.isPending && !repo)) {
+    <RepoNotFound />
+  } @else if (!repo) {
+    <p className="text-[16px] text-muted-foreground">Loading issues…</p>
+  } @else {
+    <>
+      <RepoChrome repo={repo} active="issues" />
+      @if (listQ.isError) {
+        <p role="alert" className="text-[16px] text-destructive">
+          {(listQ.error?.message || NETWORK_ERROR) as string}
+        </p>
+      } @else {
+        <IssuesList
+          owner={owner}
+          repoName={repoName}
+          repo={repo}
+          issues={listQ.data?.issues ?? []}
+          total={listQ.data?.total ?? 0}
+          state={state}
+          onStateChange={setState}
+          pending={listQ.isPending}
+        />
+      }
+    </>
+  }
+}
+
+export default IssuesListPage;

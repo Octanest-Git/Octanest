@@ -179,6 +179,46 @@ export const fetchRepoCompare = createServerFn({ method: "GET" })
     });
   });
 
+/** SSR: `issue.list` with Cookie forward. */
+export const fetchIssueList = createServerFn({ method: "GET" })
+  .validator(
+    (data: OwnerName & { state?: string; offset?: number; limit?: number }) => ({
+      owner: String(data?.owner ?? ""),
+      name: String(data?.name ?? ""),
+      state: data?.state ? String(data.state) : "open",
+      offset: typeof data?.offset === "number" ? data.offset : 0,
+      limit: typeof data?.limit === "number" ? data.limit : 30,
+    }),
+  )
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.issue.list({
+      owner: data.owner,
+      name: data.name,
+      state: data.state,
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
+/** SSR: `issue.get` with Cookie forward. */
+export const fetchIssueGet = createServerFn({ method: "GET" })
+  .validator(
+    (data: OwnerName & { number: number }) => ({
+      owner: String(data?.owner ?? ""),
+      name: String(data?.name ?? ""),
+      number: typeof data?.number === "number" ? data.number : Number(data?.number),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.issue.get({
+      owner: data.owner,
+      name: data.name,
+      number: data.number,
+    });
+  });
+
 /**
  * SSR: browser-facing origin for clone URLs.
  * Prefer OCTANEST_PUBLIC_ORIGIN; fall back to forwarded Host.

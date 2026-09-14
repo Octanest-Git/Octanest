@@ -31,6 +31,7 @@ import { Route as SetupIndexRouteImport } from './routes/setup.index'
 import { Route as SetupCredentialsRouteImport } from './routes/setup.credentials'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
+import { Route as OwnerRepoIssuesRouteImport } from './routes/$owner.$repo.issues'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner.settings.members'
@@ -40,6 +41,8 @@ import { Route as OwnerRepoBlobSplatRouteImport } from './routes/$owner.$repo.bl
 import { Route as OwnerRepoCommitShaRouteImport } from './routes/$owner.$repo.commit.$sha'
 import { Route as OwnerRepoCommitsSplatRouteImport } from './routes/$owner.$repo.commits.$'
 import { Route as OwnerRepoCompareSplatRouteImport } from './routes/$owner.$repo.compare.$'
+import { Route as OwnerRepoIssuesNRouteImport } from './routes/$owner.$repo.issues.$n'
+import { Route as OwnerRepoIssuesNewRouteImport } from './routes/$owner.$repo.issues.new'
 import { Route as OwnerRepoTreeSplatRouteImport } from './routes/$owner.$repo.tree.$'
 import { Route as SettingsTokensNewFineGrainedRouteImport } from './routes/settings/tokens.new.fine-grained'
 
@@ -153,6 +156,11 @@ const OwnerRepoBranchesRoute = OwnerRepoBranchesRouteImport.update({
   path: '/branches',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoIssuesRoute = OwnerRepoIssuesRouteImport.update({
+  id: '/issues',
+  path: '/issues',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoSettingsRoute = OwnerRepoSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -198,6 +206,16 @@ const OwnerRepoCompareSplatRoute = OwnerRepoCompareSplatRouteImport.update({
   path: '/compare/$',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoIssuesNRoute = OwnerRepoIssuesNRouteImport.update({
+  id: '/$n',
+  path: '/$n',
+  getParentRoute: () => OwnerRepoIssuesRoute,
+} as any)
+const OwnerRepoIssuesNewRoute = OwnerRepoIssuesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => OwnerRepoIssuesRoute,
+} as any)
 const OwnerRepoTreeSplatRoute = OwnerRepoTreeSplatRouteImport.update({
   id: '/tree/$',
   path: '/tree/$',
@@ -232,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -242,6 +261,8 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
   '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
   '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
+  '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
+  '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
 }
@@ -265,6 +286,7 @@ export interface FileRoutesByTo {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -275,6 +297,8 @@ export interface FileRoutesByTo {
   '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
   '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
   '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
+  '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
+  '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
 }
@@ -301,6 +325,7 @@ export interface FileRoutesById {
   '/setup/credentials': typeof SetupCredentialsRoute
   '/setup/': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
+  '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
@@ -311,6 +336,8 @@ export interface FileRoutesById {
   '/$owner/$repo/commit/$sha': typeof OwnerRepoCommitShaRoute
   '/$owner/$repo/commits/$': typeof OwnerRepoCommitsSplatRoute
   '/$owner/$repo/compare/$': typeof OwnerRepoCompareSplatRoute
+  '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
+  '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
 }
@@ -338,6 +365,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/issues'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/members'
@@ -348,6 +376,8 @@ export interface FileRouteTypes {
     | '/$owner/$repo/commit/$sha'
     | '/$owner/$repo/commits/$'
     | '/$owner/$repo/compare/$'
+    | '/$owner/$repo/issues/$n'
+    | '/$owner/$repo/issues/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
   fileRoutesByTo: FileRoutesByTo
@@ -371,6 +401,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/issues'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/members'
@@ -381,6 +412,8 @@ export interface FileRouteTypes {
     | '/$owner/$repo/commit/$sha'
     | '/$owner/$repo/commits/$'
     | '/$owner/$repo/compare/$'
+    | '/$owner/$repo/issues/$n'
+    | '/$owner/$repo/issues/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
   id:
@@ -406,6 +439,7 @@ export interface FileRouteTypes {
     | '/setup/credentials'
     | '/setup/'
     | '/$owner/$repo/branches'
+    | '/$owner/$repo/issues'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/members'
@@ -416,6 +450,8 @@ export interface FileRouteTypes {
     | '/$owner/$repo/commit/$sha'
     | '/$owner/$repo/commits/$'
     | '/$owner/$repo/compare/$'
+    | '/$owner/$repo/issues/$n'
+    | '/$owner/$repo/issues/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
   fileRoutesById: FileRoutesById
@@ -595,6 +631,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoBranchesRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/issues': {
+      id: '/$owner/$repo/issues'
+      path: '/issues'
+      fullPath: '/$owner/$repo/issues'
+      preLoaderRoute: typeof OwnerRepoIssuesRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/settings': {
       id: '/$owner/$repo/settings'
       path: '/settings'
@@ -658,6 +701,20 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoCompareSplatRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/issues/$n': {
+      id: '/$owner/$repo/issues/$n'
+      path: '/$n'
+      fullPath: '/$owner/$repo/issues/$n'
+      preLoaderRoute: typeof OwnerRepoIssuesNRouteImport
+      parentRoute: typeof OwnerRepoIssuesRoute
+    }
+    '/$owner/$repo/issues/new': {
+      id: '/$owner/$repo/issues/new'
+      path: '/new'
+      fullPath: '/$owner/$repo/issues/new'
+      preLoaderRoute: typeof OwnerRepoIssuesNewRouteImport
+      parentRoute: typeof OwnerRepoIssuesRoute
+    }
     '/$owner/$repo/tree/$': {
       id: '/$owner/$repo/tree/$'
       path: '/tree/$'
@@ -675,8 +732,23 @@ declare module '@octanejs/tanstack-router' {
   }
 }
 
+interface OwnerRepoIssuesRouteChildren {
+  OwnerRepoIssuesNRoute: typeof OwnerRepoIssuesNRoute
+  OwnerRepoIssuesNewRoute: typeof OwnerRepoIssuesNewRoute
+}
+
+const OwnerRepoIssuesRouteChildren: OwnerRepoIssuesRouteChildren = {
+  OwnerRepoIssuesNRoute: OwnerRepoIssuesNRoute,
+  OwnerRepoIssuesNewRoute: OwnerRepoIssuesNewRoute,
+}
+
+const OwnerRepoIssuesRouteWithChildren = OwnerRepoIssuesRoute._addFileChildren(
+  OwnerRepoIssuesRouteChildren,
+)
+
 interface OwnerRepoRouteChildren {
   OwnerRepoBranchesRoute: typeof OwnerRepoBranchesRoute
+  OwnerRepoIssuesRoute: typeof OwnerRepoIssuesRouteWithChildren
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoTagsRoute: typeof OwnerRepoTagsRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
@@ -690,6 +762,7 @@ interface OwnerRepoRouteChildren {
 
 const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoBranchesRoute: OwnerRepoBranchesRoute,
+  OwnerRepoIssuesRoute: OwnerRepoIssuesRouteWithChildren,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoTagsRoute: OwnerRepoTagsRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
