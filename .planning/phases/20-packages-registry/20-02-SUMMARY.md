@@ -8,7 +8,7 @@ requires:
   - phase: 20-packages-registry
     provides: Wave 0 dialect_packages stub
 provides:
-  - Tri-dialect 0012_packages schema
+  - Tri-dialect 0014_packages schema
   - OCTANEST_PACKAGES_DIR Compose volume + docs
   - Traefik/Vite /v2|/npm|/generic routing; reserved slugs
 affects: [20-03, 20-04, 20-05, 20-06, 20-12]
@@ -20,13 +20,13 @@ actuals:
 
 tech-stack:
   added: []
-  patterns: [sqlx migrate 0012_packages, Traefik api-packages PathPrefix]
+  patterns: [sqlx migrate 0014_packages, Traefik api-packages PathPrefix]
 
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0012_packages.sql
-    - crates/octanest-db/migrations/mysql/0012_packages.sql
-    - crates/octanest-db/migrations/sqlite/0012_packages.sql
+    - crates/octanest-db/migrations/postgres/0014_packages.sql
+    - crates/octanest-db/migrations/mysql/0014_packages.sql
+    - crates/octanest-db/migrations/sqlite/0014_packages.sql
   modified:
     - crates/octanest-db/tests/dialect_packages.rs
     - docker-compose.yml
@@ -36,7 +36,7 @@ key-files:
     - apps/web/vite.config.ts
 
 key-decisions:
-  - "Resolved migration id to 0012_packages (after 0011_issues)"
+  - "Resolved migration id to 0014_packages (after 0011_issues)"
   - "Unlinked packages default visibility private; optional repository_id link"
 
 patterns-established:
@@ -70,7 +70,7 @@ status: complete
 
 # Phase 20 Plan 02: Schema + Edge Routing Summary
 
-**Tri-dialect `0012_packages` schema, separate `OCTANEST_PACKAGES_DIR` volume, and Traefik/Vite PathPrefix routing for `/v2|/npm|/generic` with reserved usernames.**
+**Tri-dialect `0014_packages` schema, separate `OCTANEST_PACKAGES_DIR` volume, and Traefik/Vite PathPrefix routing for `/v2|/npm|/generic` with reserved usernames.**
 
 ## Performance
 
@@ -97,6 +97,6 @@ status: complete
 None — plan executed as written.
 
 ## Self-Check: PASSED
-- FOUND: 0012_packages.sql ×3 dialects
+- FOUND: 0014_packages.sql ×3 dialects
 - FOUND: dialect_packages green
 - FOUND: 479e76f, cdbd746, 095e056

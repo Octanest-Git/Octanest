@@ -1,19 +1,19 @@
-//! 20-02: `0012_packages` + packages / versions / blobs / refs / quota tables.
+//! 20-02: `0014_packages` + packages / versions / blobs / refs / quota tables.
 
 use octanest_core::Role;
 use octanest_db::Database;
 
-/// Expect sqlite `0012_packages.sql` with packages domain tables, then migrate applies.
+/// Expect sqlite `0014_packages.sql` with packages domain tables, then migrate applies.
 #[tokio::test]
 async fn dialect_packages_schema_presence() {
     let migration_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/migrations/sqlite/0012_packages.sql"
+        "/migrations/sqlite/0014_packages.sql"
     );
     let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
     assert!(
         !sql.is_empty(),
-        "0012_packages.sql must exist (packages domain)"
+        "0014_packages.sql must exist (packages domain)"
     );
     for table in [
         "packages",

@@ -11,7 +11,7 @@
 |------|------|---------|-------------|
 | 20-00 | 0 | Wave 0 Rust nextest stubs | `c8ff537`, `817dab5` |
 | 20-01 | 0 | Wave 0 Vitest + smoke-packages | `a6692ab`, `8c00913` |
-| 20-02 | 1 | `0012_packages` schema, PACKAGES_DIR, Traefik/Vite `/v2\|/npm\|/generic`, reserved slugs | `479e76f`, `cdbd746`, `095e056` |
+| 20-02 | 1 | `0014_packages` schema, PACKAGES_DIR, Traefik/Vite `/v2\|/npm\|/generic`, reserved slugs | `479e76f`, `cdbd746`, `095e056` |
 | 20-03 | 2 | CA blob store, ACL∩PAT helpers, `package:read`/`package:write` PAT + rpc-gen | `4b39c06`, `5084820`, `44302ee` |
 
 ## Remaining plans (9 / 13)

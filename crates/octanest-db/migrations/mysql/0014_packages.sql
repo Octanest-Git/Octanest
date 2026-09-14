@@ -1,4 +1,4 @@
--- logical: 0012_packages — multi-format package registry metadata (D-PKG-02, D-PKG-08, D-PKG-09)
+-- logical: 0014_packages — multi-format package registry metadata (D-PKG-02, D-PKG-08, D-PKG-09)
 -- MySQL: TEXT cannot carry DEFAULT — use VARCHAR where a default is required.
 
 CREATE TABLE IF NOT EXISTS packages (

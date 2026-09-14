@@ -6,7 +6,7 @@ tags: [packages, acl, pat, blob-store]
 
 requires:
   - phase: 20-packages-registry
-    provides: 0012_packages schema + PACKAGES_DIR
+    provides: 0014_packages schema + PACKAGES_DIR
 provides:
   - Content-addressed blob store under OCTANEST_PACKAGES_DIR
   - Package ACL ∩ PAT package scopes helpers

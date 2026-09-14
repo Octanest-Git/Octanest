@@ -1,4 +1,4 @@
--- logical: 0012_packages — multi-format package registry metadata (D-PKG-02, D-PKG-08, D-PKG-09)
+-- logical: 0014_packages — multi-format package registry metadata (D-PKG-02, D-PKG-08, D-PKG-09)
 -- Phase 20: packages, versions, content-addressed blobs + refs, per-owner quota overrides.
 
 CREATE TABLE IF NOT EXISTS packages (
