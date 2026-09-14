@@ -108,8 +108,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 - [ ] **PKG-01**: User can publish and pull OCI container images from an instance registry scoped to a repo or org
 - [ ] **PKG-02**: User can publish and pull npm packages from an instance registry scoped to a repo or org
-- [ ] **PKG-03**: User can publish and pull generic/raw packages from an instance registry scoped to a repo or org
-- [ ] **PKG-04**: Registry packages respect the same auth/visibility rules as their owning repo/org
+- [x] **PKG-03**: User can publish and pull generic/raw packages from an instance registry scoped to a repo or org
+- [x] **PKG-04**: Registry packages respect the same auth/visibility rules as their owning repo/org
 - [ ] **PKG-05**: User can list and delete package versions they are permitted to manage
 
 ### Social & explore
@@ -241,8 +241,8 @@ Deferred; not in the current roadmap until promoted.
 | ACT-07 | Phase 19 | Pending |
 | PKG-01 | Phase 20 | Pending |
 | PKG-02 | Phase 20 | Pending |
-| PKG-03 | Phase 20 | Pending |
-| PKG-04 | Phase 20 | Pending |
+| PKG-03 | Phase 20 | Complete |
+| PKG-04 | Phase 20 | Complete |
 | PKG-05 | Phase 20 | Pending |
 | SOC-01 | Phase 21 | Pending |
 | SOC-02 | Phase 21 | Pending |
