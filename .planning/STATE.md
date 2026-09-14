@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: 10
 current_phase_name: Orgs & Permissions
-current_plan: 7
+current_plan: 8
 status: executing
-stopped_at: Completed 10-06-PLAN.md
-last_updated: "2026-09-14T01:02:33.845Z"
+stopped_at: Completed 10-07-PLAN.md
+last_updated: "2026-09-14T01:16:31.724Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 10-13 org.create tracer + /orgs/new
-state_head: 1c59d24f85763f6ac0f11301bf35495b07e5af1e
+state_head: 044e733c1387ad8673b6cd8cb3e8f46822c1b5fa
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 101
-  completed_plans: 85
+  completed_plans: 86
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 10 (Orgs & Permissions) — EXECUTING
-Current Plan: 7
+Current Plan: 8
 Total Plans in Phase: 14
 Also ready: Phase 09 (Git SSH) — 10 plans: 09-00…09-09
 Status: Ready to execute
@@ -138,6 +138,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 10 P04 | 6min | 2 tasks | 11 files |
 | Phase 10 P05 | 9min | 2 tasks | 12 files |
 | Phase 10 P06 | 12min | 2 tasks | 12 files |
+| Phase 10 P07 | 12min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -313,6 +314,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Invite accept creates verified local users without checking allow_signup when redeeming a valid token
 - [Phase 10]: Create/list omit plaintext invite token; magic only in outbound email link
 - [Phase 10]: Existing invite-email account must sign in (org.invite_login_required) rather than password-steal on accept
+- [Phase 10]: Admin gate uses Capability ACL (meets Admin), not personal owner_id equality — required for org-owned repos
+- [Phase 10]: Collaborator is per-repo grant only (D-ORG-04) — never an organization membership role
 
 ### Pending Todos
 
@@ -334,6 +337,6 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T01:02:33.763Z
-Stopped at: Completed 10-06-PLAN.md
+Last session: 2026-09-14T01:16:31.646Z
+Stopped at: Completed 10-07-PLAN.md
 Resume file: None

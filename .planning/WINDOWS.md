@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 29
+open_count: 30
 waived_count: 0
 fixed_count: 1
-total_count: 30
-last_updated: 2026-09-14T00:36:39.533Z
+total_count: 31
+last_updated: 2026-09-14T01:15:41.319Z
 ---
 
 # Broken Windows Ledger
@@ -45,6 +45,7 @@ last_updated: 2026-09-14T00:36:39.533Z
 | 28 | 10 | deviation | crates/octanest-api/src/auth/local.rs |  | Signup still does not dual-check organizations.slug for shared namespace (D-ORG-01); org.create does — defer to signup/rename plans | open |  | 2026-09-14T00:06:48.676Z |  |
 | 29 | 10 | skipped-test | crates/octanest-api/tests/repo_collaborators_acl.rs |  | Collaborator CRUD ACL tests ignored until plan 07 | open |  | 2026-09-14T00:36:39.442Z |  |
 | 30 | 10 | skipped-test | crates/octanest-api/tests/repo_private_404.rs | 410 | repo_private_404_collaborator_granted_read ignored until plan 07 | open |  | 2026-09-14T00:36:39.533Z |  |
+| 31 | 10 | skipped-test | crates/octanest-api/tests/git_smart_http.rs | 610 | git_smart_collaborator_classic_pat_push Wave-0 stub fails under test(collab) filter; PAT collaborator push deferred to later plan | open |  | 2026-09-14T01:15:41.319Z |  |
 
 ````json
 [
@@ -406,6 +407,18 @@ last_updated: 2026-09-14T00:36:39.533Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T00:36:39.533Z",
+    "resolved_at": null
+  },
+  {
+    "id": 31,
+    "kind": "skipped-test",
+    "phase": "10",
+    "file": "crates/octanest-api/tests/git_smart_http.rs",
+    "line": 610,
+    "description": "git_smart_collaborator_classic_pat_push Wave-0 stub fails under test(collab) filter; PAT collaborator push deferred to later plan",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-14T01:15:41.319Z",
     "resolved_at": null
   }
 ]
