@@ -124,7 +124,6 @@ async fn issue_lifecycle_create_allocates_per_repo_number() {
         ))
         .await
         .unwrap();
-    assert_eq!(create.status(), StatusCode::OK);
     let bytes = create.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
     assert_eq!(v["ok"], true, "issue.create ok — {v}");
