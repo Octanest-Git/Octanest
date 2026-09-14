@@ -27,6 +27,8 @@ const commentsCreateMock = vi.fn();
 const commentsUpdateMock = vi.fn();
 const commentsDeleteMock = vi.fn();
 const commentsHistoryMock = vi.fn();
+const labelListForRepoMock = vi.fn();
+const labelsSetMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -49,6 +51,12 @@ vi.mock("@/lib/api-client", () => ({
         delete: (...args: unknown[]) => commentsDeleteMock(...args),
         history: (...args: unknown[]) => commentsHistoryMock(...args),
       },
+      labels: {
+        set: (...args: unknown[]) => labelsSetMock(...args),
+      },
+    },
+    label: {
+      listForRepo: (...args: unknown[]) => labelListForRepoMock(...args),
     },
   },
 }));
@@ -145,6 +153,8 @@ beforeEach(() => {
   commentsUpdateMock.mockReset();
   commentsDeleteMock.mockReset();
   commentsHistoryMock.mockReset();
+  labelListForRepoMock.mockReset();
+  labelsSetMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -155,6 +165,8 @@ beforeEach(() => {
   historyMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
   commentsListMock.mockResolvedValue({ ok: true, data: { comments: [] } });
   commentsHistoryMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
+  labelListForRepoMock.mockResolvedValue({ ok: true, data: { labels: [] } });
+  labelsSetMock.mockResolvedValue({ ok: true, data: sampleIssue });
 });
 
 afterEach(cleanup);
@@ -317,7 +329,7 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
     15_000,
   );
 
-  it.fails(
+  it(
     "Admin label settings entry gated by can_admin (D-ISS-07)",
     async () => {
       getMock.mockResolvedValue({
@@ -470,7 +482,9 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
             .length,
         ).toBeGreaterThanOrEqual(1);
       });
-      expect(screen.getByText(/History|Edit history/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /^Edit history$/i }),
+      ).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /^Delete issue$/i }),
       ).toBeInTheDocument();

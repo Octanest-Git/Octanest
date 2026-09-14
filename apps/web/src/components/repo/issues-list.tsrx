@@ -32,6 +32,7 @@ export function IssuesList({
 }: IssuesListProps) @{
   const base = `/${owner}/${repoName}`;
   const canWrite = !!repo.can_write;
+  const canAdmin = !!repo.can_admin;
   const emptyCopy =
     state === "closed"
       ? "No closed issues"
@@ -74,14 +75,24 @@ export function IssuesList({
           All
         </button>
       </div>
-      @if (canWrite) {
-        <a
-          href={`${base}/issues/new` as string}
-          className="inline-flex h-11 items-center rounded-md bg-primary px-4 text-[14px] font-semibold text-primary-foreground no-underline hover:brightness-110"
-        >
-          New issue
-        </a>
-      }
+      <div className="flex flex-wrap items-center gap-3">
+        @if (canAdmin) {
+          <a
+            href={`${base}/issues/labels` as string}
+            className="text-[14px] font-medium text-primary no-underline hover:underline"
+          >
+            Labels
+          </a>
+        }
+        @if (canWrite) {
+          <a
+            href={`${base}/issues/new` as string}
+            className="inline-flex h-11 items-center rounded-md bg-primary px-4 text-[14px] font-semibold text-primary-foreground no-underline hover:brightness-110"
+          >
+            New issue
+          </a>
+        }
+      </div>
     </div>
 
     @if (pending) {

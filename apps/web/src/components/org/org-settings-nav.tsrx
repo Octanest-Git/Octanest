@@ -4,13 +4,13 @@ function navClass(isActive: boolean): string {
     : "pb-2 text-[14px] font-normal text-muted-foreground no-underline hover:text-foreground";
 }
 
-/** Org settings secondary nav: General | Members (D-ORG-06). */
+/** Org settings secondary nav: General | Members | Labels (D-ORG-06 / D-ISS-05). */
 export function OrgSettingsNav({
   slug,
   active,
 }: {
   slug: string;
-  active: "general" | "members";
+  active: "general" | "members" | "labels";
 }) @{
   <nav
     className="mb-6 flex flex-wrap gap-4 border-b border-border pb-0"
@@ -29,6 +29,13 @@ export function OrgSettingsNav({
       aria-current={active === "members" ? "page" : undefined}
     >
       Members
+    </a>
+    <a
+      href={`/${slug}/settings/labels`}
+      className={navClass(active === "labels") as string}
+      aria-current={active === "labels" ? "page" : undefined}
+    >
+      Labels
     </a>
   </nav>
 }

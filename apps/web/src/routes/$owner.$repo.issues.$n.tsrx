@@ -11,6 +11,7 @@ import { AuthErrorBanner } from "@/components/auth-shell";
 import { IssueComments } from "@/components/repo/issue-comments";
 import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
 import { IssueHistoryPanel } from "@/components/repo/issue-history";
+import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -432,15 +433,13 @@ export function IssueDetailPage() @{
             />
           </div>
           <aside className="flex flex-col gap-6">
-            <section aria-labelledby="issue-labels-heading">
-              <h2
-                id="issue-labels-heading"
-                className="text-[14px] font-semibold text-foreground"
-              >
-                Labels
-              </h2>
-              <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
-            </section>
+            <IssueLabelsPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              issue={issue!}
+              canWrite={canWrite}
+            />
             <section aria-labelledby="issue-assignees-heading">
               <h2
                 id="issue-assignees-heading"
