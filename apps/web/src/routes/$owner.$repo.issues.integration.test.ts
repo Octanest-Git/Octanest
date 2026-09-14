@@ -9,17 +9,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 /**
- * Phase 11 Issues UI — tracer greened in 11-03; remaining RED via `it.fails`
- * for comments/labels lifecycle/reactions (11-04+).
- *
- * Runtime-variable dynamic import with @vite-ignore keeps Vitest collectable while
- * routes are still absent (Phase 08/10 Wave 0 pattern).
+ * Phase 11 Issues UI — create/list/detail lifecycle greened through 11-04;
+ * remaining RED via `it.fails` for reactions (11-08) and later panels.
  */
 
 const getMock = vi.fn();
 const listMock = vi.fn();
 const issueGetMock = vi.fn();
 const createMock = vi.fn();
+const historyMock = vi.fn();
+const updateMock = vi.fn();
+const closeMock = vi.fn();
+const reopenMock = vi.fn();
+const deleteMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -30,6 +32,11 @@ vi.mock("@/lib/api-client", () => ({
       list: (...args: unknown[]) => listMock(...args),
       get: (...args: unknown[]) => issueGetMock(...args),
       create: (...args: unknown[]) => createMock(...args),
+      history: (...args: unknown[]) => historyMock(...args),
+      update: (...args: unknown[]) => updateMock(...args),
+      close: (...args: unknown[]) => closeMock(...args),
+      reopen: (...args: unknown[]) => reopenMock(...args),
+      delete: (...args: unknown[]) => deleteMock(...args),
     },
   },
 }));
@@ -116,6 +123,11 @@ beforeEach(() => {
   listMock.mockReset();
   issueGetMock.mockReset();
   createMock.mockReset();
+  historyMock.mockReset();
+  updateMock.mockReset();
+  closeMock.mockReset();
+  reopenMock.mockReset();
+  deleteMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -123,6 +135,7 @@ beforeEach(() => {
   });
   issueGetMock.mockResolvedValue({ ok: true, data: sampleIssue });
   createMock.mockResolvedValue({ ok: true, data: sampleIssue });
+  historyMock.mockResolvedValue({ ok: true, data: { revisions: [] } });
 });
 
 afterEach(cleanup);
@@ -364,11 +377,16 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
     15_000,
   );
 
-  it.fails(
-    "Write|Preview on edit and comment forms (D-ISS-10)",
+  it(
+    "Write|Preview on edit form after Edit (D-ISS-10)",
     async () => {
       const mod = await loadIssueDetailModule();
       renderWithQueryClient(issueDetailPage(mod));
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /^Edit$/i })).toBeInTheDocument();
+      });
+      screen.getByRole("button", { name: /^Edit$/i }).click();
 
       await waitFor(() => {
         const writes = screen.getAllByText(/^Write$/i);
@@ -380,23 +398,23 @@ describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () 
     15_000,
   );
 
-  it.fails(
-    "lifecycle affordances edit/close/reopen + history panel + Admin delete confirm (D-ISS-02 / D-ISS-04) — green in 11-04",
+  it(
+    "lifecycle affordances edit/close/reopen + history panel + Admin delete confirm (D-ISS-02 / D-ISS-04)",
     async () => {
       const mod = await loadIssueDetailModule();
       renderWithQueryClient(issueDetailPage(mod));
 
       await waitFor(() => {
         expect(
-          screen.getByRole("button", { name: /Edit|Close issue|Reopen/i }),
-        ).toBeInTheDocument();
+          screen.getAllByRole("button", { name: /Edit|Close issue|Reopen/i })
+            .length,
+        ).toBeGreaterThanOrEqual(1);
       });
       expect(screen.getByText(/History|Edit history/i)).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /Delete issue/i }),
+        screen.getByRole("button", { name: /^Delete issue$/i }),
       ).toBeInTheDocument();
-      // confirmNumber dialog copy appears after Delete (Admin)
-      screen.getByRole("button", { name: /Delete issue/i }).click();
+      screen.getByRole("button", { name: /^Delete issue$/i }).click();
       await waitFor(() => {
         expect(
           screen.getByText(/type.*(issue )?number|confirm/i),

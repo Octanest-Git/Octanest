@@ -1,16 +1,25 @@
 import {
   createFileRoute,
   useLoaderData,
+  useNavigate,
   useParams,
 } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { IssuePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { AuthErrorBanner } from "@/components/auth-shell";
+import { IssueDeleteDialog } from "@/components/repo/issue-delete-dialog";
+import { IssueHistoryPanel } from "@/components/repo/issue-history";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
+import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { fetchIssueGet, fetchRepoGet } from "@/lib/ssr-repo";
 
 export type IssueDetailLoaderData =
@@ -73,7 +82,7 @@ export const Route = createFileRoute("/$owner/$repo/issues/$n")({
   },
 });
 
-/** Issue detail — title/body + empty shells for later panels (ISS-01 tracer). */
+/** Issue detail — edit/close/reopen/history/Admin delete (ISS-01 / D-ISS-02..04). */
 export function IssueDetailPage() @{
   const params = useParams({ strict: false }) as {
     owner?: string;
@@ -83,6 +92,9 @@ export function IssueDetailPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const number = Number(params.n ?? "0");
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const account = useChromeAccountState();
   const layout = useLoaderData({ from: "/$owner/$repo" }) as
     | RepoLayoutLoaderData
     | undefined;
@@ -90,7 +102,17 @@ export function IssueDetailPage() @{
     | IssueDetailLoaderData
     | undefined;
 
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [tab, setTab] = useState<"write" | "preview">("write");
+  const [previewHtml, setPreviewHtml] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [pending, setPending] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -126,9 +148,23 @@ export function IssueDetailPage() @{
 
   const repo = repoQ.data ?? null;
   const issue = issueQ.data ?? null;
+  const userId = account.user?.id ?? "";
+  const canEdit =
+    !!issue &&
+    (!!repo?.can_write || (!!userId && issue.author_id === userId));
+  const canWrite = !!repo?.can_write;
+  const canAdmin = !!repo?.can_admin;
+  const showClose = canWrite && issue?.state === "open";
+  const showReopen = canWrite && issue?.state === "closed";
+  const notFound =
+    layout?.status === "not_found" ||
+    routeLoader?.kind === "not_found" ||
+    (!repoQ.isPending && !repo) ||
+    (!issueQ.isPending && !issue && !issueQ.isError);
+  const loading = !notFound && (!repo || !issue);
 
   useEffect(() => {
-    if (!issue) return;
+    if (!issue || editing) return;
     let cancelled = false;
     (async () => {
       const html = await renderGfm(issue.body || "");
@@ -137,85 +173,358 @@ export function IssueDetailPage() @{
     return () => {
       cancelled = true;
     };
-  }, [issue?.id, issue?.body]);
+  }, [issue?.id, issue?.body, editing]);
 
-  @if (
-    layout?.status === "not_found" ||
-    routeLoader?.kind === "not_found" ||
-    (!repoQ.isPending && !repo) ||
-    (!issueQ.isPending && !issue && !issueQ.isError)
-  ) {
+  useEffect(() => {
+    if (!editing || tab !== "preview") return;
+    let cancelled = false;
+    (async () => {
+      const html = await renderGfm(editBody || "_Nothing to preview_");
+      if (!cancelled) setPreviewHtml(html);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editing, tab, editBody]);
+
+  async function invalidateIssueCaches() {
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "get", owner, repoName, number],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "history", owner, repoName, number],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["issue", "list", owner, repoName],
+    });
+  }
+
+  function startEdit() {
+    if (!issue) return;
+    setEditTitle(issue.title);
+    setEditBody(issue.body);
+    setTab("write");
+    setActionError("");
+    setEditing(true);
+  }
+
+  async function saveEdit() {
+    if (!issue) return;
+    setActionError("");
+    if (!editTitle.trim()) {
+      setActionError("Title is required.");
+      return;
+    }
+    setPending(true);
+    try {
+      const res = await apiClient.issue.update({
+        owner,
+        name: repoName,
+        number: issue.number,
+        title: editTitle.trim(),
+        body: editBody,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not update issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setEditing(false);
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function closeIssue() {
+    if (!issue) return;
+    setActionError("");
+    setPending(true);
+    try {
+      const res = await apiClient.issue.close({
+        owner,
+        name: repoName,
+        number: issue.number,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not close issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function reopenIssue() {
+    if (!issue) return;
+    setActionError("");
+    setPending(true);
+    try {
+      const res = await apiClient.issue.reopen({
+        owner,
+        name: repoName,
+        number: issue.number,
+      });
+      if (!res.ok) {
+        setActionError(res.error.message || "Could not reopen issue.");
+        setPending(false);
+        return;
+      }
+      await invalidateIssueCaches();
+      setPending(false);
+    } catch {
+      setActionError(NETWORK_ERROR);
+      setPending(false);
+    }
+  }
+
+  async function confirmDelete(confirmNumber: number) {
+    if (!issue) return;
+    setDeleteError("");
+    setDeletePending(true);
+    try {
+      const res = await apiClient.issue.delete({
+        owner,
+        name: repoName,
+        number: issue.number,
+        confirmNumber,
+      });
+      if (!res.ok) {
+        setDeleteError(res.error.message || "Could not delete issue.");
+        setDeletePending(false);
+        return;
+      }
+      await queryClient.invalidateQueries({
+        queryKey: ["issue", "list", owner, repoName],
+      });
+      setDeleteOpen(false);
+      setDeletePending(false);
+      await navigate({
+        to: "/$owner/$repo/issues",
+        params: { owner, repo: repoName },
+      });
+    } catch {
+      setDeleteError(NETWORK_ERROR);
+      setDeletePending(false);
+    }
+  }
+
+  @if (notFound) {
     <RepoNotFound />
-  } @else if (!repo || !issue) {
-    <p className="text-[16px] text-muted-foreground">Loading issue…</p>
   } @else {
-    <>
-      <RepoChrome repo={repo} active="issues" />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-[13px] text-muted-foreground">
-              {`#${issue.number} · ${issue.state}` as string}
-            </p>
-            <h1
-              data-testid="issue-title"
-              className="mt-1 text-[24px] font-semibold text-foreground"
-            >
-              {issue.title as string}
-            </h1>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              {`opened by @${issue.author_username}` as string}
-            </p>
+    @if (loading) {
+      <p className="text-[16px] text-muted-foreground">Loading issue…</p>
+    } @else {
+      <>
+        <RepoChrome repo={repo!} active="issues" />
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+          <div className="flex flex-col gap-4">
+            @if (actionError) {
+              <AuthErrorBanner message={actionError} />
+            }
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] text-muted-foreground">
+                  {`#${issue!.number} · ${issue!.state}` as string}
+                </p>
+                @if (editing) {
+                  <div className="mt-2 flex flex-col gap-2">
+                    <Label htmlFor="issue-edit-title">Title</Label>
+                    <Input
+                      id="issue-edit-title"
+                      value={editTitle}
+                      onInput={(e) =>
+                        setEditTitle((e.target as HTMLInputElement).value)
+                      }
+                      disabled={pending}
+                    />
+                  </div>
+                } @else {
+                  <h1
+                    data-testid="issue-title"
+                    className="mt-1 text-[24px] font-semibold text-foreground"
+                  >
+                    {issue!.title as string}
+                  </h1>
+                }
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {`opened by @${issue!.author_username}` as string}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                @if (canEdit && !editing) {
+                  <Button type="button" variant="outline" onClick={startEdit}>
+                    Edit
+                  </Button>
+                }
+                @if (showClose) {
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={closeIssue}
+                  >
+                    Close issue
+                  </Button>
+                }
+                @if (showReopen) {
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={reopenIssue}
+                  >
+                    Reopen
+                  </Button>
+                }
+                @if (canAdmin) {
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      setDeleteError("");
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    Delete issue
+                  </Button>
+                }
+              </div>
+            </div>
+
+            @if (editing) {
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2 border-b border-border pb-0">
+                  <button
+                    type="button"
+                    className={
+                      (tab === "write"
+                        ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
+                        : "pb-2 text-[14px] text-muted-foreground") as string
+                    }
+                    onClick={() => setTab("write")}
+                  >
+                    Write
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      (tab === "preview"
+                        ? "border-b-2 border-primary pb-2 text-[14px] font-semibold"
+                        : "pb-2 text-[14px] text-muted-foreground") as string
+                    }
+                    onClick={() => setTab("preview")}
+                  >
+                    Preview
+                  </button>
+                </div>
+                @if (tab === "write") {
+                  <Textarea
+                    id="issue-edit-body"
+                    rows={10}
+                    value={editBody}
+                    onInput={(e) =>
+                      setEditBody((e.target as HTMLTextAreaElement).value)
+                    }
+                    disabled={pending}
+                  />
+                } @else {
+                  <div
+                    className="prose prose-sm min-h-40 max-w-none rounded-md border border-border px-4 py-3"
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  />
+                }
+                <div className="flex gap-2">
+                  <Button type="button" disabled={pending} onClick={saveEdit}>
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => {
+                      setEditing(false);
+                      setActionError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            } @else {
+              <div
+                className="prose prose-sm max-w-none rounded-md border border-border px-4 py-3"
+                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+              />
+            }
+
+            <IssueHistoryPanel
+              owner={owner}
+              repoName={repoName}
+              number={number}
+            />
+
+            <section aria-labelledby="issue-comments-heading">
+              <h2
+                id="issue-comments-heading"
+                className="text-[16px] font-semibold text-foreground"
+              >
+                Comments
+              </h2>
+              <p className="mt-2 text-[14px] text-muted-foreground">
+                No comments yet.
+              </p>
+            </section>
           </div>
-          <div
-            className="prose prose-sm max-w-none rounded-md border border-border px-4 py-3"
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
-          />
-          <section aria-labelledby="issue-comments-heading">
-            <h2
-              id="issue-comments-heading"
-              className="text-[16px] font-semibold text-foreground"
-            >
-              Comments
-            </h2>
-            <p className="mt-2 text-[14px] text-muted-foreground">
-              No comments yet.
-            </p>
-          </section>
+          <aside className="flex flex-col gap-6">
+            <section aria-labelledby="issue-labels-heading">
+              <h2
+                id="issue-labels-heading"
+                className="text-[14px] font-semibold text-foreground"
+              >
+                Labels
+              </h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
+            </section>
+            <section aria-labelledby="issue-assignees-heading">
+              <h2
+                id="issue-assignees-heading"
+                className="text-[14px] font-semibold text-foreground"
+              >
+                Assignees
+              </h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
+            </section>
+            <section aria-labelledby="issue-linked-prs-heading">
+              <h2
+                id="issue-linked-prs-heading"
+                className="text-[14px] font-semibold text-foreground"
+              >
+                Linked PRs
+              </h2>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                No linked pull requests yet.
+              </p>
+            </section>
+          </aside>
         </div>
-        <aside className="flex flex-col gap-6">
-          <section aria-labelledby="issue-labels-heading">
-            <h2
-              id="issue-labels-heading"
-              className="text-[14px] font-semibold text-foreground"
-            >
-              Labels
-            </h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
-          </section>
-          <section aria-labelledby="issue-assignees-heading">
-            <h2
-              id="issue-assignees-heading"
-              className="text-[14px] font-semibold text-foreground"
-            >
-              Assignees
-            </h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">None yet</p>
-          </section>
-          <section aria-labelledby="issue-linked-prs-heading">
-            <h2
-              id="issue-linked-prs-heading"
-              className="text-[14px] font-semibold text-foreground"
-            >
-              Linked PRs
-            </h2>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              No linked pull requests yet.
-            </p>
-          </section>
-        </aside>
-      </div>
-    </>
+
+        <IssueDeleteDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          issueNumber={issue!.number}
+          pending={deletePending}
+          error={deleteError}
+          onConfirm={confirmDelete}
+        />
+      </>
+    }
   }
 }
 
