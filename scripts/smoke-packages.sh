@@ -26,6 +26,11 @@ if ! docker info >/dev/null 2>&1; then
   echo "docker engine not reachable; skipping smoke-packages"
   exit 0
 fi
+# Fast skip when Compose API isn't up (avoid 2-minute health wait).
+if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|octanest-api'; then
+  echo "Compose API not running; skipping smoke-packages (run make up to exercise Traefik routing)"
+  exit 0
+fi
 
 echo "==> wait for ${BASE_URL}/health"
 ok=0

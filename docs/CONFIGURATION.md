@@ -42,6 +42,8 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_PACKAGES_DIR` | Optional | `var/packages` | Root for content-addressed package blobs (OCI/npm/generic). Compose binds `./var/packages:/var/packages` and sets `/var/packages`. **Must not** share `OCTANEST_LFS_DIR` or release-asset paths (D-PKG-07). |
 | `OCTANEST_PACKAGES_MAX_BLOB_BYTES` | Optional | `2147483648` (2 GiB) | Reject uploads larger than this size (D-PKG-09). |
 | `OCTANEST_PACKAGES_OWNER_QUOTA_BYTES` | Optional | `10737418240` (10 GiB) | Default per-owner storage quota; Admin may override per owner (D-PKG-09). |
+| `OCTANEST_PACKAGES_GC_INTERVAL_SECS` | Optional | `86400` | Package blob GC interval; `0` disables. |
+| `OCTANEST_PACKAGES_GC_GRACE_SECS` | Optional | `604800` (7d) | Grace before deleting refcount-0 blobs. |
 | `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
@@ -59,9 +61,13 @@ Dev-auth Compose port overrides (see `docker-compose.dev-auth.yml`): `OCTANEST_M
 
 Package blobs live under `OCTANEST_PACKAGES_DIR` (default `var/packages`). Layout is content-addressed: `{OCTANEST_PACKAGES_DIR}/{algo}/{aa}/{bb}/{digest}` with DB refcounts for cross-package dedup (D-PKG-07 / D-PKG-08). This volume is **separate** from bare repos, Git LFS, and release assets.
 
-**Compose:** Default stack mounts `./var/packages:/var/packages` and sets `OCTANEST_PACKAGES_DIR=/var/packages`. Defaults for max blob size (2 GiB) and per-owner quota (10 GiB) are documented above; Admin UI can override owner quotas later.
+**Compose:** Default stack mounts `./var/packages:/var/packages` and sets `OCTANEST_PACKAGES_DIR=/var/packages`. Defaults for max blob size (2 GiB) and per-owner quota (10 GiB) are documented above; Admin UI (`/admin/packages`) and `packages.adminSetQuota` override per owner.
 
-**Edge paths:** Registry protocols are served on the same host at `/v2` (OCI), `/npm` (npm), and `/generic` (raw). Traefik and Vite must route these prefixes to the API before the SPA (see Compose `api-packages` router).
+**Edge paths:** Registry protocols are served on the same host at `/v2` (OCI), `/npm` (npm), and `/generic` (raw). Traefik and Vite must route these prefixes to the API before the SPA (see Compose `api-packages` router, priority ≥110). Smoke: `make smoke-packages` (skip-ok without Docker).
+
+**GC:** `OCTANEST_PACKAGES_GC_INTERVAL_SECS` (default 86400) runs in-process GC; `OCTANEST_PACKAGES_GC_GRACE_SECS` (default 7d) delays deletion of refcount-0 blobs. Live layers shared across packages are never GC'd while referenced.
+
+**Auth:** PAT `package:read` / `package:write` (or FG Packages perm) ∩ forge ACL. Classic `repo` does not include packages. Cookies ignored on registry paths. See [API.md](API.md#packages-registry-oci--npm--generic).
 
 ## Git repositories & disk lifecycle
 

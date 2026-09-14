@@ -55,6 +55,10 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-receive-pack` | Git push body | PAT Basic (verified email; write scope) |
+| `GET` | `/v2/` | OCI Distribution Spec API base (Docker/OCI clients) | PAT Bearer / Basic (not session cookie) |
+| `*` | `/v2/{owner}/{image}/…` | OCI blobs, manifests, tags | PAT with `package:read` / `package:write` ∩ ACL |
+| `*` | `/npm/{owner}/…` | npm registry (publish, packument, tarball, dist-tags) | PAT Basic; cookie ignored |
+| `PUT/GET/DELETE` | `/generic/{owner}/{name}/{version}/…` | Generic/raw package files | PAT Basic; cookie ignored |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -97,10 +101,14 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
 | `issue.links.list` / `add` / `remove` | Linked PR stubs + manual links (`pr_stub`) | Session (+ capability) |
 | `label.listForRepo` / `listForOrg` / `create` / `update` / `delete` | Org/repo label definitions (Admin for defs) | Session (+ capability) |
-| `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response | Session + verified email |
-| `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); one-time plaintext in response | Session + verified email |
+| `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response. Classic scopes include optional `package:read` / `package:write` (repo scope does **not** imply packages) | Session + verified email |
+| `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); optional Packages Read/Write | Session + verified email |
 | `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
 | `pat.revoke` | Soft-revoke a PAT by `id` | Session |
+| `packages.list` | List packages for an owner login or `repository_id` (ACL-filtered) | Session + verified |
+| `packages.deleteVersion` | Delete a version; `confirm` must equal `{name}@{version}` | Session + owner Admin capability |
+| `packages.adminUsage` | Per-owner storage usage + format/package breakdown | Sys-admin |
+| `packages.adminSetQuota` | Set per-owner package quota override (`max_bytes`) | Sys-admin |
 | `sshKey.add` | Register an OpenSSH public key; returns fingerprint metadata | Session + verified email |
 | `sshKey.list` | List registered SSH public keys (no private keys) | Session |
 | `sshKey.revoke` | Hard-delete an SSH public key by `id` | Session |
@@ -333,6 +341,24 @@ git -c http.extraHeader="Authorization: Basic $(printf 'git:octanest_pat_REDACTE
 Clone / fetch / push over SSH use an in-process listener (Compose TCP **2222** by default — not Traefik). Remotes are **scp-style** `git@{host}:{owner}/{repo}.git` (D-SSH-02). The SSH username must be `git`; identity comes only from a registered public-key fingerprint (full account ACL — no PAT scopes). When advertised port ≠ 22, clients set `Port` in `~/.ssh/config` (or `ssh -p`); do not treat `ssh://` as the primary CloneBox URL.
 
 Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprint buckets). See [CONFIGURATION.md](CONFIGURATION.md) for `OCTANEST_SSH_*`.
+
+### Packages registry (OCI / npm / generic)
+
+Same-host path prefixes (Traefik/Vite must route to the API **before** the SPA):
+
+| Prefix | Clients | Notes |
+| --- | --- | --- |
+| `/v2` | `docker` / OCI | Distribution Spec; Bearer realm `GET /v2/token`; image names `{owner}/{image}` (two segments) |
+| `/npm/{owner}/` | `npm` / yarn / pnpm | Packument, publish, tarball; set registry to `{PUBLIC_ORIGIN}/npm/{owner}/` |
+| `/generic/{owner}/{name}/{version}/{filename}` | curl / CI | Immutable per filename (409 on overwrite); `DELETE` removes a version |
+
+**Auth matrix:** Registry routes use **PAT only** (HTTP Basic password = token, or OCI Bearer). Session cookies are **ignored**. Classic `package:read` / `package:write` (or FG Packages perm) is **required** in addition to forge ACL — classic `repo` alone does **not** grant package access. Public packages may allow anonymous pull when ACL permits.
+
+**Immutability:** Published versions are immutable (npm republish conflict; generic filename conflict; OCI digest tags). Soft-delete via UI/RPC uses type-to-confirm `name@version`.
+
+**Tarball / clone-style URLs:** Absolute URLs in npm packuments use `OCTANEST_PUBLIC_ORIGIN` (same as clone boxes).
+
+**Owner transfer/rename:** When Phase 15 lands owner transfer/rename, package owner path metadata must be updated in lockstep — not implemented in Phase 20.
 
 ### TypeScript client
 
