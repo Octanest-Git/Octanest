@@ -9,21 +9,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 /**
- * Phase 11 Issues UI Wave 0 / Nyquist stubs (ISS-01..04, D-ISS-10/13/16/19, D-ISS-02/04/07/11).
- *
- * Prefer `it.fails` so remaining RED cases do not fail the suite until greened in
- * 11-03 / 11-04 / 11-05 / 11-06 / 11-08 / 11-09. Do not author production .tsrx here.
+ * Phase 11 Issues UI — tracer greened in 11-03; remaining RED via `it.fails`
+ * for comments/labels lifecycle/reactions (11-04+).
  *
  * Runtime-variable dynamic import with @vite-ignore keeps Vitest collectable while
  * routes are still absent (Phase 08/10 Wave 0 pattern).
  */
 
 const getMock = vi.fn();
+const listMock = vi.fn();
+const issueGetMock = vi.fn();
+const createMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
     repo: {
       get: (...args: unknown[]) => getMock(...args),
+    },
+    issue: {
+      list: (...args: unknown[]) => listMock(...args),
+      get: (...args: unknown[]) => issueGetMock(...args),
+      create: (...args: unknown[]) => createMock(...args),
     },
   },
 }));
@@ -71,6 +77,7 @@ vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
     ...actual,
     useParams: () => ({ owner: "ada", repo: "hello", n: "1" }),
     useLoaderData: () => undefined,
+    useNavigate: () => vi.fn(),
     Link: MockLink,
   };
 });
@@ -89,9 +96,33 @@ const readableRepo = {
   can_write: true,
 };
 
+const sampleIssue = {
+  id: "i1",
+  repo_id: "r1",
+  number: 1,
+  title: "Tracer issue",
+  body: "Hello **world**",
+  state: "open" as const,
+  author_id: "u1",
+  author_username: "ada",
+  created_at: "2026-09-14T00:00:00Z",
+  updated_at: "2026-09-14T00:00:00Z",
+  labels: [],
+  assignees: [],
+};
+
 beforeEach(() => {
   getMock.mockReset();
+  listMock.mockReset();
+  issueGetMock.mockReset();
+  createMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
+  listMock.mockResolvedValue({
+    ok: true,
+    data: { issues: [], total: 0 },
+  });
+  issueGetMock.mockResolvedValue({ ok: true, data: sampleIssue });
+  createMock.mockResolvedValue({ ok: true, data: sampleIssue });
 });
 
 afterEach(cleanup);
@@ -157,7 +188,7 @@ function issueDetailPage(mod: Record<string, unknown>): unknown {
 }
 
 describe("repo chrome Issues tab Wave 0 (D-ISS-19)", () => {
-  it.fails(
+  it(
     "Issues tab present for readable repos with href /{owner}/{repo}/issues",
     async () => {
       const { RepoChrome } = await import("../components/repo/repo-chrome");
@@ -183,7 +214,7 @@ describe("repo chrome Issues tab Wave 0 (D-ISS-19)", () => {
 });
 
 describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
-  it.fails(
+  it(
     "list defaults Open with Closed and All controls",
     async () => {
       const mod = await loadIssuesListModule();
@@ -198,9 +229,9 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
       });
       expect(screen.getByText(/^Closed$/i)).toBeInTheDocument();
       expect(screen.getByText(/^All$/i)).toBeInTheDocument();
-      // Open is the default selection (tab/link aria-current or pressed)
+      // Prefer tablist selection — repo chrome may also set aria-current on Issues
       const openControl =
-        container.querySelector('[aria-current="page"]') ??
+        container.querySelector('[role="tablist"] [aria-selected="true"]') ??
         container.querySelector('[aria-selected="true"]') ??
         container.querySelector('[data-state="active"]');
       expect(openControl?.textContent).toMatch(/Open/i);
@@ -208,7 +239,7 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
     15_000,
   );
 
-  it.fails(
+  it(
     "New issue from list when can_write (D-ISS-19 / D-ISS-20)",
     async () => {
       getMock.mockResolvedValue({
@@ -231,7 +262,7 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
     15_000,
   );
 
-  it.fails(
+  it(
     "New issue hidden when !can_write (empty state still readable)",
     async () => {
       getMock.mockResolvedValue({
@@ -289,7 +320,7 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
 });
 
 describe("/{owner}/{repo}/issues/new Wave 0 (D-ISS-10)", () => {
-  it.fails(
+  it(
     "Write|Preview tabs on new issue form",
     async () => {
       const mod = await loadIssuesNewModule();
@@ -305,22 +336,30 @@ describe("/{owner}/{repo}/issues/new Wave 0 (D-ISS-10)", () => {
 });
 
 describe("/{owner}/{repo}/issues/{n} detail Wave 0 (ISS-01..04 / D-ISS-13)", () => {
-  it.fails(
+  it(
     "detail shows title/body/comments/labels/assignees + Linked PRs panel shell",
     async () => {
       const mod = await loadIssueDetailModule();
       renderWithQueryClient(issueDetailPage(mod));
 
       await waitFor(() => {
-        expect(
-          screen.getByRole("heading", { level: 1 }) ??
-            screen.getByTestId("issue-title"),
-        ).toBeTruthy();
+        expect(screen.getByTestId("issue-title")).toBeInTheDocument();
       });
-      expect(screen.getByText(/Comments|comment/i)).toBeInTheDocument();
-      expect(screen.getByText(/Labels/i)).toBeInTheDocument();
-      expect(screen.getByText(/Assignees/i)).toBeInTheDocument();
-      expect(screen.getByText(/Linked PRs/i)).toBeInTheDocument();
+      expect(screen.getByTestId("issue-title").textContent).toMatch(
+        /Tracer issue/i,
+      );
+      expect(
+        screen.getByRole("heading", { name: /^Comments$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /^Labels$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /^Assignees$/i }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: /^Linked PRs$/i }),
+      ).toBeInTheDocument();
     },
     15_000,
   );
