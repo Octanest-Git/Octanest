@@ -168,6 +168,12 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/{owner}/{repo_git}/git-receive-pack",
             axum::routing::post(git_smart_http::receive_pack),
         )
+        // Package registry (D-PKG-01) — path prefixes must outrank SPA at the edge.
+        .route("/v2", get(crate::packages::oci::discovery))
+        .route("/v2/", get(crate::packages::oci::discovery))
+        .nest("/v2", crate::packages::oci::router())
+        .nest("/npm", crate::packages::npm::router())
+        .nest("/generic", crate::packages::generic::router())
         .layer(cors)
         .layer(TraceLayer::new_for_http())
         .with_state(state)

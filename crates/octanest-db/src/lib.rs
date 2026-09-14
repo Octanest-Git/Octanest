@@ -1128,6 +1128,14 @@ impl Database {
         packages::list_version_blob_digests(self.require_pool()?, version_id).await
     }
 
+    pub async fn update_package_version_metadata(
+        &self,
+        version_id: &str,
+        metadata_json: &str,
+    ) -> Result<(), String> {
+        packages::update_version_metadata(self.require_pool()?, version_id, metadata_json).await
+    }
+
     pub async fn delete_package_version(&self, version_id: &str) -> Result<(), String> {
         packages::delete_version(self.require_pool()?, version_id).await
     }

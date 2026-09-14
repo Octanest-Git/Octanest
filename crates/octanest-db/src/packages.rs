@@ -519,6 +519,40 @@ pub async fn list_version_blob_digests(
     }
 }
 
+pub async fn update_version_metadata(
+    pool: &DbPool,
+    version_id: &str,
+    metadata_json: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE package_versions SET metadata_json = ? WHERE id = ?")
+                .bind(metadata_json)
+                .bind(version_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE package_versions SET metadata_json = ? WHERE id = ?")
+                .bind(metadata_json)
+                .bind(version_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE package_versions SET metadata_json = $1 WHERE id = $2")
+                .bind(metadata_json)
+                .bind(version_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 pub async fn delete_version(pool: &DbPool, version_id: &str) -> Result<(), String> {
     match pool {
         DbPool::Sqlite(p) => {
