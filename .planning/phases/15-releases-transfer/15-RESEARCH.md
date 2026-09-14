@@ -654,7 +654,7 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 | Architecture | HIGH | Forge docs + Gitea redirect model + local schema |
 | Pitfalls | HIGH | Reconcile races, draft leak, redirect supersede documented |
 
-### Open Questions
+### Open Questions (RESOLVED)
 - RESOLVED: next-free `00NN` migration; rename without type-confirm; SSH via shared helper in 15-03; no `release.latest`; ENV defaults 90d / 512 MiB locked in plans.
 
 ### Ready for Planning
