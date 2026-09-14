@@ -44,6 +44,7 @@ pub struct RpcCtx {
     pub sessions: SessionService,
     pub uploads_dir: PathBuf,
     pub repos_dir: PathBuf,
+    pub release_assets_dir: PathBuf,
     pub git: Arc<dyn GitBackend>,
     pub env_name: String,
     pub session: Option<ResolvedSession>,
@@ -460,6 +461,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "release.delete" => match release::delete(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "release.deleteAsset" => match release::delete_asset(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

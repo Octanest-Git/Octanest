@@ -919,6 +919,16 @@ export type DeleteReleaseResponse = {
   ok: boolean;
 };
 
+export type DeleteReleaseAssetRequest = {
+  owner: string;
+  name: string;
+  asset_id: string;
+};
+
+export type DeleteReleaseAssetResponse = {
+  ok: boolean;
+};
+
 export type IssueRevisionPublic = {
   id: string;
   issue_id: string;
@@ -1184,6 +1194,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<ReleasePublic>(opts, "release.update", input),
       delete: (input: DeleteReleaseRequest) =>
         rpcCall<DeleteReleaseResponse>(opts, "release.delete", input),
+      deleteAsset: (input: DeleteReleaseAssetRequest) =>
+        rpcCall<DeleteReleaseAssetResponse>(opts, "release.deleteAsset", input),
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>

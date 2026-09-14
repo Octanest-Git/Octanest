@@ -1182,6 +1182,13 @@ impl Database {
     pub async fn find_release_asset_by_id(&self, id: &str) -> Result<Option<ReleaseAssetRow>, String> {
         releases::find_asset_by_id(self.require_pool()?, id).await
     }
+    pub async fn find_release_asset_by_filename(
+        &self,
+        release_id: &str,
+        filename: &str,
+    ) -> Result<Option<ReleaseAssetRow>, String> {
+        releases::find_asset_by_release_filename(self.require_pool()?, release_id, filename).await
+    }
     pub async fn insert_release_asset(&self, id: &str, release_id: &str, filename: &str, content_type: &str, byte_size: i64, uploader_id: &str) -> Result<ReleaseAssetRow, String> {
         releases::insert_asset(self.require_pool()?, id, release_id, filename, content_type, byte_size, uploader_id).await
     }

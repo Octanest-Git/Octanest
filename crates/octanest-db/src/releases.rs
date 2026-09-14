@@ -228,6 +228,54 @@ pub async fn find_asset_by_id(pool: &DbPool, id: &str) -> Result<Option<ReleaseA
     }
 }
 
+pub async fn find_asset_by_release_filename(
+    pool: &DbPool,
+    release_id: &str,
+    filename: &str,
+) -> Result<Option<ReleaseAssetRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let sql = format!("{ASEL_PG} WHERE release_id = $1 AND filename = $2");
+            let row = sqlx::query(&sql)
+                .bind(release_id)
+                .bind(filename)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find asset by name: {e}"))?;
+            match row {
+                Some(r) => Ok(Some(map_asset!(r))),
+                None => Ok(None),
+            }
+        }
+        DbPool::MySql(p) => {
+            let sql = format!("{ASEL_MY} WHERE release_id = ? AND filename = ?");
+            let row = sqlx::query(&sql)
+                .bind(release_id)
+                .bind(filename)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find asset by name: {e}"))?;
+            match row {
+                Some(r) => Ok(Some(map_asset!(r))),
+                None => Ok(None),
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let sql = format!("{ASEL_SQ} WHERE release_id = ? AND filename = ?");
+            let row = sqlx::query(&sql)
+                .bind(release_id)
+                .bind(filename)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find asset by name: {e}"))?;
+            match row {
+                Some(r) => Ok(Some(map_asset!(r))),
+                None => Ok(None),
+            }
+        }
+    }
+}
+
 pub async fn insert_asset(pool: &DbPool, id: &str, release_id: &str, filename: &str, content_type: &str, byte_size: i64, uploader_id: &str) -> Result<ReleaseAssetRow, String> {
     match pool {
         DbPool::Postgres(p) => {

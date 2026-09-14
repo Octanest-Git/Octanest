@@ -23,7 +23,7 @@ use crate::auth::session::{
 };
 use crate::email::{self, EmailSender};
 use crate::pat::rate_limit::FailedAuthLimiter;
-use crate::routes::{auth_callbacks, avatar, git_smart_http, repo_raw};
+use crate::routes::{auth_callbacks, avatar, git_smart_http, release_assets, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 use crate::user::rate_limit::LookupLimiter;
 
@@ -116,6 +116,16 @@ impl AppState {
         self
     }
 
+    pub fn with_release_assets_dir(mut self, dir: PathBuf) -> Self {
+        self.release_assets_dir = dir;
+        self
+    }
+
+    pub fn with_release_asset_max_bytes(mut self, max: usize) -> Self {
+        self.release_asset_max_bytes = max;
+        self
+    }
+
     pub fn with_git(mut self, git: Arc<dyn GitBackend>) -> Self {
         self.git = git;
         self
@@ -137,6 +147,7 @@ pub fn router(db: Database, cors: CorsLayer) -> Router {
 }
 
 pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
+    let asset_body_limit = state.release_asset_max_bytes.max(1024);
     Router::new()
         .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
@@ -156,6 +167,14 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             post(avatar::upload_avatar).layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES)),
         )
         .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
+        .route(
+            "/api/repos/{owner}/{repo}/releases/{release_id}/assets",
+            post(release_assets::upload_asset).layer(DefaultBodyLimit::max(asset_body_limit)),
+        )
+        .route(
+            "/api/releases/assets/{asset_id}",
+            get(release_assets::download_asset),
+        )
         .route(
             "/api/repos/{owner}/{repo}/raw/{ref}/{*path}",
             get(repo_raw::serve_raw),
@@ -217,6 +236,7 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         sessions: state.sessions.clone(),
         uploads_dir: state.uploads_dir.clone(),
         repos_dir: state.repos_dir.clone(),
+        release_assets_dir: state.release_assets_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,

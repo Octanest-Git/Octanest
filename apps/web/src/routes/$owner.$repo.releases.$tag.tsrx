@@ -7,6 +7,7 @@ import { useQuery } from "@octanejs/tanstack-query";
 import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
@@ -192,6 +193,63 @@ export function RepoReleaseDetailPage() @{
         className="prose prose-sm max-w-none text-foreground"
         dangerouslySetInnerHTML={{ __html: bodyHtml }}
       />
+      <section className="mt-8">
+        <h3 className="mb-3 text-[16px] font-semibold text-foreground">Assets</h3>
+        @if (release.assets && release.assets.length > 0) {
+          <ul className="mb-4 flex flex-col gap-2">
+            @for (const a of release.assets; key a.id) {
+              <li>
+                <a
+                  href={`/api/releases/assets/${a.id}` as string}
+                  className="text-[14px] text-primary underline"
+                >
+                  {(a.filename || a.id) as string}
+                </a>
+                <span className="ml-2 text-[12px] text-muted-foreground">
+                  {`${a.byte_size} bytes` as string}
+                </span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p className="mb-4 text-[14px] text-muted-foreground">No assets attached.</p>
+        }
+        @if (repo.can_write) {
+          <form
+            method="post"
+            action="#"
+            className="flex flex-wrap items-end gap-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="release-asset-file">Upload asset</Label>
+              <input
+                id="release-asset-file"
+                type="file"
+                onChange={(e) => {
+                  const input = e.target as HTMLInputElement;
+                  const file = input.files?.[0];
+                  if (!file || !release) return;
+                  void (async () => {
+                    const fd = new FormData();
+                    fd.append("asset", file, file.name);
+                    const res = await fetch(
+                      `/api/repos/${owner}/${repoName}/releases/${release.id}/assets`,
+                      { method: "POST", body: fd, credentials: "include" },
+                    );
+                    if (res.ok) {
+                      await releaseQ.refetch();
+                      input.value = "";
+                    }
+                  })();
+                }}
+              />
+            </div>
+          </form>
+        }
+      </section>
       <p className="mt-8">
         <a
           href={`/${owner}/${repoName}/releases` as string}

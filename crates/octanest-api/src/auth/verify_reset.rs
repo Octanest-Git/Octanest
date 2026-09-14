@@ -656,6 +656,7 @@ mod tests {
             sessions: SessionService::new("development"),
             uploads_dir: PathBuf::from("/tmp/octanest-test-uploads"),
             repos_dir: PathBuf::from("/tmp/octanest-test-repos"),
+            release_assets_dir: PathBuf::from("/tmp/octanest-test-release-assets"),
             git: Arc::new(octanest_git::CliGitBackend::new()),
             env_name: "development".into(),
             session: Some(ResolvedSession {

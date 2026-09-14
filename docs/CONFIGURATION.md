@@ -46,6 +46,8 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | Optional | `86400` (24h) | In-process orphan reconcile interval. Removes bare dirs with no DB row and purges soft-deleted repos past retention. Set `0` to disable. |
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | Optional | `14` | Days to keep soft-deleted repository rows/files before orphan reconcile hard-deletes them. |
 | `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` | Optional | `90` | Days to keep `repository_redirects` after rename/transfer so old `/{owner}/{repo}` and Smart HTTP/SSH paths keep resolving. Expired rows are purged by orphan reconcile. |
+| `OCTANEST_RELEASE_ASSETS_DIR` | Optional | `var/release-assets` | Directory for release binary assets keyed by opaque `asset_id` (not the LFS OID store). Compose binds `./var/release-assets:/var/release-assets`. |
+| `OCTANEST_RELEASE_ASSET_MAX_BYTES` | Optional | `536870912` (512 MiB) | Max multipart size for a single release asset upload. |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | Optional | `604800` (7d) | In-process scheduled `git gc --auto` across active repos. Set `0` to disable. Sys-admins can also trigger `admin.repos.gc` manually. |
 
 \* Strongly recommended for any real instance; without it the API runs with a skipped DB pool.  

@@ -1,8 +1,9 @@
 //! Release RPC handlers — tag-bound notes (GIT-14 / D-REL-01..03 / D-REL-12).
 
 use octanest_core::{
-    AppError, CreateReleaseRequest, DeleteReleaseRequest, DeleteReleaseResponse, ReleaseAssetPublic,
-    ReleaseGetRequest, ReleaseListRequest, ReleaseListResponse, ReleasePublic, UpdateReleaseRequest,
+    AppError, CreateReleaseRequest, DeleteReleaseAssetRequest, DeleteReleaseAssetResponse,
+    DeleteReleaseRequest, DeleteReleaseResponse, ReleaseAssetPublic, ReleaseGetRequest,
+    ReleaseListRequest, ReleaseListResponse, ReleasePublic, UpdateReleaseRequest,
 };
 use octanest_db::{ReleaseAssetRow, ReleaseRow};
 use uuid::Uuid;
@@ -11,6 +12,7 @@ use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
 use crate::repo::resolve_repo_for_admin;
 use crate::repo::{meets, not_found, resolve_repo_for_read, AccessibleRepo, Capability};
+use crate::routes::release_assets::{delete_asset_with_file, remove_asset_file};
 use crate::rpc::RpcCtx;
 
 fn db_err(e: String) -> AppError {
@@ -176,6 +178,48 @@ pub async fn delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<DeleteRele
     }
     let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
     let existing = ctx.db.find_release_by_repo_tag(&accessible.row.id, tag_name).await.map_err(db_err)?.ok_or_else(release_not_found)?;
+    let assets = ctx
+        .db
+        .list_assets_for_release(&existing.id)
+        .await
+        .map_err(db_err)?;
+    for asset in &assets {
+        remove_asset_file(&ctx.release_assets_dir, &asset.id).await;
+    }
     ctx.db.delete_release(&existing.id).await.map_err(db_err)?;
     Ok(DeleteReleaseResponse { ok: true })
+}
+
+pub async fn delete_asset(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<DeleteReleaseAssetResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: DeleteReleaseAssetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid release.deleteAsset input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    if !meets(accessible.capability, Capability::Write) {
+        return Err(not_found());
+    }
+    let asset = ctx
+        .db
+        .find_release_asset_by_id(req.asset_id.trim())
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("release.asset_not_found", "Asset not found"))?;
+    let release = ctx
+        .db
+        .find_release_by_id(&asset.release_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(release_not_found)?;
+    if release.repo_id != accessible.row.id {
+        return Err(AppError::new("release.asset_not_found", "Asset not found"));
+    }
+    delete_asset_with_file(ctx, &ctx.release_assets_dir, &asset.id).await?;
+    Ok(DeleteReleaseAssetResponse { ok: true })
 }

@@ -31,6 +31,7 @@ export default defineConfig({
       "/api/auth": { target: apiProxyTarget, changeOrigin: true },
       "/api/user": { target: apiProxyTarget, changeOrigin: true },
       "/api/repos": { target: apiProxyTarget, changeOrigin: true },
+      "/api/releases": { target: apiProxyTarget, changeOrigin: true },
       "/uploads": { target: apiProxyTarget, changeOrigin: true },
       "/health": { target: apiProxyTarget, changeOrigin: true },
     },

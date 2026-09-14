@@ -282,25 +282,287 @@ async fn release_delete_requires_admin() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 asset tests green in 15-02"]
 async fn release_asset_upload_download_acl() {
-    assert!(false, "15-02");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let assets = dir.path().join("release-assets");
+    let url = format!("sqlite:{}", dir.path().join("asset_acl.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let state = AppState::new(db.clone(), Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos.clone())
+        .with_release_assets_dir(assets.clone())
+        .with_git(Arc::new(CliGitBackend::new()));
+    let cors = build_cors("development", None).expect("cors");
+    let app = router_with_state(state, cors);
+    let (cookie, login_v) = signup_and_login(&app, "a1@ex.com", "aowner").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_repo_with_tag(&app, &db, &repos, &cookie, "aowner", "hello", "v1.0.0").await;
+    let created = rpc_json(
+        &app,
+        r#"{"procedure":"release.create","input":{"owner":"aowner","name":"hello","tag_name":"v1.0.0","title":"One","body":"","draft":false}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+    let release_id = created["data"]["id"].as_str().unwrap();
+
+    let boundary = "----octanest";
+    let mut body = Vec::new();
+    body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+    body.extend_from_slice(
+        b"Content-Disposition: form-data; name=\"asset\"; filename=\"bin.txt\"\r\n",
+    );
+    body.extend_from_slice(b"Content-Type: text/plain\r\n\r\n");
+    body.extend_from_slice(b"hello-asset");
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+    let upload = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/api/repos/aowner/hello/releases/{release_id}/assets"
+                ))
+                .header(
+                    "content-type",
+                    format!("multipart/form-data; boundary={boundary}"),
+                )
+                .header("cookie", &cookie)
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(upload.status(), StatusCode::OK);
+    let ub = upload.into_body().collect().await.unwrap().to_bytes();
+    let uv: serde_json::Value = serde_json::from_slice(&ub).unwrap();
+    assert_eq!(uv["ok"], true, "{uv}");
+    let asset_id = uv["asset"]["id"].as_str().unwrap();
+
+    let dl = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/releases/assets/{asset_id}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(dl.status(), StatusCode::OK);
+    let bytes = dl.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&bytes[..], b"hello-asset");
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 asset tests green in 15-02"]
 async fn release_asset_size_reject() {
-    assert!(false, "15-02");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let assets = dir.path().join("release-assets");
+    let url = format!("sqlite:{}", dir.path().join("asset_size.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let state = AppState::new(db.clone(), Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos.clone())
+        .with_release_assets_dir(assets)
+        .with_release_asset_max_bytes(64)
+        .with_git(Arc::new(CliGitBackend::new()));
+    let cors = build_cors("development", None).expect("cors");
+    let app = router_with_state(state, cors);
+    let (cookie, login_v) = signup_and_login(&app, "a2@ex.com", "bowner").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_repo_with_tag(&app, &db, &repos, &cookie, "bowner", "hello", "v1.0.0").await;
+    let created = rpc_json(
+        &app,
+        r#"{"procedure":"release.create","input":{"owner":"bowner","name":"hello","tag_name":"v1.0.0","title":"One","body":""}}"#,
+        &cookie,
+    )
+    .await;
+    let release_id = created["data"]["id"].as_str().unwrap();
+    let payload = vec![b'x'; 128];
+    let boundary = "----big";
+    let mut body = Vec::new();
+    body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+    body.extend_from_slice(
+        b"Content-Disposition: form-data; name=\"asset\"; filename=\"big.bin\"\r\n\r\n",
+    );
+    body.extend_from_slice(&payload);
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+    let upload = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/api/repos/bowner/hello/releases/{release_id}/assets"
+                ))
+                .header(
+                    "content-type",
+                    format!("multipart/form-data; boundary={boundary}"),
+                )
+                .header("cookie", &cookie)
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(upload.status(), StatusCode::PAYLOAD_TOO_LARGE);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 asset tests green in 15-02"]
 async fn release_asset_replace_on_edit() {
-    assert!(false, "15-02");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let assets = dir.path().join("release-assets");
+    let url = format!("sqlite:{}", dir.path().join("asset_rep.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let state = AppState::new(db.clone(), Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos.clone())
+        .with_release_assets_dir(assets.clone())
+        .with_git(Arc::new(CliGitBackend::new()));
+    let cors = build_cors("development", None).expect("cors");
+    let app = router_with_state(state, cors);
+    let (cookie, login_v) = signup_and_login(&app, "a3@ex.com", "cowner").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_repo_with_tag(&app, &db, &repos, &cookie, "cowner", "hello", "v2.0.0").await;
+    let created = rpc_json(
+        &app,
+        r#"{"procedure":"release.create","input":{"owner":"cowner","name":"hello","tag_name":"v2.0.0","title":"Two","body":""}}"#,
+        &cookie,
+    )
+    .await;
+    let release_id = created["data"]["id"].as_str().unwrap();
+
+    async fn upload(app: &axum::Router, cookie: &str, release_id: &str, data: &[u8]) -> String {
+        let boundary = "----rep";
+        let mut body = Vec::new();
+        body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+        body.extend_from_slice(
+            b"Content-Disposition: form-data; name=\"asset\"; filename=\"same.bin\"\r\n\r\n",
+        );
+        body.extend_from_slice(data);
+        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        let res = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!(
+                        "/api/repos/cowner/hello/releases/{release_id}/assets"
+                    ))
+                    .header(
+                        "content-type",
+                        format!("multipart/form-data; boundary={boundary}"),
+                    )
+                    .header("cookie", cookie)
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = res.into_body().collect().await.unwrap().to_bytes();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        v["asset"]["id"].as_str().unwrap().to_string()
+    }
+
+    let id1 = upload(&app, &cookie, release_id, b"first").await;
+    let id2 = upload(&app, &cookie, release_id, b"second").await;
+    assert_eq!(id1, id2, "same filename replaces in place");
+    let dl = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/releases/assets/{id1}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let bytes = dl.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(&bytes[..], b"second");
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 asset tests green in 15-02"]
 async fn release_asset_draft_and_private_acl() {
-    assert!(false, "15-02");
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let assets = dir.path().join("release-assets");
+    let url = format!("sqlite:{}", dir.path().join("asset_priv.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let state = AppState::new(db.clone(), Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos.clone())
+        .with_release_assets_dir(assets)
+        .with_git(Arc::new(CliGitBackend::new()));
+    let cors = build_cors("development", None).expect("cors");
+    let app = router_with_state(state, cors);
+    let (cookie, login_v) = signup_and_login(&app, "a4@ex.com", "downer").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    setup_repo_with_tag(&app, &db, &repos, &cookie, "downer", "hello", "v3.0.0").await;
+    let created = rpc_json(
+        &app,
+        r#"{"procedure":"release.create","input":{"owner":"downer","name":"hello","tag_name":"v3.0.0","title":"Draft","body":"","draft":true}}"#,
+        &cookie,
+    )
+    .await;
+    let release_id = created["data"]["id"].as_str().unwrap();
+    let boundary = "----d";
+    let mut body = Vec::new();
+    body.extend_from_slice(format!("--{boundary}\r\n").as_bytes());
+    body.extend_from_slice(
+        b"Content-Disposition: form-data; name=\"asset\"; filename=\"secret.bin\"\r\n\r\n",
+    );
+    body.extend_from_slice(b"secret");
+    body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+    let upload = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/api/repos/downer/hello/releases/{release_id}/assets"
+                ))
+                .header(
+                    "content-type",
+                    format!("multipart/form-data; boundary={boundary}"),
+                )
+                .header("cookie", &cookie)
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let ub = upload.into_body().collect().await.unwrap().to_bytes();
+    let uv: serde_json::Value = serde_json::from_slice(&ub).unwrap();
+    let asset_id = uv["asset"]["id"].as_str().unwrap();
+
+    let anon = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/releases/assets/{asset_id}"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(anon.status(), StatusCode::NOT_FOUND);
 }
