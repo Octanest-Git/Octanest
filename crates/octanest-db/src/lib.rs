@@ -664,6 +664,43 @@ impl Database {
         issue_labels::set_issue_assignees(self.require_pool()?, issue_id, user_ids).await
     }
 
+    pub async fn list_issue_reaction_groups(
+        &self,
+        issue_id: &str,
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<issues::ReactionGroupRow>, String> {
+        issues::list_issue_reaction_groups(self.require_pool()?, issue_id, viewer_user_id).await
+    }
+
+    pub async fn list_comment_reaction_groups(
+        &self,
+        comment_id: &str,
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<issues::ReactionGroupRow>, String> {
+        issues::list_comment_reaction_groups(self.require_pool()?, comment_id, viewer_user_id)
+            .await
+    }
+
+    /// Returns `true` if the reaction is now present (inserted), `false` if removed.
+    pub async fn toggle_issue_reaction(
+        &self,
+        issue_id: &str,
+        user_id: &str,
+        content: &str,
+    ) -> Result<bool, String> {
+        issues::toggle_issue_reaction(self.require_pool()?, issue_id, user_id, content).await
+    }
+
+    /// Returns `true` if the reaction is now present (inserted), `false` if removed.
+    pub async fn toggle_comment_reaction(
+        &self,
+        comment_id: &str,
+        user_id: &str,
+        content: &str,
+    ) -> Result<bool, String> {
+        issues::toggle_comment_reaction(self.require_pool()?, comment_id, user_id, content).await
+    }
+
     // --- users ---
 
     pub async fn create_user(

@@ -8,7 +8,8 @@ use octanest_core::{
     DeleteIssueRequest, DeleteIssueResponse, IssueAssigneePublic, IssueCommentPublic,
     IssueCommentRefRequest, IssueCommentsListResponse, IssueHistoryResponse, IssueListRequest,
     IssueListResponse, IssuePublic, IssueRefRequest, IssueRevisionPublic, IssueState,
-    SetIssueAssigneesRequest, SetIssueLabelsRequest, UpdateIssueCommentRequest, UpdateIssueRequest,
+    ReactionGroupPublic, ReactionTarget, SetIssueAssigneesRequest, SetIssueLabelsRequest,
+    ToggleReactionRequest, ToggleReactionResponse, UpdateIssueCommentRequest, UpdateIssueRequest,
 };
 use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
@@ -65,6 +66,22 @@ fn validate_body(body: Option<&str>) -> Result<String, AppError> {
     Ok(stored)
 }
 
+fn viewer_id(ctx: &RpcCtx) -> Option<&str> {
+    ctx.session.as_ref().map(|s| s.user_id.as_str())
+}
+
+fn reaction_groups_to_public(
+    rows: Vec<octanest_db::issues::ReactionGroupRow>,
+) -> Vec<ReactionGroupPublic> {
+    rows.into_iter()
+        .map(|r| ReactionGroupPublic {
+            content: r.content,
+            count: r.count,
+            viewer_has_reacted: r.viewer_has_reacted,
+        })
+        .collect()
+}
+
 async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError> {
     let state = IssueState::parse(&row.state).map_err(|e| {
         tracing::error!(error = %e, "invalid issue state in db");
@@ -94,6 +111,12 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
             display_name: a.display_name,
         })
         .collect();
+    let reaction_rows = ctx
+        .db
+        .list_issue_reaction_groups(&row.id, viewer_id(ctx))
+        .await
+        .map_err(db_err)?;
+    let reactions = reaction_groups_to_public(reaction_rows);
     Ok(IssuePublic {
         id: row.id.clone(),
         repo_id: row.repo_id.clone(),
@@ -109,6 +132,7 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         updated_at: row.updated_at.clone(),
         labels,
         assignees,
+        reactions,
     })
 }
 
@@ -339,6 +363,12 @@ async fn comment_to_public(
         Ok(None) => String::new(),
         Err(e) => return Err(db_err(e)),
     };
+    let reaction_rows = ctx
+        .db
+        .list_comment_reaction_groups(&row.id, viewer_id(ctx))
+        .await
+        .map_err(db_err)?;
+    let reactions = reaction_groups_to_public(reaction_rows);
     Ok(IssueCommentPublic {
         id: row.id.clone(),
         issue_id: row.issue_id.clone(),
@@ -347,6 +377,7 @@ async fn comment_to_public(
         body: row.body.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
+        reactions,
     })
 }
 
@@ -740,4 +771,67 @@ pub async fn assignee_candidates(
     }
     users.sort_by(|a, b| a.username.to_ascii_lowercase().cmp(&b.username.to_ascii_lowercase()));
     Ok(AssigneeCandidatesResponse { users })
+}
+
+/// `issue.reactions.toggle` — Write+; GitHub eight contents on issue|comment (D-ISS-11 / D-ISS-20).
+pub async fn reactions_toggle(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<ToggleReactionResponse, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: ToggleReactionRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid issue.reactions.toggle input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let issue = load_issue_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let content = req.content.as_str();
+
+    let reacted = match req.target {
+        ReactionTarget::Issue => ctx
+            .db
+            .toggle_issue_reaction(&issue.id, &user.id, content)
+            .await
+            .map_err(db_err)?,
+        ReactionTarget::Comment => {
+            let comment_id = req
+                .comment_id
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .ok_or_else(|| {
+                    AppError::new(
+                        "rpc.bad_input",
+                        "commentId is required when target is comment",
+                    )
+                })?;
+            let comment = load_comment_in_issue(ctx, &issue.id, comment_id).await?;
+            ctx.db
+                .toggle_comment_reaction(&comment.id, &user.id, content)
+                .await
+                .map_err(db_err)?
+        }
+    };
+
+    let reaction_rows = match req.target {
+        ReactionTarget::Issue => ctx
+            .db
+            .list_issue_reaction_groups(&issue.id, Some(&user.id))
+            .await
+            .map_err(db_err)?,
+        ReactionTarget::Comment => {
+            let comment_id = req.comment_id.as_deref().unwrap_or("").trim();
+            ctx.db
+                .list_comment_reaction_groups(comment_id, Some(&user.id))
+                .await
+                .map_err(db_err)?
+        }
+    };
+
+    Ok(ToggleReactionResponse {
+        reactions: reaction_groups_to_public(reaction_rows),
+        reacted,
+    })
 }

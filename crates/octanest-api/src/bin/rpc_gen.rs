@@ -702,6 +702,38 @@ export type AssigneeCandidatesResponse = {
   users: IssueAssigneePublic[];
 };
 
+export type ReactionContent =
+  | "+1"
+  | "-1"
+  | "laugh"
+  | "confused"
+  | "heart"
+  | "hooray"
+  | "rocket"
+  | "eyes";
+
+export type ReactionTarget = "issue" | "comment";
+
+export type ToggleReactionRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  target: ReactionTarget;
+  commentId?: string | null;
+  content: ReactionContent;
+};
+
+export type ReactionGroupPublic = {
+  content: string;
+  count: number;
+  viewerHasReacted: boolean;
+};
+
+export type ToggleReactionResponse = {
+  reactions: ReactionGroupPublic[];
+  reacted: boolean;
+};
+
 export type IssuePublic = {
   id: string;
   repo_id: string;
@@ -717,6 +749,7 @@ export type IssuePublic = {
   updated_at: string;
   labels?: LabelPublic[];
   assignees?: IssueAssigneePublic[];
+  reactions?: ReactionGroupPublic[];
 };
 
 export type CreateIssueRequest = {
@@ -790,6 +823,7 @@ export type IssueCommentPublic = {
   body: string;
   created_at: string;
   updated_at: string;
+  reactions?: ReactionGroupPublic[];
 };
 
 export type CreateIssueCommentRequest = {
@@ -1006,6 +1040,10 @@ export function createClient(opts: CreateClientOptions) {
       },
       assigneeCandidates: (input: AssigneeCandidatesRequest) =>
         rpcCall<AssigneeCandidatesResponse>(opts, "issue.assigneeCandidates", input),
+      reactions: {
+        toggle: (input: ToggleReactionRequest) =>
+          rpcCall<ToggleReactionResponse>(opts, "issue.reactions.toggle", input),
+      },
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>
@@ -1668,6 +1706,17 @@ export function issueAssigneeCandidatesQueryOptions(
     ] as const,
     queryFn: async () => {
       const res = await client.issue.assigneeCandidates(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function issueReactionsToggleMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["issue", "reactions", "toggle"] as const,
+    mutationFn: async (input: ToggleReactionRequest) => {
+      const res = await client.issue.reactions.toggle(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

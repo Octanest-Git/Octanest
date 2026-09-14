@@ -1309,3 +1309,420 @@ pub async fn list_comment_revisions(
         }
     }
 }
+
+/// Aggregated reaction group for an issue or comment (D-ISS-11).
+#[derive(Debug, Clone)]
+pub struct ReactionGroupRow {
+    pub content: String,
+    pub count: i64,
+    pub viewer_has_reacted: bool,
+}
+
+macro_rules! map_reaction_group_any {
+    ($row:expr) => {{
+        let row = $row;
+        ReactionGroupRow {
+            content: row
+                .try_get("content")
+                .map_err(|e| format!("reaction group: {e}"))?,
+            count: {
+                let c: i64 = row
+                    .try_get("count")
+                    .or_else(|_| {
+                        row.try_get::<i32, _>("count")
+                            .map(|v| i64::from(v))
+                    })
+                    .map_err(|e| format!("reaction group: {e}"))?;
+                c
+            },
+            viewer_has_reacted: {
+                let hit: i64 = row
+                    .try_get("viewer_hit")
+                    .or_else(|_| {
+                        row.try_get::<i32, _>("viewer_hit")
+                            .map(|v| i64::from(v))
+                    })
+                    .or_else(|_| {
+                        row.try_get::<bool, _>("viewer_hit")
+                            .map(|v| if v { 1 } else { 0 })
+                    })
+                    .map_err(|e| format!("reaction group: {e}"))?;
+                hit > 0
+            },
+        }
+    }};
+}
+
+/// List aggregated reaction groups for an issue.
+pub async fn list_issue_reaction_groups(
+    pool: &DbPool,
+    issue_id: &str,
+    viewer_user_id: Option<&str>,
+) -> Result<Vec<ReactionGroupRow>, String> {
+    let viewer = viewer_user_id.unwrap_or("");
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*)::bigint AS count,
+                          COALESCE(SUM(CASE WHEN user_id = $2 THEN 1 ELSE 0 END), 0)::bigint AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id = $1
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(issue_id)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id = ?
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(viewer)
+            .bind(issue_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ?2 THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id = ?1
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(issue_id)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+/// List aggregated reaction groups for a comment.
+pub async fn list_comment_reaction_groups(
+    pool: &DbPool,
+    comment_id: &str,
+    viewer_user_id: Option<&str>,
+) -> Result<Vec<ReactionGroupRow>, String> {
+    let viewer = viewer_user_id.unwrap_or("");
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*)::bigint AS count,
+                          COALESCE(SUM(CASE WHEN user_id = $2 THEN 1 ELSE 0 END), 0)::bigint AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id = $1
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(comment_id)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id = ?
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(viewer)
+            .bind(comment_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ?2 THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id = ?1
+                   GROUP BY content
+                   ORDER BY content ASC"#,
+            )
+            .bind(comment_id)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_reaction_group_any!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+/// Toggle an issue reaction for a user. Returns `true` if now reacted (inserted).
+pub async fn toggle_issue_reaction(
+    pool: &DbPool,
+    issue_id: &str,
+    user_id: &str,
+    content: &str,
+) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM issue_reactions WHERE issue_id = $1 AND user_id = $2 AND content = $3",
+            )
+            .bind(issue_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find issue reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM issue_reactions WHERE issue_id = $1 AND user_id = $2 AND content = $3",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO issue_reactions (issue_id, user_id, content) VALUES ($1, $2, $3)",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert issue reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+        DbPool::MySql(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM issue_reactions WHERE issue_id = ? AND user_id = ? AND content = ?",
+            )
+            .bind(issue_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find issue reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM issue_reactions WHERE issue_id = ? AND user_id = ? AND content = ?",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO issue_reactions (issue_id, user_id, content) VALUES (?, ?, ?)",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert issue reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM issue_reactions WHERE issue_id = ?1 AND user_id = ?2 AND content = ?3",
+            )
+            .bind(issue_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find issue reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM issue_reactions WHERE issue_id = ?1 AND user_id = ?2 AND content = ?3",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete issue reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO issue_reactions (issue_id, user_id, content) VALUES (?1, ?2, ?3)",
+                )
+                .bind(issue_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert issue reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+    }
+}
+
+/// Toggle a comment reaction for a user. Returns `true` if now reacted (inserted).
+pub async fn toggle_comment_reaction(
+    pool: &DbPool,
+    comment_id: &str,
+    user_id: &str,
+    content: &str,
+) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM comment_reactions WHERE comment_id = $1 AND user_id = $2 AND content = $3",
+            )
+            .bind(comment_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find comment reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM comment_reactions WHERE comment_id = $1 AND user_id = $2 AND content = $3",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete comment reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO comment_reactions (comment_id, user_id, content) VALUES ($1, $2, $3)",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert comment reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+        DbPool::MySql(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND content = ?",
+            )
+            .bind(comment_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find comment reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND content = ?",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete comment reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO comment_reactions (comment_id, user_id, content) VALUES (?, ?, ?)",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert comment reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let existing = sqlx::query(
+                "SELECT 1 AS ok FROM comment_reactions WHERE comment_id = ?1 AND user_id = ?2 AND content = ?3",
+            )
+            .bind(comment_id)
+            .bind(user_id)
+            .bind(content)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| format!("find comment reaction failed: {e}"))?;
+            if existing.is_some() {
+                sqlx::query(
+                    "DELETE FROM comment_reactions WHERE comment_id = ?1 AND user_id = ?2 AND content = ?3",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete comment reaction failed: {e}"))?;
+                Ok(false)
+            } else {
+                sqlx::query(
+                    "INSERT INTO comment_reactions (comment_id, user_id, content) VALUES (?1, ?2, ?3)",
+                )
+                .bind(comment_id)
+                .bind(user_id)
+                .bind(content)
+                .execute(p)
+                .await
+                .map_err(|e| format!("insert comment reaction failed: {e}"))?;
+                Ok(true)
+            }
+        }
+    }
+}

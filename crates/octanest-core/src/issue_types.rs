@@ -132,6 +132,9 @@ pub struct IssuePublic {
     pub labels: Vec<LabelPublic>,
     #[serde(default)]
     pub assignees: Vec<IssueAssigneePublic>,
+    /// Aggregated reaction counts (D-ISS-11).
+    #[serde(default)]
+    pub reactions: Vec<ReactionGroupPublic>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -343,6 +346,43 @@ pub struct IssueListResponse {
     pub total: i64,
 }
 
+/// Reaction target for `issue.reactions.toggle` (D-ISS-11).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReactionTarget {
+    Issue,
+    Comment,
+}
+
+/// Toggle a GitHub-eight reaction on an issue or comment (Write+ / D-ISS-20).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToggleReactionRequest {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    pub target: ReactionTarget,
+    #[serde(default, rename = "commentId", alias = "comment_id")]
+    pub comment_id: Option<String>,
+    pub content: ReactionContent,
+}
+
+/// Aggregated count for one reaction content value.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReactionGroupPublic {
+    pub content: String,
+    pub count: i64,
+    #[serde(rename = "viewerHasReacted", alias = "viewer_has_reacted")]
+    pub viewer_has_reacted: bool,
+}
+
+/// Result of `issue.reactions.toggle`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToggleReactionResponse {
+    pub reactions: Vec<ReactionGroupPublic>,
+    /// Whether the caller now has this content reaction after the toggle.
+    pub reacted: bool,
+}
+
 /// Comment on an issue (ISS-02).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IssueCommentPublic {
@@ -353,6 +393,9 @@ pub struct IssueCommentPublic {
     pub body: String,
     pub created_at: String,
     pub updated_at: String,
+    /// Aggregated reaction counts (D-ISS-11).
+    #[serde(default)]
+    pub reactions: Vec<ReactionGroupPublic>,
 }
 
 /// Create comment on an issue (Write+).
