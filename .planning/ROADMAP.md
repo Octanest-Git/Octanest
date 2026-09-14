@@ -631,14 +631,14 @@ Plans:
   3. Registry packages respect the same auth/visibility rules as their owning repo/org
   4. User can list and delete package versions they are permitted to manage
 
-**Plans:** 3/13 plans executed
+**Plans:** 4/13 plans executed
 
 Plans:
 
 - [x] 20-00-PLAN.md — Wave 0 Rust RED stubs (oci/npm/generic/acl/rpc/dialect)
 - [x] 20-01-PLAN.md — Wave 0 web Vitest stubs + smoke-packages
 - [x] 20-02-PLAN.md — Schema, PACKAGES_DIR, Traefik/Vite, reserved slugs
-- [ ] 20-03-PLAN.md — CA blob store + package ACL + PAT package scopes
+- [x] 20-03-PLAN.md — CA blob store + package ACL + PAT package scopes
 - [ ] 20-04-PLAN.md — Tracer: generic PUT/GET/DELETE + mount /v2|/npm|/generic
 - [ ] 20-05-PLAN.md — OCI Distribution Spec push/pull/tags/delete + Bearer realm
 - [ ] 20-06-PLAN.md — npm publish/install packument + tarball
@@ -707,7 +707,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |
-| 20. Packages Registry | 3/13 | In Progress|  |
+| 20. Packages Registry | 4/13 | In Progress|  |
 | 21. Social & Explore | 0/TBD | Not started | - |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 
