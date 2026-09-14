@@ -462,7 +462,23 @@ Plans:
   2. User can comment on issues and assign labels and assignees
   3. User can link issues and PRs by reference
 
-**Plans**: TBD
+**Plans**: 13 plans
+
+Plans:
+- [ ] 11-00-PLAN.md — Wave 0 Rust Nyquist stubs (issue_*/dialect/factory_reset)
+- [ ] 11-01-PLAN.md — Wave 0 Vitest stubs (Issues UI + markdown.issues)
+- [ ] 11-02-PLAN.md — Schema door: 0011_issues + counters + issue_types
+- [ ] 11-03-PLAN.md — Tracer: create/get/list + Issues tab + list/new/detail
+- [ ] 11-04-PLAN.md — Lifecycle: edit/close/reopen/history/Admin delete
+- [ ] 11-05-PLAN.md — Comments + Write|Preview + comment history
+- [ ] 11-06-PLAN.md — Org/repo labels defs + issue assignment
+- [ ] 11-07-PLAN.md — Multi-assignees + Read+ eligibility
+- [ ] 11-08-PLAN.md — GitHub eight emoji reactions
+- [ ] 11-09-PLAN.md — Linked PR stubs + manual link control
+- [ ] 11-10-PLAN.md — remark-github #N / owner/repo#N autolink
+- [ ] 11-11-PLAN.md — List filters + Open/Closed/All + offset pages
+- [ ] 11-12-PLAN.md — Factory reset + docs + VALIDATION phase gate
+
 **UI hint**: yes
 
 ### Phase 12: Pull Requests
