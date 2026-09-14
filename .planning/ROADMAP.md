@@ -521,7 +521,7 @@ Plans:
   1. Operator can configure LFS storage on the filesystem (volume-backed) for the instance
   2. User can push and fetch Git LFS objects for a repository
 
-**Plans**: 8/13 plans executed
+**Plans**: 9/13 plans executed
 
 Plans:
 
@@ -533,7 +533,7 @@ Plans:
 - [x] 14-05-PLAN.md — OID dedup/refcount + verify + Range GET
 - [x] 14-06-PLAN.md — LFS GC job + factory reset wipe LFS_DIR
 - [x] 14-07-PLAN.md — Compose OCTANEST_LFS_DIR + operator docs
-- [ ] 14-08-PLAN.md — repo.lfs / admin.lfs RPC + rpc-gen
+- [x] 14-08-PLAN.md — repo.lfs / admin.lfs RPC + rpc-gen
 - [ ] 14-09-PLAN.md — Repo Settings LFS toggle + usage breakdown
 - [ ] 14-10-PLAN.md — Admin quotas + instance usage UI
 - [ ] 14-11-PLAN.md — Pointer badge, Download, LFS browser
@@ -701,7 +701,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 11. Issues | 13/13 | In Progress|  |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
-| 14. Git LFS | 8/13 | In Progress|  |
+| 14. Git LFS | 9/13 | In Progress|  |
 | 15. Releases & Transfer | 0/7 | Not started | - |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |

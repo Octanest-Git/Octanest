@@ -5,16 +5,16 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 14-07-PLAN.md
-last_updated: "2026-09-14T17:37:36.219Z"
+stopped_at: Completed 14-08-PLAN.md
+last_updated: "2026-09-14T17:45:58.170Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: a876e5345ca8b88379534d080a91086913cc1751
+state_head: 832016ca2a2c0a0f0e0b5305bf777fe106d9e624
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 122
+  completed_plans: 123
 milestone_name: milestone
 ---
 
@@ -138,6 +138,7 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 14 P05 | 25min | 2 tasks | 4 files |
 | Phase 14 P06 | 30min | 2 tasks | 13 files |
 | Phase 14 P07 | 2min | 2 tasks | 5 files |
+| Phase 14 P08 | 12min | 2 tasks | 8 files |
 
 # Project State
 
@@ -499,6 +500,7 @@ Recent decisions affecting current work:
 - [Phase 11]: LFS quotas: logical per-repo/owner; Admin override via instance_lfs_settings
 - [Phase 11]: Document SSH remotes still use HTTPS LFS; no LFS-over-SSH claim
 - [Phase 11]: Reuse existing Traefik .git PathRegexp for info/lfs
+- [Phase 11]: repo.lfs.download returns soft-capped base64; oversized → lfs.too_large_for_rpc
 
 ### Pending Todos
 
@@ -520,8 +522,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T17:37:36.102Z
-Stopped at: Completed 14-07-PLAN.md
+Last session: 2026-09-14T17:45:58.055Z
+Stopped at: Completed 14-08-PLAN.md
 Resume file: None
  3min | 2 tasks | 3 files |
 | Phase 10 P00 | 4min | 2 tasks | 7 files |
