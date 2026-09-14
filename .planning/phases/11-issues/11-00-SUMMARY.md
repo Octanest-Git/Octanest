@@ -20,7 +20,7 @@ affects:
 actuals:
   tokens: 4465
   tasks: 2
-  commits: 5
+  commits: 7
 
 plan_head_before: 40d6cd5cee78211cc51e66e1b6c9170910c90fc9
 
@@ -146,7 +146,7 @@ Each task was committed atomically:
 1. **Task 1: Issue domain Wave 0 API + dialect stubs** - `007956d` (test)
 2. **Task 2: Private ACL + factory_reset issue stub names** - `035208d` (test)
 
-**Plan metadata:** `eb41dc6` (docs: complete plan)
+**Plan metadata:** `eb41dc6` … `fdc8b59`+ (docs: complete plan)
 
 ## Files Created/Modified
 
