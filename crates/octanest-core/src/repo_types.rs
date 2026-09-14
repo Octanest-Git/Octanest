@@ -381,6 +381,32 @@ pub struct RepoSoftDeleteResponse {
     pub name: String,
 }
 
+/// Effective instance LFS limits (Admin override or env default) — D-LFS-13.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsSettingsPublic {
+    pub max_object_bytes: i64,
+    pub quota_repo_bytes: i64,
+    pub quota_user_bytes: i64,
+    /// True when DB override is set for each field.
+    pub max_object_bytes_overridden: bool,
+    pub quota_repo_bytes_overridden: bool,
+    pub quota_user_bytes_overridden: bool,
+}
+
+/// `admin.lfs.updateSettings` — null fields clear override (revert to env).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsUpdateSettingsRequest {
+    #[serde(default)]
+    pub max_object_bytes: Option<i64>,
+    #[serde(default)]
+    pub quota_repo_bytes: Option<i64>,
+    #[serde(default)]
+    pub quota_user_bytes: Option<i64>,
+    /// When true, clear all overrides (use env defaults).
+    #[serde(default)]
+    pub clear_overrides: bool,
+}
+
 /// Public collaborator row — no email (ORG-03 / D-ORG-02c).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoCollaboratorPublic {

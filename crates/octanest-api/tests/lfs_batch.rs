@@ -653,9 +653,200 @@ async fn lfs_enable_disabled_repo_rejects_batch() {
     );
 }
 
-/// Quota stub remains for 14-04.
+/// Quota / max-size rejects with clear LFS errors (D-LFS-12/14).
 #[tokio::test]
-async fn lfs_quota_over_quota_upload_rejected() {}
+async fn lfs_quota_over_quota_upload_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_quota.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    // Tiny repo quota via Admin override storage.
+    db.update_lfs_settings(Some(1024), Some(32), Some(1024 * 1024))
+        .await
+        .expect("set quotas");
+    let app = test_app(db.clone(), repos, lfs).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "q@ex.com", "qown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    verify_user(&db, user_id).await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"blobs","visibility":"public","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    db.set_repo_lfs_enabled(create_v["data"]["id"].as_str().unwrap(), true)
+        .await
+        .unwrap();
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"lfs","scopes":["repo"]}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().unwrap();
+
+    // Over max object (1024).
+    let big = vec![0u8; 2000];
+    let oid = sha256_hex(&big);
+    let body = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid, "size": big.len() }]
+    });
+    let req = Request::builder()
+        .method("POST")
+        .uri("/qown/blobs.git/info/lfs/objects/batch")
+        .header(header::AUTHORIZATION, basic_header("git", token))
+        .header(header::ACCEPT, "application/vnd.git-lfs+json")
+        .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+        .body(Body::from(body.to_string()))
+        .unwrap();
+    let res = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["objects"][0]["error"]["code"], 422);
+
+    // Within max but over repo quota (32).
+    let mid = b"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // 33 bytes
+    let oid2 = sha256_hex(mid);
+    let body2 = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid2, "size": mid.len() }]
+    });
+    let req2 = Request::builder()
+        .method("POST")
+        .uri("/qown/blobs.git/info/lfs/objects/batch")
+        .header(header::AUTHORIZATION, basic_header("git", token))
+        .header(header::ACCEPT, "application/vnd.git-lfs+json")
+        .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+        .body(Body::from(body2.to_string()))
+        .unwrap();
+    let res2 = app.oneshot(req2).await.unwrap();
+    assert_eq!(res2.status(), StatusCode::OK);
+    let bytes2 = res2.into_body().collect().await.unwrap().to_bytes();
+    let v2: serde_json::Value = serde_json::from_slice(&bytes2).unwrap();
+    assert_eq!(
+        v2["objects"][0]["error"]["code"], 507,
+        "repo quota — {v2}"
+    );
+}
+
+/// Admin override RPC affects subsequent upload reject threshold.
+#[tokio::test]
+async fn lfs_quota_admin_override_affects_enforcement() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_admin_q.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let hash = octanest_api::auth::hash_password_str("password1").expect("hash");
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    db.create_user(
+        &admin_id,
+        "adm@ex.com",
+        "admlfs",
+        Some(&hash),
+        "Admin",
+        "",
+        None,
+        octanest_core::Role::SysAdmin,
+    )
+    .await
+    .expect("create admin");
+
+    let app = test_app(db.clone(), repos, lfs).await;
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"adm@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&login);
+
+    let upd = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"admin.lfs.updateSettings","input":{"max_object_bytes":64,"quota_repo_bytes":10000,"quota_user_bytes":100000}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(upd.status(), StatusCode::OK, "admin update");
+    let upd_bytes = upd.into_body().collect().await.unwrap().to_bytes();
+    let upd_v: serde_json::Value = serde_json::from_slice(&upd_bytes).unwrap();
+    assert_eq!(upd_v["data"]["max_object_bytes"], 64);
+    assert_eq!(upd_v["data"]["max_object_bytes_overridden"], true);
+
+    verify_user(&db, &admin_id).await;
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"lim","visibility":"public","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    db.set_repo_lfs_enabled(create_v["data"]["id"].as_str().unwrap(), true)
+        .await
+        .unwrap();
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createClassic","input":{"name":"lfs","scopes":["repo"]}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().unwrap();
+
+    let payload = vec![1u8; 100];
+    let oid = sha256_hex(&payload);
+    let body = serde_json::json!({
+        "operation": "upload",
+        "transfers": ["basic"],
+        "objects": [{ "oid": oid, "size": payload.len() }]
+    });
+    let req = Request::builder()
+        .method("POST")
+        .uri("/admlfs/lim.git/info/lfs/objects/batch")
+        .header(header::AUTHORIZATION, basic_header("git", token))
+        .header(header::ACCEPT, "application/vnd.git-lfs+json")
+        .header(header::CONTENT_TYPE, "application/vnd.git-lfs+json")
+        .body(Body::from(body.to_string()))
+        .unwrap();
+    let res = app.oneshot(req).await.unwrap();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["objects"][0]["error"]["code"], 422, "{v}");
+}
 
 /// Dedup stub remains for 14-05.
 #[tokio::test]

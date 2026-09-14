@@ -1171,8 +1171,48 @@ impl Database {
         lfs::link_lfs_object(self.require_pool()?, repository_id, oid).await
     }
 
+    pub async fn link_lfs_object_as(
+        &self,
+        repository_id: &str,
+        oid: &str,
+        uploaded_by: Option<&str>,
+    ) -> Result<(), String> {
+        lfs::link_lfs_object_as(self.require_pool()?, repository_id, oid, uploaded_by).await
+    }
+
     pub async fn has_lfs_link(&self, repository_id: &str, oid: &str) -> Result<bool, String> {
         lfs::has_lfs_link(self.require_pool()?, repository_id, oid).await
+    }
+
+    pub async fn get_lfs_settings(&self) -> Result<lfs::LfsSettingsRow, String> {
+        lfs::get_lfs_settings(self.require_pool()?).await
+    }
+
+    pub async fn update_lfs_settings(
+        &self,
+        max_object_bytes: Option<i64>,
+        quota_repo_bytes: Option<i64>,
+        quota_user_bytes: Option<i64>,
+    ) -> Result<lfs::LfsSettingsRow, String> {
+        lfs::update_lfs_settings(
+            self.require_pool()?,
+            max_object_bytes,
+            quota_repo_bytes,
+            quota_user_bytes,
+        )
+        .await
+    }
+
+    pub async fn lfs_repo_logical_bytes(&self, repository_id: &str) -> Result<i64, String> {
+        lfs::repo_logical_bytes(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn lfs_owner_logical_bytes(&self, owner_id: &str) -> Result<i64, String> {
+        lfs::owner_logical_bytes(self.require_pool()?, owner_id).await
+    }
+
+    pub async fn lfs_physical_bytes(&self) -> Result<i64, String> {
+        lfs::physical_bytes(self.require_pool()?).await
     }
 
     pub async fn factory_reset_instance(&self) -> Result<(), String> {

@@ -2,4 +2,5 @@
 
 pub mod auth;
 pub mod batch;
+pub mod quota;
 pub mod store;

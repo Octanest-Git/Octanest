@@ -92,6 +92,15 @@ where
     Ok(written)
 }
 
+pub async fn delete_object(lfs_dir: &Path, oid: &str) -> Result<(), String> {
+    let path = shard_path(lfs_dir, oid)?;
+    match tokio::fs::remove_file(&path).await {
+        Ok(()) => Ok(()),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(format!("delete object: {e}")),
+    }
+}
+
 pub async fn read_object(lfs_dir: &Path, oid: &str) -> Result<Vec<u8>, String> {
     let path = shard_path(lfs_dir, oid)?;
     tokio::fs::read(&path)

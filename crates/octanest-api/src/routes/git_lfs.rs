@@ -15,8 +15,9 @@ use crate::lfs::batch::{
     BatchAction, BatchActions, BatchObjectOut, BatchRequest, BatchResponse, LfsErrorBody,
     LfsObjectError,
 };
+use crate::lfs::quota;
 use crate::lfs::store;
-use crate::repo::{is_private_visibility, resolve_owner_slug, OwnerRef};
+use crate::repo::{resolve_owner_slug, OwnerRef};
 
 const LFS_JSON: &str = "application/vnd.git-lfs+json";
 
@@ -184,6 +185,26 @@ pub async fn batch(
                     error: None,
                 });
             } else {
+                if let Err(rej) = quota::check_upload(
+                    &state,
+                    &resolved.row.id,
+                    resolved.owner.id(),
+                    obj.size,
+                    linked,
+                )
+                .await
+                {
+                    objects.push(BatchObjectOut {
+                        oid: obj.oid,
+                        size: obj.size,
+                        actions: None,
+                        error: Some(LfsObjectError {
+                            code: rej.object_code(),
+                            message: rej.object_message(),
+                        }),
+                    });
+                    continue;
+                }
                 let href = object_href(&owner, &repo_git, &obj.oid);
                 objects.push(BatchObjectOut {
                     oid: obj.oid,
@@ -274,6 +295,23 @@ pub async fn put_object(
             .into_response();
     }
 
+    let content_len = headers
+        .get(header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse::<i64>().ok());
+    let linked = state
+        .db
+        .has_lfs_link(&resolved.row.id, &oid)
+        .await
+        .unwrap_or(false);
+    if let Some(size) = content_len {
+        if let Err(rej) =
+            quota::check_upload(&state, &resolved.row.id, resolved.owner.id(), size, linked).await
+        {
+            return rej.into_response();
+        }
+    }
+
     let stream = body.into_data_stream();
     let size = match store::put_stream(&state.lfs_dir, &oid, None, stream).await {
         Ok(n) => n,
@@ -290,11 +328,34 @@ pub async fn put_object(
         }
     };
 
+    if let Err(rej) = quota::check_upload(
+        &state,
+        &resolved.row.id,
+        resolved.owner.id(),
+        size as i64,
+        linked,
+    )
+    .await
+    {
+        let _ = store::delete_object(&state.lfs_dir, &oid).await;
+        return rej.into_response();
+    }
+
+    let uploader = crate::lfs::auth::authenticate_pat(&state, &headers)
+        .await
+        .ok()
+        .flatten()
+        .map(|a| a.owner.id);
+
     if let Err(e) = state.db.upsert_lfs_object(&oid, size as i64).await {
         tracing::error!(error = %e, "upsert_lfs_object");
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
-    if let Err(e) = state.db.link_lfs_object(&resolved.row.id, &oid).await {
+    if let Err(e) = state
+        .db
+        .link_lfs_object_as(&resolved.row.id, &oid, uploader.as_deref())
+        .await
+    {
         tracing::error!(error = %e, "link_lfs_object");
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
@@ -322,7 +383,6 @@ pub async fn get_object(
     if let Err(r) = authorize_lfs(&state, &headers, &resolved.row, &resolved.owner, false).await {
         return r;
     }
-    let _ = is_private_visibility(&resolved.row.visibility);
 
     if store::validate_oid(&oid).is_err() {
         return not_found_lfs("Object does not exist");

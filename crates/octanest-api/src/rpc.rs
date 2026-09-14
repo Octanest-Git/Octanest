@@ -218,6 +218,14 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
         },
+        "admin.lfs.getSettings" => match admin::lfs_get_settings(ctx).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.lfs.updateSettings" => match admin::lfs_update_settings(ctx, req.input).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
         "admin.instance.factory_reset" => match admin::factory_reset(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
