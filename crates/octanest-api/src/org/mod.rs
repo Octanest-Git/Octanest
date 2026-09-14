@@ -1,7 +1,12 @@
 //! Organization RPC handlers (ORG-01 / ORG-02 / D-ORG-01 / D-ORG-02a / D-ORG-02b).
 
+mod invites;
 mod members;
 
+pub use invites::{
+    accept as invites_accept, create as invites_create, list as invites_list,
+    revoke as invites_revoke,
+};
 pub use members::{add as members_add, list as members_list, remove as members_remove, update_role as members_update_role};
 
 use octanest_core::{

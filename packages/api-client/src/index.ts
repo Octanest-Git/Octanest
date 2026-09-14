@@ -453,6 +453,41 @@ export type OrgMembersRemoveRequest = {
   user_id: string;
 };
 
+export type OrgInvitePublic = {
+  id: string;
+  email: string;
+  role: OrgRole;
+  expires_at: string;
+  invited_by: string;
+  created_at: string;
+};
+
+export type OrgInvitesListResponse = {
+  invites: OrgInvitePublic[];
+};
+
+export type OrgInvitesCreateRequest = {
+  slug: string;
+  email: string;
+  role: OrgRole;
+};
+
+export type OrgInvitesRevokeRequest = {
+  slug: string;
+  invite_id: string;
+};
+
+export type OrgInvitesAcceptRequest = {
+  token: string;
+  username?: string | null;
+  password?: string | null;
+};
+
+export type OrgInvitesAcceptResponse = {
+  org: OrgPublic;
+  member: OrgMemberPublic;
+};
+
 /** Classic PAT string prefix (octanest_pat_). */
 export const CLASSIC_PAT_PREFIX = "octanest_pat_" as const;
 /** Fine-grained PAT string prefix (octanest_fg_). */
@@ -609,6 +644,16 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<OrgMemberPublic>(opts, "org.members.updateRole", input),
         remove: (input: OrgMembersRemoveRequest) =>
           rpcCall<{ ok: boolean }>(opts, "org.members.remove", input),
+      },
+      invites: {
+        create: (input: OrgInvitesCreateRequest) =>
+          rpcCall<OrgInvitePublic>(opts, "org.invites.create", input),
+        list: (input: OrgSlugRequest) =>
+          rpcCall<OrgInvitesListResponse>(opts, "org.invites.list", input),
+        revoke: (input: OrgInvitesRevokeRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "org.invites.revoke", input),
+        accept: (input: OrgInvitesAcceptRequest) =>
+          rpcCall<OrgInvitesAcceptResponse>(opts, "org.invites.accept", input),
       },
     },
     pat: {

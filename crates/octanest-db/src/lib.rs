@@ -5,6 +5,7 @@ pub mod auth_settings;
 pub mod dialect;
 pub mod email_tokens;
 pub mod migrate;
+pub mod org_invites;
 pub mod org_members;
 pub mod organizations;
 pub mod pats;
@@ -18,6 +19,7 @@ pub mod users;
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
+pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use pats::PatRow;
@@ -218,6 +220,81 @@ impl Database {
 
     pub async fn list_orgs_for_user(&self, user_id: &str) -> Result<Vec<OrgMineRow>, String> {
         org_members::list_orgs_for_user(self.require_pool()?, user_id).await
+    }
+
+    // --- organization invites ---
+
+    pub async fn insert_org_invite(
+        &self,
+        id: &str,
+        org_id: &str,
+        email: &str,
+        role: &str,
+        token_hash: &str,
+        expires_at: &str,
+        invited_by: &str,
+    ) -> Result<OrgInviteRow, String> {
+        org_invites::insert_invite(
+            self.require_pool()?,
+            id,
+            org_id,
+            email,
+            role,
+            token_hash,
+            expires_at,
+            invited_by,
+        )
+        .await
+    }
+
+    pub async fn find_org_invite_by_id(&self, id: &str) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn find_org_invite_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_pending_org_invite_by_org_email(
+        &self,
+        org_id: &str,
+        email: &str,
+    ) -> Result<Option<OrgInviteRow>, String> {
+        org_invites::find_pending_by_org_email(self.require_pool()?, org_id, email).await
+    }
+
+    pub async fn list_pending_org_invites(
+        &self,
+        org_id: &str,
+    ) -> Result<Vec<OrgInviteRow>, String> {
+        org_invites::list_pending(self.require_pool()?, org_id).await
+    }
+
+    pub async fn revoke_org_invite(&self, id: &str, revoked_at: &str) -> Result<(), String> {
+        org_invites::revoke(self.require_pool()?, id, revoked_at).await
+    }
+
+    pub async fn accept_org_invite(&self, id: &str, accepted_at: &str) -> Result<(), String> {
+        org_invites::mark_accepted(self.require_pool()?, id, accepted_at).await
+    }
+
+    pub async fn count_org_invites_created_by_since(
+        &self,
+        invited_by: &str,
+        since: &str,
+    ) -> Result<i64, String> {
+        org_invites::count_created_by_since(self.require_pool()?, invited_by, since).await
+    }
+
+    pub async fn set_org_invite_expires_at(
+        &self,
+        id: &str,
+        expires_at: &str,
+    ) -> Result<(), String> {
+        org_invites::set_expires_at(self.require_pool()?, id, expires_at).await
     }
 
     pub async fn find_repo_collaborator(

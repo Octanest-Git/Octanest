@@ -247,6 +247,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "org.invites.create" => match org::invites_create(ctx, req.input).await {
+            Ok(invite) => RpcResponse::ok(invite),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.list" => match org::invites_list(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.revoke" => match org::invites_revoke(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "org.invites.accept" => match org::invites_accept(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.listMine" => match repo::list_mine(ctx).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),

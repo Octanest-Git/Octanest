@@ -205,3 +205,52 @@ pub struct OrgMembersRemoveRequest {
     pub slug: String,
     pub user_id: String,
 }
+
+/// Public pending invite — never includes token or token_hash (ORG-01 / T-10-11).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitePublic {
+    pub id: String,
+    pub email: String,
+    pub role: OrgRole,
+    pub expires_at: String,
+    pub invited_by: String,
+    pub created_at: String,
+}
+
+/// `org.invites.list` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitesListResponse {
+    pub invites: Vec<OrgInvitePublic>,
+}
+
+/// `org.invites.create`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitesCreateRequest {
+    pub slug: String,
+    pub email: String,
+    pub role: OrgRole,
+}
+
+/// `org.invites.revoke`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitesRevokeRequest {
+    pub slug: String,
+    pub invite_id: String,
+}
+
+/// `org.invites.accept` — token from email link; username/password when provisioning (A2).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitesAcceptRequest {
+    pub token: String,
+    #[serde(default)]
+    pub username: Option<String>,
+    #[serde(default)]
+    pub password: Option<String>,
+}
+
+/// `org.invites.accept` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrgInvitesAcceptResponse {
+    pub org: OrgPublic,
+    pub member: OrgMemberPublic,
+}

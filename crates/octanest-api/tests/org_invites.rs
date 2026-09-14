@@ -143,6 +143,13 @@ fn sha256_hex(data: &[u8]) -> String {
     out
 }
 
+
+fn invite_email(sent: &[OutboundEmail]) -> &OutboundEmail {
+    sent.iter()
+        .find(|m| m.text.contains("/invites/"))
+        .unwrap_or_else(|| panic!("no invite email in {} messages", sent.len()))
+}
+
 fn extract_invite_token(text: &str) -> String {
     let marker = "/invites/";
     let after = text
@@ -205,14 +212,9 @@ async fn org_invites_create() {
     );
 
     let sent = recorder.sent.lock().expect("lock");
-    assert_eq!(sent.len(), 1, "expected invite email");
-    assert_eq!(sent[0].to, "newbie@ex.com");
-    assert!(
-        sent[0].text.contains("/invites/"),
-        "invite email must include accept link: {}",
-        sent[0].text
-    );
-    let token = extract_invite_token(&sent[0].text);
+    let invite = invite_email(&sent);
+    assert_eq!(invite.to, "newbie@ex.com");
+    let token = extract_invite_token(&invite.text);
     assert_eq!(token.len(), 64, "32-byte hex magic expected");
 }
 
@@ -331,8 +333,7 @@ async fn org_invites_accept_closed_signup_creates_or_links_account() {
 
     let token = {
         let sent = recorder.sent.lock().expect("lock");
-        assert_eq!(sent.len(), 1);
-        extract_invite_token(&sent[0].text)
+        extract_invite_token(&invite_email(&sent).text)
     };
 
     close_signup(&db).await;
@@ -414,11 +415,64 @@ async fn org_invites_token_hash_at_rest() {
 
     let token = {
         let sent = recorder.sent.lock().expect("lock");
-        extract_invite_token(&sent[0].text)
+        extract_invite_token(&invite_email(&sent).text)
     };
-    // Stored hash must differ from plaintext magic (verified via accept lookup path).
     assert_eq!(token.len(), 64);
-    let _ = sha256_hex(token.as_bytes());
+    let expected_hash = sha256_hex(token.as_bytes());
+    let row = db
+        .find_org_invite_by_id(create_v["data"]["id"].as_str().expect("id"))
+        .await
+        .expect("find invite")
+        .expect("invite row");
+    assert_eq!(row.token_hash, expected_hash);
+    assert_ne!(row.token_hash, token);
+}
+
+/// Expired invite → stable `org.invalid_invite` (ASSUME TTL).
+#[tokio::test]
+async fn org_invites_accept_expired_token_fails() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("org_invites_expired.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let (app, recorder) = test_app_with_recorder(db.clone()).await;
+
+    let cookie = setup_owner_org(&app, &db, "expowner@ex.com", "expowner1", "inv-exp").await;
+
+    let (_, create_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.invites.create","input":{"slug":"inv-exp","email":"expired@ex.com","role":"member"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(create_v["ok"], true, "{create_v}");
+    let invite_id = create_v["data"]["id"].as_str().expect("id");
+
+    let token = {
+        let sent = recorder.sent.lock().expect("lock");
+        extract_invite_token(&invite_email(&sent).text)
+    };
+
+    let past = (chrono::Utc::now() - chrono::Duration::days(8))
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_org_invite_expires_at(invite_id, &past)
+        .await
+        .expect("backdate expiry");
+
+    let (status, v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"org.invites.accept","input":{{"token":"{token}","username":"expired1","password":"password1"}}}}"#
+        ),
+        None,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
+    assert_eq!(v["error"]["code"], "org.invalid_invite");
 }
 
 fn has_plaintext_token_column(sql: &str) -> bool {

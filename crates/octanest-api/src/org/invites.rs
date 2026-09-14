@@ -1,0 +1,520 @@
+//! Org email invites (`org.invites.*` — ORG-01 / D-ORG-03 / A2 / T-10-11 / T-10-12).
+
+use chrono::Utc;
+use octanest_core::{
+    is_reserved_username, validate_username, AppError, OrgInvitePublic, OrgInvitesAcceptRequest,
+    OrgInvitesAcceptResponse, OrgInvitesCreateRequest, OrgInvitesListResponse,
+    OrgInvitesRevokeRequest, OrgMemberPublic, OrgPublic, OrgRole, OrgSlugRequest, Role,
+};
+use octanest_db::{OrgInviteRow, OrganizationRow, UserRow};
+use sha2::{Digest, Sha256};
+use uuid::Uuid;
+
+use crate::auth::gate::require_verified;
+use crate::auth::local::normalize_email;
+use crate::auth::password::{hash_password_str, PasswordError, MIN_PASSWORD_LEN};
+use crate::auth::verify_reset::public_origin;
+use crate::email::OutboundEmail;
+use crate::org::{db_err, load_org_by_slug, require_org_role, to_public};
+use crate::rpc::{CookieChange, RpcCtx};
+
+const TOKEN_BYTES: usize = 32;
+const TTL_SECS: i64 = 7 * 24 * 60 * 60; // 7 days
+const MIN_ISSUE_INTERVAL_SECS: i64 = 60;
+const MAX_ISSUES_PER_HOUR: i64 = 5;
+const INVITE_SUBJECT: &str = "You've been invited to an organization on Octanest";
+
+fn is_admin_plus(role: OrgRole) -> bool {
+    matches!(role, OrgRole::Owner | OrgRole::Admin)
+}
+
+async fn require_admin_plus(
+    ctx: &RpcCtx,
+    org: &OrganizationRow,
+    caller: &UserRow,
+) -> Result<OrgRole, AppError> {
+    let role = require_org_role(ctx, &org.id, &caller.id).await?;
+    if !is_admin_plus(role) {
+        return Err(AppError::new(
+            "org.forbidden",
+            "organization admin access required",
+        ));
+    }
+    Ok(role)
+}
+
+fn ensure_can_grant_role(caller_role: OrgRole, new_role: OrgRole) -> Result<(), AppError> {
+    if new_role == OrgRole::Owner && caller_role != OrgRole::Owner {
+        return Err(AppError::new(
+            "org.forbidden",
+            "only an organization owner can grant the owner role",
+        ));
+    }
+    Ok(())
+}
+
+fn sha256_hex(data: &[u8]) -> String {
+    bytes_to_hex(&Sha256::digest(data))
+}
+
+fn bytes_to_hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(bytes.len() * 2);
+    for &b in bytes {
+        out.push(HEX[(b >> 4) as usize] as char);
+        out.push(HEX[(b & 0xf) as usize] as char);
+    }
+    out
+}
+
+fn generate_magic() -> String {
+    let mut token_bytes = [0u8; TOKEN_BYTES];
+    rand::fill(&mut token_bytes);
+    bytes_to_hex(&token_bytes)
+}
+
+fn rate_limited() -> AppError {
+    AppError::new(
+        "auth.rate_limited",
+        "too many emails; try again later",
+    )
+}
+
+fn invalid_invite() -> AppError {
+    AppError::new(
+        "org.invalid_invite",
+        "invalid or expired invitation",
+    )
+}
+
+fn parse_created_at(raw: &str) -> Result<chrono::DateTime<Utc>, AppError> {
+    chrono::DateTime::parse_from_rfc3339(raw)
+        .map(|dt| dt.with_timezone(&Utc))
+        .or_else(|_| {
+            chrono::NaiveDateTime::parse_from_str(raw, "%Y-%m-%d %H:%M:%S")
+                .map(|ndt| ndt.and_utc())
+                .map_err(|_| AppError::new("org.internal", "organization operation failed"))
+        })
+}
+
+fn invite_public(row: &OrgInviteRow) -> Result<OrgInvitePublic, AppError> {
+    let role = OrgRole::parse(&row.role).map_err(|e| {
+        tracing::error!(error = %e, "invalid invite role");
+        AppError::new("org.internal", "organization operation failed")
+    })?;
+    Ok(OrgInvitePublic {
+        id: row.id.clone(),
+        email: row.email.clone(),
+        role,
+        expires_at: row.expires_at.clone(),
+        invited_by: row.invited_by.clone(),
+        created_at: row.created_at.clone(),
+    })
+}
+
+fn build_invite_email(to: &str, org_slug: &str, org_name: &str, magic: &str) -> OutboundEmail {
+    let origin = public_origin();
+    let link = format!("{origin}/invites/{magic}");
+    let text = format!(
+        "You've been invited to join {org_name} ({org_slug}) on Octanest.\n\n\
+Accept this invitation:\n{link}\n\n\
+This link expires in 7 days and can only be used once.\n\
+If signup is closed on this instance, this invite still lets you create an account for the invited email.\n\
+If you were not expecting this email, you can ignore it.\n"
+    );
+    OutboundEmail {
+        to: to.to_string(),
+        subject: INVITE_SUBJECT.into(),
+        text,
+        html: None,
+    }
+}
+
+async fn enforce_create_rate_limit(ctx: &RpcCtx, caller_id: &str) -> Result<(), AppError> {
+    let since = (Utc::now() - chrono::Duration::hours(1))
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let count = ctx
+        .db
+        .count_org_invites_created_by_since(caller_id, &since)
+        .await
+        .map_err(db_err)?;
+    if count >= MAX_ISSUES_PER_HOUR {
+        return Err(rate_limited());
+    }
+    Ok(())
+}
+
+/// `org.invites.create` — Admin+; hash-at-rest; email via EmailSender.
+pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<OrgInvitePublic, AppError> {
+    let caller = require_verified(ctx).await?;
+    let req: OrgInvitesCreateRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid org.invites.create input: {e}"),
+        )
+    })?;
+    let org = load_org_by_slug(ctx, &req.slug).await?;
+    let caller_role = require_admin_plus(ctx, &org, &caller).await?;
+    ensure_can_grant_role(caller_role, req.role)?;
+
+    let email = normalize_email(&req.email)?;
+    enforce_create_rate_limit(ctx, &caller.id).await?;
+
+    // Soft success when invitee email already belongs to a member (anti-noise for admins).
+    if let Some(existing) = ctx
+        .db
+        .find_user_by_email(&email)
+        .await
+        .map_err(db_err)?
+    {
+        if ctx
+            .db
+            .find_org_member(&org.id, &existing.id)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
+            return Err(AppError::new(
+                "org.already_member",
+                "user is already a member of this organization",
+            ));
+        }
+    }
+
+    if let Some(pending) = ctx
+        .db
+        .find_pending_org_invite_by_org_email(&org.id, &email)
+        .await
+        .map_err(db_err)?
+    {
+        let created = parse_created_at(&pending.created_at)?;
+        let age = Utc::now().signed_duration_since(created);
+        if age.num_seconds() < MIN_ISSUE_INTERVAL_SECS {
+            return Err(rate_limited());
+        }
+        let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let _ = ctx.db.revoke_org_invite(&pending.id, &now).await;
+    }
+
+    let magic = generate_magic();
+    let token_hash = sha256_hex(magic.as_bytes());
+    let expires_at = (Utc::now() + chrono::Duration::seconds(TTL_SECS))
+        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let id = Uuid::new_v4().to_string();
+
+    let row = ctx
+        .db
+        .insert_org_invite(
+            &id,
+            &org.id,
+            &email,
+            req.role.as_str(),
+            &token_hash,
+            &expires_at,
+            &caller.id,
+        )
+        .await
+        .map_err(db_err)?;
+
+    let msg = build_invite_email(&email, &org.slug, &org.display_name, &magic);
+    if let Err(e) = ctx.email.send(msg).await {
+        tracing::error!(error = %e, "org invite email send failed");
+    }
+
+    invite_public(&row)
+}
+
+/// `org.invites.list` — Admin+; pending only; no tokens.
+pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<OrgInvitesListResponse, AppError> {
+    let caller = require_verified(ctx).await?;
+    let req: OrgSlugRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid org.invites.list input: {e}"),
+        )
+    })?;
+    let org = load_org_by_slug(ctx, &req.slug).await?;
+    let _ = require_admin_plus(ctx, &org, &caller).await?;
+
+    let rows = ctx
+        .db
+        .list_pending_org_invites(&org.id)
+        .await
+        .map_err(db_err)?;
+    let mut invites = Vec::with_capacity(rows.len());
+    for row in rows {
+        invites.push(invite_public(&row)?);
+    }
+    Ok(OrgInvitesListResponse { invites })
+}
+
+/// `org.invites.revoke` — Admin+.
+pub async fn revoke(ctx: &RpcCtx, input: serde_json::Value) -> Result<serde_json::Value, AppError> {
+    let caller = require_verified(ctx).await?;
+    let req: OrgInvitesRevokeRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid org.invites.revoke input: {e}"),
+        )
+    })?;
+    let org = load_org_by_slug(ctx, &req.slug).await?;
+    let _ = require_admin_plus(ctx, &org, &caller).await?;
+
+    let invite = ctx
+        .db
+        .find_org_invite_by_id(&req.invite_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("org.invite_not_found", "invite not found"))?;
+    if invite.org_id != org.id {
+        return Err(AppError::new("org.invite_not_found", "invite not found"));
+    }
+    if invite.accepted_at.is_some() || invite.revoked_at.is_some() {
+        return Err(AppError::new("org.invite_not_found", "invite not found"));
+    }
+
+    let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    ctx.db
+        .revoke_org_invite(&invite.id, &now)
+        .await
+        .map_err(|e| {
+            if e == "org invite not found" {
+                AppError::new("org.invite_not_found", "invite not found")
+            } else {
+                db_err(e)
+            }
+        })?;
+    Ok(serde_json::json!({ "ok": true }))
+}
+
+fn map_username_err(msg: String) -> AppError {
+    if msg.contains("reserved") {
+        AppError::new("auth.reserved_username", "username is reserved")
+    } else {
+        AppError::new("auth.invalid_username", msg)
+    }
+}
+
+fn session_err(e: crate::auth::session::AuthError) -> AppError {
+    match e {
+        crate::auth::session::AuthError::NotConfigured => AppError::new(
+            "db.not_configured",
+            "no database configured for this instance",
+        ),
+        crate::auth::session::AuthError::Store(msg) => {
+            tracing::error!("session store error: {msg}");
+            AppError::new("auth.session_failed", "session operation failed")
+        }
+    }
+}
+
+/// `org.invites.accept` — redeem token; may create user when allow_signup is false (A2).
+pub async fn accept(
+    ctx: &mut RpcCtx,
+    input: serde_json::Value,
+) -> Result<OrgInvitesAcceptResponse, AppError> {
+    let req: OrgInvitesAcceptRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid org.invites.accept input: {e}"),
+        )
+    })?;
+    let token = req.token.trim();
+    if token.is_empty() {
+        return Err(invalid_invite());
+    }
+
+    let row = ctx
+        .db
+        .find_org_invite_by_token_hash(&sha256_hex(token.as_bytes()))
+        .await
+        .map_err(db_err)?
+        .ok_or_else(invalid_invite)?;
+
+    if row.accepted_at.is_some() || row.revoked_at.is_some() {
+        return Err(invalid_invite());
+    }
+
+    let expires_at = chrono::DateTime::parse_from_rfc3339(&row.expires_at)
+        .map(|dt| dt.with_timezone(&Utc))
+        .or_else(|_| {
+            chrono::NaiveDateTime::parse_from_str(&row.expires_at, "%Y-%m-%d %H:%M:%S")
+                .map(|ndt| ndt.and_utc())
+        })
+        .map_err(|_| invalid_invite())?;
+    if expires_at <= Utc::now() {
+        return Err(invalid_invite());
+    }
+
+    let invite_role = OrgRole::parse(&row.role).map_err(|_| {
+        AppError::new("org.internal", "organization operation failed")
+    })?;
+
+    let org = ctx
+        .db
+        .find_organization_by_id(&row.org_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(invalid_invite)?;
+
+    // Resolve user: session match on invite email, or provision with username/password.
+    let user = if let Some(session) = &ctx.session {
+        let session_user = ctx
+            .db
+            .find_user_by_id(&session.user_id)
+            .await
+            .map_err(db_err)?
+            .ok_or_else(|| {
+                AppError::new("auth.unauthenticated", "not authenticated")
+            })?;
+        if session_user.email.eq_ignore_ascii_case(&row.email) {
+            session_user
+        } else {
+            return Err(AppError::new(
+                "org.invite_email_mismatch",
+                "signed-in email does not match this invitation",
+            ));
+        }
+    } else if ctx
+        .db
+        .find_user_by_email(&row.email)
+        .await
+        .map_err(db_err)?
+        .is_some()
+    {
+        // Existing account for invite email — require login (no password path steal).
+        return Err(AppError::new(
+            "org.invite_login_required",
+            "an account with this email already exists; sign in to accept the invitation",
+        ));
+    } else {
+        let username = req
+            .username
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| {
+                AppError::new("rpc.bad_input", "username is required to accept this invitation")
+            })?;
+        let password = req
+            .password
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .ok_or_else(|| {
+                AppError::new("rpc.bad_input", "password is required to accept this invitation")
+            })?;
+
+        validate_username(username).map_err(map_username_err)?;
+        if is_reserved_username(username) {
+            return Err(AppError::new(
+                "auth.reserved_username",
+                "username is reserved",
+            ));
+        }
+        let password_hash = hash_password_str(password).map_err(|e| match e {
+            PasswordError::TooShort => AppError::new(
+                "auth.weak_password",
+                format!("password must be at least {MIN_PASSWORD_LEN} characters"),
+            ),
+            PasswordError::Hash(_) => {
+                tracing::error!("password hash failed");
+                AppError::new("auth.internal", "authentication failed")
+            }
+        })?;
+
+        if ctx
+            .db
+            .find_user_by_username(username)
+            .await
+            .map_err(db_err)?
+            .is_some()
+        {
+            return Err(AppError::new(
+                "auth.taken",
+                "email or username already taken",
+            ));
+        }
+
+        // A2: create account despite allow_signup=false — invite-gated only.
+        let id = Uuid::new_v4().to_string();
+        let display_name = username.to_string();
+        let created = ctx
+            .db
+            .create_user(
+                &id,
+                &row.email,
+                username,
+                Some(&password_hash),
+                &display_name,
+                "",
+                None,
+                Role::User,
+            )
+            .await
+            .map_err(db_err)?;
+
+        let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        ctx.db
+            .set_email_verified_at(&created.id, &now)
+            .await
+            .map_err(db_err)?;
+
+        let (_tok, cookie) = ctx
+            .sessions
+            .create(&ctx.db, &created.id, false)
+            .await
+            .map_err(session_err)?;
+        ctx.set_cookie = Some(CookieChange::Set(cookie));
+
+        ctx.db
+            .find_user_by_id(&created.id)
+            .await
+            .map_err(db_err)?
+            .ok_or_else(|| AppError::new("auth.internal", "authentication failed"))?
+    };
+
+    if ctx
+        .db
+        .find_org_member(&org.id, &user.id)
+        .await
+        .map_err(db_err)?
+        .is_some()
+    {
+        // Still consume invite so it cannot be reused.
+        let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let _ = ctx.db.accept_org_invite(&row.id, &now).await;
+        return Err(AppError::new(
+            "org.already_member",
+            "user is already a member of this organization",
+        ));
+    }
+
+    let member_row = ctx
+        .db
+        .insert_org_member(&org.id, &user.id, invite_role.as_str())
+        .await
+        .map_err(db_err)?;
+
+    let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    ctx.db
+        .accept_org_invite(&row.id, &now)
+        .await
+        .map_err(|e| {
+            if e == "org invite not found" {
+                invalid_invite()
+            } else {
+                db_err(e)
+            }
+        })?;
+
+    let org_public: OrgPublic = to_public(&org)?;
+    Ok(OrgInvitesAcceptResponse {
+        org: org_public,
+        member: OrgMemberPublic {
+            user_id: member_row.user_id,
+            username: user.username,
+            role: invite_role,
+            created_at: member_row.created_at,
+        },
+    })
+}
