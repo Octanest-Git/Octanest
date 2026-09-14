@@ -53,10 +53,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **GIT-11**: User can create, list, and revoke personal access tokens used for HTTPS git (and RPC/API where applicable)
 - [x] **GIT-12**: User can push and fetch Git LFS objects for a repository
 - [x] **GIT-13**: Operator can configure LFS storage on the filesystem (volume-backed) for the instance
-- [ ] **GIT-14**: User can create a release for a tag with notes and downloadable assets
-- [ ] **GIT-15**: User can download release assets from the web UI
-- [ ] **GIT-16**: User with permission can rename a repository
-- [ ] **GIT-17**: User with permission can transfer a repository to another user or organization
+- [x] **GIT-14**: User can create a release for a tag with notes and downloadable assets
+- [x] **GIT-15**: User can download release assets from the web UI
+- [x] **GIT-16**: User with permission can rename a repository
+- [x] **GIT-17**: User with permission can transfer a repository to another user or organization
 - [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
 ### Organizations & permissions
@@ -204,10 +204,10 @@ Deferred; not in the current roadmap until promoted.
 | GIT-11 | Phase 8 | Complete |
 | GIT-12 | Phase 14 | Complete |
 | GIT-13 | Phase 14 | Complete |
-| GIT-14 | Phase 15 | Pending |
-| GIT-15 | Phase 15 | Pending |
-| GIT-16 | Phase 15 | Pending |
-| GIT-17 | Phase 15 | Pending |
+| GIT-14 | Phase 15 | Complete |
+| GIT-15 | Phase 15 | Complete |
+| GIT-16 | Phase 15 | Complete |
+| GIT-17 | Phase 15 | Complete |
 | GIT-18 | Phase 16 | Pending |
 | ORG-01 | Phase 10 | Complete |
 | ORG-02 | Phase 10 | Complete |

@@ -1,25 +1,29 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
-import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 type RepoChromeProps = {
   repo: RepoPublic;
-  active: "code" | "commits" | "branches" | "tags" | "issues" | "settings";
-  /** Force Settings nav (e.g. settings page). Owners also see it via session. */
+  active:
+    | "code"
+    | "commits"
+    | "branches"
+    | "tags"
+    | "issues"
+    | "releases"
+    | "settings";
+  /** Force Settings nav (e.g. settings page). Admins also see it via can_admin. */
   showSettings?: boolean;
 };
 
-/** Title row + Code/Commits/Branches/Tags/Issues/(Settings) link-row. */
+/** Title row + Code/Commits/Branches/Tags/Issues/Releases/(Settings) link-row. */
 export function RepoChrome({
   repo,
   active,
   showSettings = false,
 }: RepoChromeProps) @{
-  const { user } = useChromeAccountState();
-  const isOwner =
-    !!user?.username && user.username === repo.owner_username;
-  const settingsVisible = showSettings || isOwner;
+  // Gate Settings on API can_admin — not personal username equality (D-REL-07 / D-REL-09).
+  const settingsVisible = showSettings || !!repo.can_admin;
 
   const owner = repo.owner_username;
   const name = repo.name;
@@ -29,6 +33,7 @@ export function RepoChrome({
   const branchesHref = `${base}/branches`;
   const tagsHref = `${base}/tags`;
   const issuesHref = `${base}/issues`;
+  const releasesHref = `${base}/releases`;
   const settingsHref = `${base}/settings`;
 
   function navClass(isActive: boolean): string {
@@ -97,6 +102,13 @@ export function RepoChrome({
         aria-current={active === "issues" ? "page" : undefined}
       >
         Issues
+      </a>
+      <a
+        href={releasesHref as string}
+        className={navClass(active === "releases") as string}
+        aria-current={active === "releases" ? "page" : undefined}
+      >
+        Releases
       </a>
       @if (settingsVisible) {
         <a

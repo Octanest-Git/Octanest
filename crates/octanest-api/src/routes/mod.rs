@@ -4,4 +4,5 @@ pub mod auth_callbacks;
 pub mod avatar;
 pub mod git_lfs;
 pub mod git_smart_http;
+pub mod release_assets;
 pub mod repo_raw;

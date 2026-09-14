@@ -6,6 +6,7 @@
 
 use octanest_core::AppError;
 use octanest_db::{Database, RepositoryRow};
+use chrono::Utc;
 
 use crate::rpc::RpcCtx;
 
@@ -265,7 +266,66 @@ pub struct AccessibleRepo {
     pub capability: Option<Capability>,
 }
 
+fn redirect_expired(expires_at: &str) -> bool {
+    let trimmed = expires_at.trim();
+    let when = chrono::DateTime::parse_from_rfc3339(trimmed)
+        .map(|dt| dt.with_timezone(&Utc))
+        .ok()
+        .or_else(|| {
+            chrono::NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%dT%H:%M:%SZ")
+                .ok()
+                .map(|n| chrono::DateTime::from_naive_utc_and_offset(n, Utc))
+        })
+        .or_else(|| {
+            chrono::NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S")
+                .ok()
+                .map(|n| chrono::DateTime::from_naive_utc_and_offset(n, Utc))
+        });
+    match when {
+        Some(exp) => Utc::now() >= exp,
+        None => true,
+    }
+}
+
+/// Live repo at `owner`/`name`, or unexpired redirect → current row + owner (D-REL-08).
+/// Live path always wins over redirects.
+pub async fn lookup_repo_row_or_redirect(
+    db: &Database,
+    owner_slug: &str,
+    name: &str,
+) -> Result<Option<(RepositoryRow, OwnerRef)>, String> {
+    let owner_slug = owner_slug.trim();
+    let name = name.trim();
+    if owner_slug.is_empty() || name.is_empty() {
+        return Ok(None);
+    }
+
+    if let Some(owner_ref) = resolve_owner_slug(db, owner_slug).await? {
+        if let Some(row) = db
+            .find_repository_by_owner_name(owner_ref.id(), name)
+            .await?
+        {
+            return Ok(Some((row, owner_ref)));
+        }
+    }
+
+    let Some(redir) = db.find_repository_redirect(owner_slug, name).await? else {
+        return Ok(None);
+    };
+    if redirect_expired(&redir.expires_at) {
+        return Ok(None);
+    }
+    let Some(row) = db.find_repository_by_id(&redir.repo_id).await? else {
+        return Ok(None);
+    };
+    let Some(owner_ref) = owner_ref_for_repo(db, &row).await? else {
+        return Ok(None);
+    };
+    Ok(Some((row, owner_ref)))
+}
+
 /// Resolve `owner`/`name` for read. Missing OR unauthorized private → identical [`not_found`].
+/// Honors unexpired repository redirects (D-REL-08).
 pub async fn resolve_repo_for_read(
     ctx: &RpcCtx,
     owner: &str,
@@ -277,26 +337,15 @@ pub async fn resolve_repo_for_read(
         return Err(not_found());
     }
 
-    let owner_ref = match resolve_owner_slug(&ctx.db, owner).await {
-        Ok(Some(r)) => r,
-        Ok(None) => return Err(not_found()),
+    let pair = match lookup_repo_row_or_redirect(&ctx.db, owner, name).await {
+        Ok(v) => v,
         Err(e) => {
-            tracing::error!(error = %e, "resolve_owner_slug failed");
+            tracing::error!(error = %e, "lookup_repo_row_or_redirect failed");
             return Err(AppError::new("repo.internal", "repository operation failed"));
         }
     };
-
-    let row = match ctx
-        .db
-        .find_repository_by_owner_name(owner_ref.id(), name)
-        .await
-    {
-        Ok(Some(r)) => r,
-        Ok(None) => return Err(not_found()),
-        Err(e) => {
-            tracing::error!(error = %e, "find_repository_by_owner_name failed");
-            return Err(AppError::new("repo.internal", "repository operation failed"));
-        }
+    let Some((row, owner_ref)) = pair else {
+        return Err(not_found());
     };
 
     let caller_id = ctx.session.as_ref().map(|s| s.user_id.as_str());

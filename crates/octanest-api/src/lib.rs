@@ -9,6 +9,7 @@ pub mod label;
 pub mod lfs;
 pub mod org;
 pub mod pat;
+pub mod release;
 pub mod ssh;
 pub mod ssh_keys;
 pub mod repo;

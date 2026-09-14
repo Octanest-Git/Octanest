@@ -26,8 +26,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
-- [ ] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
-- [ ] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
+- [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
+- [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
 - [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
@@ -550,17 +550,17 @@ Plans:
   2. User with permission can rename a repository
   3. User with permission can transfer a repository to another user or organization
 
-**Plans:** 7 plans
+**Plans:** 7/7 plans executed
 
 Plans:
 
-- [ ] 15-00-PLAN.md — Wave 0 Nyquist stubs (release/rename/transfer/dialect/web)
-- [ ] 15-01-PLAN.md — Tracer: tag-bound releases RPC + shared migration
-- [ ] 15-06-PLAN.md — Releases tab + list/create/detail notes UI
-- [ ] 15-02-PLAN.md — Release assets volume, upload/download, Compose/Vite
-- [ ] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
-- [ ] 15-04-PLAN.md — Admin transfer with type-confirm + cascade
-- [ ] 15-05-PLAN.md — Settings danger zone UI, can_admin chrome, factory reset, docs
+- [x] 15-00-PLAN.md — Wave 0 Nyquist stubs (release/rename/transfer/dialect/web)
+- [x] 15-01-PLAN.md — Tracer: tag-bound releases RPC + shared migration
+- [x] 15-06-PLAN.md — Releases tab + list/create/detail notes UI
+- [x] 15-02-PLAN.md — Release assets volume, upload/download, Compose/Vite
+- [x] 15-03-PLAN.md — Admin rename + redirects (web/git/SSH) + purge
+- [x] 15-04-PLAN.md — Admin transfer with type-confirm + cascade
+- [x] 15-05-PLAN.md — Settings danger zone UI, can_admin chrome, factory reset, docs
 
 **UI hint**: yes
 
@@ -698,11 +698,11 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 8. Git HTTPS & PATs | 14/14 | Complete    | 2026-09-13 |
 | 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
 | 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
-| 11. Issues | 13/13 | In Progress|  |
+| 11. Issues | 13/13 | Complete    | 2026-09-14 |
 | 12. Pull Requests | 0/TBD | Not started | - |
 | 13. Branch Protection | 0/TBD | Not started | - |
-| 14. Git LFS | 13/13 | In Progress|  |
-| 15. Releases & Transfer | 0/7 | Not started | - |
+| 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
+| 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 0/TBD | Not started | - |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |

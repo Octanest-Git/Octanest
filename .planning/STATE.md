@@ -5,16 +5,16 @@ current_phase: 11
 current_phase_name: Issues
 current_plan: 13
 status: ready_for_verification
-stopped_at: Completed 14-12-PLAN.md — Phase 14 execute complete
-last_updated: "2026-09-14T18:04:54.656Z"
+stopped_at: Merged Phase 15 Releases into forge-core (with Phase 14 LFS); renumbered releases migration to 0014
+last_updated: "2026-09-14T20:15:00.000Z"
 last_activity: 2026-09-14
 last_activity_desc: Completed 11-12 factory reset + docs + VALIDATION gate
-state_head: 73322f53cd2b4b91427751ed70103ec0992ae39c
+state_head: e94f5ba
 progress:
   total_phases: 22
   completed_phases: 0
   total_plans: 147
-  completed_plans: 127
+  completed_plans: 134
 milestone_name: milestone
 ---
 
@@ -143,6 +143,13 @@ See also: `.planning/ROADMAP.md` Phase 9 · GIT-03, GIT-04 · Phase 10 · ORG-01
 | Phase 14 P10 | 10min | 2 tasks | 6 files |
 | Phase 14 P11 | 12min | 2 tasks | 7 files |
 | Phase 14 P12 | 15min | 2 tasks | 2 files |
+| Phase 15 P00 | 2min | 2 tasks | 5 files |
+| Phase 15 P01 | 10min | 2 tasks | 16 files |
+| Phase 15 P03 | 11min | 3 tasks | 16 files |
+| Phase 15 P06 | 8min | 2 tasks | 5 files |
+| Phase 15 P02 | 20min | 2 tasks | 17 files |
+| Phase 15 P04 | 25min | 2 tasks | 8 files |
+| Phase 15 P05 | 20min | 3 tasks | 4 files |
 
 # Project State
 
@@ -507,6 +514,12 @@ Recent decisions affecting current work:
 - [Phase 11]: repo.lfs.download returns soft-capped base64; oversized → lfs.too_large_for_rpc
 - [Phase 11]: Docs link points at CONFIGURATION.md#git-lfs; no auto-commit of .gitattributes
 - [Phase 11]: Health unreachable → smoke-git-lfs skip exit 0 (operator runs make up for full client smoke)
+- [Phase 11]: Wave 0 stubs use #[ignore] until 15-01..15-05 turn them green
+- [Phase 11]: Release ENV defaults: assets dir var/release-assets, max 512MiB, redirect retention 90d
+- [Phase 11]: 15-03: combined rename/redirect/purge commit; 90-day redirect retention; Smart HTTP rewrites path_info after redirect
+- [Phase 11]: 15-06: Releases notes UI; assets deferred to 15-02
+- [Phase 11]: Immediate transfer after type-confirm; user→user former owner becomes admin collaborator
+- [Phase 11]: Settings chrome uses can_admin; factory reset repos scope wipes release-assets
 
 ### Pending Todos
 
@@ -528,25 +541,9 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T18:04:54.557Z
-Stopped at: Completed 14-12-PLAN.md — Phase 14 execute complete
+Last session: 2026-09-14T20:15:00.000Z
+Stopped at: Merged Phase 15 into feat/forge-core (LFS 0012/0013 + releases 0014)
 Resume file: None
- 3min | 2 tasks | 3 files |
-| Phase 10 P00 | 4min | 2 tasks | 7 files |
-| Phase 10 P01 | 5min | 1 tasks | 4 files |
-| Phase 10 P02 | 4min | 1 tasks | 9 files |
-| Phase 10 P13 | 12min | 1 tasks | 9 files |
-| Phase 10 P03 | 17min | 2 tasks | 18 files |
-| Phase 10 P04 | 6min | 2 tasks | 11 files |
-| Phase 10 P05 | 9min | 2 tasks | 12 files |
-| Phase 10 P06 | 12min | 2 tasks | 12 files |
-| Phase 10 P07 | 12min | 2 tasks | 12 files |
-| Phase 10 P08 | 8min | 2 tasks | 7 files |
-| Phase 10 P09 | 6min | 2 tasks | 16 files |
-| Phase 10 P10 | 10min | 2 tasks | 14 files |
-| Phase 10 P11 | 8min | 2 tasks | 6 files |
-| Phase 10 P12 | 7min | 2 tasks | 8 files |
-
 ## Accumulated Context
 
 ### Decisions

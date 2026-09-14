@@ -494,7 +494,39 @@ pub struct AdminLfsUpdateSettingsRequest {
     #[serde(default)]
     pub clear_overrides: bool,
 }
+/// `repo.rename` input — Admin only; no type-confirm (D-REL-07 / GIT-16).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoRenameRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "newName", alias = "new_name")]
+    pub new_name: String,
+}
 
+/// `repo.rename` response — updated public repo metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoRenameResponse {
+    pub repo: RepoPublic,
+}
+
+/// `repo.transfer` input — Admin only; type-confirm required (D-REL-09 / D-REL-10 / GIT-17).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTransferRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "destOwner", alias = "dest_owner")]
+    pub dest_owner: String,
+    #[serde(rename = "destOwnerType", alias = "dest_owner_type")]
+    pub dest_owner_type: OwnerType,
+    #[serde(rename = "confirmName", alias = "confirm_name")]
+    pub confirm_name: String,
+}
+
+/// `repo.transfer` response — updated public repo under the new owner.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTransferResponse {
+    pub repo: RepoPublic,
+}
 /// Public collaborator row — no email (ORG-03 / D-ORG-02c).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoCollaboratorPublic {

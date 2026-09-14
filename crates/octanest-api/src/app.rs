@@ -23,7 +23,7 @@ use crate::auth::session::{
 };
 use crate::email::{self, EmailSender};
 use crate::pat::rate_limit::FailedAuthLimiter;
-use crate::routes::{auth_callbacks, avatar, git_lfs, git_smart_http, repo_raw};
+use crate::routes::{auth_callbacks, avatar, git_lfs, git_smart_http, release_assets, repo_raw};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 use crate::user::rate_limit::LookupLimiter;
 
@@ -37,6 +37,12 @@ pub struct AppState {
     pub repos_dir: PathBuf,
     /// Instance LFS object store (`OCTANEST_LFS_DIR`, default `var/lfs`) — D-LFS-01.
     pub lfs_dir: PathBuf,
+    /// Release asset binaries (`OCTANEST_RELEASE_ASSETS_DIR`, default `var/release-assets`) — D-REL-04.
+    pub release_assets_dir: PathBuf,
+    /// Max upload bytes for a single release asset (default 512 MiB) — D-REL-05.
+    pub release_asset_max_bytes: usize,
+    /// Days to retain repository redirects after rename/transfer (default 90) — D-REL-08.
+    pub repo_redirect_retention_days: u32,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -77,12 +83,33 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(lfs_dir)
         };
+        let release_assets_dir = std::env::var("OCTANEST_RELEASE_ASSETS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/release-assets"));
+        let release_assets_dir = if release_assets_dir.is_absolute() {
+            release_assets_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(release_assets_dir)
+        };
+        let release_asset_max_bytes = std::env::var("OCTANEST_RELEASE_ASSET_MAX_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(536_870_912usize);
+        let repo_redirect_retention_days = std::env::var("OCTANEST_REPO_REDIRECT_RETENTION_DAYS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(90u32);
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
             uploads_dir: PathBuf::from("var/uploads"),
             repos_dir,
             lfs_dir,
+            release_assets_dir,
+            release_asset_max_bytes,
+            repo_redirect_retention_days,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
@@ -107,6 +134,16 @@ impl AppState {
         self
     }
 
+    pub fn with_release_assets_dir(mut self, dir: PathBuf) -> Self {
+        self.release_assets_dir = dir;
+        self
+    }
+
+    pub fn with_release_asset_max_bytes(mut self, max: usize) -> Self {
+        self.release_asset_max_bytes = max;
+        self
+    }
+
     pub fn with_git(mut self, git: Arc<dyn GitBackend>) -> Self {
         self.git = git;
         self
@@ -128,6 +165,7 @@ pub fn router(db: Database, cors: CorsLayer) -> Router {
 }
 
 pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
+    let asset_body_limit = state.release_asset_max_bytes.max(1024);
     Router::new()
         .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
@@ -147,6 +185,14 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             post(avatar::upload_avatar).layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES)),
         )
         .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
+        .route(
+            "/api/repos/{owner}/{repo}/releases/{release_id}/assets",
+            post(release_assets::upload_asset).layer(DefaultBodyLimit::max(asset_body_limit)),
+        )
+        .route(
+            "/api/releases/assets/{asset_id}",
+            get(release_assets::download_asset),
+        )
         .route(
             "/api/repos/{owner}/{repo}/raw/{ref}/{*path}",
             get(repo_raw::serve_raw),
@@ -224,6 +270,7 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         uploads_dir: state.uploads_dir.clone(),
         repos_dir: state.repos_dir.clone(),
         lfs_dir: state.lfs_dir.clone(),
+        release_assets_dir: state.release_assets_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,

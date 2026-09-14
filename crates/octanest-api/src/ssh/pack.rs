@@ -8,7 +8,7 @@ use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};
 use tokio::process::Command;
 
 use crate::git::bare_repo_path;
-use crate::repo::{can_read_as_owner, is_private_visibility};
+use crate::repo::{can_read_as_owner, is_private_visibility, lookup_repo_row_or_redirect};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PackCommand {
@@ -86,8 +86,8 @@ pub async fn authorize_pack(
         PackCommand::ReceivePack { owner, name } => (owner.as_str(), name.as_str(), PackAction::Push),
     };
 
-    let owner_user = match db.find_user_by_username(owner).await {
-        Ok(Some(u)) => u,
+    let pair = match lookup_repo_row_or_redirect(db, owner, name).await {
+        Ok(Some(p)) => p,
         Ok(None) => {
             return AuthzDecision::Deny {
                 message: "ERROR: Repository not found.\n".into(),
@@ -99,25 +99,11 @@ pub async fn authorize_pack(
             };
         }
     };
+    let (row, owner_ref) = pair;
+    let disk_owner = owner_ref.slug();
+    let disk_name = row.name.as_str();
 
-    let row = match db
-        .find_repository_by_owner_name(&owner_user.id, name)
-        .await
-    {
-        Ok(Some(r)) => r,
-        Ok(None) => {
-            return AuthzDecision::Deny {
-                message: "ERROR: Repository not found.\n".into(),
-            };
-        }
-        Err(_) => {
-            return AuthzDecision::Deny {
-                message: "ERROR: Internal error.\n".into(),
-            };
-        }
-    };
-
-    let bare = match resolve_bare(repos_dir, owner, name) {
+    let bare = match resolve_bare(repos_dir, disk_owner, disk_name) {
         Ok(p) if p.exists() => p,
         _ => {
             return AuthzDecision::Deny {
@@ -126,7 +112,7 @@ pub async fn authorize_pack(
         }
     };
 
-    let is_owner = can_read_as_owner(Some(caller_user_id), &owner_user.id);
+    let is_owner = can_read_as_owner(Some(caller_user_id), owner_ref.id());
 
     match action {
         PackAction::Fetch => {

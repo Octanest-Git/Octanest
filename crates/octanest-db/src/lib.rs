@@ -14,6 +14,8 @@ pub mod organizations;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod redirects;
+pub mod releases;
 pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
@@ -32,6 +34,8 @@ pub use org_invites::OrgInviteRow;
 pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use pats::PatRow;
+pub use redirects::RedirectRow;
+pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
@@ -410,6 +414,23 @@ impl Database {
         visibility: &str,
     ) -> Result<RepositoryRow, String> {
         repositories::update_visibility(self.require_pool()?, id, visibility).await
+    }
+
+    pub async fn update_repository_name(
+        &self,
+        id: &str,
+        name: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_name(self.require_pool()?, id, name).await
+    }
+
+    pub async fn update_repository_owner(
+        &self,
+        id: &str,
+        owner_id: &str,
+        owner_type: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_owner(self.require_pool()?, id, owner_id, owner_type).await
     }
 
     pub async fn soft_delete_repository(&self, id: &str) -> Result<(), String> {
@@ -1141,6 +1162,64 @@ impl Database {
             default_visibility,
         )
         .await
+    }
+
+    // --- Releases / redirects (Phase 15) ---
+
+    pub async fn insert_release(
+        &self, id: &str, repo_id: &str, tag_name: &str, title: &str, body: &str,
+        draft: bool, prerelease: bool, author_id: &str,
+    ) -> Result<ReleaseRow, String> {
+        releases::insert_release(self.require_pool()?, id, repo_id, tag_name, title, body, draft, prerelease, author_id).await
+    }
+    pub async fn find_release_by_id(&self, id: &str) -> Result<Option<ReleaseRow>, String> {
+        releases::find_release_by_id(self.require_pool()?, id).await
+    }
+    pub async fn find_release_by_repo_tag(&self, repo_id: &str, tag_name: &str) -> Result<Option<ReleaseRow>, String> {
+        releases::find_release_by_repo_tag(self.require_pool()?, repo_id, tag_name).await
+    }
+    pub async fn list_releases_for_repo(&self, repo_id: &str, include_drafts: bool) -> Result<Vec<ReleaseRow>, String> {
+        releases::list_releases_for_repo(self.require_pool()?, repo_id, include_drafts).await
+    }
+    pub async fn update_release(&self, id: &str, title: &str, body: &str, draft: bool, prerelease: bool) -> Result<ReleaseRow, String> {
+        releases::update_release(self.require_pool()?, id, title, body, draft, prerelease).await
+    }
+    pub async fn delete_release(&self, id: &str) -> Result<(), String> {
+        releases::delete_release(self.require_pool()?, id).await
+    }
+    pub async fn list_assets_for_release(&self, release_id: &str) -> Result<Vec<ReleaseAssetRow>, String> {
+        releases::list_assets_for_release(self.require_pool()?, release_id).await
+    }
+    pub async fn find_release_asset_by_id(&self, id: &str) -> Result<Option<ReleaseAssetRow>, String> {
+        releases::find_asset_by_id(self.require_pool()?, id).await
+    }
+    pub async fn find_release_asset_by_filename(
+        &self,
+        release_id: &str,
+        filename: &str,
+    ) -> Result<Option<ReleaseAssetRow>, String> {
+        releases::find_asset_by_release_filename(self.require_pool()?, release_id, filename).await
+    }
+    pub async fn insert_release_asset(&self, id: &str, release_id: &str, filename: &str, content_type: &str, byte_size: i64, uploader_id: &str) -> Result<ReleaseAssetRow, String> {
+        releases::insert_asset(self.require_pool()?, id, release_id, filename, content_type, byte_size, uploader_id).await
+    }
+    pub async fn update_release_asset_bytes(&self, id: &str, content_type: &str, byte_size: i64) -> Result<ReleaseAssetRow, String> {
+        releases::update_asset_bytes(self.require_pool()?, id, content_type, byte_size).await
+    }
+    pub async fn delete_release_asset(&self, id: &str) -> Result<(), String> {
+        releases::delete_asset(self.require_pool()?, id).await
+    }
+    pub async fn insert_repository_redirect(&self, id: &str, old_owner_slug: &str, old_name: &str, repo_id: &str, expires_at: &str) -> Result<RedirectRow, String> {
+        redirects::insert_redirect(self.require_pool()?, id, old_owner_slug, old_name, repo_id, expires_at).await
+    }
+    pub async fn find_repository_redirect(&self, old_owner_slug: &str, old_name: &str) -> Result<Option<RedirectRow>, String> {
+        redirects::find_redirect(self.require_pool()?, old_owner_slug, old_name).await
+    }
+    pub async fn delete_repository_redirect(&self, old_owner_slug: &str, old_name: &str) -> Result<(), String> {
+        redirects::delete_redirect(self.require_pool()?, old_owner_slug, old_name).await
+    }
+    pub async fn purge_expired_repository_redirects(&self, now_rfc3339: &str) -> Result<u64, String> {
+        redirects::purge_expired_redirects(self.require_pool()?, now_rfc3339).await
     }
 
     /// Wipe tenant + auth data so the instance returns to empty-setup (`needs_setup`).
