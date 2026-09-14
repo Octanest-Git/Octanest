@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS releases (
   repo_id     CHAR(36)       NOT NULL,
   tag_name    VARCHAR(255)   NOT NULL,
   title       VARCHAR(500)   NOT NULL DEFAULT '',
-  body        VARCHAR(65535) NOT NULL DEFAULT '',
+  body        TEXT           NOT NULL DEFAULT (''),
   draft       TINYINT(1)     NOT NULL DEFAULT 0,
   prerelease  TINYINT(1)     NOT NULL DEFAULT 0,
   author_id   CHAR(36)       NOT NULL,

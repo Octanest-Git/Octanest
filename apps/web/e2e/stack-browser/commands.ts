@@ -135,8 +135,9 @@ export const signupThroughUi: BrowserCommand<
   await context.clearCookies();
   const page = await context.newPage();
   try {
+    // Prefer load over networkidle — Vite HMR / long-poll keeps network busy in CI.
     await page.goto(`${webOrigin()}/signup`, {
-      waitUntil: "networkidle",
+      waitUntil: "load",
     });
     await page
       .getByRole("heading", { name: "Create your account" })
@@ -191,7 +192,7 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
   await context.clearCookies();
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/login`, { waitUntil: "networkidle" });
+    await page.goto(`${webOrigin()}/login`, { waitUntil: "load" });
     try {
       await page
         .getByRole("button", { name: /continue with workos/i })
@@ -226,7 +227,7 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
 
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/login`, { waitUntil: "networkidle" });
+    await page.goto(`${webOrigin()}/login`, { waitUntil: "load" });
     await new Promise((r) => setTimeout(r, 750));
     const html = await page.content();
     // Chrome may pulse account skeletons; form must be the real SSO CTA (no AuthFormSkeleton).
@@ -267,7 +268,7 @@ export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
   const page = await context.newPage();
   try {
-    await page.goto(`${webOrigin()}/status`, { waitUntil: "networkidle" });
+    await page.goto(`${webOrigin()}/status`, { waitUntil: "load" });
     await page
       .getByRole("heading", { name: "System status" })
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -315,7 +316,7 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
       }
     });
 
-    await page.goto(`${webOrigin()}/`, { waitUntil: "networkidle" });
+    await page.goto(`${webOrigin()}/`, { waitUntil: "load" });
     await page
       .getByRole("button", { name: /account menu/i })
       .waitFor({ state: "visible", timeout: 30_000 });

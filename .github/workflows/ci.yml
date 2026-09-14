@@ -24,6 +24,10 @@ jobs:
         with:
           tool: nextest
       - name: cargo nextest
+        # Limit link parallelism — full-workspace debug link of many integration
+        # binaries has hit lld bus errors (signal 7) on ubuntu-latest runners.
+        env:
+          CARGO_BUILD_JOBS: "2"
         run: cargo nextest run --workspace --profile ci
 
   web-octane:

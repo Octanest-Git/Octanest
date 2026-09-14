@@ -99,6 +99,7 @@ describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
           visibility: "public",
           default_branch: "main",
           updated_at: "2026-09-12T00:00:00Z",
+          can_admin: true,
         },
       });
       treeMock.mockResolvedValue({

@@ -1,13 +1,14 @@
 -- logical: 0011_issues — issues domain (D-ISS-01..06, D-ISS-11..13)
 -- Per-repo sequential #N via issue_counters; hard-delete does not reclaim.
--- MySQL: TEXT cannot carry DEFAULT — use VARCHAR where a default is required.
+-- MySQL utf8mb4: VARCHAR max length is 16383; use TEXT for markdown bodies.
+-- MySQL 8.0.13+ allows DEFAULT on TEXT (CI uses mysql:8.4).
 
 CREATE TABLE IF NOT EXISTS issues (
   id         CHAR(36)      PRIMARY KEY,
   repo_id    CHAR(36)      NOT NULL,
   number     BIGINT        NOT NULL,
   title      VARCHAR(500)  NOT NULL,
-  body       VARCHAR(65535) NOT NULL DEFAULT '',
+  body       TEXT          NOT NULL DEFAULT (''),
   state      VARCHAR(16)   NOT NULL DEFAULT 'open',
   author_id  CHAR(36)      NOT NULL,
   closed_at  TIMESTAMP     NULL,
@@ -35,7 +36,7 @@ CREATE TABLE IF NOT EXISTS issue_comments (
   id         CHAR(36)       PRIMARY KEY,
   issue_id   CHAR(36)       NOT NULL,
   author_id  CHAR(36)       NOT NULL,
-  body       VARCHAR(65535) NOT NULL DEFAULT '',
+  body       TEXT           NOT NULL DEFAULT (''),
   created_at TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_issue_comments_issue FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE,
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS issue_revisions (
   issue_id   CHAR(36)       NOT NULL,
   editor_id  CHAR(36)       NOT NULL,
   title      VARCHAR(500)   NOT NULL,
-  body       VARCHAR(65535) NOT NULL,
+  body       TEXT           NOT NULL,
   created_at TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_issue_revisions_issue FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE,
   CONSTRAINT fk_issue_revisions_editor FOREIGN KEY (editor_id) REFERENCES users(id) ON DELETE CASCADE
@@ -61,7 +62,7 @@ CREATE TABLE IF NOT EXISTS comment_revisions (
   id         CHAR(36)       PRIMARY KEY,
   comment_id CHAR(36)       NOT NULL,
   editor_id  CHAR(36)       NOT NULL,
-  body       VARCHAR(65535) NOT NULL,
+  body       TEXT           NOT NULL,
   created_at TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_comment_revisions_comment FOREIGN KEY (comment_id) REFERENCES issue_comments(id) ON DELETE CASCADE,
   CONSTRAINT fk_comment_revisions_editor FOREIGN KEY (editor_id) REFERENCES users(id) ON DELETE CASCADE

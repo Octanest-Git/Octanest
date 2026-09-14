@@ -1,5 +1,5 @@
 -- logical: 0015_packages — multi-format package registry metadata (D-PKG-02, D-PKG-08, D-PKG-09)
--- MySQL: TEXT cannot carry DEFAULT — use VARCHAR where a default is required.
+-- MySQL utf8mb4: avoid VARCHAR(65535); TEXT + DEFAULT () is valid on MySQL 8.0.13+.
 
 CREATE TABLE IF NOT EXISTS packages (
   id             CHAR(36)      PRIMARY KEY,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS package_versions (
   package_id    CHAR(36)       NOT NULL,
   version       VARCHAR(255)   NOT NULL,
   digest        VARCHAR(128)   NULL,
-  metadata_json VARCHAR(65535) NOT NULL DEFAULT '{}',
+  metadata_json TEXT           NOT NULL DEFAULT ('{}'),
   published_by  CHAR(36)       NULL,
   created_at    TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_package_versions_pkg_ver (package_id, version),
