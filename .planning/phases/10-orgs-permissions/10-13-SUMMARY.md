@@ -19,7 +19,7 @@ affects:
 actuals:
   tokens: 8443
   tasks: 1
-  commits: 4
+  commits: 5
 
 plan_head_before: ce18402f00a49b78c5ec9b5dce68d0ee7cfd7f4e
 
@@ -106,7 +106,7 @@ status: complete
 
 1. **Task 1: End-to-end org.create — RPC + /orgs/new** - `5d7a6d3` (feat)
 
-**Plan metadata:** `ebe0571` (docs: complete plan); `96a4141` (docs: WINDOWS ledger)
+**Plan metadata:** `ebe0571` / `96a4141` / `f5f951a` (docs)
 
 ## Tracer feedback gate
 
