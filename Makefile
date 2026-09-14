@@ -1,4 +1,5 @@
 .PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
+	smoke-packages \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix
@@ -27,6 +28,7 @@ help:
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
+	@echo "  make smoke-packages  - Traefik /v2|/npm|/generic → API smoke (PKG-01..03)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
@@ -133,6 +135,11 @@ smoke-git-https:
 # Requires stack with SSH listener; docker-missing skips exit 0. See scripts/smoke-git-ssh.sh.
 smoke-git-ssh:
 	@./scripts/smoke-git-ssh.sh
+
+# Requires stack already up (`make up`). Traefik PathPrefix /v2|/npm|/generic → api.
+# Docker-missing skips exit 0. See scripts/smoke-packages.sh.
+smoke-packages:
+	@./scripts/smoke-packages.sh
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh
