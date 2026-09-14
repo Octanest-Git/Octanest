@@ -27,7 +27,9 @@ use octanest_core::{
     RepoBranchRenameRequest, RepoCommitRequest, RepoCommitResponse, RepoCommitSummary,
     RepoCommitsRequest, RepoCommitsResponse, RepoCompareRequest, RepoCompareResponse,
     RepoCreateDefaults, RepoDiffFile, RepoBlobRequest, RepoBlobResponse, RepoGetRequest,
-    RepoLfsEnabledResponse, RepoLfsGetEnabledRequest, RepoLfsSetEnabledRequest,
+    RepoLfsDownloadRequest, RepoLfsDownloadResponse, RepoLfsEnabledResponse,
+    RepoLfsGetEnabledRequest, RepoLfsListObjectsRequest, RepoLfsListObjectsResponse,
+    RepoLfsObjectEntry, RepoLfsSetEnabledRequest, RepoLfsStatusResponse, RepoLfsUsageResponse,
     RepoListByOwnerRequest, RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse,
     RepoSoftDeleteRequest,
     RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
@@ -710,6 +712,9 @@ pub async fn update_visibility(
     }))
 }
 
+/// Soft cap for session RPC browser Download (D-LFS-18) — larger objects use git-lfs client.
+pub const LFS_RPC_DOWNLOAD_MAX_BYTES: usize = 16 * 1024 * 1024;
+
 /// `repo.lfs.setEnabled` — Admin-only per-repo LFS toggle (D-LFS-10).
 pub async fn lfs_set_enabled(
     ctx: &RpcCtx,
@@ -749,6 +754,184 @@ pub async fn lfs_get_enabled(
         .await
         .map_err(db_err)?;
     Ok(RepoLfsEnabledResponse { enabled })
+}
+
+/// `repo.lfs.getStatus` — enable + light usage for Settings.
+pub async fn lfs_get_status(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsStatusResponse, AppError> {
+    let req: RepoLfsGetEnabledRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.getStatus input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let enabled = ctx
+        .db
+        .get_repo_lfs_enabled(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let object_count = ctx
+        .db
+        .repo_lfs_object_count(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let logical_bytes = ctx
+        .db
+        .lfs_repo_logical_bytes(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    Ok(RepoLfsStatusResponse {
+        enabled,
+        object_count,
+        logical_bytes,
+    })
+}
+
+/// `repo.lfs.getUsage` — this-repo breakdown (D-LFS-19).
+pub async fn lfs_get_usage(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsUsageResponse, AppError> {
+    let req: RepoLfsGetEnabledRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.getUsage input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let enabled = ctx
+        .db
+        .get_repo_lfs_enabled(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let object_count = ctx
+        .db
+        .repo_lfs_object_count(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let logical_bytes = ctx
+        .db
+        .lfs_repo_logical_bytes(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let settings = ctx.db.get_lfs_settings().await.map_err(db_err)?;
+    let quota_repo_bytes = settings.quota_repo_bytes.unwrap_or_else(|| {
+        std::env::var("OCTANEST_LFS_QUOTA_REPO_BYTES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(crate::lfs::quota::DEFAULT_QUOTA_REPO_BYTES)
+    });
+    let objects = ctx
+        .db
+        .list_repo_lfs_objects(&accessible.row.id, 25)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| RepoLfsObjectEntry {
+            oid: r.oid,
+            size: r.size,
+            refcount: r.refcount,
+        })
+        .collect();
+    Ok(RepoLfsUsageResponse {
+        enabled,
+        object_count,
+        logical_bytes,
+        quota_repo_bytes,
+        objects,
+    })
+}
+
+/// `repo.lfs.listObjects` — in-app LFS browser listing (D-LFS-16).
+pub async fn lfs_list_objects(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsListObjectsResponse, AppError> {
+    let req: RepoLfsListObjectsRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.listObjects input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let enabled = ctx
+        .db
+        .get_repo_lfs_enabled(&accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    let limit = req.limit.unwrap_or(100);
+    let objects = ctx
+        .db
+        .list_repo_lfs_objects(&accessible.row.id, limit)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| RepoLfsObjectEntry {
+            oid: r.oid,
+            size: r.size,
+            refcount: r.refcount,
+        })
+        .collect();
+    Ok(RepoLfsListObjectsResponse { enabled, objects })
+}
+
+/// `repo.lfs.download` — session + Read; base64 soft-capped (never PAT / .git/info/lfs cookie).
+pub async fn lfs_download(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoLfsDownloadResponse, AppError> {
+    let req: RepoLfsDownloadRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.lfs.download input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    crate::lfs::store::validate_oid(&req.oid).map_err(|e| {
+        AppError::new("rpc.bad_input", e)
+    })?;
+    let linked = ctx
+        .db
+        .has_lfs_link(&accessible.row.id, &req.oid)
+        .await
+        .map_err(db_err)?;
+    if !linked {
+        return Err(AppError::new(
+            "lfs.object_not_found",
+            "LFS object not found for this repository",
+        ));
+    }
+    let meta = ctx
+        .db
+        .find_lfs_object(&req.oid)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| {
+            AppError::new(
+                "lfs.object_not_found",
+                "LFS object not found for this repository",
+            )
+        })?;
+    if meta.size < 0 || meta.size as usize > LFS_RPC_DOWNLOAD_MAX_BYTES {
+        return Err(AppError::new(
+            "lfs.too_large_for_rpc",
+            format!(
+                "object exceeds browser Download limit ({LFS_RPC_DOWNLOAD_MAX_BYTES} bytes); use git lfs"
+            ),
+        ));
+    }
+    let bytes = crate::lfs::store::read_object(&ctx.lfs_dir, &req.oid)
+        .await
+        .map_err(|e| AppError::new("lfs.read_failed", e))?;
+    Ok(RepoLfsDownloadResponse {
+        oid: req.oid,
+        size: meta.size,
+        encoding: "base64".into(),
+        content: base64_encode(&bytes),
+    })
 }
 
 /// `repo.softDelete` — Admin soft-deletes after typed name confirm (D-35). Disk purge deferred.

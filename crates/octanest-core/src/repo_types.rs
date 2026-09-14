@@ -366,6 +366,94 @@ pub struct RepoLfsGetEnabledRequest {
     pub name: String,
 }
 
+/// `repo.lfs.getStatus` — enable flag + light usage snapshot for Settings (D-LFS-16/19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsStatusResponse {
+    pub enabled: bool,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// Top / listed LFS object row for usage + browser.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsObjectEntry {
+    pub oid: String,
+    pub size: i64,
+    pub refcount: i64,
+}
+
+/// `repo.lfs.getUsage` — this-repo breakdown (D-LFS-19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsUsageResponse {
+    pub enabled: bool,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+    pub quota_repo_bytes: i64,
+    pub objects: Vec<RepoLfsObjectEntry>,
+}
+
+/// `repo.lfs.listObjects` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsListObjectsRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `repo.lfs.listObjects` response — in-app LFS browser (D-LFS-16).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsListObjectsResponse {
+    pub enabled: bool,
+    pub objects: Vec<RepoLfsObjectEntry>,
+}
+
+/// `repo.lfs.download` input — session Read path (D-LFS-18 / A2).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsDownloadRequest {
+    pub owner: String,
+    pub name: String,
+    pub oid: String,
+}
+
+/// Soft-capped base64 payload for browser Download (not git-lfs PAT path).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLfsDownloadResponse {
+    pub oid: String,
+    pub size: i64,
+    pub encoding: String,
+    pub content: String,
+}
+
+/// Per-repo row in admin instance usage breakdown.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsRepoUsageEntry {
+    pub repository_id: String,
+    pub owner: String,
+    pub name: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// Per-owner (user/org) row in admin instance usage breakdown.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsOwnerUsageEntry {
+    pub owner_id: String,
+    pub owner_slug: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// `admin.lfs.getUsage` — instance breakdown (D-LFS-19).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminLfsUsageResponse {
+    pub physical_bytes: i64,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+    pub by_repo: Vec<AdminLfsRepoUsageEntry>,
+    pub by_owner: Vec<AdminLfsOwnerUsageEntry>,
+}
+
 /// `repo.softDelete` input — typed confirm name required (D-35 / T-07-24).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoSoftDeleteRequest {

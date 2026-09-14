@@ -1222,6 +1222,37 @@ impl Database {
         lfs::list_unreferenced_lfs_oids(self.require_pool()?, created_before).await
     }
 
+    pub async fn list_repo_lfs_objects(
+        &self,
+        repository_id: &str,
+        limit: i64,
+    ) -> Result<Vec<lfs::LfsLinkedObjectRow>, String> {
+        lfs::list_repo_lfs_objects(self.require_pool()?, repository_id, limit).await
+    }
+
+    pub async fn repo_lfs_object_count(&self, repository_id: &str) -> Result<i64, String> {
+        lfs::repo_lfs_object_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn instance_lfs_object_count(&self) -> Result<i64, String> {
+        lfs::instance_lfs_object_count(self.require_pool()?).await
+    }
+
+    pub async fn lfs_instance_logical_bytes(&self) -> Result<i64, String> {
+        lfs::instance_logical_bytes(self.require_pool()?).await
+    }
+
+    pub async fn lfs_usage_by_repo(&self, limit: i64) -> Result<Vec<lfs::LfsRepoUsageRow>, String> {
+        lfs::usage_by_repo(self.require_pool()?, limit).await
+    }
+
+    pub async fn lfs_usage_by_owner(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<lfs::LfsOwnerUsageRow>, String> {
+        lfs::usage_by_owner(self.require_pool()?, limit).await
+    }
+
     pub async fn delete_lfs_object(&self, oid: &str) -> Result<(), String> {
         lfs::delete_lfs_object(self.require_pool()?, oid).await
     }

@@ -1131,3 +1131,180 @@ async fn lfs_verify_post_checks_size_and_oid() {
     let got = get.into_body().collect().await.unwrap().to_bytes();
     assert_eq!(&got[..], &payload[0..=4]);
 }
+/// Session RPC surface for Settings/Admin/browser (14-08 / D-LFS-16/18/19).
+#[tokio::test]
+async fn lfs_session_rpc_status_usage_list_download() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_rpc.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos, lfs.clone()).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "rpc@ex.com", "rpcown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    verify_user(&db, user_id).await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"blobs","visibility":"public","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    let repo_id = create_v["data"]["id"].as_str().unwrap();
+
+    app.clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.lfs.setEnabled","input":{"owner":"rpcown","name":"blobs","enabled":true}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+
+    let oid = "a".repeat(64);
+    let payload = b"hello-lfs-rpc";
+    db.upsert_lfs_object(&oid, payload.len() as i64)
+        .await
+        .unwrap();
+    db.link_lfs_object(repo_id, &oid).await.unwrap();
+    let shard = lfs.join(&oid[0..2]).join(&oid[2..4]);
+    tokio::fs::create_dir_all(&shard).await.unwrap();
+    tokio::fs::write(shard.join(&oid), payload).await.unwrap();
+
+    let status = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.lfs.getStatus","input":{"owner":"rpcown","name":"blobs"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(status.status(), StatusCode::OK);
+    let status_v: serde_json::Value =
+        serde_json::from_slice(&status.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(status_v["data"]["enabled"], true);
+    assert_eq!(status_v["data"]["object_count"], 1);
+    assert_eq!(status_v["data"]["logical_bytes"], payload.len() as i64);
+
+    let usage = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.lfs.getUsage","input":{"owner":"rpcown","name":"blobs"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let usage_v: serde_json::Value =
+        serde_json::from_slice(&usage.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(usage_v["data"]["objects"].as_array().unwrap().len(), 1);
+
+    let list = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.lfs.listObjects","input":{"owner":"rpcown","name":"blobs"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let list_v: serde_json::Value =
+        serde_json::from_slice(&list.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(list_v["data"]["objects"][0]["oid"], oid);
+
+    let dl = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            &format!(
+                r#"{{"procedure":"repo.lfs.download","input":{{"owner":"rpcown","name":"blobs","oid":"{oid}"}}}}"#
+            ),
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(dl.status(), StatusCode::OK);
+    let dl_v: serde_json::Value =
+        serde_json::from_slice(&dl.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(dl_v["data"]["encoding"], "base64");
+    assert!(!dl_v["data"]["content"].as_str().unwrap().is_empty());
+}
+
+/// admin.lfs.getUsage requires sys-admin (D-LFS-19).
+#[tokio::test]
+async fn lfs_admin_get_usage_breakdown() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let lfs = dir.path().join("lfs");
+    let url = format!("sqlite:{}", dir.path().join("lfs_adm_u.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let hash = octanest_api::auth::hash_password_str("password1").expect("hash");
+    let admin_id = uuid::Uuid::new_v4().to_string();
+    db.create_user(
+        &admin_id,
+        "admu@ex.com",
+        "admu",
+        Some(&hash),
+        "Admin",
+        "",
+        None,
+        octanest_core::Role::SysAdmin,
+    )
+    .await
+    .expect("create admin");
+    verify_user(&db, &admin_id).await;
+
+    let app = test_app(db.clone(), repos, lfs.clone()).await;
+    let login = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.login","input":{"identifier":"admu@ex.com","password":"password1","remember_me":false}}"#,
+        ))
+        .await
+        .unwrap();
+    let cookie = session_cookie_from_response(&login);
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"lim","visibility":"public","description":""}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    let repo_id = create_v["data"]["id"].as_str().unwrap();
+
+    let oid = "b".repeat(64);
+    let payload = b"admin-usage";
+    db.upsert_lfs_object(&oid, payload.len() as i64)
+        .await
+        .unwrap();
+    db.link_lfs_object(repo_id, &oid).await.unwrap();
+    let shard = lfs.join(&oid[0..2]).join(&oid[2..4]);
+    tokio::fs::create_dir_all(&shard).await.unwrap();
+    tokio::fs::write(shard.join(&oid), payload).await.unwrap();
+
+    let usage = app
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"admin.lfs.getUsage","input":{}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(usage.status(), StatusCode::OK);
+    let usage_v: serde_json::Value =
+        serde_json::from_slice(&usage.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(usage_v["ok"], true);
+    assert!(usage_v["data"]["physical_bytes"].as_i64().unwrap() >= payload.len() as i64);
+    assert_eq!(usage_v["data"]["object_count"], 1);
+    assert!(!usage_v["data"]["by_repo"].as_array().unwrap().is_empty());
+    assert!(!usage_v["data"]["by_owner"].as_array().unwrap().is_empty());
+}

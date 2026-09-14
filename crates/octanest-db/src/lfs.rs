@@ -589,3 +589,371 @@ pub async fn delete_lfs_object(pool: &DbPool, oid: &str) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[derive(Debug, Clone)]
+pub struct LfsLinkedObjectRow {
+    pub oid: String,
+    pub size: i64,
+    pub refcount: i64,
+}
+
+/// Linked objects for a repo, largest first.
+pub async fn list_repo_lfs_objects(
+    pool: &DbPool,
+    repository_id: &str,
+    limit: i64,
+) -> Result<Vec<LfsLinkedObjectRow>, String> {
+    let limit = limit.clamp(1, 500);
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT l.oid AS oid, o.size AS size, l.refcount AS refcount
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid
+                 WHERE l.repository_id = ?
+                 ORDER BY o.size DESC, l.oid ASC
+                 LIMIT ?",
+            )
+            .bind(repository_id)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_repo_lfs_objects: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsLinkedObjectRow {
+                    oid: r.try_get::<String, _>("oid").unwrap_or_default(),
+                    size: r.try_get::<i64, _>("size").unwrap_or(0),
+                    refcount: r.try_get::<i64, _>("refcount").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT l.oid AS oid, o.size AS size, l.refcount AS refcount
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid
+                 WHERE l.repository_id = $1
+                 ORDER BY o.size DESC, l.oid ASC
+                 LIMIT $2",
+            )
+            .bind(repository_id)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_repo_lfs_objects: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsLinkedObjectRow {
+                    oid: r.try_get::<String, _>("oid").unwrap_or_default(),
+                    size: r.try_get::<i64, _>("size").unwrap_or(0),
+                    refcount: r.try_get::<i64, _>("refcount").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT l.oid AS oid, o.size AS size, l.refcount AS refcount
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid
+                 WHERE l.repository_id = ?
+                 ORDER BY o.size DESC, l.oid ASC
+                 LIMIT ?",
+            )
+            .bind(repository_id)
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list_repo_lfs_objects: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsLinkedObjectRow {
+                    oid: r.try_get::<String, _>("oid").unwrap_or_default(),
+                    size: r.try_get::<i64, _>("size").unwrap_or(0),
+                    refcount: r.try_get::<i64, _>("refcount").unwrap_or(0),
+                })
+                .collect())
+        }
+    }
+}
+
+pub async fn repo_lfs_object_count(pool: &DbPool, repository_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query(
+                "SELECT COUNT(*) AS c FROM lfs_object_links WHERE repository_id = ?",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("repo_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+        DbPool::Postgres(p) => {
+            let row = sqlx::query(
+                "SELECT COUNT(*)::bigint AS c FROM lfs_object_links WHERE repository_id = $1",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("repo_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query(
+                "SELECT COUNT(*) AS c FROM lfs_object_links WHERE repository_id = ?",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("repo_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+    }
+}
+
+pub async fn instance_lfs_object_count(pool: &DbPool) -> Result<i64, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query("SELECT COUNT(*) AS c FROM lfs_objects")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("instance_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+        DbPool::Postgres(p) => {
+            let row = sqlx::query("SELECT COUNT(*)::bigint AS c FROM lfs_objects")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("instance_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query("SELECT COUNT(*) AS c FROM lfs_objects")
+                .fetch_one(p)
+                .await
+                .map_err(|e| format!("instance_lfs_object_count: {e}"))?;
+            Ok(row.try_get::<i64, _>("c").unwrap_or(0))
+        }
+    }
+}
+
+pub async fn instance_logical_bytes(pool: &DbPool) -> Result<i64, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let row = sqlx::query(
+                "SELECT COALESCE(SUM(o.size), 0) AS total
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid",
+            )
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("instance_logical_bytes: {e}"))?;
+            Ok(row.try_get::<i64, _>("total").unwrap_or(0))
+        }
+        DbPool::Postgres(p) => {
+            let row = sqlx::query(
+                "SELECT COALESCE(SUM(o.size), 0) AS total
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid",
+            )
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("instance_logical_bytes: {e}"))?;
+            Ok(row.try_get::<i64, _>("total").unwrap_or(0))
+        }
+        DbPool::MySql(p) => {
+            let row = sqlx::query(
+                "SELECT COALESCE(SUM(o.size), 0) AS total
+                 FROM lfs_object_links l
+                 JOIN lfs_objects o ON o.oid = l.oid",
+            )
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("instance_logical_bytes: {e}"))?;
+            Ok(row.try_get::<i64, _>("total").unwrap_or(0))
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LfsRepoUsageRow {
+    pub repository_id: String,
+    pub owner_id: String,
+    pub owner_slug: String,
+    pub name: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+/// Usage grouped by repository (largest first).
+pub async fn usage_by_repo(pool: &DbPool, limit: i64) -> Result<Vec<LfsRepoUsageRow>, String> {
+    let limit = limit.clamp(1, 500);
+    // owner slug: prefer users.username, else organizations.slug
+    let sql_sqlite = "SELECT r.id AS repository_id, r.owner_id AS owner_id, r.name AS name,
+            COALESCE(u.username, o.slug, r.owner_id) AS owner_slug,
+            COUNT(l.oid) AS object_count,
+            COALESCE(SUM(obj.size), 0) AS logical_bytes
+         FROM repositories r
+         JOIN lfs_object_links l ON l.repository_id = r.id
+         JOIN lfs_objects obj ON obj.oid = l.oid
+         LEFT JOIN users u ON u.id = r.owner_id
+         LEFT JOIN organizations o ON o.id = r.owner_id
+         GROUP BY r.id, r.owner_id, r.name, owner_slug
+         ORDER BY logical_bytes DESC
+         LIMIT ?";
+    let sql_pg = "SELECT r.id AS repository_id, r.owner_id AS owner_id, r.name AS name,
+            COALESCE(u.username, o.slug, r.owner_id) AS owner_slug,
+            COUNT(l.oid)::bigint AS object_count,
+            COALESCE(SUM(obj.size), 0) AS logical_bytes
+         FROM repositories r
+         JOIN lfs_object_links l ON l.repository_id = r.id
+         JOIN lfs_objects obj ON obj.oid = l.oid
+         LEFT JOIN users u ON u.id = r.owner_id
+         LEFT JOIN organizations o ON o.id = r.owner_id
+         GROUP BY r.id, r.owner_id, r.name, u.username, o.slug
+         ORDER BY logical_bytes DESC
+         LIMIT $1";
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(sql_sqlite)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_repo: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsRepoUsageRow {
+                    repository_id: r.try_get::<String, _>("repository_id").unwrap_or_default(),
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    name: r.try_get::<String, _>("name").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(sql_pg)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_repo: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsRepoUsageRow {
+                    repository_id: r.try_get::<String, _>("repository_id").unwrap_or_default(),
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    name: r.try_get::<String, _>("name").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(sql_sqlite)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_repo: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsRepoUsageRow {
+                    repository_id: r.try_get::<String, _>("repository_id").unwrap_or_default(),
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    name: r.try_get::<String, _>("name").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LfsOwnerUsageRow {
+    pub owner_id: String,
+    pub owner_slug: String,
+    pub object_count: i64,
+    pub logical_bytes: i64,
+}
+
+pub async fn usage_by_owner(pool: &DbPool, limit: i64) -> Result<Vec<LfsOwnerUsageRow>, String> {
+    let limit = limit.clamp(1, 500);
+    let sql_sqlite = "SELECT r.owner_id AS owner_id,
+            COALESCE(u.username, o.slug, r.owner_id) AS owner_slug,
+            COUNT(l.oid) AS object_count,
+            COALESCE(SUM(obj.size), 0) AS logical_bytes
+         FROM repositories r
+         JOIN lfs_object_links l ON l.repository_id = r.id
+         JOIN lfs_objects obj ON obj.oid = l.oid
+         LEFT JOIN users u ON u.id = r.owner_id
+         LEFT JOIN organizations o ON o.id = r.owner_id
+         GROUP BY r.owner_id, owner_slug
+         ORDER BY logical_bytes DESC
+         LIMIT ?";
+    let sql_pg = "SELECT r.owner_id AS owner_id,
+            COALESCE(u.username, o.slug, r.owner_id) AS owner_slug,
+            COUNT(l.oid)::bigint AS object_count,
+            COALESCE(SUM(obj.size), 0) AS logical_bytes
+         FROM repositories r
+         JOIN lfs_object_links l ON l.repository_id = r.id
+         JOIN lfs_objects obj ON obj.oid = l.oid
+         LEFT JOIN users u ON u.id = r.owner_id
+         LEFT JOIN organizations o ON o.id = r.owner_id
+         GROUP BY r.owner_id, u.username, o.slug
+         ORDER BY logical_bytes DESC
+         LIMIT $1";
+    match pool {
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(sql_sqlite)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_owner: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsOwnerUsageRow {
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(sql_pg)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_owner: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsOwnerUsageRow {
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(sql_sqlite)
+                .bind(limit)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("usage_by_owner: {e}"))?;
+            Ok(rows
+                .into_iter()
+                .map(|r| LfsOwnerUsageRow {
+                    owner_id: r.try_get::<String, _>("owner_id").unwrap_or_default(),
+                    owner_slug: r.try_get::<String, _>("owner_slug").unwrap_or_default(),
+                    object_count: r.try_get::<i64, _>("object_count").unwrap_or(0),
+                    logical_bytes: r.try_get::<i64, _>("logical_bytes").unwrap_or(0),
+                })
+                .collect())
+        }
+    }
+}

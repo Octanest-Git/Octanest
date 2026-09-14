@@ -5,7 +5,8 @@ use std::sync::Arc;
 use std::path::Path;
 
 use octanest_core::{
-    AdminLfsSettingsPublic, AdminLfsUpdateSettingsRequest, AppError, AuthSettingsPublic,
+    AdminLfsSettingsPublic, AdminLfsUpdateSettingsRequest, AdminLfsUsageResponse,
+    AdminLfsOwnerUsageEntry, AdminLfsRepoUsageEntry, AppError, AuthSettingsPublic,
     EmailProviderKind, FactoryResetRequest, FactoryResetResponse, FactoryResetScope, ProviderMode,
     RepoVisibility, UpdateAuthSettingsRequest,
 };
@@ -425,6 +426,48 @@ pub async fn lfs_update_settings(
             .map_err(db_err)?;
     }
     lfs_get_settings(ctx).await
+}
+
+/// `admin.lfs.getUsage` — instance physical + logical breakdown (D-LFS-19).
+pub async fn lfs_get_usage(ctx: &RpcCtx) -> Result<AdminLfsUsageResponse, AppError> {
+    require_admin(ctx).await?;
+    let physical_bytes = ctx.db.lfs_physical_bytes().await.map_err(db_err)?;
+    let object_count = ctx.db.instance_lfs_object_count().await.map_err(db_err)?;
+    let logical_bytes = ctx.db.lfs_instance_logical_bytes().await.map_err(db_err)?;
+    let by_repo = ctx
+        .db
+        .lfs_usage_by_repo(100)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| AdminLfsRepoUsageEntry {
+            repository_id: r.repository_id,
+            owner: r.owner_slug,
+            name: r.name,
+            object_count: r.object_count,
+            logical_bytes: r.logical_bytes,
+        })
+        .collect();
+    let by_owner = ctx
+        .db
+        .lfs_usage_by_owner(100)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|r| AdminLfsOwnerUsageEntry {
+            owner_id: r.owner_id,
+            owner_slug: r.owner_slug,
+            object_count: r.object_count,
+            logical_bytes: r.logical_bytes,
+        })
+        .collect();
+    Ok(AdminLfsUsageResponse {
+        physical_bytes,
+        object_count,
+        logical_bytes,
+        by_repo,
+        by_owner,
+    })
 }
 
 fn path_is_under(path: &Path, root: &Path) -> bool {
