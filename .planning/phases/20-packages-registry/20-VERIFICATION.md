@@ -1,8 +1,8 @@
 ---
 phase: 20-packages-registry
-verified: 2026-09-14T18:05:48Z
-status: gaps_found
-score: 6/7 must-haves verified
+verified: 2026-09-14T18:10:12Z
+status: passed
+score: 7/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 covered_files:
@@ -77,32 +77,27 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-packages.sh
-covered_digest: "v1:sha256:bf26bffeb522172f9a1f53f76b68487cc0393c64128bd4fc5e9e27e89e1aa890"
+covered_digest: "v1:sha256:f88a9f065434a2d8af6fe06bf060cb0fd9b801cbf45640e1320ad7ca1383d66f"
 decision_coverage:
   honored: 16
   total: 16
   not_honored: []
-gaps:
-  - truth: "Repo packages page lists packages linked to that repository (D-PKG-11)"
-    status: failed
-    reason: "`$owner.$repo.packages.tsrx` calls `packages.list({ owner })` then filters only `repository_id != null`; it never resolves `$repo` to an id or passes `repository_id`, so packages linked to any repo of the owner appear on every repo packages page."
-    artifacts:
-      - path: apps/web/src/routes/$owner.$repo.packages.tsrx
-        issue: "Client filter ignores route `repo` slug; API `packages.list` by `repository_id` is unused"
-      - path: apps/web/src/routes/$owner.$repo.packages.integration.test.ts
-        issue: "Vitest only asserts `typeof RepoPackagesPage === 'function'` — does not catch wrong filter"
-    missing:
-      - "Resolve owner/repo to repository_id (or call packages.list with repository_id)"
-      - "Filter/list only packages whose repository_id matches that repository"
-      - "Strengthen Vitest to assert repo-scoped listing behavior"
+re_verification:
+  previous_status: gaps_found
+  previous_score: 6/7
+  gaps_closed:
+    - "Repo packages page lists packages linked to that repository (D-PKG-11)"
+  gaps_remaining: []
+  regressions: []
+advisory: []
 ---
 
 # Phase 20: Packages Registry Verification Report
 
 **Phase Goal:** Users can publish and pull OCI, npm, and generic/raw packages scoped to repo/org with the same auth/visibility rules  
-**Verified:** 2026-09-14T18:05:48Z  
-**Status:** gaps_found  
-**Re-verification:** No — initial verification  
+**Verified:** 2026-09-14T18:10:12Z  
+**Status:** passed  
+**Re-verification:** Yes — after gap closure (`fccad92`)  
 **Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-phase20` (`feat/execute-20-packages`)  
 **Migration:** `0015_packages` (postgres/sqlite/mysql) — confirmed; not 0012/0013
 
@@ -112,66 +107,63 @@ gaps:
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | User can publish and pull OCI container images from an instance registry scoped to a repo or org | ✓ VERIFIED | `oci.rs` (~954 lines) mounts `/v2`; `oci_registry_auth_push_manifest_blob` + `oci_registry_anonymous_public_pull` pass; digests immutable / tags mutable covered |
-| 2 | User can publish and pull npm packages and generic/raw packages from an instance registry scoped to a repo or org | ✓ VERIFIED | `npm.rs` / `generic.rs` substantive; `npm_registry_publish_put_attachment` + `generic_registry_put_file` pass; packument/tarball/dist-tags/search present |
-| 3 | Registry packages respect the same auth/visibility rules as their owning repo/org | ✓ VERIFIED | `acl.rs` hybrid ACL∩PAT; `package_acl_*` tests green; handlers call `authorize_*`; classic `repo` alone denied |
-| 4 | User can list and delete package versions they are permitted to manage | ✓ VERIFIED | `packages.list` / `packages.deleteVersion` in `rpc.rs` + `rpc.rs` dispatch; `package_rpc_delete_version_admin_confirm` pass; owner UI wires list + type-to-confirm delete |
-| 5 | Repo packages page lists packages linked to that repository (D-PKG-11) | ✗ FAILED | Page shows any owner package with non-null `repository_id`; `$repo` unused for filtering; RPC `list_by_repository` unused by UI |
-| 6 | Uploads exceeding max blob / owner quota rejected; Admin quota RPC; GC keeps live refs | ✓ VERIFIED | `package_quota_rejects_over_owner_limit` + `package_gc_keeps_shared_blob_and_removes_unref` pass; GC scheduled in `jobs/schedule.rs` |
-| 7 | Docs describe `/v2` `/npm` `/generic`, PACKAGES_DIR, PAT scopes; edge smoke skip-ok | ✓ VERIFIED | `docs/CONFIGURATION.md` + `docs/API.md`; Compose Traefik PathPrefix + Vite proxy; `smoke-packages.sh` skip-ok when Compose down |
+| 1 | User can publish and pull OCI container images from an instance registry scoped to a repo or org | ✓ VERIFIED | Prior pass + regression: `oci.rs` mounted; artifacts present (sanity) |
+| 2 | User can publish and pull npm packages and generic/raw packages from an instance registry scoped to a repo or org | ✓ VERIFIED | Prior pass + regression: `npm.rs` / `generic.rs` present |
+| 3 | Registry packages respect the same auth/visibility rules as their owning repo/org | ✓ VERIFIED | Prior pass: `acl.rs` hybrid ACL∩PAT |
+| 4 | User can list and delete package versions they are permitted to manage | ✓ VERIFIED | Prior pass: `packages.list` / `deleteVersion` RPC + owner UI |
+| 5 | Repo packages page lists packages linked to that repository (D-PKG-11) | ✓ VERIFIED | `$owner.$repo.packages.tsrx`: `repo.get` → `packagesListQueryOptions({ repository_id })`; old owner-wide soft-filter removed; Vitest `?raw` asserts `repo.get` + `repository_id` and rejects owner-only list; `package_rpc_list_by_repo_link` ok |
+| 6 | Uploads exceeding max blob / owner quota rejected; Admin quota RPC; GC keeps live refs | ✓ VERIFIED | Prior pass: quota + GC tests / schedule |
+| 7 | Docs describe `/v2` `/npm` `/generic`, PACKAGES_DIR, PAT scopes; edge smoke skip-ok | ✓ VERIFIED | Prior pass: docs + Compose/Vite + `smoke-packages.sh` |
 
-**Score:** 6/7 truths verified (0 present, behavior-unverified)
+**Score:** 7/7 truths verified (0 present, behavior-unverified)
+
+### Advisory (New Scope, Unevidenced)
+
+None — re-verification Step 7 found no new-scope unevidenced blockers.
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0015_packages.sql` | Schema packages/versions/blobs/refs/quotas | ✓ VERIFIED | All three dialects; dialect test green |
+| `crates/octanest-db/migrations/*/0015_packages.sql` | Schema packages/versions/blobs/refs/quotas | ✓ VERIFIED | All three dialects present |
 | `crates/octanest-api/src/packages/{oci,npm,generic,acl,auth,store,rpc,quota}.rs` | Protocol + shared subsystem | ✓ VERIFIED | Substantive; mounted in `app.rs` |
-| `crates/octanest-api/tests/{oci,npm,generic}_registry.rs` + `package_*.rs` | Behavioral coverage | ✓ VERIFIED | Named tests pass; no `#[ignore]` stubs left |
-| `apps/web/src/routes/$owner.packages.tsrx` | Owner list + delete | ✓ VERIFIED | Query + mutation wired to api-client |
-| `apps/web/src/routes/$owner.$repo.packages.tsrx` | Repo-linked list | ✗ HOLLOW | Exists + renders but data filter wrong (see gap) |
-| `apps/web/src/components/packages/delete-version-dialog.tsrx` | Type-to-confirm | ✓ VERIFIED | Gates confirm button on `name@version` |
-| `apps/web/src/routes/admin/packages.tsrx` | Admin quota UI | ✓ VERIFIED | `adminUsage` / `adminSetQuota` Query/Mutation |
-| `apps/web/src/components/settings/pat-*-form.tsrx` | package:read/write + FG | ✓ VERIFIED | Classic + FG PackagesPerm controls |
+| `crates/octanest-api/tests/{oci,npm,generic}_registry.rs` + `package_*.rs` | Behavioral coverage | ✓ VERIFIED | Named RPC list-by-repo test re-run green |
+| `apps/web/src/routes/$owner.packages.tsrx` | Owner list + delete | ✓ VERIFIED | Query + mutation wired |
+| `apps/web/src/routes/$owner.$repo.packages.tsrx` | Repo-linked list | ✓ VERIFIED | Resolves repo id then lists by `repository_id` |
+| `apps/web/src/components/packages/delete-version-dialog.tsrx` | Type-to-confirm | ✓ VERIFIED | Prior pass |
+| `apps/web/src/routes/admin/packages.tsrx` | Admin quota UI | ✓ VERIFIED | Prior pass |
+| `apps/web/src/components/settings/pat-*-form.tsrx` | package:read/write + FG | ✓ VERIFIED | Prior pass |
 | `scripts/smoke-packages.sh` | Edge routing smoke | ✓ VERIFIED | Skip-ok without Docker/Compose |
-| `packages/api-client` packages.* | Generated RPC client | ✓ VERIFIED | `packages.list/deleteVersion/admin*` present |
+| `packages/api-client` packages.* | Generated RPC client | ✓ VERIFIED | `packagesListQueryOptions` accepts `PackagesListRequest` incl. `repository_id` |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
-| `app.rs` | `packages::{oci,npm,generic}::router` | nest `/v2` `/npm` `/generic` | WIRED | Lines 172–176 |
-| Protocol handlers | `acl` + `store` + `quota` | authorize + CA commit + check_can_store | WIRED | Grep across oci/npm/generic |
-| `rpc.rs` dispatch | `packages::rpc::*` | `packages.list` / `deleteVersion` / admin | WIRED | `crates/octanest-api/src/rpc.rs` |
-| Owner packages UI | `@octanest/api-client` | `packagesListQueryOptions` / delete mutation | WIRED | `$owner.packages.tsrx` |
-| Repo packages UI | `packages.list` by `repository_id` | Should use repo id | NOT_WIRED | Lists by owner only |
-| Traefik / Vite | API | PathPrefix / proxy | WIRED | `docker-compose.yml`, `vite.config.ts` |
-| GC job | `quota::gc_unref_blobs` | schedule interval | WIRED | `jobs/schedule.rs` |
+| `app.rs` | `packages::{oci,npm,generic}::router` | nest `/v2` `/npm` `/generic` | WIRED | Prior pass |
+| Protocol handlers | `acl` + `store` + `quota` | authorize + CA commit + check_can_store | WIRED | Prior pass |
+| `rpc.rs` dispatch | `packages::rpc::*` | `packages.list` / `deleteVersion` / admin | WIRED | `list` branches on `repository_id` → `list_packages_by_repository` |
+| Owner packages UI | `@octanest/api-client` | `packagesListQueryOptions` / delete mutation | WIRED | Prior pass |
+| Repo packages UI | `packages.list` by `repository_id` | `repo.get` → id → list | WIRED | Fixed in `fccad92` |
+| Traefik / Vite | API | PathPrefix / proxy | WIRED | Prior pass |
+| GC job | `quota::gc_unref_blobs` | schedule interval | WIRED | Prior pass |
 
 ### Data-Flow Trace (Level 4)
 
 | Artifact | Data Variable | Source | Produces Real Data | Status |
 | -------- | ------------- | ------ | ------------------ | ------ |
 | `$owner.packages.tsrx` | `packages` | `packages.list` RPC → DB | Yes | ✓ FLOWING |
-| `$owner.$repo.packages.tsrx` | `packages` | `packages.list({owner})` then wrong client filter | Partial / wrong scope | ⚠️ HOLLOW |
+| `$owner.$repo.packages.tsrx` | `packages` | `repo.get` → `packages.list({ repository_id })` → DB | Yes | ✓ FLOWING |
 | `admin/packages.tsrx` | `usageQ.data` | `packages.adminUsage` | Yes when lookup set | ✓ FLOWING |
 | OCI/npm/generic GET | blob/tarball bytes | CA store + DB refs | Yes (integration tests) | ✓ FLOWING |
 
 ### Behavioral Spot-Checks
 
 | Behavior | Command | Result | Status |
-| -------- | ------- | ------ | ------ |
-| OCI push/pull auth | `cargo test -p octanest-api --test oci_registry oci_registry_auth_push_manifest_blob -- --exact` | ok | ✓ PASS |
-| npm publish | `… npm_registry_publish_put_attachment -- --exact` | ok | ✓ PASS |
-| generic PUT | `… generic_registry_put_file -- --exact` | ok | ✓ PASS |
-| ACL publish matrix | `… package_acl_publish_needs_write_and_package_write -- --exact` | ok | ✓ PASS |
-| RPC delete confirm | `… package_rpc_delete_version_admin_confirm -- --exact` | ok | ✓ PASS |
-| RPC list by repo | `… package_rpc_list_by_repo_link -- --exact` | ok | ✓ PASS |
-| Quota reject | `… package_quota_rejects_over_owner_limit -- --exact` | ok | ✓ PASS |
-| GC refcount | `… package_gc_keeps_shared_blob_and_removes_unref -- --exact` | ok | ✓ PASS |
-| dialect 0014 | `cargo test -p octanest-db --test dialect_packages -- --exact` | ok | ✓ PASS |
-| smoke-packages | `./scripts/smoke-packages.sh` | skip (Compose not running) | ? SKIP (skip-ok) |
+| -------- | ------- | ------ | ------- |
+| Repo UI scopes by repository_id | `bunx vitest run src/routes/$owner.$repo.packages.integration.test.ts` | 2 passed | ✓ PASS |
+| RPC list by repo | `cargo test -p octanest-api --test package_rpc package_rpc_list_by_repo_link -- --exact` | ok | ✓ PASS |
+| Migration id | `ls …/0015_packages.sql` (3 dialects) | present | ✓ PASS |
 
 ### Probe Execution
 
@@ -183,13 +175,13 @@ gaps:
 
 | Requirement | Source Plan | Description | Status | Evidence |
 | ----------- | ---------- | ----------- | ------ | -------- |
-| PKG-01 | 00,05,12 | OCI publish/pull | ✓ SATISFIED | oci handlers + `oci_registry` tests |
-| PKG-02 | 00,06,07,12 | npm publish/pull (+ dist-tags/search) | ✓ SATISFIED | npm handlers + tests |
-| PKG-03 | 00,04,12 | generic/raw | ✓ SATISFIED | generic handlers + tests |
-| PKG-04 | 00,02,03,05,11 | Auth/visibility hybrid | ✓ SATISFIED | acl + PAT scopes + tokens UI |
-| PKG-05 | 00,08,10,11 | List/delete manage | ⚠️ PARTIAL | Owner list/delete OK; repo-linked UI wrong filter |
+| PKG-01 | 00,05,12 | OCI publish/pull | ✓ SATISFIED | oci handlers + tests (prior) |
+| PKG-02 | 00,06,07,12 | npm publish/pull (+ dist-tags/search) | ✓ SATISFIED | npm handlers + tests (prior) |
+| PKG-03 | 00,04,12 | generic/raw | ✓ SATISFIED | generic handlers + tests (prior) |
+| PKG-04 | 00,02,03,05,11 | Auth/visibility hybrid | ✓ SATISFIED | acl + PAT scopes + tokens UI (prior) |
+| PKG-05 | 00,08,10,11 | List/delete manage | ✓ SATISFIED | Owner + repo-scoped list (`repository_id`); delete RPC/UI |
 
-Orphaned requirements mapped to Phase 20 but unclaimed by plans: none (PKG-01…05 all claimed).
+Orphaned requirements mapped to Phase 20 but unclaimed by plans: none.
 
 ### Decision Coverage
 
@@ -199,44 +191,31 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (16/16). Gat
 
 | Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
 |-----------|-----------|--------|---------|----------|-----------------|---------|
-| `oci_registry.rs` | PKG-01 | 8 | 0 | 0 | Behavioral | PASS |
-| `npm_registry.rs` | PKG-02 | 7 | 0 | 0 | Behavioral | PASS |
-| `generic_registry.rs` | PKG-03 | 5 | 0 | 0 | Behavioral | PASS |
-| `package_acl.rs` | PKG-04 | 4 | 0 | 0 | Value | PASS |
 | `package_rpc.rs` | PKG-05 | 6 | 0 | 0 | Behavioral | PASS |
-| `$owner.packages.integration.test.ts` | PKG-05 | 3 | 0 | 0 | Existence/type only | ⚠️ INSUFFICIENT |
-| `$owner.$repo.packages.integration.test.ts` | PKG-05 | 2 | 0 | 0 | Existence only | ⚠️ INSUFFICIENT (missed gap) |
-| `admin/packages.integration.test.ts` | PKG-05 | 2 | 0 | 0 | Existence | ⚠️ INSUFFICIENT |
-| `tokens.packages.integration.test.ts` | PKG-04 | 3 | 0 | 0 | Existence | ⚠️ INSUFFICIENT |
+| `$owner.$repo.packages.integration.test.ts` | PKG-05 | 2 | 0 | 0 | Value (`?raw` source contract) | PASS (gap closed) |
+| Other registry/acl/quota/web files | PKG-01…05 | — | 0 | 0 | Prior audit | Unchanged |
 
 **Disabled tests on requirements:** 0  
 **Circular patterns detected:** 0  
-**Insufficient assertions:** 4 web integration files (WARNING — does not alone flip status; repo gap already BLOCKER)
+**Insufficient assertions:** remaining web typeof-only files are WARNING only (not blocking; not the prior gap)
 
 ### Anti-Patterns Found
 
 | File | Line | Pattern | Severity | Impact |
 | ---- | ---- | ------- | -------- | ------ |
-| `dialect_packages.rs` | ~27 | Assert message says `"0012 must define {}"` while checking `0015_packages.sql` | ℹ️ Info | Misleading failure text only; migration id is correct |
-| `$owner.$repo.packages.tsrx` | 28–31 | Wrong client-side filter | 🛑 Blocker | D-PKG-11 repo-linked view incorrect |
-| Web `*.packages.integration.test.ts` | — | typeof-only stubs left after Wave 0 | ⚠️ Warning | Weak UI regression net |
+| `dialect_packages.rs` | ~27 | Assert message says `"0012 must define {}"` while checking `0015_packages.sql` | ℹ️ Info / 📋 Advisory-eligible | Misleading failure text only; predates gap closure; not in prior `gaps:`; no regression evidence |
 
-No unresolved `TBD`/`FIXME`/`XXX` debt markers in packages implementation files.
+No unresolved `TBD`/`FIXME`/`XXX` debt markers in gap-fix files. Prior D-PKG-11 wrong-filter blocker is closed.
 
 ### Human Verification Required
 
-(Informational while status is `gaps_found` — from VALIDATION.md; re-run UAT after gap closure.)
-
-1. **docker login/push/pull** — Login with PAT-as-password; push `{host}/{owner}/{image}:tag`; anonymous pull if public  
-2. **npm publish/install** — Registry `{PUBLIC_ORIGIN}/npm/{owner}/`; publish then install clean  
-3. **Type-to-confirm delete UI** — Cancel leaves version; Confirm with `name@version` removes  
-4. **Admin packages page** — Usage breakdown readable vs env defaults  
+(None for status.) Optional edge UAT remains documented in `20-VALIDATION.md` (docker/npm client flows, delete confirm UX, admin quota page) — not required to close must-haves; protocol truths already covered by Rust integration tests.
 
 ### Gaps Summary
 
-Registry protocols (OCI/npm/generic), hybrid ACL∩PAT, session RPC list/delete, quotas/GC, owner packages UI, admin/tokens UI, docs, and `0015_packages` migration are present, wired, and backed by passing Rust tests. One D-PKG-11 gap blocks phase close: the repo packages route does not scope to the repository in the URL (backend list-by-repo works; UI does not use it). Fix that filter (and preferably strengthen the matching Vitest), then re-verify.
+Prior gap (D-PKG-11 repo packages page listing by owner instead of `repository_id`) is closed in `fccad92`: page resolves `repo.get` then calls `packages.list({ repository_id })`; Vitest enforces the wiring via `?raw`. All 7 must-have truths verified. Phase goal achieved. No remaining gaps.
 
 ---
 
-_Verified: 2026-09-14T18:05:48Z_  
+_Verified: 2026-09-14T18:10:12Z_  
 _Verifier: Claude (gsd-verifier)_
