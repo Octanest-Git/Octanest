@@ -762,13 +762,23 @@ impl Database {
         .await
     }
 
-    /// Wipe auth data so the instance returns to empty-setup (`needs_setup`).
-    /// Deletes sessions, identities, email tokens, and users; resets auth settings
-    /// to local/log defaults with signup closed.
+    /// Wipe tenant + auth data so the instance returns to empty-setup (`needs_setup`).
+    /// Deletes repositories (cascades collaborators / PAT-repo links), organizations
+    /// (cascades members / invites), then sessions, identities, email tokens, and
+    /// users; resets auth settings to local/log defaults with signup closed.
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
         match pool {
             Pool::Postgres(p) => {
+                // Polymorphic repos no longer cascade from users — wipe explicitly (T-10-15).
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
                 sqlx::query("DELETE FROM auth_email_tokens")
                     .execute(p)
                     .await
@@ -802,6 +812,14 @@ impl Database {
                 .map_err(|e| e.to_string())?;
             }
             Pool::MySql(p) => {
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
                 sqlx::query("DELETE FROM auth_email_tokens")
                     .execute(p)
                     .await
@@ -837,6 +855,14 @@ impl Database {
             Pool::Sqlite(p) => {
                 // Ensure FK cascades / order are honored.
                 sqlx::query("PRAGMA foreign_keys = ON")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM repositories")
+                    .execute(p)
+                    .await
+                    .map_err(|e| e.to_string())?;
+                sqlx::query("DELETE FROM organizations")
                     .execute(p)
                     .await
                     .map_err(|e| e.to_string())?;
