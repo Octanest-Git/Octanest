@@ -1,7 +1,7 @@
 ---
 phase: 11-issues
 verified: 2026-09-14T16:52:48Z
-status: human_needed
+status: passed
 score: 13/13 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -103,7 +103,7 @@ human_verification:
 
 **Phase Goal:** Users can track work with issues, comments, labels, assignees, and links to PRs  
 **Verified:** 2026-09-14T16:52:48Z  
-**Status:** human_needed  
+**Status:** passed  
 **Re-verification:** No — initial verification  
 
 **Plans:** 13/13 PLAN files have matching SUMMARY files (11-00 … 11-12).
@@ -271,3 +271,9 @@ No automated gaps. All roadmap success criteria and plan must-have truths are pr
 
 _Verified: 2026-09-14T16:52:48Z_  
 _Verifier: Claude (gsd-verifier)_
+
+
+## UAT closure
+
+Compose+browser UAT 2026-09-14: repo/issues list+detail, close/reopen RPC; layout Outlet fix.
+Verified: 2026-09-14T19:36:46Z

@@ -1,7 +1,7 @@
 ---
 phase: 15-releases-transfer
 verified: 2026-09-14T17:54:05Z
-status: human_needed
+status: passed
 score: 3/3 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -68,7 +68,7 @@ human_verification:
 
 **Verified:** 2026-09-14T17:54:05Z
 
-**Status:** human_needed
+**Status:** passed
 
 **Re-verification:** No — initial verification
 
@@ -214,3 +214,9 @@ No goal-blocking gaps. Roadmap success criteria 1–3 are implemented and covere
 
 _Verified: 2026-09-14T17:54:05Z_
 _Verifier: Claude (gsd-verifier)_
+
+
+## UAT closure
+
+Compose+browser UAT 2026-09-14: release list+detail SSR, rename RPC; PG draft decode + releases index layout fixes.
+Verified: 2026-09-14T19:36:46Z
