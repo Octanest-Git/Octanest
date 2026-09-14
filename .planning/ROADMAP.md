@@ -631,7 +631,7 @@ Plans:
   3. Registry packages respect the same auth/visibility rules as their owning repo/org
   4. User can list and delete package versions they are permitted to manage
 
-**Plans:** 12/13 plans executed
+**Plans:** 13/13 plans executed
 
 Plans:
 
@@ -647,7 +647,7 @@ Plans:
 - [x] 20-09-PLAN.md — Quotas reject + Admin quota RPC + blob GC
 - [x] 20-10-PLAN.md — Owner/repo packages UI + delete dialog
 - [x] 20-11-PLAN.md — Admin quota UI + tokens package scopes
-- [ ] 20-12-PLAN.md — Docs + smoke + phase gate
+- [x] 20-12-PLAN.md — Docs + smoke + phase gate
 
 **UI hint**: yes
 
@@ -707,7 +707,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |
-| 20. Packages Registry | 12/13 | In Progress|  |
+| 20. Packages Registry | 13/13 | In Progress|  |
 | 21. Social & Explore | 0/TBD | Not started | - |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 

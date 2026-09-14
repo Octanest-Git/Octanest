@@ -41,7 +41,7 @@ status: complete
 
 | Task | Commit |
 |------|--------|
-| 1–2 | (this plan) |
+| 1–2 | `4e4ddad` |
 
 ## Deviations from Plan
 
