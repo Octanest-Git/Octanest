@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-api --test pat_rpc pat_create_fine_grained_selected_allows_collaborator_repo -- --nocapture",
+  "exitCode": 101,
+  "targetTest": "pat_create_fine_grained_selected_allows_collaborator_repo",
+  "targetFile": "crates/octanest-api/tests/pat_rpc.rs",
+  "expected": "Collaborator with Write may mint FG Selected for that repo (ORG-04 / A4)",
+  "actual": "pat.invalid_scope / non-OK \u2014 Selected mint still requires repositories.owner_id == caller",
+  "output": "\nrunning 1 test\ntest pat_create_fine_grained_selected_allows_collaborator_repo ... FAILED\n\nfailures:\n\nfailures:\n    pat_create_fine_grained_selected_allows_collaborator_repo\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 11 filtered out; finished in 1.47s\n\n\n   Compiling octanest-api v0.1.0 (/home/jesse/wsl-projects/personal/typescript/octanest-wt-10/crates/octanest-api)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.75s\n     Running tests/pat_rpc.rs (target/debug/build/octanest-api/1a2695175b10f4a9/out/pat_rpc-1a2695175b10f4a9)\n\nthread 'pat_create_fine_grained_selected_allows_collaborator_repo' (1273923) panicked at crates/octanest-api/tests/pat_rpc.rs:508:5:\nassertion `left == right` failed: collaborator Write must mint Selected FG \u2014 {\"error\":{\"code\":\"pat.invalid_scope\",\"message\":\"one or more repositories are not accessible for this token\"},\"ok\":false}\n  left: 400\n right: 200\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `-p octanest-api --test pat_rpc`\n\nnot ok 1 - pat_create_fine_grained_selected_allows_collaborator_repo\n  ---\n  message: 'collaborator Write mint Selected FG rejected \u2014 owner_id equality (expected StatusCode::OK)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n"
+}

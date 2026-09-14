@@ -852,3 +852,157 @@ async fn git_smart_private_non_grantee_401() {
         "WWW-Authenticate — {www}"
     );
 }
+
+/// A4 / ORG-04: FG All covers org Owner/Admin repos (not personal-owner_id equality).
+#[tokio::test]
+async fn git_smart_fg_all_org_owner_receive_pack() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("smart_fg_all_org.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, login_v) = signup_and_login(&app, "fgorg@ex.com", "fgorgown").await;
+    let user_id = login_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(user_id, &now)
+        .await
+        .expect("verify");
+
+    let org = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"org.create","input":{"slug":"fg-all-org"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(org.status(), StatusCode::OK);
+    let _ = org.into_body().collect().await;
+
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"svc","visibility":"private","owner":"fg-all-org"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    assert_eq!(create_v["ok"], true, "org repo create — {create_v}");
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"pat.createFineGrained","input":{"name":"org-all","repo_access":"all","contents":"write"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create_pat.status(), StatusCode::OK);
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    let token = pat_v["data"]["token"].as_str().expect("token");
+
+    let push = Request::builder()
+        .method("GET")
+        .uri("/fg-all-org/svc.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("fgorgown", token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push).await.unwrap();
+    assert_eq!(
+        push_res.status(),
+        StatusCode::OK,
+        "FG All + org Owner must allow receive-pack (A4) — got {}",
+        push_res.status()
+    );
+}
+
+/// Collaborator FG Selected + contents write can receive-pack (PAT ∩ ACL).
+#[tokio::test]
+async fn git_smart_collaborator_fg_selected_push() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!(
+        "sqlite:{}",
+        dir.path().join("smart_fg_collab_sel.db").display()
+    );
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "fgsown@ex.com", "fgsown").await;
+    let owner_id = owner_v["data"]["id"].as_str().unwrap();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify owner");
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.create","input":{"name":"sel","visibility":"private","description":""}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
+    let repo_id = create_v["data"]["id"].as_str().expect("repo id").to_string();
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "fgssel@ex.com", "fgssel1").await;
+    let collab_id = collab_v["data"]["id"].as_str().unwrap();
+    db.set_email_verified_at(collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let add = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"repo.collaborators.add","input":{"owner":"fgsown","name":"sel","username":"fgssel1","permission":"write"}}"#,
+            &owner_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(add.status(), StatusCode::OK);
+    let _ = add.into_body().collect().await;
+
+    let create_pat = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            &format!(
+                r#"{{"procedure":"pat.createFineGrained","input":{{"name":"sel-push","repo_access":"selected","contents":"write","repository_ids":["{repo_id}"]}}}}"#
+            ),
+            &collab_cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(
+        create_pat.status(),
+        StatusCode::OK,
+        "mint Selected FG for collaborator repo"
+    );
+    let pat_bytes = create_pat.into_body().collect().await.unwrap().to_bytes();
+    let pat_v: serde_json::Value = serde_json::from_slice(&pat_bytes).unwrap();
+    assert_eq!(pat_v["ok"], true, "mint Selected — {pat_v}");
+    let token = pat_v["data"]["token"].as_str().expect("token");
+
+    let push = Request::builder()
+        .method("GET")
+        .uri("/fgsown/sel.git/info/refs?service=git-receive-pack")
+        .header(header::AUTHORIZATION, basic_header("fgssel1", token))
+        .body(Body::empty())
+        .unwrap();
+    let push_res = app.oneshot(push).await.unwrap();
+    assert_eq!(
+        push_res.status(),
+        StatusCode::OK,
+        "collaborator FG Selected write must receive-pack"
+    );
+}

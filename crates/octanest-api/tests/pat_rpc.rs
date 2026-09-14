@@ -464,3 +464,100 @@ async fn pat_create_fine_grained_foreign_repo_rejected() {
     assert_eq!(v["error"]["code"], "pat.invalid_scope");
     let _ = cookie_a; // keep a session created for ownership fixture
 }
+
+/// ORG-04 / A4: FG Selected may include repos where subject has ACL capability.
+#[tokio::test]
+async fn pat_create_fine_grained_selected_allows_collaborator_repo() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_collab.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (_owner_cookie, owner_v) = signup_and_login(&app, "fgco@ex.com", "fgcoown").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify owner");
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "fgcc@ex.com", "fgccoll").await;
+    let collab_id = collab_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let repo = db
+        .insert_repository("r-collab-fg", &owner_id, "user", "shared", "private", "", "main")
+        .await
+        .expect("repo");
+    db.insert_repo_collaborator(&repo.id, &collab_id, "write")
+        .await
+        .expect("grant write");
+
+    let (status, v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"pat.createFineGrained","input":{{"name":"collab-fg","repo_access":"selected","contents":"write","repository_ids":["{}"]}}}}"#,
+            repo.id
+        ),
+        &collab_cookie,
+    )
+    .await;
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "collaborator Write must mint Selected FG — {v}"
+    );
+    assert_eq!(v["ok"], true, "{v}");
+    let ids = v["data"]["item"]["repository_ids"]
+        .as_array()
+        .expect("repository_ids");
+    assert_eq!(ids.len(), 1);
+    assert_eq!(ids[0], repo.id);
+}
+
+/// Read collaborator cannot mint Selected FG with contents:write (capability mismatch).
+#[tokio::test]
+async fn pat_create_fine_grained_selected_read_collab_write_contents_rejected() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pat_fg_read_deny.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone()).await;
+
+    let (_owner_cookie, owner_v) = signup_and_login(&app, "fgrd@ex.com", "fgrdown").await;
+    let owner_id = owner_v["data"]["id"].as_str().expect("id").to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&owner_id, &now)
+        .await
+        .expect("verify owner");
+
+    let (collab_cookie, collab_v) = signup_and_login(&app, "fgrc@ex.com", "fgrcoll").await;
+    let collab_id = collab_v["data"]["id"].as_str().expect("id").to_string();
+    db.set_email_verified_at(&collab_id, &now)
+        .await
+        .expect("verify collab");
+
+    let repo = db
+        .insert_repository("r-read-fg", &owner_id, "user", "ro", "private", "", "main")
+        .await
+        .expect("repo");
+    db.insert_repo_collaborator(&repo.id, &collab_id, "read")
+        .await
+        .expect("grant read");
+
+    let (status, v) = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"pat.createFineGrained","input":{{"name":"too-much","repo_access":"selected","contents":"write","repository_ids":["{}"]}}}}"#,
+            repo.id
+        ),
+        &collab_cookie,
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{v}");
+    assert_eq!(v["error"]["code"], "pat.invalid_scope");
+}
