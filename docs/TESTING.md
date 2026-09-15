@@ -108,17 +108,26 @@ cargo test -p octanest-db --test dialect_probe -- --nocapture
 |------|--------|----------|
 | Unit | `*.unit.test.ts` | under `src/` |
 | Integration | `*.integration.test.ts(x)` | under `src/` |
-| Component e2e | `*.e2e.test.ts(x)` | `e2e/component/` |
 | Stack HTTP e2e | `*.stack.test.ts` | `e2e/stack/` |
 | Stack browser e2e | `*.stack.browser.test.ts(x)` | `e2e/stack-browser/` |
 
 Shared setup:
 
 - Integration: `src/test/setup-integration.ts`
-- Component e2e: `e2e/component/setup.ts`
 - Stack: `e2e/stack/setup.ts`, `e2e/stack-browser/setup.ts`
 
 Import from `vitest` explicitly (`globals: false` in the web Vitest config).
+
+**Forge stack-browser matrix (D-QH-03)** — extend `apps/web/e2e/stack-browser/` only (do not revive removed `e2e/component`). Suites under `make test-e2e-stack`:
+
+| Suite file | Covers |
+|------------|--------|
+| `auth-ui.stack.browser.test.tsx` | Local signup UI, WorkOS CTA, OIDC SSO, `/status`, `auth.me` dedupe |
+| `forge-repo.stack.browser.test.tsx` | Seeded repo code home + Packages tab / packages list |
+| `forge-issues-releases.stack.browser.test.tsx` | Issues create→close; release create from seeded tag |
+| `forge-packages-ssh-orgs.stack.browser.test.tsx` | SSH keys add/list; org members settings |
+
+login / verify / profile also have happy-dom `*.integration.test.ts` export/render contracts (RESEARCH P1).
 
 ### API client
 
@@ -137,7 +146,7 @@ Weighted forge-core gate (**D-QH-02**). Layers and weights:
 |-------|--------|------------------|
 | Unit | **25%** (`0.25`) | Web Vitest `--project unit` line coverage (`@vitest/coverage-v8`). Rust lib units via `cargo-llvm-cov` when available (optional today; see residual below). |
 | Integration | **40%** (`0.40`) | Web Vitest `--project integration` (happy-dom) line coverage. Rust `tests/` included when llvm-cov runs. |
-| E2E / hydration | **35%** (`0.35`) | Interim **checklist score** (fraction of required stack-browser + stack HTTP + smoke script paths present). Not Playwright % coverage yet — expands when the forge matrix (Phase 11.1-03) lands. |
+| E2E / hydration | **35%** (`0.35`) | Interim **checklist score** (fraction of required stack-browser + stack HTTP + smoke script paths present). Not Playwright % coverage yet — forge stack-browser matrix landed in Phase 11.1-04 (see Writing new tests). |
 
 **Weighted score**
 
@@ -149,7 +158,7 @@ score = 0.25 * unit + 0.40 * integration + 0.35 * e2e
 
 **E2E checklist formula (interim)**
 
-`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge flows (repo code, issues, releases, packages list, SSH keys, org members) are **not** in the interim list until 11.1-03 adds them.
+`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge stack-browser suites (repo code, issues, releases, packages list, SSH keys, org members) live under `apps/web/e2e/stack-browser/` (D-QH-03 / 11.1-04); expand the checklist when promoting those paths into the weighted e2e score.
 
 **Commands**
 
@@ -202,4 +211,4 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 | OIDC mock | Issuer `http://127.0.0.1:9090/default` | OIDC login without a real IdP |
 | HTTP stubs | `http://127.0.0.1:9092` | Resend `POST /emails` + WorkOS AuthKit |
 
-`e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI and WorkOS CTA against the live web/API in Chromium.
+`e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI, WorkOS CTA, and the D-QH-03 forge matrix (repo/packages, issues/releases, SSH keys, org members) against the live web/API in Chromium.

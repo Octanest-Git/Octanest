@@ -56,7 +56,8 @@ type Phase =
   | { kind: "ready"; user: UserPublic }
   | { kind: "error"; message: string };
 
-function ProfilePage() {
+/** Exported for profile.integration.test.ts (RESEARCH P1 / D-QH-03). */
+export function ProfilePage() {
   const queryClient = useQueryClient();
   const loaderData = useLoaderData({ from: "/settings/profile" }) as
     | ProfileLoaderData

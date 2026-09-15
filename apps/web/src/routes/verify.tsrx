@@ -60,7 +60,8 @@ type Phase =
       verifyingToken: boolean;
     };
 
-function VerifyPage() {
+/** Exported for verify.integration.test.ts (RESEARCH P1 / D-QH-03). */
+export function VerifyPage() {
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [code, setCode] = useState("");
   const [error, setError] = useState("");

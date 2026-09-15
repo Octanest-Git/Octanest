@@ -57,7 +57,8 @@ export const Route = createFileRoute("/login")({
   },
 });
 
-function LoginPage() @{
+/** Exported for login.integration.test.ts (RESEARCH P1 / D-QH-03). */
+export function LoginPage() @{
   const data = useLoaderData({ from: "/login" }) as LoginLoaderData;
   const mode = data.mode;
   const allowSignup = data.allow_signup;
