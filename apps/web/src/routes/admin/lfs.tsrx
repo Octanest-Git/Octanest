@@ -58,6 +58,9 @@ export function AdminLfsPage() @{
   const [maxObject, setMaxObject] = useState("");
   const [quotaRepo, setQuotaRepo] = useState("");
   const [quotaUser, setQuotaUser] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
   useEffect(() => {
     if (me.isPending) return;
     if (me.isError) return;
@@ -129,197 +132,214 @@ export function AdminLfsPage() @{
     }
   }
 
-  @if (me.isPending) {
+  const loading = me.isPending;
+  const signedOut = !me.isPending && (!me.isSuccess || !me.data);
+  const forbidden = me.isSuccess && !!me.data && !isSysAdmin;
+
+  @if (loading) {
     <AdminAuthSkeleton />
-  } @else if (!me.isSuccess || !me.data) {
-    <div className="mx-auto max-w-lg py-12 text-center">
-      <p className="text-[16px] text-muted-foreground">
-        Sign in as a system administrator to manage LFS quotas.
-      </p>
-      <a
-        href="/login?returnTo=/admin/lfs"
-        className="mt-4 inline-block text-primary underline-offset-2 hover:underline"
-      >
-        Sign in
-      </a>
-    </div>
-  } @else if (!isSysAdmin) {
-    <div className="mx-auto max-w-lg py-12 text-center">
-      <p role="alert" className="text-[16px] text-destructive">
-        {FORBIDDEN as string}
-      </p>
-    </div>
   } @else {
-    <div className="mx-auto max-w-3xl py-8" data-testid="admin-lfs-page">
-      <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
-        Git LFS quotas
-      </h1>
-      <p className="mt-2 text-[14px] text-muted-foreground">
-        Override instance defaults for max object size and storage quotas.
-        Environment variables remain the fallback when overrides are cleared.
-      </p>
-      <p className="mt-1 text-[14px]">
-        <a
-          href="/admin/auth"
-          className="text-primary underline-offset-2 hover:underline"
-        >
-          Auth settings
-        </a>
-      </p>
-
-      @if (settingsQ.isPending) {
-        <p className="mt-8 text-[14px] text-muted-foreground">Loading…</p>
-      } @else if (settingsQ.isError) {
-        <p role="alert" className="mt-8 text-[14px] text-destructive">
-          {(settingsQ.error instanceof Error
-            ? settingsQ.error.message
-            : FORBIDDEN) as string}
+    @if (signedOut) {
+      <div className="mx-auto max-w-lg py-12 text-center">
+        <p className="text-[16px] text-muted-foreground">
+          Sign in as a system administrator to manage LFS quotas.
         </p>
-      } @else {
-        <form
-          method="post"
-          action="#"
-          className="mt-8 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save();
-          }}
+        <a
+          href="/login?returnTo=/admin/lfs"
+          className="mt-4 inline-block text-primary underline-offset-2 hover:underline"
         >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="lfs-max-object">Max object bytes</Label>
-            <Input
-              id="lfs-max-object"
-              inputMode="numeric"
-              value={maxObject}
-              onInput={(e) =>
-                setMaxObject((e.currentTarget as HTMLInputElement).value)
-              }
-              disabled={pending}
-            />
-            @if (settingsQ.data?.max_object_bytes_overridden) {
-              <span className="text-[13px] text-muted-foreground">
-                Override active
-              </span>
-            }
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="lfs-quota-repo">Per-repo quota bytes</Label>
-            <Input
-              id="lfs-quota-repo"
-              inputMode="numeric"
-              value={quotaRepo}
-              onInput={(e) =>
-                setQuotaRepo((e.currentTarget as HTMLInputElement).value)
-              }
-              disabled={pending}
-            />
-            @if (settingsQ.data?.quota_repo_bytes_overridden) {
-              <span className="text-[13px] text-muted-foreground">
-                Override active
-              </span>
-            }
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="lfs-quota-user">Per-user quota bytes</Label>
-            <Input
-              id="lfs-quota-user"
-              inputMode="numeric"
-              value={quotaUser}
-              onInput={(e) =>
-                setQuotaUser((e.currentTarget as HTMLInputElement).value)
-              }
-              disabled={pending}
-            />
-            @if (settingsQ.data?.quota_user_bytes_overridden) {
-              <span className="text-[13px] text-muted-foreground">
-                Override active
-              </span>
-            }
-          </div>
-          @if (error) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {error as string}
-            </p>
-          }
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={pending}>
-              {(pending ? "Saving…" : "Save quotas") as string}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={pending}
-              onClick={() => void clearOverrides()}
-            >
-              Clear overrides
-            </Button>
-          </div>
-        </form>
-      }
-
-      <section className="mt-12 flex flex-col gap-4" aria-labelledby="lfs-inst-usage">
-        <h2
-          id="lfs-inst-usage"
-          className="font-[family-name:var(--font-display)] text-[18px] font-semibold"
-        >
-          Instance usage breakdown
-        </h2>
-        @if (usageQ.isPending) {
-          <p className="text-[14px] text-muted-foreground">Loading usage…</p>
-        } @else if (usageQ.isError) {
-          <p role="alert" className="text-[14px] text-destructive">
-            {(usageQ.error instanceof Error
-              ? usageQ.error.message
-              : "Could not load usage.") as string}
+          Sign in
+        </a>
+      </div>
+    } @else {
+      @if (forbidden) {
+        <div className="mx-auto max-w-lg py-12 text-center">
+          <p role="alert" className="text-[16px] text-destructive">
+            {FORBIDDEN as string}
           </p>
-        } @else if (usageQ.data) {
-          <>
-            <p className="text-[14px] text-muted-foreground">
-              {(
-                `${usageQ.data.object_count} unique OIDs · ${formatBytes(usageQ.data.physical_bytes)} physical · ${formatBytes(usageQ.data.logical_bytes)} logical`
-              ) as string}
-            </p>
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <h3 className="text-[15px] font-medium">By repository</h3>
-                @if (usageQ.data.by_repo.length === 0) {
-                  <p className="mt-2 text-[13px] text-muted-foreground">
-                    No linked LFS objects.
-                  </p>
-                } @else {
-                  <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                    @for (const row of usageQ.data.by_repo; key row.repository_id) {
-                      <li>
-                        {(
-                          `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
-                        ) as string}
-                      </li>
+        </div>
+      } @else {
+        <div className="mx-auto max-w-3xl py-8" data-testid="admin-lfs-page">
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
+            Git LFS quotas
+          </h1>
+          <p className="mt-2 text-[14px] text-muted-foreground">
+            Override instance defaults for max object size and storage quotas.
+            Environment variables remain the fallback when overrides are cleared.
+          </p>
+          <p className="mt-1 text-[14px]">
+            <a
+              href="/admin/auth"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Auth settings
+            </a>
+          </p>
+
+          @if (settingsQ.isPending) {
+            <p className="mt-8 text-[14px] text-muted-foreground">Loading…</p>
+          } @else {
+            @if (settingsQ.isError) {
+              <p role="alert" className="mt-8 text-[14px] text-destructive">
+                {(settingsQ.error instanceof Error
+                  ? settingsQ.error.message
+                  : FORBIDDEN) as string}
+              </p>
+            } @else {
+              <form
+                method="post"
+                action="#"
+                className="mt-8 flex flex-col gap-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void save();
+                }}
+              >
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="lfs-max-object">Max object bytes</Label>
+                  <Input
+                    id="lfs-max-object"
+                    inputMode="numeric"
+                    value={maxObject}
+                    onInput={(e) =>
+                      setMaxObject((e.currentTarget as HTMLInputElement).value)
                     }
-                  </ul>
-                }
-              </div>
-              <div>
-                <h3 className="text-[15px] font-medium">By owner</h3>
-                @if (usageQ.data.by_owner.length === 0) {
-                  <p className="mt-2 text-[13px] text-muted-foreground">
-                    No linked LFS objects.
-                  </p>
-                } @else {
-                  <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                    @for (const row of usageQ.data.by_owner; key row.owner_id) {
-                      <li>
-                        {(
-                          `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
-                        ) as string}
-                      </li>
+                    disabled={pending}
+                  />
+                  @if (settingsQ.data?.max_object_bytes_overridden) {
+                    <span className="text-[13px] text-muted-foreground">
+                      Override active
+                    </span>
+                  }
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="lfs-quota-repo">Per-repo quota bytes</Label>
+                  <Input
+                    id="lfs-quota-repo"
+                    inputMode="numeric"
+                    value={quotaRepo}
+                    onInput={(e) =>
+                      setQuotaRepo((e.currentTarget as HTMLInputElement).value)
                     }
-                  </ul>
+                    disabled={pending}
+                  />
+                  @if (settingsQ.data?.quota_repo_bytes_overridden) {
+                    <span className="text-[13px] text-muted-foreground">
+                      Override active
+                    </span>
+                  }
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="lfs-quota-user">Per-user quota bytes</Label>
+                  <Input
+                    id="lfs-quota-user"
+                    inputMode="numeric"
+                    value={quotaUser}
+                    onInput={(e) =>
+                      setQuotaUser((e.currentTarget as HTMLInputElement).value)
+                    }
+                    disabled={pending}
+                  />
+                  @if (settingsQ.data?.quota_user_bytes_overridden) {
+                    <span className="text-[13px] text-muted-foreground">
+                      Override active
+                    </span>
+                  }
+                </div>
+                @if (error) {
+                  <p role="alert" className="text-[14px] text-destructive">
+                    {error as string}
+                  </p>
                 }
-              </div>
-            </div>
-          </>
-        }
-      </section>
-    </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" disabled={pending}>
+                    {(pending ? "Saving…" : "Save quotas") as string}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={pending}
+                    onClick={() => void clearOverrides()}
+                  >
+                    Clear overrides
+                  </Button>
+                </div>
+              </form>
+            }
+          }
+
+          <section
+            className="mt-12 flex flex-col gap-4"
+            aria-labelledby="lfs-inst-usage"
+          >
+            <h2
+              id="lfs-inst-usage"
+              className="font-[family-name:var(--font-display)] text-[18px] font-semibold"
+            >
+              Instance usage breakdown
+            </h2>
+            @if (usageQ.isPending) {
+              <p className="text-[14px] text-muted-foreground">Loading usage…</p>
+            } @else {
+              @if (usageQ.isError) {
+                <p role="alert" className="text-[14px] text-destructive">
+                  {(usageQ.error instanceof Error
+                    ? usageQ.error.message
+                    : "Could not load usage.") as string}
+                </p>
+              } @else {
+                @if (usageQ.data) {
+                  <>
+                    <p className="text-[14px] text-muted-foreground">
+                      {(
+                        `${usageQ.data.object_count} unique OIDs · ${formatBytes(usageQ.data.physical_bytes)} physical · ${formatBytes(usageQ.data.logical_bytes)} logical`
+                      ) as string}
+                    </p>
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <div>
+                        <h3 className="text-[15px] font-medium">By repository</h3>
+                        @if (usageQ.data.by_repo.length === 0) {
+                          <p className="mt-2 text-[13px] text-muted-foreground">
+                            No linked LFS objects.
+                          </p>
+                        } @else {
+                          <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
+                            @for (const row of usageQ.data.by_repo; key row.repository_id) {
+                              <li>
+                                {(
+                                  `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
+                                ) as string}
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </div>
+                      <div>
+                        <h3 className="text-[15px] font-medium">By owner</h3>
+                        @if (usageQ.data.by_owner.length === 0) {
+                          <p className="mt-2 text-[13px] text-muted-foreground">
+                            No linked LFS objects.
+                          </p>
+                        } @else {
+                          <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
+                            @for (const row of usageQ.data.by_owner; key row.owner_id) {
+                              <li>
+                                {(
+                                  `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
+                                ) as string}
+                              </li>
+                            }
+                          </ul>
+                        }
+                      </div>
+                    </div>
+                  </>
+                }
+              }
+            }
+          </section>
+        </div>
+      }
+    }
   }
 }

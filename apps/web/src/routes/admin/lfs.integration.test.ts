@@ -1,30 +1,107 @@
-import { describe, expect, it } from "vitest";
+import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderWithQueryClient } from "@/test/render-with-query";
+
+const meMock = vi.fn();
+const getSettingsMock = vi.fn();
+const getUsageMock = vi.fn();
+const updateSettingsMock = vi.fn();
+
+vi.mock("@/lib/api-client", () => ({
+  apiClient: {
+    auth: {
+      me: (...args: unknown[]) => meMock(...args),
+    },
+    admin: {
+      lfs: {
+        getSettings: (...args: unknown[]) => getSettingsMock(...args),
+        getUsage: (...args: unknown[]) => getUsageMock(...args),
+        updateSettings: (...args: unknown[]) => updateSettingsMock(...args),
+      },
+    },
+  },
+}));
+
+import { AdminLfsPage } from "./lfs";
+
+const sysAdmin = {
+  id: "u1",
+  email: "admin@example.com",
+  username: "admin",
+  display_name: "Admin",
+  bio: "",
+  avatar_url: null as null,
+  role: "sys-admin" as const,
+  profile_incomplete: false,
+  email_verified: true,
+  must_change_credentials: false,
+  default_branch: "main",
+};
 
 /**
- * D-LFS-12 / D-LFS-13 / D-LFS-19: Admin LFS quotas + instance usage.
+ * D-LFS-12 / D-LFS-13 / D-LFS-19 + G-11.1-15: Admin LFS quotas must *render*
+ * (raw-source checks alone missed missing useState / Octane template breakage).
  */
 describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
-  it(
-    "Admin can override max-object / per-repo / per-user quotas + see instance breakdown",
-    async () => {
-      const mod = await import("./lfs");
-      expect(
-        mod.AdminLfsPage ?? mod.default,
-        "Admin LFS page must exist for quota overrides (D-LFS-13)",
-      ).toBeTruthy();
-      const src = await import("./lfs.tsrx?raw").then((m) =>
-        String((m as { default: string }).default),
-      );
-      expect(src).toMatch(/admin\.lfs\.getSettings|getSettings/);
-      expect(src).toMatch(/updateSettings/);
-      expect(src).toMatch(/getUsage/);
-      expect(src).toMatch(/max.object|Max object/i);
-      expect(src).toMatch(/quota/i);
-      expect(src).toMatch(/by_repo|By repository/i);
-      expect(src).toMatch(/by_owner|By owner/i);
-      expect(src).toMatch(/physical/i);
-      expect(src).toMatch(/sys-admin/);
-    },
-    30_000,
-  );
+  afterEach(() => {
+    cleanup();
+  });
+
+  beforeEach(() => {
+    meMock.mockReset();
+    getSettingsMock.mockReset();
+    getUsageMock.mockReset();
+    updateSettingsMock.mockReset();
+    meMock.mockResolvedValue({ ok: true, data: sysAdmin });
+    getSettingsMock.mockResolvedValue({
+      ok: true,
+      data: {
+        max_object_bytes: 1024,
+        quota_repo_bytes: 2048,
+        quota_user_bytes: 4096,
+        max_object_bytes_overridden: false,
+        quota_repo_bytes_overridden: false,
+        quota_user_bytes_overridden: false,
+      },
+    });
+    getUsageMock.mockResolvedValue({
+      ok: true,
+      data: {
+        object_count: 0,
+        physical_bytes: 0,
+        logical_bytes: 0,
+        by_repo: [],
+        by_owner: [],
+      },
+    });
+  });
+
+  it("exports AdminLfsPage without @else if and declares error/pending state", async () => {
+    const mod = await import("./lfs");
+    expect(mod.AdminLfsPage ?? mod.default).toBeTruthy();
+    const src = await import("./lfs.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(src).toMatch(/getSettings/);
+    expect(src).toMatch(/updateSettings/);
+    expect(src).toMatch(/getUsage/);
+    expect(src).toMatch(/setError|\[error,/);
+    expect(src).toMatch(/setPending|\[pending,/);
+    expect(src).not.toMatch(/@else if/);
+  });
+
+  it("renders Git LFS quotas form for sys-admin without throwing", async () => {
+    renderWithQueryClient(AdminLfsPage);
+
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("admin-lfs-page")).toBeTruthy();
+        expect(screen.getByText("Git LFS quotas")).toBeTruthy();
+        expect(screen.getByLabelText(/Max object bytes/i)).toBeTruthy();
+      },
+      { timeout: 10_000 },
+    );
+    expect(getSettingsMock).toHaveBeenCalled();
+    expect(getUsageMock).toHaveBeenCalled();
+  });
 });
