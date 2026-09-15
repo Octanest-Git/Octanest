@@ -7,6 +7,7 @@ import {
 } from "@octanest/api-client";
 import { useState } from "octane";
 import { apiClient } from "@/lib/api-client";
+import { AdminSettingsLayout } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_OWNER_QUOTA_HINT } from "@/lib/package-quota-copy";
 
@@ -48,9 +49,8 @@ export function AdminPackagesPage() @{
     },
   });
 
-  @{
-    <div className="mx-auto max-w-3xl px-4 py-12" data-testid="admin-packages">
-      <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold">
+  <AdminSettingsLayout active="packages" data-testid="admin-packages">
+      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Package storage
       </h1>
       <p className="mt-2 text-muted-foreground">
@@ -155,6 +155,5 @@ export function AdminPackagesPage() @{
           </form>
         </div>
       }
-    </div>
-  }
+  </AdminSettingsLayout>
 }

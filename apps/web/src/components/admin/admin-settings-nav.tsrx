@@ -1,22 +1,19 @@
 import { cn } from "@/lib/utils";
 
-export type SettingsNavActive =
-  | "profile"
-  | "tokens"
-  | "ssh-keys";
+export type AdminSettingsNavActive = "auth" | "lfs" | "packages";
 
-type SettingsNavProps = {
-  active: SettingsNavActive;
+type AdminSettingsNavProps = {
+  active: AdminSettingsNavActive;
 };
 
-const LINKS: { id: SettingsNavActive; href: string; label: string }[] = [
-  { id: "profile", href: "/settings/profile", label: "Profile" },
-  {
-    id: "tokens",
-    href: "/settings/tokens",
-    label: "Personal access tokens",
-  },
-  { id: "ssh-keys", href: "/settings/ssh-keys", label: "SSH keys" },
+const LINKS: {
+  id: AdminSettingsNavActive;
+  href: string;
+  label: string;
+}[] = [
+  { id: "auth", href: "/admin/auth", label: "Auth" },
+  { id: "lfs", href: "/admin/lfs", label: "LFS quotas" },
+  { id: "packages", href: "/admin/packages", label: "Package storage" },
 ];
 
 function linkClass(isActive: boolean): string {
@@ -28,11 +25,11 @@ function linkClass(isActive: boolean): string {
   );
 }
 
-/** Account settings sidebar: Profile | Personal access tokens | SSH keys. */
-export function SettingsNav({ active }: SettingsNavProps) @{
-  <nav className="flex flex-col gap-1" aria-label="Account settings">
+/** Instance admin settings sidebar: Auth | LFS quotas | Package storage. */
+export function AdminSettingsNav({ active }: AdminSettingsNavProps) @{
+  <nav className="flex flex-col gap-1" aria-label="Admin settings">
     <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-      Account
+      Admin
     </p>
     @for (const link of LINKS; key link.id) {
       <a

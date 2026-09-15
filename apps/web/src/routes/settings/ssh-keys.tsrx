@@ -7,7 +7,10 @@ import { useQuery } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { SshKeyAddForm } from "@/components/settings/ssh-key-add-form";
 import { SshKeyList } from "@/components/settings/ssh-key-list";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import {
+  AccountSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
@@ -120,21 +123,22 @@ export function SshKeysPage() @{
   const canAdd = verified && !atCap;
 
   @if (phase.kind === "loading") {
-    <div className="mx-auto max-w-2xl px-4 py-16" aria-busy="true">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-6 h-11 w-48" />
-      <Skeleton className="mt-8 h-24 w-full" />
-    </div>
+    <SettingsShell bare>
+      <div aria-busy="true">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-6 h-11 w-48" />
+        <Skeleton className="mt-8 h-24 w-full" />
+      </div>
+    </SettingsShell>
   } @else {
     @if (phase.kind === "error") {
-      <div className="mx-auto max-w-2xl px-4 py-16">
+      <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </div>
+      </SettingsShell>
     } @else {
-      <div className="mx-auto max-w-2xl px-4 py-16">
-        <SettingsNav active="ssh-keys" />
+      <AccountSettingsLayout active="ssh-keys">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -171,7 +175,7 @@ export function SshKeysPage() @{
           />
         }
         <SshKeyList enabled={true} />
-      </div>
+      </AccountSettingsLayout>
     }
   }
 }

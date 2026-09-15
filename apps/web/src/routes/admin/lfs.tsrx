@@ -10,6 +10,10 @@ import type {
 } from "@octanest/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
+import {
+  AdminSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -259,47 +263,41 @@ export function AdminLfsPage() @{
     <></>
   } @else {
     @if (signedOut) {
-      <div className="mx-auto max-w-lg py-12 text-center">
-        <p className="text-[16px] text-muted-foreground">
-          Sign in as a system administrator to manage LFS quotas.
-        </p>
-        <a
-          href="/login?returnTo=/admin/lfs"
-          className="mt-4 inline-block text-primary underline-offset-2 hover:underline"
-        >
-          Sign in
-        </a>
-      </div>
+      <SettingsShell bare>
+        <div className="text-center">
+          <p className="text-[16px] text-muted-foreground">
+            Sign in as a system administrator to manage LFS quotas.
+          </p>
+          <a
+            href="/login?returnTo=/admin/lfs"
+            className="mt-4 inline-block text-primary underline-offset-2 hover:underline"
+          >
+            Sign in
+          </a>
+        </div>
+      </SettingsShell>
     } @else {
       @if (forbidden) {
-        <div className="mx-auto max-w-lg py-12 text-center">
-          <p role="alert" className="text-[16px] text-destructive">
+        <SettingsShell bare>
+          <p role="alert" className="text-center text-[16px] text-destructive">
             {FORBIDDEN as string}
           </p>
-        </div>
+        </SettingsShell>
       } @else {
         @if (loaderError && !settings) {
-          <div className="mx-auto max-w-lg py-12 text-center">
-            <p role="alert" className="text-[16px] text-destructive">
+          <SettingsShell bare>
+            <p role="alert" className="text-center text-[16px] text-destructive">
               {loaderError as string}
             </p>
-          </div>
+          </SettingsShell>
         } @else {
-          <div className="mx-auto max-w-3xl py-8" data-testid="admin-lfs-page">
-            <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
+          <AdminSettingsLayout active="lfs" data-testid="admin-lfs-page">
+            <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
               Git LFS quotas
             </h1>
-            <p className="mt-2 text-[14px] text-muted-foreground">
+            <p className="mt-2 text-[16px] text-muted-foreground">
               Override instance defaults for max object size and storage quotas.
               Environment variables remain the fallback when overrides are cleared.
-            </p>
-            <p className="mt-1 text-[14px]">
-              <a
-                href="/admin/auth"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                Auth settings
-              </a>
             </p>
 
             @if (settingsQ.isError && !settings) {
@@ -477,7 +475,7 @@ export function AdminLfsPage() @{
                 }
               }
             </section>
-          </div>
+          </AdminSettingsLayout>
         }
       }
     }

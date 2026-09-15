@@ -18,6 +18,10 @@ import {
 } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { AdminAuthSkeleton } from "@/components/page-skeletons";
+import {
+  AdminSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -257,16 +261,16 @@ export function AdminAuthPage() @{
     <AdminAuthSkeleton />
   } @else {
     @if (forbidden) {
-      <div className="mx-auto max-w-2xl px-4 py-16">
+      <SettingsShell bare>
         <p className="text-[16px] text-muted-foreground">{FORBIDDEN}</p>
-      </div>
+      </SettingsShell>
     } @else {
       @if (loadError) {
-        <div className="mx-auto max-w-2xl px-4 py-16">
+        <SettingsShell bare>
           <p className="text-[16px] text-destructive">{NETWORK_ERROR}</p>
-        </div>
+        </SettingsShell>
       } @else {
-    <div className="mx-auto max-w-2xl px-4 py-16">
+    <AdminSettingsLayout active="auth">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Auth settings
       </h1>
@@ -458,7 +462,7 @@ export function AdminAuthPage() @{
       </form>
 
       <FactoryResetSection />
-    </div>
+    </AdminSettingsLayout>
       }
     }
   }

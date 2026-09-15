@@ -5,6 +5,10 @@ import {
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthShell } from "@/components/auth-shell";
+import {
+  AccountSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { PatFgForm } from "@/components/settings/pat-fg-form";
 import { PatReveal } from "@/components/settings/pat-reveal";
 import { buttonVariants } from "@/components/ui/button";
@@ -117,17 +121,19 @@ export function TokensNewFineGrainedPage() @{
   const showWall = phase.kind === "ready" && !verified;
 
   @if (phase.kind === "loading") {
-    <div className="mx-auto max-w-2xl px-4 py-16" aria-busy="true">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-8 h-40 w-full" />
-    </div>
+    <SettingsShell bare>
+      <div aria-busy="true">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-8 h-40 w-full" />
+      </div>
+    </SettingsShell>
   } @else {
     @if (phase.kind === "error") {
-      <div className="mx-auto max-w-2xl px-4 py-16">
+      <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </div>
+      </SettingsShell>
     } @else {
       @if (showWall) {
         <AuthShell
@@ -142,12 +148,12 @@ export function TokensNewFineGrainedPage() @{
           </a>
         </AuthShell>
       } @else {
-        <div className="mx-auto max-w-2xl px-4 py-16">
+        <AccountSettingsLayout active="tokens">
           <a
             href="/settings/tokens"
             className="text-[14px] text-muted-foreground no-underline hover:text-foreground"
           >
-            ← Personal access tokens
+            ← Back
           </a>
           @if (plaintext) {
             <div className="mt-6">
@@ -165,7 +171,7 @@ export function TokensNewFineGrainedPage() @{
               />
             </>
           }
-        </div>
+        </AccountSettingsLayout>
       }
     }
   }

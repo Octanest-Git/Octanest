@@ -201,10 +201,10 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     const { container } = renderWithQueryClient(TokensPage);
 
     await waitFor(() => {
-      expect(container.querySelector('nav[aria-label="Settings"]')).toBeTruthy();
+      expect(container.querySelector('nav[aria-label="Account settings"]')).toBeTruthy();
     });
 
-    const nav = container.querySelector('nav[aria-label="Settings"]')!;
+    const nav = container.querySelector('nav[aria-label="Account settings"]')!;
     const profile = nav.querySelector('a[href="/settings/profile"]');
     const tokens = nav.querySelector('a[href="/settings/tokens"]');
     expect(profile?.textContent).toBe("Profile");

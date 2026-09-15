@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { SETTINGS_SHELL_MAX } from "@/components/settings/settings-shell";
 
 /** Signed-in home at `/` — mirrors {@link SignedInHome} geometry. */
 export function SignedInHomeSkeleton() @{
@@ -24,7 +25,7 @@ export function SignedInHomeSkeleton() @{
 
 export function ProfilePageSkeleton() @{
   <div
-    className="mx-auto max-w-xl px-4 py-16"
+    className={`mx-auto w-full px-4 py-10 sm:px-6 ${SETTINGS_SHELL_MAX}`}
     role="status"
     aria-busy="true"
     aria-label="Loading profile"
@@ -55,7 +56,7 @@ export function ProfilePageSkeleton() @{
 
 export function AdminAuthSkeleton() @{
   <div
-    className="mx-auto max-w-2xl px-4 py-16"
+    className={`mx-auto w-full px-4 py-10 sm:px-6 ${SETTINGS_SHELL_MAX}`}
     role="status"
     aria-busy="true"
     aria-label="Loading auth settings"

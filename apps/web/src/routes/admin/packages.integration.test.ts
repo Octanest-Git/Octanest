@@ -36,11 +36,11 @@ describe("/admin/packages", () => {
     await waitFor(
       () => {
         expect(screen.getByTestId("admin-packages")).toBeTruthy();
-        expect(screen.getByText("Package storage")).toBeTruthy();
+        expect(screen.getByRole("heading", { name: "Package storage" })).toBeTruthy();
         expect(screen.getByText("Max blob size")).toBeTruthy();
         expect(screen.getByText("Per-owner quota")).toBeTruthy();
       },
       { timeout: 10_000 },
     );
-  });
+  }, 15_000);
 });

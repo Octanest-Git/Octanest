@@ -8,7 +8,10 @@ import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AvatarPreview } from "@/components/avatar-preview";
 import { ProfilePageSkeleton } from "@/components/page-skeletons";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import {
+  AccountSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
@@ -298,12 +301,11 @@ export function ProfilePage() @{
   @if (phase.kind === "loading") {
     <ProfilePageSkeleton />
   } @else if (phase.kind === "error") {
-    <div className="mx-auto max-w-xl px-4 py-16">
+    <SettingsShell bare>
       <p className="text-[16px] text-destructive">{phase.message as string}</p>
-    </div>
+    </SettingsShell>
   } @else {
-    <div className="mx-auto max-w-xl px-4 py-16">
-      <SettingsNav active="profile" />
+    <AccountSettingsLayout active="profile">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Profile
       </h1>
@@ -525,6 +527,6 @@ export function ProfilePage() @{
           </div>
         </div>
       }
-    </div>
+    </AccountSettingsLayout>
   }
 }

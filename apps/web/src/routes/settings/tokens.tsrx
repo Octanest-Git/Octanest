@@ -6,7 +6,10 @@ import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { ChevronDown } from "@octanejs/lucide";
 import { PatList } from "@/components/settings/pat-list";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import {
+  AccountSettingsLayout,
+  SettingsShell,
+} from "@/components/settings/settings-shell";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -117,21 +120,22 @@ export function TokensPage() @{
     phase.kind === "ready" ? phase.user.email_verified === true : false;
 
   @if (phase.kind === "loading") {
-    <div className="mx-auto max-w-2xl px-4 py-16" aria-busy="true">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-6 h-11 w-48" />
-      <Skeleton className="mt-8 h-24 w-full" />
-    </div>
+    <SettingsShell bare>
+      <div aria-busy="true">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="mt-6 h-11 w-48" />
+        <Skeleton className="mt-8 h-24 w-full" />
+      </div>
+    </SettingsShell>
   } @else {
     @if (phase.kind === "error") {
-      <div className="mx-auto max-w-2xl px-4 py-16">
+      <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </div>
+      </SettingsShell>
     } @else {
-      <div className="mx-auto max-w-2xl px-4 py-16">
-        <SettingsNav active="tokens" />
+      <AccountSettingsLayout active="tokens">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -178,7 +182,7 @@ export function TokensPage() @{
           </p>
         }
         <PatList enabled={true} />
-      </div>
+      </AccountSettingsLayout>
     }
   }
 }
