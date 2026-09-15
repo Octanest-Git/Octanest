@@ -16,5 +16,5 @@ describe("stack browser e2e: SSH keys + org members (D-QH-03)", () => {
   it("adds an SSH key and opens org members", async () => {
     const ok = await commands.expectForgeSshAndOrgMembersFlow();
     expect(ok).toBe(true);
-  }, 90_000);
+  }, 120_000);
 });

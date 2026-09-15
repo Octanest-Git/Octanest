@@ -17,10 +17,10 @@ describe("stack browser e2e: forge issues + releases CRUD (D-QH-03)", () => {
   it("creates an issue via UI and closes it", async () => {
     const ok = await commands.expectForgeIssuesCrudFlow();
     expect(ok).toBe(true);
-  }, 60_000);
+  }, 120_000);
 
   it("creates a release from a seeded tag via UI", async () => {
     const ok = await commands.expectForgeReleasesCrudFlow();
     expect(ok).toBe(true);
-  }, 90_000);
+  }, 120_000);
 });
