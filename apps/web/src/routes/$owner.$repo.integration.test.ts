@@ -99,6 +99,31 @@ describe("/$owner/$repo layout chrome (D-QH-01)", () => {
     },
     30_000,
   );
+
+  it(
+    "code home leaf has no RepoChrome — chrome is layout-owned (D-QH-01)",
+    async () => {
+      const src = await import("./$owner.$repo.index.tsrx?raw").then((m) =>
+        String((m as { default: string }).default),
+      );
+      expect(src).not.toMatch(/RepoChrome/);
+      expect(src).toMatch(/QuickSetup/);
+    },
+    30_000,
+  );
+
+  it(
+    "RepoChrome exposes Code tab + active code contract (D-QH-01)",
+    async () => {
+      const chrome = await import(
+        "../components/repo/repo-chrome.tsrx?raw"
+      ).then((m) => String((m as { default: string }).default));
+      expect(chrome).toMatch(/>\s*Code\s*</);
+      expect(chrome).toMatch(/active === "code"/);
+      expect(chrome).toMatch(/RepoChromeActive/);
+    },
+    30_000,
+  );
 });
 
 describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
@@ -139,10 +164,10 @@ describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
       });
       expect(screen.queryByText("src")).not.toBeInTheDocument();
       expect(screen.queryByText("Page not found")).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute(
-        "href",
-        "/ada/hello/settings",
-      );
+      // Settings lives in layout RepoChrome (D-QH-01), not the code-home leaf.
+      expect(
+        screen.queryByRole("link", { name: "Settings" }),
+      ).not.toBeInTheDocument();
     },
     20000,
   );
