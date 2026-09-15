@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase_name: Pull Requests
 current_plan: 0
 status: planning
-stopped_at: Completed 11.1-07-PLAN.md
-last_updated: "2026-09-15T18:00:20.839Z"
+stopped_at: Completed 11.1-08-PLAN.md
+last_updated: "2026-09-15T18:01:52.315Z"
 last_activity: 2026-09-15
 last_activity_desc: 11.1-05 complete (smoke-protocol CI + GSD residual); all 11.1 SUMMARYs present; Phase 12 GitHub-parity CONTEXT locked
-state_head: b31158606a588f07abffd346736c4c44e02c9ef4
+state_head: d17d2854650cb1d13d1a66ab9e324b57a0309bff
 progress:
   total_phases: 23
   completed_phases: 0
   total_plans: 156
-  completed_plans: 154
+  completed_plans: 155
 milestone_name: milestone
 current_phase: 12
 ---
@@ -163,6 +163,7 @@ See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases
 | Phase 11.1 P04 | 95min | 3 tasks | 14 files |
 | Phase 11.1 P05 | 9min | 2 tasks | 16 files |
 | Phase 11.1 P07 | 5min | 3 tasks | 9 files |
+| Phase 11.1 P08 | 6min | 2 tasks | 6 files |
 
 # Project State
 
@@ -551,6 +552,8 @@ Recent decisions affecting current work:
 - [Phase 11.1]: CI protocol smokes fail-closed; skip seeded client by default (SMOKE_SKIP_*)
 - [Phase 11.1]: 09 nyquist_compliant true after 11.1-04 SSH e2e + 11.1-05 smoke-protocol
 - [Phase 11.1]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
+- [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
+- [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
 
 ### Pending Todos
 
@@ -572,8 +575,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T18:00:20.710Z
-Stopped at: Completed 11.1-07-PLAN.md
+Last session: 2026-09-15T18:01:52.187Z
+Stopped at: Completed 11.1-08-PLAN.md
 Resume file: None
 
 ## Accumulated Context

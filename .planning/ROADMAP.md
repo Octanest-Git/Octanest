@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH *(GSD VERIFICATION/VALIDATION honesty repaired in Phase 11.1)*
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
-- [ ] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 7/9; gap-closure 07 done, 08–09 for G-11.1-15 remaining)
+- [x] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 9/9; G-11.1-15 gap-closure 07–09 done)
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
@@ -497,7 +497,7 @@ Plans:
   3. Coverage tooling + docs exist; CI enforces a weighted unit / integration / e2e gate (initial floor documented in TESTING.md)
   4. Phase 09 has VERIFICATION + Nyquist-honest VALIDATION; phases 11/15/20 VERIFICATION annotate known stubs (`pr_stub`, OCI referrers, packages chrome debt closed or explicitly tracked)
 
-**Plans:** 7/9 executed (gap-closure 07 done; 08–09 for G-11.1-15 remaining)
+**Plans:** 9/9 executed (gap-closure 07–09 closed G-11.1-15)
 
 Plans:
 
@@ -508,8 +508,8 @@ Plans:
 - [x] 11.1-05-PLAN.md
 - [x] 11.1-06-PLAN.md
 - [x] 11.1-07-PLAN.md
-- [ ] 11.1-08-PLAN.md
-- [ ] 11.1-09-PLAN.md
+- [x] 11.1-08-PLAN.md
+- [x] 11.1-09-PLAN.md
 
 - [x] `11.1-01-PLAN.md` — Tracer: layout RepoChrome + Packages tab + packages shell (D-QH-01)
 - [x] `11.1-02-PLAN.md` — Coverage toolchain + TESTING.md weights 25/40/35 + CI weighted gate (D-QH-02)
@@ -518,8 +518,8 @@ Plans:
 - [x] `11.1-05-PLAN.md` — Protocol smokes in CI + GSD residual honesty (D-QH-04, D-QH-05)
 - [x] `11.1-06-PLAN.md` — Strip RepoChrome from issues/releases/settings + retarget tests (D-QH-01)
 - [x] `11.1-07-PLAN.md` — Gap G-11.1-15: Admin LFS fix + happy-dom mount + stack-browser /admin/lfs
-- [ ] `11.1-08-PLAN.md` — Gap G-11.1-15: Admin packages mount + stack-browser /admin/packages + /admin/auth
-- [ ] `11.1-09-PLAN.md` — Gap G-11.1-15: Full .tsrx route-coverage manifest + CI gate
+- [x] `11.1-08-PLAN.md` — Gap G-11.1-15: Admin packages mount + stack-browser /admin/packages + /admin/auth
+- [x] `11.1-09-PLAN.md` — Gap G-11.1-15: Full .tsrx route-coverage manifest + CI gate
 
 **UI hint**: yes
 
