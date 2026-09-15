@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase_name: Quality Hardening
-current_plan: 4
+current_plan: 5
 status: executing
-stopped_at: Completed 11.1-06-PLAN.md
-last_updated: "2026-09-15T16:28:53.739Z"
+stopped_at: Completed 11.1-03-PLAN.md
+last_updated: "2026-09-15T16:30:27.572Z"
 last_activity: 2026-09-15
 last_activity_desc: Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded
-state_head: 42faa1ef4a8240423341caf5800777190a4697fc
+state_head: 35a44db6f529d31e0abe0ea1448967062f86eae9
 progress:
   total_phases: 23
   completed_phases: 0
   total_plans: 153
-  completed_plans: 150
+  completed_plans: 151
 milestone_name: milestone
 current_phase: "11.1"
 ---
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: **11.1** — Quality Hardening (executing) · parallel **12** discuss
-Current Plan: 4
+Current Plan: 5
 Total Plans in Phase: 6
 Status: 11.1-01 and 11.1-02 complete (RepoChrome + coverage gate); next 11.1-03 leaf chrome dedupe / forge matrix
 Last activity: 2026-09-15 — Completed 11.1-01-PLAN.md (RepoChrome Packages tracer)
@@ -161,6 +161,7 @@ See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.
 | Phase 11.1 P02 | 6min | 3 tasks | 9 files |
 | Phase 11.1 P01 | 5min | 3 tasks | 7 files |
 | Phase 11.1 P06 | 4min | 2 tasks | 11 files |
+| Phase 11.1 P03 | 6min | 2 tasks | 10 files |
 
 # Project State
 
@@ -542,6 +543,8 @@ Recent decisions affecting current work:
 - [Phase 11.1]: Active tab from first path segment under /owner/repo; packages leaf keeps repo.get fallback; leaf chrome dedupe deferred to 11.1-03
 - [Phase 11.1]: 11.1-06: issues/releases/settings leaves content-only; settings not split (D-QH-06)
 - [Phase 11.1]: 11.1-06: labels drop showSettings; layout can_admin gates Settings tab
+- [Phase 11.1]: 11.1-03: Index empty/ready gated on phase.kind only after chrome strip; Settings assert is layout-owned
+- [Phase 11.1]: 11.1-03: Code-browse leaves content-only; layout RepoChrome sole mount for those paths
 
 ### Pending Todos
 
@@ -563,8 +566,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T16:28:53.620Z
-Stopped at: Completed 11.1-06-PLAN.md
+Last session: 2026-09-15T16:30:27.439Z
+Stopped at: Completed 11.1-03-PLAN.md
 Resume file: None
 
 ## Accumulated Context
