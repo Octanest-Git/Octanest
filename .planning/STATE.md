@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Quality Hardening
-current_plan: 6
-status: executing
-stopped_at: Completed 11.1-05-PLAN.md
-last_updated: "2026-09-15T17:11:53.857Z"
+current_phase: "12"
+current_phase_name: Pull Requests
+current_plan: 0
+status: planning
+stopped_at: "Phase 11.1 plans 6/6 executed; 12-CONTEXT ready — next /gsd-plan-phase 12 (or /gsd-verify-work 11.1)"
+last_updated: "2026-09-15T19:15:00.000Z"
 last_activity: 2026-09-15
-last_activity_desc: Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded
-state_head: 28ef5027a11b7d3ad3bfeefecc3ec4597c95e576
+last_activity_desc: "11.1-05 complete (smoke-protocol CI + GSD residual); all 11.1 SUMMARYs present; Phase 12 GitHub-parity CONTEXT locked"
+state_head: dual-track-11.1-executed-12-ready
 progress:
   total_phases: 23
-  completed_phases: 0
+  completed_phases: 15
   total_plans: 153
   completed_plans: 153
 milestone_name: milestone
-current_phase: "11.1"
 ---
 
 # Project State
@@ -25,19 +25,17 @@ current_phase: "11.1"
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Dual-track on `feat/phase-12-and-quality` — **Phase 11.1 Quality Hardening** (plan 05 protocol smokes + GSD residual; phase nearly complete) + **Phase 12 Pull Requests** discuss (Area 1 locked)
+**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** ready to plan (`12-CONTEXT.md`)
 
 ## Current Position
 
-Phase: **11.1** — Quality Hardening (all plans SUMMARY'd · ready for verification) · parallel **12** discuss
-Current Plan: 6 (complete)
-Total Plans in Phase: 6
-Status: 11.1-01…06 plans complete — protocol smoke CI + GSD residual honesty landed
-Last activity: 2026-09-15 — Completed 11.1-05-PLAN.md (smoke-protocol + Nyquist/stub closeout)
+Phase: **12** — Pull Requests (CONTEXT locked, GitHub parity) · **11.1** plans complete
+Current Plan: —
+Total Plans in Phase: TBD
+Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: `/gsd-plan-phase 12` or `/gsd-verify-work 11.1`
+Last activity: 2026-09-15 — Completed 11.1-05; Phase 12 discuss closed to GitHub parity
 
-Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
-
-See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.1-CONTEXT.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
+See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
 
 ## Performance Metrics
 
