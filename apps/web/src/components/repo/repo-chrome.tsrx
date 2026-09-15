@@ -1,22 +1,16 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
+import type { RepoChromeActive } from "@/lib/repo-chrome-active";
 
 type RepoChromeProps = {
   repo: RepoPublic;
-  active:
-    | "code"
-    | "commits"
-    | "branches"
-    | "tags"
-    | "issues"
-    | "releases"
-    | "settings";
+  active: RepoChromeActive;
   /** Force Settings nav (e.g. settings page). Admins also see it via can_admin. */
   showSettings?: boolean;
 };
 
-/** Title row + Code/Commits/Branches/Tags/Issues/Releases/(Settings) link-row. */
+/** Title row + Code/Commits/Branches/Tags/Issues/Releases/Packages/(Settings) link-row. */
 export function RepoChrome({
   repo,
   active,
@@ -34,6 +28,7 @@ export function RepoChrome({
   const tagsHref = `${base}/tags`;
   const issuesHref = `${base}/issues`;
   const releasesHref = `${base}/releases`;
+  const packagesHref = `${base}/packages`;
   const settingsHref = `${base}/settings`;
 
   function navClass(isActive: boolean): string {
@@ -109,6 +104,13 @@ export function RepoChrome({
         aria-current={active === "releases" ? "page" : undefined}
       >
         Releases
+      </a>
+      <a
+        href={packagesHref as string}
+        className={navClass(active === "packages") as string}
+        aria-current={active === "packages" ? "page" : undefined}
+      >
+        Packages
       </a>
       @if (settingsVisible) {
         <a
