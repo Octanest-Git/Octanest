@@ -64,3 +64,64 @@ describe("FileTree long name layout (07-15 / E3 overflow)", () => {
     expect(link).toHaveAttribute("title", longName);
   });
 });
+
+describe("FileTree parent row (GitHub/Gitea ..)", () => {
+  it("shows .. linking to parent when basePath is nested", () => {
+    render(FileTree, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        basePath: "src/lib",
+        entries: [
+          {
+            name: "index.ts",
+            kind: "blob",
+            oid: "abc1234deadbeef",
+            mode: "100644",
+          },
+        ],
+      },
+    });
+
+    const parent = screen.getByRole("link", { name: ".." });
+    expect(parent).toHaveAttribute("href", "/ada/hello/tree/main/src");
+    expect(parent).toHaveAttribute("title", "Parent directory");
+  });
+
+  it("omits .. at repo root", () => {
+    render(FileTree, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        basePath: "",
+        entries: [
+          {
+            name: "README.md",
+            kind: "blob",
+            oid: "abc1234deadbeef",
+            mode: "100644",
+          },
+        ],
+      },
+    });
+
+    expect(screen.queryByRole("link", { name: ".." })).not.toBeInTheDocument();
+  });
+});
+
+describe("PathBreadcrumb repo crumb", () => {
+  it("links the repo name to code home", () => {
+    render(PathBreadcrumb, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        path: "src",
+      },
+    });
+
+    expect(screen.getByRole("link", { name: "hello" })).toHaveAttribute("href", "/ada/hello/");
+  });
+});
