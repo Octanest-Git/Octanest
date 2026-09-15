@@ -46,7 +46,20 @@ make test                    # Rust nextest + Vitest
 make test-e2e-stack          # full auth stack e2e
 make up / make smoke         # Compose + health
 make rpc-sync-check          # CI gate for client drift
+make web-lint                # oxlint type-aware (apps/web; @tsrx/oxc)
+make web-format-check        # oxfmt --check (apps/web)
 ```
+
+### Before committing web changes
+
+Always run (or equivalent filter scripts) and fix failures before claiming done or creating a commit:
+
+```bash
+make web-lint
+make web-format-check
+```
+
+`make web-lint` is **type-aware** (`oxlint --type-aware` via `oxlint-tsgolint`). Treat those diagnostics as the web type gate — plain `tsc --noEmit` does not understand `.tsrx` yet (needs `@tsrx/typescript-plugin`; peer range is still TS 5.9.x while this app uses TypeScript 7). Also fix editor/linter type diagnostics you introduce. Format with `bun run --filter @octanest/web format` when `format:check` fails.
 
 See [docs/TESTING.md](docs/TESTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 

@@ -22,11 +22,7 @@ export function resolvePublicOriginClient(): string {
 }
 
 /** HTTPS clone remote for a repo (absolute — git clients need a full URL). */
-export function httpsCloneUrl(
-  origin: string,
-  owner: string,
-  repo: string,
-): string {
+export function httpsCloneUrl(origin: string, owner: string, repo: string): string {
   const base = (origin || resolvePublicOriginClient()).replace(/\/$/, "");
   return `${base}/${owner}/${repo}.git`;
 }
@@ -36,13 +32,11 @@ export function httpsCloneUrl(
  * Always `git@{host}:{owner}/{repo}.git` — port is never embedded; use
  * `sshNeedsPortHint` / `~/.ssh/config Port` when advertised port ≠ 22.
  */
-export function sshCloneUrl(
-  host: string,
-  _port: number,
-  owner: string,
-  repo: string,
-): string {
-  const h = host.trim().replace(/\/$/, "").replace(/^\[|\]$/g, "");
+export function sshCloneUrl(host: string, _port: number, owner: string, repo: string): string {
+  const h = host
+    .trim()
+    .replace(/\/$/, "")
+    .replace(/^\[|\]$/g, "");
   return `git@${h}:${owner}/${repo}.git`;
 }
 
@@ -59,9 +53,7 @@ export function resolveSshHost(
   const fromEnv = envHost?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, "");
   const origin =
-    (publicOrigin || "").trim() ||
-    resolvePublicOriginFromEnv() ||
-    resolvePublicOriginClient();
+    (publicOrigin || "").trim() || resolvePublicOriginFromEnv() || resolvePublicOriginClient();
   try {
     const u = new URL(origin.includes("://") ? origin : `http://${origin}`);
     return u.hostname || "localhost";
@@ -71,9 +63,7 @@ export function resolveSshHost(
 }
 
 /** Advertised/listen SSH port (env default 2222 for Compose). */
-export function resolveSshPort(
-  envPort = process.env.OCTANEST_SSH_PORT,
-): number {
+export function resolveSshPort(envPort = process.env.OCTANEST_SSH_PORT): number {
   const raw = envPort?.trim();
   if (raw) {
     const n = Number.parseInt(raw, 10);

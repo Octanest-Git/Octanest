@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -80,8 +74,7 @@ type LoaderShape = {
 let loaderData: LoaderShape;
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useLoaderData: () => loaderData,
@@ -110,165 +103,132 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("/new Wave 0 (D-11 verify wall)", () => {
-  it(
-    "unverified session shows Verify your email wall — not the create form",
-    async () => {
-      const { NewPage } = await import("./new");
-      render(NewPage as never);
+  it("unverified session shows Verify your email wall — not the create form", async () => {
+    const { NewPage } = await import("./new");
+    render(NewPage as never);
 
-      await waitFor(() => {
-        expect(screen.getByText("Verify your email")).toBeInTheDocument();
-      });
-      expect(
-        screen.getByText("Verify your email before creating a repository."),
-      ).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute(
-        "href",
-        "/verify",
-      );
-      expect(
-        screen.queryByRole("button", { name: "Create repository" }),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText(/repository name/i),
-      ).not.toBeInTheDocument();
-    },
-    20000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText("Verify your email")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Verify your email before creating a repository.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute("href", "/verify");
+    expect(screen.queryByRole("button", { name: "Create repository" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/repository name/i)).not.toBeInTheDocument();
+  }, 20000);
 });
 
 describe("/new create form (D-02, D-04, D-12)", () => {
-  it(
-    "verified form shows stack, license, gitignore pickers",
-    async () => {
-      loaderData = {
-        user: {
-          id: "u1",
-          email: "ada@example.com",
-          username: "ada",
-          display_name: "Ada",
-          bio: "",
-          avatar_url: null,
-          role: "user",
-          profile_incomplete: false,
-          email_verified: true,
-        },
-        defaults: {
-          default_visibility: "public",
-          stacks: [
-            {
-              id: "rust",
-              label: "Rust",
-              group: "Systems",
-              description: "Cargo binary crate with src/main.rs.",
-              default_gitignore: "Rust",
-            },
-          ],
-          gitignores: [
-            {
-              id: "Rust",
-              label: "Rust",
-              group: "Languages",
-              description: "target/ and Cargo build noise.",
-            },
-          ],
-        },
-        ownerOrgs: [],
-      };
+  it("verified form shows stack, license, gitignore pickers", async () => {
+    loaderData = {
+      user: {
+        id: "u1",
+        email: "ada@example.com",
+        username: "ada",
+        display_name: "Ada",
+        bio: "",
+        avatar_url: null,
+        role: "user",
+        profile_incomplete: false,
+        email_verified: true,
+      },
+      defaults: {
+        default_visibility: "public",
+        stacks: [
+          {
+            id: "rust",
+            label: "Rust",
+            group: "Systems",
+            description: "Cargo binary crate with src/main.rs.",
+            default_gitignore: "Rust",
+          },
+        ],
+        gitignores: [
+          {
+            id: "Rust",
+            label: "Rust",
+            group: "Languages",
+            description: "target/ and Cargo build noise.",
+          },
+        ],
+      },
+      ownerOrgs: [],
+    };
 
-      const { NewPage } = await import("./new");
-      render(NewPage as never);
+    const { NewPage } = await import("./new");
+    render(NewPage as never);
 
-      await waitFor(() => {
-        expect(
-          screen.getByRole("button", { name: "Create repository" }),
-        ).toBeInTheDocument();
-      });
-      expect(screen.getByLabelText("Stack template")).toBeInTheDocument();
-      expect(screen.getByLabelText("License")).toBeInTheDocument();
-      expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Create repository" })).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText("Stack template")).toBeInTheDocument();
+    expect(screen.getByLabelText("License")).toBeInTheDocument();
+    expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Stack template"));
-      await waitFor(() => {
-        expect(
-          screen.getByRole("heading", { name: "Choose Stack template" }),
-        ).toBeInTheDocument();
-      });
-      expect(screen.getByText("Cargo binary crate with src/main.rs.")).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: /Rust/i }));
-      await waitFor(() => {
-        expect(
-          screen.queryByRole("heading", { name: "Choose Stack template" }),
-        ).not.toBeInTheDocument();
-      });
-      // Stack pick auto-fills the matching .gitignore
-      expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Rust/);
-
-      fireEvent.click(screen.getByLabelText("License"));
-      await waitFor(() => {
-        expect(
-          screen.getByRole("heading", { name: "Choose License" }),
-        ).toBeInTheDocument();
-      });
+    fireEvent.click(screen.getByLabelText("Stack template"));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Choose Stack template" })).toBeInTheDocument();
+    });
+    expect(screen.getByText("Cargo binary crate with src/main.rs.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Rust/i }));
+    await waitFor(() => {
       expect(
-        screen.getByText("Permissive — keep the copyright notice."),
+        screen.queryByRole("heading", { name: "Choose Stack template" }),
+      ).not.toBeInTheDocument();
+    });
+    // Stack pick auto-fills the matching .gitignore
+    expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Rust/);
+
+    fireEvent.click(screen.getByLabelText("License"));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "Choose License" })).toBeInTheDocument();
+    });
+    expect(screen.getByText("Permissive — keep the copyright notice.")).toBeInTheDocument();
+  }, 20000);
+
+  it("duplicate name maps to exact inline field copy", async () => {
+    loaderData = {
+      user: {
+        id: "u1",
+        email: "ada@example.com",
+        username: "ada",
+        display_name: "Ada",
+        bio: "",
+        avatar_url: null,
+        role: "user",
+        profile_incomplete: false,
+        email_verified: true,
+      },
+      defaults: {
+        default_visibility: "public",
+        stacks: [],
+        gitignores: [],
+      },
+      ownerOrgs: [],
+    };
+
+    createMock.mockResolvedValueOnce({
+      ok: false,
+      error: {
+        code: "repo.name_taken",
+        message: "ignored server wording",
+      },
+    });
+
+    const { NewPage } = await import("./new");
+    render(NewPage as never);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/repository name/i)).toBeInTheDocument();
+    });
+
+    const input = screen.getByLabelText(/repository name/i);
+    fireEvent.input(input, { target: { value: "dup-repo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Create repository" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("A repository with this name already exists. Choose a different name."),
       ).toBeInTheDocument();
-    },
-    20000,
-  );
-
-  it(
-    "duplicate name maps to exact inline field copy",
-    async () => {
-      loaderData = {
-        user: {
-          id: "u1",
-          email: "ada@example.com",
-          username: "ada",
-          display_name: "Ada",
-          bio: "",
-          avatar_url: null,
-          role: "user",
-          profile_incomplete: false,
-          email_verified: true,
-        },
-        defaults: {
-          default_visibility: "public",
-          stacks: [],
-          gitignores: [],
-        },
-        ownerOrgs: [],
-      };
-
-      createMock.mockResolvedValueOnce({
-        ok: false,
-        error: {
-          code: "repo.name_taken",
-          message: "ignored server wording",
-        },
-      });
-
-      const { NewPage } = await import("./new");
-      render(NewPage as never);
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/repository name/i)).toBeInTheDocument();
-      });
-
-      const input = screen.getByLabelText(/repository name/i);
-      fireEvent.input(input, { target: { value: "dup-repo" } });
-      fireEvent.click(
-        screen.getByRole("button", { name: "Create repository" }),
-      );
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(
-            "A repository with this name already exists. Choose a different name.",
-          ),
-        ).toBeInTheDocument();
-      });
-    },
-    20000,
-  );
+    });
+  }, 20000);
 });

@@ -92,9 +92,7 @@ describe("authSessionQueryOptions", () => {
       error: { code: "rpc.internal", message: "boom" },
     } as never);
 
-    await expect(authSessionQueryOptions().queryFn()).rejects.toThrow(
-      /rpc.internal/,
-    );
+    await expect(authSessionQueryOptions().queryFn()).rejects.toThrow(/rpc.internal/);
   });
 });
 

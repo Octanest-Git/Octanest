@@ -53,14 +53,12 @@ export const fetchRepoGet = createServerFn({ method: "GET" })
 
 /** SSR: `repo.tree` with Cookie forward. */
 export const fetchRepoTree = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { ref: string; path?: string }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      ref: String(data?.ref ?? ""),
-      path: String(data?.path ?? ""),
-    }),
-  )
+  .validator((data: OwnerName & { ref: string; path?: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+    path: String(data?.path ?? ""),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.tree({
@@ -81,14 +79,12 @@ export const fetchRepoRefs = createServerFn({ method: "GET" })
 
 /** SSR: `repo.blob` with Cookie forward. */
 export const fetchRepoBlob = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { ref: string; path: string }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      ref: String(data?.ref ?? ""),
-      path: String(data?.path ?? ""),
-    }),
-  )
+  .validator((data: OwnerName & { ref: string; path: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+    path: String(data?.path ?? ""),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.blob({
@@ -101,15 +97,13 @@ export const fetchRepoBlob = createServerFn({ method: "GET" })
 
 /** SSR: `repo.commits` with Cookie forward. */
 export const fetchRepoCommits = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { ref: string; skip?: number; limit?: number }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      ref: String(data?.ref ?? ""),
-      skip: typeof data?.skip === "number" ? data.skip : 0,
-      limit: typeof data?.limit === "number" ? data.limit : 30,
-    }),
-  )
+  .validator((data: OwnerName & { ref: string; skip?: number; limit?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+    skip: typeof data?.skip === "number" ? data.skip : 0,
+    limit: typeof data?.limit === "number" ? data.limit : 30,
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.commits({
@@ -123,14 +117,12 @@ export const fetchRepoCommits = createServerFn({ method: "GET" })
 
 /** SSR: `repo.blame` with Cookie forward. */
 export const fetchRepoBlame = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { ref: string; path: string }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      ref: String(data?.ref ?? ""),
-      path: String(data?.path ?? ""),
-    }),
-  )
+  .validator((data: OwnerName & { ref: string; path: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+    path: String(data?.path ?? ""),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.blame({
@@ -143,13 +135,11 @@ export const fetchRepoBlame = createServerFn({ method: "GET" })
 
 /** SSR: `repo.commit` with Cookie forward. */
 export const fetchRepoCommit = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { sha: string }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      sha: String(data?.sha ?? ""),
-    }),
-  )
+  .validator((data: OwnerName & { sha: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    sha: String(data?.sha ?? ""),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.commit({
@@ -161,14 +151,12 @@ export const fetchRepoCommit = createServerFn({ method: "GET" })
 
 /** SSR: `repo.compare` with Cookie forward. */
 export const fetchRepoCompare = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { base: string; head: string }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      base: String(data?.base ?? ""),
-      head: String(data?.head ?? ""),
-    }),
-  )
+  .validator((data: OwnerName & { base: string; head: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    base: String(data?.base ?? ""),
+    head: String(data?.head ?? ""),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.repo.compare({
@@ -221,13 +209,11 @@ export const fetchIssueList = createServerFn({ method: "GET" })
 
 /** SSR: `issue.get` with Cookie forward. */
 export const fetchIssueGet = createServerFn({ method: "GET" })
-  .validator(
-    (data: OwnerName & { number: number }) => ({
-      owner: String(data?.owner ?? ""),
-      name: String(data?.name ?? ""),
-      number: typeof data?.number === "number" ? data.number : Number(data?.number),
-    }),
-  )
+  .validator((data: OwnerName & { number: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    number: typeof data?.number === "number" ? data.number : Number(data?.number),
+  }))
   .handler(async ({ data }) => {
     const client = createSsrClient(incomingCookie());
     return client.issue.get({
@@ -249,25 +235,21 @@ export const fetchReleaseList = createServerFn({ method: "GET" })
  * SSR: browser-facing origin for clone URLs.
  * Prefer OCTANEST_PUBLIC_ORIGIN; fall back to forwarded Host.
  */
-export const fetchPublicOrigin = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const fromEnv = resolvePublicOriginFromEnv();
-    if (fromEnv) return fromEnv;
+export const fetchPublicOrigin = createServerFn({ method: "GET" }).handler(async () => {
+  const fromEnv = resolvePublicOriginFromEnv();
+  if (fromEnv) return fromEnv;
 
-    const host =
-      getRequestHeader("x-forwarded-host")?.split(",")[0]?.trim() ||
-      getRequestHeader("host")?.trim() ||
-      "";
-    if (!host) {
-      return "http://localhost";
-    }
+  const host =
+    getRequestHeader("x-forwarded-host")?.split(",")[0]?.trim() ||
+    getRequestHeader("host")?.trim() ||
+    "";
+  if (!host) {
+    return "http://localhost";
+  }
 
-    const protoRaw =
-      getRequestHeader("x-forwarded-proto")?.split(",")[0]?.trim() ||
-      (host.startsWith("localhost") || host.startsWith("127.0.0.1")
-        ? "http"
-        : "https");
-    const proto = protoRaw === "https" ? "https" : "http";
-    return `${proto}://${host}`.replace(/\/$/, "");
-  },
-);
+  const protoRaw =
+    getRequestHeader("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
+  const proto = protoRaw === "https" ? "https" : "http";
+  return `${proto}://${host}`.replace(/\/$/, "");
+});

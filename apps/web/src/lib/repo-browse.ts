@@ -3,8 +3,7 @@ import type { RepoTreeEntry } from "@octanest/api-client";
 /** Directories (and gitlink commits) before blobs; then localeCompare (D-15). */
 export function sortTreeEntries(entries: RepoTreeEntry[]): RepoTreeEntry[] {
   return [...entries].sort((a, b) => {
-    const rank = (e: RepoTreeEntry) =>
-      e.kind === "tree" || e.kind === "commit" ? 0 : 1;
+    const rank = (e: RepoTreeEntry) => (e.kind === "tree" || e.kind === "commit" ? 0 : 1);
     const d = rank(a) - rank(b);
     if (d !== 0) return d;
     return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
@@ -29,9 +28,7 @@ export function parseRefAndPath(
     .filter(Boolean);
   if (parts.length === 0) return { ref: "", path: "" };
 
-  const known = (knownRefs ?? [])
-    .map((r) => r.trim())
-    .filter(Boolean);
+  const known = (knownRefs ?? []).map((r) => r.trim()).filter(Boolean);
   if (known.length > 0) {
     const knownSet = new Set(known);
     let best: { ref: string; pathSegs: number } | null = null;
@@ -84,23 +81,13 @@ export function pathBreadcrumbCrumbs(path: string): PathCrumb[] {
   }));
 }
 
-export function treeHref(
-  owner: string,
-  repo: string,
-  ref: string,
-  path = "",
-): string {
+export function treeHref(owner: string, repo: string, ref: string, path = ""): string {
   const base = `/${owner}/${repo}/tree/${encodeURIComponent(ref)}`;
   const rel = path.replace(/^\/+/, "");
   return rel ? `${base}/${rel.split("/").map(encodeURIComponent).join("/")}` : base;
 }
 
-export function blobHref(
-  owner: string,
-  repo: string,
-  ref: string,
-  path: string,
-): string {
+export function blobHref(owner: string, repo: string, ref: string, path: string): string {
   const rel = path.replace(/^\/+/, "");
   return `/${owner}/${repo}/blob/${encodeURIComponent(ref)}/${rel
     .split("/")
@@ -116,21 +103,11 @@ export function commitHref(owner: string, repo: string, sha: string): string {
   return `/${owner}/${repo}/commit/${encodeURIComponent(sha)}`;
 }
 
-export function compareHref(
-  owner: string,
-  repo: string,
-  base: string,
-  head: string,
-): string {
+export function compareHref(owner: string, repo: string, base: string, head: string): string {
   return `/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`;
 }
 
-export function blameHref(
-  owner: string,
-  repo: string,
-  ref: string,
-  path: string,
-): string {
+export function blameHref(owner: string, repo: string, ref: string, path: string): string {
   const rel = path.replace(/^\/+/, "");
   return `/${owner}/${repo}/blame/${encodeURIComponent(ref)}/${rel
     .split("/")
@@ -138,12 +115,7 @@ export function blameHref(
     .join("/")}`;
 }
 
-export function rawBlobUrl(
-  owner: string,
-  repo: string,
-  ref: string,
-  path: string,
-): string {
+export function rawBlobUrl(owner: string, repo: string, ref: string, path: string): string {
   // Same-origin relative path — SSR-safe (no window / Host needed).
   const rel = path.replace(/^\/+/, "");
   return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/raw/${encodeURIComponent(ref)}/${rel
@@ -183,9 +155,7 @@ export function imageMimeForPath(filePath: string): string {
 }
 
 /** Parse `#L10` or `#L10-L20` line permalinks (D-20). */
-export function parseLineHash(
-  hash: string,
-): { start: number; end: number } | null {
+export function parseLineHash(hash: string): { start: number; end: number } | null {
   const m = hash.match(/^#?L(\d+)(?:-L?(\d+))?$/i);
   if (!m) return null;
   const start = Number(m[1]);
@@ -196,9 +166,7 @@ export function parseLineHash(
 }
 
 export function findReadmeName(entries: RepoTreeEntry[]): string | null {
-  const names = entries
-    .filter((e) => e.kind === "blob")
-    .map((e) => e.name);
+  const names = entries.filter((e) => e.kind === "blob").map((e) => e.name);
   const preferred = ["README.md", "README.MD", "Readme.md", "readme.md", "README"];
   for (const p of preferred) {
     if (names.includes(p)) return p;
@@ -220,18 +188,10 @@ export function isTagRef(fullName: string): boolean {
   return fullName.startsWith("refs/tags/");
 }
 
-export function archiveZipUrl(
-  owner: string,
-  repo: string,
-  refName: string,
-): string {
+export function archiveZipUrl(owner: string, repo: string, refName: string): string {
   return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.zip`;
 }
 
-export function archiveTarGzUrl(
-  owner: string,
-  repo: string,
-  refName: string,
-): string {
+export function archiveTarGzUrl(owner: string, repo: string, refName: string): string {
   return `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.tar.gz`;
 }

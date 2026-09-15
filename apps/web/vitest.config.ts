@@ -45,9 +45,7 @@ const stackEnvDefine = {
   "process.env.OCTANEST_E2E_OIDC_ISSUER": JSON.stringify(
     process.env.OCTANEST_E2E_OIDC_ISSUER ?? "http://127.0.0.1:9090/default",
   ),
-  "process.env.OCTANEST_E2E_DB_PATH": JSON.stringify(
-    process.env.OCTANEST_E2E_DB_PATH ?? "",
-  ),
+  "process.env.OCTANEST_E2E_DB_PATH": JSON.stringify(process.env.OCTANEST_E2E_DB_PATH ?? ""),
 };
 
 /**

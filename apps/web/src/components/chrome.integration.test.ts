@@ -4,12 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 vi.mock("@octanejs/tanstack-router", () => ({
-  Link: (props: {
-    to?: string;
-    children?: unknown;
-    className?: string;
-    onClick?: () => void;
-  }) =>
+  Link: (props: { to?: string; children?: unknown; className?: string; onClick?: () => void }) =>
     createElement(
       "a",
       {
@@ -69,9 +64,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("omits Sign up when allow_signup is unknown", async () => {
@@ -86,9 +79,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("omits Sign in and Sign up while needs_setup", async () => {
@@ -103,12 +94,8 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.queryByLabelText(/^Account$/i)).toBeTruthy();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /sign in/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("shows Sign up when allow_signup is true", async () => {

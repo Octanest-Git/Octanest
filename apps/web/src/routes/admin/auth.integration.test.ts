@@ -69,9 +69,7 @@ describe("/admin/auth Query-backed settings", () => {
     );
 
     expect(screen.getByText("Allow open signup")).toBeInTheDocument();
-    expect(
-      screen.getByText(/When off, new accounts can’t self-register/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/When off, new accounts can’t self-register/i)).toBeInTheDocument();
     expect(screen.getByText("Danger zone")).toBeInTheDocument();
   }, 10000);
 

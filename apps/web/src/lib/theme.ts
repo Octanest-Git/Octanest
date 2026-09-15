@@ -14,9 +14,7 @@ export function readThemePreference(): ThemePreference {
 export function resolveTheme(pref: ThemePreference): "light" | "dark" {
   if (pref === "light" || pref === "dark") return pref;
   if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 /** Parse `octanest-theme` from a Cookie header (SSR). */
@@ -24,9 +22,7 @@ export function themePreferenceFromCookieHeader(
   cookieHeader: string | undefined | null,
 ): ThemePreference | null {
   if (!cookieHeader) return null;
-  const match = /(?:^|;\s*)octanest-theme=(light|dark|system)(?:;|$)/.exec(
-    cookieHeader,
-  );
+  const match = /(?:^|;\s*)octanest-theme=(light|dark|system)(?:;|$)/.exec(cookieHeader);
   return match ? (match[1] as ThemePreference) : null;
 }
 
@@ -68,7 +64,7 @@ export const THEME_BOOT_SCRIPT =
   'var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);' +
   'document.documentElement.classList.toggle("dark",d);' +
   'document.cookie="octanest-theme="+p+";path=/;max-age=31536000;SameSite=Lax";' +
-  '}catch(e){}})();';
+  "}catch(e){}})();";
 
 /**
  * Warm webfonts into `document.fonts` so View Transitions / soft navigations
@@ -76,7 +72,7 @@ export const THEME_BOOT_SCRIPT =
  * Static literal — no interpolation (same threat model as theme boot).
  */
 export const FONT_WARM_SCRIPT =
-  '(function(){try{if(!document.fonts||!document.fonts.load)return;' +
-  'document.fonts.load(\'600 24px "Sora Variable"\');' +
-  'document.fonts.load(\'400 16px "Source Sans 3 Variable"\');' +
-  '}catch(e){}})();';
+  "(function(){try{if(!document.fonts||!document.fonts.load)return;" +
+  "document.fonts.load('600 24px \"Sora Variable\"');" +
+  "document.fonts.load('400 16px \"Source Sans 3 Variable\"');" +
+  "}catch(e){}})();";

@@ -1,10 +1,5 @@
 import { createElement } from "octane";
-import {
-  cleanup,
-  fireEvent,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
@@ -61,8 +56,7 @@ type LoaderShape =
 let loaderData: LoaderShape;
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useLoaderData: () => loaderData,
@@ -142,212 +136,174 @@ async function loadTokensModule(): Promise<Record<string, unknown>> {
 }
 
 describe("/settings/tokens (GIT-11 / D-14 list)", () => {
-  it(
-    "list title Personal access tokens + empty hero No personal access tokens + Generate new token",
-    async () => {
-      const mod = await loadTokensModule();
-      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-      const { container } = renderWithQueryClient(TokensPage);
+  it("list title Personal access tokens + empty hero No personal access tokens + Generate new token", async () => {
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    const { container } = renderWithQueryClient(TokensPage);
 
-      await waitFor(() => {
-        expect(
-          container.querySelector("h1")?.textContent,
-        ).toBe("Personal access tokens");
-      });
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("Personal access tokens");
+    });
 
-      await waitFor(() => {
-        expect(
-          screen.getByText("No personal access tokens"),
-        ).toBeInTheDocument();
-      });
-      expect(
-        screen.getByText("Create a token to clone, fetch, and push over HTTPS."),
-      ).toBeInTheDocument();
-      const generate = screen.getAllByRole("button", {
-        name: /Generate new token/i,
-      })[0]!;
-      expect(generate).toBeInTheDocument();
-      expect(generate).not.toBeDisabled();
-      generate.click();
-      await waitFor(() => {
-        expect(screen.getByText("Classic token")).toBeInTheDocument();
-      });
-      expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
-      // T-08-01: no plaintext secrets on list
-      expect(container.textContent).not.toMatch(
-        /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
-      );
-    },
-    15_000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("Create a token to clone, fetch, and push over HTTPS."),
+    ).toBeInTheDocument();
+    const generate = screen.getAllByRole("button", {
+      name: /Generate new token/i,
+    })[0]!;
+    expect(generate).toBeInTheDocument();
+    expect(generate).not.toBeDisabled();
+    generate.click();
+    await waitFor(() => {
+      expect(screen.getByText("Classic token")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
+    // T-08-01: no plaintext secrets on list
+    expect(container.textContent).not.toMatch(
+      /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
+    );
+  }, 15_000);
 
-  it(
-    "unverified: list visible with Generate disabled + Verify your email to create a token.",
-    async () => {
-      loaderData = {
-        kind: "ready",
-        user: { ...verifiedUser, email_verified: false },
-      };
-      meMock.mockResolvedValue({
-        ok: true,
-        data: { ...verifiedUser, email_verified: false },
-      });
+  it("unverified: list visible with Generate disabled + Verify your email to create a token.", async () => {
+    loaderData = {
+      kind: "ready",
+      user: { ...verifiedUser, email_verified: false },
+    };
+    meMock.mockResolvedValue({
+      ok: true,
+      data: { ...verifiedUser, email_verified: false },
+    });
 
-      const mod = await loadTokensModule();
-      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-      const { container } = renderWithQueryClient(TokensPage);
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    const { container } = renderWithQueryClient(TokensPage);
 
-      await waitFor(() => {
-        expect(
-          container.querySelector("h1")?.textContent,
-        ).toBe("Personal access tokens");
-      });
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("Personal access tokens");
+    });
 
-      const generate = screen.getAllByRole("button", {
-        name: /Generate new token/i,
-      })[0]!;
-      expect(generate).toBeDisabled();
-      expect(
-        screen.getByText("Verify your email to create a token."),
-      ).toBeInTheDocument();
-      await waitFor(() => {
-        expect(
-          screen.getByText("No personal access tokens"),
-        ).toBeInTheDocument();
-      });
-    },
-    15_000,
-  );
+    const generate = screen.getAllByRole("button", {
+      name: /Generate new token/i,
+    })[0]!;
+    expect(generate).toBeDisabled();
+    expect(screen.getByText("Verify your email to create a token.")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
+    });
+  }, 15_000);
 
-  it(
-    "settings secondary nav Profile | Personal access tokens",
-    async () => {
-      const mod = await loadTokensModule();
-      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-      const { container } = renderWithQueryClient(TokensPage);
+  it("settings secondary nav Profile | Personal access tokens", async () => {
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    const { container } = renderWithQueryClient(TokensPage);
 
-      await waitFor(() => {
-        expect(
-          container.querySelector('nav[aria-label="Settings"]'),
-        ).toBeTruthy();
-      });
+    await waitFor(() => {
+      expect(container.querySelector('nav[aria-label="Settings"]')).toBeTruthy();
+    });
 
-      const nav = container.querySelector('nav[aria-label="Settings"]')!;
-      const profile = nav.querySelector('a[href="/settings/profile"]');
-      const tokens = nav.querySelector('a[href="/settings/tokens"]');
-      expect(profile?.textContent).toBe("Profile");
-      expect(tokens?.textContent).toBe("Personal access tokens");
-      expect(tokens?.getAttribute("aria-current")).toBe("page");
-    },
-    15_000,
-  );
+    const nav = container.querySelector('nav[aria-label="Settings"]')!;
+    const profile = nav.querySelector('a[href="/settings/profile"]');
+    const tokens = nav.querySelector('a[href="/settings/tokens"]');
+    expect(profile?.textContent).toBe("Profile");
+    expect(tokens?.textContent).toBe("Personal access tokens");
+    expect(tokens?.getAttribute("aria-current")).toBe("page");
+  }, 15_000);
 });
 
 describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
-  it(
-    "revoke AlertDialog copy Revoke token? / Keep token",
-    async () => {
-      listMock.mockResolvedValue({
-        ok: true,
-        data: [
-          {
-            id: "pat-1",
-            kind: "classic",
-            name: "laptop",
-            token_prefix: "octanest_pat_abcd",
-            scopes: ["repo"],
-            expires_at: null,
-            last_used_at: null,
-            last_used_ip: null,
-            created_at: "2026-01-01T00:00:00Z",
-          },
-        ],
-      });
+  it("revoke AlertDialog copy Revoke token? / Keep token", async () => {
+    listMock.mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: "pat-1",
+          kind: "classic",
+          name: "laptop",
+          token_prefix: "octanest_pat_abcd",
+          scopes: ["repo"],
+          expires_at: null,
+          last_used_at: null,
+          last_used_ip: null,
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+    });
 
-      const mod = await loadTokensModule();
-      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-      renderWithQueryClient(TokensPage);
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    renderWithQueryClient(TokensPage);
 
-      await waitFor(() => {
-        expect(screen.getByText("laptop")).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText("laptop")).toBeInTheDocument();
+    });
 
-      screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
+    screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
 
-      await waitFor(() => {
-        expect(screen.getByText("Revoke token?")).toBeInTheDocument();
-      });
-      expect(
-        screen.getByRole("button", { name: "Keep token" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getAllByRole("button", { name: /^Revoke token$/ }).length,
-      ).toBeGreaterThanOrEqual(1);
-      expect(
-        screen.getByText(/Revokes .*laptop/i),
-      ).toBeInTheDocument();
-      expect(document.body.textContent).not.toMatch(/\bCancel\b/);
-    },
-    15_000,
-  );
-
-  it(
-    "revoke confirm calls pat.revoke and keeps dialog open on error",
-    async () => {
-      listMock.mockResolvedValue({
-        ok: true,
-        data: [
-          {
-            id: "pat-1",
-            kind: "classic",
-            name: "ci-bot",
-            token_prefix: "octanest_pat_ef01",
-            scopes: ["repo"],
-            expires_at: null,
-            last_used_at: null,
-            last_used_ip: null,
-            created_at: "2026-01-01T00:00:00Z",
-          },
-        ],
-      });
-      revokeMock.mockResolvedValue({
-        ok: false,
-        error: { code: "internal", message: "fail" },
-      });
-
-      const mod = await loadTokensModule();
-      const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
-      renderWithQueryClient(TokensPage);
-
-      await waitFor(() => {
-        expect(screen.getByText("ci-bot")).toBeInTheDocument();
-      });
-
-      screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
-      await waitFor(() => {
-        expect(screen.getByText("Revoke token?")).toBeInTheDocument();
-      });
-
-      const confirmBtns = screen.getAllByRole("button", {
-        name: /^Revoke token$/,
-      });
-      // Dialog confirm is the last Revoke token button (row trigger already clicked)
-      confirmBtns[confirmBtns.length - 1]!.click();
-
-      await waitFor(() => {
-        expect(revokeMock).toHaveBeenCalledWith({ id: "pat-1" });
-      });
-      await waitFor(() => {
-        expect(
-          screen.getByText(
-            "Couldn't revoke token. Check your connection and try again.",
-          ),
-        ).toBeInTheDocument();
-      });
+    await waitFor(() => {
       expect(screen.getByText("Revoke token?")).toBeInTheDocument();
-    },
-    15_000,
-  );
+    });
+    expect(screen.getByRole("button", { name: "Keep token" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Revoke token$/ }).length).toBeGreaterThanOrEqual(
+      1,
+    );
+    expect(screen.getByText(/Revokes .*laptop/i)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/\bCancel\b/);
+  }, 15_000);
+
+  it("revoke confirm calls pat.revoke and keeps dialog open on error", async () => {
+    listMock.mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: "pat-1",
+          kind: "classic",
+          name: "ci-bot",
+          token_prefix: "octanest_pat_ef01",
+          scopes: ["repo"],
+          expires_at: null,
+          last_used_at: null,
+          last_used_ip: null,
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+    });
+    revokeMock.mockResolvedValue({
+      ok: false,
+      error: { code: "internal", message: "fail" },
+    });
+
+    const mod = await loadTokensModule();
+    const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
+    renderWithQueryClient(TokensPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("ci-bot")).toBeInTheDocument();
+    });
+
+    screen.getAllByRole("button", { name: "Revoke token" })[0]!.click();
+    await waitFor(() => {
+      expect(screen.getByText("Revoke token?")).toBeInTheDocument();
+    });
+
+    const confirmBtns = screen.getAllByRole("button", {
+      name: /^Revoke token$/,
+    });
+    // Dialog confirm is the last Revoke token button (row trigger already clicked)
+    confirmBtns[confirmBtns.length - 1]!.click();
+
+    await waitFor(() => {
+      expect(revokeMock).toHaveBeenCalledWith({ id: "pat-1" });
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Couldn't revoke token. Check your connection and try again."),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText("Revoke token?")).toBeInTheDocument();
+  }, 15_000);
 });
 
 /** Load classic create page; @vite-ignore keeps suite collectable before route exists. */
@@ -372,157 +328,120 @@ function tokensNewPage(mod: Record<string, unknown>): unknown {
 }
 
 describe("/settings/tokens/new (GIT-11 / D-05 classic create)", () => {
-  it(
-    "title New classic token + Note + Full control checkbox + No expiration + Generate token",
-    async () => {
-      const mod = await loadTokensNewModule();
-      const { container } = renderWithQueryClient(tokensNewPage(mod));
+  it("title New classic token + Note + Full control checkbox + No expiration + Generate token", async () => {
+    const mod = await loadTokensNewModule();
+    const { container } = renderWithQueryClient(tokensNewPage(mod));
 
-      await waitFor(() => {
-        expect(container.querySelector("h1")?.textContent).toBe(
-          "New classic token",
-        );
-      });
-      expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
-      expect(
-        screen.getByText("Full control of private repositories"),
-      ).toBeInTheDocument();
-      expect(screen.getByText("No expiration")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Generate token" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: /Personal access tokens/i }),
-      ).toHaveAttribute("href", "/settings/tokens");
-    },
-    15_000,
-  );
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("New classic token");
+    });
+    expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+    expect(screen.getByText("Full control of private repositories")).toBeInTheDocument();
+    expect(screen.getByText("No expiration")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate token" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Personal access tokens/i })).toHaveAttribute(
+      "href",
+      "/settings/tokens",
+    );
+  }, 15_000);
 
-  it(
-    "empty Note submit shows Note is required.",
-    async () => {
-      const mod = await loadTokensNewModule();
-      renderWithQueryClient(tokensNewPage(mod));
+  it("empty Note submit shows Note is required.", async () => {
+    const mod = await loadTokensNewModule();
+    renderWithQueryClient(tokensNewPage(mod));
 
-      await waitFor(() => {
-        expect(
-          screen.getByRole("button", { name: "Generate token" }),
-        ).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate token" })).toBeInTheDocument();
+    });
 
-      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+    fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
 
-      await waitFor(() => {
-        expect(screen.getByText("Note is required.")).toBeInTheDocument();
-      });
-      expect(createClassicMock).not.toHaveBeenCalled();
-    },
-    15_000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText("Note is required.")).toBeInTheDocument();
+    });
+    expect(createClassicMock).not.toHaveBeenCalled();
+  }, 15_000);
 
-  it(
-    "unverified shows Verify your email AuthShell — not the create form",
-    async () => {
-      loaderData = {
-        kind: "ready",
-        user: { ...verifiedUser, email_verified: false },
-      };
-      meMock.mockResolvedValue({
-        ok: true,
-        data: { ...verifiedUser, email_verified: false },
-      });
+  it("unverified shows Verify your email AuthShell — not the create form", async () => {
+    loaderData = {
+      kind: "ready",
+      user: { ...verifiedUser, email_verified: false },
+    };
+    meMock.mockResolvedValue({
+      ok: true,
+      data: { ...verifiedUser, email_verified: false },
+    });
 
-      const mod = await loadTokensNewModule();
-      renderWithQueryClient(tokensNewPage(mod));
+    const mod = await loadTokensNewModule();
+    renderWithQueryClient(tokensNewPage(mod));
 
-      await waitFor(() => {
-        expect(screen.getByText("Verify your email")).toBeInTheDocument();
-      });
-      expect(
-        screen.getByText(
-          "Verify your email before creating a personal access token.",
-        ),
-      ).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute(
-        "href",
-        "/verify",
-      );
-      expect(
-        screen.queryByRole("button", { name: "Generate token" }),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
-    },
-    15_000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText("Verify your email")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("Verify your email before creating a personal access token."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute("href", "/verify");
+    expect(screen.queryByRole("button", { name: "Generate token" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
+  }, 15_000);
 });
 
 describe("/settings/tokens/new (GIT-11 / D-15 one-time reveal)", () => {
-  it(
-    "success shows Make sure to copy… + Copy token + Back to tokens",
-    async () => {
-      createClassicMock.mockResolvedValue({
-        ok: true,
-        data: {
-          token: "octanest_pat_abcdef0123456789deadbeef",
-          item: {
-            id: "pat-new",
-            kind: "classic",
-            name: "laptop",
-            token_prefix: "octanest_pat_abcd",
-            scopes: ["repo"],
-            expires_at: null,
-            last_used_at: null,
-            last_used_ip: null,
-            created_at: "2026-01-01T00:00:00Z",
-          },
-        },
-      });
-
-      const mod = await loadTokensNewModule();
-      renderWithQueryClient(tokensNewPage(mod));
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
-      });
-
-      fireEvent.input(screen.getByLabelText(/^Note$/i), {
-        target: { value: "laptop" },
-      });
-      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
-
-      await waitFor(() => {
-        expect(createClassicMock).toHaveBeenCalled();
-      });
-      expect(createClassicMock).toHaveBeenCalledWith(
-        expect.objectContaining({
+  it("success shows Make sure to copy… + Copy token + Back to tokens", async () => {
+    createClassicMock.mockResolvedValue({
+      ok: true,
+      data: {
+        token: "octanest_pat_abcdef0123456789deadbeef",
+        item: {
+          id: "pat-new",
+          kind: "classic",
           name: "laptop",
+          token_prefix: "octanest_pat_abcd",
           scopes: ["repo"],
-        }),
-      );
+          expires_at: null,
+          last_used_at: null,
+          last_used_ip: null,
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      },
+    });
 
-      await waitFor(() => {
-        expect(
-          screen.getByText("Make sure to copy your personal access token now"),
-        ).toBeInTheDocument();
-      });
+    const mod = await loadTokensNewModule();
+    renderWithQueryClient(tokensNewPage(mod));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+    });
+
+    fireEvent.input(screen.getByLabelText(/^Note$/i), {
+      target: { value: "laptop" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+    await waitFor(() => {
+      expect(createClassicMock).toHaveBeenCalled();
+    });
+    expect(createClassicMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "laptop",
+        scopes: ["repo"],
+      }),
+    );
+
+    await waitFor(() => {
       expect(
-        screen.getByText("You won’t be able to see it again."),
+        screen.getByText("Make sure to copy your personal access token now"),
       ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue("octanest_pat_abcdef0123456789deadbeef"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Copy token" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: "Back to tokens" }),
-      ).toHaveAttribute("href", "/settings/tokens");
-      expect(
-        screen.queryByRole("button", { name: "Generate token" }),
-      ).not.toBeInTheDocument();
-    },
-    15_000,
-  );
+    });
+    expect(screen.getByText("You won’t be able to see it again.")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("octanest_pat_abcdef0123456789deadbeef")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy token" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to tokens" })).toHaveAttribute(
+      "href",
+      "/settings/tokens",
+    );
+    expect(screen.queryByRole("button", { name: "Generate token" })).not.toBeInTheDocument();
+  }, 15_000);
 });
 
 /** Load fine-grained create page; @vite-ignore keeps suite collectable before route exists. */
@@ -538,10 +457,7 @@ async function loadTokensNewFgModule(): Promise<Record<string, unknown>> {
 }
 
 function tokensNewFgPage(mod: Record<string, unknown>): unknown {
-  const page =
-    mod.TokensNewFineGrainedPage ??
-    mod.FineGrainedCreatePage ??
-    mod.default;
+  const page = mod.TokensNewFineGrainedPage ?? mod.FineGrainedCreatePage ?? mod.default;
   expect(
     page,
     "Wave 0: TokensNewFineGrainedPage (or FineGrainedCreatePage) must be exported from tokens.new.fine-grained",
@@ -550,185 +466,142 @@ function tokensNewFgPage(mod: Record<string, unknown>): unknown {
 }
 
 describe("/settings/tokens/new/fine-grained (GIT-11 / D-05 / D-06 FG create)", () => {
-  it(
-    "title New fine-grained token + All repositories / Only select repositories + Contents Read-only / Read and write",
-    async () => {
-      const mod = await loadTokensNewFgModule();
-      const { container } = renderWithQueryClient(tokensNewFgPage(mod));
+  it("title New fine-grained token + All repositories / Only select repositories + Contents Read-only / Read and write", async () => {
+    const mod = await loadTokensNewFgModule();
+    const { container } = renderWithQueryClient(tokensNewFgPage(mod));
 
-      await waitFor(() => {
-        expect(container.querySelector("h1")?.textContent).toBe(
-          "New fine-grained token",
-        );
-      });
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("New fine-grained token");
+    });
+    expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+    expect(screen.getByText("All repositories")).toBeInTheDocument();
+    expect(screen.getByText("Only select repositories")).toBeInTheDocument();
+    expect(screen.getByText("Contents permission")).toBeInTheDocument();
+    expect(screen.getByText("Read-only")).toBeInTheDocument();
+    expect(screen.getByText("Read and write")).toBeInTheDocument();
+    expect(screen.getByText("No expiration")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generate token" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Personal access tokens/i })).toHaveAttribute(
+      "href",
+      "/settings/tokens",
+    );
+  }, 15_000);
+
+  it("selected empty submit shows Select at least one repository.", async () => {
+    const mod = await loadTokensNewFgModule();
+    renderWithQueryClient(tokensNewFgPage(mod));
+
+    await waitFor(() => {
       expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
-      expect(screen.getByText("All repositories")).toBeInTheDocument();
-      expect(screen.getByText("Only select repositories")).toBeInTheDocument();
-      expect(screen.getByText("Contents permission")).toBeInTheDocument();
-      expect(screen.getByText("Read-only")).toBeInTheDocument();
-      expect(screen.getByText("Read and write")).toBeInTheDocument();
-      expect(screen.getByText("No expiration")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Generate token" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: /Personal access tokens/i }),
-      ).toHaveAttribute("href", "/settings/tokens");
-    },
-    15_000,
-  );
+    });
 
-  it(
-    "selected empty submit shows Select at least one repository.",
-    async () => {
-      const mod = await loadTokensNewFgModule();
-      renderWithQueryClient(tokensNewFgPage(mod));
+    fireEvent.input(screen.getByLabelText(/^Note$/i), {
+      target: { value: "ci" },
+    });
+    // Default is Only select repositories with nothing checked
+    fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
 
-      await waitFor(() => {
-        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText("Select at least one repository.")).toBeInTheDocument();
+    });
+    expect(createFineGrainedMock).not.toHaveBeenCalled();
+  }, 15_000);
 
-      fireEvent.input(screen.getByLabelText(/^Note$/i), {
-        target: { value: "ci" },
-      });
-      // Default is Only select repositories with nothing checked
-      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+  it("zero owned repos shows You don’t have any repositories yet. + New repository link", async () => {
+    listMineMock.mockResolvedValue({ ok: true, data: { repos: [] } });
 
-      await waitFor(() => {
-        expect(
-          screen.getByText("Select at least one repository."),
-        ).toBeInTheDocument();
-      });
-      expect(createFineGrainedMock).not.toHaveBeenCalled();
-    },
-    15_000,
-  );
+    const mod = await loadTokensNewFgModule();
+    renderWithQueryClient(tokensNewFgPage(mod));
 
-  it(
-    "zero owned repos shows You don’t have any repositories yet. + New repository link",
-    async () => {
-      listMineMock.mockResolvedValue({ ok: true, data: { repos: [] } });
+    await waitFor(() => {
+      expect(screen.getByText("You don’t have any repositories yet.")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("link", { name: "New repository" })).toHaveAttribute("href", "/new");
+  }, 15_000);
 
-      const mod = await loadTokensNewFgModule();
-      renderWithQueryClient(tokensNewFgPage(mod));
+  it("unverified shows Verify your email AuthShell — not the FG create form", async () => {
+    loaderData = {
+      kind: "ready",
+      user: { ...verifiedUser, email_verified: false },
+    };
+    meMock.mockResolvedValue({
+      ok: true,
+      data: { ...verifiedUser, email_verified: false },
+    });
 
-      await waitFor(() => {
-        expect(
-          screen.getByText("You don’t have any repositories yet."),
-        ).toBeInTheDocument();
-      });
-      expect(
-        screen.getByRole("link", { name: "New repository" }),
-      ).toHaveAttribute("href", "/new");
-    },
-    15_000,
-  );
+    const mod = await loadTokensNewFgModule();
+    renderWithQueryClient(tokensNewFgPage(mod));
 
-  it(
-    "unverified shows Verify your email AuthShell — not the FG create form",
-    async () => {
-      loaderData = {
-        kind: "ready",
-        user: { ...verifiedUser, email_verified: false },
-      };
-      meMock.mockResolvedValue({
-        ok: true,
-        data: { ...verifiedUser, email_verified: false },
-      });
-
-      const mod = await loadTokensNewFgModule();
-      renderWithQueryClient(tokensNewFgPage(mod));
-
-      await waitFor(() => {
-        expect(screen.getByText("Verify your email")).toBeInTheDocument();
-      });
-      expect(
-        screen.getByText(
-          "Verify your email before creating a personal access token.",
-        ),
-      ).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute(
-        "href",
-        "/verify",
-      );
-      expect(
-        screen.queryByRole("button", { name: "Generate token" }),
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
-    },
-    15_000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText("Verify your email")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText("Verify your email before creating a personal access token."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Verify email" })).toHaveAttribute("href", "/verify");
+    expect(screen.queryByRole("button", { name: "Generate token" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Note$/i)).not.toBeInTheDocument();
+  }, 15_000);
 });
 
 describe("/settings/tokens/new/fine-grained (GIT-11 / D-15 FG reveal)", () => {
-  it(
-    "success shows Make sure to copy… + Copy token + Back to tokens via createFineGrained",
-    async () => {
-      createFineGrainedMock.mockResolvedValue({
-        ok: true,
-        data: {
-          token: "octanest_fg_abcdef0123456789deadbeef",
-          item: {
-            id: "pat-fg-1",
-            kind: "fine_grained",
-            name: "ci",
-            token_prefix: "octanest_fg_abcd",
-            contents: "write",
-            repo_access: "all",
-            expires_at: null,
-            last_used_at: null,
-            last_used_ip: null,
-            created_at: "2026-01-01T00:00:00Z",
-          },
-        },
-      });
-
-      const mod = await loadTokensNewFgModule();
-      renderWithQueryClient(tokensNewFgPage(mod));
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
-      });
-
-      fireEvent.input(screen.getByLabelText(/^Note$/i), {
-        target: { value: "ci" },
-      });
-      fireEvent.click(screen.getByText("All repositories"));
-      fireEvent.click(screen.getByText("Read and write"));
-      fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
-
-      await waitFor(() => {
-        expect(createFineGrainedMock).toHaveBeenCalled();
-      });
-      expect(createFineGrainedMock).toHaveBeenCalledWith(
-        expect.objectContaining({
+  it("success shows Make sure to copy… + Copy token + Back to tokens via createFineGrained", async () => {
+    createFineGrainedMock.mockResolvedValue({
+      ok: true,
+      data: {
+        token: "octanest_fg_abcdef0123456789deadbeef",
+        item: {
+          id: "pat-fg-1",
+          kind: "fine_grained",
           name: "ci",
-          repo_access: "all",
+          token_prefix: "octanest_fg_abcd",
           contents: "write",
-        }),
-      );
+          repo_access: "all",
+          expires_at: null,
+          last_used_at: null,
+          last_used_ip: null,
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      },
+    });
 
-      await waitFor(() => {
-        expect(
-          screen.getByText("Make sure to copy your personal access token now"),
-        ).toBeInTheDocument();
-      });
+    const mod = await loadTokensNewFgModule();
+    renderWithQueryClient(tokensNewFgPage(mod));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^Note$/i)).toBeInTheDocument();
+    });
+
+    fireEvent.input(screen.getByLabelText(/^Note$/i), {
+      target: { value: "ci" },
+    });
+    fireEvent.click(screen.getByText("All repositories"));
+    fireEvent.click(screen.getByText("Read and write"));
+    fireEvent.click(screen.getByRole("button", { name: "Generate token" }));
+
+    await waitFor(() => {
+      expect(createFineGrainedMock).toHaveBeenCalled();
+    });
+    expect(createFineGrainedMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "ci",
+        repo_access: "all",
+        contents: "write",
+      }),
+    );
+
+    await waitFor(() => {
       expect(
-        screen.getByText("You won’t be able to see it again."),
+        screen.getByText("Make sure to copy your personal access token now"),
       ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue("octanest_fg_abcdef0123456789deadbeef"),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Copy token" }),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: "Back to tokens" }),
-      ).toHaveAttribute("href", "/settings/tokens");
-      expect(
-        screen.queryByRole("button", { name: "Generate token" }),
-      ).not.toBeInTheDocument();
-    },
-    15_000,
-  );
+    });
+    expect(screen.getByText("You won’t be able to see it again.")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("octanest_fg_abcdef0123456789deadbeef")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy token" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to tokens" })).toHaveAttribute(
+      "href",
+      "/settings/tokens",
+    );
+    expect(screen.queryByRole("button", { name: "Generate token" })).not.toBeInTheDocument();
+  }, 15_000);
 });

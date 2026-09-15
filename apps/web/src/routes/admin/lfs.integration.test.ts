@@ -67,8 +67,7 @@ type LoaderShape =
 let loaderData: LoaderShape | undefined;
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useLoaderData: () => loaderData,
@@ -118,7 +117,8 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
     expect(src).toMatch(/updateSettings/);
     expect(src).toMatch(/getUsage/);
     expect(src).toMatch(/fetchAdminLfsSettings|loader:/);
-    expect(src).toMatch(/AdminLfsSkeleton/);
+    expect(src).toMatch(/initialData/);
+    expect(src).not.toMatch(/AdminLfsSkeleton|showSkeleton/);
     expect(src).toMatch(/setError|\[error,/);
     expect(src).toMatch(/setPending|\[pending,/);
     expect(src).not.toMatch(/@else if/);

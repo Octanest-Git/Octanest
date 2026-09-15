@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloneBox } from "./clone-box";
 
@@ -21,8 +15,8 @@ beforeEach(() => {
   Object.defineProperty(window, "location", {
     configurable: true,
     value: {
-      ...window.location,
       origin: "http://127.0.0.1:3000",
+      href: "http://127.0.0.1:3000/",
       hostname: "127.0.0.1",
       assign: vi.fn(),
     },
@@ -37,103 +31,83 @@ async function openCloneMenu() {
 }
 
 describe("CloneBox SSH (GIT-03 / D-SSH-02 / D-SSH-06)", () => {
-  it(
-    "primary clone string is scp-style git@host:owner/repo.git (not ssh://)",
-    async () => {
-      render(CloneBox, {
-        props: {
-          owner: "ada",
-          repo: "hello",
-          refName: "main",
-          empty: false,
-          publicOrigin: "http://127.0.0.1:3000",
-        },
-      });
+  it("primary clone string is scp-style git@host:owner/repo.git (not ssh://)", async () => {
+    render(CloneBox, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
+      },
+    });
 
-      await openCloneMenu();
+    await openCloneMenu();
 
-      await waitFor(() => {
-        expect(screen.getByText("Clone with SSH")).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText("Clone with SSH")).toBeInTheDocument();
+    });
 
-      const sshInput = screen.getByLabelText(/SSH clone URL/i) as HTMLInputElement;
-      expect(sshInput.value).toBe("git@127.0.0.1:ada/hello.git");
-      expect(sshInput.value).not.toMatch(/^ssh:\/\//);
-      expect(document.body.textContent).not.toMatch(
-        /SSH cloning arrives in a later phase/,
-      );
-    },
-    20_000,
-  );
+    const sshInput = screen.getByLabelText(/SSH clone URL/i) as HTMLInputElement;
+    expect(sshInput.value).toBe("git@127.0.0.1:ada/hello.git");
+    expect(sshInput.value).not.toMatch(/^ssh:\/\//);
+    expect(document.body.textContent).not.toMatch(/SSH cloning arrives in a later phase/);
+  }, 20_000);
 
-  it(
-    "shows Port hint when advertised SSH port is 2222",
-    async () => {
-      render(CloneBox, {
-        props: {
-          owner: "ada",
-          repo: "hello",
-          refName: "main",
-          empty: false,
-          publicOrigin: "http://127.0.0.1:3000",
-          sshPort: 2222,
-        },
-      });
+  it("shows Port hint when advertised SSH port is 2222", async () => {
+    render(CloneBox, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
+        sshPort: 2222,
+      },
+    });
 
-      await openCloneMenu();
+    await openCloneMenu();
 
-      await waitFor(() => {
-        expect(screen.getByText(/Port 2222/)).toBeInTheDocument();
-      });
-      expect(screen.getByText(/Host/)).toBeInTheDocument();
-    },
-    20_000,
-  );
+    await waitFor(() => {
+      expect(screen.getByText(/Port 2222/)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Host/)).toBeInTheDocument();
+  }, 20_000);
 
-  it(
-    "compact Add an SSH key CTA points to /settings/ssh-keys",
-    async () => {
-      render(CloneBox, {
-        props: {
-          owner: "ada",
-          repo: "hello",
-          refName: "main",
-          empty: false,
-          publicOrigin: "http://127.0.0.1:3000",
-        },
-      });
+  it("compact Add an SSH key CTA points to /settings/ssh-keys", async () => {
+    render(CloneBox, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
+      },
+    });
 
-      await openCloneMenu();
+    await openCloneMenu();
 
-      const cta = await waitFor(() =>
-        screen.getByRole("link", { name: "Add an SSH key" }),
-      );
-      expect(cta).toHaveAttribute("href", "/settings/ssh-keys");
-    },
-    20_000,
-  );
+    const cta = await waitFor(() => screen.getByRole("link", { name: "Add an SSH key" }));
+    expect(cta).toHaveAttribute("href", "/settings/ssh-keys");
+  }, 20_000);
 
-  it(
-    "documents SSH login user git",
-    async () => {
-      render(CloneBox, {
-        props: {
-          owner: "ada",
-          repo: "hello",
-          refName: "main",
-          empty: false,
-          publicOrigin: "http://127.0.0.1:3000",
-        },
-      });
+  it("documents SSH login user git", async () => {
+    render(CloneBox, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        empty: false,
+        publicOrigin: "http://127.0.0.1:3000",
+      },
+    });
 
-      await openCloneMenu();
+    await openCloneMenu();
 
-      await waitFor(() => {
-        expect(
-          screen.getByText(/login user is `?git`?|user `git`|as user `git`/i),
-        ).toBeInTheDocument();
-      });
-    },
-    20_000,
-  );
+    await waitFor(() => {
+      expect(
+        screen.getByText(/login user is `?git`?|user `git`|as user `git`/i),
+      ).toBeInTheDocument();
+    });
+  }, 20_000);
 });

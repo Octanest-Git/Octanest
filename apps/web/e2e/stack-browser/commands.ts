@@ -3,12 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
-import {
-  adminLogin,
-  restoreLocalAuth,
-  rpc,
-  updateAuthSettings,
-} from "../stack/client";
+import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client";
 import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env";
 
 type AuthPatch = {
@@ -55,10 +50,7 @@ type PlaywrightPage = {
     press: (key: string) => Promise<unknown>;
     check?: () => Promise<unknown>;
   };
-  waitForURL: (
-    url: string | RegExp | ((url: URL) => boolean),
-    opts?: object,
-  ) => Promise<unknown>;
+  waitForURL: (url: string | RegExp | ((url: URL) => boolean), opts?: object) => Promise<unknown>;
   content: () => Promise<string>;
   url: () => string;
   close: () => Promise<unknown>;
@@ -69,9 +61,7 @@ type PlaywrightCommandCtx = {
   provider: { name: string };
   context: {
     clearCookies: () => Promise<void>;
-    addCookies: (
-      cookies: Array<{ name: string; value: string; url: string }>,
-    ) => Promise<void>;
+    addCookies: (cookies: Array<{ name: string; value: string; url: string }>) => Promise<void>;
     newPage: () => Promise<PlaywrightPage>;
   };
 };
@@ -128,10 +118,7 @@ function forceLocalViaSqlite(): boolean {
 }
 
 /** Node-side admin RPC — browser fetch cannot read Set-Cookie (HttpOnly). */
-export const ensureAuthSettings: BrowserCommand<[AuthPatch]> = async (
-  _ctx,
-  patch,
-) => {
+export const ensureAuthSettings: BrowserCommand<[AuthPatch]> = async (_ctx, patch) => {
   const cookie = await adminLogin();
   lastAdminCookie = cookie;
   await updateAuthSettings(cookie, patch);
@@ -228,10 +215,7 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
         .waitFor({ state: "visible", timeout: 30_000 });
     } catch (e) {
       const html = await page.content();
-      throw new Error(
-        `WorkOS CTA not found. body snippet=${html.slice(0, 800)}`,
-        { cause: e },
-      );
+      throw new Error(`WorkOS CTA not found. body snippet=${html.slice(0, 800)}`, { cause: e });
     }
     return true;
   } finally {
@@ -245,8 +229,7 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
   await context.clearCookies();
   const cookie = await adminLogin();
   lastAdminCookie = cookie;
-  const issuer =
-    envVar("OCTANEST_E2E_OIDC_ISSUER") || "http://127.0.0.1:9090/default";
+  const issuer = envVar("OCTANEST_E2E_OIDC_ISSUER") || "http://127.0.0.1:9090/default";
   await updateAuthSettings(cookie, {
     provider_mode: "oidc",
     email_provider: "log",
@@ -267,17 +250,13 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
       .getByRole("button", { name: /continue with sso/i })
       .waitFor({ state: "visible", timeout: 15_000 });
     // Drive the same start URL the button uses so Playwright follows the full hop chain.
-    await page.goto(
-      `${webOrigin()}/api/auth/oidc/start?returnTo=${encodeURIComponent("/")}`,
-      { waitUntil: "domcontentloaded" },
-    );
+    await page.goto(`${webOrigin()}/api/auth/oidc/start?returnTo=${encodeURIComponent("/")}`, {
+      waitUntil: "domcontentloaded",
+    });
     await page.waitForURL(
       (url) => {
         const u = typeof url === "string" ? new URL(url) : url;
-        return (
-          u.origin === webOrigin() &&
-          (u.pathname === "/" || u.pathname === "")
-        );
+        return u.origin === webOrigin() && (u.pathname === "/" || u.pathname === "");
       },
       { timeout: 45_000, waitUntil: "domcontentloaded" },
     );
@@ -301,9 +280,7 @@ export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "System status" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .getByText("All systems operational")
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText("All systems operational").waitFor({ state: "visible", timeout: 30_000 });
     return true;
   } finally {
     await page.close();
@@ -332,18 +309,17 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
   const page = await context.newPage();
   const meBodies: string[] = [];
   try {
-    page.on("request", (req: {
-      method: () => string;
-      url: () => string;
-      postData: () => string | null;
-    }) => {
-      if (req.method() !== "POST") return;
-      if (!req.url().includes("/api/rpc")) return;
-      const body = req.postData() ?? "";
-      if (body.includes('"auth.me"') || body.includes('"procedure":"auth.me"')) {
-        meBodies.push(body);
-      }
-    });
+    page.on(
+      "request",
+      (req: { method: () => string; url: () => string; postData: () => string | null }) => {
+        if (req.method() !== "POST") return;
+        if (!req.url().includes("/api/rpc")) return;
+        const body = req.postData() ?? "";
+        if (body.includes('"auth.me"') || body.includes('"procedure":"auth.me"')) {
+          meBodies.push(body);
+        }
+      },
+    );
 
     await page.goto(`${webOrigin()}/`, {
       waitUntil: "domcontentloaded",
@@ -409,9 +385,7 @@ async function ensureForgeAdminSession(): Promise<{
       cookie,
     );
     if (!confirm.ok) {
-      throw new Error(
-        `confirm_admin_credentials failed: ${JSON.stringify(confirm.error)}`,
-      );
+      throw new Error(`confirm_admin_credentials failed: ${JSON.stringify(confirm.error)}`);
     }
     cookie = confirm.cookieHeader ?? cookie;
     return { cookie, username: "forgee2eadmin" };
@@ -438,9 +412,7 @@ async function seedPublicRepo(
     cookie,
   );
   if (!created.ok || !created.data || typeof created.data !== "object") {
-    throw new Error(
-      `repo.create failed: ${JSON.stringify(created.error ?? created)}`,
-    );
+    throw new Error(`repo.create failed: ${JSON.stringify(created.error ?? created)}`);
   }
   const data = created.data as { owner_username?: string; name?: string };
   const owner = String(data.owner_username ?? "").trim();
@@ -459,12 +431,7 @@ async function seedForgeRepo(): Promise<ForgeRepoSeed> {
 }
 
 /** Push an annotated-free lightweight tag via Smart HTTP + classic PAT. */
-function pushTagViaGit(opts: {
-  owner: string;
-  repo: string;
-  token: string;
-  tag: string;
-}): void {
+function pushTagViaGit(opts: { owner: string; repo: string; token: string; tag: string }): void {
   const origin = apiOrigin().replace(/^https?:\/\//, "");
   const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
   const work = mkdtempSync(join(tmpdir(), "octanest-e2e-tag-"));
@@ -531,9 +498,7 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
       },
       { timeout: 30_000, waitUntil: "domcontentloaded" },
     );
-    await page
-      .getByTestId("repo-packages")
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("repo-packages").waitFor({ state: "visible", timeout: 30_000 });
     await page
       .getByText(/No linked packages|Packages linked to this repository/i)
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -557,10 +522,10 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
   const page = await context.newPage();
   const title = `E2E issue ${Date.now()}`;
   try {
-    await page.goto(
-      `${webOrigin()}/${seed.owner}/${seed.repo}/issues/new`,
-      { waitUntil: "domcontentloaded", timeout: 60_000 },
-    );
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/issues/new`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
     await page
       .getByRole("heading", { name: "New issue" })
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -584,21 +549,17 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
         seed.cookie,
       );
       if (!created.ok || !created.data || typeof created.data !== "object") {
-        throw new Error(
-          `issue.create failed: ${JSON.stringify(created.error)} url=${page.url()}`,
-        );
+        throw new Error(`issue.create failed: ${JSON.stringify(created.error)} url=${page.url()}`);
       }
       number = Number((created.data as { number?: number }).number);
       if (!number) throw new Error("issue.create returned no number");
-      await page.goto(
-        `${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`,
-        { waitUntil: "domcontentloaded", timeout: 60_000 },
-      );
+      await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
     }
 
-    await page
-      .getByTestId("issue-title")
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("issue-title").waitFor({ state: "visible", timeout: 30_000 });
     const html = await page.content();
     if (!html.includes(title)) {
       throw new Error(`issue detail missing title ${title}`);
@@ -624,10 +585,10 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
       if (!closed.ok) {
         throw new Error(`issue.close failed: ${JSON.stringify(closed.error)}`);
       }
-      await page.goto(
-        `${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`,
-        { waitUntil: "domcontentloaded", timeout: 60_000 },
-      );
+      await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
       await page
         .getByRole("button", { name: "Reopen" })
         .waitFor({ state: "visible", timeout: 30_000 });
@@ -659,16 +620,14 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
   const page = await context.newPage();
   const releaseTitle = `E2E release ${tag}`;
   try {
-    await page.goto(
-      `${webOrigin()}/${seed.owner}/${seed.repo}/releases/new`,
-      { waitUntil: "domcontentloaded", timeout: 60_000 },
-    );
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/releases/new`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
     await page
       .getByRole("heading", { name: "New release" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .locator("#release-tag")
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator("#release-tag").waitFor({ state: "visible", timeout: 30_000 });
     await page.locator("#release-title").fill(releaseTitle);
     await page.getByRole("button", { name: /Publish release/i }).click();
     await new Promise((r) => setTimeout(r, 800));
@@ -690,10 +649,10 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
           `release.create failed: ${JSON.stringify(created.error)} url=${page.url()}`,
         );
       }
-      await page.goto(
-        `${webOrigin()}/${seed.owner}/${seed.repo}/releases/${tag}`,
-        { waitUntil: "domcontentloaded", timeout: 60_000 },
-      );
+      await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/releases/${tag}`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60_000,
+      });
     }
 
     // Prefer content check — detail may SSR tag in mono without a standalone text node
@@ -734,12 +693,8 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "Git LFS quotas" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .getByTestId("admin-lfs-page")
-      .waitFor({ state: "visible", timeout: 15_000 });
-    await page
-      .getByLabel(/Max object bytes/i)
-      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("admin-lfs-page").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByLabel(/Max object bytes/i).waitFor({ state: "visible", timeout: 30_000 });
 
     const lfsHtml = await page.content();
     if (
@@ -759,38 +714,48 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "Package storage" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .getByTestId("admin-packages")
-      .waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByTestId("admin-packages").waitFor({ state: "visible", timeout: 15_000 });
     const pkgHtml = await page.content();
-    if (
-      pkgHtml.includes("vite-error-overlay") ||
-      /is not defined|ReferenceError/i.test(pkgHtml)
-    ) {
-      throw new Error(
-        `admin packages showed error overlay. body=${pkgHtml.slice(0, 1000)}`,
-      );
+    if (pkgHtml.includes("vite-error-overlay") || /is not defined|ReferenceError/i.test(pkgHtml)) {
+      throw new Error(`admin packages showed error overlay. body=${pkgHtml.slice(0, 1000)}`);
     }
 
-    // Auth settings chrome only — never click factory reset.
+    // Auth settings chrome only — never click factory reset (T-11.1-73).
     await page.goto(`${webOrigin()}/admin/auth`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
-    await page
-      .getByRole("heading", { name: "Auth settings" })
-      .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .getByText("Danger zone")
-      .waitFor({ state: "visible", timeout: 15_000 });
-    const authHtml = await page.content();
-    if (
-      authHtml.includes("vite-error-overlay") ||
-      /is not defined|ReferenceError/i.test(authHtml)
-    ) {
-      throw new Error(
-        `admin auth showed error overlay. body=${authHtml.slice(0, 1000)}`,
-      );
+    // Prefer text over role: Octane h1 may not expose accessible name immediately.
+    // Poll past AdminAuthSkeleton (aria-busy) until chrome or an error state.
+    let authReady = false;
+    for (let i = 0; i < 60; i++) {
+      const url = page.url();
+      if (url.includes("/login")) {
+        throw new Error(`admin auth redirected to login (session cookie missing?). url=${url}`);
+      }
+      const body = await page.content();
+      if (body.includes("vite-error-overlay") || /is not defined|ReferenceError/i.test(body)) {
+        throw new Error(`admin auth showed error overlay. body=${body.slice(0, 1000)}`);
+      }
+      if (
+        body.includes("Auth settings") &&
+        body.includes("Danger zone") &&
+        !body.includes('aria-busy="true"')
+      ) {
+        authReady = true;
+        break;
+      }
+      if (body.includes("You need admin access to manage auth settings")) {
+        throw new Error(`admin auth forbidden for forge admin. url=${url}`);
+      }
+      if (body.includes("Can't reach Octanest")) {
+        throw new Error(`admin auth network error. url=${url}`);
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (!authReady) {
+      const body = await page.content();
+      throw new Error(`admin auth chrome not ready. url=${page.url()} body=${body.slice(0, 1500)}`);
     }
     return true;
   } finally {
@@ -801,9 +766,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
 /**
  * SSH keys + org members reachable (D-QH-03). Seed key via RPC; assert pages.
  */
-export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
-  ctx,
-) => {
+export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
   await context.clearCookies();
   const { cookie, username } = await ensureForgeAdminSession();
@@ -811,11 +774,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
 
   const suffix = Date.now();
   const orgSlug = `e2eorg${suffix}`;
-  const org = await rpc(
-    "org.create",
-    { slug: orgSlug, display_name: `E2E Org ${suffix}` },
-    cookie,
-  );
+  const org = await rpc("org.create", { slug: orgSlug, display_name: `E2E Org ${suffix}` }, cookie);
   if (!org.ok) {
     throw new Error(`org.create failed: ${JSON.stringify(org.error)}`);
   }
@@ -824,11 +783,9 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
   const keyPath = join(keyDir, "id_ed25519");
   let pubKey = "";
   try {
-    execFileSync(
-      "ssh-keygen",
-      ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "e2e@octanest"],
-      { stdio: "pipe" },
-    );
+    execFileSync("ssh-keygen", ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "e2e@octanest"], {
+      stdio: "pipe",
+    });
     pubKey = readFileSync(`${keyPath}.pub`, "utf8").trim();
   } finally {
     rmSync(keyDir, { recursive: true, force: true });
@@ -848,11 +805,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
       .getByRole("button", { name: /Add SSH key/i })
       .waitFor({ state: "visible", timeout: 15_000 });
 
-    const added = await rpc(
-      "sshKey.add",
-      { title: keyTitle, public_key: pubKey },
-      cookie,
-    );
+    const added = await rpc("sshKey.add", { title: keyTitle, public_key: pubKey }, cookie);
     if (!added.ok) {
       throw new Error(`sshKey.add failed: ${JSON.stringify(added.error)}`);
     }
@@ -873,9 +826,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
       }
       // Follow soft redirect once if sent to login.
       if (url.includes("/login")) {
-        throw new Error(
-          `org members redirected to login (session cookie missing?). url=${url}`,
-        );
+        throw new Error(`org members redirected to login (session cookie missing?). url=${url}`);
       }
       await new Promise((r) => setTimeout(r, 500));
     }

@@ -12,4 +12,5 @@ alwaysApply: false
 - Server/session data: `@octanejs/tanstack-query` via `src/lib/session-queries.ts` and cache helpers. Local `useState` for forms only.
 - Auth forms: `method="post" action="#"`, submit controls `type="button"` when handling in JS.
 - Bindings: use existing `@octanejs/*` packages. Do not alias `react` → Octane.
+- Before commit: `make web-lint` + `make web-format-check` (type-aware oxlint / oxfmt via `@tsrx/oxc`).
 - Full skill: `.agents/skills/octane/SKILL.md` · reference: https://octanejs.dev/llms.txt

@@ -33,59 +33,43 @@ async function loadOrgSettingsModule(): Promise<Record<string, unknown>> {
 }
 
 describe("org members Wave 0 (ORG-01 / D-ORG-03)", () => {
-  it(
-    "Add member by username with live lookup autocomplete",
-    async () => {
-      const mod = await loadMembersModule();
-      // Greened in 10-10: username Input + user.lookup prefix ≥2 → ≤10 results;
-      // Role Select Owner|Admin|Member (default Member); works when allow_signup false
-      expect(
-        mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
-        "Wave 0: members page must support Add member by username (D-ORG-03)",
-      ).toBeTruthy();
-    },
-    30_000,
-  );
+  it("Add member by username with live lookup autocomplete", async () => {
+    const mod = await loadMembersModule();
+    // Greened in 10-10: username Input + user.lookup prefix ≥2 → ≤10 results;
+    // Role Select Owner|Admin|Member (default Member); works when allow_signup false
+    expect(
+      mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
+      "Wave 0: members page must support Add member by username (D-ORG-03)",
+    ).toBeTruthy();
+  }, 30_000);
 
-  it(
-    "lookup results never include email (T-10-03 / D-ORG-03)",
-    async () => {
-      const mod = await loadMembersModule();
-      // Greened in 10-10: autocomplete shows username, display name, avatar URL only
-      expect(
-        mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
-        "Wave 0: member lookup must never render email addresses (T-10-03)",
-      ).toBeTruthy();
-    },
-    30_000,
-  );
+  it("lookup results never include email (T-10-03 / D-ORG-03)", async () => {
+    const mod = await loadMembersModule();
+    // Greened in 10-10: autocomplete shows username, display name, avatar URL only
+    expect(
+      mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
+      "Wave 0: member lookup must never render email addresses (T-10-03)",
+    ).toBeTruthy();
+  }, 30_000);
 
-  it(
-    "email invite create/list + Revoke invite / Keep invite AlertDialog",
-    async () => {
-      const mod = await loadMembersModule();
-      // Greened in 10-10: Email + role invite; pending list; Revoke invite / Keep invite
-      expect(
-        mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
-        "Wave 0: invites panel Revoke invite? / Keep invite (D-ORG-03)",
-      ).toBeTruthy();
-    },
-    30_000,
-  );
+  it("email invite create/list + Revoke invite / Keep invite AlertDialog", async () => {
+    const mod = await loadMembersModule();
+    // Greened in 10-10: Email + role invite; pending list; Revoke invite / Keep invite
+    expect(
+      mod.OrgMembersPage ?? mod.MembersPage ?? mod.default,
+      "Wave 0: invites panel Revoke invite? / Keep invite (D-ORG-03)",
+    ).toBeTruthy();
+  }, 30_000);
 });
 
 describe("org settings member_base Wave 0 (D-ORG-02b)", () => {
-  it(
-    "member_base_permission Select None | Read | Write (default None)",
-    async () => {
-      const mod = await loadOrgSettingsModule();
-      // Greened in 10-10: Select None (default) | Read | Write; helper about private
-      // org repos; Owner/Admin always admin
-      expect(
-        mod.OrgSettingsPage ?? mod.default,
-        "Wave 0: member_base_permission None|Read|Write control (D-ORG-02b)",
-      ).toBeTruthy();
-    },
-    30_000,
-  );
+  it("member_base_permission Select None | Read | Write (default None)", async () => {
+    const mod = await loadOrgSettingsModule();
+    // Greened in 10-10: Select None (default) | Read | Write; helper about private
+    // org repos; Owner/Admin always admin
+    expect(
+      mod.OrgSettingsPage ?? mod.default,
+      "Wave 0: member_base_permission None|Read|Write control (D-ORG-02b)",
+    ).toBeTruthy();
+  }, 30_000);
 });

@@ -43,9 +43,7 @@ describe("/verify Wave 0 contracts (RESEARCH P1)", () => {
     render(VerifyPage);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Sign in to finish verifying this email/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Sign in to finish verifying this email/i)).toBeInTheDocument();
     });
     expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });

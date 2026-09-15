@@ -13,15 +13,14 @@ import tailwindcss from "@tailwindcss/vite";
 // See .planning/phases/03-brand-shell-theme/03-05-SUMMARY.md for details.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const apiProxyTarget =
-  process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
-  "http://127.0.0.1:8080";
+  process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") || "http://127.0.0.1:8080";
 
 export default defineConfig({
   plugins: [
     tanstackStart({
       // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
       // (avoids noisy warnings and extra SSR work during stack e2e).
-      routeFileIgnorePattern: '\\.(test|spec)\\.',
+      routeFileIgnorePattern: "\\.(test|spec)\\.",
     }),
     tailwindcss(),
   ],

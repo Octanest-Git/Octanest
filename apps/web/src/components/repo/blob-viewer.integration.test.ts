@@ -8,8 +8,7 @@ vi.mock("@/lib/highlight", () => ({
     const parts = code.split("\n");
     return parts[parts.length - 1] === "" ? parts.length - 1 : parts.length;
   },
-  stripTrailingNewline: (code: string) =>
-    code.endsWith("\n") ? code.slice(0, -1) : code,
+  stripTrailingNewline: (code: string) => (code.endsWith("\n") ? code.slice(0, -1) : code),
   highlightCode: async (code: string) =>
     `<pre data-language="javascript"><code>${code
       .replace(/&/g, "&amp;")
@@ -56,9 +55,7 @@ describe("BlobViewer file chrome", () => {
       "href",
       "/ada/hello/blame/main/src/App.jsx",
     );
-    expect(
-      screen.getByRole("button", { name: "Copy file contents" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy file contents" })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByLabelText("Line numbers")).toBeInTheDocument();

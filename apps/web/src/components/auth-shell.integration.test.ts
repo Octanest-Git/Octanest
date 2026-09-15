@@ -16,9 +16,7 @@ describe("AuthShell", () => {
       },
     });
 
-    expect(
-      screen.getByRole("heading", { name: "Sign in to Octanest" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sign in to Octanest" })).toBeInTheDocument();
     expect(screen.getByText("Use your account.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });

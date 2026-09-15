@@ -26,6 +26,8 @@ Octane is Inferno’s successor with a React-*shaped* programming model (hooks, 
 
 Shared session helpers: `apps/web/src/lib/session-queries.ts`, `use-chrome-account.ts`, `query-client.ts`. Test with `apps/web/src/test/render-with-query.ts`.
 
+Before committing web UI changes: `make web-lint` and `make web-format-check` (`@tsrx/oxc` — type-aware oxlint + oxfmt). See [AGENTS.md](../../../AGENTS.md).
+
 ## Authoring `.tsrx`
 
 ```tsrx

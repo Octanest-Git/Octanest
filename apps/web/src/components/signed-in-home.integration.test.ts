@@ -4,11 +4,7 @@ import { cleanup, render, screen } from "@octanejs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@octanejs/tanstack-router", () => ({
-  Link: (props: {
-    to?: string;
-    children?: unknown;
-    className?: string;
-  }) =>
+  Link: (props: { to?: string; children?: unknown; className?: string }) =>
     createElement(
       "a",
       { href: props.to ?? "#", className: props.className },
@@ -68,14 +64,9 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
     for (const cta of ctas) {
       expect(cta).toBeDisabled();
       expect(cta).toHaveAttribute("aria-disabled", "true");
-      expect(cta).toHaveAttribute(
-        "title",
-        "Verify your email to create a repository.",
-      );
+      expect(cta).toHaveAttribute("title", "Verify your email to create a repository.");
     }
-    expect(
-      screen.getByText("Verify your email to create a repository."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Verify your email to create a repository.")).toBeInTheDocument();
   });
 
   it("verified: enabled New repository navigates to /new", () => {
@@ -94,9 +85,7 @@ describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
       expect(cta).toHaveAttribute("href", "/new");
       expect(cta).not.toHaveAttribute("aria-disabled", "true");
     }
-    expect(
-      screen.queryByText("Verify your email to create a repository."),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Verify your email to create a repository.")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Repository creation arrives in a later phase."),
     ).not.toBeInTheDocument();
@@ -150,9 +139,7 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
       },
     });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Choose a username to finish setup.",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Choose a username to finish setup.");
     expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
   });
 
@@ -165,9 +152,7 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
       },
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Could not load repositories.",
-    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not load repositories.");
     expect(
       screen.queryByRole("heading", { name: "Create your first repository" }),
     ).not.toBeInTheDocument();

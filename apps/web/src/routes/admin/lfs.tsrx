@@ -9,7 +9,6 @@ import type {
   UserPublic,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { AdminLfsSkeleton } from "@/components/page-skeletons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -237,25 +236,28 @@ export function AdminLfsPage() @{
     }
   }
 
-  const fromLoader = !!loaderData;
-  const loadingSession = !fromLoader && me.isPending;
+  const readyFromLoader = loaderData?.kind === "ready";
+  const sessionKnown =
+    readyFromLoader ||
+    loaderData?.kind === "unauthenticated" ||
+    loaderData?.kind === "forbidden" ||
+    loaderData?.kind === "error" ||
+    !me.isPending;
   const signedOut =
     loaderData?.kind === "unauthenticated" ||
-    (!fromLoader && !me.isPending && (!me.isSuccess || !me.data));
+    (sessionKnown && !me.isPending && (!me.isSuccess || !me.data));
   const forbidden =
     loaderData?.kind === "forbidden" ||
-    (me.isSuccess && !!me.data && !isSysAdmin);
+    (sessionKnown && me.isSuccess && !!me.data && !isSysAdmin);
   const loaderError = loaderData?.kind === "error" ? loaderData.message : "";
-  const awaitingData =
-    !fromLoader &&
-    isSysAdmin &&
-    (settingsQ.isPending || usageQ.isPending) &&
-    !settingsQ.data &&
-    !usageQ.data;
-  const showSkeleton = loadingSession || awaitingData;
+  const settings =
+    settingsQ.data ??
+    (readyFromLoader ? loaderData.settings : undefined);
+  const usage =
+    usageQ.data ?? (readyFromLoader ? loaderData.usage : undefined);
 
-  @if (showSkeleton) {
-    <AdminLfsSkeleton />
+  @if (!sessionKnown) {
+    <></>
   } @else {
     @if (signedOut) {
       <div className="mx-auto max-w-lg py-12 text-center">
@@ -277,7 +279,7 @@ export function AdminLfsPage() @{
           </p>
         </div>
       } @else {
-        @if (loaderError && !settingsQ.data) {
+        @if (loaderError && !settings) {
           <div className="mx-auto max-w-lg py-12 text-center">
             <p role="alert" className="text-[16px] text-destructive">
               {loaderError as string}
@@ -301,7 +303,7 @@ export function AdminLfsPage() @{
               </a>
             </p>
 
-            @if (settingsQ.isError && !settingsQ.data) {
+            @if (settingsQ.isError && !settings) {
               <p role="alert" className="mt-8 text-[14px] text-destructive">
                 {(settingsQ.error instanceof Error
                   ? settingsQ.error.message
@@ -328,7 +330,7 @@ export function AdminLfsPage() @{
                     }
                     disabled={pending}
                   />
-                  @if (settingsQ.data?.max_object_bytes_overridden) {
+                  @if (settings?.max_object_bytes_overridden) {
                     <span className="text-[13px] text-muted-foreground">
                       Override active
                     </span>
@@ -345,7 +347,7 @@ export function AdminLfsPage() @{
                     }
                     disabled={pending}
                   />
-                  @if (settingsQ.data?.quota_repo_bytes_overridden) {
+                  @if (settings?.quota_repo_bytes_overridden) {
                     <span className="text-[13px] text-muted-foreground">
                       Override active
                     </span>
@@ -362,7 +364,7 @@ export function AdminLfsPage() @{
                     }
                     disabled={pending}
                   />
-                  @if (settingsQ.data?.quota_user_bytes_overridden) {
+                  @if (settings?.quota_user_bytes_overridden) {
                     <span className="text-[13px] text-muted-foreground">
                       Override active
                     </span>
@@ -399,30 +401,30 @@ export function AdminLfsPage() @{
               >
                 Instance usage breakdown
               </h2>
-              @if (usageQ.isError && !usageQ.data) {
+              @if (usageQ.isError && !usage) {
                 <p role="alert" className="text-[14px] text-destructive">
                   {(usageQ.error instanceof Error
                     ? usageQ.error.message
                     : "Could not load usage.") as string}
                 </p>
               } @else {
-                @if (usageQ.data) {
+                @if (usage) {
                   <>
                     <p className="text-[14px] text-muted-foreground">
                       {(
-                        `${usageQ.data.object_count} unique OIDs · ${formatBytes(usageQ.data.physical_bytes)} physical · ${formatBytes(usageQ.data.logical_bytes)} logical`
+                        `${usage.object_count} unique OIDs · ${formatBytes(usage.physical_bytes)} physical · ${formatBytes(usage.logical_bytes)} logical`
                       ) as string}
                     </p>
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
                         <h3 className="text-[15px] font-medium">By repository</h3>
-                        @if (usageQ.data.by_repo.length === 0) {
+                        @if (usage.by_repo.length === 0) {
                           <p className="mt-2 text-[13px] text-muted-foreground">
                             No linked LFS objects.
                           </p>
                         } @else {
                           <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                            @for (const row of usageQ.data.by_repo; key row.repository_id) {
+                            @for (const row of usage.by_repo; key row.repository_id) {
                               <li>
                                 {(
                                   `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
@@ -434,13 +436,13 @@ export function AdminLfsPage() @{
                       </div>
                       <div>
                         <h3 className="text-[15px] font-medium">By owner</h3>
-                        @if (usageQ.data.by_owner.length === 0) {
+                        @if (usage.by_owner.length === 0) {
                           <p className="mt-2 text-[13px] text-muted-foreground">
                             No linked LFS objects.
                           </p>
                         } @else {
                           <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                            @for (const row of usageQ.data.by_owner; key row.owner_id) {
+                            @for (const row of usage.by_owner; key row.owner_id) {
                               <li>
                                 {(
                                   `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`

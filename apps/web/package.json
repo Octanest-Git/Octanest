@@ -15,7 +15,9 @@
     "test:coverage": "vitest run --coverage --project unit --project integration",
     "test:coverage:unit": "vitest run --coverage --project unit --coverage.reportsDirectory=coverage/unit",
     "test:coverage:integration": "vitest run --coverage --project integration --coverage.reportsDirectory=coverage/integration",
-    "lint": "echo 'no web lint yet'"
+    "lint": "oxlint --type-aware --deny-warnings .",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check ."
   },
   "dependencies": {
     "@octanejs/base-ui": "^0.1.52",
@@ -47,9 +49,11 @@
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
+    "@tsrx/oxc": "^0.13.0",
     "@vitest/browser-playwright": "^5",
     "@vitest/coverage-v8": "^5.0.1",
     "happy-dom": "^20.14.3",
+    "oxlint-tsgolint": "^7.0.2001",
     "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",

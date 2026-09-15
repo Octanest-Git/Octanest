@@ -55,6 +55,10 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
+      - name: web lint (oxlint type-aware)
+        run: bun run --filter @octanest/web lint
+      - name: web format check (oxfmt)
+        run: bun run --filter @octanest/web format:check
       - name: vitest (api-client + web unit/integration)
         run: bun run test
       - name: web build

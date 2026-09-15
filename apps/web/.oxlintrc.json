@@ -1,0 +1,10 @@
+{
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "ignorePatterns": ["**/routeTree.gen.ts", "dist/**", "coverage/**"],
+  "env": {
+    "builtin": true
+  }
+}

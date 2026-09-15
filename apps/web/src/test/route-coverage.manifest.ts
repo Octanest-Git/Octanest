@@ -26,12 +26,9 @@ export type RouteCoverageEntry = {
 
 const AUTH_UI = "apps/web/e2e/stack-browser/auth-ui.stack.browser.test.tsx";
 const FORGE_REPO = "apps/web/e2e/stack-browser/forge-repo.stack.browser.test.tsx";
-const FORGE_ISSUES =
-  "apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx";
-const FORGE_SSH_ORGS =
-  "apps/web/e2e/stack-browser/forge-packages-ssh-orgs.stack.browser.test.tsx";
-const FORGE_ADMIN =
-  "apps/web/e2e/stack-browser/forge-admin.stack.browser.test.tsx";
+const FORGE_ISSUES = "apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx";
+const FORGE_SSH_ORGS = "apps/web/e2e/stack-browser/forge-packages-ssh-orgs.stack.browser.test.tsx";
+const FORGE_ADMIN = "apps/web/e2e/stack-browser/forge-admin.stack.browser.test.tsx";
 
 export const routeCoverageManifest: RouteCoverageEntry[] = [
   // --- shells / Outlet-only layouts (excluded from required set) ---
@@ -58,9 +55,7 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "verify.tsrx",
-    coverage: [
-      { kind: "happy-dom", test: "apps/web/src/routes/verify.integration.test.ts" },
-    ],
+    coverage: [{ kind: "happy-dom", test: "apps/web/src/routes/verify.integration.test.ts" }],
   },
   {
     route: "reset-password.tsrx",
@@ -93,9 +88,7 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   // --- setup wizard ---
   {
     route: "setup.index.tsrx",
-    coverage: [
-      { kind: "happy-dom", test: "apps/web/src/routes/setup.integration.test.ts" },
-    ],
+    coverage: [{ kind: "happy-dom", test: "apps/web/src/routes/setup.integration.test.ts" }],
   },
   {
     route: "setup.credentials.tsrx",
@@ -140,9 +133,8 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "settings/tokens.new.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Create-token form covered transitively by tokens.integration.test.ts PAT flows; dedicated mount deferred",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/settings/tokens.integration.test.ts",
       },
     ],
   },
@@ -160,15 +152,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   // --- create flows ---
   {
     route: "new.tsrx",
-    coverage: [
-      { kind: "happy-dom", test: "apps/web/src/routes/new.integration.test.ts" },
-    ],
+    coverage: [{ kind: "happy-dom", test: "apps/web/src/routes/new.integration.test.ts" }],
   },
   {
     route: "orgs.new.tsrx",
-    coverage: [
-      { kind: "happy-dom", test: "apps/web/src/routes/orgs.new.integration.test.ts" },
-    ],
+    coverage: [{ kind: "happy-dom", test: "apps/web/src/routes/orgs.new.integration.test.ts" }],
   },
   {
     route: "dashboard.tsrx",
@@ -184,9 +172,8 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "invites.$token.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Invite accept page not yet in forge stack-browser matrix; follow-up with org invite e2e",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/invites.$token.integration.test.ts",
       },
     ],
   },
@@ -325,9 +312,8 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "$owner.$repo.settings.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Repo settings panels covered by Wave 0 raw-source suites (collaborators/lfs/rename); render mount + browser deferred",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.settings.integration.test.ts",
       },
     ],
   },
@@ -378,10 +364,10 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "$owner.$repo.releases.index.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Releases list covered transitively by create→detail stack-browser; dedicated list mount deferred",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.releases.integration.test.ts",
       },
+      { kind: "stack-browser", test: FORGE_ISSUES },
     ],
   },
   {
@@ -398,9 +384,8 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "$owner.index.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Org overview not in D-QH-03 matrix; members settings browser covers org admin path",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.layout.integration.test.ts",
       },
     ],
   },
@@ -408,10 +393,10 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     route: "$owner.packages.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale:
-          "Owner packages list has export/raw-source suite only; stack-browser covers repo-linked packages",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.packages.integration.test.ts",
       },
+      { kind: "stack-browser", test: FORGE_REPO },
     ],
   },
   {

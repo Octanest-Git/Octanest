@@ -14,9 +14,7 @@ describe("parseLfsPointer (D-LFS-18)", () => {
     ].join("\n");
     const p = parseLfsPointer(text);
     expect(p).not.toBeNull();
-    expect(p?.oid).toBe(
-      "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    );
+    expect(p?.oid).toBe("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
     expect(p?.size).toBe(123);
   });
 

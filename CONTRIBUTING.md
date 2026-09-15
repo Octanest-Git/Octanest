@@ -32,6 +32,8 @@ make help                  # all targets
 make rpc-gen               # after RPC / DTO changes
 make test                  # Rust + Vitest
 make test-e2e-stack        # API + Mailpit/OIDC stubs + browser
+make web-lint              # oxlint type-aware (apps/web)
+make web-format-check      # oxfmt --check (apps/web)
 make up && make smoke      # Compose stack
 ```
 
@@ -46,9 +48,10 @@ Auth stubs without cloud secrets: [docs/dev-auth.md](docs/dev-auth.md).
 3. After changing RPC procedures or shared types: run `make rpc-gen` and commit `@octanest/api-client` updates together.
 4. Do not commit secrets (`.env`, tokens, private keys). Use examples under `docs/` and `.env.example`.
 5. Keep UI in `.tsrx` Octane style; do not introduce a parallel React app or alias React to Octane.
-6. Run what CI runs locally when practical: `make test`, `make rpc-sync-check`, and stack e2e for auth/UI paths.
+6. Before opening a PR that touches `apps/web`: `make web-lint` and `make web-format-check` must pass (CI `web-octane` gates them). Fix type-aware oxlint diagnostics; do not leave formatting drift.
+7. Run what CI runs locally when practical: `make test`, `make rpc-sync-check`, and stack e2e for auth/UI paths.
 
-CI workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (Rust nextest, Vitest, stack e2e, RPC sync, Compose validate).
+CI workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (Rust nextest, web lint/format, Vitest, stack e2e, RPC sync, Compose validate).
 
 ## License
 

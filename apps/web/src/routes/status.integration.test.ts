@@ -1,9 +1,6 @@
 import { cleanup, render, screen } from "@octanejs/testing-library";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  resolveStatusPhase,
-  StatusResolved,
-} from "./status";
+import { resolveStatusPhase, StatusResolved } from "./status";
 
 afterEach(cleanup);
 

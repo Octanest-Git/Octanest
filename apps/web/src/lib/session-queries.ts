@@ -1,7 +1,4 @@
-import {
-  queryOptions,
-  type QueryClient,
-} from "@octanejs/tanstack-query";
+import { queryOptions, type QueryClient } from "@octanejs/tanstack-query";
 import type {
   AuthSettingsPublic,
   BootstrapStatus,
@@ -23,10 +20,7 @@ export function authSessionQueryOptions() {
       const res = await apiClient.auth.me();
       if (!res.ok) {
         // Expected anonymous / lock states — never throw (throws → Query remount refetch spam).
-        if (
-          res.error.code === "auth.unauthenticated" ||
-          res.error.code === "auth.setup_required"
-        ) {
+        if (res.error.code === "auth.unauthenticated" || res.error.code === "auth.setup_required") {
           return null;
         }
         throw new Error(`${res.error.code}: ${res.error.message}`);
@@ -83,9 +77,9 @@ export function adminAuthSettingsQueryOptions() {
     queryFn: async (): Promise<AuthSettingsPublic> => {
       const res = await apiClient.admin.auth.getSettings();
       if (!res.ok) {
-        const err = new Error(
-          `${res.error.code}: ${res.error.message}`,
-        ) as Error & { code: string };
+        const err = new Error(`${res.error.code}: ${res.error.message}`) as Error & {
+          code: string;
+        };
         err.code = res.error.code;
         throw err;
       }
@@ -106,10 +100,7 @@ export function setAuthMeCache(qc: QueryClient, user: UserPublic | null) {
   qc.setQueryData(authMeQueryKey, user);
 }
 
-export function setAdminAuthSettingsCache(
-  qc: QueryClient,
-  settings: AuthSettingsPublic,
-) {
+export function setAdminAuthSettingsCache(qc: QueryClient, settings: AuthSettingsPublic) {
   qc.setQueryData(adminAuthSettingsQueryKey, settings);
   void qc.invalidateQueries({ queryKey: authProviderConfigQueryKey });
 }

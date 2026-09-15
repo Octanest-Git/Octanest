@@ -138,10 +138,7 @@ export async function highlightCode(
   const display = stripTrailingNewline(code);
   const html = highlighter.codeToHtml(display, { lang, theme });
   // Annotate language id for callers/tests — Shiki HTML may omit the lang name.
-  return html.replace(
-    /<pre(\s)/,
-    `<pre data-language="${lang}"$1`,
-  );
+  return html.replace(/<pre(\s)/, `<pre data-language="${lang}"$1`);
 }
 
 /** Drop a single trailing newline so line numbers match highlighted rows. */

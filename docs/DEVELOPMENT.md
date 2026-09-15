@@ -146,6 +146,9 @@ octanest/
 | `bun run --filter @octanest/web build` | `vite build` |
 | `bun run --filter @octanest/web test` | Vitest (unit / integration / e2e projects) |
 | `bun run --filter @octanest/web test:e2e:stack` | Stack e2e Vitest projects |
+| `bun run --filter @octanest/web lint` | `oxlint --type-aware --deny-warnings` via `@tsrx/oxc` + `oxlint-tsgolint` |
+| `bun run --filter @octanest/web format` | `oxfmt --write` |
+| `bun run --filter @octanest/web format:check` | `oxfmt --check` |
 | `bun run --filter @octanest/api-client test` | api-client Vitest |
 
 ### Make targets (preferred day-to-day)
@@ -158,6 +161,7 @@ octanest/
 | `make up` / `make down` / `make logs` | Default Compose stack |
 | `make up-mysql` / `up-sqlite` / `up-dev-auth` | Dialect and auth overlays |
 | `make test` | `cargo nextest` (or `cargo test`) + `bun run test` |
+| `make web-lint` / `make web-format-check` | Web oxlint (type-aware) / oxfmt check |
 | `make test-e2e-stack` | `./scripts/dev-auth/run-stack-e2e.sh` |
 | `make smoke` / `smoke-mysql` / `smoke-sqlite` | Compose bring-up smoke |
 | `make db-migrate` / `db-switch-dialect` / `db-matrix` | Migrations and dialect probe |
@@ -166,7 +170,7 @@ Turbo task graph: `turbo.json` (`build`, `dev`, `test`, `lint`).
 
 ## Code style
 
-- **JavaScript / TypeScript** — No ESLint, Prettier, or Biome config is checked into the repo yet. `@octanest/web` `lint` is currently a placeholder (`echo 'no web lint yet'`). Prefer existing patterns in `apps/web` (TypeScript, Octane/TanStack, Tailwind v4) and keep changes consistent with neighboring files.
+- **JavaScript / TypeScript / TSRX** — Lint and format with [`@tsrx/oxc`](https://oxc.tsrx.dev/guide/getting-started) in `@octanest/web`: type-aware `oxlint` (`oxlint-tsgolint`) and `oxfmt` (scripts `lint`, `format`, `format:check`; Make `web-lint` / `web-format-check`). CI `web-octane` runs lint + format check. No ESLint or Prettier. Prefer existing patterns in `apps/web` (TypeScript, Octane/TanStack, Tailwind v4). Full `tsc --noEmit` is not the gate yet (`.tsrx` needs `@tsrx/typescript-plugin`, which still peers TypeScript 5.9.x while this app uses TypeScript 7) — type-aware oxlint is the enforced substitute.
 - **Rust** — Use standard `rustfmt` / `cargo fmt` and Clippy locally (`cargo clippy --workspace`). There is no committed `rustfmt.toml` / `clippy.toml`; CI currently gates on `cargo nextest`, not fmt/clippy.
 - **Generated client** — Do not reformat or hand-patch `packages/api-client` as a substitute for updating Rust + `make rpc-gen`.
 - **Env files** — Keep secrets out of git (`.env`, `.env.dev-auth`, `.env.sqlite`).
@@ -183,7 +187,7 @@ No `.github/PULL_REQUEST_TEMPLATE.md` or `CONTRIBUTING.md` is present. Practical
 
 - Open a PR against `main`; all workflow jobs must pass.
 - **api-rust** — `cargo nextest run --workspace --profile ci`
-- **web-octane** — `bun install --frozen-lockfile`, Playwright Chromium, `bun run test`, `turbo run build --filter=@octanest/web`
+- **web-octane** — `bun install --frozen-lockfile`, `bun run --filter @octanest/web lint`, `format:check`, `bun run test`, `turbo run build --filter=@octanest/web`
 - **e2e-stack** — `make test-e2e-stack` (API + Mailpit/OIDC/stubs + web)
 - **rpc-sync** — `make rpc-sync-check` (commit regenerated `packages/api-client` if you changed RPC)
 - **compose** — `docker compose … config` for default, MySQL, SQLite, and dev-auth overlays
