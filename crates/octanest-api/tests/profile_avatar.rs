@@ -247,6 +247,7 @@ async fn avatar_delete_clears_profile_and_file() {
     assert!(!on_disk.exists(), "avatar file should be removed");
 
     let get = app
+        .clone()
         .oneshot(rpc_req_with_cookie(
             r#"{"procedure":"user.get_profile","input":{}}"#,
             &cookie,
