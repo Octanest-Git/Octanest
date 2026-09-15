@@ -5,8 +5,7 @@ import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 type IssueAssigneesPanelProps = {
   owner: string;
@@ -53,9 +52,7 @@ export function IssueAssigneesPanel({
 
   function toggle(userId: string) {
     setSelected((prev) =>
-      prev.includes(userId)
-        ? prev.filter((x) => x !== userId)
-        : [...prev, userId],
+      prev.includes(userId) ? prev.filter((x) => x !== userId) : [...prev, userId],
     );
   }
 
@@ -88,28 +85,23 @@ export function IssueAssigneesPanel({
   }
 
   <section aria-labelledby="issue-assignees-heading">
-    <h2
-      id="issue-assignees-heading"
-      className="text-[14px] font-semibold text-foreground"
-    >
+    <h2 id="issue-assignees-heading" className="text-[14px] font-semibold text-foreground">
       Assignees
     </h2>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (canWrite) {
       <div className="mt-2 flex flex-col gap-2">
         @if (candidatesQ.isPending) {
-          <p className="text-[13px] text-muted-foreground">
-            Loading assignees…
-          </p>
+          <p className="text-[13px] text-muted-foreground">Loading assignees…</p>;
         } @else {
           @if (catalog.length === 0) {
             <p className="text-[13px] text-muted-foreground">
               No eligible assignees for this repository.
-            </p>
+            </p>;
           } @else {
             <ul className="flex flex-col gap-1.5">
               @for (const user of catalog; key user.user_id) {
@@ -122,15 +114,18 @@ export function IssueAssigneesPanel({
                       onChange={() => toggle(user.user_id)}
                     />
                     <span>{user.username as string}</span>
-                    @if (user.display_name && user.display_name !== user.username) {
+                    @if (
+                      user.display_name &&
+                      user.display_name !== user.username
+                    ) {
                       <span className="text-muted-foreground">
                         ({user.display_name as string})
-                      </span>
+                      </span>;
                     }
                   </label>
-                </li>
+                </li>;
               }
-            </ul>
+            </ul>;
           }
         }
         <Button
@@ -142,23 +137,21 @@ export function IssueAssigneesPanel({
         >
           Save assignees
         </Button>
-      </div>
+      </div>;
     } @else {
       <div className="mt-2">
         @if (current.length === 0) {
-          <p className="text-[13px] text-muted-foreground">None yet</p>
+          <p className="text-[13px] text-muted-foreground">None yet</p>;
         } @else {
           <ul className="flex flex-wrap gap-1.5">
             @for (const user of current; key user.user_id) {
-              <li
-                className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[12px] text-foreground"
-              >
+              <li className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[12px] text-foreground">
                 {user.username as string}
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         }
-      </div>
+      </div>;
     }
-  </section>
+  </section>;
 }

@@ -9,8 +9,7 @@ const BANNER_MESSAGE =
   "Verify your email to unlock creating repositories and other privileged actions.";
 const RESEND_SUCCESS = "Verification email sent.";
 const RESEND_RATE_LIMITED = "Please wait before requesting another email.";
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const RESEND_COOLDOWN_SECS = 60;
 
 /**
@@ -25,9 +24,7 @@ export function VerifyBanner() {
   const [cooldownLeft, setCooldownLeft] = useState(0);
 
   const ready = !me.isPending;
-  const visible = Boolean(
-    me.isSuccess && me.data && me.data.email_verified === false,
-  );
+  const visible = Boolean(me.isSuccess && me.data && me.data.email_verified === false);
 
   useEffect(() => {
     if (cooldownUntil <= 0) {
@@ -59,10 +56,7 @@ export function VerifyBanner() {
         setResendPending(false);
         return;
       }
-      toastSuccess(
-        RESEND_SUCCESS,
-        "Check your inbox for a link and 8-digit code.",
-      );
+      toastSuccess(RESEND_SUCCESS, "Check your inbox for a link and 8-digit code.");
       setCooldownUntil(Date.now() + RESEND_COOLDOWN_SECS * 1000);
       setResendPending(false);
     } catch {
@@ -91,9 +85,7 @@ export function VerifyBanner() {
           className="mt-0.5 w-1 shrink-0 self-stretch rounded-full bg-primary"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-medium leading-snug text-foreground">
-            Verify your email
-          </p>
+          <p className="text-[14px] font-medium leading-snug text-foreground">Verify your email</p>
           <p className="mt-1 text-[13px] font-normal leading-snug text-muted-foreground break-words">
             {BANNER_MESSAGE}
           </p>

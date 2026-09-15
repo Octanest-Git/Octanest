@@ -44,16 +44,35 @@ make logs          # follow default compose logs
 
 Network name: `octanest_octanest`. Avatar uploads bind `./var/uploads` → `/var/uploads` on `api`.
 
+### Forge volumes & ports
+
+Default Compose publishes HTTP via Traefik and raw TCP for Git-over-SSH. Persist forge data on the host under `./var/` (create as needed; gitignored).
+
+| Host | Container / role | Notes |
+|------|------------------|--------|
+| `:80` | Traefik → web + API | Browser origin `http://localhost` |
+| `:2222` | API SSH (`OCTANEST_SSH_PORT`) | Raw TCP — **not** routed through Traefik. Disable with `OCTANEST_SSH_ENABLED=false` |
+| `./var/repos` | `/var/repos` | Bare git repositories |
+| `./var/lfs` | `/var/lfs` (`OCTANEST_LFS_DIR`) | Git LFS object store |
+| `./var/packages` | `/var/packages` (`OCTANEST_PACKAGES_DIR`) | OCI / npm / generic blobs |
+| `./var/release-assets` | `/var/release-assets` (`OCTANEST_RELEASE_ASSETS_DIR`) | Release asset files (distinct from LFS) |
+| `./var/ssh` | `/var/ssh` (`OCTANEST_SSH_HOST_KEY_DIR`) | SSH host keys (TOFU across restarts) |
+| `./var/uploads` | `/var/uploads` | Avatars / uploads |
+
+Env knobs: [CONFIGURATION.md](CONFIGURATION.md).
+
 ### Traefik routing
 
 Traefik `v3.3` is configured in Compose (`--providers.docker=true`, `--providers.docker.exposedbydefault=false`, entrypoint `web` on `:80`). Dashboard is off.
 
 | Router | Rule | Priority | Backend |
 |--------|------|----------|---------|
+| `api-git` | `Host(\`localhost\`) && PathRegexp(\`^/[^/]+/[^/]+\\.git\`)` | 110 | `api:8080` (Smart HTTP) |
+| `api-packages` | `Host(\`localhost\`) && (PathPrefix(\`/v2\`) \|\| PathPrefix(\`/npm\`) \|\| PathPrefix(\`/generic\`))` | 110 | `api:8080` (registries) |
 | `api` | `Host(\`localhost\`) && (PathPrefix(\`/api\`) \|\| PathPrefix(\`/uploads\`) \|\| Path(\`/health\`))` | 100 | `api:8080` |
 | `web` | `Host(\`localhost\`)` | 1 | `web:3000` |
 
-Both services set `traefik.enable=true` and `traefik.docker.network=octanest_octanest`. Browser traffic uses `http://localhost` (no TLS in default Compose).
+Both services set `traefik.enable=true` and `traefik.docker.network=octanest_octanest`. Browser traffic uses `http://localhost` (no TLS in default Compose). Git SSH stays on host `:2222` and does not use Traefik.
 
 <!-- VERIFY: Production Host() rules, TLS / ACME, and public DNS for non-localhost Traefik deployments -->
 

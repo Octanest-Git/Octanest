@@ -20,10 +20,7 @@ export type RenderGfmOptions = {
  * With owner/repo context, `remark-github` autolinks `#N` and `owner/repo#N` to
  * `/{owner}/{repo}/issues/{n}`. Mentions and commits are not linked (Q1 / D-ISS-13).
  */
-export async function renderGfm(
-  markdown: string,
-  opts?: RenderGfmOptions,
-): Promise<string> {
+export async function renderGfm(markdown: string, opts?: RenderGfmOptions): Promise<string> {
   const owner = opts?.owner?.trim() || "owner";
   const repo = opts?.repo?.trim() || "repo";
 

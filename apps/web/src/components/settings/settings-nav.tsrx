@@ -1,39 +1,44 @@
+import { cn } from "@/lib/utils";
+
+export type SettingsNavActive = "profile" | "tokens" | "ssh-keys";
+
 type SettingsNavProps = {
-  active: "profile" | "tokens" | "ssh-keys";
+  active: SettingsNavActive;
 };
 
-function navClass(isActive: boolean): string {
-  return isActive
-    ? "border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground no-underline"
-    : "pb-2 text-[14px] font-normal text-muted-foreground no-underline hover:text-foreground";
+const LINKS: { id: SettingsNavActive; href: string; label: string }[] = [
+  { id: "profile", href: "/settings/profile", label: "Profile" },
+  {
+    id: "tokens",
+    href: "/settings/tokens",
+    label: "Personal access tokens",
+  },
+  { id: "ssh-keys", href: "/settings/ssh-keys", label: "SSH keys" },
+];
+
+function linkClass(isActive: boolean): string {
+  return cn(
+    "block rounded-md px-3 py-2 text-[14px] no-underline transition-colors",
+    isActive
+      ? "bg-muted font-semibold text-foreground"
+      : "font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+  );
 }
 
-/** Settings secondary link-row: Profile | Personal access tokens | SSH keys (D-SSH-06). */
+/** Account settings sidebar: Profile | Personal access tokens | SSH keys. */
 export function SettingsNav({ active }: SettingsNavProps) @{
-  <nav
-    className="mb-6 flex flex-wrap gap-4 border-b border-border pb-0"
-    aria-label="Settings"
-  >
-    <a
-      href="/settings/profile"
-      className={navClass(active === "profile") as string}
-      aria-current={active === "profile" ? "page" : undefined}
-    >
-      Profile
-    </a>
-    <a
-      href="/settings/tokens"
-      className={navClass(active === "tokens") as string}
-      aria-current={active === "tokens" ? "page" : undefined}
-    >
-      Personal access tokens
-    </a>
-    <a
-      href="/settings/ssh-keys"
-      className={navClass(active === "ssh-keys") as string}
-      aria-current={active === "ssh-keys" ? "page" : undefined}
-    >
-      SSH keys
-    </a>
-  </nav>
+  <nav className="flex flex-col gap-1" aria-label="Account settings">
+    <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+      Account
+    </p>
+    @for (const link of LINKS; key link.id) {
+      <a
+        href={link.href as string}
+        className={linkClass(active === link.id) as string}
+        aria-current={active === link.id ? "page" : undefined}
+      >
+        {link.label as string}
+      </a>;
+    }
+  </nav>;
 }

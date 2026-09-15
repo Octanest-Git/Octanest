@@ -11,5 +11,5 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) @{
       className,
     )}
     {...props}
-  />
+  />;
 }

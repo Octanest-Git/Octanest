@@ -12,20 +12,17 @@ export function SshHowTo({ compact }: SshHowToProps) @{
 
   <div className={pad as string} data-slot="ssh-how-to">
     <h3
-      className={(compact
-        ? "text-[14px] font-semibold text-foreground"
-        : "text-[14px] font-medium text-foreground") as string}
+      className={
+        (compact
+          ? "text-[14px] font-semibold text-foreground"
+          : "text-[14px] font-medium text-foreground") as string
+      }
     >
       Authenticate with an SSH key
     </h3>
     <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
-      <li>
-        SSH login user is `git`. Identity comes from your registered key
-        fingerprint.
-      </li>
-      <li>
-        Register a public key, then clone with the scp-style URL above.
-      </li>
+      <li>SSH login user is `git`. Identity comes from your registered key fingerprint.</li>
+      <li>Register a public key, then clone with the scp-style URL above.</li>
     </ul>
     <p className="mt-3">
       <a
@@ -35,5 +32,5 @@ export function SshHowTo({ compact }: SshHowToProps) @{
         Add an SSH key
       </a>
     </p>
-  </div>
+  </div>;
 }

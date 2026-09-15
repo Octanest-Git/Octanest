@@ -3,8 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 vi.mock("@/lib/toast", () => ({
+  toast: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  toastInfo: vi.fn(),
+  toastWarning: vi.fn(),
 }));
 
 vi.mock("@/lib/api-client", () => ({
@@ -68,14 +71,9 @@ describe("VerifyBanner shared auth.me query", () => {
     renderWithQueryClient(VerifyBanner);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("status", { name: /email verification/i }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("status", { name: /email verification/i })).toBeInTheDocument();
     });
     expect(screen.getByText("Verify your email")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /enter code/i })).toHaveAttribute(
-      "href",
-      "/verify",
-    );
+    expect(screen.getByRole("link", { name: /enter code/i })).toHaveAttribute("href", "/verify");
   });
 });

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useRef, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
@@ -12,21 +13,17 @@ import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 export const Route = createFileRoute("/verify")({
   component: VerifyPage,
   head: () => ({
-    meta: [
-      { title: "Verify email · Octanest" },
-      { name: "referrer", content: "no-referrer" },
-    ],
+    meta: [{ title: "Verify email · Octanest" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
 const SUPPORT_DEFAULT =
   "We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in.";
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const INVALID_EXPIRED =
   "That code or link is invalid or expired. Request a new email and try again.";
 const WRONG_USER =
-  "You’re signed in as a different user. Sign out, then open the link again or enter the code while signed in as the mailbox owner.";
+  "You're signed in as a different user. Sign out, then open the link again or enter the code while signed in as the mailbox owner.";
 const NEED_SIGN_IN = "Sign in to finish verifying this email.";
 const ALREADY_VERIFIED = "Your email is already verified.";
 const RESEND_SUCCESS = "Verification email sent. Check your inbox.";
@@ -43,9 +40,7 @@ function readTokenFromLocation(): string | null {
 }
 
 function loginHrefWithToken(token: string | null): string {
-  const verifyPath = token
-    ? `/verify?token=${encodeURIComponent(token)}`
-    : "/verify";
+  const verifyPath = token ? `/verify?token=${encodeURIComponent(token)}` : "/verify";
   return `/login?returnTo=${encodeURIComponent(verifyPath)}`;
 }
 
@@ -60,11 +55,11 @@ type Phase =
       verifyingToken: boolean;
     };
 
-function VerifyPage() {
+/** Exported for verify.integration.test.ts (RESEARCH P1 / D-QH-03). */
+export function VerifyPage() @{
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
+  const [tokenPending, setTokenPending] = useState(false);
   const [resendPending, setResendPending] = useState(false);
   const [resendNote, setResendNote] = useState("");
   const [cooldownUntil, setCooldownUntil] = useState(0);
@@ -72,10 +67,37 @@ function VerifyPage() {
   const tokenAttempted = useRef(false);
   const submitLock = useRef(false);
 
+  const form = useForm({
+    defaultValues: { code: "" },
+    onSubmit: async ({ value }) => {
+      if (submitLock.current) return;
+      const trimmed = value.code.trim();
+      if (trimmed.length !== 8 || !/^\d{8}$/.test(trimmed)) return;
+      submitLock.current = true;
+      setError("");
+      try {
+        const res = await apiClient.auth.verify({ code: trimmed });
+        if (!res.ok) {
+          setError(
+            res.error.code === "auth.invalid_token"
+              ? INVALID_EXPIRED
+              : res.error.message || INVALID_EXPIRED,
+          );
+          submitLock.current = false;
+          return;
+        }
+        window.location.assign(safeReturnTo(readReturnToFromLocation()));
+      } catch {
+        setError(NETWORK_ERROR);
+        submitLock.current = false;
+      }
+    },
+  });
+
   useEffect(() => {
     let cancelled = false;
     const token = readTokenFromLocation();
-    (async () => {
+    void (async () => {
       try {
         const me = await apiClient.auth.me();
         if (cancelled) return;
@@ -110,23 +132,21 @@ function VerifyPage() {
     tokenAttempted.current = true;
     const token = phase.token;
     let cancelled = false;
-    (async () => {
-      setPending(true);
+    void (async () => {
+      setTokenPending(true);
       setError("");
       try {
         const res = await apiClient.auth.verify({ token });
         if (cancelled) return;
         if (!res.ok) {
-          setError(
-            res.error.code === "auth.invalid_token" ? WRONG_USER : INVALID_EXPIRED,
-          );
+          setError(res.error.code === "auth.invalid_token" ? WRONG_USER : INVALID_EXPIRED);
           setPhase({
             kind: "form",
             user: phase.user,
             token: null,
             verifyingToken: false,
           });
-          setPending(false);
+          setTokenPending(false);
           return;
         }
         window.location.assign(safeReturnTo(readReturnToFromLocation()));
@@ -139,7 +159,7 @@ function VerifyPage() {
           token: null,
           verifyingToken: false,
         });
-        setPending(false);
+        setTokenPending(false);
       }
     })();
     return () => {
@@ -161,33 +181,6 @@ function VerifyPage() {
     const id = window.setInterval(tick, 250);
     return () => window.clearInterval(id);
   }, [cooldownUntil]);
-
-  async function submitCode(nextCode: string) {
-    if (submitLock.current || pending) return;
-    const trimmed = nextCode.trim();
-    if (trimmed.length !== 8 || !/^\d{8}$/.test(trimmed)) return;
-    submitLock.current = true;
-    setPending(true);
-    setError("");
-    try {
-      const res = await apiClient.auth.verify({ code: trimmed });
-      if (!res.ok) {
-        setError(
-          res.error.code === "auth.invalid_token"
-            ? INVALID_EXPIRED
-            : res.error.message || INVALID_EXPIRED,
-        );
-        setPending(false);
-        submitLock.current = false;
-        return;
-      }
-      window.location.assign(safeReturnTo(readReturnToFromLocation()));
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-      submitLock.current = false;
-    }
-  }
 
   async function resend() {
     if (resendPending || cooldownLeft > 0) return;
@@ -215,58 +208,13 @@ function VerifyPage() {
     }
   }
 
-  if (phase.kind === "loading") {
-    return (
-      <AuthShell title="Verify your email" support="Checking your session…">
-        <AuthFormSkeleton fields={1} />
-      </AuthShell>
-    );
+  async function submitCode(nextCode: string) {
+    form.setFieldValue("code", nextCode);
+    await form.handleSubmit();
   }
 
-  if (phase.kind === "need-sign-in") {
-    const href = loginHrefWithToken(phase.token);
-    return (
-      <AuthShell title="Verify your email" support={NEED_SIGN_IN}>
-        {error ? <AuthErrorBanner message={error} /> : null}
-        <Button
-          type="button"
-          className="w-full"
-          onClick={() => {
-            window.location.assign(href);
-          }}
-        >
-          Sign in
-        </Button>
-        <p className="text-[14px] text-muted-foreground">
-          Need a different account?{" "}
-          <a
-            href={href as string}
-            className="font-normal text-foreground underline-offset-4 hover:underline"
-          >
-            Sign in
-          </a>
-        </p>
-      </AuthShell>
-    );
-  }
-
-  if (phase.kind === "already-verified") {
-    return (
-      <AuthShell title="Verify your email" support={ALREADY_VERIFIED}>
-        <Button
-          type="button"
-          className="w-full"
-          onClick={() => {
-            window.location.assign("/");
-          }}
-        >
-          Go to home
-        </Button>
-      </AuthShell>
-    );
-  }
-
-  const verifying = phase.verifyingToken || pending;
+  const verifying =
+    (phase.kind === "form" && phase.verifyingToken) || tokenPending || form.state.isSubmitting;
   const cooldownHelper =
     cooldownLeft > 0
       ? `You can resend in ${cooldownLeft}s`
@@ -274,77 +222,139 @@ function VerifyPage() {
         ? RESEND_COOLDOWN_HELPER
         : "";
 
-  return (
-    <AuthShell title="Verify your email" support={SUPPORT_DEFAULT}>
-      {error ? <AuthErrorBanner message={error} /> : null}
-      {phase.verifyingToken ? (
-        <p className="text-[16px] text-muted-foreground">Verifying…</p>
-      ) : null}
-
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submitCode(code);
-        }}
-      >
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="verify-code">Verification code</Label>
-          <InputOtp
-            id="verify-code"
-            name="code"
-            value={code}
-            onChange={(next) => {
-              setCode(next);
-              if (error) setError("");
-            }}
-            onComplete={(next) => {
-              void submitCode(next);
-            }}
-            disabled={verifying}
-            aria-label="Verification code"
-            aria-invalid={Boolean(error)}
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={verifying || code.length !== 8}>
-          {(verifying ? "Working…" : "Verify email") as string}
-        </Button>
-      </form>
-
-      <div className="flex flex-col gap-2">
+  @if (phase.kind === "loading") {
+    <AuthShell title="Verify your email" support="Checking your session…">
+      <AuthFormSkeleton fields={1} />
+    </AuthShell>;
+  } @else {
+    @if (phase.kind === "need-sign-in") {
+      <AuthShell title="Verify your email" support={NEED_SIGN_IN}>
+        @if (error) {
+          <AuthErrorBanner message={error} />;
+        }
         <Button
           type="button"
-          variant="ghost"
           className="w-full"
-          disabled={verifying || resendPending || cooldownLeft > 0}
           onClick={() => {
-            void resend();
+            window.location.assign(loginHrefWithToken(phase.token));
           }}
         >
-          {(resendPending ? "Working…" : "Resend email") as string}
-        </Button>
-        {resendNote && resendNote !== RESEND_RATE_LIMITED ? (
-          <p className="text-[14px] text-muted-foreground" role="status">
-            {resendNote as string}
-          </p>
-        ) : null}
-        {cooldownHelper ? (
-          <p className="text-[14px] text-muted-foreground">{cooldownHelper as string}</p>
-        ) : null}
-        {resendNote === RESEND_RATE_LIMITED ? (
-          <p className="text-[14px] text-muted-foreground">{RESEND_RATE_LIMITED}</p>
-        ) : null}
-      </div>
-
-      <p className="text-[14px] text-muted-foreground">
-        Need a different account?{" "}
-        <a
-          href="/login"
-          className="font-normal text-foreground underline-offset-4 hover:underline"
-        >
           Sign in
-        </a>
-      </p>
-    </AuthShell>
-  );
+        </Button>
+        <p className="text-[14px] text-muted-foreground">
+          Need a different account?{" "}
+          <a
+            href={loginHrefWithToken(phase.token) as string}
+            className="font-normal text-foreground underline-offset-4 hover:underline"
+          >
+            Sign in
+          </a>
+        </p>
+      </AuthShell>;
+    } @else {
+      @if (phase.kind === "already-verified") {
+        <AuthShell title="Verify your email" support={ALREADY_VERIFIED}>
+          <Button
+            type="button"
+            className="w-full"
+            onClick={() => {
+              window.location.assign("/");
+            }}
+          >
+            Go to home
+          </Button>
+        </AuthShell>;
+      } @else {
+        <AuthShell title="Verify your email" support={SUPPORT_DEFAULT}>
+          @if (error) {
+            <AuthErrorBanner message={error} />;
+          }
+          @if (phase.verifyingToken) {
+            <p className="text-[16px] text-muted-foreground">Verifying…</p>;
+          }
+
+          <form
+            className="flex flex-col gap-4"
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void form.handleSubmit();
+            }}
+          >
+            <form.Field name="code">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="verify-code">Verification code</Label>
+                  <InputOtp
+                    id="verify-code"
+                    name="code"
+                    value={field.state.value}
+                    onChange={(next) => {
+                      field.handleChange(next);
+                      if (error) setError("");
+                    }}
+                    onComplete={(next) => {
+                      void submitCode(next);
+                    }}
+                    disabled={verifying}
+                    aria-label="Verification code"
+                    aria-invalid={Boolean(error)}
+                  />
+                </div>
+              )}
+            </form.Field>
+            <form.Subscribe
+              selector={(s) => ({ isSubmitting: s.isSubmitting, code: s.values.code })}
+            >
+              {(state) => (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={verifying || state.code.length !== 8}
+                >
+                  {(verifying ? "Working…" : "Verify email") as string}
+                </Button>
+              )}
+            </form.Subscribe>
+          </form>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full"
+              disabled={verifying || resendPending || cooldownLeft > 0}
+              onClick={() => {
+                void resend();
+              }}
+            >
+              {(resendPending ? "Working…" : "Resend email") as string}
+            </Button>
+            @if (resendNote && resendNote !== RESEND_RATE_LIMITED) {
+              <p className="text-[14px] text-muted-foreground" role="status">
+                {resendNote as string}
+              </p>;
+            }
+            @if (cooldownHelper) {
+              <p className="text-[14px] text-muted-foreground">{cooldownHelper as string}</p>;
+            }
+            @if (resendNote === RESEND_RATE_LIMITED) {
+              <p className="text-[14px] text-muted-foreground">{RESEND_RATE_LIMITED}</p>;
+            }
+          </div>
+
+          <p className="text-[14px] text-muted-foreground">
+            Need a different account?{" "}
+            <a
+              href="/login"
+              className="font-normal text-foreground underline-offset-4 hover:underline"
+            >
+              Sign in
+            </a>
+          </p>
+        </AuthShell>;
+      }
+    }
+  }
 }

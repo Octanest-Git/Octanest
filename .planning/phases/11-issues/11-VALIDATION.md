@@ -5,13 +5,17 @@ status: complete
 nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-14"
-updated: "2026-09-14"
+updated: "2026-09-15"
 ---
 
 # Phase 11 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
 > Seeded from `11-RESEARCH.md` Validation Architecture. Wave 0 gaps closed by plans 00–12.
+>
+> **Honesty (2026-09-15):** Phase gate remains complete, but residual stubs/gaps are documented in
+> [`11-VERIFICATION.md` → Known stubs / residual gaps](./11-VERIFICATION.md#known-stubs--residual-gaps)
+> (`pr_stub`, closing keywords → Phase 12, thin/no stack-browser issues e2e). Do not treat Wave 0 ✅ as real PR linking or forge Chromium e2e.
 
 ---
 
@@ -83,3 +87,13 @@ updated: "2026-09-14"
 - Autolink `#N` and `owner/repo#N` in body; Linked PRs panel shows stubs; manual link control
 - List: Open default; Closed/All; filter author/label/assignee/text; offset pages
 - Private repo: unauthorized viewer gets soft not-found (no issue enumeration)
+
+## Known stubs / residual gaps (honesty)
+
+Cross-ref full table in [`11-VERIFICATION.md`](./11-VERIFICATION.md#known-stubs--residual-gaps):
+
+| Item | Note for Phase 12 / quality |
+|------|-----------------------------|
+| `pr_stub` / `IssueLinkKind::PrStub` | UI “PR stub #N”; real PRs are Phase 12 |
+| Closing keywords (D-ISS-15) | Not enforced; deferred to Phase 12 |
+| Stack-browser issues e2e | Wave 0 UI map uses Vitest integration only; no issues flow under `apps/web/e2e/stack-browser/` yet |

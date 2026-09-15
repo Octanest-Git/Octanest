@@ -4,12 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 vi.mock("@octanejs/tanstack-router", () => ({
-  Link: (props: {
-    to?: string;
-    children?: unknown;
-    className?: string;
-    onClick?: () => void;
-  }) =>
+  Link: (props: { to?: string; children?: unknown; className?: string; onClick?: () => void }) =>
     createElement(
       "a",
       {
@@ -20,6 +15,7 @@ vi.mock("@octanejs/tanstack-router", () => ({
       props.children as never,
     ),
   useNavigate: () => () => undefined,
+  useParams: () => ({}),
 }));
 
 vi.mock("@/lib/api-client", () => ({
@@ -37,6 +33,10 @@ vi.mock("@/lib/api-client", () => ({
         ok: true,
         data: { mode: "local", allow_signup: false },
       })),
+      logout: vi.fn(async () => ({ ok: true, data: { ok: true } })),
+    },
+    org: {
+      listMine: vi.fn(async () => ({ ok: true, data: { orgs: [] } })),
     },
   },
 }));
@@ -69,9 +69,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("omits Sign up when allow_signup is unknown", async () => {
@@ -86,9 +84,7 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.getByRole("link", { name: /sign in/i })).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("omits Sign in and Sign up while needs_setup", async () => {
@@ -103,12 +99,8 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
       expect(screen.queryByLabelText(/^Account$/i)).toBeTruthy();
     });
 
-    expect(
-      screen.queryByRole("link", { name: /sign in/i }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: /^sign up$/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^sign up$/i })).not.toBeInTheDocument();
   });
 
   it("shows Sign up when allow_signup is true", async () => {
@@ -138,5 +130,55 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
     expect(apiClient.auth.me.mock.calls.length).toBeLessThanOrEqual(2);
     expect(apiClient.auth.bootstrapStatus.mock.calls.length).toBeLessThanOrEqual(2);
     expect(apiClient.auth.providerConfig.mock.calls.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("chrome signed-in create + account menus", () => {
+  const signedInUser = {
+    id: "u1",
+    email: "ada@example.com",
+    username: "ada",
+    display_name: "Ada",
+    bio: "",
+    avatar_url: null,
+    role: "user" as const,
+    profile_incomplete: false,
+    email_verified: true,
+    must_change_credentials: false,
+    default_branch: "main",
+  };
+
+  beforeEach(() => {
+    vi.mocked(apiClient.auth.me).mockResolvedValue({
+      ok: true,
+      data: signedInUser,
+    } as never);
+    vi.mocked(apiClient.org.listMine).mockResolvedValue({
+      ok: true,
+      data: {
+        orgs: [
+          {
+            id: "o1",
+            slug: "acme",
+            display_name: "Acme",
+            member_base_permission: "read",
+            role: "owner",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      },
+    } as never);
+  });
+
+  it("shows Create new and Account menu triggers when signed in", async () => {
+    renderWithQueryClient(SiteHeader);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /create new/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
   });
 });

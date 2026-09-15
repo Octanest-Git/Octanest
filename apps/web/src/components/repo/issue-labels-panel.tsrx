@@ -5,8 +5,7 @@ import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 type IssueLabelsPanelProps = {
   owner: string;
@@ -30,9 +29,7 @@ export function IssueLabelsPanel({
   canWrite,
 }: IssueLabelsPanelProps) @{
   const queryClient = useQueryClient();
-  const [selected, setSelected] = useState<string[]>(() =>
-    (issue.labels ?? []).map((l) => l.id),
-  );
+  const [selected, setSelected] = useState<string[]>(() => (issue.labels ?? []).map((l) => l.id));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -57,9 +54,7 @@ export function IssueLabelsPanel({
   const catalog: LabelPublic[] = catalogQ.data ?? [];
 
   function toggle(id: string) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   async function save() {
@@ -91,26 +86,23 @@ export function IssueLabelsPanel({
   }
 
   <section aria-labelledby="issue-labels-heading">
-    <h2
-      id="issue-labels-heading"
-      className="text-[14px] font-semibold text-foreground"
-    >
+    <h2 id="issue-labels-heading" className="text-[14px] font-semibold text-foreground">
       Labels
     </h2>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (canWrite) {
       <div className="mt-2 flex flex-col gap-2">
         @if (catalogQ.isPending) {
-          <p className="text-[13px] text-muted-foreground">Loading labels…</p>
+          <p className="text-[13px] text-muted-foreground">Loading labels…</p>;
         } @else {
           @if (catalog.length === 0) {
             <p className="text-[13px] text-muted-foreground">
               No labels in this repository yet.
-            </p>
+            </p>;
           } @else {
             <ul className="flex flex-col gap-1.5">
               @for (const lab of catalog; key lab.id) {
@@ -129,9 +121,9 @@ export function IssueLabelsPanel({
                     />
                     <span>{lab.name as string}</span>
                   </label>
-                </li>
+                </li>;
               }
-            </ul>
+            </ul>;
           }
         }
         <Button
@@ -143,28 +135,26 @@ export function IssueLabelsPanel({
         >
           Save labels
         </Button>
-      </div>
+      </div>;
     } @else {
       <div className="mt-2">
         @if (current.length === 0) {
-          <p className="text-[13px] text-muted-foreground">None yet</p>
+          <p className="text-[13px] text-muted-foreground">None yet</p>;
         } @else {
           <ul className="flex flex-wrap gap-1.5">
             @for (const lab of current; key lab.id) {
-              <li
-                className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-[12px] text-foreground"
-              >
+              <li className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-[12px] text-foreground">
                 <span
                   className="inline-block size-2.5 rounded-sm"
                   style={swatchStyle(lab.color)}
                   aria-hidden
                 />
                 {lab.name as string}
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         }
-      </div>
+      </div>;
     }
-  </section>
+  </section>;
 }

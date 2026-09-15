@@ -51,6 +51,7 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/api/auth/oidc/start` | Start OIDC + PKCE (optional `?return_to=`) | No (redirect) |
 | `GET` | `/api/auth/oidc/callback` | OIDC code exchange; sets session cookie | No (redirect) |
 | `POST` | `/api/user/avatar` | Multipart avatar upload (field `avatar`) | Yes (`octanest_session`) |
+| `DELETE` | `/api/user/avatar` | Remove profile picture | Yes (`octanest_session`) |
 | `GET` | `/uploads/avatars/{file}` | Public WebP avatar bytes (`{user_id}.webp`) | No |
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
@@ -231,6 +232,14 @@ curl -sS http://127.0.0.1:8080/api/user/avatar \
 - Stored as WebP under `var/uploads/avatars/{user_id}.webp`; public URL `/uploads/avatars/{user_id}.webp`
 - Success: `{"ok":true,"avatar_url":"/uploads/avatars/….webp"}`
 
+```bash
+curl -sS -X DELETE http://127.0.0.1:8080/api/user/avatar \
+  -H 'Cookie: octanest_session=…'
+```
+
+- Clears `avatar_path` and deletes `{user_id}.webp` when present (idempotent if already absent)
+- Success: `{"ok":true,"avatar_url":null}`
+
 ### Admin auth settings
 
 `admin.auth.update_settings` input (non-secret fields only; secrets stay in ENV):
@@ -306,7 +315,7 @@ Organizations share the username slug namespace. `org.create` rejects reserved /
 
 `repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
 
-`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks / packages are not invented here (later phases).
+`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks are not invented here (later phases). Package owner-path updates on rename/transfer follow packages rules (see Packages registry).
 
 ### Releases (`release.*`)
 

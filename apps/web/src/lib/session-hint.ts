@@ -4,9 +4,7 @@ export const SESSION_PRESENCE_COOKIE = "octanest_signed_in";
 /** Sync hint for choosing signed-in home skeleton before `auth.me` resolves. */
 export function hasSessionPresenceHint(): boolean {
   if (typeof document === "undefined") return false;
-  return new RegExp(
-    `(?:^|;\\s*)${SESSION_PRESENCE_COOKIE}=1(?:;|$)`,
-  ).test(document.cookie);
+  return new RegExp(`(?:^|;\\s*)${SESSION_PRESENCE_COOKIE}=1(?:;|$)`).test(document.cookie);
 }
 
 /** Heal / clear the presence cookie after `auth.me` (covers sessions minted before the hint existed). */

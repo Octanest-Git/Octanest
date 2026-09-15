@@ -17,12 +17,7 @@ export function AuthShell({
       aria-hidden
       className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_10%,color-mix(in_srgb,var(--primary)_28%,transparent),transparent_50%),radial-gradient(ellipse_at_85%_20%,color-mix(in_srgb,var(--secondary)_22%,transparent),transparent_48%)]"
     />
-    <div
-      className={cn(
-        "oct-auth-enter relative mx-auto flex w-full max-w-md flex-col",
-        className,
-      )}
-    >
+    <div className={cn("oct-auth-enter relative mx-auto flex w-full max-w-md flex-col", className)}>
       <OctanestMark size={48} />
       <h1 className="mt-8 font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         {title}
@@ -45,7 +40,7 @@ export function AuthShell({
         .oct-auth-enter, .oct-auth-error { animation: none !important; }
       }
     `}</style>
-  </div>
+  </div>;
 }
 
 export function AuthErrorBanner({ message }: { message: string }) {

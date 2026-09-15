@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  classifyDiffLine,
-  parseUnifiedDiffLines,
-} from "./parse-unified-diff";
+import { classifyDiffLine, parseUnifiedDiffLines } from "./parse-unified-diff";
 
 describe("classifyDiffLine", () => {
   it("tags add/del/ctx/hunk/meta", () => {
@@ -45,15 +42,8 @@ describe("parseUnifiedDiffLines", () => {
   });
 
   it("handles CRLF and mixed change hunks", () => {
-    const patch =
-      "@@ -1,3 +1,3 @@\r\n context\r\n-old\r\n+new\r\n keep\r\n";
+    const patch = "@@ -1,3 +1,3 @@\r\n context\r\n-old\r\n+new\r\n keep\r\n";
     const lines = parseUnifiedDiffLines(patch);
-    expect(lines.map((l) => l.kind)).toEqual([
-      "hunk",
-      "ctx",
-      "del",
-      "add",
-      "ctx",
-    ]);
+    expect(lines.map((l) => l.kind)).toEqual(["hunk", "ctx", "del", "add", "ctx"]);
   });
 });

@@ -1,10 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import {
-  followRedirects,
-  rpc,
-  updateAuthSettings,
-  withAdminSession,
-} from "./client";
+import { followRedirects, rpc, updateAuthSettings, withAdminSession } from "./client";
 import { apiOrigin, requireStack } from "./env";
 import { stubsReset, waitForStub } from "./stubs";
 
@@ -26,14 +21,10 @@ describe("stack e2e: WorkOS → AuthKit stub", () => {
       const result = await followRedirects(start);
 
       expect(new URL(result.finalUrl).pathname).toBe("/");
-      const session = result.cookies.find((c) =>
-        c.startsWith("octanest_session="),
-      );
+      const session = result.cookies.find((c) => c.startsWith("octanest_session="));
       expect(session).toBeTruthy();
 
-      await waitForStub(
-        (e) => e.method === "POST" && e.path === "/user_management/authenticate",
-      );
+      await waitForStub((e) => e.method === "POST" && e.path === "/user_management/authenticate");
 
       const me = await rpc("auth.me", {}, session);
       expect(me.ok).toBe(true);

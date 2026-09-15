@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { IssueListResponse, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
@@ -12,7 +8,6 @@ import {
   type IssueListFilters,
   type IssueListStateFilter,
 } from "@/components/repo/issues-list";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
@@ -28,8 +23,7 @@ export type IssuesLoaderData =
       state: IssueListStateFilter;
     };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadIssuesPage(
   owner: string,
@@ -108,20 +102,12 @@ export function IssuesListPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({ from: "/$owner/$repo/issues/" }) as
     | IssuesLoaderData
     | undefined;
 
-  const [filters, setFilters] = useState<IssueListFilters>(() =>
-    emptyFilters("open"),
-  );
-  const [draftAuthor, setDraftAuthor] = useState("");
-  const [draftLabel, setDraftLabel] = useState("");
-  const [draftAssignee, setDraftAssignee] = useState("");
-  const [draftQ, setDraftQ] = useState("");
+  const [filters, setFilters] = useState<IssueListFilters>(() => emptyFilters("open"));
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -198,16 +184,15 @@ export function IssuesListPage() @{
   const notFound =
     layout?.status === "not_found" ||
     routeLoader?.kind === "not_found" ||
-    (repoQ.isError &&
-      String(repoQ.error?.message ?? "").includes("not found"));
+    (repoQ.isError && String(repoQ.error?.message ?? "").includes("not found"));
 
-  const applyFilters = () => {
+  const applyFilters = (draft: { author: string; label: string; assignee: string; q: string }) => {
     setFilters((prev) => ({
       ...prev,
-      author: draftAuthor.trim(),
-      label: draftLabel.trim(),
-      assignee: draftAssignee.trim(),
-      q: draftQ.trim(),
+      author: draft.author,
+      label: draft.label,
+      assignee: draft.assignee,
+      q: draft.q,
       offset: 0,
     }));
   };
@@ -231,41 +216,30 @@ export function IssuesListPage() @{
   };
 
   @if (notFound || (!repoQ.isPending && !repo)) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (!repo) {
-    <p className="text-[16px] text-muted-foreground">Loading issues…</p>
+    <p className="text-[16px] text-muted-foreground">Loading issues…</p>;
   } @else {
-    <>
-      <RepoChrome repo={repo} active="issues" />
-      @if (listQ.isError) {
-        <p role="alert" className="text-[16px] text-destructive">
-          {(listQ.error?.message || NETWORK_ERROR) as string}
-        </p>
-      } @else {
-        <IssuesList
-          owner={owner}
-          repoName={repoName}
-          repo={repo}
-          issues={listQ.data?.issues ?? []}
-          total={listQ.data?.total ?? 0}
-          filters={filters}
-          labels={labelsQ.data ?? []}
-          draftAuthor={draftAuthor}
-          draftLabel={draftLabel}
-          draftAssignee={draftAssignee}
-          draftQ={draftQ}
-          onStateChange={setState}
-          onDraftAuthor={setDraftAuthor}
-          onDraftLabel={setDraftLabel}
-          onDraftAssignee={setDraftAssignee}
-          onDraftQ={setDraftQ}
-          onApplyFilters={applyFilters}
-          onPrevPage={prevPage}
-          onNextPage={nextPage}
-          pending={listQ.isPending}
-        />
-      }
-    </>
+    @if (listQ.isError) {
+      <p role="alert" className="text-[16px] text-destructive">
+        {(listQ.error?.message || NETWORK_ERROR) as string}
+      </p>;
+    } @else {
+      <IssuesList
+        owner={owner}
+        repoName={repoName}
+        repo={repo}
+        issues={listQ.data?.issues ?? []}
+        total={listQ.data?.total ?? 0}
+        filters={filters}
+        labels={labelsQ.data ?? []}
+        onStateChange={setState}
+        onApplyFilters={applyFilters}
+        onPrevPage={prevPage}
+        onNextPage={nextPage}
+        pending={listQ.isPending}
+      />;
+    }
   }
 }
 

@@ -25,5 +25,5 @@ export function Checkbox({
     >
       <Check aria-hidden size={14} />
     </CheckboxPrimitive.Indicator>
-  </CheckboxPrimitive.Root>
+  </CheckboxPrimitive.Root>;
 }

@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { IssuePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
@@ -16,7 +11,6 @@ import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
 import { IssueLinkedPrsPanel } from "@/components/repo/issue-linked-prs";
 import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,8 +26,7 @@ export type IssueDetailLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic; issue: IssuePublic };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadIssueDetail(
   owner: string,
@@ -52,10 +45,7 @@ async function loadIssueDetail(
     data: { owner, name: repoName, number },
   });
   if (!issueRes.ok) {
-    if (
-      issueRes.error.code === "repo.not_found" ||
-      issueRes.error.code === "issue.not_found"
-    ) {
+    if (issueRes.error.code === "repo.not_found" || issueRes.error.code === "issue.not_found") {
       return { kind: "not_found" };
     }
     return {
@@ -100,9 +90,7 @@ export function IssueDetailPage() @{
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const account = useChromeAccountState();
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({ from: "/$owner/$repo/issues/$n" }) as
     | IssueDetailLoaderData
     | undefined;
@@ -145,16 +133,13 @@ export function IssueDetailPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName && number > 0,
-    initialData:
-      routeLoader?.kind === "ready" ? routeLoader.issue : undefined,
+    initialData: routeLoader?.kind === "ready" ? routeLoader.issue : undefined,
   });
 
   const repo = repoQ.data ?? null;
   const issue = issueQ.data ?? null;
   const userId = account.user?.id ?? "";
-  const canEdit =
-    !!issue &&
-    (!!repo?.can_write || (!!userId && issue.author_id === userId));
+  const canEdit = !!issue && (!!repo?.can_write || (!!userId && issue.author_id === userId));
   const canWrite = !!repo?.can_write;
   const canAdmin = !!repo?.can_admin;
   const showClose = canWrite && issue?.state === "open";
@@ -169,7 +154,7 @@ export function IssueDetailPage() @{
   useEffect(() => {
     if (!issue || editing) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const html = await renderGfm(issue.body || "", {
         owner,
         repo: repoName,
@@ -309,17 +294,16 @@ export function IssueDetailPage() @{
   }
 
   @if (notFound) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else {
     @if (loading) {
-      <p className="text-[16px] text-muted-foreground">Loading issue…</p>
+      <p className="text-[16px] text-muted-foreground">Loading issue…</p>;
     } @else {
       <>
-        <RepoChrome repo={repo!} active="issues" />
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="flex flex-col gap-4">
             @if (actionError) {
-              <AuthErrorBanner message={actionError} />
+              <AuthErrorBanner message={actionError} />;
             }
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
@@ -332,19 +316,17 @@ export function IssueDetailPage() @{
                     <Input
                       id="issue-edit-title"
                       value={editTitle}
-                      onInput={(e) =>
-                        setEditTitle((e.target as HTMLInputElement).value)
-                      }
+                      onInput={(e) => setEditTitle((e.target as HTMLInputElement).value)}
                       disabled={pending}
                     />
-                  </div>
+                  </div>;
                 } @else {
                   <h1
                     data-testid="issue-title"
                     className="mt-1 text-[24px] font-semibold text-foreground"
                   >
                     {issue!.title as string}
-                  </h1>
+                  </h1>;
                 }
                 <p className="mt-1 text-[13px] text-muted-foreground">
                   {`opened by @${issue!.author_username}` as string}
@@ -354,7 +336,7 @@ export function IssueDetailPage() @{
                 @if (canEdit && !editing) {
                   <Button type="button" variant="outline" onClick={startEdit}>
                     Edit
-                  </Button>
+                  </Button>;
                 }
                 @if (showClose) {
                   <Button
@@ -364,7 +346,7 @@ export function IssueDetailPage() @{
                     onClick={closeIssue}
                   >
                     Close issue
-                  </Button>
+                  </Button>;
                 }
                 @if (showReopen) {
                   <Button
@@ -374,7 +356,7 @@ export function IssueDetailPage() @{
                     onClick={reopenIssue}
                   >
                     Reopen
-                  </Button>
+                  </Button>;
                 }
                 @if (canAdmin) {
                   <Button
@@ -386,7 +368,7 @@ export function IssueDetailPage() @{
                     }}
                   >
                     Delete issue
-                  </Button>
+                  </Button>;
                 }
               </div>
             </div>
@@ -418,12 +400,12 @@ export function IssueDetailPage() @{
                     Cancel
                   </Button>
                 </div>
-              </div>
+              </div>;
             } @else {
               <div
                 className="prose prose-sm max-w-none rounded-md border border-border px-4 py-3"
                 dangerouslySetInnerHTML={{ __html: bodyHtml }}
-              />
+              />;
             }
 
             <IssueReactionsBar
@@ -435,11 +417,7 @@ export function IssueDetailPage() @{
               canWrite={canWrite}
             />
 
-            <IssueHistoryPanel
-              owner={owner}
-              repoName={repoName}
-              number={number}
-            />
+            <IssueHistoryPanel owner={owner} repoName={repoName} number={number} />
 
             <IssueComments
               owner={owner}
@@ -481,7 +459,7 @@ export function IssueDetailPage() @{
           error={deleteError}
           onConfirm={confirmDelete}
         />
-      </>
+      </>;
     }
   }
 }

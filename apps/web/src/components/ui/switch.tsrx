@@ -25,5 +25,5 @@ export function Switch({
         "translate-x-0.5 data-[checked]:translate-x-[1.375rem]",
       )}
     />
-  </SwitchPrimitive.Root>
+  </SwitchPrimitive.Root>;
 }

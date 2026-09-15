@@ -200,7 +200,9 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
         )
         .route(
             "/api/user/avatar",
-            post(avatar::upload_avatar).layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES)),
+            post(avatar::upload_avatar)
+                .layer(DefaultBodyLimit::max(avatar::AVATAR_MAX_BYTES))
+                .delete(avatar::delete_avatar),
         )
         .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
         .route(

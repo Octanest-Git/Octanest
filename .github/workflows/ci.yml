@@ -55,10 +55,62 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
+      - name: web lint (oxlint type-aware)
+        run: bun run --filter @octanest/web lint
+      - name: web format check (oxfmt)
+        run: bun run --filter @octanest/web format:check
       - name: vitest (api-client + web unit/integration)
         run: bun run test
       - name: web build
         run: bunx turbo run build --filter=@octanest/web
+
+  # G-11.1-15 — every user-facing apps/web route page must declare happy-dom,
+  # stack-browser, or documented skip evidence in the route coverage manifest.
+  route-coverage:
+    name: route-coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: route coverage gate
+        run: make route-coverage-check
+
+  # D-QH-02 weighted coverage gate (unit 25% / integration 40% / e2e checklist 35%).
+  # Rust cargo-llvm-cov is Make-ready but skipped here (runtime/disk residual);
+  # web Vitest + interim e2e checklist drive the score.
+  coverage-weighted:
+    name: coverage-weighted
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: aggregator contract
+        run: make coverage-contract
+      - name: collect web coverage + weighted gate
+        env:
+          COVERAGE_WEIGHTED_FLOOR: "0.65"
+        run: |
+          make coverage-web
+          ./scripts/coverage-e2e-checklist.sh | tee var/coverage/e2e-checklist.txt
+          ./scripts/coverage-weighted.sh \
+            --unit-json var/coverage/web-unit-summary.json \
+            --integration-json var/coverage/web-integration-summary.json \
+            --e2e-checklist | tee var/coverage/weighted.txt
+      - name: upload coverage artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-weighted-logs
+          path: |
+            var/coverage/
+            apps/web/coverage/
+          if-no-files-found: ignore
 
   e2e-stack:
     name: e2e-stack
@@ -112,6 +164,30 @@ jobs:
         run: docker compose -f docker-compose.yml -f docker-compose.sqlite.yml config
       - name: docker compose dev-auth stubs config
         run: docker compose -f docker-compose.dev-auth.yml --profile dev-auth config
+
+  # D-QH-04: forge protocol smokes (Smart HTTP, SSH TCP, LFS routing, packages PathPrefix).
+  # Fail-closed — docker-missing / stack-down must not greenwash (T-11.1-40).
+  # Client ls-remote/LFS push remain optional (need seeded repo); routing+TCP are required.
+  smoke-protocol:
+    name: smoke-protocol
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: forge protocol smokes
+        env:
+          CI: "true"
+          SMOKE_REQUIRE_STACK: "1"
+          SMOKE_SKIP_LS_REMOTE: "1"
+          SMOKE_SKIP_LFS_CLIENT: "1"
+        run: make smoke-protocol-ci # smoke-git-https smoke-git-ssh smoke-git-lfs smoke-packages
+      - name: upload compose logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-protocol-logs
+          path: |
+            /tmp/octanest-smoke*.json
+          if-no-files-found: ignore
 
   # Both Postgres and MySQL service containers boot on every matrix leg because
   # GitHub Actions cannot condition `services:` on `matrix.*`. Accepted cost on the sqlite leg.

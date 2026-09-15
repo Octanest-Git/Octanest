@@ -4,13 +4,13 @@ Short orientation for coding agents and automated contributors. Humans: start wi
 
 ## Product
 
-Self-hostable GitHub-style forge (git, PRs, issues). **One codebase** for Octanest Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
+Self-hostable GitHub-style forge (git, issues, orgs, LFS, releases, packages; PRs upcoming). **One codebase** for Octanest Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
 
 ## Stack (do not invent alternatives)
 
 | Layer | Tech |
 |-------|------|
-| Web UI | **Octane** (`.tsrx`), TanStack Start / Router / Query via `@octanejs/*` |
+| Web UI | **Octane** (`.tsrx`), TanStack Start / Router / Query / Form via `@octanejs/*`; file pickers via `@octanejs/dropzone` |
 | API | Rust Axum + typed JSON RPC (`octanest-api`) |
 | Domain types | `octanest-core` |
 | Persistence | `octanest-db` (Postgres / MySQL / SQLite) |
@@ -28,7 +28,7 @@ Before editing UI under `apps/web`:
 2. Prefer official reference: https://octanejs.dev/llms.txt and https://octanejs.dev/docs/differences-from-react
 3. Author components in **`.tsrx`** with `function Comp() @{ … }`, `@if` / `@else` (no `@else if`), `@for`, native `onInput` for text fields.
 4. Never mix `return (` JSX with Rivet `@{` / `@if` in the same component — that breaks exports/hydration.
-5. Server domain data: **TanStack Query** (`@octanejs/tanstack-query`) via `apps/web/src/lib/session-queries.ts` and friends. Local form state stays in `useState`. Do not add Zustand for server/session data.
+5. Server domain data: **TanStack Query** (`@octanejs/tanstack-query`) via `apps/web/src/lib/session-queries.ts` and friends. Forms: **`@octanejs/tanstack-form`** (`useForm` / `form.Field`, text via `onInput` + `field.handleChange`). File uploads: **`@octanejs/dropzone`** via `apps/web/src/components/ui/file-dropzone.tsrx` (does not upload — callers own `FormData`/`fetch`). Local ephemeral UI state may still use `useState`. Do not add Zustand for server/session data.
 
 ## Hard boundaries
 
@@ -46,7 +46,20 @@ make test                    # Rust nextest + Vitest
 make test-e2e-stack          # full auth stack e2e
 make up / make smoke         # Compose + health
 make rpc-sync-check          # CI gate for client drift
+make web-lint                # oxlint type-aware (apps/web; @tsrx/oxc)
+make web-format-check        # oxfmt --check (apps/web)
 ```
+
+### Before committing web changes
+
+Always run (or equivalent filter scripts) and fix failures before claiming done or creating a commit:
+
+```bash
+make web-lint
+make web-format-check
+```
+
+`make web-lint` is **type-aware** (`oxlint --type-aware` via `oxlint-tsgolint`). Treat those diagnostics as the web type gate — plain `tsc --noEmit` does not understand `.tsrx` yet (needs `@tsrx/typescript-plugin`; peer range is still TS 5.9.x while this app uses TypeScript 7). Also fix editor/linter type diagnostics you introduce. Format with `bun run --filter @octanest/web format` when `format:check` fails.
 
 See [docs/TESTING.md](docs/TESTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 

@@ -1,15 +1,18 @@
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
+
+const meMock = vi.fn();
+const getSettingsMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
     auth: {
-      me: vi.fn(),
+      me: (...args: unknown[]) => meMock(...args),
     },
     admin: {
       auth: {
-        getSettings: vi.fn(),
+        getSettings: (...args: unknown[]) => getSettingsMock(...args),
         updateSettings: vi.fn(),
         factoryReset: vi.fn(),
       },
@@ -17,21 +20,18 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
-import { apiClient } from "@/lib/api-client";
-import { AdminAuthPage } from "./auth";
-
-afterEach(cleanup);
-
 const sysAdmin = {
   id: "u1",
   email: "admin@example.com",
   username: "admin",
   display_name: "Admin",
   bio: "",
+  avatar_url: null as null,
   role: "sys-admin" as const,
   profile_incomplete: false,
   email_verified: true,
   must_change_credentials: false,
+  default_branch: "main",
 };
 
 const settings = {
@@ -46,40 +46,80 @@ const settings = {
   workos_api_key_configured: false,
   oidc_client_secret_configured: false,
   allow_signup: false,
+  default_visibility: "public" as const,
 };
 
-describe("/admin/auth Query-backed settings", () => {
-  it("shows Allow open signup Switch with wizard helper copy", async () => {
-    vi.mocked(apiClient.auth.me).mockResolvedValue({
-      ok: true,
-      data: sysAdmin,
-    } as never);
-    vi.mocked(apiClient.admin.auth.getSettings).mockResolvedValue({
-      ok: true,
-      data: settings,
-    } as never);
+type LoaderShape =
+  | { kind: "unauthenticated" }
+  | { kind: "forbidden" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      me: typeof sysAdmin;
+      settings: typeof settings;
+    };
 
+let loaderData: LoaderShape | undefined;
+
+vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  return {
+    ...actual,
+    useLoaderData: () => loaderData,
+  };
+});
+
+import { AdminAuthPage } from "./auth";
+
+describe("/admin/auth SSR-backed settings", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  beforeEach(() => {
+    meMock.mockReset();
+    getSettingsMock.mockReset();
+    meMock.mockResolvedValue({ ok: true, data: sysAdmin });
+    getSettingsMock.mockResolvedValue({ ok: true, data: settings });
+    loaderData = {
+      kind: "ready",
+      me: sysAdmin,
+      settings,
+    };
+  });
+
+  it("declares SSR loader and seeds form without AdminAuthSkeleton", async () => {
+    const src = await import("./auth.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(src).toMatch(/fetchAdminAuthSettings|loader:/);
+    expect(src).toMatch(/initialData/);
+    expect(src).not.toMatch(/AdminAuthSkeleton/);
+    expect(src).not.toMatch(/@else if/);
+  });
+
+  it("shows Allow open signup Switch with wizard helper copy", async () => {
     renderWithQueryClient(AdminAuthPage);
 
     await waitFor(
       () => {
+        expect(screen.getByTestId("admin-auth-page")).toBeTruthy();
         expect(screen.getByText("Auth settings")).toBeInTheDocument();
       },
       { timeout: 3000 },
     );
 
     expect(screen.getByText("Allow open signup")).toBeInTheDocument();
-    expect(
-      screen.getByText(/When off, new accounts can’t self-register/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/When off, new accounts can’t self-register/i)).toBeInTheDocument();
     expect(screen.getByText("Danger zone")).toBeInTheDocument();
   }, 10000);
 
-  it("shows forbidden for non sys-admin", async () => {
-    vi.mocked(apiClient.auth.me).mockResolvedValue({
+  it("shows forbidden for non sys-admin from loader", async () => {
+    loaderData = { kind: "forbidden" };
+    meMock.mockResolvedValue({
       ok: true,
       data: { ...sysAdmin, role: "user" },
-    } as never);
+    });
 
     renderWithQueryClient(AdminAuthPage);
 
@@ -88,6 +128,6 @@ describe("/admin/auth Query-backed settings", () => {
         screen.getByText(/You need admin access to manage auth settings/i),
       ).toBeInTheDocument();
     });
-    expect(apiClient.admin.auth.getSettings).not.toHaveBeenCalled();
+    expect(getSettingsMock).not.toHaveBeenCalled();
   });
 });

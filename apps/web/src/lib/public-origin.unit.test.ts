@@ -27,15 +27,9 @@ describe("public-origin", () => {
   });
 
   it("builds scp-style SSH URLs for port 22 and 2222 (never ssh://)", () => {
-    expect(sshCloneUrl("git.example", 22, "ada", "hello")).toBe(
-      "git@git.example:ada/hello.git",
-    );
-    expect(sshCloneUrl("localhost/", 2222, "ada", "hello")).toBe(
-      "git@localhost:ada/hello.git",
-    );
-    expect(sshCloneUrl("127.0.0.1", 2222, "ada", "hello")).not.toMatch(
-      /^ssh:\/\//,
-    );
+    expect(sshCloneUrl("git.example", 22, "ada", "hello")).toBe("git@git.example:ada/hello.git");
+    expect(sshCloneUrl("localhost/", 2222, "ada", "hello")).toBe("git@localhost:ada/hello.git");
+    expect(sshCloneUrl("127.0.0.1", 2222, "ada", "hello")).not.toMatch(/^ssh:\/\//);
   });
 
   it("sshNeedsPortHint only when port !== 22", () => {
@@ -44,12 +38,8 @@ describe("public-origin", () => {
   });
 
   it("resolveSshHost prefers OCTANEST_SSH_HOST then origin hostname", () => {
-    expect(resolveSshHost("http://127.0.0.1:3000", undefined)).toBe(
-      "127.0.0.1",
-    );
-    expect(resolveSshHost("http://127.0.0.1:3000", "git.example")).toBe(
-      "git.example",
-    );
+    expect(resolveSshHost("http://127.0.0.1:3000", undefined)).toBe("127.0.0.1");
+    expect(resolveSshHost("http://127.0.0.1:3000", "git.example")).toBe("git.example");
   });
 
   it("resolveSshPort defaults to 2222", () => {

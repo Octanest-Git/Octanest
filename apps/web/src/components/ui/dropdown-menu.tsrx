@@ -3,13 +3,11 @@ import type { ComponentProps } from "octane";
 import { cn } from "@/lib/utils";
 
 export function DropdownMenu(props: ComponentProps<typeof MenuPrimitive.Root>) @{
-  <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
 
-export function DropdownMenuTrigger(
-  props: ComponentProps<typeof MenuPrimitive.Trigger>,
-) @{
-  <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
+export function DropdownMenuTrigger(props: ComponentProps<typeof MenuPrimitive.Trigger>) @{
+  <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
 export function DropdownMenuContent({
@@ -41,7 +39,7 @@ export function DropdownMenuContent({
         {...props}
       />
     </MenuPrimitive.Positioner>
-  </MenuPrimitive.Portal>
+  </MenuPrimitive.Portal>;
 }
 
 export function DropdownMenuItem({
@@ -57,7 +55,7 @@ export function DropdownMenuItem({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function DropdownMenuSeparator({
@@ -68,5 +66,5 @@ export function DropdownMenuSeparator({
     data-slot="dropdown-menu-separator"
     className={cn("-mx-1 my-1 h-px bg-border", className)}
     {...props}
-  />
+  />;
 }

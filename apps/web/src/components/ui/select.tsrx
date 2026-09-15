@@ -11,7 +11,10 @@ export const SelectItemText = Select.ItemText;
 export const SelectIcon = Select.Icon;
 export const SelectItemIndicator = Select.ItemIndicator;
 
-export function SelectTrigger({ className, ...props }: ComponentProps<typeof Select.Trigger>) @{
+export function SelectTrigger({
+  className,
+  ...props
+}: ComponentProps<typeof Select.Trigger>) @{
   <Select.Trigger
     data-slot="select-trigger"
     className={cn(
@@ -19,10 +22,13 @@ export function SelectTrigger({ className, ...props }: ComponentProps<typeof Sel
       className,
     )}
     {...props}
-  />
+  />;
 }
 
-export function SelectPopup({ className, ...props }: ComponentProps<typeof Select.Popup>) @{
+export function SelectPopup({
+  className,
+  ...props
+}: ComponentProps<typeof Select.Popup>) @{
   <Select.Popup
     data-slot="select-popup"
     className={cn(
@@ -30,7 +36,7 @@ export function SelectPopup({ className, ...props }: ComponentProps<typeof Selec
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function SelectItem({ className, ...props }: ComponentProps<typeof Select.Item>) @{
@@ -41,5 +47,5 @@ export function SelectItem({ className, ...props }: ComponentProps<typeof Select
       className,
     )}
     {...props}
-  />
+  />;
 }

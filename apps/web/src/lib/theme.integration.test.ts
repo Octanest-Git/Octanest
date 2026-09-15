@@ -84,9 +84,7 @@ describe("theme helpers", () => {
 
   it("parses theme cookie and resolves SSR highlight theme", () => {
     expect(themePreferenceFromCookieHeader("octanest-theme=dark")).toBe("dark");
-    expect(
-      themePreferenceFromCookieHeader("a=1; octanest-theme=system; b=2"),
-    ).toBe("system");
+    expect(themePreferenceFromCookieHeader("a=1; octanest-theme=system; b=2")).toBe("system");
     expect(themePreferenceFromCookieHeader(undefined)).toBeNull();
 
     expect(resolveThemeForSsr("dark")).toBe("dark");

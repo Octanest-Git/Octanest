@@ -23,5 +23,5 @@ type BadgeProps = {
 export function Badge({ className, variant, children }: BadgeProps) @{
   <span data-slot="badge" className={cn(badgeVariants({ variant }), className)}>
     {children}
-  </span>
+  </span>;
 }

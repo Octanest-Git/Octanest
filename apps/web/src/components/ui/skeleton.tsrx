@@ -13,10 +13,7 @@ export function Skeleton({
 }) @{
   <div
     aria-hidden
-    className={cn(
-      "oct-skeleton animate-pulse rounded-md bg-muted",
-      className,
-    )}
+    className={cn("oct-skeleton animate-pulse rounded-md bg-muted", className)}
     {...rest}
-  />
+  />;
 }

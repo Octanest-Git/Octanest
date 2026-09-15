@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 12
 current_phase_name: Pull Requests
 current_plan: 0
-status: discuss
-stopped_at: "forge-core PR #2 — CI green + docs refresh before /gsd-ship; Phase 12 discuss paused (Area 1 locked)"
-last_updated: "2026-09-14T22:05:00.000Z"
-last_activity: 2026-09-14
-last_activity_desc: "Closed verify for 11/14/15/20 on forge-core; next is Phase 12 discuss then ship PR #2"
-state_head: forge-core-pre-ship-docs
+status: planning
+stopped_at: Completed 11.1-08-PLAN.md
+last_updated: "2026-09-15T18:01:52.315Z"
+last_activity: 2026-09-15
+last_activity_desc: 11.1-05 complete (smoke-protocol CI + GSD residual); all 11.1 SUMMARYs present; Phase 12 GitHub-parity CONTEXT locked
+state_head: d17d2854650cb1d13d1a66ab9e324b57a0309bff
 progress:
-  total_phases: 22
-  completed_phases: 14
-  total_plans: 147
-  completed_plans: 147
+  total_phases: 23
+  completed_phases: 0
+  total_plans: 156
+  completed_plans: 155
 milestone_name: milestone
+current_phase: 12
 ---
 
 # Project State
@@ -25,19 +25,17 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
+**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** ready to plan (`12-CONTEXT.md`)
 
 ## Current Position
 
-Phase: 12 — Pull Requests (discuss)
+Phase: **12** — Pull Requests (CONTEXT locked, GitHub parity) · **11.1** plans complete
 Current Plan: —
 Total Plans in Phase: TBD
-Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
-Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
+Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: `/gsd-plan-phase 12` or `/gsd-verify-work 11.1`
+Last activity: 2026-09-15 — Completed 11.1-05; Phase 12 discuss closed to GitHub parity
 
-Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
-
-See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
+See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
 
 ## Performance Metrics
 
@@ -158,6 +156,14 @@ See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUS
 | Phase 20 P03 | 25min | 3 tasks | 11 files |
 | Phase 20 P04 | 12min | 2 tasks | 8 files |
 | Phase 20 P05 | 15min | 3 tasks | 2 files |
+| Phase 11.1 P02 | 6min | 3 tasks | 9 files |
+| Phase 11.1 P01 | 5min | 3 tasks | 7 files |
+| Phase 11.1 P06 | 4min | 2 tasks | 11 files |
+| Phase 11.1 P03 | 6min | 2 tasks | 10 files |
+| Phase 11.1 P04 | 95min | 3 tasks | 14 files |
+| Phase 11.1 P05 | 9min | 2 tasks | 16 files |
+| Phase 11.1 P07 | 5min | 3 tasks | 9 files |
+| Phase 11.1 P08 | 6min | 2 tasks | 6 files |
 
 # Project State
 
@@ -534,6 +540,20 @@ Recent decisions affecting current work:
 - [Phase 11]: Per-file immutability within generic versions (409 on same filename)
 - [Phase 11]: GET /v2 and /v2/ discovery on app router; nest serves OCI subpaths only
 - [Phase 11]: OCI repo path is {owner}/{image}; nested names deferred
+- [Phase 11.1]: D-QH-02 coverage: bootstrap floor 0.65 with ratchet target 0.70; Vitest v8 + checklist e2e
+- [Phase 11.1]: CI coverage-weighted skips cargo-llvm-cov collect this wave; Make coverage-rust remains
+- [Phase 11.1]: Active tab from first path segment under /owner/repo; packages leaf keeps repo.get fallback; leaf chrome dedupe deferred to 11.1-03
+- [Phase 11.1]: 11.1-06: issues/releases/settings leaves content-only; settings not split (D-QH-06)
+- [Phase 11.1]: 11.1-06: labels drop showSettings; layout can_admin gates Settings tab
+- [Phase 11.1]: 11.1-03: Index empty/ready gated on phase.kind only after chrome strip; Settings assert is layout-owned
+- [Phase 11.1]: 11.1-03: Code-browse leaves content-only; layout RepoChrome sole mount for those paths
+- [Phase 11.1]: Extend stack-browser only for D-QH-03 forge matrix (no e2e/component)
+- [Phase 11.1]: Forge e2e uses UI fill + RPC fallback when Octane onClick hydration lags
+- [Phase 11.1]: CI protocol smokes fail-closed; skip seeded client by default (SMOKE_SKIP_*)
+- [Phase 11.1]: 09 nyquist_compliant true after 11.1-04 SSH e2e + 11.1-05 smoke-protocol
+- [Phase 11.1]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
+- [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
+- [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
 
 ### Pending Todos
 
@@ -555,9 +575,10 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:30:00.000Z
-Stopped at: Merged Phase 20 into feat/forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
+Last session: 2026-09-15T18:01:52.187Z
+Stopped at: Completed 11.1-08-PLAN.md
 Resume file: None
+
 ## Accumulated Context
 
 ### Decisions

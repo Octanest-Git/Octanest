@@ -5,24 +5,14 @@ import { buttonVariants } from "@/components/ui/button";
 import { OctanestMark } from "@/components/octanest-mark";
 import { SignedInHomeSkeleton } from "@/components/page-skeletons";
 import { SignedInHome } from "@/components/signed-in-home";
-import {
-  fetchProviderConfig,
-  fetchRepoListMine,
-  fetchSessionMe,
-} from "@/lib/ssr-auth";
-import {
-  hasSessionPresenceHint,
-  syncSessionPresenceHint,
-} from "@/lib/session-hint";
+import { fetchProviderConfig, fetchRepoListMine, fetchSessionMe } from "@/lib/ssr-auth";
+import { hasSessionPresenceHint, syncSessionPresenceHint } from "@/lib/session-hint";
 import { cn } from "@/lib/utils";
 
 /** D-20 home tree priority after shared root access gate. */
 export type HomeTree = "setup" | "signed-in" | "marketing";
 
-export function selectHomeTree(input: {
-  needs_setup: boolean;
-  hasSession: boolean;
-}): HomeTree {
+export function selectHomeTree(input: { needs_setup: boolean; hasSession: boolean }): HomeTree {
   if (input.needs_setup) return "setup";
   if (input.hasSession) return "signed-in";
   return "marketing";
@@ -38,8 +28,7 @@ export type HomeLoaderData = {
   allowSignup: boolean;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -160,11 +149,7 @@ function HomePage() {
 
   if (tree === "signed-in" && user) {
     return (
-      <SignedInHome
-        user={user}
-        repos={data?.repos ?? []}
-        reposError={data?.reposError ?? null}
-      />
+      <SignedInHome user={user} repos={data?.repos ?? []} reposError={data?.reposError ?? null} />
     );
   }
 
@@ -190,14 +175,14 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
         </h1>
         <div className="oct-rise" style={{ animationDelay: "160ms" }}>
           <p className="mt-4 max-w-2xl text-[16px] text-muted-foreground">
-            Social coding forge: host git, collaborate, and ship — one product
-            for Octanest Cloud and self-host
+            Social coding forge: host git, collaborate, and ship — one product for Octanest Cloud
+            and self-host
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             @if (allowSignup) {
               <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
                 Get started
-              </Link>
+              </Link>;
             }
             <a
               href="#explore"
@@ -270,7 +255,7 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
           @if (allowSignup) {
             <Link to="/signup" preload="intent" className={cn(buttonVariants())}>
               Get started
-            </Link>
+            </Link>;
           }
           <a
             href="#explore"
@@ -282,5 +267,5 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
         </div>
       </div>
     </section>
-  </>
+  </>;
 }

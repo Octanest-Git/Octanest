@@ -58,9 +58,7 @@ export const fetchOrgOverview = createServerFn({ method: "GET" })
 
     const mine = await client.org.listMine();
     if (mine.ok) {
-      const entry: OrgMineEntry | undefined = mine.data.orgs.find(
-        (o) => o.slug === org.slug,
-      );
+      const entry: OrgMineEntry | undefined = mine.data.orgs.find((o) => o.slug === org.slug);
       if (entry) {
         canAdmin = entry.role === "owner" || entry.role === "admin";
       }
@@ -91,9 +89,7 @@ export const fetchOrgGet = createServerFn({ method: "GET" })
   });
 
 /** SSR: org.listMine for Admin+ gates. */
-export const fetchOrgListMine = createServerFn({ method: "GET" }).handler(
-  async () => {
-    const client = createSsrClient(incomingCookie());
-    return client.org.listMine();
-  },
-);
+export const fetchOrgListMine = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.org.listMine();
+});

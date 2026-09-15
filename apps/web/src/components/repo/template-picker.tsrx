@@ -127,12 +127,8 @@ function TemplateCard({
   const group = option?.group ?? "General";
   const Icon = option ? iconForGroup(group) : Container;
   const title = option ? option.label : noneLabel;
-  const body = option
-    ? option.description || option.group
-    : noneDescription;
-  const accent = option
-    ? accentForGroup(group)
-    : "bg-muted text-muted-foreground";
+  const body = option ? option.description || option.group : noneDescription;
+  const accent = option ? accentForGroup(group) : "bg-muted text-muted-foreground";
 
   <button
     type="button"
@@ -154,14 +150,14 @@ function TemplateCard({
       <span className="flex items-center gap-2 text-[14px] font-semibold text-foreground">
         {title as string}
         @if (active) {
-          <Check aria-hidden size={16} className="text-primary" />
+          <Check aria-hidden size={16} className="text-primary" />;
         }
       </span>
       <span className="mt-0.5 block text-[13px] leading-snug text-muted-foreground">
         {body as string}
       </span>
     </span>
-  </button>
+  </button>;
 }
 
 /** Field trigger + searchable card modal for stack / gitignore / license catalogs. */
@@ -180,8 +176,7 @@ export function TemplatePicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
-  const selected =
-    value === "none" ? null : (options.find((o) => o.id === value) ?? null);
+  const selected = value === "none" ? null : (options.find((o) => o.id === value) ?? null);
 
   const q = query.trim().toLowerCase();
   const filtered = !q
@@ -215,9 +210,7 @@ export function TemplatePicker({
     ? accentForGroup(triggerIconGroup)
     : "bg-muted text-muted-foreground";
   const triggerTitle = selected ? selected.label : noneLabel;
-  const triggerBody = selected
-    ? selected.description || selected.group
-    : noneDescription;
+  const triggerBody = selected ? selected.description || selected.group : noneDescription;
 
   <div className="flex flex-col gap-2">
     <Label htmlFor={id}>{label as string}</Label>
@@ -246,9 +239,7 @@ export function TemplatePicker({
           {triggerBody as string}
         </span>
       </span>
-      <span className="shrink-0 self-center text-[13px] font-semibold text-primary">
-        Choose…
-      </span>
+      <span className="shrink-0 self-center text-[13px] font-semibold text-primary">Choose…</span>
     </button>
     <p className="text-[13px] text-muted-foreground">{description as string}</p>
 
@@ -266,9 +257,11 @@ export function TemplatePicker({
         <DialogHeader className="border-b border-border px-5 py-4 pr-12">
           <DialogTitle>Choose {label as string}</DialogTitle>
           <DialogDescription>
-            {(browseGroups && browseGroups.length > 0
-              ? "Browse popular picks or search the full catalog. Selecting a card applies it immediately."
-              : "Browse by category or search. Selecting a card applies it immediately.") as string}
+            {
+              (browseGroups && browseGroups.length > 0
+                ? "Browse popular picks or search the full catalog. Selecting a card applies it immediately."
+                : "Browse by category or search. Selecting a card applies it immediately.") as string
+            }
           </DialogDescription>
           <div className="relative mt-3">
             <Search
@@ -282,9 +275,7 @@ export function TemplatePicker({
               placeholder={searchPlaceholder as string}
               aria-label={`Search ${label}`}
               className="pl-9"
-              onInput={(ev) =>
-                setQuery((ev.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(ev) => setQuery((ev.currentTarget as HTMLInputElement).value)}
             />
           </div>
         </DialogHeader>
@@ -303,7 +294,7 @@ export function TemplatePicker({
           @if (filtered.length === 0) {
             <p className="py-8 text-center text-[14px] text-muted-foreground">
               No templates match your search.
-            </p>
+            </p>;
           } @else {
             <div className="flex flex-col gap-6">
               @for (const group of groups; key group) {
@@ -315,35 +306,30 @@ export function TemplatePicker({
                     {group as string}
                   </h3>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    @for (
-                      const opt of filtered.filter((o) => o.group === group);
-                      key opt.id
-                    ) {
+                    @for (const opt of filtered.filter(
+                        (o) => o.group === group,
+                      ); key opt.id) {
                       <TemplateCard
                         option={opt}
                         noneLabel={noneLabel}
                         noneDescription={noneDescription}
                         active={value === opt.id}
                         onSelect={() => choose(opt.id)}
-                      />
+                      />;
                     }
                   </div>
-                </section>
+                </section>;
               }
-            </div>
+            </div>;
           }
         </div>
 
         <div className="flex justify-end border-t border-border bg-muted/30 px-5 py-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setOpen(false)}
-          >
+          <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
             Close
           </Button>
         </div>
       </DialogContent>
     </Dialog>
-  </div>
+  </div>;
 }

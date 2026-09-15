@@ -14,5 +14,5 @@ export function OctanestMark({
     height={size}
     className={cn("octanest-squircle block shrink-0", className)}
     style={{ width: `${size}px`, height: `${size}px` }}
-  />
+  />;
 }

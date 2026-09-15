@@ -180,6 +180,103 @@ async fn profile_update_and_avatar_round_trip() {
 }
 
 #[tokio::test]
+async fn avatar_delete_clears_profile_and_file() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let uploads = dir.path().join("uploads");
+    let url = format!("sqlite:{}", dir.path().join("del.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), &uploads).await;
+
+    let signup = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"del@ex.com","username":"deluser","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    let cookie = session_cookie_from_response(&signup);
+    let signup_bytes = signup.into_body().collect().await.unwrap().to_bytes();
+    let signup_v: serde_json::Value = serde_json::from_slice(&signup_bytes).unwrap();
+    let user_id = signup_v["data"]["id"].as_str().expect("id").to_string();
+
+    let png = tiny_png();
+    let boundary = "----delboundary";
+    let (ct, body) = multipart_avatar(&png, boundary);
+    let upload = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/user/avatar")
+                .header("content-type", ct)
+                .header("cookie", &cookie)
+                .body(Body::from(body))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(upload.status(), StatusCode::OK);
+    let expected_url = format!("/uploads/avatars/{user_id}.webp");
+    let on_disk = uploads.join("avatars").join(format!("{user_id}.webp"));
+    assert!(on_disk.is_file(), "avatar file should exist after upload");
+
+    let delete = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri("/api/user/avatar")
+                .header("cookie", &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let delete_status = delete.status();
+    let delete_bytes = delete.into_body().collect().await.unwrap().to_bytes();
+    assert_eq!(
+        delete_status,
+        StatusCode::OK,
+        "avatar delete failed: {delete_status} body={}",
+        String::from_utf8_lossy(&delete_bytes)
+    );
+    let delete_v: serde_json::Value = serde_json::from_slice(&delete_bytes).unwrap();
+    assert_eq!(delete_v["ok"], true);
+    assert!(!on_disk.exists(), "avatar file should be removed");
+
+    let get = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"user.get_profile","input":{}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(get.status(), StatusCode::OK);
+    let get_bytes = get.into_body().collect().await.unwrap().to_bytes();
+    let get_v: serde_json::Value = serde_json::from_slice(&get_bytes).unwrap();
+    assert!(
+        get_v["data"]["avatar_url"].is_null(),
+        "profile avatar_url should be cleared, got {}",
+        get_v["data"]["avatar_url"]
+    );
+
+    let serve = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(&expected_url)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(serve.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn avatar_rejects_oversized_upload() {
     let dir = tempfile::tempdir().expect("tempdir");
     let uploads = dir.path().join("uploads");

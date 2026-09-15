@@ -1,6 +1,6 @@
-import { Menu, X } from "@octanejs/lucide";
-import { Link, useNavigate } from "@octanejs/tanstack-router";
-import { useQueryClient } from "@octanejs/tanstack-query";
+import { Menu, Plus, X } from "@octanejs/lucide";
+import { Link, useNavigate, useParams } from "@octanejs/tanstack-router";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useEffectEvent, useState } from "octane";
 import { GlobalSearch } from "@/components/global-search";
@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from "@/lib/api-client";
-import { clearSessionQueries } from "@/lib/session-queries";
+import { clearSessionQueries, orgListMineQueryOptions } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { cn } from "@/lib/utils";
@@ -30,38 +30,102 @@ function initialsFor(user: UserPublic): string {
   return source.slice(0, 2).toUpperCase();
 }
 
-function AccountAvatar({
-  user,
-  size = "sm",
-}: {
-  user: UserPublic;
-  size?: "sm" | "md";
-}) {
+function AccountAvatar({ user, size = "sm" }: { user: UserPublic; size?: "sm" | "md" }) @{
   const box = size === "md" ? "size-9" : "size-7";
   const text = size === "md" ? "text-[12px]" : "text-[11px]";
-  if (user.avatar_url) {
-    return (
+  const px = size === "md" ? 36 : 28;
+  const dim = `${px}px`;
+
+  <div
+    className={cn("octanest-squircle relative block shrink-0 overflow-hidden bg-muted", box)}
+    style={{ width: dim, height: dim, minWidth: dim, minHeight: dim }}
+  >
+    @if (user.avatar_url) {
       <img
-        src={user.avatar_url}
+        src={user.avatar_url as string}
         alt=""
-        width={size === "md" ? 36 : 28}
-        height={size === "md" ? 36 : 28}
-        className={cn("octanest-squircle shrink-0 object-cover", box)}
-      />
-    );
+        width={px}
+        height={px}
+        className="block size-full object-cover"
+      />;
+    } @else {
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-full items-center justify-center font-semibold leading-none text-foreground",
+          text,
+        )}
+      >
+        {initialsFor(user) as string}
+      </span>;
+    }
+  </div>;
+}
+
+function useRepoContext(): { owner: string; repo: string } | null {
+  const params = useParams({ strict: false }) as {
+    owner?: string;
+    repo?: string;
+  };
+  if (params.owner && params.repo) {
+    return { owner: params.owner, repo: params.repo };
   }
-  return (
-    <span
-      aria-hidden
+  return null;
+}
+
+function CreateMenu({ onNavigated }: { onNavigated?: () => void }) @{
+  const repo = useRepoContext();
+
+  <DropdownMenu>
+    <DropdownMenuTrigger
       className={cn(
-        "octanest-squircle inline-flex shrink-0 items-center justify-center bg-muted font-semibold text-foreground",
-        box,
-        text,
+        "inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+        "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
       )}
+      aria-label="Create new…"
     >
-      {initialsFor(user)}
-    </span>
-  );
+      <Plus aria-hidden size={18} />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="min-w-52">
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/new");
+        }}
+      >
+        New repository
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/orgs/new");
+        }}
+      >
+        New organization
+      </DropdownMenuItem>
+      @if (repo) {
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigated?.();
+              window.location.assign(`/${repo.owner}/${repo.repo}/issues/new`);
+            }}
+          >
+            New issue
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigated?.();
+              window.location.assign(`/${repo.owner}/${repo.repo}/releases/new`);
+            }}
+          >
+            New release
+          </DropdownMenuItem>
+        </>;
+      }
+    </DropdownMenuContent>
+  </DropdownMenu>;
 }
 
 function AccountMenu({
@@ -72,6 +136,8 @@ function AccountMenu({
   onNavigated?: () => void;
 }) @{
   const queryClient = useQueryClient();
+  const orgsQ = useQuery(orgListMineQueryOptions());
+  const orgs = orgsQ.data ?? [];
 
   async function logout() {
     try {
@@ -85,6 +151,8 @@ function AccountMenu({
     window.location.assign("/");
   }
 
+  const displayName = (user.display_name?.trim() || user.username) as string;
+
   <DropdownMenu>
     <DropdownMenuTrigger
       className={cn(
@@ -94,42 +162,29 @@ function AccountMenu({
       aria-label="Account menu"
     >
       <AccountAvatar user={user} />
-      <span className="hidden text-muted-foreground md:inline">
-        {"@" + user.username}
-      </span>
+      <span className="hidden text-muted-foreground md:inline">{"@" + user.username}</span>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="min-w-48">
+    <DropdownMenuContent align="end" className="min-w-56">
+      <div className="px-2 py-2" role="presentation">
+        <p className="truncate text-[14px] font-medium text-foreground">{displayName}</p>
+        <p className="truncate text-[13px] text-muted-foreground">{"@" + user.username}</p>
+      </div>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/");
+        }}
+      >
+        Your repositories
+      </DropdownMenuItem>
       <DropdownMenuItem
         onClick={() => {
           onNavigated?.();
           window.location.assign("/settings/profile");
         }}
       >
-        Profile
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/orgs/new");
-        }}
-      >
-        New organization
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/settings/tokens");
-        }}
-      >
-        Personal access tokens
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/settings/ssh-keys");
-        }}
-      >
-        SSH keys
+        Settings
       </DropdownMenuItem>
       @if (user.role === "sys-admin") {
         <DropdownMenuItem
@@ -138,13 +193,34 @@ function AccountMenu({
             window.location.assign("/admin/auth");
           }}
         >
-          Auth settings
-        </DropdownMenuItem>
+          Admin
+        </DropdownMenuItem>;
+      }
+      @if (orgs.length > 0) {
+        <>
+          <DropdownMenuSeparator />
+          <div
+            className="px-2 py-1.5 text-[12px] font-medium text-muted-foreground"
+            role="presentation"
+          >
+            Organizations
+          </div>
+          @for (const org of orgs; key org.id) {
+            <DropdownMenuItem
+              onClick={() => {
+                onNavigated?.();
+                window.location.assign(`/${org.slug}`);
+              }}
+            >
+              {(org.display_name?.trim() || org.slug) as string}
+            </DropdownMenuItem>;
+          }
+        </>;
       }
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => void logout()}>Log out</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>
     </DropdownMenuContent>
-  </DropdownMenu>
+  </DropdownMenu>;
 }
 
 function AccountActions({
@@ -162,13 +238,10 @@ function AccountActions({
         role="group"
         aria-label="Account"
         aria-busy="true"
-        className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
-          className,
-        )}
+        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
       >
-        <Skeleton className="h-11 w-[4.75rem]" />
-        <Skeleton className="h-11 w-[4.75rem]" />
+        <Skeleton className="h-11 w-11" />
+        <Skeleton className="h-11 w-24" />
       </div>
     );
   }
@@ -179,10 +252,7 @@ function AccountActions({
       <div
         role="group"
         aria-label="Account"
-        className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
-          className,
-        )}
+        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
       />
     );
   }
@@ -192,11 +262,9 @@ function AccountActions({
       <div
         role="group"
         aria-label="Account"
-        className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
-          className,
-        )}
+        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
       >
+        <CreateMenu onNavigated={onNavigated} />
         <AccountMenu user={user} onNavigated={onNavigated} />
       </div>
     );
@@ -206,10 +274,7 @@ function AccountActions({
     <div
       role="group"
       aria-label="Account"
-      className={cn(
-        "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
-        className,
-      )}
+      className={cn("flex h-11 shrink-0 items-center justify-end gap-2", className)}
     >
       <Link
         to="/login"
@@ -227,7 +292,7 @@ function AccountActions({
           onClick={onNavigated}
         >
           Sign up
-        </Link>
+        </Link>;
       }
     </div>
   );
@@ -240,6 +305,12 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { pending, user, needsSetup, allowSignup } = useChromeAccountState();
+  const repo = useRepoContext();
+  const orgsQ = useQuery({
+    ...orgListMineQueryOptions(),
+    enabled: !!user,
+  });
+  const orgs = orgsQ.data ?? [];
 
   async function logout() {
     try {
@@ -276,7 +347,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
           <Skeleton className="h-11 w-full" />
           <Skeleton className="h-11 w-full" />
           <Skeleton className="h-11 w-full" />
-        </div>
+        </div>;
       } @else {
         @if (user) {
           <div className="flex flex-col">
@@ -302,37 +373,62 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               >
                 Home
               </button>
-              <a
-                href="/settings/profile"
-                className={mobileNavItemClass}
-                onClick={onClose}
-              >
-                Profile
+              <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                Create
+              </p>
+              <a href="/new" className={mobileNavItemClass} onClick={onClose}>
+                New repository
               </a>
-              <a
-                href="/orgs/new"
-                className={mobileNavItemClass}
-                onClick={onClose}
-              >
+              <a href="/orgs/new" className={mobileNavItemClass} onClick={onClose}>
                 New organization
               </a>
-              @if (user.role === "sys-admin") {
+              @if (repo) {
                 <>
                   <a
-                    href="/admin/auth"
+                    href={`/${repo.owner}/${repo.repo}/issues/new`}
                     className={mobileNavItemClass}
                     onClick={onClose}
                   >
-                    Auth settings
+                    New issue
                   </a>
                   <a
-                    href="/admin/lfs"
+                    href={`/${repo.owner}/${repo.repo}/releases/new`}
                     className={mobileNavItemClass}
                     onClick={onClose}
                   >
-                    LFS quotas
+                    New release
                   </a>
-                </>
+                </>;
+              }
+              <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                Account
+              </p>
+              <a href="/" className={mobileNavItemClass} onClick={onClose}>
+                Your repositories
+              </a>
+              <a href="/settings/profile" className={mobileNavItemClass} onClick={onClose}>
+                Settings
+              </a>
+              @if (user.role === "sys-admin") {
+                <a href="/admin/auth" className={mobileNavItemClass} onClick={onClose}>
+                  Admin
+                </a>;
+              }
+              @if (orgs.length > 0) {
+                <>
+                  <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                    Organizations
+                  </p>
+                  @for (const org of orgs; key org.id) {
+                    <a
+                      href={`/${org.slug}`}
+                      className={mobileNavItemClass}
+                      onClick={onClose}
+                    >
+                      {(org.display_name?.trim() || org.slug) as string}
+                    </a>;
+                  }
+                </>;
               }
               <Link
                 to="/status"
@@ -356,10 +452,10 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                   void logout();
                 }}
               >
-                Log out
+                Sign out
               </button>
             </div>
-          </div>
+          </div>;
         } @else {
           <div className="flex flex-col gap-2">
             <Link
@@ -402,15 +498,15 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                     onClick={onClose}
                   >
                     Sign up
-                  </Link>
+                  </Link>;
                 }
-              </div>
+              </div>;
             }
-          </div>
+          </div>;
         }
       }
     </div>
-  </nav>
+  </nav>;
 }
 
 export function SiteHeader() @{
@@ -453,10 +549,7 @@ export function SiteHeader() @{
 
   // Fixed overlay stays inside <header> so we don't insert siblings next to
   // view-transition-named <main> (that caused insertBefore DOM errors).
-  <header
-    data-site-header
-    className="sticky top-0 z-50 border-b border-border bg-card"
-  >
+  <header data-site-header className="sticky top-0 z-50 border-b border-border bg-card">
     <div className="mx-auto grid h-14 max-w-6xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 px-3 sm:gap-x-3 sm:px-4 md:h-16 md:gap-x-4">
       <Link
         to="/"
@@ -483,12 +576,12 @@ export function SiteHeader() @{
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
         aria-controls="mobile-nav"
-        onClick={() => setMenuOpen((v) => !v)}
+        onClick={() => setMenuOpen(!menuOpen)}
       >
         @if (menuOpen) {
-          <X aria-hidden size={20} />
+          <X aria-hidden size={20} />;
         } @else {
-          <Menu aria-hidden size={20} />
+          <Menu aria-hidden size={20} />;
         }
       </button>
     </div>
@@ -502,9 +595,9 @@ export function SiteHeader() @{
           onClick={closeMenu}
         />
         <MobileNavSheet onClose={closeMenu} />
-      </>
+      </>;
     }
-  </header>
+  </header>;
 }
 
 export function SiteFooter() @{
@@ -516,12 +609,11 @@ export function SiteFooter() @{
         preload="intent"
         className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
         activeProps={{
-          className:
-            "font-medium text-primary underline underline-offset-4",
+          className: "font-medium text-primary underline underline-offset-4",
         }}
       >
         Status
       </Link>
     </div>
-  </footer>
+  </footer>;
 }

@@ -7,8 +7,8 @@ import {
 } from "@octanejs/tanstack-router";
 import type { MemberBasePermission, OrgPublic } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
-import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,11 +26,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
-import {
-  fetchOrgGet,
-  fetchOrgListMine,
-} from "@/lib/ssr-org";
+import { fetchOrgGet, fetchOrgListMine } from "@/lib/ssr-org";
 import { fetchSessionMe } from "@/lib/ssr-auth";
+import { toastError, toastSuccess } from "@/lib/toast";
 import { OrgSettingsNav } from "@/components/org/org-settings-nav";
 import { cn } from "@/lib/utils";
 
@@ -39,8 +37,7 @@ export type OrgSettingsLoaderData = {
   canAdmin: boolean;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const FORBIDDEN = "You need organization admin access to manage settings.";
 const MEMBER_BASE_HELPER =
   "Applies to Members on private organization repositories. Owners and Admins always have admin access. Public repositories remain readable.";
@@ -83,8 +80,7 @@ export const Route = createFileRoute("/$owner/settings")({
     const mine = await fetchOrgListMine();
     if (mine.ok) {
       const entry = mine.data.orgs.find((o) => o.slug === got.data.slug);
-      canAdmin =
-        entry?.role === "owner" || entry?.role === "admin";
+      canAdmin = entry?.role === "owner" || entry?.role === "admin";
     }
     if (!canAdmin) {
       throw redirect({ href: `/${got.data.slug}` });
@@ -96,67 +92,56 @@ export const Route = createFileRoute("/$owner/settings")({
 /** Exported for member_base Wave 0 tests (D-ORG-02b). */
 export function OrgSettingsPage() @{
   const params = useParams({ from: "/$owner/settings" }) as { owner?: string };
-  const data = useLoaderData({ from: "/$owner/settings" }) as
-    | OrgSettingsLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/$owner/settings" }) as OrgSettingsLoaderData | undefined;
 
   const org = data?.org;
   const slug = org?.slug ?? params.owner ?? "";
 
-  const [displayName, setDisplayName] = useState(
-    () => org?.display_name ?? "",
-  );
-  const [memberBase, setMemberBase] = useState<MemberBasePermission>(
-    () => org?.member_base_permission ?? "none",
-  );
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
 
-  const baseLabel =
-    MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ?? "None";
-
-  async function saveSettings() {
-    setFormError("");
-    setSuccess("");
-    setPending(true);
-    try {
-      const res = await apiClient.org.updateSettings({
-        slug,
-        display_name: displayName.trim() || null,
-        member_base_permission: memberBase,
-      });
-      if (!res.ok) {
-        if (res.error.code === "org.forbidden") {
-          setFormError(FORBIDDEN);
-        } else {
-          setFormError(res.error.message || NETWORK_ERROR);
+  const form = useForm({
+    defaultValues: {
+      display_name: org?.display_name ?? "",
+      member_base: (org?.member_base_permission ?? "none") as MemberBasePermission,
+    },
+    onSubmit: async ({ value }) => {
+      setPending(true);
+      try {
+        const res = await apiClient.org.updateSettings({
+          slug,
+          display_name: value.display_name.trim() || null,
+          member_base_permission: value.member_base,
+        });
+        if (!res.ok) {
+          if (res.error.code === "org.forbidden") {
+            toastError(FORBIDDEN);
+          } else {
+            toastError(res.error.message || NETWORK_ERROR);
+          }
+          setPending(false);
+          return;
         }
+        form.setFieldValue("display_name", res.data.display_name ?? "");
+        form.setFieldValue("member_base", res.data.member_base_permission);
+        toastSuccess("Settings saved.");
         setPending(false);
-        return;
+      } catch {
+        toastError(NETWORK_ERROR);
+        setPending(false);
       }
-      setDisplayName(res.data.display_name);
-      setMemberBase(res.data.member_base_permission);
-      setSuccess("Settings saved.");
-      setPending(false);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+    },
+  });
 
   @if (!org) {
     <div className="mx-auto max-w-2xl px-4 py-16">
       <p className="text-[16px] text-muted-foreground">Loading…</p>
-    </div>
+    </div>;
   } @else {
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Organization settings
       </h1>
-      <p className="mt-1 text-[14px] text-muted-foreground">
-        {"@" + (slug as string)}
-      </p>
+      <p className="mt-1 text-[14px] text-muted-foreground">{"@" + (slug as string)}</p>
 
       <div className="mt-6">
         <OrgSettingsNav slug={slug} active="general" />
@@ -168,90 +153,83 @@ export function OrgSettingsPage() @{
         action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void saveSettings();
+          void form.handleSubmit();
         }}
       >
-        @if (formError) {
-          <AuthErrorBanner message={formError} />
-        }
-        @if (success) {
-          <p role="status" className="text-[14px] text-foreground">
-            {success as string}
-          </p>
-        }
+        <form.Field name="display_name">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="org-display-name">Display name</Label>
+              <Input
+                id="org-display-name"
+                name="display_name"
+                autoComplete="organization"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
+              />
+            </div>
+          )}
+        </form.Field>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-display-name">Display name</Label>
-          <Input
-            id="org-display-name"
-            name="display_name"
-            autoComplete="organization"
-            value={displayName}
-            onInput={(ev) =>
-              setDisplayName((ev.currentTarget as HTMLInputElement).value)
-            }
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-member-base">Base permission for Members</Label>
-          <SelectRoot
-            value={memberBase}
-            onValueChange={(next) => {
-              if (typeof next === "string") {
-                setMemberBase(next as MemberBasePermission);
-              }
-            }}
-          >
-            <SelectTrigger
-              id="org-member-base"
-              className="w-full min-w-[12rem]"
-              aria-label="Base permission for Members"
-            >
-              <SelectValue>{baseLabel as string}</SelectValue>
-              <SelectIcon>
-                <ChevronDown aria-hidden size={16} />
-              </SelectIcon>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectPositioner sideOffset={4}>
-                <SelectPopup>
-                  <SelectList>
-                    @for (const opt of MEMBER_BASE_OPTIONS; key opt.value) {
-                      <SelectItem value={opt.value}>
-                        <SelectItemIndicator>
-                          <Check
-                            aria-hidden
-                            size={16}
-                            className="text-primary"
-                          />
-                        </SelectItemIndicator>
-                        <SelectItemText>{opt.label as string}</SelectItemText>
-                      </SelectItem>
+        <form.Subscribe selector={(s) => s.values.member_base}>
+          {(memberBase) => {
+            const baseLabel =
+              MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ?? "None";
+            return (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="org-member-base">Base permission for Members</Label>
+                <SelectRoot
+                  value={memberBase}
+                  onValueChange={(next) => {
+                    if (typeof next === "string") {
+                      form.setFieldValue("member_base", next as MemberBasePermission);
                     }
-                  </SelectList>
-                </SelectPopup>
-              </SelectPositioner>
-            </SelectPortal>
-          </SelectRoot>
-          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-            {MEMBER_BASE_HELPER}
-          </p>
-        </div>
+                  }}
+                >
+                  <SelectTrigger
+                    id="org-member-base"
+                    className="w-full min-w-[12rem]"
+                    aria-label="Base permission for Members"
+                  >
+                    <SelectValue>{baseLabel as string}</SelectValue>
+                    <SelectIcon>
+                      <ChevronDown aria-hidden size={16} />
+                    </SelectIcon>
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectPositioner sideOffset={4}>
+                      <SelectPopup>
+                        <SelectList>
+                          @for (const opt of MEMBER_BASE_OPTIONS; key opt.value) {
+                            <SelectItem value={opt.value}>
+                              <SelectItemIndicator>
+                                <Check aria-hidden size={16} className="text-primary" />
+                              </SelectItemIndicator>
+                              <SelectItemText>{opt.label as string}</SelectItemText>
+                            </SelectItem>;
+                          }
+                        </SelectList>
+                      </SelectPopup>
+                    </SelectPositioner>
+                  </SelectPortal>
+                </SelectRoot>
+                <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                  {MEMBER_BASE_HELPER}
+                </p>
+              </div>
+            );
+          }}
+        </form.Subscribe>
 
-        <Button
-          type="button"
-          disabled={pending}
-          className={cn("h-11")}
-          onClick={() => void saveSettings()}
-        >
+        <Button type="submit" disabled={pending} className={cn("h-11")}>
           @if (pending) {
-            <>Saving…</>
+            <>Saving…</>;
           } @else {
-            <>Save settings</>
+            <>Save settings</>;
           }
         </Button>
       </form>
-    </div>
+    </div>;
   }
 }

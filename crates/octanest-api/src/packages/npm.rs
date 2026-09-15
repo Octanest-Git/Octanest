@@ -4,7 +4,7 @@ use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{delete, get, put};
+use axum::routing::{get, put};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};

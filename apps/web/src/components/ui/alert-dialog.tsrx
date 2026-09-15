@@ -3,22 +3,20 @@ import type { ComponentProps } from "octane";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function AlertDialog(
-  props: ComponentProps<typeof AlertDialogPrimitive.Root>,
-) @{
-  <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+export function AlertDialog(props: ComponentProps<typeof AlertDialogPrimitive.Root>) @{
+  <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
 }
 
 export function AlertDialogTrigger(
   props: ComponentProps<typeof AlertDialogPrimitive.Trigger>,
 ) @{
-  <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+  <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
 }
 
 export function AlertDialogPortal(
   props: ComponentProps<typeof AlertDialogPrimitive.Portal>,
 ) @{
-  <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+  <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
 }
 
 export function AlertDialogOverlay({
@@ -32,7 +30,7 @@ export function AlertDialogOverlay({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function AlertDialogContent({
@@ -51,24 +49,18 @@ export function AlertDialogContent({
         {...props}
       />
     </AlertDialogPrimitive.Viewport>
-  </AlertDialogPortal>
+  </AlertDialogPortal>;
 }
 
-export function AlertDialogHeader({
-  className,
-  ...props
-}: ComponentProps<"div">) @{
+export function AlertDialogHeader({ className, ...props }: ComponentProps<"div">) @{
   <div
     data-slot="alert-dialog-header"
     className={cn("flex flex-col gap-2 text-left", className)}
     {...props}
-  />
+  />;
 }
 
-export function AlertDialogFooter({
-  className,
-  ...props
-}: ComponentProps<"div">) @{
+export function AlertDialogFooter({ className, ...props }: ComponentProps<"div">) @{
   <div
     data-slot="alert-dialog-footer"
     className={cn(
@@ -76,7 +68,7 @@ export function AlertDialogFooter({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function AlertDialogTitle({
@@ -90,7 +82,7 @@ export function AlertDialogTitle({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function AlertDialogDescription({
@@ -101,7 +93,7 @@ export function AlertDialogDescription({
     data-slot="alert-dialog-description"
     className={cn("text-[14px] text-muted-foreground", className)}
     {...props}
-  />
+  />;
 }
 
 export function AlertDialogAction({
@@ -120,7 +112,7 @@ export function AlertDialogAction({
     size={size}
     type="button"
     {...props}
-  />
+  />;
 }
 
 export function AlertDialogCancel({
@@ -131,5 +123,5 @@ export function AlertDialogCancel({
     data-slot="alert-dialog-cancel"
     className={cn(buttonVariants({ variant: "secondary" }), className)}
     {...props}
-  />
+  />;
 }

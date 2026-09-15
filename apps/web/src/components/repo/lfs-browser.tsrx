@@ -39,9 +39,7 @@ export function LfsBrowser(props: { owner: string; name: string }) @{
         return;
       }
       const bin = Uint8Array.from(atob(res.data.content), (c) => c.charCodeAt(0));
-      const url = URL.createObjectURL(
-        new Blob([bin], { type: "application/octet-stream" }),
-      );
+      const url = URL.createObjectURL(new Blob([bin], { type: "application/octet-stream" }));
       const a = document.createElement("a");
       a.href = url;
       a.download = oid.slice(0, 12);
@@ -62,36 +60,34 @@ export function LfsBrowser(props: { owner: string; name: string }) @{
     aria-labelledby="lfs-browser-heading"
     data-testid="lfs-browser"
   >
-    <h3
-      id="lfs-browser-heading"
-      className="text-[15px] font-medium text-foreground"
-    >
+    <h3 id="lfs-browser-heading" className="text-[15px] font-medium text-foreground">
       LFS objects
     </h3>
     @if (listQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading objects…</p>
+      <p className="text-[14px] text-muted-foreground">Loading objects…</p>;
     } @else if (listQ.isError) {
       <p role="alert" className="text-[14px] text-destructive">
-        {(listQ.error instanceof Error
-          ? listQ.error.message
-          : "Could not load objects.") as string}
-      </p>
+        {
+          (listQ.error instanceof Error
+            ? listQ.error.message
+            : "Could not load objects.") as string
+        }
+      </p>;
     } @else if (!enabled) {
       <p className="text-[14px] text-muted-foreground">
-        Git LFS is disabled for this repository. Enable it above to browse
-        objects.
-      </p>
+        Git LFS is disabled for this repository. Enable it above to browse objects.
+      </p>;
     } @else if (objects.length === 0) {
       <p className="text-[14px] text-muted-foreground">
         No LFS objects linked yet. Push tracked files with{" "}
         <code className="text-[13px]">git lfs</code>.
-      </p>
+      </p>;
     } @else {
       <>
         @if (dlError) {
           <p role="alert" className="text-[14px] text-destructive">
             {dlError as string}
-          </p>
+          </p>;
         }
         <ul className="flex flex-col gap-2">
           @for (const obj of objects; key obj.oid) {
@@ -108,10 +104,10 @@ export function LfsBrowser(props: { owner: string; name: string }) @{
               >
                 {(dlOid === obj.oid ? "Downloading…" : "Download") as string}
               </Button>
-            </li>
+            </li>;
           }
         </ul>
-      </>
+      </>;
     }
-  </section>
+  </section>;
 }

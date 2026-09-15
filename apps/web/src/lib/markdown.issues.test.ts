@@ -26,9 +26,7 @@ describe("markdown.issues (ISS-04 / D-ISS-13)", () => {
   });
 
   it("keeps rehype-sanitize last — script bodies neutralized (D-ISS-10 / T-11-03)", async () => {
-    const html = await renderGfm(
-      'Hello <script>alert("xss")</script> **world** see #1',
-    );
+    const html = await renderGfm('Hello <script>alert("xss")</script> **world** see #1');
     expect(html).not.toMatch(/<script/i);
     expect(html).not.toMatch(/\son\w+=/i);
     expect(html).toMatch(/<strong>world<\/strong>/i);
@@ -44,10 +42,10 @@ describe("markdown.issues (ISS-04 / D-ISS-13)", () => {
   });
 
   it("does not autolink commit SHAs (buildUrl false / Q1)", async () => {
-    const html = await renderGfm(
-      "Landed in abcdef0123456789abcdef0123456789abcdef01",
-      { owner: "ada", repo: "hello" },
-    );
+    const html = await renderGfm("Landed in abcdef0123456789abcdef0123456789abcdef01", {
+      owner: "ada",
+      repo: "hello",
+    });
     expect(html).not.toMatch(/href=["'][^"']*\/commit\//);
     expect(html).not.toMatch(/href=["'][^"']*\/commits\//);
   });

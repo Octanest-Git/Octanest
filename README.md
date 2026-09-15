@@ -1,4 +1,3 @@
-<!-- generated-by: gsd-doc-writer -->
 # Octanest
 
 <p align="center">
@@ -11,109 +10,75 @@
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/version-0.1.0-informational.svg" alt="Version 0.1.0" /></a>
 </p>
 
-A self-hostable GitHub-style social coding platform (git hosting, pull requests, and issues) that runs the same product in the cloud or on your own machines.
+## What it is
 
-**Octanest Cloud** and **self-hosted Octanest** are one codebase: Bun workspaces for the web app and TypeScript packages, plus a Rust Cargo workspace for the API and database layer.
+A self-hostable GitHub-style forge — git hosting, issues, organizations, and package registries — that runs as **one product** for Octanest Cloud and on your own machines.
 
-## Installation
+## Who it’s for
 
-Prerequisites: [Bun](https://bun.sh) (see `packageManager` in root `package.json`), Rust/`cargo`, and Docker Compose for the full stack.
+- **Operators** who want a Compose-based forge they control
+- **Teams** that need a GitHub-shaped workflow without splitting cloud vs self-host into different products
+- **Contributors** improving the same codebase that powers both deployments
 
-```bash
-corepack enable
-bun install
-cargo metadata -q
-```
+## Cloud vs self-host
 
-Copy environment defaults for Compose:
-
-```bash
-cp .env.example .env
-```
+**Octanest Cloud** and **self-hosted Octanest** share the same images and application. Self-host with Docker Compose today; Cloud is the hosted instance of that same stack. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Quick start
 
-1. Install dependencies (`bun install` / `cargo metadata` as above).
-2. Bring up the default stack (Traefik on `:80`, web, API, Postgres):
+Prerequisites: Docker Engine with Compose v2, and a free host port **80** (Traefik). Git-over-SSH also publishes host port **2222** by default.
 
 ```bash
+cp .env.example .env
 make up
 make smoke
 ```
 
-3. Or develop locally with Vite + API (see `make dev` for the two-terminal commands):
+Open [http://localhost](http://localhost). Tear down with `make down`.
 
-```bash
-make rpc-gen
-# terminal 1
-OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin octanest-api
-# terminal 2
-bun run --filter @octanest/web dev
-```
+Full walkthrough (including host-side development): [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).  
+Production-oriented Compose notes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-List all Make targets anytime with `make help`.
+## What’s included
 
-## Usage examples
+Shipped on the current mainline:
 
-### Docker Compose databases
+- Git hosting over **HTTPS** (Smart HTTP + PATs) and **SSH**
+- **Organizations**, collaborators, and repository visibility / ACL
+- **Issues** (comments, labels, assignees)
+- **Git LFS**, **releases** with assets, repo rename / transfer
+- **Package registries** (OCI, npm, generic/raw)
+- Multi-database support: **Postgres**, **MySQL**, **SQLite**
 
-Default stack uses **PostgreSQL**. MySQL and SQLite are first-class overlays:
-
-```bash
-make up && make smoke                 # Postgres
-make up-mysql && make smoke-mysql     # MySQL profile
-make up-sqlite && make smoke-sqlite   # SQLite file under ./var
-make down
-```
-
-Dialect details, migrations, and switching: [`docs/database.md`](docs/database.md).
-
-### Local auth & email stubs
-
-Exercise SMTP, Resend, WorkOS, and OIDC without cloud secrets:
-
-```bash
-cp docs/dev-auth.env.example .env.dev-auth
-make up-dev-auth
-```
-
-Tear down with `make down-dev-auth`. Full walkthrough: [`docs/dev-auth.md`](docs/dev-auth.md).
-
-### Tests
-
-```bash
-make test              # cargo nextest (or cargo test) + bun Vitest
-make test-e2e-stack    # Vitest e2e against API + Mailpit/OIDC/stubs
-```
-
-## Monorepo layout
-
-| Path | Role | README |
-|------|------|--------|
-| `apps/web` | Octane / TanStack Start web app (`@octanest/web`) | [apps/web/README.md](apps/web/README.md) |
-| `packages/api-client` | Generated TypeScript RPC client (`make rpc-gen`) | [packages/api-client/README.md](packages/api-client/README.md) |
-| `crates/octanest-api` | Rust API + `rpc-gen` binary | [crates/octanest-api/README.md](crates/octanest-api/README.md) |
-| `crates/octanest-core` | Shared Rust domain types | [crates/octanest-core/README.md](crates/octanest-core/README.md) |
-| `crates/octanest-db` | SQL migrations and DB tooling | [crates/octanest-db/README.md](crates/octanest-db/README.md) |
-
-Root tooling: Bun workspaces (`apps/*`, `packages/*`) + Turborepo scripts; Cargo workspace under `crates/`.
-
-## Contributing
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, PRs, expectations
-- [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md) — conventions for humans and agents
-- [AGENTS.md](AGENTS.md) — short agent orientation (Octane ≠ React)
+Coming later (not shipped yet): full pull-request review/merge, branch protection, search, notifications, webhooks, Actions, and social explore.
 
 ## Docs
 
-- [`docs/database.md`](docs/database.md) — Postgres / MySQL / SQLite, migrations, dialect switching
-- [`docs/dev-auth.md`](docs/dev-auth.md) — Mailpit, OIDC mock, Resend/WorkOS stubs (`make up-dev-auth`)
-- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — local API + Vite, RPC sync, Compose
-- [`docs/TESTING.md`](docs/TESTING.md) — nextest + Vitest projects
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview
-- [`docs/API.md`](docs/API.md) — RPC surface
+Canonical docs live under [`docs/`](docs/).
+
+**Run & operate**
+
+- [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md) — first run (Compose or host)
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Compose images, Traefik, volumes, production knobs
 - [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — environment variables
-- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — Compose / ops
+- [`docs/database.md`](docs/database.md) — Postgres / MySQL / SQLite, migrations, dialect switching
+
+**Product & API**
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system overview (git, SSH, LFS, orgs, packages)
+- [`docs/API.md`](docs/API.md) — RPC + Smart HTTP / LFS / SSH / registry surfaces
+- [`docs/guides/stack-presets.md`](docs/guides/stack-presets.md) — in-repo `/new` stack presets
+
+**Develop**
+
+- [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — local API + Vite, RPC sync, monorepo layout
+- [`docs/TESTING.md`](docs/TESTING.md) — nextest + Vitest + stack e2e
+- [`docs/dev-auth.md`](docs/dev-auth.md) — auth/email stubs without cloud secrets
+- [`docs/CODE_PRACTICES.md`](docs/CODE_PRACTICES.md) — conventions for humans and agents
+
+## Contributing
+
+Want to change the code? Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md). Agents: [AGENTS.md](AGENTS.md) (Octane ≠ React).
 
 ## License
 

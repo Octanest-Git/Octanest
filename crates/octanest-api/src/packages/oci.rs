@@ -8,7 +8,7 @@ use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, patch, post, put};
+use axum::routing::{get, patch, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -26,15 +26,22 @@ const FORMAT: &str = "oci";
 
 #[derive(Clone)]
 struct UploadSession {
+    /// Set at session start for diagnostics / future TTL sweeps.
+    #[allow(dead_code)]
     owner_login: String,
+    #[allow(dead_code)]
     image: String,
     bytes: Vec<u8>,
+    #[allow(dead_code)]
     created: Instant,
 }
 
 #[derive(Clone)]
 struct BearerToken {
+    /// Mirrored from identity for token introspection / future scope checks.
+    #[allow(dead_code)]
     user_id: String,
+    #[allow(dead_code)]
     scopes: Vec<String>,
     expires: Instant,
     identity: RegistryIdentity,

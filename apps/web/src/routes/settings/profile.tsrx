@@ -1,24 +1,19 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
-import { useEffect, useRef, useState } from "octane";
-import { AvatarPreview } from "@/components/avatar-preview";
-import { ProfilePageSkeleton } from "@/components/page-skeletons";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import { useEffect, useState } from "octane";
+import { ProfileAvatarField } from "@/components/settings/profile-avatar-field";
+import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
-import {
-  clearSessionQueries,
-  setAuthMeCache,
-} from "@/lib/session-queries";
+import { clearSessionQueries, setAuthMeCache } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { fetchUserGetProfile } from "@/lib/ssr-auth";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 export type ProfileLoaderData =
@@ -56,11 +51,10 @@ type Phase =
   | { kind: "ready"; user: UserPublic }
   | { kind: "error"; message: string };
 
-function ProfilePage() {
+/** Exported for profile.integration.test.ts (RESEARCH P1 / D-QH-03). */
+export function ProfilePage() @{
   const queryClient = useQueryClient();
-  const loaderData = useLoaderData({ from: "/settings/profile" }) as
-    | ProfileLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/settings/profile" }) as ProfileLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -68,8 +62,7 @@ function ProfilePage() {
     }
   }, [loaderData]);
 
-  const initialUser =
-    loaderData?.kind === "ready" ? loaderData.user : null;
+  const initialUser = loaderData?.kind === "ready" ? loaderData.user : null;
 
   const [phase, setPhase] = useState<Phase>(() => {
     if (loaderData?.kind === "ready") return { kind: "ready", user: loaderData.user };
@@ -81,34 +74,98 @@ function ProfilePage() {
     }
     return { kind: "loading" };
   });
-  const [displayName, setDisplayName] = useState(
-    () => initialUser?.display_name ?? "",
-  );
-  const [username, setUsername] = useState(() => initialUser?.username ?? "");
-  const [bio, setBio] = useState(() => initialUser?.bio ?? "");
-  const [defaultBranch, setDefaultBranch] = useState(
-    () => initialUser?.default_branch?.trim() || "main",
-  );
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(
     () => initialUser?.avatar_url,
   );
-  const [avatarStatus, setAvatarStatus] = useState("");
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [avatarUploadPending, setAvatarUploadPending] = useState(false);
+  const [avatarRemovePending, setAvatarRemovePending] = useState(false);
   const [pending, setPending] = useState(false);
   const [branchPending, setBranchPending] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const profileForm = useForm({
+    defaultValues: {
+      display_name: initialUser?.display_name ?? "",
+      username: initialUser?.username ?? "",
+      bio: initialUser?.bio ?? "",
+    },
+    onSubmit: async ({ value }) => {
+      setPending(true);
+      const previousUsername = phase.kind === "ready" ? phase.user.username : "";
+      try {
+        const res = await apiClient.user.updateProfile({
+          display_name: value.display_name.trim(),
+          username: value.username.trim(),
+          bio: value.bio.slice(0, BIO_MAX),
+        });
+        if (!res.ok) {
+          toastError(res.error.message || "Could not save profile. Try again.");
+          setPending(false);
+          return;
+        }
+        setPhase({ kind: "ready", user: res.data });
+        profileForm.setFieldValue("display_name", res.data.display_name ?? "");
+        profileForm.setFieldValue("username", res.data.username ?? "");
+        profileForm.setFieldValue("bio", res.data.bio ?? "");
+        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
+        setAvatarUrl(res.data.avatar_url);
+        setAuthMeCache(queryClient, res.data);
+        if (previousUsername && res.data.username && previousUsername !== res.data.username) {
+          toastSuccess(
+            `Username updated to @${res.data.username}`,
+            `Update git remotes to /${res.data.username}/{repo}.git.`,
+          );
+        } else {
+          toastSuccess("Profile saved.");
+        }
+        setPending(false);
+      } catch {
+        toastError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
+
+  const branchForm = useForm({
+    defaultValues: {
+      default_branch: initialUser?.default_branch?.trim() || "main",
+    },
+    onSubmit: async ({ value }) => {
+      setBranchPending(true);
+      const profileValues = profileForm.state.values;
+      try {
+        const res = await apiClient.user.updateProfile({
+          display_name: profileValues.display_name.trim(),
+          username: profileValues.username.trim(),
+          bio: profileValues.bio.slice(0, BIO_MAX),
+          default_branch: value.default_branch.trim() || "main",
+        });
+        if (!res.ok) {
+          toastError(res.error.message || "Could not save default branch. Try again.");
+          setBranchPending(false);
+          return;
+        }
+        setPhase({ kind: "ready", user: res.data });
+        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
+        setAuthMeCache(queryClient, res.data);
+        toastSuccess("Default branch saved.");
+        setBranchPending(false);
+      } catch {
+        toastError(NETWORK_ERROR);
+        setBranchPending(false);
+      }
+    },
+  });
 
   useEffect(() => {
     if (!loaderData) return;
     if (loaderData.kind === "ready") {
       const user = loaderData.user;
-      setDisplayName(user.display_name ?? "");
-      setUsername(user.username ?? "");
-      setBio(user.bio ?? "");
-      setDefaultBranch(user.default_branch?.trim() || "main");
+      profileForm.setFieldValue("display_name", user.display_name ?? "");
+      profileForm.setFieldValue("username", user.username ?? "");
+      profileForm.setFieldValue("bio", user.bio ?? "");
+      branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
       setAvatarUrl(user.avatar_url);
       setPhase({ kind: "ready", user });
       return;
@@ -118,11 +175,10 @@ function ProfilePage() {
     }
   }, [loaderData]);
 
-  // Client fallback when loader payload is missing (tests / soft nav edge).
   useEffect(() => {
     if (loaderData) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await apiClient.user.getProfile();
         if (cancelled) return;
@@ -131,10 +187,10 @@ function ProfilePage() {
           return;
         }
         const user = res.data;
-        setDisplayName(user.display_name ?? "");
-        setUsername(user.username ?? "");
-        setBio(user.bio ?? "");
-        setDefaultBranch(user.default_branch?.trim() || "main");
+        profileForm.setFieldValue("display_name", user.display_name ?? "");
+        profileForm.setFieldValue("username", user.username ?? "");
+        profileForm.setFieldValue("bio", user.bio ?? "");
+        branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
         setAvatarUrl(user.avatar_url);
         setPhase({ kind: "ready", user });
       } catch {
@@ -147,79 +203,9 @@ function ProfilePage() {
     };
   }, [loaderData]);
 
-  async function saveProfile() {
-    setFormError("");
-    setSuccess("");
-    setPending(true);
-    const previousUsername = phase.kind === "ready" ? phase.user.username : "";
-    try {
-      const res = await apiClient.user.updateProfile({
-        display_name: displayName.trim(),
-        username: username.trim(),
-        bio: bio.slice(0, BIO_MAX),
-      });
-      if (!res.ok) {
-        setFormError(res.error.message || "Could not save profile. Try again.");
-        setPending(false);
-        return;
-      }
-      setPhase({ kind: "ready", user: res.data });
-      setDisplayName(res.data.display_name ?? "");
-      setUsername(res.data.username ?? "");
-      setBio(res.data.bio ?? "");
-      setDefaultBranch(res.data.default_branch?.trim() || "main");
-      setAvatarUrl(res.data.avatar_url);
-      setAuthMeCache(queryClient, res.data);
-      if (
-        previousUsername &&
-        res.data.username &&
-        previousUsername !== res.data.username
-      ) {
-        setSuccess(
-          `Username updated to @${res.data.username}. Update git remotes to /${res.data.username}/{repo}.git.`,
-        );
-      } else {
-        setSuccess("Profile saved.");
-      }
-      setPending(false);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
-
-  async function saveDefaultBranch() {
-    setFormError("");
-    setSuccess("");
-    setBranchPending(true);
-    try {
-      const res = await apiClient.user.updateProfile({
-        display_name: displayName.trim(),
-        username: username.trim(),
-        bio: bio.slice(0, BIO_MAX),
-        default_branch: defaultBranch.trim() || "main",
-      });
-      if (!res.ok) {
-        setFormError(res.error.message || "Could not save default branch. Try again.");
-        setBranchPending(false);
-        return;
-      }
-      setPhase({ kind: "ready", user: res.data });
-      setDefaultBranch(res.data.default_branch?.trim() || "main");
-      setAuthMeCache(queryClient, res.data);
-      setSuccess("Default branch saved.");
-      setBranchPending(false);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setBranchPending(false);
-    }
-  }
-
   async function onAvatarSelected(file: File | undefined) {
     if (!file) return;
-    setAvatarStatus(file.name);
-    setFormError("");
-    setSuccess("");
+    setAvatarUploadPending(true);
     const formData = new FormData();
     formData.append("avatar", file);
     try {
@@ -234,22 +220,58 @@ function ProfilePage() {
         error?: { message?: string };
       };
       if (!res.ok || !json.ok || !json.avatar_url) {
-        setFormError(json.error?.message || "Avatar upload failed. Try again.");
-        setAvatarStatus("");
-        return;
+        toastError(json.error?.message || "Avatar upload failed. Try again.");
+        setAvatarUploadPending(false);
+        throw new Error("avatar upload failed");
       }
       const nextUrl = `${json.avatar_url}?t=${Date.now()}`;
       setAvatarUrl(nextUrl);
-      setAvatarStatus("Avatar updated.");
       setPhase((prev) => {
         if (prev.kind !== "ready") return prev;
         const nextUser = { ...prev.user, avatar_url: json.avatar_url };
         setAuthMeCache(queryClient, nextUser);
         return { kind: "ready", user: nextUser };
       });
+      toastSuccess("Profile picture updated.");
+      setAvatarUploadPending(false);
+    } catch (err) {
+      setAvatarUploadPending(false);
+      if (err instanceof Error && err.message === "avatar upload failed") {
+        throw err;
+      }
+      toastError(NETWORK_ERROR);
+      throw err instanceof Error ? err : new Error(NETWORK_ERROR);
+    }
+  }
+
+  async function onAvatarRemove() {
+    setAvatarRemovePending(true);
+    try {
+      const res = await fetch("/api/user/avatar", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: { message?: string };
+      };
+      if (!res.ok || !json.ok) {
+        toastError(json.error?.message || "Could not remove profile picture.");
+        setAvatarRemovePending(false);
+        return;
+      }
+      setAvatarUrl(null);
+      setPhase((prev) => {
+        if (prev.kind !== "ready") return prev;
+        const nextUser = { ...prev.user, avatar_url: null };
+        setAuthMeCache(queryClient, nextUser);
+        return { kind: "ready", user: nextUser };
+      });
+      toastSuccess("Profile picture removed.");
+      setAvatarRemovePending(false);
     } catch {
-      setFormError(NETWORK_ERROR);
-      setAvatarStatus("");
+      toastError(NETWORK_ERROR);
+      setAvatarRemovePending(false);
     }
   }
 
@@ -277,217 +299,196 @@ function ProfilePage() {
     window.location.assign("/");
   }
 
-  if (phase.kind === "loading") {
-    return <ProfilePageSkeleton />;
-  }
-
-  if (phase.kind === "error") {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-16">
+  @if (phase.kind === "loading") {
+    <></>;
+  } @else {
+    @if (phase.kind === "error") {
+      <SettingsShell bare>
         <p className="text-[16px] text-destructive">{phase.message as string}</p>
-      </div>
-    );
-  }
+      </SettingsShell>;
+    } @else {
+      <AccountSettingsLayout active="profile" data-testid="settings-profile-page">
+        <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
+          Profile
+        </h1>
 
-  const user = phase.user;
+        <div className="mt-8 flex flex-col gap-6">
+          <ProfileAvatarField
+            user={phase.user}
+            src={avatarUrl}
+            uploadPending={avatarUploadPending}
+            removePending={avatarRemovePending}
+            onCroppedFile={(file) => onAvatarSelected(file)}
+            onRemove={() => onAvatarRemove()}
+            onReject={() => {
+              toastWarning("Choose a JPEG, PNG, or WebP image under 2 MB.");
+            }}
+          />
 
-  return (
-    <div className="mx-auto max-w-xl px-4 py-16">
-      <SettingsNav active="profile" />
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        Profile
-      </h1>
+          <form
+            method="post"
+            action="#"
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void profileForm.handleSubmit();
+            }}
+          >
+            <profileForm.Field name="display_name">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="display-name">Display name</Label>
+                  <Input
+                    id="display-name"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="name"
+                  />
+                </div>
+              )}
+            </profileForm.Field>
+            <profileForm.Field name="username">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="username"
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    1–39 characters; letters, numbers, and hyphens. Can't start or end with a
+                    hyphen.
+                  </p>
+                </div>
+              )}
+            </profileForm.Field>
+            <profileForm.Field name="bio">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    rows={4}
+                    maxLength={BIO_MAX}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange(
+                        (e.currentTarget as HTMLTextAreaElement).value.slice(0, BIO_MAX),
+                      )
+                    }
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    Optional · up to 160 characters
+                  </p>
+                </div>
+              )}
+            </profileForm.Field>
+            <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+              {(pending ? "Working…" : "Save profile") as string}
+            </Button>
+          </form>
 
-      <div className="mt-8 flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <AvatarPreview user={user} src={avatarUrl} size={64} />
-          <div className="flex min-w-0 flex-col gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="sr-only"
-              onChange={(e) => {
-                const input = e.currentTarget;
-                void onAvatarSelected(input.files?.[0]);
-                input.value = "";
-              }}
-            />
+          <hr className="border-border" />
+
+          <form
+            method="post"
+            action="#"
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void branchForm.handleSubmit();
+            }}
+          >
+            <branchForm.Field name="default_branch">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="default-branch">Default branch name</Label>
+                  <Input
+                    id="default-branch"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="off"
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    Applies to new repositories you create. Existing repos keep their current
+                    default branch.
+                  </p>
+                </div>
+              )}
+            </branchForm.Field>
+            <Button type="submit" disabled={branchPending} className="w-full sm:w-auto">
+              {(branchPending ? "Working…" : "Save default branch") as string}
+            </Button>
+          </form>
+
+          <hr className="border-border" />
+
+          <div className="flex flex-wrap gap-3">
             <Button
               type="button"
               variant="ghost"
-              className="w-fit"
-              onClick={() => fileInputRef.current?.click()}
+              disabled={logoutPending}
+              onClick={() => void logoutThisDevice()}
             >
-              Change avatar
+              Log out
             </Button>
-            <p className="text-[14px] text-muted-foreground">
-              JPEG, PNG, or WebP · max 2 MB
-            </p>
-            {avatarStatus ? (
-              <p className="truncate text-[14px] text-muted-foreground">
-                {avatarStatus as string}
-              </p>
-            ) : null}
-          </div>
-        </div>
-
-        {formError ? (
-          <p role="alert" className="text-[14px] text-destructive">
-            {formError as string}
-          </p>
-        ) : null}
-        {success ? (
-          <p role="status" className="text-[14px] text-foreground">
-            {success as string}
-          </p>
-        ) : null}
-
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="display-name">Display name</Label>
-            <Input
-              id="display-name"
-              value={displayName}
-              onInput={(e) =>
-                setDisplayName((e.currentTarget as HTMLInputElement).value)
-              }
-              autoComplete="name"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              value={username}
-              onInput={(e) =>
-                setUsername((e.currentTarget as HTMLInputElement).value)
-              }
-              autoComplete="username"
-            />
-            <p className="text-[14px] text-muted-foreground">
-              1–39 characters; letters, numbers, and hyphens. Can’t start or end with
-              a hyphen.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              rows={4}
-              maxLength={BIO_MAX}
-              value={bio}
-              onInput={(e) =>
-                setBio(
-                  (e.currentTarget as HTMLTextAreaElement).value.slice(0, BIO_MAX),
-                )
-              }
-            />
-            <p className="text-[14px] text-muted-foreground">
-              Optional · up to 160 characters
-            </p>
-          </div>
-          <Button
-            type="button"
-            disabled={pending}
-            onClick={() => void saveProfile()}
-            className="w-full sm:w-auto"
-          >
-            {(pending ? "Working…" : "Save profile") as string}
-          </Button>
-        </div>
-
-        <hr className="border-border" />
-
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="default-branch">Default branch name</Label>
-            <Input
-              id="default-branch"
-              value={defaultBranch}
-              onInput={(e) =>
-                setDefaultBranch((e.currentTarget as HTMLInputElement).value)
-              }
-              autoComplete="off"
-            />
-            <p className="text-[14px] text-muted-foreground">
-              Applies to new repositories you create. Existing repos keep their
-              current default branch.
-            </p>
-          </div>
-          <Button
-            type="button"
-            disabled={branchPending}
-            onClick={() => void saveDefaultBranch()}
-            className="w-full sm:w-auto"
-          >
-            {(branchPending ? "Working…" : "Save default branch") as string}
-          </Button>
-        </div>
-
-        <hr className="border-border" />
-
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={logoutPending}
-            onClick={() => void logoutThisDevice()}
-          >
-            Log out
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={logoutPending}
-            className={cn(
-              "border border-destructive text-destructive hover:bg-destructive/10",
-            )}
-            onClick={() => setConfirmLogoutAll(true)}
-          >
-            Log out all devices
-          </Button>
-        </div>
-      </div>
-
-      {confirmLogoutAll ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="logout-all-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
-        >
-          <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-lg">
-            <h2
-              id="logout-all-title"
-              className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground"
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={logoutPending}
+              className={cn("border border-destructive text-destructive hover:bg-destructive/10")}
+              onClick={() => setConfirmLogoutAll(true)}
             >
               Log out all devices
-            </h2>
-            <p className="mt-3 text-[16px] text-muted-foreground">
-              Sign out everywhere? You’ll need to sign in again on each device.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                type="button"
-                disabled={logoutPending}
-                className="bg-destructive text-white hover:brightness-110"
-                onClick={() => void logoutAllDevices()}
-              >
-                Log out all devices
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={logoutPending}
-                onClick={() => setConfirmLogoutAll(false)}
-              >
-                Stay signed in
-              </Button>
-            </div>
+            </Button>
           </div>
         </div>
-      ) : null}
-    </div>
-  );
+
+        @if (confirmLogoutAll) {
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-all-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
+          >
+            <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-lg">
+              <h2
+                id="logout-all-title"
+                className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground"
+              >
+                Log out all devices
+              </h2>
+              <p className="mt-3 text-[16px] text-muted-foreground">
+                Sign out everywhere? You'll need to sign in again on each device.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  disabled={logoutPending}
+                  className="bg-destructive text-white hover:brightness-110"
+                  onClick={() => void logoutAllDevices()}
+                >
+                  Log out all devices
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={logoutPending}
+                  onClick={() => setConfirmLogoutAll(false)}
+                >
+                  Stay signed in
+                </Button>
+              </div>
+            </div>
+          </div>;
+        }
+      </AccountSettingsLayout>;
+    }
+  }
 }

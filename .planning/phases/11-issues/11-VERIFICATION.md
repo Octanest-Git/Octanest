@@ -2,6 +2,7 @@
 phase: 11-issues
 verified: 2026-09-14T16:52:48Z
 status: passed
+honesty: passed_with_documented_stubs
 score: 13/13 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -103,10 +104,12 @@ human_verification:
 
 **Phase Goal:** Users can track work with issues, comments, labels, assignees, and links to PRs  
 **Verified:** 2026-09-14T16:52:48Z  
-**Status:** passed  
-**Re-verification:** No — initial verification  
+**Status:** passed with documented stubs  
+**Re-verification:** No — initial verification (honesty fixup 2026-09-15: Known stubs below; status unchanged from passed)
 
 **Plans:** 13/13 PLAN files have matching SUMMARY files (11-00 … 11-12).
+
+> **Phase 12 planners:** do not treat ISS-04 / Linked PRs as real PR objects, closing-keyword auto-close as shipped, or issues flows as covered by stack-browser e2e. See [Known stubs / residual gaps](#known-stubs--residual-gaps).
 
 ## Goal Achievement
 
@@ -265,12 +268,34 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (20/20). Non
 
 ### Gaps Summary
 
-No automated gaps. All roadmap success criteria and plan must-have truths are present, wired, data-flowing, and backed by passing named tests. End-of-phase UAT from `11-VALIDATION.md` Manual / UAT Backstops is closed (see UAT closure below).
+Phase 11 must-have truths are present, wired, data-flowing, and backed by passing named API/Vitest tests. End-of-phase UAT from `11-VALIDATION.md` Manual / UAT Backstops is closed (see UAT closure below).
+
+**Residual (not failures of Phase 11 scope):** Linked PR rows remain `pr_stub` until Phase 12; closing keywords stay deferred (D-ISS-15). Issues CRUD stack-browser landed in Phase 11.1-04 (`forge-issues-releases.stack.browser.test.tsx`) — see Known stubs update.
+
+---
+
+## Known stubs / residual gaps
+
+Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/issues/3) quality audit. These do **not** flip Phase 11 verification to failed — they were intentional Phase 11 scope boundaries (or out-of-phase test depth). Phase 12 must not invent “real PRs / auto-close / full forge e2e” from a green Phase 11 VERIFICATION alone.
+
+| Stub / gap | What shipped | What is *not* done | Pointers |
+| ---------- | ------------ | ------------------ | -------- |
+| **`pr_stub` / `IssueLinkKind::PrStub`** | Manual `issue.links.*` CRUD; Linked PRs sidebar lists stub rows | Real pull-request domain objects, PR routes, or PR↔issue linking as first-class PRs (Phase 12) | `IssueLinkKind::PrStub` in `crates/octanest-core/src/issue_types.rs`; UI copy `PR stub #N` in `apps/web/src/components/repo/issue-linked-prs.tsrx`; API note in `docs/API.md` (Linked PRs); tests `crates/octanest-api/tests/issue_links.rs` |
+| **Closing keywords (D-ISS-15)** | Negative test proves `fixes` / `closes` `#N` in comments do **not** auto-close or auto-link | Auto-close / auto-link on merge or keyword comments — deferred to Phase 12 | Decision `D-ISS-15` in `11-CONTEXT.md`; `issue_links_no_closing_keyword_enforcement` in `crates/octanest-api/tests/issue_links.rs`; truth #11 above is “not enforced,” not “keywords work” |
+| **Stack-browser e2e for issues** | API nextest (`issue_*`), Vitest DOM integration, **plus** Phase 11.1-04 Chromium create→close (`forge-issues-releases.stack.browser.test.tsx`) | Full list filters / soft-404 / comments / labels in stack-browser remain thinner than API/Vitest | `apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx` (**closed** for core CRUD; expand filters later) |
+
+**Footnotes for planners**
+
+1. Truth #3 / ISS-04 “link issues and PRs by reference” means markdown `#N` autolink + **stub** link rows — not Phase 12 PR entities.
+2. Truth #11 explicitly verifies stubs + absence of closing-keyword enforcement; do not re-read that as keyword automation shipped.
+3. “15/15 Issues UI integration” is Vitest/DOM; Chromium forge CRUD is `make test-e2e-stack` (11.1-04) — still not a substitute for real PRs.
 
 ---
 
 _Verified: 2026-09-14T16:52:48Z_  
-_Verifier: Claude (gsd-verifier)_
+_Verifier: Claude (gsd-verifier)_  
+_Honesty fixup: 2026-09-15 (Known stubs / residual gaps; status remains passed)_  
+_Residual 11.1-05: issues stack-browser CRUD marked closed (keep pr_stub / closing-keyword)_
 
 
 ## UAT closure

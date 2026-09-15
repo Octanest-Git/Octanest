@@ -18,39 +18,37 @@ type AvatarPreviewProps = {
   className?: string;
 };
 
-/** 64×64 squircle avatar preview — reuses `octanest-squircle` clip language. */
-export function AvatarPreview({
-  user,
-  src,
-  size = 64,
-  className,
-}: AvatarPreviewProps) {
-  const url = src ?? user.avatar_url;
+/**
+ * Squircle avatar preview — stable outer box so empty/filled states share size
+ * (avoids layout shift + img↔span root swaps that break Octane DOM updates).
+ */
+export function AvatarPreview(props: AvatarPreviewProps) @{
+  const size = props.size ?? 64;
+  const url = props.src ?? props.user.avatar_url;
   const dim = `${size}px`;
 
-  if (url) {
-    return (
+  <div
+    className={cn(
+      "octanest-squircle relative block shrink-0 overflow-hidden bg-muted",
+      props.className,
+    )}
+    style={{ width: dim, height: dim, minWidth: dim, minHeight: dim }}
+  >
+    @if (url) {
       <img
-        src={url}
+        src={url as string}
         alt=""
         width={size}
         height={size}
-        className={cn("octanest-squircle block shrink-0 object-cover", className)}
-        style={{ width: dim, height: dim }}
-      />
-    );
-  }
-
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "octanest-squircle inline-flex shrink-0 items-center justify-center bg-muted text-[18px] font-semibold text-foreground",
-        className,
-      )}
-      style={{ width: dim, height: dim }}
-    >
-      {initialsFor(user)}
-    </span>
-  );
+        className="block size-full object-cover"
+      />;
+    } @else {
+      <span
+        aria-hidden
+        className="flex size-full items-center justify-center text-[18px] font-semibold leading-none text-foreground"
+      >
+        {initialsFor(props.user) as string}
+      </span>;
+    }
+  </div>;
 }

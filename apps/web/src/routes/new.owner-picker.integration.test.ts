@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -65,8 +59,7 @@ type LoaderShape = {
 let loaderData: LoaderShape;
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useLoaderData: () => loaderData,
@@ -148,91 +141,69 @@ function ownerTrigger(): HTMLElement {
 }
 
 describe("/new owner picker (D-ORG-06)", () => {
-  it(
-    "lists @self + Owner/Admin orgs — not Member-only orgs",
-    async () => {
-      const mod = await loadNewModule();
-      const NewPage = (mod.NewPage ?? mod.default) as unknown;
-      expect(NewPage, "NewPage must export for owner picker").toBeTruthy();
-      render(NewPage as never);
+  it("lists @self + Owner/Admin orgs — not Member-only orgs", async () => {
+    const mod = await loadNewModule();
+    const NewPage = (mod.NewPage ?? mod.default) as unknown;
+    expect(NewPage, "NewPage must export for owner picker").toBeTruthy();
+    render(NewPage as never);
 
-      const ownerControl = ownerTrigger();
-      expect(
-        ownerControl,
-        "Owner Select/combobox listing self + Owner/Admin orgs (D-ORG-06)",
-      ).toBeTruthy();
+    const ownerControl = ownerTrigger();
+    expect(
+      ownerControl,
+      "Owner Select/combobox listing self + Owner/Admin orgs (D-ORG-06)",
+    ).toBeTruthy();
 
-      fireEvent.click(ownerControl);
-      await waitFor(() => {
-        expect(screen.getByRole("option", { name: "@ada" })).toBeInTheDocument();
-        expect(
-          screen.getByRole("option", { name: /Acme/ }),
-        ).toBeInTheDocument();
-        expect(
-          screen.getByRole("option", { name: /Widgets/ }),
-        ).toBeInTheDocument();
-      });
-      expect(
-        screen.queryByRole("option", { name: /ReadOnly Co/i }),
-      ).not.toBeInTheDocument();
-    },
-    20_000,
-  );
+    fireEvent.click(ownerControl);
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "@ada" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /Acme/ })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /Widgets/ })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole("option", { name: /ReadOnly Co/i })).not.toBeInTheDocument();
+  }, 20_000);
 
-  it(
-    "removes Organizations come in a later phase copy",
-    async () => {
-      const mod = await loadNewModule();
-      const NewPage = (mod.NewPage ?? mod.default) as unknown;
-      render(NewPage as never);
+  it("removes Organizations come in a later phase copy", async () => {
+    const mod = await loadNewModule();
+    const NewPage = (mod.NewPage ?? mod.default) as unknown;
+    render(NewPage as never);
 
-      expect(
-        screen.queryByText(/Organizations come in a later phase/i),
-      ).not.toBeInTheDocument();
-    },
-    20_000,
-  );
+    expect(screen.queryByText(/Organizations come in a later phase/i)).not.toBeInTheDocument();
+  }, 20_000);
 
-  it(
-    "repo.create posts selected owner slug",
-    async () => {
-      createMock.mockResolvedValue({
-        ok: true,
-        data: {
-          id: "r1",
-          owner_id: "u1",
-          owner_type: "user",
-          owner_username: "ada",
-          name: "demo",
-          description: "",
-          visibility: "public",
-          default_branch: "main",
-          updated_at: "2026-01-01T00:00:00Z",
-          can_admin: true,
-          can_write: true,
-        },
-      });
+  it("repo.create posts selected owner slug", async () => {
+    createMock.mockResolvedValue({
+      ok: true,
+      data: {
+        id: "r1",
+        owner_id: "u1",
+        owner_type: "user",
+        owner_username: "ada",
+        name: "demo",
+        description: "",
+        visibility: "public",
+        default_branch: "main",
+        updated_at: "2026-01-01T00:00:00Z",
+        can_admin: true,
+        can_write: true,
+      },
+    });
 
-      const mod = await loadNewModule();
-      const NewPage = (mod.NewPage ?? mod.default) as unknown;
-      render(NewPage as never);
+    const mod = await loadNewModule();
+    const NewPage = (mod.NewPage ?? mod.default) as unknown;
+    render(NewPage as never);
 
-      // Default selection is self; owner slug must still be posted (D-ORG-06).
-      expect(ownerTrigger()).toHaveTextContent("@ada");
+    // Default selection is self; owner slug must still be posted (D-ORG-06).
+    expect(ownerTrigger()).toHaveTextContent("@ada");
 
-      fireEvent.input(screen.getByLabelText(/repository name/i), {
-        target: { value: "demo" },
-      });
-      fireEvent.click(
-        screen.getByRole("button", { name: /create repository/i }),
-      );
+    fireEvent.input(screen.getByLabelText(/repository name/i), {
+      target: { value: "demo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create repository/i }));
 
-      await waitFor(() => {
-        expect(createMock).toHaveBeenCalled();
-      });
-      const payload = createMock.mock.calls[0]?.[0] as { owner?: string };
-      expect(payload.owner).toBe("ada");
-    },
-    20_000,
-  );
+    await waitFor(() => {
+      expect(createMock).toHaveBeenCalled();
+    });
+    const payload = createMock.mock.calls[0]?.[0] as { owner?: string };
+    expect(payload.owner).toBe("ada");
+  }, 20_000);
 });

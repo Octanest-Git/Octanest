@@ -1,4 +1,5 @@
 import type { IssueLinkKind, IssueLinkPublic } from "@octanest/api-client";
+import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -7,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 type IssueLinkedPrsPanelProps = {
   owner: string;
@@ -35,11 +35,46 @@ export function IssueLinkedPrsPanel({
   canWrite,
 }: IssueLinkedPrsPanelProps) @{
   const queryClient = useQueryClient();
-  const [kind, setKind] = useState<IssueLinkKind>("pr_stub");
-  const [targetNumber, setTargetNumber] = useState("");
-  const [title, setTitle] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  const form = useForm({
+    defaultValues: {
+      kind: "pr_stub" as IssueLinkKind,
+      targetNumber: "",
+      title: "",
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      const n = Number(value.targetNumber.trim());
+      if (!Number.isFinite(n) || n < 1) {
+        setError("Enter a positive target number.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.issue.links.add({
+          owner,
+          name: repoName,
+          number,
+          kind: value.kind,
+          targetNumber: n,
+          title: value.title.trim() || null,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not add link.");
+          setPending(false);
+          return;
+        }
+        form.reset();
+        await refresh();
+        setPending(false);
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   const linksQ = useQuery({
     queryKey: ["issue", "links", "list", owner, repoName, number] as const,
@@ -61,38 +96,6 @@ export function IssueLinkedPrsPanel({
     await queryClient.invalidateQueries({
       queryKey: ["issue", "links", "list", owner, repoName, number],
     });
-  }
-
-  async function addLink() {
-    setError("");
-    const n = Number(targetNumber.trim());
-    if (!Number.isFinite(n) || n < 1) {
-      setError("Enter a positive target number.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.issue.links.add({
-        owner,
-        name: repoName,
-        number,
-        kind,
-        targetNumber: n,
-        title: title.trim() || null,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not add link.");
-        setPending(false);
-        return;
-      }
-      setTargetNumber("");
-      setTitle("");
-      await refresh();
-      setPending(false);
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
   }
 
   async function removeLink(linkId: string) {
@@ -119,24 +122,21 @@ export function IssueLinkedPrsPanel({
   }
 
   <section aria-labelledby="issue-linked-prs-heading" data-testid="issue-linked-prs">
-    <h2
-      id="issue-linked-prs-heading"
-      className="text-[14px] font-semibold text-foreground"
-    >
+    <h2 id="issue-linked-prs-heading" className="text-[14px] font-semibold text-foreground">
       Linked PRs
     </h2>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (linksQ.isPending) {
-      <p className="mt-1 text-[13px] text-muted-foreground">Loading links…</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">Loading links…</p>;
     } @else {
       @if (links.length === 0) {
         <p className="mt-1 text-[13px] text-muted-foreground">
           No linked pull requests yet.
-        </p>
+        </p>;
       } @else {
         <ul className="mt-2 flex flex-col gap-1.5" data-testid="issue-linked-prs-list">
           @for (const link of links; key link.id) {
@@ -153,11 +153,11 @@ export function IssueLinkedPrsPanel({
                   onClick={() => removeLink(link.id)}
                 >
                   Unlink
-                </button>
+                </button>;
               }
-            </li>
+            </li>;
           }
-        </ul>
+        </ul>;
       }
     }
     @if (canWrite) {
@@ -167,63 +167,71 @@ export function IssueLinkedPrsPanel({
         className="mt-3 flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
+          void form.handleSubmit();
         }}
       >
         <p className="text-[12px] font-medium text-foreground">Link issue/PR</p>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="issue-link-kind">Kind</Label>
-          <select
-            id="issue-link-kind"
-            className="h-8 rounded-md border border-border bg-background px-2 text-[13px] text-foreground"
-            value={kind}
-            onChange={(e) =>
-              setKind(
-                ((e.target as HTMLSelectElement).value === "issue"
-                  ? "issue"
-                  : "pr_stub") as IssueLinkKind,
-              )
-            }
-            disabled={pending}
-          >
-            <option value="pr_stub">PR stub</option>
-            <option value="issue">Issue</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="issue-link-target">Number</Label>
-          <Input
-            id="issue-link-target"
-            type="number"
-            min={1}
-            inputMode="numeric"
-            value={targetNumber}
-            placeholder="42"
-            disabled={pending}
-            onInput={(e) =>
-              setTargetNumber((e.target as HTMLInputElement).value)
-            }
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="issue-link-title">Title (optional)</Label>
-          <Input
-            id="issue-link-title"
-            type="text"
-            value={title}
-            placeholder="Stub title"
-            disabled={pending}
-            onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
-          />
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          disabled={pending}
-          onClick={() => addLink()}
-        >
+        <form.Field name="kind">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="issue-link-kind">Kind</Label>
+              <select
+                id="issue-link-kind"
+                className="h-8 rounded-md border border-border bg-background px-2 text-[13px] text-foreground"
+                value={field.state.value}
+                onChange={(e) =>
+                  field.handleChange(
+                    ((e.target as HTMLSelectElement).value === "issue"
+                      ? "issue"
+                      : "pr_stub") as IssueLinkKind,
+                  )
+                }
+                disabled={pending}
+              >
+                <option value="pr_stub">PR stub</option>
+                <option value="issue">Issue</option>
+              </select>
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="targetNumber">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="issue-link-target">Number</Label>
+              <Input
+                id="issue-link-target"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={field.state.value}
+                placeholder="42"
+                disabled={pending}
+                onBlur={field.handleBlur}
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="title">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="issue-link-title">Title (optional)</Label>
+              <Input
+                id="issue-link-title"
+                type="text"
+                value={field.state.value}
+                placeholder="Stub title"
+                disabled={pending}
+                onBlur={field.handleBlur}
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
+              />
+            </div>
+          )}
+        </form.Field>
+        <Button type="submit" size="sm" disabled={pending}>
           Link
         </Button>
-      </form>
+      </form>;
     }
-  </section>
+  </section>;
 }

@@ -2,14 +2,17 @@ import {
   Outlet,
   createFileRoute,
   useLoaderData,
+  useLocation,
   useParams,
 } from "@octanejs/tanstack-router";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@octanest/api-client";
+import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { RepoPageShell } from "@/components/repo/repo-page-shell";
 import { RepoStoreProvider } from "@/components/repo/repo-store-provider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { type RepoLayoutLoaderData } from "@/lib/repo-store";
+import { repoChromeActiveFromPath } from "@/lib/repo-chrome-active";
+import { type RepoLayoutLoaderData, useRepoStore } from "@/lib/repo-store";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 import { fetchPublicOrigin, fetchRepoGet } from "@/lib/ssr-repo";
 
@@ -86,9 +89,7 @@ function RepoLayout() @{
     owner: string;
     repo: string;
   };
-  const data = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
 
   const owner = data?.owner ?? params.owner ?? "";
   const repoName = data?.repoName ?? params.repo ?? "";
@@ -105,15 +106,15 @@ function RepoLayout() @{
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-48 w-full" />
       </div>
-    </RepoPageShell>
+    </RepoPageShell>;
   } @else if (status === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (status === "error") {
     <RepoPageShell>
       <p role="alert" className="text-[16px] text-destructive">
         {message as string}
       </p>
-    </RepoPageShell>
+    </RepoPageShell>;
   } @else {
     <RepoStoreProvider
       key={`${owner}/${repoName}` as string}
@@ -126,8 +127,26 @@ function RepoLayout() @{
       publicOrigin={publicOrigin}
     >
       <RepoPageShell>
-        <Outlet />
+        <RepoLayoutChrome />
       </RepoPageShell>
-    </RepoStoreProvider>
+    </RepoStoreProvider>;
+  }
+}
+
+/** Shared repo HI chrome above leaf Outlet (D-QH-01). Leaves may still remount until 11.1-03. */
+function RepoLayoutChrome() @{
+  const repo = useRepoStore((s) => s.repo);
+  const pathname = useLocation({
+    select: (loc) => (loc as { pathname?: string }).pathname,
+  });
+  const active = repoChromeActiveFromPath(String(pathname ?? ""));
+
+  @if (repo) {
+    <>
+      <RepoChrome repo={repo} active={active} />
+      <Outlet />
+    </>;
+  } @else {
+    <Outlet />;
   }
 }

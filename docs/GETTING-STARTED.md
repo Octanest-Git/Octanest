@@ -85,7 +85,7 @@ List all Make targets with `make help`.
 | Issue | What you see | Fix |
 |-------|----------------|-----|
 | **Docker / Compose missing** | `docker: command not found` or Compose errors from `make up` | Install Docker Engine and Compose v2 so `docker compose` works. Host-only path: use Option B (`make rpc-gen` + two terminals) with a reachable `DATABASE_URL`. |
-| **Port already in use** | Bind failures on **80** (Traefik), **3000** (Vite/web), or **8080** (API) | Stop the conflicting process, or change binds (`API_BIND`, Vite port) for host dev. Compose exposes Traefik as `80:80`. |
+| **Port already in use** | Bind failures on **80** (Traefik), **2222** (Git SSH), **3000** (Vite/web), or **8080** (API) | Stop the conflicting process, or change binds (`API_BIND`, Vite port) for host dev. Compose exposes Traefik as `80:80` and SSH as `2222:2222` (`OCTANEST_SSH_ENABLED=false` to disable SSH). |
 | **DB dialect mismatch** | Boot exit when `OCTANEST_DB_DIALECT` disagrees with `DATABASE_URL`, or smoke expects another dialect | Keep scheme and dialect aligned (`postgres://` → postgres, `mysql://` → mysql, `sqlite:` → sqlite). Default stack is Postgres; use `make up-mysql` / `make up-sqlite` (and matching smoke targets) instead of mixing overlays. See [CONFIGURATION.md](CONFIGURATION.md) and [database.md](database.md). |
 | **Missing `.env`** | Compose/API using unexpected defaults or empty secrets | `cp .env.example .env` and edit before `make up`. Never commit `.env`. |
 
