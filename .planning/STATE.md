@@ -2,8 +2,8 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase_name: Quality Hardening
-current_plan: 4
-status: planning
+current_plan: 3
+status: executing
 stopped_at: Completed 11.1-01-PLAN.md
 last_updated: "2026-09-15T16:23:07.478Z"
 last_activity: 2026-09-15
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: **11.1** — Quality Hardening (executing) · parallel **12** discuss
-Current Plan: 4
+Current Plan: 3
 Total Plans in Phase: 6
-Status: 11.1-01 and 11.1-02 complete (RepoChrome + coverage gate); next 11.1-03 forge e2e matrix
-Last activity: 2026-09-15 — Completed 11.1-02 coverage tooling + weighted CI gate
+Status: 11.1-01 and 11.1-02 complete (RepoChrome + coverage gate); next 11.1-03 leaf chrome dedupe / forge matrix
+Last activity: 2026-09-15 — Completed 11.1-01-PLAN.md (RepoChrome Packages tracer)
 
 Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
 
