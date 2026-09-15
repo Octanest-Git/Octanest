@@ -88,6 +88,7 @@ up-dev-auth:
 # Main Traefik stack + Mailpit/stubs; API SMTP defaults to smtp://mailpit:1025.
 up-with-dev-auth:
 	@bash -c 'source ./scripts/docker-wsl-creds.sh; \
+	  export OCTANEST_HOST_GATEWAY_IP="$$(./scripts/dev-auth/host-gateway-ip.sh)"; \
 	  $(COMPOSE) -f docker-compose.yml \
 	    -f docker-compose.dev-auth.yml \
 	    -f docker-compose.dev-auth-attach.yml \

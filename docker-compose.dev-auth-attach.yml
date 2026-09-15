@@ -34,7 +34,10 @@ services:
   api:
     extra_hosts:
       # OIDC discovery from API container to published host port (:9090).
-      - "host.docker.internal:host-gateway"
+      # Docker Desktop resolves `host-gateway` magic; the `docker`→podman alias
+      # needs the octanest_dev_auth bridge gateway IP (auto-detected by
+      # scripts/dev-auth/host-gateway-ip.sh and injected as OCTANEST_HOST_GATEWAY_IP).
+      - "host.docker.internal:${OCTANEST_HOST_GATEWAY_IP:-host-gateway}"
     environment:
       # Traefik serves the app on :80 → http://localhost (not vite :3000).
       # Use OCTANEST_COMPOSE_PUBLIC_ORIGIN so host `.env` OCTANEST_PUBLIC_ORIGIN
@@ -54,7 +57,7 @@ services:
       OCTANEST_WORKOS_AUTHORIZE_BASE_URL: ${OCTANEST_WORKOS_AUTHORIZE_BASE_URL:-http://127.0.0.1:9092}
       # Optional OIDC mock — issuer via host gateway so API can reach published :9090.
       OCTANEST_OIDC_ALLOW_INSECURE: ${OCTANEST_OIDC_ALLOW_INSECURE:-1}
-      OCTANEST_OIDC_ISSUER: ${OCTANEST_COMPOSE_OIDC_ISSUER:-http://host.docker.internal:9090/default}
+      OCTANEST_OIDC_ISSUER: ${OCTANEST_COMPOSE_OIDC_ISSUER:-http://${OCTANEST_HOST_GATEWAY_IP:-host.docker.internal}:9090/default}
       OCTANEST_OIDC_CLIENT_ID: ${OCTANEST_OIDC_CLIENT_ID:-octanest-dev}
       OCTANEST_OIDC_CLIENT_SECRET: ${OCTANEST_OIDC_CLIENT_SECRET:-octanest-dev}
 

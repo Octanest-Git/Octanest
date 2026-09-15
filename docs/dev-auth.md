@@ -37,6 +37,16 @@ Then open:
 
 Defaults set `OCTANEST_SMTP_URL=smtp://mailpit:1025` via `OCTANEST_COMPOSE_SMTP_URL` (so a host `.env` with `127.0.0.1:1025` for `make dev` does not break the API container). Magic links use `OCTANEST_COMPOSE_PUBLIC_ORIGIN` → `http://localhost` (Traefik), so a host `OCTANEST_PUBLIC_ORIGIN=http://localhost:3000` for Vite does not leak into mail. Optional Resend / WorkOS / OIDC stub vars: `docs/dev-auth.env.compose.example` (merge into `.env`).
 
+`make up-with-dev-auth` auto-detects the `host.docker.internal` target and injects it as `OCTANEST_HOST_GATEWAY_IP`:
+
+| Runtime | Resolution |
+|---------|------------|
+| Docker Desktop | `host-gateway` magic (unchanged; no action) |
+| `docker`→podman alias | bridge gateway of the `octanest_dev_auth` network, read via `podman network inspect` (`scripts/dev-auth/host-gateway-ip.sh`) |
+| Manual override | `OCTANEST_HOST_GATEWAY_IP=10.89.0.1` (or any IP reaching the published `:9090` port) |
+
+On podman-machine, compose cannot substitute `host-gateway` (`host containers internal IP address is empty`), so the API container would fail to start — the autodetection above resolves the current bridge gateway instead.
+
 Tear down stubs only: `make down-dev-auth`. Full stack from `up-with-dev-auth`: `make down-with-dev-auth`.
 
 | Service | Host URL / port | Compose API URL |
@@ -101,7 +111,7 @@ Then:
 1. Set provider mode to **oidc** (Admin → Auth, or choose OIDC during `/setup`).
 2. Requires `OCTANEST_OIDC_ALLOW_INSECURE=1` and `OCTANEST_ENV` in `development` / `dev` / `compose` (never honored in production-like envs).
 3. Host issuer `http://127.0.0.1:9090/default` — any client id/secret accepted by the mock server.
-4. Compose API must use `OCTANEST_COMPOSE_OIDC_ISSUER=http://host.docker.internal:9090/default` (never `127.0.0.1` inside the API container). On Linux without Docker Desktop, ensure `host.docker.internal` resolves (often `extra_hosts` / `/etc/hosts`).
+4. Compose API must use `OCTANEST_COMPOSE_OIDC_ISSUER=http://host.docker.internal:9090/default` (never `127.0.0.1` inside the API container). On Linux without Docker Desktop, ensure `host.docker.internal` resolves (often `extra_hosts` / `/etc/hosts`). On the `docker`→podman alias, `make up-with-dev-auth` auto-detects the bridge gateway via `scripts/dev-auth/host-gateway-ip.sh`; override with `OCTANEST_HOST_GATEWAY_IP=<ip>` if needed.
 5. Use Sign in with SSO; the mock issues tokens without a real IdP account.
 6. If discovery hangs, check the mock is up (`curl -4 -m 3 http://127.0.0.1:9090/default/.well-known/openid-configuration`) — the API now fails OIDC HTTP within ~10s instead of spinning forever.
 
