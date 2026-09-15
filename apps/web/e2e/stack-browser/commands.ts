@@ -735,7 +735,10 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
       .getByRole("heading", { name: "Git LFS quotas" })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.getByTestId("admin-lfs-page").waitFor({ state: "visible", timeout: 15_000 });
-    await page.getByLabel(/Max object bytes/i).waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("lfs-max-object-amount").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("lfs-max-object-unit").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByTestId("lfs-usage-chart-repo").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByTestId("lfs-usage-chart-owner").waitFor({ state: "visible", timeout: 15_000 });
 
     const lfsHtml = await page.content();
     assertNoOctaneOverlay(lfsHtml, "admin LFS");

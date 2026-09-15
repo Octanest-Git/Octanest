@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { tanstackStart } from "@octanejs/tanstack-start/plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
+import {
+  fixTypeOnlyImports,
+  RECHARTS_TYPE_ONLY_IMPORT_FIX,
+} from "./vite-plugins/fix-type-only-imports.ts";
 
 // NOTE (03-05): vite-plugin-pwa was evaluated here but does not emit a service
 // worker under this Vite 8 / @octanejs/tanstack-start multi-environment build
@@ -17,6 +21,7 @@ const apiProxyTarget =
 
 export default defineConfig({
   plugins: [
+    fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX),
     tanstackStart({
       // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
       // (avoids noisy warnings and extra SSR work during stack e2e).

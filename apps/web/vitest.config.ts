@@ -4,6 +4,10 @@ import { octane } from "@octanejs/vite-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
+  fixTypeOnlyImports,
+  RECHARTS_TYPE_ONLY_IMPORT_FIX,
+} from "./vite-plugins/fix-type-only-imports.ts";
+import {
   ensureAuthSettings,
   expectAdminLfsQuotasFlow,
   expectAuthMeDedupedOnHome,
@@ -60,7 +64,7 @@ const stackEnvDefine = {
  * file hit Vitest `initSuite` / `config` undefined failures on GitHub runners.
  */
 export default defineConfig({
-  plugins: [octane()],
+  plugins: [fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX), octane()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),

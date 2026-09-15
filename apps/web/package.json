@@ -23,6 +23,7 @@
     "@octanejs/base-ui": "^0.1.52",
     "@octanejs/dropzone": "^0.0.18",
     "@octanejs/lucide": "^0.1.47",
+    "@octanejs/recharts": "0.1.50",
     "@octanejs/tanstack-form": "^0.0.48",
     "@octanejs/tanstack-query": "^0.1.52",
     "@octanejs/tanstack-router": "^0.1.53",

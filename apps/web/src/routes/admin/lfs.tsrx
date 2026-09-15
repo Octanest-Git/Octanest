@@ -7,11 +7,20 @@ import type {
 } from "@octanest/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
+import { ByteQuotaField } from "@/components/admin/byte-quota-field";
+import { LfsUsageBarChart } from "@/components/admin/lfs-usage-charts";
 import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
+import {
+  bytesToUnitString,
+  convertUnitDisplay,
+  formatBytes,
+  pickDisplayUnit,
+  toLfsUsageChartRows,
+  unitValueToBytes,
+  type ByteUnit,
+} from "@/lib/byte-units";
 import { authSessionQueryOptions, setAuthMeCache } from "@/lib/session-queries";
 import { fetchAdminLfsSettings, fetchAdminLfsUsage, fetchSessionMe } from "@/lib/ssr-auth";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
@@ -32,6 +41,29 @@ const FORBIDDEN = "You need admin access to manage LFS quotas.";
 
 const settingsQueryKey = ["admin", "lfs", "settings"] as const;
 const usageQueryKey = ["admin", "lfs", "usage"] as const;
+
+type QuotaFormValues = {
+  maxObject: string;
+  maxObjectUnit: ByteUnit;
+  quotaRepo: string;
+  quotaRepoUnit: ByteUnit;
+  quotaUser: string;
+  quotaUserUnit: ByteUnit;
+};
+
+function settingsToFormValues(settings: AdminLfsSettingsPublic): QuotaFormValues {
+  const maxObjectUnit = pickDisplayUnit(settings.max_object_bytes);
+  const quotaRepoUnit = pickDisplayUnit(settings.quota_repo_bytes);
+  const quotaUserUnit = pickDisplayUnit(settings.quota_user_bytes);
+  return {
+    maxObject: bytesToUnitString(settings.max_object_bytes, maxObjectUnit),
+    maxObjectUnit,
+    quotaRepo: bytesToUnitString(settings.quota_repo_bytes, quotaRepoUnit),
+    quotaRepoUnit,
+    quotaUser: bytesToUnitString(settings.quota_user_bytes, quotaUserUnit),
+    quotaUserUnit,
+  };
+}
 
 export const Route = createFileRoute("/admin/lfs")({
   component: AdminLfsPage,
@@ -78,14 +110,6 @@ export const Route = createFileRoute("/admin/lfs")({
     }
   },
 });
-
-function formatBytes(n: number): string {
-  if (!Number.isFinite(n) || n < 0) return "0 B";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KiB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MiB`;
-  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GiB`;
-}
 
 /** Exported for admin/lfs integration tests (D-LFS-12 / D-LFS-13 / D-LFS-19). */
 export function AdminLfsPage() @{
@@ -141,19 +165,22 @@ export function AdminLfsPage() @{
   const [pending, setPending] = useState(false);
 
   const form = useForm({
-    defaultValues: {
-      maxObject: initialSettings ? String(initialSettings.max_object_bytes) : "",
-      quotaRepo: initialSettings ? String(initialSettings.quota_repo_bytes) : "",
-      quotaUser: initialSettings ? String(initialSettings.quota_user_bytes) : "",
-    },
+    defaultValues: initialSettings
+      ? settingsToFormValues(initialSettings)
+      : {
+          maxObject: "",
+          maxObjectUnit: "GiB" as ByteUnit,
+          quotaRepo: "",
+          quotaRepoUnit: "GiB" as ByteUnit,
+          quotaUser: "",
+          quotaUserUnit: "GiB" as ByteUnit,
+        },
     onSubmit: async ({ value }) => {
-      const max_object_bytes = Number(value.maxObject);
-      const quota_repo_bytes = Number(value.quotaRepo);
-      const quota_user_bytes = Number(value.quotaUser);
-      if (
-        ![max_object_bytes, quota_repo_bytes, quota_user_bytes].every((n) => Number.isFinite(n))
-      ) {
-        toastWarning("Enter valid numeric byte limits.");
+      const max_object_bytes = unitValueToBytes(value.maxObject, value.maxObjectUnit);
+      const quota_repo_bytes = unitValueToBytes(value.quotaRepo, value.quotaRepoUnit);
+      const quota_user_bytes = unitValueToBytes(value.quotaUser, value.quotaUserUnit);
+      if (max_object_bytes === null || quota_repo_bytes === null || quota_user_bytes === null) {
+        toastWarning("Enter valid numeric quota amounts.");
         return;
       }
       setPending(true);
@@ -189,9 +216,13 @@ export function AdminLfsPage() @{
 
   useEffect(() => {
     if (settingsQ.isSuccess && settingsQ.data) {
-      form.setFieldValue("maxObject", String(settingsQ.data.max_object_bytes));
-      form.setFieldValue("quotaRepo", String(settingsQ.data.quota_repo_bytes));
-      form.setFieldValue("quotaUser", String(settingsQ.data.quota_user_bytes));
+      const next = settingsToFormValues(settingsQ.data);
+      form.setFieldValue("maxObject", next.maxObject);
+      form.setFieldValue("maxObjectUnit", next.maxObjectUnit);
+      form.setFieldValue("quotaRepo", next.quotaRepo);
+      form.setFieldValue("quotaRepoUnit", next.quotaRepoUnit);
+      form.setFieldValue("quotaUser", next.quotaUser);
+      form.setFieldValue("quotaUserUnit", next.quotaUserUnit);
     }
   }, [settingsQ.isSuccess, settingsQ.dataUpdatedAt]);
 
@@ -231,6 +262,23 @@ export function AdminLfsPage() @{
   const settings = settingsQ.data ?? (readyFromLoader ? loaderData.settings : undefined);
   const usage = usageQ.data ?? (readyFromLoader ? loaderData.usage : undefined);
 
+  const byRepoChart = usage
+    ? toLfsUsageChartRows(
+        usage.by_repo.map((row) => ({
+          label: `${row.owner}/${row.name}`,
+          logicalBytes: row.logical_bytes,
+        })),
+      )
+    : [];
+  const byOwnerChart = usage
+    ? toLfsUsageChartRows(
+        usage.by_owner.map((row) => ({
+          label: row.owner_slug,
+          logicalBytes: row.logical_bytes,
+        })),
+      )
+    : [];
+
   @if (!sessionKnown) {
     <></>;
   } @else {
@@ -268,8 +316,8 @@ export function AdminLfsPage() @{
               Git LFS quotas
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Override instance defaults for max object size and storage quotas. Environment
-              variables remain the fallback when overrides are cleared.
+              Override instance defaults for max object size and storage quotas. Choose an amount
+              and unit; environment variables remain the fallback when overrides are cleared.
             </p>
 
             @if (settingsQ.isError && !settings) {
@@ -291,75 +339,87 @@ export function AdminLfsPage() @{
                 }}
               >
                 <form.Field name="maxObject">
-                  {(field) => (
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="lfs-max-object">Max object bytes</Label>
-                      <Input
-                        id="lfs-max-object"
-                        inputMode="numeric"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onInput={(e) =>
-                          field.handleChange((e.currentTarget as HTMLInputElement).value)
-                        }
-                        disabled={pending}
-                      />
-                      @if (
-                        settings?.max_object_bytes_overridden
-                      ) {
-                        <span className="text-[13px] text-muted-foreground">
-                          Override active
-                        </span>;
-                      }
-                    </div>
+                  {(amountField) => (
+                    <form.Field name="maxObjectUnit">
+                      {(unitField) => (
+                        <ByteQuotaField
+                          id="lfs-max-object"
+                          label="Max object size"
+                          value={amountField.state.value}
+                          unit={unitField.state.value}
+                          overridden={settings?.max_object_bytes_overridden}
+                          disabled={pending}
+                          onBlur={amountField.handleBlur}
+                          onValueChange={amountField.handleChange}
+                          onUnitChange={(next) => {
+                            amountField.handleChange(
+                              convertUnitDisplay(
+                                amountField.state.value,
+                                unitField.state.value,
+                                next,
+                              ),
+                            );
+                            unitField.handleChange(next);
+                          }}
+                        />
+                      )}
+                    </form.Field>
                   )}
                 </form.Field>
                 <form.Field name="quotaRepo">
-                  {(field) => (
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="lfs-quota-repo">Per-repo quota bytes</Label>
-                      <Input
-                        id="lfs-quota-repo"
-                        inputMode="numeric"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onInput={(e) =>
-                          field.handleChange((e.currentTarget as HTMLInputElement).value)
-                        }
-                        disabled={pending}
-                      />
-                      @if (
-                        settings?.quota_repo_bytes_overridden
-                      ) {
-                        <span className="text-[13px] text-muted-foreground">
-                          Override active
-                        </span>;
-                      }
-                    </div>
+                  {(amountField) => (
+                    <form.Field name="quotaRepoUnit">
+                      {(unitField) => (
+                        <ByteQuotaField
+                          id="lfs-quota-repo"
+                          label="Per-repo quota"
+                          value={amountField.state.value}
+                          unit={unitField.state.value}
+                          overridden={settings?.quota_repo_bytes_overridden}
+                          disabled={pending}
+                          onBlur={amountField.handleBlur}
+                          onValueChange={amountField.handleChange}
+                          onUnitChange={(next) => {
+                            amountField.handleChange(
+                              convertUnitDisplay(
+                                amountField.state.value,
+                                unitField.state.value,
+                                next,
+                              ),
+                            );
+                            unitField.handleChange(next);
+                          }}
+                        />
+                      )}
+                    </form.Field>
                   )}
                 </form.Field>
                 <form.Field name="quotaUser">
-                  {(field) => (
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="lfs-quota-user">Per-user quota bytes</Label>
-                      <Input
-                        id="lfs-quota-user"
-                        inputMode="numeric"
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onInput={(e) =>
-                          field.handleChange((e.currentTarget as HTMLInputElement).value)
-                        }
-                        disabled={pending}
-                      />
-                      @if (
-                        settings?.quota_user_bytes_overridden
-                      ) {
-                        <span className="text-[13px] text-muted-foreground">
-                          Override active
-                        </span>;
-                      }
-                    </div>
+                  {(amountField) => (
+                    <form.Field name="quotaUserUnit">
+                      {(unitField) => (
+                        <ByteQuotaField
+                          id="lfs-quota-user"
+                          label="Per-user quota"
+                          value={amountField.state.value}
+                          unit={unitField.state.value}
+                          overridden={settings?.quota_user_bytes_overridden}
+                          disabled={pending}
+                          onBlur={amountField.handleBlur}
+                          onValueChange={amountField.handleChange}
+                          onUnitChange={(next) => {
+                            amountField.handleChange(
+                              convertUnitDisplay(
+                                amountField.state.value,
+                                unitField.state.value,
+                                next,
+                              ),
+                            );
+                            unitField.handleChange(next);
+                          }}
+                        />
+                      )}
+                    </form.Field>
                   )}
                 </form.Field>
                 <div className="flex flex-wrap gap-2">
@@ -401,44 +461,59 @@ export function AdminLfsPage() @{
                         `${usage.object_count} unique OIDs · ${formatBytes(usage.physical_bytes)} physical · ${formatBytes(usage.logical_bytes)} logical` as string
                       }
                     </p>
-                    <div className="grid gap-6 sm:grid-cols-2">
-                      <div>
-                        <h3 className="text-[15px] font-medium">By repository</h3>
-                        @if (usage.by_repo.length === 0) {
-                          <p className="mt-2 text-[13px] text-muted-foreground">
-                            No linked LFS objects.
-                          </p>;
-                        } @else {
-                          <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                            @for (const row of usage.by_repo; key row.repository_id) {
-                              <li>
-                                {
-                                  `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
-                                }
-                              </li>;
-                            }
-                          </ul>;
-                        }
-                      </div>
-                      <div>
-                        <h3 className="text-[15px] font-medium">By owner</h3>
-                        @if (usage.by_owner.length === 0) {
-                          <p className="mt-2 text-[13px] text-muted-foreground">
-                            No linked LFS objects.
-                          </p>;
-                        } @else {
-                          <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
-                            @for (const row of usage.by_owner; key row.owner_id) {
-                              <li>
-                                {
-                                  `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
-                                }
-                              </li>;
-                            }
-                          </ul>;
-                        }
-                      </div>
+                    <div className="grid gap-8 lg:grid-cols-2">
+                      <LfsUsageBarChart
+                        title="By repository"
+                        testId="lfs-usage-chart-repo"
+                        data={byRepoChart}
+                        emptyMessage="No linked LFS objects."
+                      />
+                      <LfsUsageBarChart
+                        title="By owner"
+                        testId="lfs-usage-chart-owner"
+                        data={byOwnerChart}
+                        emptyMessage="No linked LFS objects."
+                      />
                     </div>
+                    @if (
+                      usage.by_repo.length > 0 ||
+                      usage.by_owner.length > 0
+                    ) {
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        @if (usage.by_repo.length > 0) {
+                          <div>
+                            <h3 className="text-[15px] font-medium">
+                              Repositories (detail)
+                            </h3>
+                            <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
+                              @for (const row of usage.by_repo; key row.repository_id) {
+                                <li>
+                                  {
+                                    `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
+                                  }
+                                </li>;
+                              }
+                            </ul>
+                          </div>;
+                        }
+                        @if (usage.by_owner.length > 0) {
+                          <div>
+                            <h3 className="text-[15px] font-medium">
+                              Owners (detail)
+                            </h3>
+                            <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
+                              @for (const row of usage.by_owner; key row.owner_id) {
+                                <li>
+                                  {
+                                    `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
+                                  }
+                                </li>;
+                              }
+                            </ul>
+                          </div>;
+                        }
+                      </div>;
+                    }
                   </>;
                 }
               }

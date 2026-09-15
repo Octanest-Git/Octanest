@@ -1,5 +1,6 @@
-import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BYTE_UNIT_FACTORS } from "@/lib/byte-units";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 const meMock = vi.fn();
@@ -37,20 +38,42 @@ const sysAdmin = {
 };
 
 const readySettings = {
-  max_object_bytes: 1024,
-  quota_repo_bytes: 2048,
-  quota_user_bytes: 4096,
+  max_object_bytes: 2 * BYTE_UNIT_FACTORS.GiB,
+  quota_repo_bytes: 10 * BYTE_UNIT_FACTORS.GiB,
+  quota_user_bytes: 50 * BYTE_UNIT_FACTORS.GiB,
   max_object_bytes_overridden: false,
-  quota_repo_bytes_overridden: false,
+  quota_repo_bytes_overridden: true,
   quota_user_bytes_overridden: false,
 };
 
 const readyUsage = {
-  object_count: 0,
-  physical_bytes: 0,
-  logical_bytes: 0,
-  by_repo: [] as unknown[],
-  by_owner: [] as unknown[],
+  object_count: 3,
+  physical_bytes: 4 * BYTE_UNIT_FACTORS.GiB,
+  logical_bytes: 5 * BYTE_UNIT_FACTORS.GiB,
+  by_repo: [
+    {
+      repository_id: "r1",
+      owner: "acme",
+      name: "assets",
+      object_count: 2,
+      logical_bytes: 3 * BYTE_UNIT_FACTORS.GiB,
+    },
+    {
+      repository_id: "r2",
+      owner: "acme",
+      name: "media",
+      object_count: 1,
+      logical_bytes: 2 * BYTE_UNIT_FACTORS.GiB,
+    },
+  ],
+  by_owner: [
+    {
+      owner_id: "o1",
+      owner_slug: "acme",
+      object_count: 3,
+      logical_bytes: 5 * BYTE_UNIT_FACTORS.GiB,
+    },
+  ],
 };
 
 type LoaderShape =
@@ -99,6 +122,10 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
       ok: true,
       data: readyUsage,
     });
+    updateSettingsMock.mockResolvedValue({
+      ok: true,
+      data: { ...readySettings, quota_repo_bytes_overridden: true },
+    });
     loaderData = {
       kind: "ready",
       me: sysAdmin,
@@ -118,6 +145,7 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
     expect(src).toMatch(/getUsage/);
     expect(src).toMatch(/fetchAdminLfsSettings|loader:/);
     expect(src).toMatch(/initialData/);
+    expect(src).toMatch(/ByteQuotaField|@octanejs\/recharts|LfsUsageBarChart/);
     expect(src).not.toMatch(/AdminLfsSkeleton|showSkeleton/);
     expect(src).toMatch(/toastError|toastSuccess|toastWarning/);
     expect(src).toMatch(/kind: "error"|setPending|\[pending,/);
@@ -125,19 +153,58 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
     expect(src).not.toMatch(/Loading…|Loading usage/);
   });
 
-  it("renders Git LFS quotas form for sys-admin without throwing", async () => {
+  it("renders quota amounts with unit selects and usage charts", async () => {
     renderWithQueryClient(AdminLfsPage);
 
     await waitFor(
       () => {
         expect(screen.getByTestId("admin-lfs-page")).toBeTruthy();
         expect(screen.getByText("Git LFS quotas")).toBeTruthy();
-        expect(screen.getByLabelText(/Max object bytes/i)).toBeTruthy();
+        expect(screen.getByTestId("lfs-max-object-amount")).toBeTruthy();
+        expect(screen.getByTestId("lfs-max-object-unit")).toBeTruthy();
+        expect(screen.getByTestId("lfs-quota-repo-unit")).toBeTruthy();
+        expect(screen.getByTestId("lfs-quota-user-unit")).toBeTruthy();
+        expect(screen.getByLabelText("Max object size")).toBeTruthy();
+        expect(screen.getByLabelText("Max object size unit")).toBeTruthy();
         expect(screen.getByText("Instance usage breakdown")).toBeTruthy();
+        expect(screen.getByTestId("lfs-usage-chart-repo")).toBeTruthy();
+        expect(screen.getByTestId("lfs-usage-chart-owner")).toBeTruthy();
       },
       { timeout: 10_000 },
     );
+
+    const maxAmount = screen.getByTestId("lfs-max-object-amount") as HTMLInputElement;
+    expect(maxAmount.value).toBe("2");
+    expect(screen.getByText("Override active")).toBeTruthy();
+    expect(screen.getAllByText(/acme\/assets/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("img", { name: "By repository" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "By owner" })).toBeTruthy();
     expect(screen.queryByText("Loading…")).toBeNull();
-    expect(screen.queryByText("Loading usage…")).toBeNull();
+  }, 15_000);
+
+  it("submits quotas converted from display units into bytes", async () => {
+    renderWithQueryClient(AdminLfsPage);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("lfs-quota-repo-amount")).toBeTruthy();
+    });
+
+    const repoAmount = screen.getByTestId("lfs-quota-repo-amount") as HTMLInputElement;
+    fireEvent.input(repoAmount, { target: { value: "12" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save quotas/i }));
+
+    await waitFor(() => {
+      expect(updateSettingsMock).toHaveBeenCalled();
+    });
+
+    const payload = updateSettingsMock.mock.calls[0]?.[0] as {
+      max_object_bytes: number;
+      quota_repo_bytes: number;
+      quota_user_bytes: number;
+    };
+    expect(payload.max_object_bytes).toBe(2 * BYTE_UNIT_FACTORS.GiB);
+    expect(payload.quota_repo_bytes).toBe(12 * BYTE_UNIT_FACTORS.GiB);
+    expect(payload.quota_user_bytes).toBe(50 * BYTE_UNIT_FACTORS.GiB);
   });
 });
