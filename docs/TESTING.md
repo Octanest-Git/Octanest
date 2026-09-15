@@ -131,6 +131,7 @@ Import from `vitest` explicitly (`globals: false` in the web Vitest config).
 login / verify / profile also have happy-dom `*.integration.test.ts` export/render contracts (RESEARCH P1).
 
 **Render mounts required for Octane pages (G-11.1-15)** — Wave 0 **raw-source** stubs (`import "./page.tsrx?raw"` + regex for exports / RPC names / absence of `@else if`) are **not enough** to prove a `.tsrx` page works. They miss missing `useState`, broken Rivet control flow, and hydration-time ReferenceErrors. User-facing routes under `apps/web/src/routes/` must keep at least one **happy-dom render mount** (e.g. `AdminLfsPage` via `renderWithQueryClient` + `getByTestId("admin-lfs-page")`) and, for admin quotas, **stack-browser** coverage (`forge-admin.stack.browser.test.tsx` → `/admin/lfs`). Do not regress `/admin/lfs` back to raw-source-only.
+
 ### API client
 
 Add `*.test.ts` beside the module under `packages/api-client/src/` (Vitest picks them up with the package default config).
