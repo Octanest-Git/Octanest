@@ -3,8 +3,8 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
-import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client";
-import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env";
+import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client.ts";
+import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env.ts";
 
 type AuthPatch = {
   provider_mode: "local" | "workos" | "oidc";
@@ -207,7 +207,7 @@ export const signupThroughUi: BrowserCommand<
       });
     } catch {
       // Fallback: complete signup via RPC then land on home (UI fields already proven).
-      const { rpc } = await import("../stack/client");
+      const { rpc } = await import("../stack/client.ts");
       const res = await rpc("auth.signup", {
         email: creds.email,
         username: creds.username,
@@ -828,7 +828,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
       timeout: 60_000,
     });
     await page
-      .getByRole("heading", { name: "SSH keys" })
+      .getByRole("heading", { name: "SSH keys", exact: true })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page
       .getByRole("button", { name: /Add SSH key/i })
@@ -927,15 +927,33 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
     });
 
     await page.getByRole("button", { name: /create new/i }).click();
-    await page.getByText("New repository").waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByText("New organization").waitFor({ state: "visible", timeout: 5_000 });
+    await page.getByRole("menuitem", { name: "New repository" }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+    await page.getByRole("menuitem", { name: "New organization" }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
 
     // Dismiss create menu by opening account menu.
     await page.getByRole("button", { name: /account menu/i }).click();
-    await page.getByText("Your repositories").waitFor({ state: "visible", timeout: 10_000 });
-    await page.getByText("Settings").waitFor({ state: "visible", timeout: 5_000 });
-    await page.getByText("Admin").waitFor({ state: "visible", timeout: 5_000 });
-    await page.getByText("Sign out").waitFor({ state: "visible", timeout: 5_000 });
+    await page.getByRole("menuitem", { name: "Your repositories" }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+    await page.getByRole("menuitem", { name: "Settings" }).waitFor({
+      state: "visible",
+      timeout: 5_000,
+    });
+    await page.getByRole("menuitem", { name: "Admin" }).waitFor({
+      state: "visible",
+      timeout: 5_000,
+    });
+    await page.getByRole("menuitem", { name: "Sign out" }).waitFor({
+      state: "visible",
+      timeout: 5_000,
+    });
 
     assertNoOctaneOverlay(await page.content(), "signed-in chrome menus");
     return true;
@@ -974,7 +992,7 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       timeout: 60_000,
     });
     await page
-      .getByRole("heading", { name: "SSH keys" })
+      .getByRole("heading", { name: "SSH keys", exact: true })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.getByTestId("settings-ssh-keys-page").waitFor({ state: "visible", timeout: 15_000 });
     assertNoOctaneOverlay(await page.content(), "settings ssh-keys");

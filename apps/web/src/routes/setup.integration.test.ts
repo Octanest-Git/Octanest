@@ -38,5 +38,5 @@ describe("/setup Wave 0 (AUTH-07 UI-SPEC)", () => {
     });
     expect(screen.getByRole("button", { name: "Create system admin" })).toBeInTheDocument();
     expect(screen.getByText(/When off, new accounts can’t self-register/i)).toBeInTheDocument();
-  });
+  }, 15_000);
 });

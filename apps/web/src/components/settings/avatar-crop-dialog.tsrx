@@ -148,7 +148,8 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
     natural.w > 0
       ? displayedSize(frame())
       : { width: VIEWPORT, height: VIEWPORT };
-  const disabled = props.pending === true || busy || natural.w === 0;
+  const saving = props.pending === true || busy;
+  const canSave = !saving && natural.w > 0;
   const show = props.open && !!props.imageUrl;
 
   @if (show) {
@@ -160,7 +161,7 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
         type="button"
         aria-label="Dismiss crop"
         className="absolute inset-0 bg-black/40 supports-backdrop-filter:backdrop-blur-[2px]"
-        disabled={disabled}
+        disabled={saving}
         onClick={() => requestClose()}
       />
       <div
@@ -216,7 +217,7 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
             max={3}
             step={0.01}
             value={zoom}
-            disabled={disabled}
+            disabled={!canSave}
             className="h-11 w-full accent-primary"
             onInput={(e) =>
               onZoomInput(Number((e.currentTarget as HTMLInputElement).value))
@@ -234,17 +235,17 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
           <Button
             type="button"
             variant="secondary"
-            disabled={disabled}
+            disabled={saving}
             onClick={() => requestClose()}
           >
             Cancel
           </Button>
           <Button
             type="button"
-            disabled={disabled}
+            disabled={!canSave}
             onClick={() => void confirmCrop()}
           >
-            {(busy || props.pending ? "Saving…" : "Save picture") as string}
+            {(saving ? "Saving…" : "Save picture") as string}
           </Button>
         </div>
       </div>

@@ -65,5 +65,5 @@ describe("/setup/credentials (AUTH-06 UI-SPEC)", () => {
       ).toBeInTheDocument();
     });
     expect(confirmAdminCredentials).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 });

@@ -296,7 +296,7 @@ async fn git_ssh_public_upload_pack_happy_path() {
     .expect("listen");
 
     let key = Arc::new(load_secret_key(&priv_path, None).unwrap());
-    let mut session = connect_auth(addr, "git", key).await.expect("auth");
+    let session = connect_auth(addr, "git", key).await.expect("auth");
     let mut channel = session
         .channel_open_session()
         .await
@@ -516,7 +516,7 @@ async fn git_ssh_non_pack_exec_shell_rejected() {
     .expect("listen");
 
     let key = Arc::new(load_secret_key(&priv_path, None).unwrap());
-    let mut session = connect_auth(addr, "git", key).await.expect("auth");
+    let session = connect_auth(addr, "git", key).await.expect("auth");
     let mut channel = session.channel_open_session().await.expect("open");
     channel.exec(true, "bash").await.expect("exec sent");
     let mut failed = false;

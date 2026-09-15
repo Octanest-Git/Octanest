@@ -119,8 +119,8 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
     expect(src).toMatch(/fetchAdminLfsSettings|loader:/);
     expect(src).toMatch(/initialData/);
     expect(src).not.toMatch(/AdminLfsSkeleton|showSkeleton/);
-    expect(src).toMatch(/setError|\[error,/);
-    expect(src).toMatch(/setPending|\[pending,/);
+    expect(src).toMatch(/toastError|toastSuccess|toastWarning/);
+    expect(src).toMatch(/kind: "error"|setPending|\[pending,/);
     expect(src).not.toMatch(/@else if/);
     expect(src).not.toMatch(/Loading…|Loading usage/);
   });

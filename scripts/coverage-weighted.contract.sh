@@ -26,9 +26,9 @@ rc_eq=$?
 set -e
 [[ "$rc_eq" -eq 0 ]] || fail "expected zero exit at exact floor 0.65"
 
-rg -q '0\.25' "$SCRIPT" || fail "unit weight 0.25 missing"
-rg -q '0\.40' "$SCRIPT" || fail "integration weight 0.40 missing"
-rg -q '0\.35' "$SCRIPT" || fail "e2e weight 0.35 missing"
-rg -q '0\.65' "$SCRIPT" || fail "bootstrap floor 0.65 missing"
+grep -q '0\.25' "$SCRIPT" || fail "unit weight 0.25 missing"
+grep -q '0\.40' "$SCRIPT" || fail "integration weight 0.40 missing"
+grep -q '0\.35' "$SCRIPT" || fail "e2e weight 0.35 missing"
+grep -q '0\.65' "$SCRIPT" || fail "bootstrap floor 0.65 missing"
 
 echo "PASS: coverage-weighted aggregator contract"

@@ -20,7 +20,10 @@ export default defineConfig({
     tanstackStart({
       // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
       // (avoids noisy warnings and extra SSR work during stack e2e).
-      routeFileIgnorePattern: "\\.(test|spec)\\.",
+      // Must live under `router` — top-level keys are stripped by Start's schema.
+      router: {
+        routeFileIgnorePattern: "\\.(test|spec)\\.",
+      },
     }),
     tailwindcss(),
   ],

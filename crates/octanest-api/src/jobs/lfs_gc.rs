@@ -1,6 +1,6 @@
 //! Periodic LFS OID GC — delete unreferenced objects after grace (D-LFS-15).
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::Duration;
 
 use octanest_db::Database;
@@ -13,14 +13,6 @@ use crate::lfs::store;
 pub const DEFAULT_GC_INTERVAL_SECS: u64 = 86_400;
 /// Default grace before deleting unreferenced OIDs: 7 days.
 pub const DEFAULT_GC_GRACE_SECS: u64 = 7 * 86_400;
-
-pub fn gc_interval_from_env() -> Duration {
-    let secs = std::env::var("OCTANEST_LFS_GC_INTERVAL_SECS")
-        .ok()
-        .and_then(|s| s.parse().ok())
-        .unwrap_or(DEFAULT_GC_INTERVAL_SECS);
-    Duration::from_secs(secs)
-}
 
 pub fn gc_grace_from_env() -> Duration {
     let secs = std::env::var("OCTANEST_LFS_GC_GRACE_SECS")

@@ -252,7 +252,7 @@ export function ProfilePage() @{
       if (!res.ok || !json.ok || !json.avatar_url) {
         toastError(json.error?.message || "Avatar upload failed. Try again.");
         setAvatarUploadPending(false);
-        return;
+        throw new Error("avatar upload failed");
       }
       const nextUrl = `${json.avatar_url}?t=${Date.now()}`;
       setAvatarUrl(nextUrl);
@@ -264,9 +264,13 @@ export function ProfilePage() @{
       });
       toastSuccess("Profile picture updated.");
       setAvatarUploadPending(false);
-    } catch {
-      toastError(NETWORK_ERROR);
+    } catch (err) {
       setAvatarUploadPending(false);
+      if (err instanceof Error && err.message === "avatar upload failed") {
+        throw err;
+      }
+      toastError(NETWORK_ERROR);
+      throw err instanceof Error ? err : new Error(NETWORK_ERROR);
     }
   }
 

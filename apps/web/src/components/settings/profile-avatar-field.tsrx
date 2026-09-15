@@ -90,7 +90,10 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
         <input
           id="profile-avatar"
           aria-label="Upload profile picture"
-          {...dropzone.getInputProps()}
+          {...dropzone.getInputProps({
+            id: "profile-avatar",
+            "aria-label": "Upload profile picture",
+          })}
         />
         <AvatarPreview
           user={props.user}

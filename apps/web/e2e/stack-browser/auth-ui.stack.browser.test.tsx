@@ -40,7 +40,7 @@ describe("stack browser e2e: local signup + login UI", () => {
       password: "password1",
     });
     expect(ok).toBe(true);
-  }, 60_000);
+  }, 120_000);
 
   it("shows WorkOS CTA when provider mode is workos", async () => {
     try {

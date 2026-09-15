@@ -1,4 +1,4 @@
-import { adminEmail, adminPassword, apiOrigin, e2eDbPath } from "./env";
+import { adminEmail, adminPassword, apiOrigin, e2eDbPath } from "./env.ts";
 
 export type RpcResult = {
   status: number;

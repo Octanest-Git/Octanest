@@ -18,7 +18,7 @@ import {
   loginThroughOidc,
   restoreLocalAuthCommand,
   signupThroughUi,
-} from "./e2e/stack-browser/commands";
+} from "./e2e/stack-browser/commands.ts";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const stackEnabled = process.env.E2E_STACK === "1";
@@ -108,6 +108,8 @@ export default defineConfig({
           environment: "happy-dom",
           include: ["src/**/*.integration.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-integration.ts"],
+          // happy-dom + dynamic route imports contend under parallel workers (timeouts / DOM bleed).
+          fileParallelism: false,
         },
       },
       ...(stackEnabled
