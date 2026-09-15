@@ -25,15 +25,15 @@ current_phase: "11.1"
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Dual-track on `feat/phase-12-and-quality` — **Phase 11.1 Quality Hardening** (plan next) + **Phase 12 Pull Requests** discuss (Area 1 locked)
+**Current focus:** Dual-track on `feat/phase-12-and-quality` — **Phase 11.1 Quality Hardening** (plan 05 protocol smokes + GSD residual; phase nearly complete) + **Phase 12 Pull Requests** discuss (Area 1 locked)
 
 ## Current Position
 
 Phase: **11.1** — Quality Hardening (executing) · parallel **12** discuss
 Current Plan: 6
 Total Plans in Phase: 6
-Status: 11.1-01 and 11.1-02 complete (RepoChrome + coverage gate); next 11.1-03 leaf chrome dedupe / forge matrix
-Last activity: 2026-09-15 — Completed 11.1-01-PLAN.md (RepoChrome Packages tracer)
+Status: 11.1-01…04 + 06 complete; 11.1-05 protocol smoke CI + residual GSD honesty
+Last activity: 2026-09-15 — Executing 11.1-05-PLAN.md (smoke-protocol + Nyquist/stub closeout)
 
 Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
 

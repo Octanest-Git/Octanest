@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
-- [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA incomplete → 11.1; OCI referrers deferred)*
+- [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
@@ -356,7 +356,7 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
-**GSD note**: Plans executed; VERIFICATION/VALIDATION honesty repaired under Phase 11.1 (issue #3). Stack-browser SSH e2e remains a 11.1 gap if still open.
+**GSD note**: Plans executed; VERIFICATION/VALIDATION honesty repaired under Phase 11.1 (issue #3). Stack-browser SSH keys (11.1-04) + CI `smoke-protocol` / `smoke-git-ssh` (11.1-05) closed Nyquist sampling (`nyquist_compliant: true`).
 
 **Plans**: 10/10 plans executed
 

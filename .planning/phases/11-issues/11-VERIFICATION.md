@@ -270,7 +270,7 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (20/20). Non
 
 Phase 11 must-have truths are present, wired, data-flowing, and backed by passing named API/Vitest tests. End-of-phase UAT from `11-VALIDATION.md` Manual / UAT Backstops is closed (see UAT closure below).
 
-**Residual (not failures of Phase 11 scope):** Linked PR rows remain `pr_stub` until Phase 12; closing keywords stay deferred (D-ISS-15); stack-browser e2e does not cover issues flows. Details below.
+**Residual (not failures of Phase 11 scope):** Linked PR rows remain `pr_stub` until Phase 12; closing keywords stay deferred (D-ISS-15). Issues CRUD stack-browser landed in Phase 11.1-04 (`forge-issues-releases.stack.browser.test.tsx`) — see Known stubs update.
 
 ---
 
@@ -282,19 +282,20 @@ Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/iss
 | ---------- | ------------ | ------------------ | -------- |
 | **`pr_stub` / `IssueLinkKind::PrStub`** | Manual `issue.links.*` CRUD; Linked PRs sidebar lists stub rows | Real pull-request domain objects, PR routes, or PR↔issue linking as first-class PRs (Phase 12) | `IssueLinkKind::PrStub` in `crates/octanest-core/src/issue_types.rs`; UI copy `PR stub #N` in `apps/web/src/components/repo/issue-linked-prs.tsrx`; API note in `docs/API.md` (Linked PRs); tests `crates/octanest-api/tests/issue_links.rs` |
 | **Closing keywords (D-ISS-15)** | Negative test proves `fixes` / `closes` `#N` in comments do **not** auto-close or auto-link | Auto-close / auto-link on merge or keyword comments — deferred to Phase 12 | Decision `D-ISS-15` in `11-CONTEXT.md`; `issue_links_no_closing_keyword_enforcement` in `crates/octanest-api/tests/issue_links.rs`; truth #11 above is “not enforced,” not “keywords work” |
-| **Stack-browser e2e for issues** | API nextest (`issue_*`), Vitest DOM integration (`$owner.$repo.issues.integration.test.ts`), plus compose/browser UAT notes | Thin/no `apps/web/e2e/stack-browser/` coverage of issues CRUD/list/detail — stack-browser today is auth-oriented (`auth-ui.stack.browser.test.tsx` only) | `apps/web/e2e/stack-browser/`; forge issues e2e tracked for Phase 11.1 / quality hardening, not claimed by Phase 11 gate |
+| **Stack-browser e2e for issues** | API nextest (`issue_*`), Vitest DOM integration, **plus** Phase 11.1-04 Chromium create→close (`forge-issues-releases.stack.browser.test.tsx`) | Full list filters / soft-404 / comments / labels in stack-browser remain thinner than API/Vitest | `apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx` (**closed** for core CRUD; expand filters later) |
 
 **Footnotes for planners**
 
 1. Truth #3 / ISS-04 “link issues and PRs by reference” means markdown `#N` autolink + **stub** link rows — not Phase 12 PR entities.
 2. Truth #11 explicitly verifies stubs + absence of closing-keyword enforcement; do not re-read that as keyword automation shipped.
-3. “15/15 Issues UI integration” is Vitest/DOM, not `make test-e2e-stack` Chromium forge flows.
+3. “15/15 Issues UI integration” is Vitest/DOM; Chromium forge CRUD is `make test-e2e-stack` (11.1-04) — still not a substitute for real PRs.
 
 ---
 
 _Verified: 2026-09-14T16:52:48Z_  
 _Verifier: Claude (gsd-verifier)_  
-_Honesty fixup: 2026-09-15 (Known stubs / residual gaps; status remains passed)_
+_Honesty fixup: 2026-09-15 (Known stubs / residual gaps; status remains passed)_  
+_Residual 11.1-05: issues stack-browser CRUD marked closed (keep pr_stub / closing-keyword)_
 
 
 ## UAT closure

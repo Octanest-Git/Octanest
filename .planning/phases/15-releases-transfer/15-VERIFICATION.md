@@ -221,14 +221,14 @@ Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/iss
 | Stub / gap | What shipped | What is *not* done | Pointers |
 | ---------- | ------------ | ------------------ | -------- |
 | **Wave 0 UI tests thin (export/chrome)** | Vitest colocated suites assert Releases tab in chrome, route exports / discoverability, and Danger zone rename/transfer source contracts via `?raw` | Full interaction / hydration coverage of create→upload→download or rename/transfer dialogs in happy-dom | `$owner.$repo.releases.integration.test.ts` (chrome + export asserts; one discoverability WARNING without `?raw`); `$owner.$repo.settings.rename-transfer.integration.test.ts` (`?raw` string matches only) |
-| **No stack-browser e2e for releases CRUD** | Rust `release_rpc` integration tests; Vitest Wave 0; compose UAT notes for list/detail SSR | No `apps/web/e2e/stack-browser/` flow for releases list → create → asset → detail | `apps/web/e2e/stack-browser/` is auth-only today (`auth-ui.stack.browser.test.tsx`); forge releases CRUD tracked for Phase 11.1 / `D-QH-03` |
-| **Settings Danger zone under-tested in browser** | `repo.rename` / `repo.transfer` nextest; settings source contract Vitest; human-check / UAT for rename RPC | No stack-browser (or equivalent) coverage of type-confirm rename/transfer UX in Chromium | `$owner.$repo.settings.tsrx` Danger zone; `$owner.$repo.settings.rename-transfer.integration.test.ts`; Phase 11.1 forge matrix / settings danger-zone e2e |
+| **Stack-browser e2e for releases CRUD** | Rust `release_rpc`; Vitest Wave 0; **plus** Phase 11.1-04 Chromium create-from-tag (`forge-issues-releases.stack.browser.test.tsx`) | Asset upload/download + full detail hydration remain thinner than API | `apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx` (**closed** for create path; assets later) |
+| **Settings Danger zone under-tested in browser** | `repo.rename` / `repo.transfer` nextest; settings source contract Vitest; human-check / UAT for rename RPC | No stack-browser (or equivalent) coverage of type-confirm rename/transfer UX in Chromium | `$owner.$repo.settings.tsrx` Danger zone; `$owner.$repo.settings.rename-transfer.integration.test.ts`; residual after 11.1 forge matrix |
 | **Soft-delete disk purge deferred** | Danger zone shares soft-delete IA with rename/transfer; DB soft-delete + redirect retention jobs for rename/transfer paths | Synchronous or Phase-15-owned disk wipe of soft-deleted bare repos — still the Phase 07 **D-35** deferral (orphan reconcile / retention purge elsewhere) | Relevant because Settings Danger zone co-locates Delete with Rename/Transfer (`15-05`); disposition remains documented deferral, not a Phase 15 reopen |
 
 **Footnotes for planners**
 
-1. Truths #1–3 are RPC + wiring + compose UAT — not `make test-e2e-stack` Chromium forge flows.
-2. “Web chrome + settings raw tests” / Wave 0 green ≠ releases CRUD or Danger zone browser e2e.
+1. Truths #1–3 are RPC + wiring + compose UAT — Chromium create path is 11.1-04, not asset/Danger e2e.
+2. “Web chrome + settings raw tests” / Wave 0 green ≠ Danger zone browser e2e.
 3. Soft-delete purge gaps belong to Phase 07 retention jobs / quality follow-ups — do not invent purge behavior from a Phase 15 VERIFICATION green light.
 
 ---
@@ -236,6 +236,7 @@ Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/iss
 _Verified: 2026-09-14T17:54:05Z_
 _Verifier: Claude (gsd-verifier)_
 _Honesty fixup: 2026-09-15 (Known stubs / residual gaps; status → passed with caveats)_
+_Residual 11.1-05: releases stack-browser create marked closed (keep Danger zone + soft-delete)_
 
 
 ## UAT closure

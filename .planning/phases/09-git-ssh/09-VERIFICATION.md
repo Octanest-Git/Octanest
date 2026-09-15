@@ -9,10 +9,10 @@ decision_coverage:
   honored: 7
   total: 7
   not_honored: []
-nyquist_complete: false
+nyquist_complete: true
 caveats:
-  - no_stack_browser_e2e_for_ssh_keys
-  - compose_smoke_git_ssh_operator_dependent
+  - clonebox_live_ls_remote_optional_client_depth
+  - smoke_git_ssh_ci_routing_tcp_default_skip_ls_remote
 covered_files:
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
@@ -66,10 +66,10 @@ covered_files:
 human_verification:
   - test: "Register ed25519 key at /settings/ssh-keys; CloneBox shows git@…:owner/repo.git"
     expected: "Add/list/revoke works in a live browser; SSH URL + Port hint match env"
-    why_human: "No stack-browser / Playwright e2e covers SSH keys UI; Vitest integration stubs DOM only"
-  - test: "make up then make smoke-git-ssh (ls-remote/push on TCP 2222)"
+    why_human: "Stack-browser covers add/list (11.1-04); revoke UX + CloneBox visual polish remain human-friendly"
+  - test: "make up then make smoke-git-ssh (ls-remote/push on TCP 2222) with fixtures"
     expected: "Compose SSH listener accepts registered key; push/fetch succeed"
-    why_human: "Smoke skips when Docker missing; not part of default CI make test"
+    why_human: "CI smoke-protocol asserts TCP fail-closed; full ls-remote/push needs seeded key+repo (SMOKE_SKIP_LS_REMOTE=0)"
 ---
 
 # Phase 09: Git SSH Verification Report
@@ -77,7 +77,7 @@ human_verification:
 **Phase Goal:** Users can register SSH keys and clone/fetch/push over SSH like a normal forge remote  
 **Verified:** 2026-09-15T15:39:42Z  
 **Status:** passed_with_caveats  
-**Re-verification:** Yes — honesty repair (missing VERIFICATION + draft VALIDATION; Phase 11.1 / issue #3)  
+**Re-verification:** Yes — honesty repair (missing VERIFICATION + draft VALIDATION; Phase 11.1 / issue #3); residual 11.1-05 Nyquist flip after stack-browser SSH + CI smoke-protocol  
 **Plans:** 10/10 PLAN files have matching SUMMARY files (09-00 … 09-09).
 
 ## Goal Achievement
@@ -88,10 +88,10 @@ Roadmap success criteria (GIT-03, GIT-04). Evidence is artifact + named automate
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | User can add, list, and revoke SSH public keys on their account (GIT-04) | ✓ VERIFIED | Schema `0009_ssh_keys` tri-dialect + `ssh_keys.rs`; RPC `sshKey.add/list/revoke` in `ssh_keys/mod.rs` + generated client; UI `/settings/ssh-keys` + SettingsNav. Tests: `ssh_key_rpc.rs` (7 cases: add fingerprint, list, revoke, email_unverified, title_required, duplicate fingerprint, max 25); `dialect_ssh_keys` (2); Vitest `ssh-keys.integration.test.ts`. No `assert!(false)` / skips remain. |
-| 2 | User can clone, fetch, and push over SSH with a registered public key (GIT-03) | ✓ VERIFIED | In-process `russh` listener `crates/octanest-api/src/ssh/` (auth, pack spawn, rate-limit); CloneBox scp-style URL + CTA. Tests: `git_ssh.rs` (username `git`, registered key, public upload-pack, private non-owner stderr deny, unverified push deny, non-pack shell reject, failed-pubkey rate-limit); Vitest `clone-box.ssh.integration.test.ts`; `scripts/smoke-git-ssh.sh` + `make smoke-git-ssh` (Compose TCP; skips if Docker missing). |
+| 1 | User can add, list, and revoke SSH public keys on their account (GIT-04) | ✓ VERIFIED | Schema `0009_ssh_keys` tri-dialect + `ssh_keys.rs`; RPC `sshKey.add/list/revoke` in `ssh_keys/mod.rs` + generated client; UI `/settings/ssh-keys` + SettingsNav. Tests: `ssh_key_rpc.rs` (7 cases); `dialect_ssh_keys` (2); Vitest `ssh-keys.integration.test.ts`; stack-browser `forge-packages-ssh-orgs.stack.browser.test.tsx` (11.1-04 add/list). |
+| 2 | User can clone, fetch, and push over SSH with a registered public key (GIT-03) | ✓ VERIFIED | In-process `russh` listener `crates/octanest-api/src/ssh/`; CloneBox scp-style URL + CTA. Tests: `git_ssh.rs`; Vitest `clone-box.ssh.integration.test.ts`; `scripts/smoke-git-ssh.sh` + CI `smoke-protocol` / `make smoke-protocol-ci` (11.1-05; fail-closed TCP; optional ls-remote with fixtures). |
 
-**Score:** 2/2 truths verified by API/DB/Vitest + smoke script presence. **Caveat:** stack-browser e2e for SSH keys UI is **absent**; live Compose smoke is **operator-dependent**, not proven in this doc-only honesty pass.
+**Score:** 2/2 truths verified by API/DB/Vitest + stack-browser SSH keys + CI protocol smoke. **Caveat:** full client ls-remote/push in CI defaults to skipped (`SMOKE_SKIP_LS_REMOTE=1`) — TCP + routing are CI-gated; seeded-repo client remains ops/optional.
 
 ### Decision Coverage
 
@@ -114,7 +114,7 @@ CONTEXT decisions D-SSH-01…07 are reflected in shipped code/docs (russh in-api
 | `packages/api-client/src/index.ts` | Generated `sshKey.*` | ✓ VERIFIED | client + Query helpers |
 | `scripts/smoke-git-ssh.sh` | Compose TCP smoke | ✓ VERIFIED | Makefile target; docker-missing skip |
 | `docs/CONFIGURATION.md` / `ARCHITECTURE.md` | Ops + russh notes | ✓ VERIFIED | `OCTANEST_SSH_*` documented |
-| `09-VALIDATION.md` | Phase gate map | ⚠ PARTIAL | Wave 0 complete; **`nyquist_compliant: false`** (see Gaps) |
+| `09-VALIDATION.md` | Phase gate map | ✓ validated | Wave 0 complete; **`nyquist_compliant: true`** (11.1-04 e2e + 11.1-05 CI smoke) |
 
 ### Key Link Verification
 
@@ -172,19 +172,19 @@ No orphaned REQUIREMENTS.md IDs for Phase 09 (GIT-03/04).
 | `dialect_ssh_keys.rs` | GIT-04 | 2 | 0 | 0 | Schema/value | OK |
 | `ssh-keys.integration.test.ts` | GIT-04 UI | yes | 0 | 0 | DOM/integration | OK |
 | `clone-box.ssh.integration.test.ts` | GIT-03/04 UI | yes | 0 | 0 | DOM/integration | OK |
-| `apps/web/e2e` SSH | GIT-03/04 | **0** | — | — | — | **GAP** |
-| `smoke-git-ssh.sh` | GIT-03 | script | docker-skip | — | Live stack | PARTIAL |
+| `apps/web/e2e` SSH | GIT-03/04 | **yes** | — | — | stack-browser | OK (11.1-04) |
+| `smoke-git-ssh.sh` | GIT-03 | script | CI fail-closed | — | Live stack / CI | OK (11.1-05 `smoke-protocol`) |
 
 **Disabled tests on requirements:** 0  
 **Circular patterns detected:** 0  
-**Nyquist completeness:** **false** — missing stack-browser / Playwright coverage for SSH keys; Compose smoke not a CI-default gate.
+**Nyquist completeness:** **true** — stack-browser SSH keys (11.1-04) + CI fail-closed `smoke-git-ssh` (11.1-05). Optional client ls-remote/push remains fixture-gated.
 
 ### Anti-Patterns Found
 
 | File | Pattern | Severity | Impact |
 | ---- | ------- | -------- | ------ |
 | — | No remaining Wave 0 `assert!(false)` in ssh_key/git_ssh/dialect tests | — | Clean |
-| `apps/web/e2e` | No SSH keys or git-over-SSH browser scenarios | ⚠️ Caveat | Tracked for Phase 11.1 quality hardening |
+| `apps/web/e2e` | SSH keys covered by `forge-packages-ssh-orgs.stack.browser.test.tsx` | ℹ️ Closed | 11.1-04 |
 | `09-VALIDATION.md` (pre-fix) | `status: draft` while plans complete | ℹ️ Fixed | Honesty update this pass |
 
 ### Human Verification Required
@@ -193,25 +193,26 @@ No orphaned REQUIREMENTS.md IDs for Phase 09 (GIT-03/04).
 
 **Test:** Register ed25519 key; list; revoke with confirm; verify wall when unverified  
 **Expected:** CRUD matches Vitest/RPC behavior in live session  
-**Why human:** No stack-browser e2e for `/settings/ssh-keys`
+**Why human:** Stack-browser covers add/list; revoke confirm + unverified wall remain useful human checks
 
-### 2. Compose TCP git smoke
+### 2. Compose TCP git smoke (full client)
 
-**Test:** `make up` then `make smoke-git-ssh`  
+**Test:** `make up` then `make smoke-git-ssh` with `SMOKE_SKIP_LS_REMOTE=0` + registered key  
 **Expected:** ls-remote/push with registered key on port 2222  
-**Why human / ops:** Smoke skips without Docker; not asserted in default `make test`
+**Why human / ops:** CI asserts TCP fail-closed by default; full client needs fixtures
 
 ### Gaps Summary
 
-**Phase goal is met in code and unit/integration coverage.** Honesty caveats (do not treat as full Nyquist green):
+**Phase goal is met in code, unit/integration, stack-browser SSH keys, and CI protocol smoke.** Residual (non-blocking):
 
-1. **No stack-browser / Playwright e2e** for SSH key settings or CloneBox SSH flow (`apps/web/e2e` has no SSH matches). Residual product risk: UI regressions only caught by Vitest DOM stubs + manual UAT.
-2. **`make smoke-git-ssh`** is the live transport proof but is **Compose/operator-dependent** (skips when Docker missing). This honesty pass did not re-execute it.
-3. **`nyquist_compliant` stays false** in `09-VALIDATION.md` until browser e2e (and ideally CI-visible smoke) close the sampling gap — prefer residual-risk documentation over a false green.
+1. **CloneBox ↔ live git client** optional depth — CI asserts SSH TCP; seeded ls-remote/push when fixtures present.
+2. **`SMOKE_SKIP_LS_REMOTE=1` default in CI** — intentional (no seeded smokeowner/smokerepo in protocol job); do not treat as docker-missing skip-as-pass (that path fails closed under `CI` / `SMOKE_REQUIRE_STACK`).
+3. **`nyquist_compliant` is true** in `09-VALIDATION.md` after 11.1-04 + 11.1-05 evidence.
 
 **Non-blocking:** Phase 10+ ACL extensions for collaborators on SSH are intentional post-09 scope (CONTEXT); SSH must continue to call the shared ACL module.
 
 ---
 
 _Verified: 2026-09-15T15:39:42Z_  
-_Verifier: Claude (gsd-honesty / Phase 11.1)_
+_Verifier: Claude (gsd-honesty / Phase 11.1)_  
+_Residual Nyquist closeout: 2026-09-15 (11.1-05 — stack-browser SSH + CI smoke-protocol)_
