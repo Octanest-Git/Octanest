@@ -6,6 +6,7 @@ import { defineConfig } from "vitest/config";
 import {
   ensureAuthSettings,
   expectAuthMeDedupedOnHome,
+  expectForgeRepoPackagesFlow,
   expectStatusHealthy,
   expectWorkosCta,
   loginThroughOidc,
@@ -141,6 +142,7 @@ export default defineConfig({
                     loginThroughOidc,
                     expectStatusHealthy,
                     expectAuthMeDedupedOnHome,
+                    expectForgeRepoPackagesFlow,
                   },
                 },
               },

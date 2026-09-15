@@ -1,10 +1,15 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
 import {
   adminLogin,
   restoreLocalAuth,
+  rpc,
   updateAuthSettings,
 } from "../stack/client";
-import { e2eDbPath, webOrigin } from "../stack/env";
+import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env";
 
 type AuthPatch = {
   provider_mode: "local" | "workos" | "oidc";
@@ -15,6 +20,50 @@ type AuthPatch = {
   workos_client_id?: string | null;
 };
 
+/** Minimal Playwright page surface used by Node browser commands. */
+type PlaywrightPage = {
+  goto: (url: string, opts?: object) => Promise<unknown>;
+  getByRole: (
+    role: string,
+    opts?: object,
+  ) => {
+    waitFor: (opts?: object) => Promise<unknown>;
+    click: () => Promise<unknown>;
+    fill?: (v: string) => Promise<unknown>;
+  };
+  getByLabel: (
+    label: string | RegExp,
+    opts?: object,
+  ) => {
+    fill: (v: string) => Promise<unknown>;
+    press: (key: string) => Promise<unknown>;
+    click?: () => Promise<unknown>;
+  };
+  getByText: (
+    text: string | RegExp,
+    opts?: object,
+  ) => {
+    waitFor: (opts?: object) => Promise<unknown>;
+  };
+  getByTestId: (id: string) => {
+    waitFor: (opts?: object) => Promise<unknown>;
+  };
+  locator: (sel: string) => {
+    waitFor: (opts?: object) => Promise<unknown>;
+    fill: (v: string) => Promise<unknown>;
+    click: () => Promise<unknown>;
+    check?: () => Promise<unknown>;
+  };
+  waitForURL: (
+    url: string | RegExp | ((url: URL) => boolean),
+    opts?: object,
+  ) => Promise<unknown>;
+  content: () => Promise<string>;
+  url: () => string;
+  close: () => Promise<unknown>;
+  on: (event: string, handler: (...args: never[]) => void) => void;
+};
+
 type PlaywrightCommandCtx = {
   provider: { name: string };
   context: {
@@ -22,38 +71,15 @@ type PlaywrightCommandCtx = {
     addCookies: (
       cookies: Array<{ name: string; value: string; url: string }>,
     ) => Promise<void>;
-    newPage: () => Promise<{
-      goto: (url: string, opts?: object) => Promise<unknown>;
-      getByRole: (
-        role: string,
-        opts?: object,
-      ) => {
-        waitFor: (opts?: object) => Promise<unknown>;
-        click: () => Promise<unknown>;
-      };
-      getByLabel: (
-        label: string | RegExp,
-        opts?: object,
-      ) => {
-        fill: (v: string) => Promise<unknown>;
-        press: (key: string) => Promise<unknown>;
-      };
-      getByText: (
-        text: string | RegExp,
-        opts?: object,
-      ) => {
-        waitFor: (opts?: object) => Promise<unknown>;
-      };
-      waitForURL: (
-        url: string | RegExp | ((url: URL) => boolean),
-        opts?: object,
-      ) => Promise<unknown>;
-      content: () => Promise<string>;
-      url: () => string;
-      close: () => Promise<unknown>;
-      on: (event: string, handler: (...args: never[]) => void) => void;
-    }>;
+    newPage: () => Promise<PlaywrightPage>;
   };
+};
+
+type ForgeRepoSeed = {
+  cookie: string;
+  owner: string;
+  repo: string;
+  username: string;
 };
 
 /** Survives across command calls in the same Vitest Node process. */
@@ -336,6 +362,338 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
         `expected ≤4 auth.me RPCs on signed-in home (shared Query cache), got ${meBodies.length}`,
       );
     }
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+async function injectSessionCookie(
+  context: PlaywrightCommandCtx["context"],
+  cookieHeader: string,
+): Promise<void> {
+  const eq = cookieHeader.indexOf("=");
+  const name = eq >= 0 ? cookieHeader.slice(0, eq) : "octanest_session";
+  const value = eq >= 0 ? cookieHeader.slice(eq + 1) : cookieHeader;
+  await context.addCookies([
+    {
+      name,
+      value,
+      url: webOrigin(),
+    },
+  ]);
+}
+
+/**
+ * ENV-seeded admin is email-verified but must_change_credentials until confirm.
+ * Confirm once per stack boot so forge RPCs (repo.create, etc.) work.
+ */
+async function ensureForgeAdminSession(): Promise<{
+  cookie: string;
+  username: string;
+}> {
+  let cookie = await adminLogin();
+  const me = await rpc("auth.me", {}, cookie);
+  if (!me.ok || !me.data || typeof me.data !== "object") {
+    throw new Error(`auth.me failed: ${JSON.stringify(me.error ?? me)}`);
+  }
+  const user = me.data as {
+    username?: string;
+    must_change_credentials?: boolean;
+  };
+  if (user.must_change_credentials) {
+    const confirm = await rpc(
+      "auth.confirm_admin_credentials",
+      { username: "forgee2eadmin", keep_password: true },
+      cookie,
+    );
+    if (!confirm.ok) {
+      throw new Error(
+        `confirm_admin_credentials failed: ${JSON.stringify(confirm.error)}`,
+      );
+    }
+    cookie = confirm.cookieHeader ?? cookie;
+    return { cookie, username: "forgee2eadmin" };
+  }
+  const username = String(user.username ?? "").trim();
+  if (!username) {
+    throw new Error("auth.me returned empty username");
+  }
+  return { cookie, username };
+}
+
+async function seedPublicRepo(
+  cookie: string,
+  repoName: string,
+): Promise<{ owner: string; repo: string }> {
+  const created = await rpc(
+    "repo.create",
+    {
+      name: repoName,
+      visibility: "public",
+      gitignore_id: "Node",
+      description: "stack-browser forge e2e",
+    },
+    cookie,
+  );
+  if (!created.ok || !created.data || typeof created.data !== "object") {
+    throw new Error(
+      `repo.create failed: ${JSON.stringify(created.error ?? created)}`,
+    );
+  }
+  const data = created.data as { owner_username?: string; name?: string };
+  const owner = String(data.owner_username ?? "").trim();
+  const repo = String(data.name ?? repoName).trim();
+  if (!owner || !repo) {
+    throw new Error(`repo.create missing owner/name: ${JSON.stringify(data)}`);
+  }
+  return { owner, repo };
+}
+
+async function seedForgeRepo(): Promise<ForgeRepoSeed> {
+  const { cookie, username } = await ensureForgeAdminSession();
+  const repoName = `e2erepo${Date.now()}`;
+  const { owner, repo } = await seedPublicRepo(cookie, repoName);
+  return { cookie, owner, repo, username };
+}
+
+/** Push an annotated-free lightweight tag via Smart HTTP + classic PAT. */
+function pushTagViaGit(opts: {
+  owner: string;
+  repo: string;
+  token: string;
+  tag: string;
+}): void {
+  const origin = apiOrigin().replace(/^https?:\/\//, "");
+  const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
+  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-tag-"));
+  try {
+    execFileSync("git", ["clone", "--depth", "1", gitUrl, work], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+    execFileSync("git", ["-C", work, "tag", opts.tag], { stdio: "pipe" });
+    execFileSync("git", ["-C", work, "push", "origin", opts.tag], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+  } catch (e) {
+    const err = e as { stderr?: Buffer; message?: string };
+    const detail = err.stderr?.toString("utf8") || err.message || String(e);
+    throw new Error(`git tag push failed: ${detail.slice(0, 800)}`);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+async function createClassicPat(cookie: string): Promise<string> {
+  const res = await rpc(
+    "pat.createClassic",
+    {
+      name: `e2e-pat-${Date.now()}`,
+      scopes: ["repo"],
+    },
+    cookie,
+  );
+  if (!res.ok || !res.data || typeof res.data !== "object") {
+    throw new Error(`pat.createClassic failed: ${JSON.stringify(res.error)}`);
+  }
+  const token = String((res.data as { token?: string }).token ?? "");
+  if (!token) throw new Error("pat.createClassic returned empty token");
+  return token;
+}
+
+/**
+ * Signed-in forge user opens seeded public repo code home, sees Packages tab,
+ * and visits packages list (empty ok) — D-QH-03.
+ */
+export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const page = await context.newPage();
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("link", { name: "Packages", exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByRole("link", { name: "Packages", exact: true }).click();
+    await page.waitForURL(
+      (url) => {
+        const u = typeof url === "string" ? new URL(url) : url;
+        return u.pathname === `/${seed.owner}/${seed.repo}/packages`;
+      },
+      { timeout: 30_000, waitUntil: "domcontentloaded" },
+    );
+    await page
+      .getByTestId("repo-packages")
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByText(/No linked packages|Packages linked to this repository/i)
+      .waitFor({ state: "visible", timeout: 30_000 });
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
+ * Create issue via UI → detail → Close issue (D-QH-03 issues CRUD).
+ */
+export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const page = await context.newPage();
+  const title = `E2E issue ${Date.now()}`;
+  try {
+    await page.goto(
+      `${webOrigin()}/${seed.owner}/${seed.repo}/issues/new`,
+      { waitUntil: "domcontentloaded", timeout: 60_000 },
+    );
+    await page
+      .getByRole("heading", { name: "New issue" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByLabel("Title").fill(title);
+    await page.getByRole("button", { name: /Submit new issue/i }).click();
+    await page.waitForURL(
+      (url) => {
+        const u = typeof url === "string" ? new URL(url) : url;
+        return /\/issues\/\d+$/.test(u.pathname);
+      },
+      { timeout: 30_000, waitUntil: "domcontentloaded" },
+    );
+    await page
+      .getByTestId("issue-title")
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText(title).waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByRole("button", { name: "Close issue" }).click();
+    await page
+      .getByRole("button", { name: "Reopen" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
+ * Seed git tag → create release via UI → detail visible (D-QH-03 releases CRUD).
+ */
+export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  const token = await createClassicPat(seed.cookie);
+  const tag = `v0.0.${Date.now() % 100000}`;
+  pushTagViaGit({
+    owner: seed.owner,
+    repo: seed.repo,
+    token,
+    tag,
+  });
+  await injectSessionCookie(context, seed.cookie);
+
+  const page = await context.newPage();
+  const releaseTitle = `E2E release ${tag}`;
+  try {
+    await page.goto(
+      `${webOrigin()}/${seed.owner}/${seed.repo}/releases/new`,
+      { waitUntil: "domcontentloaded", timeout: 60_000 },
+    );
+    await page
+      .getByRole("heading", { name: "New release" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator("#release-tag").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByLabel("Release title").fill(releaseTitle);
+    await page.getByRole("button", { name: /Publish release/i }).click();
+    await page.waitForURL(
+      (url) => {
+        const u = typeof url === "string" ? new URL(url) : url;
+        return u.pathname === `/${seed.owner}/${seed.repo}/releases/${tag}`;
+      },
+      { timeout: 45_000, waitUntil: "domcontentloaded" },
+    );
+    await page
+      .getByText(releaseTitle)
+      .waitFor({ state: "visible", timeout: 30_000 });
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
+ * /settings/ssh-keys add+list path and org members page (D-QH-03).
+ */
+export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
+  ctx,
+) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const { cookie, username } = await ensureForgeAdminSession();
+  await injectSessionCookie(context, cookie);
+
+  const suffix = Date.now();
+  const orgSlug = `e2eorg${suffix}`;
+  const org = await rpc(
+    "org.create",
+    { slug: orgSlug, display_name: `E2E Org ${suffix}` },
+    cookie,
+  );
+  if (!org.ok) {
+    throw new Error(`org.create failed: ${JSON.stringify(org.error)}`);
+  }
+
+  // Fresh ed25519 pubkey for this run (never commit private material).
+  const keyDir = mkdtempSync(join(tmpdir(), "octanest-e2e-ssh-"));
+  const keyPath = join(keyDir, "id_ed25519");
+  let pubKey = "";
+  try {
+    execFileSync(
+      "ssh-keygen",
+      ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "e2e@octanest"],
+      { stdio: "pipe" },
+    );
+    pubKey = readFileSync(`${keyPath}.pub`, "utf8").trim();
+  } finally {
+    rmSync(keyDir, { recursive: true, force: true });
+  }
+
+  const page = await context.newPage();
+  try {
+    await page.goto(`${webOrigin()}/settings/ssh-keys`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "SSH keys" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByRole("button", { name: /Add SSH key/i }).click();
+    await page.getByLabel("Title").fill(`e2e-key-${suffix}`);
+    await page.getByLabel("Key").fill(pubKey);
+    await page.getByRole("button", { name: /^Add key$/i }).click();
+    await page
+      .getByText(`e2e-key-${suffix}`)
+      .waitFor({ state: "visible", timeout: 30_000 });
+
+    await page.goto(`${webOrigin()}/${orgSlug}/settings/members`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "Members" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByText(username)
+      .waitFor({ state: "visible", timeout: 30_000 });
     return true;
   } finally {
     await page.close();
