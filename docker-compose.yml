@@ -12,6 +12,10 @@ services:
       - --api.dashboard=false
     ports:
       - "80:80"
+    # podman machine: SELinux blocks socket bind-mount access inside containers;
+    # `label=disable` is a no-op on Docker and enables socket reads on podman.
+    security_opt:
+      - label=disable
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
