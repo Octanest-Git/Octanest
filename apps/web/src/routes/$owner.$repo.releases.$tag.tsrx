@@ -8,7 +8,6 @@ import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
@@ -168,7 +167,6 @@ export function RepoReleaseDetailPage() @{
     <RepoNotFound />
   } @else {
     <>
-      <RepoChrome repo={repo} active="releases" />
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <h2 className="text-[22px] font-semibold text-foreground">
           {(release.title.trim() || release.tag_name) as string}

@@ -9,7 +9,6 @@ import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,15 +176,11 @@ export function RepoReleaseNewPage() @{
   } @else if (!repo) {
     <p className="text-[16px] text-muted-foreground">Loading…</p>
   } @else if (!repo.can_write) {
-    <>
-      <RepoChrome repo={repo} active="releases" />
-      <p role="alert" className="text-[16px] text-destructive">
-        You need write access to create releases.
-      </p>
-    </>
+    <p role="alert" className="text-[16px] text-destructive">
+      You need write access to create releases.
+    </p>
   } @else {
     <>
-      <RepoChrome repo={repo} active="releases" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">
         New release
       </h2>

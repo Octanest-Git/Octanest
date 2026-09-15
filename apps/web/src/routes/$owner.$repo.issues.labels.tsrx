@@ -7,7 +7,6 @@ import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -218,7 +217,6 @@ export function RepoIssueLabelsPage() @{
       <p className="text-[16px] text-muted-foreground">Loading labels…</p>
     } @else {
       <>
-        <RepoChrome repo={repo} active="issues" showSettings={canAdmin} />
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-[18px] font-semibold text-foreground">

@@ -12,7 +12,6 @@ import {
   type IssueListFilters,
   type IssueListStateFilter,
 } from "@/components/repo/issues-list";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
@@ -235,37 +234,34 @@ export function IssuesListPage() @{
   } @else if (!repo) {
     <p className="text-[16px] text-muted-foreground">Loading issues…</p>
   } @else {
-    <>
-      <RepoChrome repo={repo} active="issues" />
-      @if (listQ.isError) {
-        <p role="alert" className="text-[16px] text-destructive">
-          {(listQ.error?.message || NETWORK_ERROR) as string}
-        </p>
-      } @else {
-        <IssuesList
-          owner={owner}
-          repoName={repoName}
-          repo={repo}
-          issues={listQ.data?.issues ?? []}
-          total={listQ.data?.total ?? 0}
-          filters={filters}
-          labels={labelsQ.data ?? []}
-          draftAuthor={draftAuthor}
-          draftLabel={draftLabel}
-          draftAssignee={draftAssignee}
-          draftQ={draftQ}
-          onStateChange={setState}
-          onDraftAuthor={setDraftAuthor}
-          onDraftLabel={setDraftLabel}
-          onDraftAssignee={setDraftAssignee}
-          onDraftQ={setDraftQ}
-          onApplyFilters={applyFilters}
-          onPrevPage={prevPage}
-          onNextPage={nextPage}
-          pending={listQ.isPending}
-        />
-      }
-    </>
+    @if (listQ.isError) {
+      <p role="alert" className="text-[16px] text-destructive">
+        {(listQ.error?.message || NETWORK_ERROR) as string}
+      </p>
+    } @else {
+      <IssuesList
+        owner={owner}
+        repoName={repoName}
+        repo={repo}
+        issues={listQ.data?.issues ?? []}
+        total={listQ.data?.total ?? 0}
+        filters={filters}
+        labels={labelsQ.data ?? []}
+        draftAuthor={draftAuthor}
+        draftLabel={draftLabel}
+        draftAssignee={draftAssignee}
+        draftQ={draftQ}
+        onStateChange={setState}
+        onDraftAuthor={setDraftAuthor}
+        onDraftLabel={setDraftLabel}
+        onDraftAssignee={setDraftAssignee}
+        onDraftQ={setDraftQ}
+        onApplyFilters={applyFilters}
+        onPrevPage={prevPage}
+        onNextPage={nextPage}
+        pending={listQ.isPending}
+      />
+    }
   }
 }
 

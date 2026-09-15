@@ -9,7 +9,6 @@ import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
 import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
 import { LfsBrowser } from "@/components/repo/lfs-browser";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import {
   AlertDialog,
@@ -210,12 +209,6 @@ export function RepoSettingsPage() @{
     </div>
   } @else if (repo && canAdmin) {
     <>
-      <RepoChrome
-        repo={repo}
-        active="settings"
-        showSettings={true}
-      />
-
       <div className="max-w-3xl">
         <section className="mt-8 flex flex-col gap-4" aria-labelledby="vis-heading">
           <h2

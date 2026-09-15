@@ -7,7 +7,6 @@ import { useQuery } from "@octanejs/tanstack-query";
 import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
@@ -126,7 +125,6 @@ export function RepoReleasesPage() @{
     <p className="text-[16px] text-muted-foreground">Loading releases…</p>
   } @else {
     <>
-      <RepoChrome repo={repo} active="releases" />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[18px] font-semibold text-foreground">Releases</h2>
         @if (repo.can_write) {

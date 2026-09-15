@@ -16,7 +16,6 @@ import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
 import { IssueLinkedPrsPanel } from "@/components/repo/issue-linked-prs";
 import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,7 +314,6 @@ export function IssueDetailPage() @{
       <p className="text-[16px] text-muted-foreground">Loading issue…</p>
     } @else {
       <>
-        <RepoChrome repo={repo!} active="issues" />
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="flex flex-col gap-4">
             @if (actionError) {
