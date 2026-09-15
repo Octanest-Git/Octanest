@@ -5,6 +5,7 @@ import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
   ensureAuthSettings,
+  expectAdminLfsQuotasFlow,
   expectAuthMeDedupedOnHome,
   expectForgeIssuesCrudFlow,
   expectForgeReleasesCrudFlow,
@@ -149,6 +150,7 @@ export default defineConfig({
                     expectForgeIssuesCrudFlow,
                     expectForgeReleasesCrudFlow,
                     expectForgeSshAndOrgMembersFlow,
+                    expectAdminLfsQuotasFlow,
                   },
                 },
               },

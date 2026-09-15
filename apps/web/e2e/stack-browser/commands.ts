@@ -714,6 +714,69 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
 };
 
 /**
+ * Forge admin opens /admin/lfs (G-11.1-15) and optionally /admin/packages.
+ * Asserts quotas UI renders without Vite/Octane error overlay (raw-source-only
+ * Wave 0 stubs missed missing useState / @else if breakage).
+ */
+export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const { cookie } = await ensureForgeAdminSession();
+  await injectSessionCookie(context, cookie);
+
+  const page = await context.newPage();
+  try {
+    await page.goto(`${webOrigin()}/admin/lfs`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "Git LFS quotas" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByTestId("admin-lfs-page")
+      .waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .getByLabel(/Max object bytes/i)
+      .waitFor({ state: "visible", timeout: 30_000 });
+
+    const lfsHtml = await page.content();
+    if (
+      lfsHtml.includes("vite-error-overlay") ||
+      /is not defined|ReferenceError|@else if/i.test(lfsHtml)
+    ) {
+      throw new Error(
+        `admin LFS showed error overlay / runtime break. body=${lfsHtml.slice(0, 1000)}`,
+      );
+    }
+
+    // Cheap sibling: packages admin quotas page (same forge-admin session).
+    await page.goto(`${webOrigin()}/admin/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "Package storage" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByTestId("admin-packages")
+      .waitFor({ state: "visible", timeout: 15_000 });
+    const pkgHtml = await page.content();
+    if (
+      pkgHtml.includes("vite-error-overlay") ||
+      /is not defined|ReferenceError/i.test(pkgHtml)
+    ) {
+      throw new Error(
+        `admin packages showed error overlay. body=${pkgHtml.slice(0, 1000)}`,
+      );
+    }
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
  * SSH keys + org members reachable (D-QH-03). Seed key via RPC; assert pages.
  */
 export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
