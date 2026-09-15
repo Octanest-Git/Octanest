@@ -91,7 +91,11 @@ re_verification:
     - "Repo packages page lists packages linked to that repository (D-PKG-11)"
   gaps_remaining: []
   regressions: []
-advisory: []
+advisory:
+  - "Repo packages UI missing RepoChrome / Packages tab (IA) — Phase 11.1 D-QH-01"
+  - "Owner vs repo packages chrome inconsistency — Phase 11.1"
+  - "OCI referrers_deferred (404) — documented Phase 20 deferral; out of 11.1 scope"
+  - "No stack-browser e2e for packages — Phase 11.1 D-QH-03"
 ---
 
 # Phase 20: Packages Registry Verification Report
