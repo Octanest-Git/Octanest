@@ -11,7 +11,7 @@ export function RadioGroup({
     data-slot="radio-group"
     className={cn("flex flex-col gap-3", className)}
     {...props}
-  />
+  />;
 }
 
 export function RadioGroupItem({
@@ -36,5 +36,5 @@ export function RadioGroupItem({
     >
       <span className="size-2.5 rounded-full bg-primary" />
     </RadioPrimitive.Indicator>
-  </RadioPrimitive.Root>
+  </RadioPrimitive.Root>;
 }

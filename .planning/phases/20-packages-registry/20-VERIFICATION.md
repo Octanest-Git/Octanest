@@ -2,9 +2,11 @@
 phase: 20-packages-registry
 verified: 2026-09-14T18:10:12Z
 status: passed
+status_note: "passed with caveats — OCI referrers deferred; packages chrome/IA + stack-browser + CI smoke closed in Phase 11.1"
 score: 7/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
+honesty_annotated: 2026-09-15
 covered_files:
   - .planning/phases/20-packages-registry/20-00-PLAN.md
   - .planning/phases/20-packages-registry/20-00-SUMMARY.md
@@ -89,14 +91,19 @@ re_verification:
     - "Repo packages page lists packages linked to that repository (D-PKG-11)"
   gaps_remaining: []
   regressions: []
-advisory: []
+advisory:
+  - "Repo packages chrome / Packages tab IA — CLOSED in Phase 11.1-01/03/06 (D-QH-01)"
+  - "OCI referrers_deferred (404) — documented Phase 20 deferral; out of 11.1 scope"
+  - "Packages list stack-browser — CLOSED in Phase 11.1-04 (forge-repo / forge-packages-ssh-orgs)"
+  - "CI smoke-packages — CLOSED in Phase 11.1-05 (smoke-protocol job)"
 ---
 
 # Phase 20: Packages Registry Verification Report
 
 **Phase Goal:** Users can publish and pull OCI, npm, and generic/raw packages scoped to repo/org with the same auth/visibility rules  
 **Verified:** 2026-09-14T18:10:12Z  
-**Status:** passed  
+**Status:** passed (with caveats — OCI referrers deferred; chrome/IA + packages e2e/smoke closed in 11.1)  
+**Honesty annotate:** 2026-09-15 — residual UI/IA; 11.1-05 closeout marks chrome + stack-browser + CI smoke closed  
 **Re-verification:** Yes — after gap closure (`fccad92`)  
 **Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-phase20` (`feat/execute-20-packages`)  
 **Migration:** `0015_packages` (postgres/sqlite/mysql) — confirmed; not 0012/0013
@@ -213,9 +220,24 @@ No unresolved `TBD`/`FIXME`/`XXX` debt markers in gap-fix files. Prior D-PKG-11 
 
 ### Gaps Summary
 
-Prior gap (D-PKG-11 repo packages page listing by owner instead of `repository_id`) is closed in `fccad92`: page resolves `repo.get` then calls `packages.list({ repository_id })`; Vitest enforces the wiring via `?raw`. All 7 must-have truths verified. Phase goal achieved. No remaining gaps.
+Prior gap (D-PKG-11 repo packages page listing by owner instead of `repository_id`) is closed in `fccad92`: page resolves `repo.get` then calls `packages.list({ repository_id })`; Vitest enforces the wiring via `?raw`. All 7 must-have **protocol / list-wiring** truths verified — phase registry goal achieved for publish/pull/ACL/quota.
+
+**Residual product gaps remain** (non-blocking for those truths; do not re-mark phase failed). See **Known stubs / residual gaps** below. Repo chrome / Packages tab IA is owned by **Phase 11.1** (`D-QH-01`), not a Phase 20 reopen.
+
+### Known stubs / residual gaps
+
+Audit source: `tmp/issue-3-quality-audit.md` (Issue #3) + Phase 11.1 context `D-QH-01` / `D-QH-05`. These did **not** fail the 7 must-have truths above; they are honesty footnotes so “passed” is not read as full UX/discovery complete.
+
+| Gap | Pointers | Owner / disposition |
+| --- | -------- | ------------------- |
+| Repo packages chrome / Packages tab IA | Layout `RepoChrome` + Packages tab + content-only leaves (`11.1-01` / `03` / `06`) | **CLOSED** — D-QH-01 |
+| Owner vs repo packages chrome inconsistency | Shared layout chrome for `$owner.$repo.packages`; owner packages page remains owner-scoped | **CLOSED** for repo shell; owner page intentional scope |
+| OCI referrers deferred | `referrers_deferred` in `crates/octanest-api/src/packages/oci.rs` (route returns 404; clients use referrers tag schema) | Documented Phase 20 deferral (`20-RESEARCH` / `20-05-SUMMARY`); **still open / out of 11.1 scope** |
+| Stack-browser e2e for packages | `forge-repo.stack.browser.test.tsx` Packages tab / list (11.1-04); CI `smoke-packages` via `smoke-protocol` (11.1-05) | **CLOSED** for list/discovery + protocol routing |
 
 ---
 
 _Verified: 2026-09-14T18:10:12Z_  
-_Verifier: Claude (gsd-verifier)_
+_Verifier: Claude (gsd-verifier)_  
+_Honesty annotate: 2026-09-15 (Phase 11.1 GSD truth pass)_  
+_Residual 11.1-05: packages chrome + stack-browser + CI smoke closed; OCI referrers remain deferred_

@@ -1225,7 +1225,6 @@ pub async fn delete_package_blob(pool: &DbPool, digest: &str) -> Result<(), Stri
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::Database;
 
     #[tokio::test]

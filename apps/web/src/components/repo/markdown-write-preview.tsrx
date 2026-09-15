@@ -27,7 +27,7 @@ export function MarkdownWritePreview(props: MarkdownWritePreviewProps) @{
   useEffect(() => {
     if (tab !== "preview") return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const html = await renderGfm(props.value || "_Nothing to preview_", {
         owner: props.owner,
         repo: props.repo,
@@ -71,15 +71,13 @@ export function MarkdownWritePreview(props: MarkdownWritePreviewProps) @{
         value={props.value}
         placeholder={props.placeholder}
         disabled={props.disabled}
-        onInput={(e) =>
-          props.onValueChange((e.target as HTMLTextAreaElement).value)
-        }
-      />
+        onInput={(e) => props.onValueChange((e.target as HTMLTextAreaElement).value)}
+      />;
     } @else {
       <div
         className="prose prose-sm min-h-40 max-w-none rounded-md border border-border px-4 py-3"
         dangerouslySetInnerHTML={{ __html: previewHtml }}
-      />
+      />;
     }
-  </div>
+  </div>;
 }

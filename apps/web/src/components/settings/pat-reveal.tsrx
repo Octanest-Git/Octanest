@@ -9,9 +9,7 @@ type PatRevealProps = {
 
 /** One-time plaintext PAT reveal (D-15 / T-08-01). */
 export function PatReveal({ token }: PatRevealProps) @{
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
   async function copyToken() {
     try {
@@ -30,9 +28,7 @@ export function PatReveal({ token }: PatRevealProps) @{
     <h2 className="font-[family-name:var(--font-display)] text-[20px] font-semibold leading-[1.2] text-foreground">
       Make sure to copy your personal access token now
     </h2>
-    <p className="mt-2 text-[16px] text-muted-foreground">
-      You won’t be able to see it again.
-    </p>
+    <p className="mt-2 text-[16px] text-muted-foreground">You won’t be able to see it again.</p>
     <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
       <Input
         readOnly
@@ -57,7 +53,7 @@ export function PatReveal({ token }: PatRevealProps) @{
     @if (copyState === "error") {
       <p role="alert" className="mt-2 text-[14px] text-destructive">
         Couldn’t copy. Select the token and copy manually.
-      </p>
+      </p>;
     }
     <a
       href="/settings/tokens"
@@ -68,5 +64,5 @@ export function PatReveal({ token }: PatRevealProps) @{
     >
       Back to tokens
     </a>
-  </div>
+  </div>;
 }

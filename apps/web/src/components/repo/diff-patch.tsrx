@@ -34,14 +34,12 @@ export function DiffPatch({ path, status, patch }: DiffPatchProps) @{
 
   <section className="overflow-hidden border border-border">
     <h3 className="border-b border-border bg-muted/40 px-3 py-2 font-mono text-[14px] text-foreground">
-      {path as string}
-      {" "}
-      <span className="text-muted-foreground">({status as string})</span>
+      {path as string} <span className="text-muted-foreground">({status as string})</span>
     </h3>
     @if (lines.length === 0) {
       <p className="px-3 py-3 text-[14px] text-muted-foreground">
         No textual patch for this file.
-      </p>
+      </p>;
     } @else {
       <div
         className="overflow-x-auto font-mono text-[14px] leading-[1.45]"
@@ -50,16 +48,13 @@ export function DiffPatch({ path, status, patch }: DiffPatchProps) @{
       >
         @for (const line of lines; key line.index) {
           <div
-            className={cn(
-              "whitespace-pre px-3 py-0.5",
-              lineClass(line.kind) as string,
-            )}
+            className={cn("whitespace-pre px-3 py-0.5", lineClass(line.kind) as string)}
             role="row"
           >
             {line.text as string}
-          </div>
+          </div>;
         }
-      </div>
+      </div>;
     }
-  </section>
+  </section>;
 }

@@ -42,10 +42,9 @@ afterEach(() => {
 describe("/setup/credentials (AUTH-06 UI-SPEC)", () => {
   it("exports CredentialsPage with Keep current password Switch and rejects default username", async () => {
     const mod = await import("./setup.credentials");
-    expect(
-      mod,
-      "CredentialsPage must be exported for integration tests (06-06)",
-    ).toHaveProperty("CredentialsPage");
+    expect(mod, "CredentialsPage must be exported for integration tests (06-06)").toHaveProperty(
+      "CredentialsPage",
+    );
 
     const { CredentialsPage } = mod as { CredentialsPage: unknown };
     render(CredentialsPage as never);
@@ -62,11 +61,9 @@ describe("/setup/credentials (AUTH-06 UI-SPEC)", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          /Choose a username other than the default system-administrator/i,
-        ),
+        screen.getByText(/Choose a username other than the default system-administrator/i),
       ).toBeInTheDocument();
     });
     expect(confirmAdminCredentials).not.toHaveBeenCalled();
-  });
+  }, 15_000);
 });

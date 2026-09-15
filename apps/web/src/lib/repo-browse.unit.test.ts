@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatFileSize,
-  parseRefAndPath,
-  pathBreadcrumbCrumbs,
-} from "./repo-browse";
+import { formatFileSize, parseRefAndPath, pathBreadcrumbCrumbs } from "./repo-browse";
 
 describe("parseRefAndPath", () => {
   it("returns empty ref and path for empty splat", () => {
@@ -73,8 +69,7 @@ describe("pathBreadcrumbCrumbs", () => {
       },
       {
         seg: "ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
-        prefix:
-          "src/very/deeply/nested/components/ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
+        prefix: "src/very/deeply/nested/components/ExtremelyLongSegmentNameThatNeedsEllipsis.tsrx",
         last: true,
       },
     ]);

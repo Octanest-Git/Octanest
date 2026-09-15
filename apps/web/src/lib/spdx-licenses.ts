@@ -31,8 +31,7 @@ const POPULAR: {
   {
     id: "BSD-3-Clause",
     label: "BSD 3-Clause",
-    description:
-      "Permissive with a no-endorsement clause. Simple and widely understood.",
+    description: "Permissive with a no-endorsement clause. Simple and widely understood.",
   },
   {
     id: "BSD-2-Clause",
@@ -42,8 +41,7 @@ const POPULAR: {
   {
     id: "GPL-3.0-only",
     label: "GPL 3.0",
-    description:
-      "Strong copyleft — derivatives must stay GPL. Common for community tools.",
+    description: "Strong copyleft — derivatives must stay GPL. Common for community tools.",
   },
   {
     id: "LGPL-3.0-only",
@@ -81,8 +79,7 @@ const POPULAR: {
   {
     id: "CC0-1.0",
     label: "CC0 1.0",
-    description:
-      "Creative Commons public-domain dedication — often used for data and content.",
+    description: "Creative Commons public-domain dedication — often used for data and content.",
   },
 ];
 

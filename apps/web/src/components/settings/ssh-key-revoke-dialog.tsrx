@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
-const REVOKE_ERROR =
-  "Couldn't revoke SSH key. Check your connection and try again.";
+const REVOKE_ERROR = "Couldn't revoke SSH key. Check your connection and try again.";
 
 type SshKeyRevokeDialogProps = {
   item: SshKeyListItem | null;
@@ -64,13 +63,15 @@ export function SshKeyRevokeDialog({
       <AlertDialogHeader>
         <AlertDialogTitle>Revoke SSH key?</AlertDialogTitle>
         <AlertDialogDescription className="break-words whitespace-normal">
-          {(`Revokes “${note}”. Git clients using this key will stop working. This can’t be undone.`) as string}
+          {
+            `Revokes “${note}”. Git clients using this key will stop working. This can’t be undone.` as string
+          }
         </AlertDialogDescription>
       </AlertDialogHeader>
       @if (error) {
         <p role="alert" className="text-[14px] text-destructive">
           {error as string}
-        </p>
+        </p>;
       }
       <AlertDialogFooter>
         <AlertDialogCancel disabled={pending}>Keep key</AlertDialogCancel>
@@ -84,5 +85,5 @@ export function SshKeyRevokeDialog({
         </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
-  </AlertDialog>
+  </AlertDialog>;
 }

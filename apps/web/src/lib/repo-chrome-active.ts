@@ -1,0 +1,32 @@
+/** Chrome tab highlight derived from a repo pathname (D-QH-01). */
+export type RepoChromeActive =
+  | "code"
+  | "commits"
+  | "branches"
+  | "tags"
+  | "issues"
+  | "releases"
+  | "packages"
+  | "settings";
+
+const SEGMENT_TO_ACTIVE: Record<string, RepoChromeActive> = {
+  issues: "issues",
+  releases: "releases",
+  packages: "packages",
+  settings: "settings",
+  commits: "commits",
+  branches: "branches",
+  tags: "tags",
+};
+
+/**
+ * Map `/{owner}/{repo}/…` pathname → RepoChrome `active` tab.
+ * Known first segments under the repo highlight that tab; everything else is Code.
+ */
+export function repoChromeActiveFromPath(pathname: string): RepoChromeActive {
+  const noQuery = (pathname.split("?")[0] ?? "/").split("#")[0] ?? "/";
+  const parts = noQuery.split("/").filter(Boolean);
+  // [owner, repo, segment?, ...]
+  const segment = (parts[2] ?? "").toLowerCase();
+  return SEGMENT_TO_ACTIVE[segment] ?? "code";
+}

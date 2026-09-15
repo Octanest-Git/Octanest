@@ -1,8 +1,6 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type {
-  CommentRevisionPublic,
-  IssueCommentPublic,
-} from "@octanest/api-client";
+import type { CommentRevisionPublic, IssueCommentPublic } from "@octanest/api-client";
+import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { IssueReactionsBar } from "@/components/repo/issue-reactions";
@@ -19,18 +17,13 @@ export type IssueCommentsProps = {
   currentUserId: string;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
-function CommentBody(props: {
-  body: string;
-  owner: string;
-  repoName: string;
-}) @{
+function CommentBody(props: { body: string; owner: string; repoName: string }) @{
   const [html, setHtml] = useState("");
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const rendered = await renderGfm(props.body || "", {
         owner: props.owner,
         repo: props.repoName,
@@ -42,10 +35,7 @@ function CommentBody(props: {
     };
   }, [props.body, props.owner, props.repoName]);
 
-  <div
-    className="prose prose-sm max-w-none"
-    dangerouslySetInnerHTML={{ __html: html }}
-  />
+  <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function CommentHistoryDisclosure(props: {
@@ -91,15 +81,15 @@ function CommentHistoryDisclosure(props: {
     @if (open) {
       <div className="mt-2" data-testid="comment-history">
         @if (historyQ.isPending) {
-          <p className="text-[13px] text-muted-foreground">Loading…</p>
+          <p className="text-[13px] text-muted-foreground">Loading…</p>;
         } @else {
           @if (historyQ.isError) {
             <p role="alert" className="text-[13px] text-destructive">
               Could not load comment history.
-            </p>
+            </p>;
           } @else {
             @if (revisions.length === 0) {
-              <p className="text-[13px] text-muted-foreground">No prior edits.</p>
+              <p className="text-[13px] text-muted-foreground">No prior edits.</p>;
             } @else {
               <ul className="flex flex-col gap-2">
                 @for (const rev of revisions; key rev.id) {
@@ -110,15 +100,15 @@ function CommentHistoryDisclosure(props: {
                     <pre className="mt-1 whitespace-pre-wrap font-sans text-foreground">
                       {rev.body as string}
                     </pre>
-                  </li>
+                  </li>;
                 }
-              </ul>
+              </ul>;
             }
           }
         }
-      </div>
+      </div>;
     }
-  </div>
+  </div>;
 }
 
 function CommentItem(props: {
@@ -135,34 +125,36 @@ function CommentItem(props: {
   const canEdit = isAuthor;
   const canDelete = isAuthor || props.canWrite;
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(comment.body);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
-  async function saveEdit() {
-    setError("");
-    setPending(true);
-    try {
-      const res = await apiClient.issue.comments.update({
-        owner: props.owner,
-        name: props.repoName,
-        number: props.number,
-        commentId: comment.id,
-        body: draft,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not update comment.");
+  const editForm = useForm({
+    defaultValues: { body: comment.body },
+    onSubmit: async ({ value }) => {
+      setError("");
+      setPending(true);
+      try {
+        const res = await apiClient.issue.comments.update({
+          owner: props.owner,
+          name: props.repoName,
+          number: props.number,
+          commentId: comment.id,
+          body: value.body,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not update comment.");
+          setPending(false);
+          return;
+        }
+        await props.onChanged();
+        setEditing(false);
         setPending(false);
-        return;
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
       }
-      await props.onChanged();
-      setEditing(false);
-      setPending(false);
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+    },
+  });
 
   async function remove() {
     setError("");
@@ -187,10 +179,7 @@ function CommentItem(props: {
     }
   }
 
-  <li
-    className="rounded-md border border-border px-4 py-3"
-    data-testid="issue-comment"
-  >
+  <li className="rounded-md border border-border px-4 py-3" data-testid="issue-comment">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <p className="text-[13px] text-muted-foreground">
         {`@${comment.author_username} · ${comment.created_at}` as string}
@@ -202,13 +191,13 @@ function CommentItem(props: {
             variant="ghost"
             disabled={pending}
             onClick={() => {
-              setDraft(comment.body);
+              editForm.setFieldValue("body", comment.body);
               setEditing(true);
               setError("");
             }}
           >
             Edit
-          </Button>
+          </Button>;
         }
         @if (canDelete && !editing) {
           <Button
@@ -218,28 +207,40 @@ function CommentItem(props: {
             onClick={() => void remove()}
           >
             Delete
-          </Button>
+          </Button>;
         }
       </div>
     </div>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (editing) {
-      <div className="mt-3 flex flex-col gap-2">
-        <MarkdownWritePreview
-          id={`comment-edit-${comment.id}`}
-          value={draft}
-          onValueChange={setDraft}
-          rows={6}
-          disabled={pending}
-          owner={props.owner}
-          repo={props.repoName}
-        />
+      <form
+        method="post"
+        action="#"
+        className="mt-3 flex flex-col gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void editForm.handleSubmit();
+        }}
+      >
+        <editForm.Field name="body">
+          {(field) => (
+            <MarkdownWritePreview
+              id={`comment-edit-${comment.id}`}
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              rows={6}
+              disabled={pending}
+              owner={props.owner}
+              repo={props.repoName}
+            />
+          )}
+        </editForm.Field>
         <div className="flex gap-2">
-          <Button type="button" disabled={pending} onClick={() => void saveEdit()}>
+          <Button type="submit" disabled={pending}>
             Save
           </Button>
           <Button
@@ -254,14 +255,10 @@ function CommentItem(props: {
             Cancel
           </Button>
         </div>
-      </div>
+      </form>;
     } @else {
       <div className="mt-2 flex flex-col gap-2">
-        <CommentBody
-          body={comment.body}
-          owner={props.owner}
-          repoName={props.repoName}
-        />
+        <CommentBody body={comment.body} owner={props.owner} repoName={props.repoName} />
         <IssueReactionsBar
           owner={props.owner}
           repoName={props.repoName}
@@ -278,27 +275,19 @@ function CommentItem(props: {
           number={props.number}
           commentId={comment.id}
         />
-      </div>
+      </div>;
     }
-  </li>
+  </li>;
 }
 
 /** Issue comment thread with create/edit/delete + history (ISS-02 / D-ISS-09 / D-ISS-12). */
 export function IssueComments(props: IssueCommentsProps) @{
   const queryClient = useQueryClient();
-  const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   const listQ = useQuery({
-    queryKey: [
-      "issue",
-      "comments",
-      "list",
-      props.owner,
-      props.repoName,
-      props.number,
-    ] as const,
+    queryKey: ["issue", "comments", "list", props.owner, props.repoName, props.number] as const,
     queryFn: async () => {
       const res = await apiClient.issue.comments.list({
         owner: props.owner,
@@ -315,66 +304,59 @@ export function IssueComments(props: IssueCommentsProps) @{
 
   async function invalidate() {
     await queryClient.invalidateQueries({
-      queryKey: [
-        "issue",
-        "comments",
-        "list",
-        props.owner,
-        props.repoName,
-        props.number,
-      ],
+      queryKey: ["issue", "comments", "list", props.owner, props.repoName, props.number],
     });
   }
 
-  async function submit() {
-    setError("");
-    if (!draft.trim()) {
-      setError("Comment body is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.issue.comments.create({
-        owner: props.owner,
-        name: props.repoName,
-        number: props.number,
-        body: draft,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not post comment.");
-        setPending(false);
+  const composeForm = useForm({
+    defaultValues: { body: "" },
+    onSubmit: async ({ value }) => {
+      setError("");
+      if (!value.body.trim()) {
+        setError("Comment body is required.");
         return;
       }
-      setDraft("");
-      await invalidate();
-      setPending(false);
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+      setPending(true);
+      try {
+        const res = await apiClient.issue.comments.create({
+          owner: props.owner,
+          name: props.repoName,
+          number: props.number,
+          body: value.body,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not post comment.");
+          setPending(false);
+          return;
+        }
+        composeForm.reset();
+        await invalidate();
+        setPending(false);
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   <section
     aria-labelledby="issue-comments-heading"
     data-testid="issue-comments"
     className="flex flex-col gap-4"
   >
-    <h2
-      id="issue-comments-heading"
-      className="text-[16px] font-semibold text-foreground"
-    >
+    <h2 id="issue-comments-heading" className="text-[16px] font-semibold text-foreground">
       Comments
     </h2>
     @if (listQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading comments…</p>
+      <p className="text-[14px] text-muted-foreground">Loading comments…</p>;
     } @else {
       @if (listQ.isError) {
         <p role="alert" className="text-[14px] text-destructive">
           Could not load comments.
-        </p>
+        </p>;
       } @else {
         @if (comments.length === 0) {
-          <p className="text-[14px] text-muted-foreground">No comments yet.</p>
+          <p className="text-[14px] text-muted-foreground">No comments yet.</p>;
         } @else {
           <ul className="flex flex-col gap-3">
             @for (const c of comments; key c.id) {
@@ -386,9 +368,9 @@ export function IssueComments(props: IssueCommentsProps) @{
                 canWrite={props.canWrite}
                 currentUserId={props.currentUserId}
                 onChanged={invalidate}
-              />
+              />;
             }
-          </ul>
+          </ul>;
         }
       }
     }
@@ -401,27 +383,32 @@ export function IssueComments(props: IssueCommentsProps) @{
         data-testid="issue-comment-compose"
         onSubmit={(e) => {
           e.preventDefault();
+          void composeForm.handleSubmit();
         }}
       >
         @if (error) {
-          <AuthErrorBanner message={error} />
+          <AuthErrorBanner message={error} />;
         }
-        <MarkdownWritePreview
-          id="issue-comment-body"
-          value={draft}
-          onValueChange={setDraft}
-          rows={6}
-          disabled={pending}
-          placeholder="Leave a comment (markdown supported)"
-          owner={props.owner}
-          repo={props.repoName}
-        />
+        <composeForm.Field name="body">
+          {(field) => (
+            <MarkdownWritePreview
+              id="issue-comment-body"
+              value={field.state.value}
+              onValueChange={field.handleChange}
+              rows={6}
+              disabled={pending}
+              placeholder="Leave a comment (markdown supported)"
+              owner={props.owner}
+              repo={props.repoName}
+            />
+          )}
+        </composeForm.Field>
         <div>
-          <Button type="button" disabled={pending} onClick={() => void submit()}>
+          <Button type="submit" disabled={pending}>
             {(pending ? "Commenting…" : "Comment") as string}
           </Button>
         </div>
-      </form>
+      </form>;
     }
-  </section>
+  </section>;
 }

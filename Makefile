@@ -1,9 +1,13 @@
 .PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
+	smoke-protocol-ci \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
-	db-migrate db-switch-dialect db-matrix
+	db-migrate db-switch-dialect db-matrix \
+	coverage-web coverage-rust coverage-weighted coverage-contract \
+	route-coverage-check \
+	web-lint web-format-check
 
 COMPOSE ?= docker compose
 COMPOSE_FILE ?= docker-compose.yml
@@ -26,11 +30,19 @@ help:
 	@echo "  make down-with-dev-auth - tear down full stack from up-with-dev-auth"
 	@echo "  make logs           - follow compose logs"
 	@echo "  make test           - cargo nextest + JS Vitest (unit/integration/e2e)"
+	@echo "  make coverage-web   - Vitest unit+integration coverage (json-summary/lcov)"
+	@echo "  make coverage-rust  - Rust lib/test coverage via cargo-llvm-cov (optional)"
+	@echo "  make coverage-weighted - D-QH-02 weighted gate (25/40/35, floor 0.65→0.70)"
+	@echo "  make coverage-contract - aggregator contract self-test"
+	@echo "  make route-coverage-check - G-11.1-15 every .tsrx page has happy-dom/browser/skip"
+	@echo "  make web-lint       - oxlint type-aware + deny-warnings (@tsrx/oxc)"
+	@echo "  make web-format-check - oxfmt --check (@tsrx/oxc)"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
 	@echo "  make smoke-git-lfs   - Traefik .git/info/lfs batch routing smoke (GIT-12)"
 	@echo "  make smoke-packages  - Traefik /v2|/npm|/generic → API smoke (PKG-01..03)"
+	@echo "  make smoke-protocol-ci - Compose up + smoke-git-* + smoke-packages (D-QH-04; fail-closed)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
@@ -131,23 +143,29 @@ smoke:
 
 # Requires stack already up (`make up`). Public repo at SMOKE_GIT_OWNER/SMOKE_GIT_REPO;
 # optional SMOKE_PAT=octanest_pat_… for push. See scripts/smoke-git-https.sh.
+# Docker-missing skips exit 0 locally; CI=true / SMOKE_REQUIRE_STACK=1 fails closed.
 smoke-git-https:
 	@./scripts/smoke-git-https.sh
 
 # Compose TCP 2222 + ls-remote/push over scp-style remotes (D-SSH-02 / D-SSH-07).
-# Requires stack with SSH listener; docker-missing skips exit 0. See scripts/smoke-git-ssh.sh.
+# Requires stack with SSH listener. See scripts/smoke-git-ssh.sh.
 smoke-git-ssh:
 	@./scripts/smoke-git-ssh.sh
 
-# Requires stack already up (`make up`). Asserts .git/info/lfs is not SPA HTML;
-# docker-missing skips exit 0. See scripts/smoke-git-lfs.sh.
+# Requires stack already up (`make up`). Asserts .git/info/lfs is not SPA HTML.
+# See scripts/smoke-git-lfs.sh.
 smoke-git-lfs:
 	@./scripts/smoke-git-lfs.sh
 
 # Requires stack already up (`make up`). Traefik PathPrefix /v2|/npm|/generic → api.
-# Docker-missing skips exit 0. See scripts/smoke-packages.sh.
+# See scripts/smoke-packages.sh.
 smoke-packages:
 	@./scripts/smoke-packages.sh
+
+# D-QH-04: bring up Compose, run protocol smokes fail-closed, tear down.
+# Default skips client ls-remote/LFS push (no seeded repo); set SMOKE_SKIP_*=0 + fixtures for full.
+smoke-protocol-ci:
+	@./scripts/ci-smoke-protocol.sh
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh
@@ -169,3 +187,53 @@ db-switch-dialect:
 
 db-matrix:
 	cargo test -p octanest-db --test dialect_probe -- --nocapture
+
+# D-QH-02 coverage collect + weighted gate (see docs/TESTING.md).
+# Collect continues when Vitest exits non-zero so summaries are still emitted
+# (reportOnFailure); web-octane remains the hard test pass/fail job.
+coverage-web:
+	@mkdir -p var/coverage
+	@bun run --filter @octanest/web test:coverage:unit \
+		|| echo "==> unit coverage finished with test failures (summaries may still exist)"
+	@bun run --filter @octanest/web test:coverage:integration \
+		|| echo "==> integration coverage finished with test failures (summaries may still exist)"
+	@test -f apps/web/coverage/unit/coverage-summary.json
+	@test -f apps/web/coverage/integration/coverage-summary.json
+	@cp -f apps/web/coverage/unit/coverage-summary.json var/coverage/web-unit-summary.json
+	@cp -f apps/web/coverage/integration/coverage-summary.json var/coverage/web-integration-summary.json
+	@echo "==> web coverage summaries in var/coverage/"
+
+# Prefer cargo-llvm-cov when installed. Residual: CI may skip until llvm-tools are budgeted.
+coverage-rust:
+	@mkdir -p var/coverage
+	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
+		cargo llvm-cov --workspace --lcov --output-path var/coverage/rust-lcov.info; \
+		cargo llvm-cov report --json --output-path var/coverage/rust-summary.json; \
+		echo "==> rust coverage in var/coverage/rust-*.{info,json}"; \
+	else \
+		echo "==> cargo-llvm-cov not installed; skipping Rust coverage collect"; \
+		echo "    install: cargo install cargo-llvm-cov --locked"; \
+		echo "    CI: taiki-e/install-action tool: cargo-llvm-cov"; \
+		echo "skipped" > var/coverage/rust-skipped.txt; \
+	fi
+
+coverage-contract:
+	@./scripts/coverage-weighted.contract.sh
+
+route-coverage-check:
+	@./scripts/route-coverage-check.sh
+
+web-lint:
+	bun run --filter @octanest/web lint
+
+web-format-check:
+	bun run --filter @octanest/web format:check
+
+coverage-weighted: coverage-web
+	@mkdir -p var/coverage
+	@$(MAKE) --no-print-directory coverage-rust
+	@./scripts/coverage-e2e-checklist.sh | tee var/coverage/e2e-checklist.txt
+	@./scripts/coverage-weighted.sh \
+		--unit-json var/coverage/web-unit-summary.json \
+		--integration-json var/coverage/web-integration-summary.json \
+		--e2e-checklist | tee var/coverage/weighted.txt

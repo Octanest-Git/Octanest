@@ -1,14 +1,12 @@
 import type { RepoLfsObjectEntry, RepoLfsUsageResponse } from "@octanest/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 const DOCS_HREF = "/docs/CONFIGURATION.md#git-lfs";
 
@@ -90,29 +88,27 @@ export function LfsSettingsPanel(props: {
     <p className="text-[14px] text-muted-foreground">
       Enable Git LFS for this repository. Track large files with{" "}
       <code className="text-[13px]">git lfs track</code> and commit{" "}
-      <code className="text-[13px]">.gitattributes</code> yourself — Octanest does
-      not auto-commit attributes.{" "}
-      <a
-        href={DOCS_HREF as string}
-        className="text-primary underline-offset-2 hover:underline"
-      >
+      <code className="text-[13px]">.gitattributes</code> yourself — Octanest does not auto-commit
+      attributes.{" "}
+      <a href={DOCS_HREF as string} className="text-primary underline-offset-2 hover:underline">
         LFS setup docs
       </a>
     </p>
 
     @if (usageQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading LFS status…</p>
+      <p className="text-[14px] text-muted-foreground">Loading LFS status…</p>;
     } @else if (usageQ.isError) {
       <p role="alert" className="text-[14px] text-destructive">
-        {(usageQ.error instanceof Error
-          ? usageQ.error.message
-          : "Could not load LFS status.") as string}
-      </p>
+        {
+          (usageQ.error instanceof Error
+            ? usageQ.error.message
+            : "Could not load LFS status.") as string
+        }
+      </p>;
     } @else {
       <>
         <p className="text-[14px] text-foreground">
-          Status:{" "}
-          <strong>{(enabled ? "Enabled" : "Disabled") as string}</strong>
+          Status: <strong>{(enabled ? "Enabled" : "Disabled") as string}</strong>
         </p>
 
         @if (canAdmin) {
@@ -127,49 +123,52 @@ export function LfsSettingsPanel(props: {
             <Label htmlFor="lfs-enable" className="text-[14px]">
               Enable Git LFS for this repository
             </Label>
-          </div>
+          </div>;
         } @else {
           <p className="text-[14px] text-muted-foreground">
             Only repository admins can enable or disable LFS.
-          </p>
+          </p>;
         }
 
         @if (error) {
           <p role="alert" className="text-[14px] text-destructive">
             {error as string}
-          </p>
+          </p>;
         }
 
         <div
           className="flex flex-col gap-2 rounded-md border border-border p-4"
           aria-labelledby="lfs-usage-heading"
         >
-          <h3
-            id="lfs-usage-heading"
-            className="text-[15px] font-medium text-foreground"
-          >
+          <h3 id="lfs-usage-heading" className="text-[15px] font-medium text-foreground">
             Usage breakdown
           </h3>
           <p className="text-[14px] text-muted-foreground">
-            {(usage
-              ? `${usage.object_count} object${usage.object_count === 1 ? "" : "s"} · ${formatBytes(usage.logical_bytes)} logical · quota ${formatBytes(usage.quota_repo_bytes)}`
-              : "No usage data") as string}
+            {
+              (usage
+                ? `${usage.object_count} object${usage.object_count === 1 ? "" : "s"} · ${formatBytes(usage.logical_bytes)} logical · quota ${formatBytes(usage.quota_repo_bytes)}`
+                : "No usage data") as string
+            }
           </p>
           @if (objects.length > 0) {
             <ul className="mt-2 flex flex-col gap-1 text-[13px] font-mono text-muted-foreground">
               @for (const obj of objects; key obj.oid) {
                 <li>
-                  {(obj.oid.slice(0, 12) + "… · " + formatBytes(obj.size)) as string}
-                </li>
+                  {
+                    (obj.oid.slice(0, 12) +
+                      "… · " +
+                      formatBytes(obj.size)) as string
+                  }
+                </li>;
               }
-            </ul>
+            </ul>;
           } @else {
             <p className="text-[14px] text-muted-foreground">
               No LFS objects linked yet.
-            </p>
+            </p>;
           }
         </div>
-      </>
+      </>;
     }
-  </section>
+  </section>;
 }

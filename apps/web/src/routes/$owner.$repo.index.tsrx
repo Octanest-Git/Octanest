@@ -1,32 +1,17 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoPublic,
-  RepoRefEntry,
-  RepoTreeEntry,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoPublic, RepoRefEntry, RepoTreeEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
 import { CloneBox } from "@/components/repo/clone-box";
 import { QuickSetup } from "@/components/repo/quick-setup";
 import { ReadmePanel } from "@/components/repo/readme-panel";
 import { RefSelect } from "@/components/repo/ref-select";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { findReadmeName, shortRefName } from "@/lib/repo-browse";
 import { renderGfm } from "@/lib/markdown";
-import { useRepoStore } from "@/lib/repo-store";
-import {
-  fetchRepoBlob,
-  fetchRepoGet,
-  fetchRepoRefs,
-  fetchRepoTree,
-} from "@/lib/ssr-repo";
+import { fetchRepoBlob, fetchRepoGet, fetchRepoRefs, fetchRepoTree } from "@/lib/ssr-repo";
 
 export type CodeHomeLoaderData =
   | { kind: "not_found" }
@@ -134,9 +119,7 @@ export const Route = createFileRoute("/$owner/$repo/")({
   },
 });
 
-type BrowsePhase =
-  | { kind: "loading" }
-  | CodeHomeLoaderData;
+type BrowsePhase = { kind: "loading" } | CodeHomeLoaderData;
 
 /** Code home — Quick setup when empty; tree + README when populated (D-15). */
 export function RepoCodeHome() @{
@@ -146,10 +129,7 @@ export function RepoCodeHome() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const loaderData = useLoaderData({ from: "/$owner/$repo/" }) as
-    | CodeHomeLoaderData
-    | undefined;
-  const layoutRepo = useRepoStore((s) => s.repo);
+  const loaderData = useLoaderData({ from: "/$owner/$repo/" }) as CodeHomeLoaderData | undefined;
 
   const [phase, setPhase] = useState<BrowsePhase>(() =>
     loaderData ? loaderData : { kind: "loading" },
@@ -162,7 +142,7 @@ export function RepoCodeHome() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadCodeHome(
@@ -178,8 +158,7 @@ export function RepoCodeHome() @{
         if (!cancelled) {
           setPhase({
             kind: "error",
-            message:
-              "Can't reach Octanest. Check your connection and try again.",
+            message: "Can't reach Octanest. Check your connection and try again.",
           });
         }
       }
@@ -189,13 +168,9 @@ export function RepoCodeHome() @{
     };
   }, [owner, repoName, loaderData]);
 
-  const chromeRepo =
-    (phase.kind === "empty" || phase.kind === "ready"
-      ? phase.repo
-      : layoutRepo) ?? null;
-
+  // Chrome comes from `$owner.$repo` layout (D-QH-01).
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else {
     <>
       @if (phase.kind === "loading") {
@@ -203,62 +178,49 @@ export function RepoCodeHome() @{
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-48 w-full" />
-        </div>
+        </div>;
       } @else if (phase.kind === "error") {
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
-        </p>
-      } @else if (chromeRepo) {
+        </p>;
+      } @else if (phase.kind === "empty") {
         <>
-          <RepoChrome repo={chromeRepo} active="code" />
-          @if (phase.kind === "empty") {
-            <>
-              <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
-                <CloneBox
-                  owner={owner}
-                  repo={repoName}
-                  refName={phase.repo.default_branch || "main"}
-                  empty={true}
-                />
-              </div>
-              <QuickSetup owner={owner} repo={repoName} />
-            </>
-          } @else {
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <RefSelect
-                  owner={owner}
-                  repo={repoName}
-                  refs={phase.refs}
-                  value={phase.refName}
-                  mode="home"
-                />
-                <div className="ml-auto">
-                  <CloneBox
-                    owner={owner}
-                    repo={repoName}
-                    refName={phase.refName}
-                    empty={false}
-                  />
-                </div>
-              </div>
-              <FileTree
-                owner={owner}
-                repo={repoName}
-                refName={phase.refName}
-                basePath=""
-                entries={phase.entries}
-              />
-              @if (phase.readme) {
-                <ReadmePanel
-                  html={phase.readme.html}
-                  fileName={phase.readme.name}
-                />
-              }
-            </>
+          <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <CloneBox
+              owner={owner}
+              repo={repoName}
+              refName={phase.repo.default_branch || "main"}
+              empty={true}
+            />
+          </div>
+          <QuickSetup owner={owner} repo={repoName} />
+        </>;
+      } @else {
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <RefSelect
+              owner={owner}
+              repo={repoName}
+              refs={phase.refs}
+              value={phase.refName}
+              mode="home"
+            />
+            <div className="ml-auto">
+              <CloneBox owner={owner} repo={repoName} refName={phase.refName} empty={false} />
+            </div>
+          </div>
+          <FileTree
+            owner={owner}
+            repo={repoName}
+            refName={phase.refName}
+            basePath=""
+            entries={phase.entries}
+          />
+          @if (phase.readme) {
+            <ReadmePanel html={phase.readme.html} fileName={phase.readme.name} />;
           }
-        </>
+        </>;
       }
-    </>
+    </>;
   }
 }

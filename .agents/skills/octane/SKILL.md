@@ -21,10 +21,14 @@ Octane is Inferno’s successor with a React-*shaped* programming model (hooks, 
 | Use `@if` / `@else`, `@for (…; key …)`, `@switch` | Invent `@else if` (unsupported — nest `@if` or use `@switch`) |
 | Text inputs: `onInput` + controlled `value` | React synthetic `onChange` for per-edit text |
 | Session/server data via `@octanejs/tanstack-query` | New global stores for `auth.me` / admin settings |
+| Forms via `@octanejs/tanstack-form` (`useForm`, `onInput` + `field.handleChange`) | Parallel `useState` per field for multi-field forms |
+| File pickers via `@octanejs/dropzone` / `FileDropzone` | Ad-hoc hidden `<input type="file">` without dropzone |
 | Forms: `method="post" action="#"` + `type="button"` where needed | Rely on GET navigations from submit |
 | Anonymous auth pages: SSR loaders, no form skeletons | Skeleton-first anonymous login/signup |
 
 Shared session helpers: `apps/web/src/lib/session-queries.ts`, `use-chrome-account.ts`, `query-client.ts`. Test with `apps/web/src/test/render-with-query.ts`.
+
+Before committing web UI changes: `make web-lint` and `make web-format-check` (`@tsrx/oxc` — type-aware oxlint + oxfmt). See [AGENTS.md](../../../AGENTS.md).
 
 ## Authoring `.tsrx`
 

@@ -48,9 +48,7 @@ export function IssueDeleteDialog(props: IssueDeleteDialogProps) @{
         <Input
           id="issue-delete-confirm"
           value={confirmValue}
-          onInput={(e) =>
-            setConfirmValue((e.currentTarget as HTMLInputElement).value)
-          }
+          onInput={(e) => setConfirmValue((e.currentTarget as HTMLInputElement).value)}
           autoComplete="off"
           disabled={props.pending}
           placeholder={expected}
@@ -58,7 +56,7 @@ export function IssueDeleteDialog(props: IssueDeleteDialogProps) @{
         @if (props.error) {
           <p role="alert" className="text-[13px] text-destructive">
             {props.error as string}
-          </p>
+          </p>;
         }
       </div>
       <AlertDialogFooter>
@@ -76,5 +74,5 @@ export function IssueDeleteDialog(props: IssueDeleteDialogProps) @{
         </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
-  </AlertDialog>
+  </AlertDialog>;
 }

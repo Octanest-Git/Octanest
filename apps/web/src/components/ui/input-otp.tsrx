@@ -65,12 +65,8 @@ export function InputOtp({
           "disabled:cursor-not-allowed",
           "aria-[invalid=true]:border-destructive",
         )}
-        aria-label={
-          index === 0
-            ? undefined
-            : `Digit ${index + 1} of ${OTP_LENGTH}`
-        }
-      />
+        aria-label={index === 0 ? undefined : `Digit ${index + 1} of ${OTP_LENGTH}`}
+      />;
     }
-  </OTPField.Root>
+  </OTPField.Root>;
 }

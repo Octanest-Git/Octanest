@@ -1,14 +1,11 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthShell } from "@/components/auth-shell";
+import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { PatFgForm } from "@/components/settings/pat-fg-form";
 import { PatReveal } from "@/components/settings/pat-reveal";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 import { cn } from "@/lib/utils";
@@ -18,8 +15,7 @@ export type TokensNewFgLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/tokens/new/fine-grained")({
   component: TokensNewFineGrainedPage,
@@ -56,9 +52,7 @@ export function TokensNewFineGrainedPage() @{
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
-      window.location.assign(
-        "/login?returnTo=/settings/tokens/new/fine-grained",
-      );
+      window.location.assign("/login?returnTo=/settings/tokens/new/fine-grained");
     }
   }, [loaderData]);
 
@@ -91,14 +85,12 @@ export function TokensNewFineGrainedPage() @{
   useEffect(() => {
     if (loaderData) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await apiClient.auth.me();
         if (cancelled) return;
         if (!res.ok) {
-          window.location.assign(
-            "/login?returnTo=/settings/tokens/new/fine-grained",
-          );
+          window.location.assign("/login?returnTo=/settings/tokens/new/fine-grained");
           return;
         }
         setPhase({ kind: "ready", user: res.data });
@@ -112,47 +104,40 @@ export function TokensNewFineGrainedPage() @{
     };
   }, [loaderData]);
 
-  const verified =
-    phase.kind === "ready" ? phase.user.email_verified === true : false;
+  const verified = phase.kind === "ready" ? phase.user.email_verified === true : false;
   const showWall = phase.kind === "ready" && !verified;
 
   @if (phase.kind === "loading") {
-    <div className="mx-auto max-w-2xl px-4 py-16" aria-busy="true">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="mt-8 h-40 w-full" />
-    </div>
+    <></>;
   } @else {
     @if (phase.kind === "error") {
-      <div className="mx-auto max-w-2xl px-4 py-16">
+      <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </div>
+      </SettingsShell>;
     } @else {
       @if (showWall) {
         <AuthShell
           title="Verify your email"
           support="Verify your email before creating a personal access token."
         >
-          <a
-            href="/verify"
-            className={cn(buttonVariants({ variant: "default" }))}
-          >
+          <a href="/verify" className={cn(buttonVariants({ variant: "default" }))}>
             Verify email
           </a>
-        </AuthShell>
+        </AuthShell>;
       } @else {
-        <div className="mx-auto max-w-2xl px-4 py-16">
+        <AccountSettingsLayout active="tokens">
           <a
             href="/settings/tokens"
             className="text-[14px] text-muted-foreground no-underline hover:text-foreground"
           >
-            ← Personal access tokens
+            ← Back
           </a>
           @if (plaintext) {
             <div className="mt-6">
               <PatReveal token={plaintext as string} />
-            </div>
+            </div>;
           } @else {
             <>
               <h1 className="mt-6 font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -163,9 +148,9 @@ export function TokensNewFineGrainedPage() @{
                   setPlaintext(token);
                 }}
               />
-            </>
+            </>;
           }
-        </div>
+        </AccountSettingsLayout>;
       }
     }
   }

@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CloneBox } from "./clone-box";
 
@@ -14,8 +8,8 @@ beforeEach(() => {
   Object.defineProperty(window, "location", {
     configurable: true,
     value: {
-      ...window.location,
       origin: "http://127.0.0.1:3000",
+      href: "http://127.0.0.1:3000/",
       assign: vi.fn(),
     },
   });
@@ -52,9 +46,7 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
     expect(copyBtn).toBeInTheDocument();
     expect(copyBtn.querySelector("svg")).not.toBeNull();
 
-    expect(
-      screen.getByText("Clone with SSH"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Clone with SSH")).toBeInTheDocument();
 
     const zip = screen.getByRole("menuitem", { name: "Download ZIP" });
     const tar = screen.getByRole("menuitem", { name: "Download tar.gz" });
@@ -77,12 +69,10 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
 
     await openCloneMenu();
 
-    expect(
-      screen.getByRole("textbox", { name: "HTTPS clone URL" }),
-    ).toHaveValue("http://127.0.0.1:3000/ada/empty.git");
-    expect(
-      screen.getByText("Clone with SSH"),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "HTTPS clone URL" })).toHaveValue(
+      "http://127.0.0.1:3000/ada/empty.git",
+    );
+    expect(screen.getByText("Clone with SSH")).toBeInTheDocument();
 
     const zip = screen.getByRole("menuitem", { name: "Download ZIP" });
     const tar = screen.getByRole("menuitem", { name: "Download tar.gz" });
@@ -113,8 +103,6 @@ describe("CloneBox (E12 / D-22 / D-29)", () => {
     await openCloneMenu();
     fireEvent.click(screen.getByRole("menuitem", { name: "Download ZIP" }));
 
-    expect(assign).toHaveBeenCalledWith(
-      "/api/repos/ada/hello/archive/feature%2Fx.zip",
-    );
+    expect(assign).toHaveBeenCalledWith("/api/repos/ada/hello/archive/feature%2Fx.zip");
   });
 });

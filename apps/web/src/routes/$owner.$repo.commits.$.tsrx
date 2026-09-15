@@ -1,14 +1,6 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoCommitSummary,
-  RepoPublic,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoCommitSummary, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { commitHref } from "@/lib/repo-browse";
@@ -40,8 +32,7 @@ type Phase =
       loadingMore: boolean;
     };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function toReadyPhase(
   data: Extract<CommitsLoaderData, { kind: "ready" }>,
@@ -133,13 +124,11 @@ export function RepoCommitsPage() @{
 
   useEffect(() => {
     if (loaderData) {
-      setPhase(
-        loaderData.kind === "ready" ? toReadyPhase(loaderData) : loaderData,
-      );
+      setPhase(loaderData.kind === "ready" ? toReadyPhase(loaderData) : loaderData);
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadCommitsPage(owner, repoName, refFromUrl);
@@ -182,23 +171,20 @@ export function RepoCommitsPage() @{
   }
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading commits…</p>
+    <p className="text-[16px] text-muted-foreground">Loading commits…</p>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
-    </p>
+    </p>;
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="commits" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">
         Commits on {phase.refName as string}
       </h2>
       @if (phase.commits.length === 0) {
-        <p className="text-[16px] text-muted-foreground">
-          No commits yet on this ref.
-        </p>
+        <p className="text-[16px] text-muted-foreground">No commits yet on this ref.</p>;
       } @else {
         <>
           <ul className="divide-y divide-border border-y border-border">
@@ -227,7 +213,7 @@ export function RepoCommitsPage() @{
                 >
                   {relativeCommitTime(c.authored_at) as string}
                 </time>
-              </li>
+              </li>;
             }
           </ul>
           @if (phase.commits.length >= phase.limit) {
@@ -242,10 +228,10 @@ export function RepoCommitsPage() @{
               >
                 {phase.loadingMore ? "Loading…" : "Load more"}
               </button>
-            </div>
+            </div>;
           }
-        </>
+        </>;
       }
-    </>
+    </>;
   }
 }

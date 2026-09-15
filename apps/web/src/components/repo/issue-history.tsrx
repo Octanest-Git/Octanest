@@ -26,26 +26,22 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
 
   const revisions: IssueRevisionPublic[] = historyQ.data?.revisions ?? [];
   const showList = !historyQ.isPending && !historyQ.isError && revisions.length > 0;
-  const showEmpty =
-    !historyQ.isPending && !historyQ.isError && revisions.length === 0;
+  const showEmpty = !historyQ.isPending && !historyQ.isError && revisions.length === 0;
 
   <section aria-labelledby="issue-history-heading" className="flex flex-col gap-3">
-    <h2
-      id="issue-history-heading"
-      className="text-[16px] font-semibold text-foreground"
-    >
+    <h2 id="issue-history-heading" className="text-[16px] font-semibold text-foreground">
       Edit history
     </h2>
     @if (historyQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading history…</p>
+      <p className="text-[14px] text-muted-foreground">Loading history…</p>;
     } @else {
       @if (historyQ.isError) {
         <p role="alert" className="text-[14px] text-destructive">
           Could not load edit history.
-        </p>
+        </p>;
       } @else {
         @if (showEmpty) {
-          <p className="text-[14px] text-muted-foreground">No prior edits.</p>
+          <p className="text-[14px] text-muted-foreground">No prior edits.</p>;
         }
         @if (showList) {
           <ul className="flex flex-col gap-3">
@@ -60,11 +56,11 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
                 <pre className="mt-1 whitespace-pre-wrap font-sans text-muted-foreground">
                   {rev.body as string}
                 </pre>
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         }
       }
     }
-  </section>
+  </section>;
 }

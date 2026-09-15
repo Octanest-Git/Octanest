@@ -61,10 +61,9 @@ describe("/signup closed-signup SSR (D-06)", () => {
     } catch (e) {
       caught = e;
     }
-    expect(
-      isNotFound(caught),
-      "closed signup must throw notFound() — no AuthShell soft page",
-    ).toBe(true);
+    expect(isNotFound(caught), "closed signup must throw notFound() — no AuthShell soft page").toBe(
+      true,
+    );
   });
 
   it("beforeLoad allows render when allow_signup is true", async () => {
@@ -75,9 +74,7 @@ describe("/signup closed-signup SSR (D-06)", () => {
       data: { mode: "local", allow_signup: true },
     });
 
-    await expect(
-      Route.options.beforeLoad!({} as never),
-    ).resolves.toBeUndefined();
+    await expect(Route.options.beforeLoad!({} as never)).resolves.toBeUndefined();
   });
 });
 

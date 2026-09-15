@@ -27,9 +27,7 @@ describe("stack e2e: Resend → HTTP stub", () => {
       });
       expect(signup.ok).toBe(true);
 
-      const entry = await waitForStub(
-        (e) => e.method === "POST" && e.path === "/emails",
-      );
+      const entry = await waitForStub((e) => e.method === "POST" && e.path === "/emails");
       const body = entry.body as {
         to?: string[];
         subject?: string;

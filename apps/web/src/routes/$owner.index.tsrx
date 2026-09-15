@@ -6,10 +6,7 @@ import {
   useParams,
 } from "@octanejs/tanstack-router";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  fetchOrgOverview,
-  type OrgOverviewPayload,
-} from "@/lib/ssr-org";
+import { fetchOrgOverview, type OrgOverviewPayload } from "@/lib/ssr-org";
 import { cn } from "@/lib/utils";
 
 export type OrgOverviewLoaderData = OrgOverviewPayload;
@@ -35,9 +32,7 @@ export const Route = createFileRoute("/$owner/")({
 /** Org overview at exact `/{owner}` (D-ORG-06). */
 export function OrgOverviewPage() @{
   const params = useParams({ from: "/$owner/" }) as { owner?: string };
-  const data = useLoaderData({ from: "/$owner/" }) as
-    | OrgOverviewLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/$owner/" }) as OrgOverviewLoaderData | undefined;
 
   const org = data?.org;
   const slug = org?.slug ?? params.owner ?? "";
@@ -49,7 +44,7 @@ export function OrgOverviewPage() @{
   @if (!org) {
     <div className="mx-auto max-w-6xl px-4 py-16">
       <p className="text-[16px] text-muted-foreground">Organization not found.</p>
-    </div>
+    </div>;
   } @else {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -57,15 +52,11 @@ export function OrgOverviewPage() @{
           <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold leading-[1.2] text-foreground">
             {display as string}
           </h1>
-          <p className="mt-1 text-[16px] text-muted-foreground">
-            {"@" + (slug as string)}
-          </p>
+          <p className="mt-1 text-[16px] text-muted-foreground">{"@" + (slug as string)}</p>
           @if (memberCount != null) {
             <p className="mt-3 text-[14px] text-muted-foreground">
-              {(memberCount === 1
-                ? "1 member"
-                : `${memberCount} members`) as string}
-            </p>
+              {(memberCount === 1 ? "1 member" : `${memberCount} members`) as string}
+            </p>;
           }
         </div>
         @if (canAdmin) {
@@ -82,7 +73,7 @@ export function OrgOverviewPage() @{
             >
               Members
             </a>
-          </div>
+          </div>;
         }
       </div>
 
@@ -96,7 +87,7 @@ export function OrgOverviewPage() @{
         @if (repos.length === 0) {
           <p className="mt-4 text-[16px] text-muted-foreground">
             No public repositories yet.
-          </p>
+          </p>;
         } @else {
           <ul className="mt-4 divide-y divide-border border-y border-border">
             @for (const repo of repos; key repo.id) {
@@ -112,16 +103,16 @@ export function OrgOverviewPage() @{
                 @if (repo.description?.trim()) {
                   <p className="mt-1 text-[14px] text-muted-foreground">
                     {repo.description as string}
-                  </p>
+                  </p>;
                 }
                 <p className="mt-1 text-[13px] text-muted-foreground">
                   {(repo.visibility === "private" ? "Private" : "Public") as string}
                 </p>
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         }
       </section>
-    </div>
+    </div>;
   }
 }

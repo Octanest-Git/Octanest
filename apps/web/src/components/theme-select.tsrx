@@ -100,9 +100,9 @@ export function ThemeSelect({
         >
           <Icon aria-hidden size={15} />
           <span>{opt.label}</span>
-        </button>
+        </button>;
       }
-    </div>
+    </div>;
   } @else {
     <div className={cn("relative", className)} data-theme-menu>
       <button
@@ -145,12 +145,12 @@ export function ThemeSelect({
               <Icon aria-hidden size={16} />
               <span className="flex-1 font-medium">{opt.label}</span>
               @if (selected) {
-                <Check aria-hidden size={16} className="text-primary" />
+                <Check aria-hidden size={16} className="text-primary" />;
               }
-            </button>
+            </button>;
           }
-        </div>
+        </div>;
       }
-    </div>
+    </div>;
   }
 }

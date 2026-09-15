@@ -4,14 +4,25 @@ import { octane } from "@octanejs/vite-plugin";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
+  fixTypeOnlyImports,
+  RECHARTS_TYPE_ONLY_IMPORT_FIX,
+} from "./vite-plugins/fix-type-only-imports.ts";
+import {
   ensureAuthSettings,
+  expectAdminLfsQuotasFlow,
   expectAuthMeDedupedOnHome,
+  expectChromeCreateAndAccountMenusFlow,
+  expectForgeIssuesCrudFlow,
+  expectForgeReleasesCrudFlow,
+  expectForgeRepoPackagesFlow,
+  expectForgeSshAndOrgMembersFlow,
+  expectSettingsProfileAvatarFlow,
   expectStatusHealthy,
   expectWorkosCta,
   loginThroughOidc,
   restoreLocalAuthCommand,
   signupThroughUi,
-} from "./e2e/stack-browser/commands";
+} from "./e2e/stack-browser/commands.ts";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const stackEnabled = process.env.E2E_STACK === "1";
@@ -40,9 +51,7 @@ const stackEnvDefine = {
   "process.env.OCTANEST_E2E_OIDC_ISSUER": JSON.stringify(
     process.env.OCTANEST_E2E_OIDC_ISSUER ?? "http://127.0.0.1:9090/default",
   ),
-  "process.env.OCTANEST_E2E_DB_PATH": JSON.stringify(
-    process.env.OCTANEST_E2E_DB_PATH ?? "",
-  ),
+  "process.env.OCTANEST_E2E_DB_PATH": JSON.stringify(process.env.OCTANEST_E2E_DB_PATH ?? ""),
 };
 
 /**
@@ -55,7 +64,7 @@ const stackEnvDefine = {
  * file hit Vitest `initSuite` / `config` undefined failures on GitHub runners.
  */
 export default defineConfig({
-  plugins: [octane()],
+  plugins: [fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX), octane()],
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
@@ -63,6 +72,22 @@ export default defineConfig({
   },
   test: {
     globals: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text-summary", "json-summary", "lcov"],
+      reportsDirectory: "./coverage",
+      // Default: only files exercised by tests (keeps D-QH-02 floor meaningful).
+      // Do not set `all: true` / broad include until suite depth catches up.
+      exclude: [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/test/**",
+        "e2e/**",
+        "**/*.d.ts",
+        "src/routeTree.gen.ts",
+        "src/styles/**",
+      ],
+      reportOnFailure: true,
+    },
     projects: [
       {
         extends: true,
@@ -87,6 +112,8 @@ export default defineConfig({
           environment: "happy-dom",
           include: ["src/**/*.integration.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-integration.ts"],
+          // happy-dom + dynamic route imports contend under parallel workers (timeouts / DOM bleed).
+          fileParallelism: false,
         },
       },
       ...(stackEnabled
@@ -125,6 +152,13 @@ export default defineConfig({
                     loginThroughOidc,
                     expectStatusHealthy,
                     expectAuthMeDedupedOnHome,
+                    expectForgeRepoPackagesFlow,
+                    expectForgeIssuesCrudFlow,
+                    expectForgeReleasesCrudFlow,
+                    expectForgeSshAndOrgMembersFlow,
+                    expectAdminLfsQuotasFlow,
+                    expectChromeCreateAndAccountMenusFlow,
+                    expectSettingsProfileAvatarFlow,
                   },
                 },
               },

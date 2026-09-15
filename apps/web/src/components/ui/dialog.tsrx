@@ -5,25 +5,19 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function Dialog(props: ComponentProps<typeof DialogPrimitive.Root>) @{
-  <DialogPrimitive.Root data-slot="dialog" {...props} />
+  <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-export function DialogTrigger(
-  props: ComponentProps<typeof DialogPrimitive.Trigger>,
-) @{
-  <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+export function DialogTrigger(props: ComponentProps<typeof DialogPrimitive.Trigger>) @{
+  <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
-export function DialogPortal(
-  props: ComponentProps<typeof DialogPrimitive.Portal>,
-) @{
-  <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+export function DialogPortal(props: ComponentProps<typeof DialogPrimitive.Portal>) @{
+  <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
-export function DialogClose(
-  props: ComponentProps<typeof DialogPrimitive.Close>,
-) @{
-  <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+export function DialogClose(props: ComponentProps<typeof DialogPrimitive.Close>) @{
+  <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
 export function DialogOverlay({
@@ -37,7 +31,7 @@ export function DialogOverlay({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function DialogContent({
@@ -73,28 +67,18 @@ export function DialogContent({
             }
           >
             <X aria-hidden size={16} />
-          </DialogPrimitive.Close>
+          </DialogPrimitive.Close>;
         }
       </DialogPrimitive.Popup>
     </DialogPrimitive.Viewport>
-  </DialogPortal>
+  </DialogPortal>;
 }
 
-export function DialogHeader({
-  className,
-  ...props
-}: ComponentProps<"div">) @{
-  <div
-    data-slot="dialog-header"
-    className={cn("flex flex-col gap-2", className)}
-    {...props}
-  />
+export function DialogHeader({ className, ...props }: ComponentProps<"div">) @{
+  <div data-slot="dialog-header" className={cn("flex flex-col gap-2", className)} {...props} />;
 }
 
-export function DialogFooter({
-  className,
-  ...props
-}: ComponentProps<"div">) @{
+export function DialogFooter({ className, ...props }: ComponentProps<"div">) @{
   <div
     data-slot="dialog-footer"
     className={cn(
@@ -102,7 +86,7 @@ export function DialogFooter({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function DialogTitle({
@@ -116,7 +100,7 @@ export function DialogTitle({
       className,
     )}
     {...props}
-  />
+  />;
 }
 
 export function DialogDescription({
@@ -127,5 +111,5 @@ export function DialogDescription({
     data-slot="dialog-description"
     className={cn("text-[14px] text-muted-foreground", className)}
     {...props}
-  />
+  />;
 }

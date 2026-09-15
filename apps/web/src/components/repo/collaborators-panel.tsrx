@@ -1,9 +1,7 @@
-import type {
-  CollaboratorPermission,
-  RepoCollaboratorPublic,
-} from "@octanest/api-client";
+import type { CollaboratorPermission, RepoCollaboratorPublic } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MemberLookup } from "@/components/org/member-lookup";
@@ -33,8 +31,7 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 const PERM_OPTIONS: { value: CollaboratorPermission; label: string }[] = [
   { value: "read", label: "Read" },
@@ -90,13 +87,13 @@ function PermissionSelect({
                   <Check aria-hidden size={16} className="text-primary" />
                 </SelectItemIndicator>
                 <SelectItemText>{opt.label as string}</SelectItemText>
-              </SelectItem>
+              </SelectItem>;
             }
           </SelectList>
         </SelectPopup>
       </SelectPositioner>
     </SelectPortal>
-  </SelectRoot>
+  </SelectRoot>;
 }
 
 export type CollaboratorsPanelProps = {
@@ -121,18 +118,49 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
     },
   });
 
-  const collaborators: RepoCollaboratorPublic[] =
-    listQ.data?.collaborators ?? [];
+  const collaborators: RepoCollaboratorPublic[] = listQ.data?.collaborators ?? [];
 
-  const [addUsername, setAddUsername] = useState("");
-  const [addPerm, setAddPerm] = useState<CollaboratorPermission>("write");
   const [addError, setAddError] = useState("");
   const [addPending, setAddPending] = useState(false);
+
+  const addForm = useForm({
+    defaultValues: {
+      username: "",
+      permission: "write" as CollaboratorPermission,
+    },
+    onSubmit: async ({ value }) => {
+      setAddError("");
+      const username = value.username.trim();
+      if (!username) {
+        setAddError("Username is required.");
+        return;
+      }
+      setAddPending(true);
+      try {
+        const res = await apiClient.repo.collaborators.add({
+          owner,
+          name,
+          username,
+          permission: value.permission,
+        });
+        if (!res.ok) {
+          setAddError(res.error.message || NETWORK_ERROR);
+          setAddPending(false);
+          return;
+        }
+        addForm.reset();
+        setShowAdd(false);
+        setAddPending(false);
+        await refresh();
+      } catch {
+        setAddError(NETWORK_ERROR);
+        setAddPending(false);
+      }
+    },
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [rowError, setRowError] = useState("");
-  const [removeTarget, setRemoveTarget] = useState<RepoCollaboratorPublic | null>(
-    null,
-  );
+  const [removeTarget, setRemoveTarget] = useState<RepoCollaboratorPublic | null>(null);
   const [removePending, setRemovePending] = useState(false);
   const [removeError, setRemoveError] = useState("");
 
@@ -142,41 +170,7 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
     });
   }
 
-  async function addCollaborator() {
-    setAddError("");
-    const username = addUsername.trim();
-    if (!username) {
-      setAddError("Username is required.");
-      return;
-    }
-    setAddPending(true);
-    try {
-      const res = await apiClient.repo.collaborators.add({
-        owner,
-        name,
-        username,
-        permission: addPerm,
-      });
-      if (!res.ok) {
-        setAddError(res.error.message || NETWORK_ERROR);
-        setAddPending(false);
-        return;
-      }
-      setAddUsername("");
-      setAddPerm("write");
-      setShowAdd(false);
-      setAddPending(false);
-      await refresh();
-    } catch {
-      setAddError(NETWORK_ERROR);
-      setAddPending(false);
-    }
-  }
-
-  async function updatePermission(
-    row: RepoCollaboratorPublic,
-    permission: CollaboratorPermission,
-  ) {
+  async function updatePermission(row: RepoCollaboratorPublic, permission: CollaboratorPermission) {
     if (permission === row.permission) return;
     setRowError("");
     try {
@@ -220,10 +214,7 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
     }
   }
 
-  <section
-    className="mt-12 flex flex-col gap-4"
-    aria-labelledby="collaborators-heading"
-  >
+  <section className="mt-12 flex flex-col gap-4" aria-labelledby="collaborators-heading">
     <h2
       id="collaborators-heading"
       className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-foreground"
@@ -231,35 +222,28 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
       Collaborators
     </h2>
     <p className="text-[14px] text-muted-foreground">
-      Grant people direct access to this repository with read, write, or admin
-      permission.
+      Grant people direct access to this repository with read, write, or admin permission.
     </p>
 
     @if (rowError) {
-      <AuthErrorBanner message={rowError} />
+      <AuthErrorBanner message={rowError} />;
     }
 
     @if (listQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading collaborators…</p>
+      <p className="text-[14px] text-muted-foreground">Loading collaborators…</p>;
     } @else if (listQ.isError) {
       <p role="alert" className="text-[14px] text-destructive">
-        {(listQ.error instanceof Error
-          ? listQ.error.message
-          : NETWORK_ERROR) as string}
-      </p>
+        {(listQ.error instanceof Error ? listQ.error.message : NETWORK_ERROR) as string}
+      </p>;
     } @else if (collaborators.length === 0 && !showAdd) {
       <>
         <p className="text-[14px] text-muted-foreground">
           No collaborators yet. Add someone by username to share access.
         </p>
-        <Button
-          type="button"
-          className="h-11 w-fit"
-          onClick={() => setShowAdd(true)}
-        >
+        <Button type="button" className="h-11 w-fit" onClick={() => setShowAdd(true)}>
           Add collaborator
         </Button>
-      </>
+      </>;
     } @else {
       <>
         <div className="overflow-x-auto">
@@ -299,21 +283,17 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
                       Remove
                     </Button>
                   </td>
-                </tr>
+                </tr>;
               }
             </tbody>
           </table>
         </div>
         @if (!showAdd) {
-          <Button
-            type="button"
-            className="h-11 w-fit"
-            onClick={() => setShowAdd(true)}
-          >
+          <Button type="button" className="h-11 w-fit" onClick={() => setShowAdd(true)}>
             Add collaborator
-          </Button>
+          </Button>;
         }
-      </>
+      </>;
     }
 
     @if (showAdd) {
@@ -323,41 +303,42 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
         action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void addCollaborator();
+          void addForm.handleSubmit();
         }}
       >
-        <h3 className="text-[16px] font-semibold text-foreground">
-          Add collaborator
-        </h3>
+        <h3 className="text-[16px] font-semibold text-foreground">Add collaborator</h3>
         @if (addError) {
-          <AuthErrorBanner message={addError} />
+          <AuthErrorBanner message={addError} />;
         }
-        <MemberLookup
-          id="collab-lookup"
-          label="Username"
-          value={addUsername}
-          onValueChange={setAddUsername}
-        />
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="collab-add-perm">Permission</Label>
-          <PermissionSelect
-            id="collab-add-perm"
-            value={addPerm}
-            onChange={setAddPerm}
-            ariaLabel="Permission"
-          />
-        </div>
+        <addForm.Field name="username">
+          {(field) => (
+            <MemberLookup
+              id="collab-lookup"
+              label="Username"
+              value={field.state.value}
+              onValueChange={field.handleChange}
+            />
+          )}
+        </addForm.Field>
+        <addForm.Subscribe selector={(s) => s.values.permission}>
+          {(addPerm) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="collab-add-perm">Permission</Label>
+              <PermissionSelect
+                id="collab-add-perm"
+                value={addPerm}
+                onChange={(p) => addForm.setFieldValue("permission", p)}
+                ariaLabel="Permission"
+              />
+            </div>
+          )}
+        </addForm.Subscribe>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            className="h-11"
-            disabled={addPending}
-            onClick={() => void addCollaborator()}
-          >
+          <Button type="submit" className="h-11" disabled={addPending}>
             @if (addPending) {
-              <>Adding…</>
+              <>Adding…</>;
             } @else {
-              <>Add collaborator</>
+              <>Add collaborator</>;
             }
           </Button>
           <Button
@@ -368,13 +349,13 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
             onClick={() => {
               setShowAdd(false);
               setAddError("");
-              setAddUsername("");
+              addForm.reset();
             }}
           >
             Cancel
           </Button>
         </div>
-      </form>
+      </form>;
     }
 
     <AlertDialog
@@ -391,15 +372,17 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
         <AlertDialogHeader>
           <AlertDialogTitle>Remove collaborator?</AlertDialogTitle>
           <AlertDialogDescription>
-            {(removeTarget
-              ? `Remove @${removeTarget.username} from this repository?`
-              : "") as string}
+            {
+              (removeTarget
+                ? `Remove @${removeTarget.username} from this repository?`
+                : "") as string
+            }
           </AlertDialogDescription>
         </AlertDialogHeader>
         @if (removeError) {
           <p role="alert" className="text-[14px] text-destructive">
             {removeError as string}
-          </p>
+          </p>;
         }
         <AlertDialogFooter>
           <AlertDialogCancel disabled={removePending}>Cancel</AlertDialogCancel>
@@ -414,5 +397,5 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </section>
+  </section>;
 }

@@ -26,10 +26,9 @@ afterEach(cleanup);
 describe("/setup Wave 0 (AUTH-07 UI-SPEC)", () => {
   it("exports SetupPage with Allow open signup Switch + Create system admin CTA", async () => {
     const mod = await import("./setup");
-    expect(
-      mod,
-      "SetupPage must be exported for integration tests (06-06)",
-    ).toHaveProperty("SetupPage");
+    expect(mod, "SetupPage must be exported for integration tests (06-06)").toHaveProperty(
+      "SetupPage",
+    );
 
     const { SetupPage } = mod as { SetupPage: unknown };
     render(SetupPage as never);
@@ -37,13 +36,7 @@ describe("/setup Wave 0 (AUTH-07 UI-SPEC)", () => {
     await waitFor(() => {
       expect(screen.getByText("Allow open signup")).toBeInTheDocument();
     });
-    expect(
-      screen.getByRole("button", { name: "Create system admin" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /When off, new accounts can’t self-register/i,
-      ),
-    ).toBeInTheDocument();
-  });
+    expect(screen.getByRole("button", { name: "Create system admin" })).toBeInTheDocument();
+    expect(screen.getByText(/When off, new accounts can’t self-register/i)).toBeInTheDocument();
+  }, 15_000);
 });

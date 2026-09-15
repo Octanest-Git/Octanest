@@ -9,8 +9,6 @@ beforeAll(async () => {
   const web = webOrigin();
   const res = await fetch(web).catch(() => null);
   if (!res?.ok) {
-    throw new Error(
-      `E2E_STACK=1 but web origin failed at ${web} — run make test-e2e-stack`,
-    );
+    throw new Error(`E2E_STACK=1 but web origin failed at ${web} — run make test-e2e-stack`);
   }
 });

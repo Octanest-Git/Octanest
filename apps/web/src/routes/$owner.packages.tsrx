@@ -50,13 +50,15 @@ export function OwnerPackagesPage() @{
         {"Registry packages for @" + (owner as string)}
       </p>
       @if (listQ.isPending) {
-        <p className="mt-8 text-muted-foreground">Loading packages…</p>
+        <p className="mt-8 text-muted-foreground">Loading packages…</p>;
       } @else {
         <ul className="mt-8 space-y-4">
           @for (const pkg of packages; key pkg.id) {
             <li className="border-b border-border pb-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-foreground">{pkg.name as string}</span>
+                <span className="font-medium text-foreground">
+                  {pkg.name as string}
+                </span>
                 <span
                   className="rounded border border-border px-2 py-0.5 text-[12px] uppercase text-muted-foreground"
                   data-format={pkg.format as string}
@@ -77,18 +79,20 @@ export function OwnerPackagesPage() @{
                       type="button"
                       variant="ghost"
                       className="h-8 text-[13px]"
-                      onClick={() => setPendingDelete({ pkg, version: v.version })}
+                      onClick={() =>
+                        setPendingDelete({ pkg, version: v.version })
+                      }
                     >
                       Delete
                     </Button>
-                  </li>
+                  </li>;
                 }
               </ul>
-            </li>
+            </li>;
           } @empty {
-            <li className="text-muted-foreground">No packages yet.</li>
+            <li className="text-muted-foreground">No packages yet.</li>;
           }
-        </ul>
+        </ul>;
       }
       @if (pendingDelete) {
         <DeleteVersionDialog
@@ -101,8 +105,8 @@ export function OwnerPackagesPage() @{
               confirm,
             });
           }}
-        />
+        />;
       }
-    </div>
-  }
+    </div>;
+    };
 }

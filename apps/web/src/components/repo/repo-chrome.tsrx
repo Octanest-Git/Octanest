@@ -1,27 +1,17 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
+import type { RepoChromeActive } from "@/lib/repo-chrome-active";
 
 type RepoChromeProps = {
   repo: RepoPublic;
-  active:
-    | "code"
-    | "commits"
-    | "branches"
-    | "tags"
-    | "issues"
-    | "releases"
-    | "settings";
+  active: RepoChromeActive;
   /** Force Settings nav (e.g. settings page). Admins also see it via can_admin. */
   showSettings?: boolean;
 };
 
-/** Title row + Code/Commits/Branches/Tags/Issues/Releases/(Settings) link-row. */
-export function RepoChrome({
-  repo,
-  active,
-  showSettings = false,
-}: RepoChromeProps) @{
+/** Title row + Code/Commits/Branches/Tags/Issues/Releases/Packages/(Settings) link-row. */
+export function RepoChrome({ repo, active, showSettings = false }: RepoChromeProps) @{
   // Gate Settings on API can_admin — not personal username equality (D-REL-07 / D-REL-09).
   const settingsVisible = showSettings || !!repo.can_admin;
 
@@ -34,6 +24,7 @@ export function RepoChrome({
   const tagsHref = `${base}/tags`;
   const issuesHref = `${base}/issues`;
   const releasesHref = `${base}/releases`;
+  const packagesHref = `${base}/packages`;
   const settingsHref = `${base}/settings`;
 
   function navClass(isActive: boolean): string {
@@ -53,21 +44,16 @@ export function RepoChrome({
       </h1>
       <Badge variant="outline">
         @if (repo.visibility === "private") {
-          <Lock aria-hidden size={12} />
+          <Lock aria-hidden size={12} />;
         }
         {(repo.visibility === "private" ? "Private" : "Public") as string}
       </Badge>
     </div>
     @if (repo.description.trim()) {
-      <p className="mt-2 text-[16px] text-muted-foreground">
-        {repo.description as string}
-      </p>
+      <p className="mt-2 text-[16px] text-muted-foreground">{repo.description as string}</p>;
     }
 
-    <nav
-      className="mt-6 flex flex-wrap gap-4 border-b border-border pb-0"
-      aria-label="Repository"
-    >
+    <nav className="mt-6 flex flex-wrap gap-4 border-b border-border pb-0" aria-label="Repository">
       <a
         href={codeHref as string}
         className={navClass(active === "code") as string}
@@ -110,6 +96,13 @@ export function RepoChrome({
       >
         Releases
       </a>
+      <a
+        href={packagesHref as string}
+        className={navClass(active === "packages") as string}
+        aria-current={active === "packages" ? "page" : undefined}
+      >
+        Packages
+      </a>
       @if (settingsVisible) {
         <a
           href={settingsHref as string}
@@ -117,8 +110,8 @@ export function RepoChrome({
           aria-current={active === "settings" ? "page" : undefined}
         >
           Settings
-        </a>
+        </a>;
       }
     </nav>
-  </div>
+  </div>;
 }

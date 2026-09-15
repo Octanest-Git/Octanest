@@ -6,22 +6,18 @@ export const REQUEST_SUPPORT =
 export const REDEEM_SUPPORT_CODE =
   "Enter the 8-digit code from your email, then set a new password.";
 
-export const REDEEM_SUPPORT_TOKEN =
-  "Choose a new password to finish resetting your account.";
+export const REDEEM_SUPPORT_TOKEN = "Choose a new password to finish resetting your account.";
 
-export const SSO_MODE_BODY =
-  "Password reset is managed by your identity provider.";
+export const SSO_MODE_BODY = "Password reset is managed by your identity provider.";
 
 export const SUCCESS_HEADING = "Check your email";
 
 export const SUCCESS_BODY =
   "If an account exists for that email, we sent password reset instructions. Check your inbox and spam folder.";
 
-export const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+export const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
-export const MISMATCH =
-  "Passwords don’t match. Fix the highlighted fields and try again.";
+export const MISMATCH = "Passwords don’t match. Fix the highlighted fields and try again.";
 
 export const TOO_SHORT = "Password must be at least 8 characters.";
 

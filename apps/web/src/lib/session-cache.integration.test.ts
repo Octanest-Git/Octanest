@@ -32,11 +32,7 @@ function SessionConsumer({ label }: { label: string }) {
   if (me.isPending) {
     return createElement("p", null, `${label}:loading`);
   }
-  return createElement(
-    "p",
-    null,
-    `${label}:${me.data?.username ?? "anon"}`,
-  );
+  return createElement("p", null, `${label}:${me.data?.username ?? "anon"}`);
 }
 
 function DualConsumers() {

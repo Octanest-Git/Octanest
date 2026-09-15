@@ -1,25 +1,12 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoPublic,
-  RepoRefEntry,
-  RepoTreeEntry,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoPublic, RepoRefEntry, RepoTreeEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RefSelect } from "@/components/repo/ref-select";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
-import {
-  fetchRepoGet,
-  fetchRepoRefs,
-  fetchRepoTree,
-} from "@/lib/ssr-repo";
+import { fetchRepoGet, fetchRepoRefs, fetchRepoTree } from "@/lib/ssr-repo";
 
 export type TreeLoaderData =
   | { kind: "not_found" }
@@ -35,8 +22,7 @@ export type TreeLoaderData =
 
 type Phase = { kind: "loading" } | TreeLoaderData;
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadTreePage(
   owner: string,
@@ -85,14 +71,11 @@ async function loadTreePage(
 export const Route = createFileRoute("/$owner/$repo/tree/$")({
   component: RepoTreePage,
   head: ({ params }) => {
-    const { path } = parseRefAndPath(
-      (params as { _splat?: string })._splat,
-    );
+    const { path } = parseRefAndPath((params as { _splat?: string })._splat);
     const owner = (params as { owner: string }).owner;
     const repo = (params as { repo: string }).repo;
     const titlePath = path || "root";
-    const trunc =
-      titlePath.length > 40 ? `…${titlePath.slice(-36)}` : titlePath;
+    const trunc = titlePath.length > 40 ? `…${titlePath.slice(-36)}` : titlePath;
     return {
       meta: [{ title: `${trunc} · ${owner}/${repo} · Octanest` }],
     };
@@ -118,13 +101,9 @@ export function RepoTreePage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const splat = params._splat;
-  const loaderData = useLoaderData({ from: "/$owner/$repo/tree/$" }) as
-    | TreeLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/$owner/$repo/tree/$" }) as TreeLoaderData | undefined;
 
-  const [phase, setPhase] = useState<Phase>(() =>
-    loaderData ?? { kind: "loading" },
-  );
+  const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
 
   useEffect(() => {
     if (loaderData) {
@@ -132,7 +111,7 @@ export function RepoTreePage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadTreePage(owner, repoName, splat);
@@ -147,16 +126,15 @@ export function RepoTreePage() @{
   }, [owner, repoName, splat, loaderData]);
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading tree…</p>
+    <p className="text-[16px] text-muted-foreground">Loading tree…</p>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
-    </p>
+    </p>;
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="code" />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <RefSelect
           owner={owner}
@@ -167,12 +145,7 @@ export function RepoTreePage() @{
           mode="tree"
         />
       </div>
-      <PathBreadcrumb
-        owner={owner}
-        repo={repoName}
-        refName={phase.refName}
-        path={phase.path}
-      />
+      <PathBreadcrumb owner={owner} repo={repoName} refName={phase.refName} path={phase.path} />
       <FileTree
         owner={owner}
         repo={repoName}
@@ -180,6 +153,6 @@ export function RepoTreePage() @{
         basePath={phase.path}
         entries={phase.entries}
       />
-    </>
+    </>;
   }
 }

@@ -1,11 +1,6 @@
 import type { RepoTreeEntry } from "@octanest/api-client";
 import { FileCode2, Folder, Package } from "@octanejs/lucide";
-import {
-  blobHref,
-  joinRepoPath,
-  sortTreeEntries,
-  treeHref,
-} from "@/lib/repo-browse";
+import { blobHref, joinRepoPath, sortTreeEntries, treeHref } from "@/lib/repo-browse";
 
 type FileTreeProps = {
   owner: string;
@@ -16,13 +11,7 @@ type FileTreeProps = {
 };
 
 /** Sorted directory listing — dirs/gitlinks first (D-15, D-21). */
-export function FileTree({
-  owner,
-  repo,
-  refName,
-  basePath,
-  entries,
-}: FileTreeProps) @{
+export function FileTree({ owner, repo, refName, basePath, entries }: FileTreeProps) @{
   const sorted = sortTreeEntries(entries);
 
   <ul
@@ -41,20 +30,20 @@ export function FileTree({
           : blobHref(owner, repo, refName, childPath);
       <li className="flex min-h-11 items-center gap-3 px-3 py-2">
         @if (isTree) {
-          <Folder aria-hidden size={16} className="shrink-0 text-muted-foreground" />
+          <Folder aria-hidden size={16} className="shrink-0 text-muted-foreground" />;
         } @else {
           @if (isLink) {
             <Package
               aria-hidden
               size={16}
               className="shrink-0 text-muted-foreground"
-            />
+            />;
           } @else {
             <FileCode2
               aria-hidden
               size={16}
               className="shrink-0 text-muted-foreground"
-            />
+            />;
           }
         }
         <a
@@ -71,14 +60,13 @@ export function FileTree({
         @if (isLink) {
           <span className="shrink-0 font-mono text-[12px] text-muted-foreground">
             {entry.oid.slice(0, 7) as string}
-          </span>
+          </span>;
         }
-      </li>
-    }
-    @empty {
+      </li>;
+    } @empty {
       <li className="px-3 py-6 text-center text-[14px] text-muted-foreground">
         This directory is empty.
-      </li>
+      </li>;
     }
-  </ul>
+  </ul>;
 }

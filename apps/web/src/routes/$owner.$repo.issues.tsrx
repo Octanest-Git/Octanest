@@ -9,5 +9,5 @@ export const Route = createFileRoute("/$owner/$repo/issues")({
 });
 
 function IssuesLayout() @{
-  <Outlet />
+  <Outlet />;
 }

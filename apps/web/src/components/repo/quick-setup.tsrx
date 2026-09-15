@@ -17,11 +17,7 @@ export function QuickSetup({
   publicOrigin: publicOriginProp,
 }: QuickSetupProps) @{
   const storeOrigin = useRepoStore((s) => s.publicOrigin);
-  const httpsUrl = httpsCloneUrl(
-    publicOriginProp || storeOrigin,
-    owner,
-    repo,
-  );
+  const httpsUrl = httpsCloneUrl(publicOriginProp || storeOrigin, owner, repo);
   const remoteCmd = `git remote add origin ${httpsUrl}`;
   const pushCmd = `git push -u origin HEAD`;
   const setupScript = `echo "# ${repo}" >> README.md
@@ -42,8 +38,8 @@ ${pushCmd}`;
       Quick setup
     </h2>
     <p className="mt-2 max-w-2xl text-[16px] leading-relaxed text-muted-foreground">
-      This repository is empty. Push an existing repository from the command
-      line using the HTTPS remote below.
+      This repository is empty. Push an existing repository from the command line using the HTTPS
+      remote below.
     </p>
 
     <div className="mt-6 flex flex-col gap-5">
@@ -76,5 +72,5 @@ ${pushCmd}`;
         </Link>
       </p>
     </div>
-  </section>
+  </section>;
 }

@@ -9,27 +9,24 @@
 # Env knobs:
 #   OCTANEST_SMOKE_URL   default http://localhost (must match Traefik Host)
 #
-# CI / hosts without Docker: exits 0 with a skip message when docker is missing.
+# Operator hosts without Docker/stack: exits 0 with a skip message.
+# CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
 # Never prints PATs or other secrets.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=scripts/smoke-lib.sh
+source "${ROOT}/scripts/smoke-lib.sh"
+SMOKE_NAME="smoke-packages"
+
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker not found on PATH; skipping smoke-packages (operator/CI without Compose)"
-  exit 0
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "docker engine not reachable; skipping smoke-packages"
-  exit 0
-fi
+smoke_require_docker
 # Fast skip when Compose API isn't up (avoid 2-minute health wait).
 if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|octanest-api'; then
-  echo "Compose API not running; skipping smoke-packages (run make up to exercise Traefik routing)"
-  exit 0
+  smoke_require_or_skip "Compose API not running; skipping smoke-packages (run make up to exercise Traefik routing)"
 fi
 
 echo "==> wait for ${BASE_URL}/health"

@@ -12,8 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
-const REVOKE_ERROR =
-  "Couldn't revoke token. Check your connection and try again.";
+const REVOKE_ERROR = "Couldn't revoke token. Check your connection and try again.";
 
 type PatRevokeDialogProps = {
   item: PatListItem | null;
@@ -64,13 +63,15 @@ export function PatRevokeDialog({
       <AlertDialogHeader>
         <AlertDialogTitle>Revoke token?</AlertDialogTitle>
         <AlertDialogDescription className="break-words whitespace-normal">
-          {(`Revokes “${note}”. Git clients using this token will stop working. This can’t be undone.`) as string}
+          {
+            `Revokes “${note}”. Git clients using this token will stop working. This can’t be undone.` as string
+          }
         </AlertDialogDescription>
       </AlertDialogHeader>
       @if (error) {
         <p role="alert" className="text-[14px] text-destructive">
           {error as string}
-        </p>
+        </p>;
       }
       <AlertDialogFooter>
         <AlertDialogCancel disabled={pending}>Keep token</AlertDialogCancel>
@@ -84,5 +85,5 @@ export function PatRevokeDialog({
         </Button>
       </AlertDialogFooter>
     </AlertDialogContent>
-  </AlertDialog>
+  </AlertDialog>;
 }

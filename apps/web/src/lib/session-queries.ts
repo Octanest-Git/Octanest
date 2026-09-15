@@ -1,10 +1,8 @@
-import {
-  queryOptions,
-  type QueryClient,
-} from "@octanejs/tanstack-query";
+import { queryOptions, type QueryClient } from "@octanejs/tanstack-query";
 import type {
   AuthSettingsPublic,
   BootstrapStatus,
+  OrgMineEntry,
   ProviderConfigPublic,
   UserPublic,
 } from "@octanest/api-client";
@@ -14,6 +12,7 @@ export const authMeQueryKey = ["auth", "me"] as const;
 export const authBootstrapQueryKey = ["auth", "bootstrapStatus"] as const;
 export const authProviderConfigQueryKey = ["auth", "providerConfig"] as const;
 export const adminAuthSettingsQueryKey = ["admin", "auth", "getSettings"] as const;
+export const orgListMineQueryKey = ["org", "listMine"] as const;
 
 /** Soft session read — unauthenticated / pre-setup → `null` (shared chrome / banner cache). */
 export function authSessionQueryOptions() {
@@ -23,10 +22,7 @@ export function authSessionQueryOptions() {
       const res = await apiClient.auth.me();
       if (!res.ok) {
         // Expected anonymous / lock states — never throw (throws → Query remount refetch spam).
-        if (
-          res.error.code === "auth.unauthenticated" ||
-          res.error.code === "auth.setup_required"
-        ) {
+        if (res.error.code === "auth.unauthenticated" || res.error.code === "auth.setup_required") {
           return null;
         }
         throw new Error(`${res.error.code}: ${res.error.message}`);
@@ -83,9 +79,9 @@ export function adminAuthSettingsQueryOptions() {
     queryFn: async (): Promise<AuthSettingsPublic> => {
       const res = await apiClient.admin.auth.getSettings();
       if (!res.ok) {
-        const err = new Error(
-          `${res.error.code}: ${res.error.message}`,
-        ) as Error & { code: string };
+        const err = new Error(`${res.error.code}: ${res.error.message}`) as Error & {
+          code: string;
+        };
         err.code = res.error.code;
         throw err;
       }
@@ -94,11 +90,32 @@ export function adminAuthSettingsQueryOptions() {
   });
 }
 
+/** Soft org memberships for chrome account menu — empty on auth failures. */
+export function orgListMineQueryOptions() {
+  return queryOptions({
+    queryKey: orgListMineQueryKey,
+    queryFn: async (): Promise<OrgMineEntry[]> => {
+      const res = await apiClient.org.listMine();
+      if (!res.ok) {
+        if (res.error.code === "auth.unauthenticated" || res.error.code === "auth.setup_required") {
+          return [];
+        }
+        throw new Error(`${res.error.code}: ${res.error.message}`);
+      }
+      return res.data.orgs;
+    },
+    retry: false,
+    staleTime: 30_000,
+  });
+}
+
 /** After logout / factory reset — drop session and related auth caches. */
 export function clearSessionQueries(qc: QueryClient) {
   qc.setQueryData(authMeQueryKey, null);
+  qc.setQueryData(orgListMineQueryKey, []);
   void qc.invalidateQueries({ queryKey: ["auth"] });
   void qc.invalidateQueries({ queryKey: ["admin"] });
+  void qc.invalidateQueries({ queryKey: ["org"] });
 }
 
 /** Keep chrome in sync after profile/avatar updates without a full reload. */
@@ -106,10 +123,7 @@ export function setAuthMeCache(qc: QueryClient, user: UserPublic | null) {
   qc.setQueryData(authMeQueryKey, user);
 }
 
-export function setAdminAuthSettingsCache(
-  qc: QueryClient,
-  settings: AuthSettingsPublic,
-) {
+export function setAdminAuthSettingsCache(qc: QueryClient, settings: AuthSettingsPublic) {
   qc.setQueryData(adminAuthSettingsQueryKey, settings);
   void qc.invalidateQueries({ queryKey: authProviderConfigQueryKey });
 }

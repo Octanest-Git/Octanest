@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { tanstackStart } from "@octanejs/tanstack-start/plugin/vite";
 import tailwindcss from "@tailwindcss/vite";
+import {
+  fixTypeOnlyImports,
+  RECHARTS_TYPE_ONLY_IMPORT_FIX,
+} from "./vite-plugins/fix-type-only-imports.ts";
 
 // NOTE (03-05): vite-plugin-pwa was evaluated here but does not emit a service
 // worker under this Vite 8 / @octanejs/tanstack-start multi-environment build
@@ -13,15 +17,18 @@ import tailwindcss from "@tailwindcss/vite";
 // See .planning/phases/03-brand-shell-theme/03-05-SUMMARY.md for details.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const apiProxyTarget =
-  process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
-  "http://127.0.0.1:8080";
+  process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") || "http://127.0.0.1:8080";
 
 export default defineConfig({
   plugins: [
+    fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX),
     tanstackStart({
       // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree
       // (avoids noisy warnings and extra SSR work during stack e2e).
-      routeFileIgnorePattern: '\\.(test|spec)\\.',
+      // Must live under `router` — top-level keys are stripped by Start's schema.
+      router: {
+        routeFileIgnorePattern: "\\.(test|spec)\\.",
+      },
     }),
     tailwindcss(),
   ],

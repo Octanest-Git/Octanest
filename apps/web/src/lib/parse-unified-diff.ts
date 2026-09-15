@@ -1,11 +1,5 @@
 /** Line kinds in a unified diff patch (commit / compare file hunks). */
-export type DiffLineKind =
-  | "meta"
-  | "hunk"
-  | "add"
-  | "del"
-  | "ctx"
-  | "note";
+export type DiffLineKind = "meta" | "hunk" | "add" | "del" | "ctx" | "note";
 
 export type DiffLine = {
   kind: DiffLineKind;

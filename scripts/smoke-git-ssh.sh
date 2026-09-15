@@ -22,12 +22,16 @@
 #   SMOKE_SKIP_LS_REMOTE   if 1, only assert TCP listen (no git client)
 #   SMOKE_SSH_PUSH         if 1, also push a throwaway ref (needs write + verified email)
 #
-# CI / hosts without Docker: exits 0 with a skip message when docker is missing
-# (same spirit as smoke-git-https.sh).
+# Operator hosts without Docker: exits 0 with a skip message.
+# CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+# shellcheck source=scripts/smoke-lib.sh
+source "${ROOT}/scripts/smoke-lib.sh"
+SMOKE_NAME="smoke-git-ssh"
 
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 SSH_HOST="${OCTANEST_SSH_HOST:-localhost}"
@@ -46,14 +50,7 @@ if ! command -v ssh >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker not found on PATH; skipping smoke-git-ssh (operator/CI without Compose)"
-  exit 0
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "docker engine not reachable; skipping smoke-git-ssh"
-  exit 0
-fi
+smoke_require_docker
 
 echo "==> wait for ${BASE_URL}/health"
 ok=0

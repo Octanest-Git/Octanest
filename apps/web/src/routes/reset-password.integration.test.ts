@@ -84,13 +84,9 @@ describe("ResetPasswordPage AUTH-12 UI", () => {
     await waitFor(() => {
       expect(screen.getByText(SSO_MODE_BODY)).toBeInTheDocument();
     });
-    expect(
-      screen.getByRole("button", { name: "Continue with WorkOS" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue with WorkOS" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Email")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Send reset email" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Send reset email" })).not.toBeInTheDocument();
   });
 
   it("redeem via code shows OTP + password fields", async () => {
@@ -109,9 +105,7 @@ describe("ResetPasswordPage AUTH-12 UI", () => {
     expect(document.getElementById("reset-code")).toBeTruthy();
     expect(screen.getByLabelText("New password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm password")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Update password" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Update password" })).toBeDisabled();
   });
 
   it("token query hides OTP and uses token redeem support copy", async () => {
@@ -125,9 +119,7 @@ describe("ResetPasswordPage AUTH-12 UI", () => {
     });
     expect(document.getElementById("reset-code")).toBeNull();
     expect(screen.getByLabelText("New password")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Choose a new password" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Choose a new password" })).toBeInTheDocument();
   });
 
   it("Enter reset code from anti-enumeration panel opens redeem", async () => {

@@ -7,8 +7,7 @@ afterEach(cleanup);
 
 describe("PathBreadcrumb long-path layout (07-15 backstop)", () => {
   it("wraps deep paths and truncates long segments with title", () => {
-    const longSeg =
-      "ExtremelyLongSegmentNameThatNeedsEllipsisAndMustNotBlowLayout.tsrx";
+    const longSeg = "ExtremelyLongSegmentNameThatNeedsEllipsisAndMustNotBlowLayout.tsrx";
     const deep = `src/a/b/c/d/e/${longSeg}`;
 
     const { container } = render(PathBreadcrumb, {
@@ -31,9 +30,7 @@ describe("PathBreadcrumb long-path layout (07-15 backstop)", () => {
     expect(last).toHaveTextContent(longSeg);
 
     // Intermediate crumbs remain links with title for hover full name
-    expect(
-      screen.getByRole("link", { name: "src" }),
-    ).toHaveAttribute("title", "src");
+    expect(screen.getByRole("link", { name: "src" })).toHaveAttribute("title", "src");
 
     // No single-line forced overflow class on the nav itself
     expect(nav.className).not.toMatch(/whitespace-nowrap/);
@@ -43,8 +40,7 @@ describe("PathBreadcrumb long-path layout (07-15 backstop)", () => {
 
 describe("FileTree long name layout (07-15 / E3 overflow)", () => {
   it("truncates long entry names and exposes full name via title", () => {
-    const longName =
-      "a-very-very-long-filename-that-should-ellipsis-in-the-tree-row.ts";
+    const longName = "a-very-very-long-filename-that-should-ellipsis-in-the-tree-row.ts";
     render(FileTree, {
       props: {
         owner: "ada",

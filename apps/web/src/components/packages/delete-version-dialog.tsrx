@@ -49,6 +49,6 @@ export function DeleteVersionDialog(props: Props) @{
           </Button>
         </div>
       </div>
-    </div>
-  }
+    </div>;
+    };
 }

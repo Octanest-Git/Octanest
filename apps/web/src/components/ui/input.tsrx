@@ -9,5 +9,5 @@ export function Input({ className, ...props }: ComponentProps<"input">) @{
       className,
     )}
     {...props}
-  />
+  />;
 }

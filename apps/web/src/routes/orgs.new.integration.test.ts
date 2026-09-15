@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
@@ -41,8 +35,7 @@ type LoaderShape = {
 let loaderData: LoaderShape;
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@octanejs/tanstack-router")>();
+  const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useLoaderData: () => loaderData,
@@ -80,12 +73,8 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByLabelText("Slug")).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Display name (optional)"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Create organization" }),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Display name (optional)")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create organization" })).toBeInTheDocument();
 
     createMock.mockResolvedValueOnce({
       ok: true,
@@ -98,9 +87,7 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
         updated_at: "2026-01-01T00:00:00Z",
       },
     });
-    const assign = vi
-      .spyOn(window.location, "assign")
-      .mockImplementation(() => {});
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => {});
 
     fireEvent.input(screen.getByLabelText("Slug"), {
       target: { value: "acme" },
@@ -108,9 +95,7 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
     fireEvent.input(screen.getByLabelText("Display name (optional)"), {
       target: { value: "Acme" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create organization" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create organization" }));
 
     await waitFor(() => {
       expect(createMock).toHaveBeenCalledWith({
@@ -135,9 +120,7 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
       screen.getByText("Verify your email before creating an organization."),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Slug")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Create organization" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Create organization" })).not.toBeInTheDocument();
   });
 
   it("reserved slug shows That username is reserved. Choose a different username.", async () => {
@@ -146,9 +129,7 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
     render(OrgsNewPage as never);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Create organization" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Create organization" })).toBeInTheDocument();
     });
 
     createMock.mockResolvedValueOnce({
@@ -159,15 +140,11 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
     fireEvent.input(screen.getByLabelText("Slug"), {
       target: { value: "orgs" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create organization" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create organization" }));
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          "That username is reserved. Choose a different username.",
-        ),
+        screen.getByText("That username is reserved. Choose a different username."),
       ).toBeInTheDocument();
     });
   });
@@ -178,26 +155,21 @@ describe("/orgs/new (ORG-01 / D-ORG-01 / D-ORG-06)", () => {
     render(OrgsNewPage as never);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Create organization" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Create organization" })).toBeInTheDocument();
     });
 
     createMock.mockResolvedValueOnce({
       ok: false,
       error: {
         code: "org.slug_taken",
-        message:
-          "That slug is already used by a user or organization. Choose a different slug.",
+        message: "That slug is already used by a user or organization. Choose a different slug.",
       },
     });
 
     fireEvent.input(screen.getByLabelText("Slug"), {
       target: { value: "taken-slug" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Create organization" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create organization" }));
 
     await waitFor(() => {
       expect(

@@ -11,5 +11,6 @@ alwaysApply: true
 - RPC types: change Rust → `make rpc-gen`. Never treat hand-edited `packages/api-client` as source of truth.
 - DB dialects only inside `crates/octanest-db`.
 - No secrets in commits or examples. Prefer `make test` / `make rpc-sync-check` / relevant e2e before claiming done.
+- **Before committing `apps/web` changes:** run `make web-lint` and `make web-format-check` (`@tsrx/oxc` — type-aware oxlint + oxfmt). Fix failures; do not skip. Plain `tsc` is not the web type gate yet (see [AGENTS.md](../../AGENTS.md)).
 - Scratch/temp files go under gitignored [`tmp/`](../../tmp/README.md) (never the repo root).
 - Prefer extending existing patterns (Query session helpers, auth gates, Make targets) over new frameworks.

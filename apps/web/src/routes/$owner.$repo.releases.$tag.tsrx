@@ -1,14 +1,10 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { Badge } from "@/components/ui/badge";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Label } from "@/components/ui/label";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
@@ -20,8 +16,7 @@ export type ReleaseDetailLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic; release: ReleasePublic };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadReleaseDetail(
   owner: string,
@@ -42,10 +37,7 @@ async function loadReleaseDetail(
     tag_name: tag,
   });
   if (!rel.ok) {
-    if (
-      rel.error.code === "repo.not_found" ||
-      rel.error.code === "release.not_found"
-    ) {
+    if (rel.error.code === "repo.not_found" || rel.error.code === "release.not_found") {
       return { kind: "not_found" };
     }
     return {
@@ -68,9 +60,7 @@ export const Route = createFileRoute("/$owner/$repo/releases/$tag")({
   loader: async ({ params }): Promise<ReleaseDetailLoaderData> => {
     const owner = String((params as { owner?: string }).owner ?? "");
     const repoName = String((params as { repo?: string }).repo ?? "");
-    const tag = decodeURIComponent(
-      String((params as { tag?: string }).tag ?? ""),
-    );
+    const tag = decodeURIComponent(String((params as { tag?: string }).tag ?? ""));
     try {
       return await loadReleaseDetail(owner, repoName, tag);
     } catch {
@@ -89,9 +79,7 @@ export function RepoReleaseDetailPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const tag = decodeURIComponent(params.tag ?? "");
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({
     from: "/$owner/$repo/releases/$tag",
   }) as ReleaseDetailLoaderData | undefined;
@@ -126,8 +114,7 @@ export function RepoReleaseDetailPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName && !!tag,
-    initialData:
-      routeLoader?.kind === "ready" ? routeLoader.release : undefined,
+    initialData: routeLoader?.kind === "ready" ? routeLoader.release : undefined,
   });
 
   const repo = repoQ.data ?? null;
@@ -161,23 +148,22 @@ export function RepoReleaseDetailPage() @{
         .includes("not found"));
 
   @if (notFound || (!repoQ.isPending && !repo)) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (!repo || (!release && releaseQ.isPending)) {
-    <p className="text-[16px] text-muted-foreground">Loading release…</p>
+    <p className="text-[16px] text-muted-foreground">Loading release…</p>;
   } @else if (!release) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else {
     <>
-      <RepoChrome repo={repo} active="releases" />
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <h2 className="text-[22px] font-semibold text-foreground">
           {(release.title.trim() || release.tag_name) as string}
         </h2>
         @if (release.draft) {
-          <Badge variant="outline">Draft</Badge>
+          <Badge variant="outline">Draft</Badge>;
         }
         @if (release.prerelease) {
-          <Badge variant="outline">Pre-release</Badge>
+          <Badge variant="outline">Pre-release</Badge>;
         }
       </div>
       <p className="mb-6 text-[14px] text-muted-foreground">
@@ -186,7 +172,7 @@ export function RepoReleaseDetailPage() @{
           <>
             {" · "}
             {`by ${release.author_username}` as string}
-          </>
+          </>;
         }
       </p>
       <div
@@ -208,46 +194,42 @@ export function RepoReleaseDetailPage() @{
                 <span className="ml-2 text-[12px] text-muted-foreground">
                   {`${a.byte_size} bytes` as string}
                 </span>
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         } @else {
-          <p className="mb-4 text-[14px] text-muted-foreground">No assets attached.</p>
+          <p className="mb-4 text-[14px] text-muted-foreground">No assets attached.</p>;
         }
         @if (repo.can_write) {
           <form
             method="post"
             action="#"
-            className="flex flex-wrap items-end gap-3"
+            className="flex flex-col gap-2"
             onSubmit={(e) => {
               e.preventDefault();
             }}
           >
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="release-asset-file">Upload asset</Label>
-              <input
-                id="release-asset-file"
-                type="file"
-                onChange={(e) => {
-                  const input = e.target as HTMLInputElement;
-                  const file = input.files?.[0];
-                  if (!file || !release) return;
-                  void (async () => {
-                    const fd = new FormData();
-                    fd.append("asset", file, file.name);
-                    const res = await fetch(
-                      `/api/repos/${owner}/${repoName}/releases/${release.id}/assets`,
-                      { method: "POST", body: fd, credentials: "include" },
-                    );
-                    if (res.ok) {
-                      await releaseQ.refetch();
-                      input.value = "";
-                    }
-                  })();
-                }}
-              />
-            </div>
-          </form>
+            <Label htmlFor="release-asset-file">Upload asset</Label>
+            <FileDropzone
+              id="release-asset-file"
+              hint="Drop a release asset here, or click to browse"
+              onFiles={(files) => {
+                const file = files[0];
+                if (!file || !release) return;
+                void (async () => {
+                  const fd = new FormData();
+                  fd.append("asset", file, file.name);
+                  const res = await fetch(
+                    `/api/repos/${owner}/${repoName}/releases/${release.id}/assets`,
+                    { method: "POST", body: fd, credentials: "include" },
+                  );
+                  if (res.ok) {
+                    await releaseQ.refetch();
+                  }
+                })();
+              }}
+            />
+          </form>;
         }
       </section>
       <p className="mt-8">
@@ -258,6 +240,6 @@ export function RepoReleaseDetailPage() @{
           All releases
         </a>
       </p>
-    </>
+    </>;
   }
 }

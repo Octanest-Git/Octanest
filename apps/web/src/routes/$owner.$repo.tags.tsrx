@@ -1,12 +1,6 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-  useRouter,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,8 +20,7 @@ export type TagsLoaderData =
 
 type Phase = { kind: "loading" } | TagsLoaderData;
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function sortTags(refs: RepoRefEntry[]): RepoRefEntry[] {
   return refs
@@ -39,10 +32,7 @@ function sortTags(refs: RepoRefEntry[]): RepoRefEntry[] {
     );
 }
 
-async function loadTagsPage(
-  owner: string,
-  repoName: string,
-): Promise<TagsLoaderData> {
+async function loadTagsPage(owner: string, repoName: string): Promise<TagsLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
@@ -95,9 +85,7 @@ export function RepoTagsPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const router = useRouter();
-  const loaderData = useLoaderData({ from: "/$owner/$repo/tags" }) as
-    | TagsLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/$owner/$repo/tags" }) as TagsLoaderData | undefined;
 
   const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
 
@@ -107,7 +95,7 @@ export function RepoTagsPage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadTagsPage(owner, repoName);
@@ -122,36 +110,31 @@ export function RepoTagsPage() @{
   }, [owner, repoName, loaderData]);
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading tags…</p>
+    <p className="text-[16px] text-muted-foreground">Loading tags…</p>;
   } @else if (phase.kind === "error") {
     <div className="flex flex-col gap-4">
       <p role="alert" className="text-[16px] text-destructive">
         {phase.message as string}
       </p>
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => void router.invalidate()}
-      >
+      <Button type="button" variant="secondary" onClick={() => void router.invalidate()}>
         Try again
       </Button>
-    </div>
+    </div>;
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="tags" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">Tags</h2>
       @if (phase.tags.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No tags yet.</p>
+        <p className="text-[16px] text-muted-foreground">No tags yet.</p>;
       } @else {
         <ul className="divide-y divide-border border-y border-border">
           @for (const t of phase.tags; key t.name) {
-            <TagRow owner={owner} repo={repoName} tag={t} />
+            <TagRow owner={owner} repo={repoName} tag={t} />;
           }
-        </ul>
+        </ul>;
       }
-    </>
+    </>;
   }
 }
 
@@ -179,10 +162,7 @@ function TagRow({
       >
         {name as string}
       </a>
-      <p
-        className="mt-0.5 font-mono text-[13px] text-muted-foreground"
-        title={tag.oid as string}
-      >
+      <p className="mt-0.5 font-mono text-[13px] text-muted-foreground" title={tag.oid as string}>
         {tip as string}
       </p>
     </div>
@@ -206,5 +186,5 @@ function TagRow({
         Download tar.gz
       </Button>
     </div>
-  </li>
+  </li>;
 }

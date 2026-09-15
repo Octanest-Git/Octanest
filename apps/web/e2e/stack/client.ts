@@ -1,9 +1,4 @@
-import {
-  adminEmail,
-  adminPassword,
-  apiOrigin,
-  e2eDbPath,
-} from "./env";
+import { adminEmail, adminPassword, apiOrigin, e2eDbPath } from "./env.ts";
 
 export type RpcResult = {
   status: number;
@@ -103,9 +98,7 @@ export async function adminLogin(): Promise<string> {
     res = await attempt();
   }
   if (!res.ok || !res.cookieHeader) {
-    throw new Error(
-      `admin login failed: status=${res.status} error=${JSON.stringify(res.error)}`,
-    );
+    throw new Error(`admin login failed: status=${res.status} error=${JSON.stringify(res.error)}`);
   }
   return res.cookieHeader;
 }
@@ -137,9 +130,7 @@ export async function updateAuthSettings(
     cookie,
   );
   if (!res.ok) {
-    throw new Error(
-      `update_settings failed: ${JSON.stringify(res.error ?? res)}`,
-    );
+    throw new Error(`update_settings failed: ${JSON.stringify(res.error ?? res)}`);
   }
 }
 
@@ -151,9 +142,7 @@ export async function restoreLocalAuth(cookie: string): Promise<void> {
 }
 
 /** Login as admin, run work, always restore local mode afterward. */
-export async function withAdminSession<T>(
-  fn: (cookie: string) => Promise<T>,
-): Promise<T> {
+export async function withAdminSession<T>(fn: (cookie: string) => Promise<T>): Promise<T> {
   const cookie = await adminLogin();
   try {
     return await fn(cookie);

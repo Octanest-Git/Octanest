@@ -108,17 +108,46 @@ cargo test -p octanest-db --test dialect_probe -- --nocapture
 |------|--------|----------|
 | Unit | `*.unit.test.ts` | under `src/` |
 | Integration | `*.integration.test.ts(x)` | under `src/` |
-| Component e2e | `*.e2e.test.ts(x)` | `e2e/component/` |
 | Stack HTTP e2e | `*.stack.test.ts` | `e2e/stack/` |
 | Stack browser e2e | `*.stack.browser.test.ts(x)` | `e2e/stack-browser/` |
 
 Shared setup:
 
 - Integration: `src/test/setup-integration.ts`
-- Component e2e: `e2e/component/setup.ts`
 - Stack: `e2e/stack/setup.ts`, `e2e/stack-browser/setup.ts`
 
 Import from `vitest` explicitly (`globals: false` in the web Vitest config).
+
+**Forge stack-browser matrix (D-QH-03)** — extend `apps/web/e2e/stack-browser/` only (do not revive removed `e2e/component`). Suites under `make test-e2e-stack`:
+
+| Suite file | Covers |
+|------------|--------|
+| `auth-ui.stack.browser.test.tsx` | Local signup UI, WorkOS CTA, OIDC SSO, `/status`, `auth.me` dedupe |
+| `forge-repo.stack.browser.test.tsx` | Seeded repo code home + Packages tab / packages list |
+| `forge-issues-releases.stack.browser.test.tsx` | Issues create→close; release create from seeded tag |
+| `forge-packages-ssh-orgs.stack.browser.test.tsx` | SSH keys add/list; org members settings |
+| `forge-admin.stack.browser.test.tsx` | Forge admin `/admin/lfs`, `/admin/packages`, `/admin/auth` chrome (no factory-reset click) (G-11.1-15) |
+
+login / verify / profile also have happy-dom `*.integration.test.ts` export/render contracts (RESEARCH P1).
+
+**Render mounts required for Octane pages (G-11.1-15)** — Wave 0 **raw-source** stubs (`import "./page.tsrx?raw"` + regex for exports / RPC names / absence of `@else if`) are **not enough** to prove a `.tsrx` page works. They miss missing `useState`, broken Rivet control flow, and hydration-time ReferenceErrors. User-facing routes under `apps/web/src/routes/` must keep at least one **happy-dom render mount** (e.g. `AdminLfsPage` / `AdminPackagesPage` via `renderWithQueryClient`) and, for admin surfaces, **stack-browser** coverage (`forge-admin.stack.browser.test.tsx` → `/admin/lfs`, `/admin/packages`, `/admin/auth`). Do not regress those routes back to raw-source-only.
+
+**Route coverage gate (G-11.1-15 / 11.1-09)** — CI fails if any user-facing `apps/web/src/routes/**/*.tsrx` page is missing from the manifest (or lacks valid evidence). Outlet-only layouts and `__root` are marked `layoutOnly` and excluded.
+
+| Artifact | Role |
+|----------|------|
+| `apps/web/src/test/route-coverage.manifest.ts` | Declares each route + `happy-dom` / `stack-browser` / `skip` evidence |
+| `scripts/route-coverage-check.sh` | Discovers `.tsrx` files and fails on gaps / missing test paths |
+| `make route-coverage-check` | Local + CI entrypoint |
+
+**Adding a new page route**
+
+1. Add the `.tsrx` under `apps/web/src/routes/`.
+2. Append a row to `routeCoverageManifest` with at least one of:
+   - `{ kind: "happy-dom", test: "apps/web/src/routes/….integration.test.ts" }` (file must exist and should **mount** the page — not raw-source-only)
+   - `{ kind: "stack-browser", test: "apps/web/e2e/stack-browser/….stack.browser.test.tsx" }`
+   - `{ kind: "skip", rationale: "…" }` (temporary; prefer real coverage)
+3. Run `make route-coverage-check` before pushing.
 
 ### API client
 
@@ -131,7 +160,50 @@ Add `*.test.ts` beside the module under `packages/api-client/src/` (Vitest picks
 
 ## Coverage requirements
 
-No coverage threshold configured (no Vitest/Jest `coverageThreshold`, `.nycrc`, or c8 thresholds in the repo).
+Weighted forge-core gate (**D-QH-02**). Layers and weights:
+
+| Layer | Weight | What is measured |
+|-------|--------|------------------|
+| Unit | **25%** (`0.25`) | Web Vitest `--project unit` line coverage (`@vitest/coverage-v8`). Rust lib units via `cargo-llvm-cov` when available (optional today; see residual below). |
+| Integration | **40%** (`0.40`) | Web Vitest `--project integration` (happy-dom) line coverage. Rust `tests/` included when llvm-cov runs. |
+| E2E / hydration | **35%** (`0.35`) | Interim **checklist score** (fraction of required stack-browser + stack HTTP + smoke script paths present). Not Playwright % coverage yet — forge stack-browser matrix landed in Phase 11.1-04 (see Writing new tests). |
+
+**Weighted score**
+
+```
+score = 0.25 * unit + 0.40 * integration + 0.35 * e2e
+```
+
+**Initial floor:** bootstrap **`0.65`** (`COVERAGE_WEIGHTED_FLOOR` default in `scripts/coverage-weighted.sh`). Measured baseline after enabling `@vitest/coverage-v8` is ~0.68 (unit ≈61% / integration ≈45% / e2e checklist 1.0). **Ratchet target `0.70`** once integration depth and the forge e2e matrix (11.1-03) land — raise the env default and this doc together. Do not lower without an explicit residual note.
+
+**E2E checklist formula (interim)**
+
+`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth + forge-admin stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge stack-browser suites (repo code, issues, releases, packages list, SSH keys, org members, admin LFS/packages/auth) live under `apps/web/e2e/stack-browser/` (D-QH-03 / 11.1-04 / 11.1-08); expand the checklist when promoting additional forge paths into the weighted e2e score.
+
+**Commands**
+
+```bash
+make coverage-web          # unit + integration Vitest coverage → var/coverage/*-summary.json
+make coverage-rust         # cargo-llvm-cov when installed; otherwise skips with residual note
+make coverage-weighted     # collect web (+ optional rust) then run weighted gate
+make coverage-contract     # aggregator self-test (under/over floor)
+./scripts/coverage-weighted.sh --unit 0.9 --integration 0.9 --e2e 0.9
+./scripts/coverage-e2e-checklist.sh
+```
+
+From `apps/web`:
+
+```bash
+bun run test:coverage:unit
+bun run test:coverage:integration
+```
+
+Reports: `apps/web/coverage/{unit,integration}/` (`coverage-summary.json`, `lcov.info`). Aggregator copies summaries under `var/coverage/` (gitignored).
+
+**Residual (this wave)**
+
+- Rust `cargo-llvm-cov` is preferred and wired as a Make target + CI install hook, but **CI does not yet fail on Rust coverage numbers** when llvm-cov is too heavy for the job budget — web unit/integration + e2e checklist drive the gate. Revisit when llvm-tools runtime is budgeted.
+- Do not revive the removed Playwright component e2e project for coverage (**D-QH-03**).
 
 ## CI integration
 
@@ -140,13 +212,28 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | Job | What it runs |
 |-----|----------------|
 | `api-rust` | Install nextest → `cargo nextest run --workspace --profile ci` |
-| `web-octane` | `bun install --frozen-lockfile` → Playwright Chromium → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `web-octane` | `bun install --frozen-lockfile` → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `route-coverage` | `make route-coverage-check` — every user-facing `.tsrx` page has happy-dom, stack-browser, or documented skip (G-11.1-15) |
+| `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` |
+| `smoke-protocol` | Compose up → `make smoke-git-https` + `smoke-git-ssh` + `smoke-git-lfs` + `smoke-packages` via `make smoke-protocol-ci` (**D-QH-04**); fail-closed when Docker/stack absent (`CI` / `SMOKE_REQUIRE_STACK`); default `SMOKE_SKIP_LS_REMOTE=1` / `SMOKE_SKIP_LFS_CLIENT=1` (routing + SSH TCP; no seeded-repo client) |
 | `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` |
 
-Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job.
+Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright. Forge protocol edges (Smart HTTP / SSH TCP / LFS batch / packages PathPrefix) are the `smoke-protocol` job — not happy-dom only.
+
+### Protocol smokes (local + CI)
+
+| Target | Proves | Notes |
+|--------|--------|-------|
+| `make smoke-git-https` | Traefik `/{owner}/{repo}.git` is not SPA HTML; optional `git ls-remote` | Needs stack up; set `SMOKE_SKIP_LS_REMOTE=1` for routing-only |
+| `make smoke-git-ssh` | TCP `OCTANEST_SSH_PORT` (2222); optional scp-style ls-remote/push | Needs SSH-enabled Compose API |
+| `make smoke-git-lfs` | `.git/info/lfs` batch routing not SPA; optional git-lfs client | `SMOKE_SKIP_LFS_CLIENT=1` for routing-only |
+| `make smoke-packages` | `/v2` `/npm` `/generic` PathPrefix → API | Needs running Compose API |
+| `make smoke-protocol-ci` | All four fail-closed against a fresh Compose up | Same entrypoint as CI `smoke-protocol` |
+
+Locally without Docker, individual `make smoke-git-*` / `smoke-packages` may skip (exit 0). Under `CI=true` or `SMOKE_REQUIRE_STACK=1`, those skips become failures.
 
 ## Dev-auth stubs (stack e2e)
 
@@ -158,4 +245,4 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 | OIDC mock | Issuer `http://127.0.0.1:9090/default` | OIDC login without a real IdP |
 | HTTP stubs | `http://127.0.0.1:9092` | Resend `POST /emails` + WorkOS AuthKit |
 
-`e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI and WorkOS CTA against the live web/API in Chromium.
+`e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI, WorkOS CTA, and the D-QH-03 forge matrix (repo/packages, issues/releases, SSH keys, org members) against the live web/API in Chromium.

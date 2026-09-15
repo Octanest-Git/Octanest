@@ -53,15 +53,10 @@ export function CloneBox({
   const showPortHint = sshNeedsPortHint(sshPort);
   const zipHref = `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.zip`;
   const tarHref = `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.tar.gz`;
-  const [copyHttps, setCopyHttps] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
+  const [copyHttps, setCopyHttps] = useState<"idle" | "copied" | "error">("idle");
   const [copySsh, setCopySsh] = useState<"idle" | "copied" | "error">("idle");
 
-  async function copyText(
-    text: string,
-    setState: (s: "idle" | "copied" | "error") => void,
-  ) {
+  async function copyText(text: string, setState: (s: "idle" | "copied" | "error") => void) {
     try {
       if (!navigator.clipboard?.writeText) {
         throw new Error("clipboard unavailable");
@@ -83,10 +78,7 @@ export function CloneBox({
       Code
       <ChevronDown aria-hidden size={16} className="text-muted-foreground" />
     </DropdownMenuTrigger>
-    <DropdownMenuContent
-      align="end"
-      className="w-[min(100vw-2rem,32rem)] p-3"
-    >
+    <DropdownMenuContent align="end" className="w-[min(100vw-2rem,32rem)] p-3">
       <div className="px-1 py-1">
         <p className="text-[14px] font-medium text-foreground">Clone with HTTPS</p>
         <p className="mt-0.5 text-[13px] text-muted-foreground">
@@ -120,23 +112,19 @@ export function CloneBox({
             <Copy
               aria-hidden
               size={16}
-              className={(copyHttps === "copied"
-                ? "hidden"
-                : "text-foreground") as string}
+              className={(copyHttps === "copied" ? "hidden" : "text-foreground") as string}
             />
             <Check
               aria-hidden
               size={16}
-              className={(copyHttps === "copied"
-                ? "text-foreground"
-                : "hidden") as string}
+              className={(copyHttps === "copied" ? "text-foreground" : "hidden") as string}
             />
           </Button>
         </div>
         @if (copyHttps === "error") {
           <p role="alert" className="mt-2 text-[14px] text-destructive">
             Couldn’t copy. Select the URL and copy manually.
-          </p>
+          </p>;
         }
 
         <PatHowTo httpsUrl={httpsUrl as string} compact />
@@ -146,9 +134,7 @@ export function CloneBox({
 
       <div className="px-1 py-1">
         <p className="text-[14px] font-medium text-foreground">Clone with SSH</p>
-        <p className="mt-0.5 text-[13px] text-muted-foreground">
-          Use a registered SSH public key.
-        </p>
+        <p className="mt-0.5 text-[13px] text-muted-foreground">Use a registered SSH public key.</p>
         <div className="mt-3 flex items-stretch gap-2">
           <input
             type="text"
@@ -177,28 +163,26 @@ export function CloneBox({
             <Copy
               aria-hidden
               size={16}
-              className={(copySsh === "copied"
-                ? "hidden"
-                : "text-foreground") as string}
+              className={(copySsh === "copied" ? "hidden" : "text-foreground") as string}
             />
             <Check
               aria-hidden
               size={16}
-              className={(copySsh === "copied"
-                ? "text-foreground"
-                : "hidden") as string}
+              className={(copySsh === "copied" ? "text-foreground" : "hidden") as string}
             />
           </Button>
         </div>
         @if (copySsh === "error") {
           <p role="alert" className="mt-2 text-[14px] text-destructive">
             Couldn’t copy. Select the URL and copy manually.
-          </p>
+          </p>;
         }
         @if (showPortHint) {
           <p className="mt-2 text-[13px] text-muted-foreground">
-            {(`Host ${sshHost} · Port ${sshPort} — add Port ${sshPort} under Host ${sshHost} in ~/.ssh/config (scp-style URL stays without ssh://).`) as string}
-          </p>
+            {
+              `Host ${sshHost} · Port ${sshPort} — add Port ${sshPort} under Host ${sshHost} in ~/.ssh/config (scp-style URL stays without ssh://).` as string
+            }
+          </p>;
         }
         <SshHowTo compact />
       </div>
@@ -213,7 +197,7 @@ export function CloneBox({
           <DropdownMenuItem disabled aria-disabled="true">
             Download tar.gz
           </DropdownMenuItem>
-        </>
+        </>;
       } @else {
         <>
           <DropdownMenuItem
@@ -230,8 +214,8 @@ export function CloneBox({
           >
             Download tar.gz
           </DropdownMenuItem>
-        </>
+        </>;
       }
     </DropdownMenuContent>
-  </DropdownMenu>
+  </DropdownMenu>;
 }
