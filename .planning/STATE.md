@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: **11.1** — Quality Hardening (CONTEXT ready → plan) · parallel **12** discuss
-Current Plan: —
-Total Plans in Phase: TBD
-Status: Forge-core merged to main (`84a8503`+); issue #3 → inserted 11.1; README/docs operator-focused; Phase 12 discuss waiting on Review model
-Last activity: 2026-09-15 — Phase 11.1 insert + CONTEXT; docs/README refactor
+Phase: **11.1** — Quality Hardening (executing) · parallel **12** discuss
+Current Plan: 3
+Total Plans in Phase: 6
+Status: 11.1-01 and 11.1-02 complete (RepoChrome + coverage gate); next 11.1-03 forge e2e matrix
+Last activity: 2026-09-15 — Completed 11.1-02 coverage tooling + weighted CI gate
 
 Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
 
