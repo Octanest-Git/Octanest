@@ -190,6 +190,7 @@ export function RepoReleaseNewPage() @{
         className="flex max-w-2xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
+          void submit();
         }}
       >
         @if (error) {

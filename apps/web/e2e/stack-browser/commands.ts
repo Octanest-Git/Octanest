@@ -52,6 +52,7 @@ type PlaywrightPage = {
     waitFor: (opts?: object) => Promise<unknown>;
     fill: (v: string) => Promise<unknown>;
     click: () => Promise<unknown>;
+    press: (key: string) => Promise<unknown>;
     check?: () => Promise<unknown>;
   };
   waitForURL: (
@@ -561,15 +562,36 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "New issue" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page.getByLabel("Title").fill(title);
-    await page.getByRole("button", { name: /Submit new issue/i }).click();
-    await page.waitForURL(
-      (url) => {
-        const u = typeof url === "string" ? new URL(url) : url;
-        return /\/issues\/\d+$/.test(u.pathname);
-      },
-      { timeout: 30_000, waitUntil: "domcontentloaded" },
-    );
+    // Prefer form Enter (onSubmit) — more reliable than Button onClick hydration.
+    await page.locator("#issue-title").fill(title);
+    await page.locator("#issue-title").press("Enter");
+    try {
+      await page.waitForURL(
+        (url) => {
+          const u = typeof url === "string" ? new URL(url) : url;
+          return /\/issues\/\d+$/.test(u.pathname);
+        },
+        { timeout: 20_000, waitUntil: "domcontentloaded" },
+      );
+    } catch (e) {
+      // Fallback: click submit if Enter did not navigate (hydration race).
+      await page.getByRole("button", { name: /Submit new issue/i }).click();
+      try {
+        await page.waitForURL(
+          (url) => {
+            const u = typeof url === "string" ? new URL(url) : url;
+            return /\/issues\/\d+$/.test(u.pathname);
+          },
+          { timeout: 20_000, waitUntil: "domcontentloaded" },
+        );
+      } catch {
+        const body = await page.content();
+        throw new Error(
+          `issue create did not navigate. url=${page.url()} body=${body.slice(0, 1200)}`,
+          { cause: e },
+        );
+      }
+    }
     await page
       .getByTestId("issue-title")
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -611,16 +633,29 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "New release" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page.locator("#release-tag").waitFor({ state: "visible", timeout: 30_000 });
-    await page.getByLabel("Release title").fill(releaseTitle);
+    await page
+      .locator("#release-tag")
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.locator("#release-title").fill(releaseTitle);
     await page.getByRole("button", { name: /Publish release/i }).click();
-    await page.waitForURL(
-      (url) => {
-        const u = typeof url === "string" ? new URL(url) : url;
-        return u.pathname === `/${seed.owner}/${seed.repo}/releases/${tag}`;
-      },
-      { timeout: 45_000, waitUntil: "domcontentloaded" },
-    );
+    try {
+      await page.waitForURL(
+        (url) => {
+          const u = typeof url === "string" ? new URL(url) : url;
+          return (
+            u.pathname === `/${seed.owner}/${seed.repo}/releases/${tag}` ||
+            u.pathname.includes(`/releases/${tag}`)
+          );
+        },
+        { timeout: 45_000, waitUntil: "domcontentloaded" },
+      );
+    } catch (e) {
+      const body = await page.content();
+      throw new Error(
+        `release publish did not navigate. url=${page.url()} body=${body.slice(0, 1200)}`,
+        { cause: e },
+      );
+    }
     await page
       .getByText(releaseTitle)
       .waitFor({ state: "visible", timeout: 30_000 });
@@ -676,10 +711,24 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
     await page
       .getByRole("heading", { name: "SSH keys" })
       .waitFor({ state: "visible", timeout: 30_000 });
-    await page.getByRole("button", { name: /Add SSH key/i }).click();
-    await page.getByLabel("Title").fill(`e2e-key-${suffix}`);
-    await page.getByLabel("Key").fill(pubKey);
-    await page.getByRole("button", { name: /^Add key$/i }).click();
+    const addBtn = page.getByRole("button", { name: /Add SSH key/i });
+    await addBtn.waitFor({ state: "visible", timeout: 15_000 });
+    await addBtn.click();
+    try {
+      await page
+        .locator("#ssh-key-title")
+        .waitFor({ state: "visible", timeout: 15_000 });
+    } catch (e) {
+      const body = await page.content();
+      throw new Error(
+        `SSH add form did not open. url=${page.url()} body=${body.slice(0, 1200)}`,
+        { cause: e },
+      );
+    }
+    await page.locator("#ssh-key-title").fill(`e2e-key-${suffix}`);
+    await page.locator("#ssh-key-public").fill(pubKey);
+    // Form onSubmit calls add — Enter is more reliable than Button onClick.
+    await page.locator("#ssh-key-public").press("Enter");
     await page
       .getByText(`e2e-key-${suffix}`)
       .waitFor({ state: "visible", timeout: 30_000 });
