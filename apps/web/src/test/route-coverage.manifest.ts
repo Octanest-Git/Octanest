@@ -205,12 +205,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   {
     route: "admin/packages.tsrx",
     coverage: [
-      { kind: "stack-browser", test: FORGE_ADMIN },
       {
-        kind: "skip",
-        rationale:
-          "happy-dom still export/hint smoke only (not a render mount); stack-browser visits /admin/packages — upgrade packages.integration.test.ts to mount when touching quotas UI",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/admin/packages.integration.test.ts",
       },
+      { kind: "stack-browser", test: FORGE_ADMIN },
     ],
   },
   {
