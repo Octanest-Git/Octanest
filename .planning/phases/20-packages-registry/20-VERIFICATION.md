@@ -2,9 +2,11 @@
 phase: 20-packages-registry
 verified: 2026-09-14T18:10:12Z
 status: passed
+status_note: "passed with caveats — see Known stubs / residual gaps (UI/IA + OCI referrers); Phase 11.1 owns chrome/IA"
 score: 7/7 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
+honesty_annotated: 2026-09-15
 covered_files:
   - .planning/phases/20-packages-registry/20-00-PLAN.md
   - .planning/phases/20-packages-registry/20-00-SUMMARY.md
@@ -96,7 +98,8 @@ advisory: []
 
 **Phase Goal:** Users can publish and pull OCI, npm, and generic/raw packages scoped to repo/org with the same auth/visibility rules  
 **Verified:** 2026-09-14T18:10:12Z  
-**Status:** passed  
+**Status:** passed (with caveats — see Known stubs / residual gaps)  
+**Honesty annotate:** 2026-09-15 — audit residual UI/IA + deferred OCI referrers  
 **Re-verification:** Yes — after gap closure (`fccad92`)  
 **Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-phase20` (`feat/execute-20-packages`)  
 **Migration:** `0015_packages` (postgres/sqlite/mysql) — confirmed; not 0012/0013
@@ -213,9 +216,23 @@ No unresolved `TBD`/`FIXME`/`XXX` debt markers in gap-fix files. Prior D-PKG-11 
 
 ### Gaps Summary
 
-Prior gap (D-PKG-11 repo packages page listing by owner instead of `repository_id`) is closed in `fccad92`: page resolves `repo.get` then calls `packages.list({ repository_id })`; Vitest enforces the wiring via `?raw`. All 7 must-have truths verified. Phase goal achieved. No remaining gaps.
+Prior gap (D-PKG-11 repo packages page listing by owner instead of `repository_id`) is closed in `fccad92`: page resolves `repo.get` then calls `packages.list({ repository_id })`; Vitest enforces the wiring via `?raw`. All 7 must-have **protocol / list-wiring** truths verified — phase registry goal achieved for publish/pull/ACL/quota.
+
+**Residual product gaps remain** (non-blocking for those truths; do not re-mark phase failed). See **Known stubs / residual gaps** below. Repo chrome / Packages tab IA is owned by **Phase 11.1** (`D-QH-01`), not a Phase 20 reopen.
+
+### Known stubs / residual gaps
+
+Audit source: `tmp/issue-3-quality-audit.md` (Issue #3) + Phase 11.1 context `D-QH-01` / `D-QH-05`. These did **not** fail the 7 must-have truths above; they are honesty footnotes so “passed” is not read as full UX/discovery complete.
+
+| Gap | Pointers | Owner / disposition |
+| --- | -------- | ------------------- |
+| Repo packages page minimal; missing `RepoChrome` / Packages tab (IA incomplete) | `apps/web/src/routes/$owner.$repo.packages.tsrx` (standalone, no chrome); `apps/web/src/components/repo/repo-chrome.tsrx` (`active` union has no `"packages"`); `$owner.$repo.tsrx` layout does not render chrome | **Phase 11.1** — `D-QH-01` (lift chrome into layout; add Packages tab; wire repo packages through same shell) |
+| Owner packages vs repo packages chrome inconsistency | `$owner.packages.tsrx` (fuller UI + delete) vs `$owner.$repo.packages.tsrx` (minimal list, different chrome conventions) | **Phase 11.1** chrome/IA pass (same as above) |
+| OCI referrers deferred | `referrers_deferred` in `crates/octanest-api/src/packages/oci.rs` (route returns 404; clients use referrers tag schema) | Documented Phase 20 deferral (`20-RESEARCH` / `20-05-SUMMARY`); **out of scope for 11.1** (do not implement as “fix”) |
+| No stack-browser e2e for packages | `apps/web/e2e/stack-browser/` covers auth only; packages covered by happy-dom / `?raw` + Rust registry tests + optional `smoke-packages.sh` | **Phase 11.1** — `D-QH-03` forge matrix (packages list among first flows) |
 
 ---
 
 _Verified: 2026-09-14T18:10:12Z_  
-_Verifier: Claude (gsd-verifier)_
+_Verifier: Claude (gsd-verifier)_  
+_Honesty annotate: 2026-09-15 (Phase 11.1 GSD truth pass)_
