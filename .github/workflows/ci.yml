@@ -60,6 +60,19 @@ jobs:
       - name: web build
         run: bunx turbo run build --filter=@octanest/web
 
+  # G-11.1-15 — every user-facing apps/web route page must declare happy-dom,
+  # stack-browser, or documented skip evidence in the route coverage manifest.
+  route-coverage:
+    name: route-coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: route coverage gate
+        run: make route-coverage-check
+
   # D-QH-02 weighted coverage gate (unit 25% / integration 40% / e2e checklist 35%).
   # Rust cargo-llvm-cov is Make-ready but skipped here (runtime/disk residual);
   # web Vitest + interim e2e checklist drive the score.

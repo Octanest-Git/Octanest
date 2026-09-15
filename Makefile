@@ -5,7 +5,8 @@
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
-	coverage-web coverage-rust coverage-weighted coverage-contract
+	coverage-web coverage-rust coverage-weighted coverage-contract \
+	route-coverage-check
 
 COMPOSE ?= docker compose
 COMPOSE_FILE ?= docker-compose.yml
@@ -32,6 +33,7 @@ help:
 	@echo "  make coverage-rust  - Rust lib/test coverage via cargo-llvm-cov (optional)"
 	@echo "  make coverage-weighted - D-QH-02 weighted gate (25/40/35, floor 0.65→0.70)"
 	@echo "  make coverage-contract - aggregator contract self-test"
+	@echo "  make route-coverage-check - G-11.1-15 every .tsrx page has happy-dom/browser/skip"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
@@ -214,6 +216,9 @@ coverage-rust:
 
 coverage-contract:
 	@./scripts/coverage-weighted.contract.sh
+
+route-coverage-check:
+	@./scripts/route-coverage-check.sh
 
 coverage-weighted: coverage-web
 	@mkdir -p var/coverage

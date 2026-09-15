@@ -132,6 +132,23 @@ login / verify / profile also have happy-dom `*.integration.test.ts` export/rend
 
 **Render mounts required for Octane pages (G-11.1-15)** — Wave 0 **raw-source** stubs (`import "./page.tsrx?raw"` + regex for exports / RPC names / absence of `@else if`) are **not enough** to prove a `.tsrx` page works. They miss missing `useState`, broken Rivet control flow, and hydration-time ReferenceErrors. User-facing routes under `apps/web/src/routes/` must keep at least one **happy-dom render mount** (e.g. `AdminLfsPage` via `renderWithQueryClient` + `getByTestId("admin-lfs-page")`) and, for admin quotas, **stack-browser** coverage (`forge-admin.stack.browser.test.tsx` → `/admin/lfs`). Do not regress `/admin/lfs` back to raw-source-only.
 
+**Route coverage gate (G-11.1-15 / 11.1-08)** — CI fails if any user-facing `apps/web/src/routes/**/*.tsrx` page is missing from the manifest (or lacks valid evidence). Outlet-only layouts and `__root` are marked `layoutOnly` and excluded.
+
+| Artifact | Role |
+|----------|------|
+| `apps/web/src/test/route-coverage.manifest.ts` | Declares each route + `happy-dom` / `stack-browser` / `skip` evidence |
+| `scripts/route-coverage-check.sh` | Discovers `.tsrx` files and fails on gaps / missing test paths |
+| `make route-coverage-check` | Local + CI entrypoint |
+
+**Adding a new page route**
+
+1. Add the `.tsrx` under `apps/web/src/routes/`.
+2. Append a row to `routeCoverageManifest` with at least one of:
+   - `{ kind: "happy-dom", test: "apps/web/src/routes/….integration.test.ts" }` (file must exist and should **mount** the page — not raw-source-only)
+   - `{ kind: "stack-browser", test: "apps/web/e2e/stack-browser/….stack.browser.test.tsx" }`
+   - `{ kind: "skip", rationale: "…" }` (temporary; prefer real coverage)
+3. Run `make route-coverage-check` before pushing.
+
 ### API client
 
 Add `*.test.ts` beside the module under `packages/api-client/src/` (Vitest picks them up with the package default config).
@@ -196,6 +213,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 |-----|----------------|
 | `api-rust` | Install nextest → `cargo nextest run --workspace --profile ci` |
 | `web-octane` | `bun install --frozen-lockfile` → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `route-coverage` | `make route-coverage-check` — every user-facing `.tsrx` page has happy-dom, stack-browser, or documented skip (G-11.1-15) |
 | `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
