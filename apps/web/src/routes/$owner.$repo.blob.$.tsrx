@@ -12,7 +12,6 @@ import { useEffect, useState } from "octane";
 import { BlobViewer } from "@/components/repo/blob-viewer";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RefSelect } from "@/components/repo/ref-select";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { highlightCode, languageIdForPath, type HighlightTheme } from "@/lib/highlight";
 import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
@@ -197,7 +196,6 @@ export function RepoBlobPage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="code" />
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <RefSelect
           owner={owner}

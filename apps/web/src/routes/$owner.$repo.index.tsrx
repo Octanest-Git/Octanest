@@ -14,13 +14,11 @@ import { CloneBox } from "@/components/repo/clone-box";
 import { QuickSetup } from "@/components/repo/quick-setup";
 import { ReadmePanel } from "@/components/repo/readme-panel";
 import { RefSelect } from "@/components/repo/ref-select";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { findReadmeName, shortRefName } from "@/lib/repo-browse";
 import { renderGfm } from "@/lib/markdown";
-import { useRepoStore } from "@/lib/repo-store";
 import {
   fetchRepoBlob,
   fetchRepoGet,
@@ -149,7 +147,6 @@ export function RepoCodeHome() @{
   const loaderData = useLoaderData({ from: "/$owner/$repo/" }) as
     | CodeHomeLoaderData
     | undefined;
-  const layoutRepo = useRepoStore((s) => s.repo);
 
   const [phase, setPhase] = useState<BrowsePhase>(() =>
     loaderData ? loaderData : { kind: "loading" },
@@ -189,11 +186,7 @@ export function RepoCodeHome() @{
     };
   }, [owner, repoName, loaderData]);
 
-  const chromeRepo =
-    (phase.kind === "empty" || phase.kind === "ready"
-      ? phase.repo
-      : layoutRepo) ?? null;
-
+  // Chrome comes from `$owner.$repo` layout (D-QH-01).
   @if (phase.kind === "not_found") {
     <RepoNotFound />
   } @else {
@@ -208,54 +201,49 @@ export function RepoCodeHome() @{
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      } @else if (chromeRepo) {
+      } @else if (phase.kind === "empty") {
         <>
-          <RepoChrome repo={chromeRepo} active="code" />
-          @if (phase.kind === "empty") {
-            <>
-              <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
-                <CloneBox
-                  owner={owner}
-                  repo={repoName}
-                  refName={phase.repo.default_branch || "main"}
-                  empty={true}
-                />
-              </div>
-              <QuickSetup owner={owner} repo={repoName} />
-            </>
-          } @else {
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <RefSelect
-                  owner={owner}
-                  repo={repoName}
-                  refs={phase.refs}
-                  value={phase.refName}
-                  mode="home"
-                />
-                <div className="ml-auto">
-                  <CloneBox
-                    owner={owner}
-                    repo={repoName}
-                    refName={phase.refName}
-                    empty={false}
-                  />
-                </div>
-              </div>
-              <FileTree
+          <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <CloneBox
+              owner={owner}
+              repo={repoName}
+              refName={phase.repo.default_branch || "main"}
+              empty={true}
+            />
+          </div>
+          <QuickSetup owner={owner} repo={repoName} />
+        </>
+      } @else {
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <RefSelect
+              owner={owner}
+              repo={repoName}
+              refs={phase.refs}
+              value={phase.refName}
+              mode="home"
+            />
+            <div className="ml-auto">
+              <CloneBox
                 owner={owner}
                 repo={repoName}
                 refName={phase.refName}
-                basePath=""
-                entries={phase.entries}
+                empty={false}
               />
-              @if (phase.readme) {
-                <ReadmePanel
-                  html={phase.readme.html}
-                  fileName={phase.readme.name}
-                />
-              }
-            </>
+            </div>
+          </div>
+          <FileTree
+            owner={owner}
+            repo={repoName}
+            refName={phase.refName}
+            basePath=""
+            entries={phase.entries}
+          />
+          @if (phase.readme) {
+            <ReadmePanel
+              html={phase.readme.html}
+              fileName={phase.readme.name}
+            />
           }
         </>
       }

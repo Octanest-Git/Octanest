@@ -9,7 +9,6 @@ import type {
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { commitHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import { formatRelativeUpdated } from "@/lib/relative-time";
@@ -161,7 +160,6 @@ export function RepoBlamePage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="code" />
       <PathBreadcrumb
         owner={owner}
         repo={repoName}

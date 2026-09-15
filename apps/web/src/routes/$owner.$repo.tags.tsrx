@@ -6,7 +6,6 @@ import {
 } from "@octanejs/tanstack-router";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,7 +139,6 @@ export function RepoTagsPage() @{
     </div>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="tags" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">Tags</h2>
       @if (phase.tags.length === 0) {
         <p className="text-[16px] text-muted-foreground">No tags yet.</p>

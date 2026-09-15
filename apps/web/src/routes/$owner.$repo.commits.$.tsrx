@@ -8,7 +8,6 @@ import type {
   RepoPublic,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { commitHref } from "@/lib/repo-browse";
@@ -191,7 +190,6 @@ export function RepoCommitsPage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="commits" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">
         Commits on {phase.refName as string}
       </h2>

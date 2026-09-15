@@ -12,7 +12,6 @@ import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RefSelect } from "@/components/repo/ref-select";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import {
@@ -156,7 +155,6 @@ export function RepoTreePage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="code" />
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <RefSelect
           owner={owner}

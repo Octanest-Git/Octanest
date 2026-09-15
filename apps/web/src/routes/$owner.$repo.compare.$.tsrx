@@ -10,7 +10,6 @@ import type {
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { DiffPatch } from "@/components/repo/diff-patch";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { compareHref, shortRefName } from "@/lib/repo-browse";
 import {
@@ -198,7 +197,6 @@ export function RepoComparePage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="commits" />
       <h2 className="mb-4 text-[18px] font-semibold text-foreground">
         Compare changes
       </h2>

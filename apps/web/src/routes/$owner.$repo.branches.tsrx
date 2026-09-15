@@ -7,7 +7,6 @@ import {
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import {
   AlertDialog,
@@ -300,7 +299,6 @@ export function RepoBranchesPage() @{
     </div>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="branches" />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[18px] font-semibold text-foreground">Branches</h2>
         @if (isOwner) {

@@ -9,7 +9,6 @@ import type {
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { DiffPatch } from "@/components/repo/diff-patch";
-import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { formatRelativeUpdated } from "@/lib/relative-time";
 import { fetchRepoCommit, fetchRepoGet } from "@/lib/ssr-repo";
@@ -131,7 +130,6 @@ export function RepoCommitPage() @{
     </p>
   } @else {
     <>
-      <RepoChrome repo={phase.repo} active="commits" />
       <header className="mb-6 border-b border-border pb-4">
         <h2 className="text-[20px] font-semibold text-foreground">
           {phase.commit.subject as string}
