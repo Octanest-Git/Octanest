@@ -1,6 +1,7 @@
 .PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
+	smoke-protocol-ci \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
@@ -36,6 +37,7 @@ help:
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
 	@echo "  make smoke-git-lfs   - Traefik .git/info/lfs batch routing smoke (GIT-12)"
 	@echo "  make smoke-packages  - Traefik /v2|/npm|/generic → API smoke (PKG-01..03)"
+	@echo "  make smoke-protocol-ci - Compose up + smoke-git-* + smoke-packages (D-QH-04; fail-closed)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
@@ -136,23 +138,29 @@ smoke:
 
 # Requires stack already up (`make up`). Public repo at SMOKE_GIT_OWNER/SMOKE_GIT_REPO;
 # optional SMOKE_PAT=octanest_pat_… for push. See scripts/smoke-git-https.sh.
+# Docker-missing skips exit 0 locally; CI=true / SMOKE_REQUIRE_STACK=1 fails closed.
 smoke-git-https:
 	@./scripts/smoke-git-https.sh
 
 # Compose TCP 2222 + ls-remote/push over scp-style remotes (D-SSH-02 / D-SSH-07).
-# Requires stack with SSH listener; docker-missing skips exit 0. See scripts/smoke-git-ssh.sh.
+# Requires stack with SSH listener. See scripts/smoke-git-ssh.sh.
 smoke-git-ssh:
 	@./scripts/smoke-git-ssh.sh
 
-# Requires stack already up (`make up`). Asserts .git/info/lfs is not SPA HTML;
-# docker-missing skips exit 0. See scripts/smoke-git-lfs.sh.
+# Requires stack already up (`make up`). Asserts .git/info/lfs is not SPA HTML.
+# See scripts/smoke-git-lfs.sh.
 smoke-git-lfs:
 	@./scripts/smoke-git-lfs.sh
 
 # Requires stack already up (`make up`). Traefik PathPrefix /v2|/npm|/generic → api.
-# Docker-missing skips exit 0. See scripts/smoke-packages.sh.
+# See scripts/smoke-packages.sh.
 smoke-packages:
 	@./scripts/smoke-packages.sh
+
+# D-QH-04: bring up Compose, run protocol smokes fail-closed, tear down.
+# Default skips client ls-remote/LFS push (no seeded repo); set SMOKE_SKIP_*=0 + fixtures for full.
+smoke-protocol-ci:
+	@./scripts/ci-smoke-protocol.sh
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh

@@ -18,12 +18,16 @@
 #   SMOKE_PAT            if set, also git push a throwaway ref (Basic auth username=git)
 #   SMOKE_SKIP_LS_REMOTE  if 1, only assert non-HTML routing (no git client)
 #
-# CI / hosts without Docker: exits 0 with a skip message when docker is missing
-# (same spirit as documenting operator-only Compose smoke).
+# Operator hosts without Docker: exits 0 with a skip message.
+# CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+# shellcheck source=scripts/smoke-lib.sh
+source "${ROOT}/scripts/smoke-lib.sh"
+SMOKE_NAME="smoke-git-https"
 
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 OWNER="${SMOKE_GIT_OWNER:-smokeowner}"
@@ -36,14 +40,7 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker not found on PATH; skipping smoke-git-https (operator/CI without Compose)"
-  exit 0
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "docker engine not reachable; skipping smoke-git-https"
-  exit 0
-fi
+smoke_require_docker
 
 echo "==> wait for ${BASE_URL}/health"
 ok=0

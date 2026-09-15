@@ -197,9 +197,22 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` |
+| `smoke-protocol` | Compose up → `make smoke-git-https` + `smoke-git-ssh` + `smoke-git-lfs` + `smoke-packages` via `make smoke-protocol-ci` (**D-QH-04**); fail-closed when Docker/stack absent (`CI` / `SMOKE_REQUIRE_STACK`); default `SMOKE_SKIP_LS_REMOTE=1` / `SMOKE_SKIP_LFS_CLIENT=1` (routing + SSH TCP; no seeded-repo client) |
 | `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` |
 
-Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright.
+Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright. Forge protocol edges (Smart HTTP / SSH TCP / LFS batch / packages PathPrefix) are the `smoke-protocol` job — not happy-dom only.
+
+### Protocol smokes (local + CI)
+
+| Target | Proves | Notes |
+|--------|--------|-------|
+| `make smoke-git-https` | Traefik `/{owner}/{repo}.git` is not SPA HTML; optional `git ls-remote` | Needs stack up; set `SMOKE_SKIP_LS_REMOTE=1` for routing-only |
+| `make smoke-git-ssh` | TCP `OCTANEST_SSH_PORT` (2222); optional scp-style ls-remote/push | Needs SSH-enabled Compose API |
+| `make smoke-git-lfs` | `.git/info/lfs` batch routing not SPA; optional git-lfs client | `SMOKE_SKIP_LFS_CLIENT=1` for routing-only |
+| `make smoke-packages` | `/v2` `/npm` `/generic` PathPrefix → API | Needs running Compose API |
+| `make smoke-protocol-ci` | All four fail-closed against a fresh Compose up | Same entrypoint as CI `smoke-protocol` |
+
+Locally without Docker, individual `make smoke-git-*` / `smoke-packages` may skip (exit 0). Under `CI=true` or `SMOKE_REQUIRE_STACK=1`, those skips become failures.
 
 ## Dev-auth stubs (stack e2e)
 

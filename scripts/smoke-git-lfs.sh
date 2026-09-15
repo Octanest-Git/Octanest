@@ -18,11 +18,17 @@
 #   SMOKE_SESSION        optional Cookie header value to enable LFS via RPC
 #   SMOKE_SKIP_LFS_CLIENT if 1, only assert Traefik LFS routing
 #
-# CI / hosts without Docker or git-lfs: exits 0 with a skip message.
+# Operator hosts without Docker: exits 0 with a skip message.
+# CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
+# git-lfs client / SMOKE_PAT remain optional after routing OK.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+
+# shellcheck source=scripts/smoke-lib.sh
+source "${ROOT}/scripts/smoke-lib.sh"
+SMOKE_NAME="smoke-git-lfs"
 
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 OWNER="${SMOKE_GIT_OWNER:-smokeowner}"
@@ -38,14 +44,7 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v docker >/dev/null 2>&1; then
-  echo "docker not found on PATH; skipping smoke-git-lfs (operator/CI without Compose)"
-  exit 0
-fi
-if ! docker info >/dev/null 2>&1; then
-  echo "docker engine not reachable; skipping smoke-git-lfs"
-  exit 0
-fi
+smoke_require_docker
 
 echo "==> wait for ${BASE_URL}/health"
 ok=0
@@ -57,8 +56,7 @@ for _ in $(seq 1 3); do
   sleep 1
 done
 if [[ "$ok" -ne 1 ]]; then
-  echo "stack health not reachable at ${BASE_URL}/health; skipping smoke-git-lfs (run make up first)"
-  exit 0
+  smoke_require_or_skip "stack health not reachable at ${BASE_URL}/health; skipping smoke-git-lfs (run make up first)"
 fi
 
 echo "==> Traefik LFS batch routing (must not be SPA text/html): ${LFS_BATCH}"
