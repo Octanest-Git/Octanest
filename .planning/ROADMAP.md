@@ -21,18 +21,19 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Self-Host Admin Bootstrap** - Env admin or one-time setup wizard (completed 2026-09-12)
 - [x] **Phase 7: Git Repos & Browse** - system git CLI filesystem repos, create, browse, branches, archives (completed 2026-09-13)
 - [x] **Phase 8: Git HTTPS & PATs** - Smart HTTP clone/push with personal access tokens (completed 2026-09-13)
-- [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH
+- [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH *(GSD VERIFICATION/VALIDATION honesty repaired in Phase 11.1)*
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
-- [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links
+- [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
+- [ ] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3))
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
-- [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos
+- [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
 - [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
-- [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth
+- [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA incomplete → 11.1; OCI referrers deferred)*
 - [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
@@ -355,6 +356,8 @@ Plans:
   1. User can add, list, and revoke SSH public keys on their account
   2. User can clone, fetch, and push over SSH with a registered public key
 
+**GSD note**: Plans executed; VERIFICATION/VALIDATION honesty repaired under Phase 11.1 (issue #3). Stack-browser SSH e2e remains a 11.1 gap if still open.
+
 **Plans**: 10/10 plans executed
 
 Plans:
@@ -482,10 +485,30 @@ Plans:
 
 **UI hint**: yes
 
+### Phase 11.1: Quality Hardening (INSERTED)
+
+**Goal**: Make forge-core (phases 09–11, 14, 15, 20) trustworthy under CI — fix incomplete UI IA (repo Header/Info chrome + packages discovery), expand unit → integration → hydration/e2e coverage with weighted coverage gates, and reconcile GSD verification docs with reality before Phase 12 PR UI lands on the same chrome
+**Depends on**: Phase 9, Phase 10, Phase 11, Phase 14, Phase 15, Phase 20 (code on main)
+**Requirements**: Issue [#3](https://github.com/Octanest-Git/Octanest/issues/3) (tests, bugfixes, hydration, CI coverage gates, repo HI refactor, GSD doc honesty)
+**Success Criteria** (what must be TRUE):
+
+  1. Repo chrome lives in `$owner.$repo` layout (or equivalent single mount); Packages is a first-class tab; packages route shares the same shell
+  2. Stack-browser (or equivalent) e2e covers forge flows beyond auth: at least repo home, issues CRUD, releases CRUD, packages list, SSH keys, org members
+  3. Coverage tooling + docs exist; CI enforces a weighted unit / integration / e2e gate (initial floor documented in TESTING.md)
+  4. Phase 09 has VERIFICATION + Nyquist-honest VALIDATION; phases 11/15/20 VERIFICATION annotate known stubs (`pr_stub`, OCI referrers, packages chrome debt closed or explicitly tracked)
+
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run `/gsd-plan-phase 11.1` — CONTEXT seeded from issue #3 audit)
+
+**UI hint**: yes
+
 ### Phase 12: Pull Requests
 
 **Goal**: Users can open, review, and merge pull requests with configurable merge strategies
-**Depends on**: Phase 8, Phase 9, Phase 10, Phase 11
+**Depends on**: Phase 8, Phase 9, Phase 10, Phase 11, Phase 11.1
 **Requirements**: PR-01, PR-02, PR-03, PR-04, PR-05, PR-06, PR-07
 **Success Criteria** (what must be TRUE):
 

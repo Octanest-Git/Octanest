@@ -1,17 +1,17 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 12
-current_phase_name: Pull Requests
+current_phase: 11.1
+current_phase_name: Quality Hardening
 current_plan: 0
-status: discuss
-stopped_at: "forge-core PR #2 — CI green + docs refresh before /gsd-ship; Phase 12 discuss paused (Area 1 locked)"
-last_updated: "2026-09-14T22:05:00.000Z"
-last_activity: 2026-09-14
-last_activity_desc: "Closed verify for 11/14/15/20 on forge-core; next is Phase 12 discuss then ship PR #2"
-state_head: forge-core-pre-ship-docs
+status: planning
+stopped_at: "Dual-track feat/phase-12-and-quality: parallel GSD truth pass (09/11/15/20 VERIFICATION); 11.1 CONTEXT ready; Phase 12 discuss paused (Review model)"
+last_updated: "2026-09-15T15:40:00.000Z"
+last_activity: 2026-09-15
+last_activity_desc: "Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded"
+state_head: dual-track-11.1-and-12
 progress:
-  total_phases: 22
+  total_phases: 23
   completed_phases: 14
   total_plans: 147
   completed_plans: 147
@@ -25,19 +25,19 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
+**Current focus:** Dual-track on `feat/phase-12-and-quality` — **Phase 11.1 Quality Hardening** (plan next) + **Phase 12 Pull Requests** discuss (Area 1 locked)
 
 ## Current Position
 
-Phase: 12 — Pull Requests (discuss)
+Phase: **11.1** — Quality Hardening (CONTEXT ready → plan) · parallel **12** discuss
 Current Plan: —
 Total Plans in Phase: TBD
-Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
-Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
+Status: Forge-core merged to main (`84a8503`+); issue #3 → inserted 11.1; README/docs operator-focused; Phase 12 discuss waiting on Review model
+Last activity: 2026-09-15 — Phase 11.1 insert + CONTEXT; docs/README refactor
 
-Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
+Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
 
-See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
+See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.1-CONTEXT.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
 
 ## Performance Metrics
 
@@ -558,6 +558,7 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 Last session: 2026-09-14T20:30:00.000Z
 Stopped at: Merged Phase 20 into feat/forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
 Resume file: None
+
 ## Accumulated Context
 
 ### Decisions

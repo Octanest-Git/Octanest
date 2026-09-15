@@ -306,7 +306,7 @@ Organizations share the username slug namespace. `org.create` rejects reserved /
 
 `repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
 
-`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks / packages are not invented here (later phases).
+`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks are not invented here (later phases). Package owner-path updates on rename/transfer follow packages rules (see Packages registry).
 
 ### Releases (`release.*`)
 

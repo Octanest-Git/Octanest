@@ -4,7 +4,7 @@ Short orientation for coding agents and automated contributors. Humans: start wi
 
 ## Product
 
-Self-hostable GitHub-style forge (git, PRs, issues). **One codebase** for Octanest Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
+Self-hostable GitHub-style forge (git, issues, orgs, LFS, releases, packages; PRs upcoming). **One codebase** for Octanest Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
 
 ## Stack (do not invent alternatives)
 

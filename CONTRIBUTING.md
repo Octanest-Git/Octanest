@@ -58,13 +58,18 @@ By contributing, you agree that your contributions are licensed under the [MIT L
 
 | Doc | Audience |
 |-----|----------|
-| [README.md](README.md) | Everyone — install, layout, badges |
-| [AGENTS.md](AGENTS.md) | Agents — stack, Octane, commands |
-| [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md) | Humans + agents — conventions |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
-| [docs/API.md](docs/API.md) | RPC surface |
-| [docs/TESTING.md](docs/TESTING.md) | Test layers |
+| [README.md](README.md) | Operators / evaluators — product overview + Compose quick start |
+| [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md) | First run — Compose or host `make dev` |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Ops — Compose images, Traefik, forge volumes/ports |
+| [docs/database.md](docs/database.md) | Ops — Postgres / MySQL / SQLite |
 | [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Env vars |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Ops / Compose |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design |
+| [docs/API.md](docs/API.md) | RPC + git / LFS / SSH / packages surfaces |
+| [docs/guides/stack-presets.md](docs/guides/stack-presets.md) | In-repo `/new` stack presets |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Contributors — local API + Vite, monorepo layout |
+| [docs/TESTING.md](docs/TESTING.md) | Test layers |
+| [docs/dev-auth.md](docs/dev-auth.md) | Local auth/email stubs |
+| [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md) | Humans + agents — conventions |
+| [AGENTS.md](AGENTS.md) | Agents — stack, Octane, commands |
 
 Per-package READMEs live next to each crate, app, and package.
