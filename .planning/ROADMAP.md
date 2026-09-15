@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Git SSH** - SSH keys and clone/fetch/push over SSH *(GSD VERIFICATION/VALIDATION honesty repaired in Phase 11.1)*
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
-- [x] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 6/6 executed 2026-09-15)
+- [ ] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 6/6 executed; gap-closure 07–09 for G-11.1-15 pending)
 - [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
@@ -497,7 +497,7 @@ Plans:
   3. Coverage tooling + docs exist; CI enforces a weighted unit / integration / e2e gate (initial floor documented in TESTING.md)
   4. Phase 09 has VERIFICATION + Nyquist-honest VALIDATION; phases 11/15/20 VERIFICATION annotate known stubs (`pr_stub`, OCI referrers, packages chrome debt closed or explicitly tracked)
 
-**Plans:** 6/6 plans executed
+**Plans:** 6/6 executed + 3 gap-closure plans (07–09) for G-11.1-15
 
 Plans:
 
@@ -507,6 +507,9 @@ Plans:
 - [x] 11.1-04-PLAN.md
 - [x] 11.1-05-PLAN.md
 - [x] 11.1-06-PLAN.md
+- [ ] 11.1-07-PLAN.md
+- [ ] 11.1-08-PLAN.md
+- [ ] 11.1-09-PLAN.md
 
 - [x] `11.1-01-PLAN.md` — Tracer: layout RepoChrome + Packages tab + packages shell (D-QH-01)
 - [x] `11.1-02-PLAN.md` — Coverage toolchain + TESTING.md weights 25/40/35 + CI weighted gate (D-QH-02)
@@ -514,8 +517,9 @@ Plans:
 - [x] `11.1-04-PLAN.md` — Stack-browser forge matrix + login/verify/profile integration (D-QH-03)
 - [x] `11.1-05-PLAN.md` — Protocol smokes in CI + GSD residual honesty (D-QH-04, D-QH-05)
 - [x] `11.1-06-PLAN.md` — Strip RepoChrome from issues/releases/settings + retarget tests (D-QH-01)
-- [ ] `11.1-07-PLAN.md` — Gap G-11.1-15: Admin LFS quotas render + stack-browser (gap_closure)
-- [ ] `11.1-08-PLAN.md` — Gap G-11.1-15: route coverage CI gate for all `.tsrx` pages (gap_closure)
+- [ ] `11.1-07-PLAN.md` — Gap G-11.1-15: Admin LFS fix + happy-dom mount + stack-browser /admin/lfs
+- [ ] `11.1-08-PLAN.md` — Gap G-11.1-15: Admin packages mount + stack-browser /admin/packages + /admin/auth
+- [ ] `11.1-09-PLAN.md` — Gap G-11.1-15: Full .tsrx route-coverage manifest + CI gate
 
 **UI hint**: yes
 
