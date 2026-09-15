@@ -1,7 +1,7 @@
 ---
 phase: 15-releases-transfer
 verified: 2026-09-14T17:54:05Z
-status: passed
+status: passed with caveats
 score: 3/3 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -68,7 +68,7 @@ human_verification:
 
 **Verified:** 2026-09-14T17:54:05Z
 
-**Status:** passed
+**Status:** passed with caveats
 
 **Re-verification:** No — initial verification
 
@@ -208,12 +208,34 @@ No orphaned Phase 15 requirements.
 
 ### Gaps Summary
 
-No goal-blocking gaps. Roadmap success criteria 1–3 are implemented and covered by named API/integration tests. Migration remains **`0014_releases_redirects`**. End-of-phase browser UAT is closed (see UAT closure below). Non-blocking Vitest import-style WARNING above remains advisory only.
+No goal-blocking gaps for the three must-have truths. Roadmap success criteria 1–3 are implemented and covered by named API/integration tests. Migration remains **`0014_releases_redirects`**. End-of-phase compose/browser UAT is closed (see UAT closure below). Non-blocking Vitest import-style WARNING above remains advisory only.
+
+**Residual (not failures of Phase 15 must-haves):** Wave 0 UI tests are mostly export/chrome/`?raw` asserts; there is no stack-browser e2e for releases CRUD or settings Danger zone rename/transfer; soft-delete disk purge remains a documented Phase 07 deferral adjacent to this Danger zone. Details below.
+
+---
+
+## Known stubs / residual gaps
+
+Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/issues/3) quality audit (`tmp/issue-3-quality-audit.md`) and Phase 11.1 `D-QH-05`. These do **not** flip Phase 15 must-haves to failed — API/nextest coverage and compose UAT still support the three truths — but **do** justify **passed with caveats** so planners do not treat green VERIFICATION as full forge browser e2e.
+
+| Stub / gap | What shipped | What is *not* done | Pointers |
+| ---------- | ------------ | ------------------ | -------- |
+| **Wave 0 UI tests thin (export/chrome)** | Vitest colocated suites assert Releases tab in chrome, route exports / discoverability, and Danger zone rename/transfer source contracts via `?raw` | Full interaction / hydration coverage of create→upload→download or rename/transfer dialogs in happy-dom | `$owner.$repo.releases.integration.test.ts` (chrome + export asserts; one discoverability WARNING without `?raw`); `$owner.$repo.settings.rename-transfer.integration.test.ts` (`?raw` string matches only) |
+| **No stack-browser e2e for releases CRUD** | Rust `release_rpc` integration tests; Vitest Wave 0; compose UAT notes for list/detail SSR | No `apps/web/e2e/stack-browser/` flow for releases list → create → asset → detail | `apps/web/e2e/stack-browser/` is auth-only today (`auth-ui.stack.browser.test.tsx`); forge releases CRUD tracked for Phase 11.1 / `D-QH-03` |
+| **Settings Danger zone under-tested in browser** | `repo.rename` / `repo.transfer` nextest; settings source contract Vitest; human-check / UAT for rename RPC | No stack-browser (or equivalent) coverage of type-confirm rename/transfer UX in Chromium | `$owner.$repo.settings.tsrx` Danger zone; `$owner.$repo.settings.rename-transfer.integration.test.ts`; Phase 11.1 forge matrix / settings danger-zone e2e |
+| **Soft-delete disk purge deferred** | Danger zone shares soft-delete IA with rename/transfer; DB soft-delete + redirect retention jobs for rename/transfer paths | Synchronous or Phase-15-owned disk wipe of soft-deleted bare repos — still the Phase 07 **D-35** deferral (orphan reconcile / retention purge elsewhere) | Relevant because Settings Danger zone co-locates Delete with Rename/Transfer (`15-05`); disposition remains documented deferral, not a Phase 15 reopen |
+
+**Footnotes for planners**
+
+1. Truths #1–3 are RPC + wiring + compose UAT — not `make test-e2e-stack` Chromium forge flows.
+2. “Web chrome + settings raw tests” / Wave 0 green ≠ releases CRUD or Danger zone browser e2e.
+3. Soft-delete purge gaps belong to Phase 07 retention jobs / quality follow-ups — do not invent purge behavior from a Phase 15 VERIFICATION green light.
 
 ---
 
 _Verified: 2026-09-14T17:54:05Z_
 _Verifier: Claude (gsd-verifier)_
+_Honesty fixup: 2026-09-15 (Known stubs / residual gaps; status → passed with caveats)_
 
 
 ## UAT closure
