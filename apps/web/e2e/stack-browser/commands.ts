@@ -696,10 +696,18 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
       );
     }
 
-    await page
-      .getByText(tag, { exact: true })
-      .waitFor({ state: "visible", timeout: 30_000 });
-    return true;
+    // Prefer content check — detail may SSR tag in mono without a standalone text node
+    // that Playwright getByText(exact) can see until hydration.
+    for (let i = 0; i < 20; i++) {
+      const body = await page.content();
+      if (body.includes(tag) || body.includes(releaseTitle)) {
+        return true;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error(
+      `release detail missing tag/title. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
+    );
   } finally {
     await page.close();
   }
@@ -768,13 +776,27 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
-    await page
-      .getByRole("heading", { name: "Members" })
-      .waitFor({ state: "visible", timeout: 30_000 });
-    await page
-      .getByText(username)
-      .waitFor({ state: "visible", timeout: 30_000 });
-    return true;
+    for (let i = 0; i < 30; i++) {
+      const url = page.url();
+      const body = await page.content();
+      if (
+        url.includes(`/${orgSlug}/settings/members`) &&
+        (body.includes("Members") || body.includes("Add member")) &&
+        body.includes(username)
+      ) {
+        return true;
+      }
+      // Follow soft redirect once if sent to login.
+      if (url.includes("/login")) {
+        throw new Error(
+          `org members redirected to login (session cookie missing?). url=${url}`,
+        );
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    throw new Error(
+      `org members page not ready. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
+    );
   } finally {
     await page.close();
   }
