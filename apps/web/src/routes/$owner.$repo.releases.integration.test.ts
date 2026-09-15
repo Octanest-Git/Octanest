@@ -17,6 +17,26 @@ describe("repo Releases tab (GIT-14/15 / D-REL-13)", () => {
         "Wave 0: repo-chrome must include Releases tab (D-REL-13)",
       ).toMatch(/Releases/);
       expect(chromeSrc).toMatch(/releases/);
+      expect(chromeSrc).toMatch(/active === "releases"/);
+    },
+    30_000,
+  );
+
+  it(
+    "releases leaves do not remount RepoChrome (D-QH-01)",
+    async () => {
+      const sources = await Promise.all([
+        import("./$owner.$repo.releases.index.tsrx?raw"),
+        import("./$owner.$repo.releases.new.tsrx?raw"),
+        import("./$owner.$repo.releases.$tag.tsrx?raw"),
+      ]);
+      const names = ["releases.index", "releases.new", "releases.$tag"];
+      for (let i = 0; i < sources.length; i++) {
+        const src = String((sources[i] as { default: string }).default);
+        expect(src, `${names[i]} must not remount RepoChrome`).not.toMatch(
+          /RepoChrome/,
+        );
+      }
     },
     30_000,
   );

@@ -313,6 +313,31 @@ describe("repo chrome Issues tab Wave 0 (D-ISS-19)", () => {
     },
     15_000,
   );
+
+  it(
+    "issues leaves do not remount RepoChrome (D-QH-01)",
+    async () => {
+      const sources = await Promise.all([
+        import("./$owner.$repo.issues.index.tsrx?raw"),
+        import("./$owner.$repo.issues.new.tsrx?raw"),
+        import("./$owner.$repo.issues.$n.tsrx?raw"),
+        import("./$owner.$repo.issues.labels.tsrx?raw"),
+      ]);
+      const names = [
+        "issues.index",
+        "issues.new",
+        "issues.$n",
+        "issues.labels",
+      ];
+      for (let i = 0; i < sources.length; i++) {
+        const src = String((sources[i] as { default: string }).default);
+        expect(src, `${names[i]} must not remount RepoChrome`).not.toMatch(
+          /RepoChrome/,
+        );
+      }
+    },
+    30_000,
+  );
 });
 
 describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
