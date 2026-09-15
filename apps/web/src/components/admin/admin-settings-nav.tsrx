@@ -38,7 +38,7 @@ export function AdminSettingsNav({ active }: AdminSettingsNavProps) @{
         aria-current={active === link.id ? "page" : undefined}
       >
         {link.label as string}
-      </a>
+      </a>;
     }
-  </nav>
+  </nav>;
 }

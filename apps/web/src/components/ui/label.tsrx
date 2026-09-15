@@ -9,5 +9,5 @@ export function Label({ className, ...props }: ComponentProps<"label">) @{
       className,
     )}
     {...props}
-  />
+  />;
 }

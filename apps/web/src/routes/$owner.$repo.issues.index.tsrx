@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { IssueListResponse, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
@@ -27,8 +23,7 @@ export type IssuesLoaderData =
       state: IssueListStateFilter;
     };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadIssuesPage(
   owner: string,
@@ -107,16 +102,12 @@ export function IssuesListPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({ from: "/$owner/$repo/issues/" }) as
     | IssuesLoaderData
     | undefined;
 
-  const [filters, setFilters] = useState<IssueListFilters>(() =>
-    emptyFilters("open"),
-  );
+  const [filters, setFilters] = useState<IssueListFilters>(() => emptyFilters("open"));
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -193,15 +184,9 @@ export function IssuesListPage() @{
   const notFound =
     layout?.status === "not_found" ||
     routeLoader?.kind === "not_found" ||
-    (repoQ.isError &&
-      String(repoQ.error?.message ?? "").includes("not found"));
+    (repoQ.isError && String(repoQ.error?.message ?? "").includes("not found"));
 
-  const applyFilters = (draft: {
-    author: string;
-    label: string;
-    assignee: string;
-    q: string;
-  }) => {
+  const applyFilters = (draft: { author: string; label: string; assignee: string; q: string }) => {
     setFilters((prev) => ({
       ...prev,
       author: draft.author,
@@ -231,14 +216,14 @@ export function IssuesListPage() @{
   };
 
   @if (notFound || (!repoQ.isPending && !repo)) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (!repo) {
-    <p className="text-[16px] text-muted-foreground">Loading issues…</p>
+    <p className="text-[16px] text-muted-foreground">Loading issues…</p>;
   } @else {
     @if (listQ.isError) {
       <p role="alert" className="text-[16px] text-destructive">
         {(listQ.error?.message || NETWORK_ERROR) as string}
-      </p>
+      </p>;
     } @else {
       <IssuesList
         owner={owner}
@@ -253,7 +238,7 @@ export function IssuesListPage() @{
         onPrevPage={prevPage}
         onNextPage={nextPage}
         pending={listQ.isPending}
-      />
+      />;
     }
   }
 }

@@ -37,5 +37,5 @@ export function OrgSettingsNav({
     >
       Labels
     </a>
-  </nav>
+  </nav>;
 }

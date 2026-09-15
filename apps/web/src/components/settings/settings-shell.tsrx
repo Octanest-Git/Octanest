@@ -1,5 +1,8 @@
 import { cn } from "@/lib/utils";
-import { AdminSettingsNav, type AdminSettingsNavActive } from "@/components/admin/admin-settings-nav";
+import {
+  AdminSettingsNav,
+  type AdminSettingsNavActive,
+} from "@/components/admin/admin-settings-nav";
 import { SettingsNav, type SettingsNavActive } from "@/components/settings/settings-nav";
 
 /** Shared fixed canvas for account + admin settings (prevents width shift between pages). */
@@ -19,15 +22,11 @@ export type SettingsShellProps = {
  */
 export function SettingsShell(props: SettingsShellProps) @{
   <div
-    className={cn(
-      "mx-auto w-full px-4 py-10 sm:px-6",
-      SETTINGS_SHELL_MAX,
-      props.className,
-    )}
+    className={cn("mx-auto w-full px-4 py-10 sm:px-6", SETTINGS_SHELL_MAX, props.className)}
     data-testid={props["data-testid"]}
   >
     {props.children}
-  </div>
+  </div>;
 }
 
 export type AccountSettingsLayoutProps = {
@@ -46,7 +45,7 @@ export function AccountSettingsLayout(props: AccountSettingsLayoutProps) @{
       </aside>
       <div className="min-w-0">{props.children}</div>
     </div>
-  </SettingsShell>
+  </SettingsShell>;
 }
 
 export type AdminSettingsLayoutProps = {
@@ -65,5 +64,5 @@ export function AdminSettingsLayout(props: AdminSettingsLayoutProps) @{
       </aside>
       <div className="min-w-0">{props.children}</div>
     </div>
-  </SettingsShell>
+  </SettingsShell>;
 }

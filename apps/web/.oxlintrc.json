@@ -3,6 +3,9 @@
   "categories": {
     "correctness": "error"
   },
+  "rules": {
+    "typescript/no-redundant-type-constituents": "off"
+  },
   "ignorePatterns": ["**/routeTree.gen.ts", "dist/**", "coverage/**"],
   "env": {
     "builtin": true

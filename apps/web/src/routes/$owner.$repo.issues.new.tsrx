@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic } from "@octanest/api-client";
@@ -24,13 +19,9 @@ export type IssuesNewLoaderData =
   | { kind: "ready"; repo: RepoPublic }
   | { kind: "forbidden"; repo: RepoPublic };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
-async function loadNewIssuePage(
-  owner: string,
-  repoName: string,
-): Promise<IssuesNewLoaderData> {
+async function loadNewIssuePage(owner: string, repoName: string): Promise<IssuesNewLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
@@ -74,9 +65,7 @@ export function IssuesNewPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const navigate = useNavigate();
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({ from: "/$owner/$repo/issues/new" }) as
     | IssuesNewLoaderData
     | undefined;
@@ -142,18 +131,16 @@ export function IssuesNewPage() @{
   const repo = repoQ.data ?? null;
 
   @if (layout?.status === "not_found" || (!repoQ.isPending && !repo)) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (!repo) {
-    <p className="text-[16px] text-muted-foreground">Loading…</p>
+    <p className="text-[16px] text-muted-foreground">Loading…</p>;
   } @else if (!repo.can_write) {
     <p role="alert" className="text-[16px] text-destructive">
       You need write access to create issues.
-    </p>
+    </p>;
   } @else {
     <>
-      <h2 className="mb-4 text-[18px] font-semibold text-foreground">
-        New issue
-      </h2>
+      <h2 className="mb-4 text-[18px] font-semibold text-foreground">New issue</h2>
       <form
         method="post"
         action="#"
@@ -164,7 +151,7 @@ export function IssuesNewPage() @{
         }}
       >
         @if (error) {
-          <AuthErrorBanner message={error} />
+          <AuthErrorBanner message={error} />;
         }
         <form.Field name="title">
           {(field) => (
@@ -175,9 +162,7 @@ export function IssuesNewPage() @{
                 name="title"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                 placeholder="Issue title"
                 required
               />
@@ -212,7 +197,7 @@ export function IssuesNewPage() @{
           </a>
         </div>
       </form>
-    </>
+    </>;
   }
 }
 

@@ -109,7 +109,10 @@ export function MemberLookup({
         className="absolute top-full z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-card py-1 shadow-md"
       >
         @for (const hit of hits; key hit.username) {
-          <li role="option" aria-selected={hits[activeIndex]?.username === hit.username}>
+          <li
+            role="option"
+            aria-selected={hits[activeIndex]?.username === hit.username}
+          >
             <button
               type="button"
               className={cn(
@@ -129,14 +132,14 @@ export function MemberLookup({
                   width={28}
                   height={28}
                   className="size-7 shrink-0 rounded-md object-cover"
-                />
+                />;
               } @else {
                 <span
                   aria-hidden
                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold"
                 >
-                  {(hit.username.slice(0, 2).toUpperCase()) as string}
-                </span>
+                  {hit.username.slice(0, 2).toUpperCase() as string}
+                </span>;
               }
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium text-foreground">
@@ -145,13 +148,13 @@ export function MemberLookup({
                 @if (hit.display_name?.trim()) {
                   <span className="block truncate text-[13px] text-muted-foreground">
                     {hit.display_name as string}
-                  </span>
+                  </span>;
                 }
               </span>
             </button>
-          </li>
+          </li>;
         }
-      </ul>
+      </ul>;
     }
-  </div>
+  </div>;
 }

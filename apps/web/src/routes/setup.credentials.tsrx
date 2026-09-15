@@ -13,8 +13,7 @@ import { fetchSessionMe } from "@/lib/ssr-auth";
 
 const DEFAULT_USERNAME = "system-administrator";
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const DEFAULT_USERNAME_ERROR =
-  "Choose a username other than the default system-administrator.";
+const DEFAULT_USERNAME_ERROR = "Choose a username other than the default system-administrator.";
 
 export const Route = createFileRoute("/setup/credentials")({
   component: CredentialsPage,
@@ -84,16 +83,12 @@ export function CredentialsPage() @{
             code === "auth.weak_password" ||
             code === "rpc.bad_input"
           ) {
-            setError(
-              `${res.error.message}. Fix the highlighted fields and try again.`,
-            );
+            setError(`${res.error.message}. Fix the highlighted fields and try again.`);
           } else if (code === "auth.credentials_not_required") {
             window.location.assign(safeReturnTo(readReturnToFromLocation()));
             return;
           } else if (code === "auth.unauthenticated") {
-            window.location.assign(
-              `/login?returnTo=${encodeURIComponent("/setup/credentials")}`,
-            );
+            window.location.assign(`/login?returnTo=${encodeURIComponent("/setup/credentials")}`);
             return;
           } else {
             setError(NETWORK_ERROR);
@@ -109,14 +104,12 @@ export function CredentialsPage() @{
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const me = await apiClient.auth.me();
         if (cancelled) return;
         if (!me.ok) {
-          window.location.assign(
-            `/login?returnTo=${encodeURIComponent("/setup/credentials")}`,
-          );
+          window.location.assign(`/login?returnTo=${encodeURIComponent("/setup/credentials")}`);
           return;
         }
         if (!me.data.must_change_credentials) {
@@ -142,11 +135,11 @@ export function CredentialsPage() @{
     support="Review your admin email and username. Change any still-default values before continuing."
   >
     @if (error) {
-      <AuthErrorBanner message={error} />
+      <AuthErrorBanner message={error} />;
     }
 
     @if (!ready) {
-      <AuthFormSkeleton fields={3} />
+      <AuthFormSkeleton fields={3} />;
     }
 
     @if (ready) {
@@ -229,9 +222,7 @@ export function CredentialsPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(ev) =>
-                          field.handleChange(
-                            (ev.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((ev.currentTarget as HTMLInputElement).value)
                         }
                         required
                       />
@@ -250,9 +241,7 @@ export function CredentialsPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(ev) =>
-                          field.handleChange(
-                            (ev.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((ev.currentTarget as HTMLInputElement).value)
                         }
                         required
                       />
@@ -270,7 +259,7 @@ export function CredentialsPage() @{
             </Button>
           )}
         </form.Subscribe>
-      </form>
+      </form>;
     }
-  </AuthShell>
+  </AuthShell>;
 }

@@ -25,20 +25,17 @@ export const toastVariants = cva(
   },
 );
 
-export const toastAccentVariants = cva(
-  "mt-0.5 w-1 shrink-0 self-stretch rounded-full",
-  {
-    variants: {
-      variant: {
-        success: "bg-primary",
-        info: "bg-muted-foreground/40",
-        warning: "bg-secondary",
-        error: "bg-destructive",
-      },
+export const toastAccentVariants = cva("mt-0.5 w-1 shrink-0 self-stretch rounded-full", {
+  variants: {
+    variant: {
+      success: "bg-primary",
+      info: "bg-muted-foreground/40",
+      warning: "bg-secondary",
+      error: "bg-destructive",
     },
-    defaultVariants: { variant: "info" },
   },
-);
+  defaultVariants: { variant: "info" },
+});
 
 export type ToastVariantProps = VariantProps<typeof toastVariants>;
 
@@ -95,10 +92,10 @@ function ToastList() @{
               </Toast.Close>
             </div>
           </Toast.Content>
-        </Toast.Root>
+        </Toast.Root>;
       }
     </Toast.Viewport>
-  </Toast.Portal>
+  </Toast.Portal>;
 }
 
 /** Root provider + viewport. Wrap the app once in `__root`. */
@@ -106,5 +103,5 @@ export function AppToaster({ children }: { children?: unknown }) @{
   <Toast.Provider toastManager={appToastManager} timeout={5000} limit={3}>
     {children}
     <ToastList />
-  </Toast.Provider>
+  </Toast.Provider>;
 }

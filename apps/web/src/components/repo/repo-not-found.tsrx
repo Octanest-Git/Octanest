@@ -4,9 +4,7 @@ export function RepoNotFound() @{
     <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
       Page not found
     </h1>
-    <p className="mt-3 text-[16px] text-muted-foreground">
-      We couldn't find that page.
-    </p>
+    <p className="mt-3 text-[16px] text-muted-foreground">We couldn't find that page.</p>
     <p className="mt-8">
       <a
         href="/"
@@ -15,5 +13,5 @@ export function RepoNotFound() @{
         Back to home
       </a>
     </p>
-  </div>
+  </div>;
 }

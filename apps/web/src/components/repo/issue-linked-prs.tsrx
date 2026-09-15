@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 type IssueLinkedPrsPanelProps = {
   owner: string;
@@ -123,24 +122,21 @@ export function IssueLinkedPrsPanel({
   }
 
   <section aria-labelledby="issue-linked-prs-heading" data-testid="issue-linked-prs">
-    <h2
-      id="issue-linked-prs-heading"
-      className="text-[14px] font-semibold text-foreground"
-    >
+    <h2 id="issue-linked-prs-heading" className="text-[14px] font-semibold text-foreground">
       Linked PRs
     </h2>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (linksQ.isPending) {
-      <p className="mt-1 text-[13px] text-muted-foreground">Loading links…</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">Loading links…</p>;
     } @else {
       @if (links.length === 0) {
         <p className="mt-1 text-[13px] text-muted-foreground">
           No linked pull requests yet.
-        </p>
+        </p>;
       } @else {
         <ul className="mt-2 flex flex-col gap-1.5" data-testid="issue-linked-prs-list">
           @for (const link of links; key link.id) {
@@ -157,11 +153,11 @@ export function IssueLinkedPrsPanel({
                   onClick={() => removeLink(link.id)}
                 >
                   Unlink
-                </button>
+                </button>;
               }
-            </li>
+            </li>;
           }
-        </ul>
+        </ul>;
       }
     }
     @if (canWrite) {
@@ -211,9 +207,7 @@ export function IssueLinkedPrsPanel({
                 placeholder="42"
                 disabled={pending}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
               />
             </div>
           )}
@@ -229,9 +223,7 @@ export function IssueLinkedPrsPanel({
                 placeholder="Stub title"
                 disabled={pending}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
               />
             </div>
           )}
@@ -239,7 +231,7 @@ export function IssueLinkedPrsPanel({
         <Button type="submit" size="sm" disabled={pending}>
           Link
         </Button>
-      </form>
+      </form>;
     }
-  </section>
+  </section>;
 }

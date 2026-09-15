@@ -1,7 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type {
   AdminLfsSettingsPublic,
@@ -10,23 +7,13 @@ import type {
 } from "@octanest/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
-import {
-  AdminSettingsLayout,
-  SettingsShell,
-} from "@/components/settings/settings-shell";
+import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import {
-  authSessionQueryOptions,
-  setAuthMeCache,
-} from "@/lib/session-queries";
-import {
-  fetchAdminLfsSettings,
-  fetchAdminLfsUsage,
-  fetchSessionMe,
-} from "@/lib/ssr-auth";
+import { authSessionQueryOptions, setAuthMeCache } from "@/lib/session-queries";
+import { fetchAdminLfsSettings, fetchAdminLfsUsage, fetchSessionMe } from "@/lib/ssr-auth";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
 
 export type AdminLfsLoaderData =
@@ -103,9 +90,7 @@ function formatBytes(n: number): string {
 /** Exported for admin/lfs integration tests (D-LFS-12 / D-LFS-13 / D-LFS-19). */
 export function AdminLfsPage() @{
   const queryClient = useQueryClient();
-  const loaderData = useLoaderData({ from: "/admin/lfs" }) as
-    | AdminLfsLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/admin/lfs" }) as AdminLfsLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -132,8 +117,7 @@ export function AdminLfsPage() @{
   const settingsQ = useQuery({
     queryKey: settingsQueryKey,
     enabled: isSysAdmin || loaderData?.kind === "ready",
-    initialData:
-      loaderData?.kind === "ready" ? loaderData.settings : undefined,
+    initialData: loaderData?.kind === "ready" ? loaderData.settings : undefined,
     queryFn: async (): Promise<AdminLfsSettingsPublic> => {
       const res = await apiClient.admin.lfs.getSettings();
       if (!res.ok) throw new Error(res.error.message || FORBIDDEN);
@@ -152,8 +136,7 @@ export function AdminLfsPage() @{
     },
   });
 
-  const initialSettings =
-    loaderData?.kind === "ready" ? loaderData.settings : null;
+  const initialSettings = loaderData?.kind === "ready" ? loaderData.settings : null;
 
   const [pending, setPending] = useState(false);
 
@@ -168,9 +151,7 @@ export function AdminLfsPage() @{
       const quota_repo_bytes = Number(value.quotaRepo);
       const quota_user_bytes = Number(value.quotaUser);
       if (
-        ![max_object_bytes, quota_repo_bytes, quota_user_bytes].every((n) =>
-          Number.isFinite(n),
-        )
+        ![max_object_bytes, quota_repo_bytes, quota_user_bytes].every((n) => Number.isFinite(n))
       ) {
         toastWarning("Enter valid numeric byte limits.");
         return;
@@ -245,17 +226,13 @@ export function AdminLfsPage() @{
     loaderData?.kind === "unauthenticated" ||
     (sessionKnown && !me.isPending && (!me.isSuccess || !me.data));
   const forbidden =
-    loaderData?.kind === "forbidden" ||
-    (sessionKnown && me.isSuccess && !!me.data && !isSysAdmin);
+    loaderData?.kind === "forbidden" || (sessionKnown && me.isSuccess && !!me.data && !isSysAdmin);
   const loaderError = loaderData?.kind === "error" ? loaderData.message : "";
-  const settings =
-    settingsQ.data ??
-    (readyFromLoader ? loaderData.settings : undefined);
-  const usage =
-    usageQ.data ?? (readyFromLoader ? loaderData.usage : undefined);
+  const settings = settingsQ.data ?? (readyFromLoader ? loaderData.settings : undefined);
+  const usage = usageQ.data ?? (readyFromLoader ? loaderData.usage : undefined);
 
   @if (!sessionKnown) {
-    <></>
+    <></>;
   } @else {
     @if (signedOut) {
       <SettingsShell bare>
@@ -270,37 +247,39 @@ export function AdminLfsPage() @{
             Sign in
           </a>
         </div>
-      </SettingsShell>
+      </SettingsShell>;
     } @else {
       @if (forbidden) {
         <SettingsShell bare>
           <p role="alert" className="text-center text-[16px] text-destructive">
             {FORBIDDEN as string}
           </p>
-        </SettingsShell>
+        </SettingsShell>;
       } @else {
         @if (loaderError && !settings) {
           <SettingsShell bare>
             <p role="alert" className="text-center text-[16px] text-destructive">
               {loaderError as string}
             </p>
-          </SettingsShell>
+          </SettingsShell>;
         } @else {
           <AdminSettingsLayout active="lfs" data-testid="admin-lfs-page">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
               Git LFS quotas
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Override instance defaults for max object size and storage quotas.
-              Environment variables remain the fallback when overrides are cleared.
+              Override instance defaults for max object size and storage quotas. Environment
+              variables remain the fallback when overrides are cleared.
             </p>
 
             @if (settingsQ.isError && !settings) {
               <p role="alert" className="mt-8 text-[14px] text-destructive">
-                {(settingsQ.error instanceof Error
-                  ? settingsQ.error.message
-                  : FORBIDDEN) as string}
-              </p>
+                {
+                  (settingsQ.error instanceof Error
+                    ? settingsQ.error.message
+                    : FORBIDDEN) as string
+                }
+              </p>;
             } @else {
               <form
                 method="post"
@@ -321,16 +300,16 @@ export function AdminLfsPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(e) =>
-                          field.handleChange(
-                            (e.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((e.currentTarget as HTMLInputElement).value)
                         }
                         disabled={pending}
                       />
-                      @if (settings?.max_object_bytes_overridden) {
+                      @if (
+                        settings?.max_object_bytes_overridden
+                      ) {
                         <span className="text-[13px] text-muted-foreground">
                           Override active
-                        </span>
+                        </span>;
                       }
                     </div>
                   )}
@@ -345,16 +324,16 @@ export function AdminLfsPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(e) =>
-                          field.handleChange(
-                            (e.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((e.currentTarget as HTMLInputElement).value)
                         }
                         disabled={pending}
                       />
-                      @if (settings?.quota_repo_bytes_overridden) {
+                      @if (
+                        settings?.quota_repo_bytes_overridden
+                      ) {
                         <span className="text-[13px] text-muted-foreground">
                           Override active
-                        </span>
+                        </span>;
                       }
                     </div>
                   )}
@@ -369,16 +348,16 @@ export function AdminLfsPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(e) =>
-                          field.handleChange(
-                            (e.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((e.currentTarget as HTMLInputElement).value)
                         }
                         disabled={pending}
                       />
-                      @if (settings?.quota_user_bytes_overridden) {
+                      @if (
+                        settings?.quota_user_bytes_overridden
+                      ) {
                         <span className="text-[13px] text-muted-foreground">
                           Override active
-                        </span>
+                        </span>;
                       }
                     </div>
                   )}
@@ -396,13 +375,10 @@ export function AdminLfsPage() @{
                     Clear overrides
                   </Button>
                 </div>
-              </form>
+              </form>;
             }
 
-            <section
-              className="mt-12 flex flex-col gap-4"
-              aria-labelledby="lfs-inst-usage"
-            >
+            <section className="mt-12 flex flex-col gap-4" aria-labelledby="lfs-inst-usage">
               <h2
                 id="lfs-inst-usage"
                 className="font-[family-name:var(--font-display)] text-[18px] font-semibold"
@@ -411,17 +387,19 @@ export function AdminLfsPage() @{
               </h2>
               @if (usageQ.isError && !usage) {
                 <p role="alert" className="text-[14px] text-destructive">
-                  {(usageQ.error instanceof Error
-                    ? usageQ.error.message
-                    : "Could not load usage.") as string}
-                </p>
+                  {
+                    (usageQ.error instanceof Error
+                      ? usageQ.error.message
+                      : "Could not load usage.") as string
+                  }
+                </p>;
               } @else {
                 @if (usage) {
                   <>
                     <p className="text-[14px] text-muted-foreground">
-                      {(
-                        `${usage.object_count} unique OIDs · ${formatBytes(usage.physical_bytes)} physical · ${formatBytes(usage.logical_bytes)} logical`
-                      ) as string}
+                      {
+                        `${usage.object_count} unique OIDs · ${formatBytes(usage.physical_bytes)} physical · ${formatBytes(usage.logical_bytes)} logical` as string
+                      }
                     </p>
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
@@ -429,17 +407,17 @@ export function AdminLfsPage() @{
                         @if (usage.by_repo.length === 0) {
                           <p className="mt-2 text-[13px] text-muted-foreground">
                             No linked LFS objects.
-                          </p>
+                          </p>;
                         } @else {
                           <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
                             @for (const row of usage.by_repo; key row.repository_id) {
                               <li>
-                                {(
-                                  `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
-                                ) as string}
-                              </li>
+                                {
+                                  `${row.owner}/${row.name} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
+                                }
+                              </li>;
                             }
-                          </ul>
+                          </ul>;
                         }
                       </div>
                       <div>
@@ -447,25 +425,25 @@ export function AdminLfsPage() @{
                         @if (usage.by_owner.length === 0) {
                           <p className="mt-2 text-[13px] text-muted-foreground">
                             No linked LFS objects.
-                          </p>
+                          </p>;
                         } @else {
                           <ul className="mt-2 flex flex-col gap-1 text-[13px] text-muted-foreground">
                             @for (const row of usage.by_owner; key row.owner_id) {
                               <li>
-                                {(
-                                  `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}`
-                                ) as string}
-                              </li>
+                                {
+                                  `${row.owner_slug} · ${row.object_count} · ${formatBytes(row.logical_bytes)}` as string
+                                }
+                              </li>;
                             }
-                          </ul>
+                          </ul>;
                         }
                       </div>
                     </div>
-                  </>
+                  </>;
                 }
               }
             </section>
-          </AdminSettingsLayout>
+          </AdminSettingsLayout>;
         }
       }
     }

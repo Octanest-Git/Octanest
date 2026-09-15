@@ -5,7 +5,7 @@ import {
   useLocation,
   useParams,
 } from "@octanejs/tanstack-router";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@octanest/api-client";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { RepoPageShell } from "@/components/repo/repo-page-shell";
@@ -89,9 +89,7 @@ function RepoLayout() @{
     owner: string;
     repo: string;
   };
-  const data = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
 
   const owner = data?.owner ?? params.owner ?? "";
   const repoName = data?.repoName ?? params.repo ?? "";
@@ -108,15 +106,15 @@ function RepoLayout() @{
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-48 w-full" />
       </div>
-    </RepoPageShell>
+    </RepoPageShell>;
   } @else if (status === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (status === "error") {
     <RepoPageShell>
       <p role="alert" className="text-[16px] text-destructive">
         {message as string}
       </p>
-    </RepoPageShell>
+    </RepoPageShell>;
   } @else {
     <RepoStoreProvider
       key={`${owner}/${repoName}` as string}
@@ -131,7 +129,7 @@ function RepoLayout() @{
       <RepoPageShell>
         <RepoLayoutChrome />
       </RepoPageShell>
-    </RepoStoreProvider>
+    </RepoStoreProvider>;
   }
 }
 
@@ -147,8 +145,8 @@ function RepoLayoutChrome() @{
     <>
       <RepoChrome repo={repo} active={active} />
       <Outlet />
-    </>
+    </>;
   } @else {
-    <Outlet />
+    <Outlet />;
   }
 }

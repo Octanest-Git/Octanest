@@ -1,20 +1,10 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
-import {
-  sshKeyListQueryOptions,
-  type SshKeyListItem,
-  type UserPublic,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
+import { sshKeyListQueryOptions, type SshKeyListItem, type UserPublic } from "@octanest/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { SshKeyAddForm } from "@/components/settings/ssh-key-add-form";
 import { SshKeyList } from "@/components/settings/ssh-key-list";
-import {
-  AccountSettingsLayout,
-  SettingsShell,
-} from "@/components/settings/settings-shell";
+import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { fetchSessionMe, fetchSshKeyList } from "@/lib/ssr-auth";
@@ -24,8 +14,7 @@ export type SshKeysLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic; keys: SshKeyListItem[] };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/ssh-keys")({
   component: SshKeysPage,
@@ -63,9 +52,7 @@ type Phase =
 
 /** Exported for ssh-keys.integration.test.ts (GIT-04 / D-SSH-06). */
 export function SshKeysPage() @{
-  const loaderData = useLoaderData({ from: "/settings/ssh-keys" }) as
-    | SshKeysLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/settings/ssh-keys" }) as SshKeysLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -106,7 +93,7 @@ export function SshKeysPage() @{
   useEffect(() => {
     if (loaderData) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await apiClient.auth.me();
         if (cancelled) return;
@@ -135,8 +122,7 @@ export function SshKeysPage() @{
     };
   }, [loaderData]);
 
-  const verified =
-    phase.kind === "ready" ? phase.user.email_verified === true : false;
+  const verified = phase.kind === "ready" ? phase.user.email_verified === true : false;
 
   const keyList = useQuery({
     ...sshKeyListQueryOptions(apiClient),
@@ -148,14 +134,14 @@ export function SshKeysPage() @{
   const canAdd = verified && !atCap;
 
   @if (phase.kind === "loading") {
-    <></>
+    <></>;
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </SettingsShell>
+      </SettingsShell>;
     } @else {
       <AccountSettingsLayout active="ssh-keys" data-testid="settings-ssh-keys-page">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -164,37 +150,28 @@ export function SshKeysPage() @{
               SSH keys
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Keys authenticate git over SSH as user git. Identity comes from the
-              key fingerprint, not the SSH username.
+              Keys authenticate git over SSH as user git. Identity comes from the key fingerprint,
+              not the SSH username.
             </p>
           </div>
-          <Button
-            type="button"
-            disabled={!canAdd}
-            onClick={() => setShowForm(true)}
-          >
+          <Button type="button" disabled={!canAdd} onClick={() => setShowForm(true)}>
             Add SSH key
           </Button>
         </div>
         @if (!verified) {
           <p className="mt-3 text-[14px] text-muted-foreground">
             Verify your email to add an SSH key.
-          </p>
+          </p>;
         } @else {
           @if (atCap) {
-            <p className="mt-3 text-[14px] text-muted-foreground">
-              Maximum of 25 SSH keys
-            </p>
+            <p className="mt-3 text-[14px] text-muted-foreground">Maximum of 25 SSH keys</p>;
           }
         }
         @if (showForm && canAdd) {
-          <SshKeyAddForm
-            disabled={!canAdd}
-            onAdded={() => setShowForm(false)}
-          />
+          <SshKeyAddForm disabled={!canAdd} onAdded={() => setShowForm(false)} />;
         }
         <SshKeyList enabled={true} initialData={keys} />
-      </AccountSettingsLayout>
+      </AccountSettingsLayout>;
     }
   }
 }

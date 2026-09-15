@@ -62,11 +62,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
 
   const busy = dropzone.isDragActive || dropzone.isProcessing;
   const hasPicture = !!(props.src ?? props.user.avatar_url);
-  const overlayLabel = dropzone.isDragActive
-    ? "Drop"
-    : dropzone.isProcessing
-      ? "…"
-      : "Change";
+  const overlayLabel = dropzone.isDragActive ? "Drop" : dropzone.isProcessing ? "…" : "Change";
   const rootProps = dropzone.getRootProps({
     className: cn(
       "group relative inline-flex size-24 shrink-0 cursor-pointer outline-none",
@@ -81,11 +77,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
     id: "profile-avatar",
     "aria-label": "Upload profile picture",
   });
-  const {
-    ref: _dropzoneInputRef,
-    onChange: onFileChange,
-    ...inputRest
-  } = inputProps;
+  const { ref: _dropzoneInputRef, onChange: onFileChange, ...inputRest } = inputProps;
 
   function closeCrop() {
     setCropOpen(false);
@@ -116,10 +108,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
           user={props.user}
           src={props.src}
           size={AVATAR_PX}
-          className={cn(
-            "size-24 transition-[filter,opacity]",
-            busy && "opacity-70",
-          )}
+          className={cn("size-24 transition-[filter,opacity]", busy && "opacity-70")}
         />
         <span
           aria-hidden
@@ -157,12 +146,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
             )}
             aria-hidden={!hasPicture}
             tabIndex={hasPicture ? 0 : -1}
-            disabled={
-              !hasPicture ||
-              props.disabled ||
-              props.uploadPending ||
-              props.removePending
-            }
+            disabled={!hasPicture || props.disabled || props.uploadPending || props.removePending}
             onClick={() => void props.onRemove()}
           >
             {(props.removePending ? "Removing…" : "Remove picture") as string}
@@ -184,5 +168,5 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
         closeCrop();
       }}
     />
-  </div>
+  </div>;
 }

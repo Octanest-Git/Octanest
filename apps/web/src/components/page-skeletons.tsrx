@@ -3,12 +3,7 @@ import { SETTINGS_SHELL_MAX } from "@/components/settings/settings-shell";
 
 /** Signed-in home at `/` — mirrors {@link SignedInHome} geometry. */
 export function SignedInHomeSkeleton() @{
-  <div
-    className="mx-auto max-w-3xl px-4 py-16"
-    role="status"
-    aria-busy="true"
-    aria-label="Loading"
-  >
+  <div className="mx-auto max-w-3xl px-4 py-16" role="status" aria-busy="true" aria-label="Loading">
     <Skeleton className="h-8 w-64 max-w-full" />
     <Skeleton className="mt-3 h-5 w-full max-w-md" />
     <Skeleton className="mt-2 h-5 w-72 max-w-full" />
@@ -20,7 +15,7 @@ export function SignedInHomeSkeleton() @{
       <Skeleton className="h-11 w-24" />
       <Skeleton className="h-11 w-20" />
     </div>
-  </div>
+  </div>;
 }
 
 export function ProfilePageSkeleton() @{
@@ -51,7 +46,7 @@ export function ProfilePageSkeleton() @{
       </div>
       <Skeleton className="h-11 w-28" />
     </div>
-  </div>
+  </div>;
 }
 
 export function AdminAuthSkeleton() @{
@@ -75,7 +70,7 @@ export function AdminAuthSkeleton() @{
       <Skeleton className="h-24 w-full" />
       <Skeleton className="h-11 w-36" />
     </div>
-  </div>
+  </div>;
 }
 
 export function StatusPageSkeleton() @{
@@ -91,26 +86,21 @@ export function StatusPageSkeleton() @{
       <Skeleton className="mt-4 h-4 w-56" />
       <Skeleton className="mt-2 h-4 w-44" />
     </div>
-  </div>
+  </div>;
 }
 
 /** Form-shaped placeholders inside {@link AuthShell}. */
 export function AuthFormSkeleton({ fields = 2 }: { fields?: number }) @{
   const fieldIndexes = Array.from({ length: fields }, (_, i) => i);
 
-  <div
-    className="flex flex-col gap-4"
-    role="status"
-    aria-busy="true"
-    aria-label="Loading form"
-  >
+  <div className="flex flex-col gap-4" role="status" aria-busy="true" aria-label="Loading form">
     @for (const i of fieldIndexes; key i) {
       <div className="flex flex-col gap-2">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="h-11 w-full" />
-      </div>
+      </div>;
     }
     <Skeleton className="h-11 w-full" />
     <Skeleton className="mx-auto h-4 w-40" />
-  </div>
+  </div>;
 }

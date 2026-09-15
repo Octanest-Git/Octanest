@@ -14,14 +14,8 @@ type SignedInHomeProps = {
 };
 
 /** Signed-in home dashboard — repo list + empty/activity states (D-13 / UI E1). */
-export function SignedInHome({
-  user,
-  repos,
-  reposError = null,
-}: SignedInHomeProps) @{
-  const greetName =
-    user.display_name?.trim() ||
-    (user.username ? `@${user.username}` : "there");
+export function SignedInHome({ user, repos, reposError = null }: SignedInHomeProps) @{
+  const greetName = user.display_name?.trim() || (user.username ? `@${user.username}` : "there");
   const empty = !reposError && repos.length === 0;
 
   <div className="mx-auto max-w-3xl px-4 py-16 md:px-4">
@@ -37,7 +31,7 @@ export function SignedInHome({
         >
           Profile
         </a>
-      </p>
+      </p>;
     }
 
     <div className="flex flex-wrap items-start justify-between gap-4">
@@ -57,7 +51,7 @@ export function SignedInHome({
             className={cn(buttonVariants({ variant: "default" }))}
           >
             New repository
-          </Link>
+          </Link>;
         } @else {
           <>
             <button
@@ -72,7 +66,7 @@ export function SignedInHome({
             <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
               Verify your email to create a repository.
             </p>
-          </>
+          </>;
         }
       </div>
     </div>
@@ -82,7 +76,7 @@ export function SignedInHome({
         @if (reposError) {
           <p role="alert" className="text-[16px] text-destructive">
             {reposError as string}
-          </p>
+          </p>;
         } @else if (empty) {
           <div className="rounded-md border border-dashed border-border px-6 py-12 text-center">
             <h2 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -99,7 +93,7 @@ export function SignedInHome({
                   className={cn(buttonVariants({ variant: "default" }))}
                 >
                   New repository
-                </Link>
+                </Link>;
               } @else {
                 <button
                   type="button"
@@ -109,10 +103,10 @@ export function SignedInHome({
                   className={cn(buttonVariants({ variant: "default" }))}
                 >
                   New repository
-                </button>
+                </button>;
               }
             </div>
-          </div>
+          </div>;
         } @else {
           <ul className="divide-y divide-border border-y border-border">
             @for (const repo of repos; key repo.id) {
@@ -125,23 +119,20 @@ export function SignedInHome({
                 </a>
                 <Badge variant="outline">
                   @if (repo.visibility === "private") {
-                    <Lock aria-hidden size={12} />
+                    <Lock aria-hidden size={12} />;
                   }
                   {(repo.visibility === "private" ? "Private" : "Public") as string}
                 </Badge>
                 <span className="text-[14px] font-normal text-muted-foreground">
                   {formatRelativeUpdated(repo.updated_at) as string}
                 </span>
-              </li>
+              </li>;
             }
-          </ul>
+          </ul>;
         }
       </section>
 
-      <aside
-        aria-label="Activity"
-        className="rounded-md border border-border bg-card/40 px-4 py-4"
-      >
+      <aside aria-label="Activity" className="rounded-md border border-border bg-card/40 px-4 py-4">
         <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
           Activity will show up here.
         </p>
@@ -149,35 +140,22 @@ export function SignedInHome({
     </div>
 
     <div className="mt-10 flex flex-wrap gap-3">
-      <a
-        href="/settings/profile"
-        className={cn(buttonVariants({ variant: "secondary" }))}
-      >
+      <a href="/settings/profile" className={cn(buttonVariants({ variant: "secondary" }))}>
         Profile
       </a>
-      <Link
-        to="/status"
-        preload="intent"
-        className={cn(buttonVariants({ variant: "ghost" }))}
-      >
+      <Link to="/status" preload="intent" className={cn(buttonVariants({ variant: "ghost" }))}>
         Status
       </Link>
       @if (user.role === "sys-admin") {
         <>
-          <a
-            href="/admin/auth"
-            className={cn(buttonVariants({ variant: "ghost" }))}
-          >
+          <a href="/admin/auth" className={cn(buttonVariants({ variant: "ghost" }))}>
             Auth settings
           </a>
-          <a
-            href="/admin/lfs"
-            className={cn(buttonVariants({ variant: "ghost" }))}
-          >
+          <a href="/admin/lfs" className={cn(buttonVariants({ variant: "ghost" }))}>
             LFS quotas
           </a>
-        </>
+        </>;
       }
     </div>
-  </div>
+  </div>;
 }

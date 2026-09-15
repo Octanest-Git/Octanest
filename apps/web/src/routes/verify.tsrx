@@ -13,17 +13,13 @@ import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 export const Route = createFileRoute("/verify")({
   component: VerifyPage,
   head: () => ({
-    meta: [
-      { title: "Verify email · Octanest" },
-      { name: "referrer", content: "no-referrer" },
-    ],
+    meta: [{ title: "Verify email · Octanest" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
 const SUPPORT_DEFAULT =
   "We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in.";
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const INVALID_EXPIRED =
   "That code or link is invalid or expired. Request a new email and try again.";
 const WRONG_USER =
@@ -44,9 +40,7 @@ function readTokenFromLocation(): string | null {
 }
 
 function loginHrefWithToken(token: string | null): string {
-  const verifyPath = token
-    ? `/verify?token=${encodeURIComponent(token)}`
-    : "/verify";
+  const verifyPath = token ? `/verify?token=${encodeURIComponent(token)}` : "/verify";
   return `/login?returnTo=${encodeURIComponent(verifyPath)}`;
 }
 
@@ -103,7 +97,7 @@ export function VerifyPage() @{
   useEffect(() => {
     let cancelled = false;
     const token = readTokenFromLocation();
-    (async () => {
+    void (async () => {
       try {
         const me = await apiClient.auth.me();
         if (cancelled) return;
@@ -138,16 +132,14 @@ export function VerifyPage() @{
     tokenAttempted.current = true;
     const token = phase.token;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setTokenPending(true);
       setError("");
       try {
         const res = await apiClient.auth.verify({ token });
         if (cancelled) return;
         if (!res.ok) {
-          setError(
-            res.error.code === "auth.invalid_token" ? WRONG_USER : INVALID_EXPIRED,
-          );
+          setError(res.error.code === "auth.invalid_token" ? WRONG_USER : INVALID_EXPIRED);
           setPhase({
             kind: "form",
             user: phase.user,
@@ -222,9 +214,7 @@ export function VerifyPage() @{
   }
 
   const verifying =
-    (phase.kind === "form" && phase.verifyingToken) ||
-    tokenPending ||
-    form.state.isSubmitting;
+    (phase.kind === "form" && phase.verifyingToken) || tokenPending || form.state.isSubmitting;
   const cooldownHelper =
     cooldownLeft > 0
       ? `You can resend in ${cooldownLeft}s`
@@ -235,12 +225,12 @@ export function VerifyPage() @{
   @if (phase.kind === "loading") {
     <AuthShell title="Verify your email" support="Checking your session…">
       <AuthFormSkeleton fields={1} />
-    </AuthShell>
+    </AuthShell>;
   } @else {
     @if (phase.kind === "need-sign-in") {
       <AuthShell title="Verify your email" support={NEED_SIGN_IN}>
         @if (error) {
-          <AuthErrorBanner message={error} />
+          <AuthErrorBanner message={error} />;
         }
         <Button
           type="button"
@@ -260,7 +250,7 @@ export function VerifyPage() @{
             Sign in
           </a>
         </p>
-      </AuthShell>
+      </AuthShell>;
     } @else {
       @if (phase.kind === "already-verified") {
         <AuthShell title="Verify your email" support={ALREADY_VERIFIED}>
@@ -273,14 +263,14 @@ export function VerifyPage() @{
           >
             Go to home
           </Button>
-        </AuthShell>
+        </AuthShell>;
       } @else {
         <AuthShell title="Verify your email" support={SUPPORT_DEFAULT}>
           @if (error) {
-            <AuthErrorBanner message={error} />
+            <AuthErrorBanner message={error} />;
           }
           @if (phase.verifyingToken) {
-            <p className="text-[16px] text-muted-foreground">Verifying…</p>
+            <p className="text-[16px] text-muted-foreground">Verifying…</p>;
           }
 
           <form
@@ -344,13 +334,13 @@ export function VerifyPage() @{
             @if (resendNote && resendNote !== RESEND_RATE_LIMITED) {
               <p className="text-[14px] text-muted-foreground" role="status">
                 {resendNote as string}
-              </p>
+              </p>;
             }
             @if (cooldownHelper) {
-              <p className="text-[14px] text-muted-foreground">{cooldownHelper as string}</p>
+              <p className="text-[14px] text-muted-foreground">{cooldownHelper as string}</p>;
             }
             @if (resendNote === RESEND_RATE_LIMITED) {
-              <p className="text-[14px] text-muted-foreground">{RESEND_RATE_LIMITED}</p>
+              <p className="text-[14px] text-muted-foreground">{RESEND_RATE_LIMITED}</p>;
             }
           </div>
 
@@ -363,7 +353,7 @@ export function VerifyPage() @{
               Sign in
             </a>
           </p>
-        </AuthShell>
+        </AuthShell>;
       }
     }
   }

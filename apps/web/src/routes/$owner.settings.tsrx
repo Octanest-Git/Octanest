@@ -26,10 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
-import {
-  fetchOrgGet,
-  fetchOrgListMine,
-} from "@/lib/ssr-org";
+import { fetchOrgGet, fetchOrgListMine } from "@/lib/ssr-org";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { OrgSettingsNav } from "@/components/org/org-settings-nav";
@@ -40,8 +37,7 @@ export type OrgSettingsLoaderData = {
   canAdmin: boolean;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const FORBIDDEN = "You need organization admin access to manage settings.";
 const MEMBER_BASE_HELPER =
   "Applies to Members on private organization repositories. Owners and Admins always have admin access. Public repositories remain readable.";
@@ -84,8 +80,7 @@ export const Route = createFileRoute("/$owner/settings")({
     const mine = await fetchOrgListMine();
     if (mine.ok) {
       const entry = mine.data.orgs.find((o) => o.slug === got.data.slug);
-      canAdmin =
-        entry?.role === "owner" || entry?.role === "admin";
+      canAdmin = entry?.role === "owner" || entry?.role === "admin";
     }
     if (!canAdmin) {
       throw redirect({ href: `/${got.data.slug}` });
@@ -97,9 +92,7 @@ export const Route = createFileRoute("/$owner/settings")({
 /** Exported for member_base Wave 0 tests (D-ORG-02b). */
 export function OrgSettingsPage() @{
   const params = useParams({ from: "/$owner/settings" }) as { owner?: string };
-  const data = useLoaderData({ from: "/$owner/settings" }) as
-    | OrgSettingsLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/$owner/settings" }) as OrgSettingsLoaderData | undefined;
 
   const org = data?.org;
   const slug = org?.slug ?? params.owner ?? "";
@@ -142,15 +135,13 @@ export function OrgSettingsPage() @{
   @if (!org) {
     <div className="mx-auto max-w-2xl px-4 py-16">
       <p className="text-[16px] text-muted-foreground">Loading…</p>
-    </div>
+    </div>;
   } @else {
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Organization settings
       </h1>
-      <p className="mt-1 text-[14px] text-muted-foreground">
-        {"@" + (slug as string)}
-      </p>
+      <p className="mt-1 text-[14px] text-muted-foreground">{"@" + (slug as string)}</p>
 
       <div className="mt-6">
         <OrgSettingsNav slug={slug} active="general" />
@@ -175,9 +166,7 @@ export function OrgSettingsPage() @{
                 autoComplete="organization"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(ev) =>
-                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
-                }
+                onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               />
             </div>
           )}
@@ -186,8 +175,7 @@ export function OrgSettingsPage() @{
         <form.Subscribe selector={(s) => s.values.member_base}>
           {(memberBase) => {
             const baseLabel =
-              MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ??
-              "None";
+              MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ?? "None";
             return (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="org-member-base">Base permission for Members</Label>
@@ -216,14 +204,10 @@ export function OrgSettingsPage() @{
                           @for (const opt of MEMBER_BASE_OPTIONS; key opt.value) {
                             <SelectItem value={opt.value}>
                               <SelectItemIndicator>
-                                <Check
-                                  aria-hidden
-                                  size={16}
-                                  className="text-primary"
-                                />
+                                <Check aria-hidden size={16} className="text-primary" />
                               </SelectItemIndicator>
                               <SelectItemText>{opt.label as string}</SelectItemText>
-                            </SelectItem>
+                            </SelectItem>;
                           }
                         </SelectList>
                       </SelectPopup>
@@ -238,18 +222,14 @@ export function OrgSettingsPage() @{
           }}
         </form.Subscribe>
 
-        <Button
-          type="submit"
-          disabled={pending}
-          className={cn("h-11")}
-        >
+        <Button type="submit" disabled={pending} className={cn("h-11")}>
           @if (pending) {
-            <>Saving…</>
+            <>Saving…</>;
           } @else {
-            <>Save settings</>
+            <>Save settings</>;
           }
         </Button>
       </form>
-    </div>
+    </div>;
   }
 }

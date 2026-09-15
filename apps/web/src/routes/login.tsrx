@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  redirect,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import type { ProviderMode } from "@octanest/api-client";
 import { useState } from "octane";
@@ -21,8 +17,7 @@ export type LoginLoaderData = {
   loadError: string;
 };
 
-const LOGIN_ERROR =
-  "Incorrect email/username or password. Check your details and try again.";
+const LOGIN_ERROR = "Incorrect email/username or password. Check your details and try again.";
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/login")({
@@ -32,9 +27,7 @@ export const Route = createFileRoute("/login")({
     try {
       const me = await fetchSessionMe();
       if (me.ok) {
-        const dest = me.data.must_change_credentials
-          ? "/setup/credentials"
-          : "/";
+        const dest = me.data.must_change_credentials ? "/setup/credentials" : "/";
         throw redirect({ href: dest });
       }
     } catch (e) {
@@ -98,8 +91,7 @@ export function LoginPage() @{
   });
 
   function startSso(kind: "workos" | "oidc") {
-    const path =
-      kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
+    const path = kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
     window.location.assign(`${path}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
@@ -112,10 +104,10 @@ export function LoginPage() @{
 
   <AuthShell title="Sign in" support={support}>
     @if (loadError) {
-      <AuthErrorBanner message={loadError} />
+      <AuthErrorBanner message={loadError} />;
     }
     @if (error) {
-      <AuthErrorBanner message={error} />
+      <AuthErrorBanner message={error} />;
     }
 
     @if (mode === "local") {
@@ -193,19 +185,19 @@ export function LoginPage() @{
             </Button>
           )}
         </form.Subscribe>
-      </form>
+      </form>;
     }
 
     @if (mode === "workos") {
       <Button type="button" className="w-full" onClick={() => startSso("workos")}>
         Continue with WorkOS
-      </Button>
+      </Button>;
     }
 
     @if (mode === "oidc") {
       <Button type="button" className="w-full" onClick={() => startSso("oidc")}>
         Continue with SSO
-      </Button>
+      </Button>;
     }
 
     @if (allowSignup) {
@@ -217,7 +209,7 @@ export function LoginPage() @{
         >
           Create an account
         </a>
-      </p>
+      </p>;
     }
-  </AuthShell>
+  </AuthShell>;
 }

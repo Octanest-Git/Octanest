@@ -4,8 +4,7 @@ import { packagesListQueryOptions } from "@octanest/api-client";
 import { apiClient } from "@/lib/api-client";
 import { useRepoStore } from "@/lib/repo-store";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/$owner/$repo/packages")({
   component: RepoPackagesPage,
@@ -56,20 +55,16 @@ export function RepoPackagesPage() @{
   });
 
   const packages = listQ.data?.packages ?? [];
-  const loading =
-    (!repositoryId && repoQ.isPending) ||
-    (!!scopedRepositoryId && listQ.isPending);
+  const loading = (!repositoryId && repoQ.isPending) || (!!scopedRepositoryId && listQ.isPending);
 
   @{
     <div data-testid="repo-packages">
       <h2 className="font-[family-name:var(--font-display)] text-[20px] font-semibold text-foreground">
         Packages
       </h2>
-      <p className="mt-1 text-muted-foreground">
-        Packages linked to this repository.
-      </p>
+      <p className="mt-1 text-muted-foreground">Packages linked to this repository.</p>
       @if (loading) {
-        <p className="mt-8 text-muted-foreground">Loading packages…</p>
+        <p className="mt-8 text-muted-foreground">Loading packages…</p>;
       } @else {
         <ul className="mt-8 space-y-3">
           @for (const pkg of packages; key pkg.id) {
@@ -78,12 +73,12 @@ export function RepoPackagesPage() @{
               <span className="text-[12px] uppercase text-muted-foreground">
                 {pkg.format as string}
               </span>
-            </li>
+            </li>;
           } @empty {
-            <li className="text-muted-foreground">No linked packages.</li>
+            <li className="text-muted-foreground">No linked packages.</li>;
           }
-        </ul>
+        </ul>;
       }
-    </div>
-  }
+    </div>;
+    };
 }

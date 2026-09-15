@@ -41,14 +41,14 @@ export function AvatarPreview(props: AvatarPreviewProps) @{
         width={size}
         height={size}
         className="block size-full object-cover"
-      />
+      />;
     } @else {
       <span
         aria-hidden
         className="flex size-full items-center justify-center text-[18px] font-semibold leading-none text-foreground"
       >
         {initialsFor(props.user) as string}
-      </span>
+      </span>;
     }
-  </div>
+  </div>;
 }

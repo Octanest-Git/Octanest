@@ -1,15 +1,9 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import type { PatListItem, UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { ChevronDown } from "@octanejs/lucide";
 import { PatList } from "@/components/settings/pat-list";
-import {
-  AccountSettingsLayout,
-  SettingsShell,
-} from "@/components/settings/settings-shell";
+import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,8 +20,7 @@ export type TokensLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic; tokens: PatListItem[] };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/tokens")({
   component: TokensPage,
@@ -65,9 +58,7 @@ type Phase =
 
 /** Exported for tokens.integration.test.ts (GIT-11 / D-14). */
 export function TokensPage() @{
-  const loaderData = useLoaderData({ from: "/settings/tokens" }) as
-    | TokensLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/settings/tokens" }) as TokensLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -108,7 +99,7 @@ export function TokensPage() @{
   useEffect(() => {
     if (loaderData) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await apiClient.auth.me();
         if (cancelled) return;
@@ -137,18 +128,17 @@ export function TokensPage() @{
     };
   }, [loaderData]);
 
-  const verified =
-    phase.kind === "ready" ? phase.user.email_verified === true : false;
+  const verified = phase.kind === "ready" ? phase.user.email_verified === true : false;
 
   @if (phase.kind === "loading") {
-    <></>
+    <></>;
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>
         <p role="alert" className="text-[16px] text-destructive">
           {phase.message as string}
         </p>
-      </SettingsShell>
+      </SettingsShell>;
     } @else {
       <AccountSettingsLayout active="tokens" data-testid="settings-tokens-page">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -157,8 +147,7 @@ export function TokensPage() @{
               Personal access tokens
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Tokens authenticate git over HTTPS. Your account password is never
-              accepted for git.
+              Tokens authenticate git over HTTPS. Your account password is never accepted for git.
             </p>
           </div>
           <DropdownMenu>
@@ -194,10 +183,10 @@ export function TokensPage() @{
         @if (!verified) {
           <p className="mt-3 text-[14px] text-muted-foreground">
             Verify your email to create a token.
-          </p>
+          </p>;
         }
         <PatList enabled={true} initialData={tokens} />
-      </AccountSettingsLayout>
+      </AccountSettingsLayout>;
     }
   }
 }

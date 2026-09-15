@@ -1,14 +1,9 @@
-import type {
-  ReactionContent,
-  ReactionGroupPublic,
-  ReactionTarget,
-} from "@octanest/api-client";
+import type { ReactionContent, ReactionGroupPublic, ReactionTarget } from "@octanest/api-client";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 /** GitHub eight reaction contents (D-ISS-11). */
 export const REACTION_CONTENTS: {
@@ -55,8 +50,7 @@ function ReactionChip(props: {
   disabled: boolean;
   onToggle: (content: ReactionContent) => void;
 }) @{
-  const title =
-    props.count > 0 ? `${props.label} · ${props.count}` : props.label;
+  const title = props.count > 0 ? `${props.label} · ${props.count}` : props.label;
 
   @if (props.canWrite) {
     <button
@@ -74,9 +68,9 @@ function ReactionChip(props: {
     >
       <span aria-hidden="true">{props.emoji as string}</span>
       @if (props.count > 0) {
-        <span className="tabular-nums">{String(props.count)}</span>
+        <span className="tabular-nums">{String(props.count)}</span>;
       }
-    </button>
+    </button>;
   } @else {
     <span
       className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[13px] text-muted-foreground"
@@ -85,9 +79,9 @@ function ReactionChip(props: {
     >
       <span aria-hidden="true">{props.emoji as string}</span>
       @if (props.count > 0) {
-        <span className="tabular-nums">{String(props.count)}</span>
+        <span className="tabular-nums">{String(props.count)}</span>;
       }
-    </span>
+    </span>;
   }
 }
 
@@ -96,9 +90,7 @@ export function IssueReactionsBar(props: IssueReactionsBarProps) @{
   const queryClient = useQueryClient();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [local, setLocal] = useState<ReactionGroupPublic[]>(
-    () => props.reactions ?? [],
-  );
+  const [local, setLocal] = useState<ReactionGroupPublic[]>(() => props.reactions ?? []);
 
   useEffect(() => {
     setLocal(props.reactions ?? []);
@@ -128,14 +120,7 @@ export function IssueReactionsBar(props: IssueReactionsBarProps) @{
       });
       if (props.target === "comment") {
         await queryClient.invalidateQueries({
-          queryKey: [
-            "issue",
-            "comments",
-            "list",
-            props.owner,
-            props.repoName,
-            props.number,
-          ],
+          queryKey: ["issue", "comments", "list", props.owner, props.repoName, props.number],
         });
       }
       if (props.onToggled) await props.onToggled();
@@ -163,13 +148,13 @@ export function IssueReactionsBar(props: IssueReactionsBarProps) @{
           canWrite={props.canWrite}
           disabled={pending}
           onToggle={(c) => void toggle(c)}
-        />
+        />;
       }
     </div>
     @if (error) {
       <p role="alert" className="text-[12px] text-destructive">
         {error as string}
-      </p>
+      </p>;
     }
-  </div>
+  </div>;
 }

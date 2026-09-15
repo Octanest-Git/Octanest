@@ -1,25 +1,16 @@
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { ProfileAvatarField } from "@/components/settings/profile-avatar-field";
-import {
-  AccountSettingsLayout,
-  SettingsShell,
-} from "@/components/settings/settings-shell";
+import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
-import {
-  clearSessionQueries,
-  setAuthMeCache,
-} from "@/lib/session-queries";
+import { clearSessionQueries, setAuthMeCache } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { fetchUserGetProfile } from "@/lib/ssr-auth";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
@@ -63,9 +54,7 @@ type Phase =
 /** Exported for profile.integration.test.ts (RESEARCH P1 / D-QH-03). */
 export function ProfilePage() @{
   const queryClient = useQueryClient();
-  const loaderData = useLoaderData({ from: "/settings/profile" }) as
-    | ProfileLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/settings/profile" }) as ProfileLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -73,8 +62,7 @@ export function ProfilePage() @{
     }
   }, [loaderData]);
 
-  const initialUser =
-    loaderData?.kind === "ready" ? loaderData.user : null;
+  const initialUser = loaderData?.kind === "ready" ? loaderData.user : null;
 
   const [phase, setPhase] = useState<Phase>(() => {
     if (loaderData?.kind === "ready") return { kind: "ready", user: loaderData.user };
@@ -120,17 +108,10 @@ export function ProfilePage() @{
         profileForm.setFieldValue("display_name", res.data.display_name ?? "");
         profileForm.setFieldValue("username", res.data.username ?? "");
         profileForm.setFieldValue("bio", res.data.bio ?? "");
-        branchForm.setFieldValue(
-          "default_branch",
-          res.data.default_branch?.trim() || "main",
-        );
+        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
         setAvatarUrl(res.data.avatar_url);
         setAuthMeCache(queryClient, res.data);
-        if (
-          previousUsername &&
-          res.data.username &&
-          previousUsername !== res.data.username
-        ) {
+        if (previousUsername && res.data.username && previousUsername !== res.data.username) {
           toastSuccess(
             `Username updated to @${res.data.username}`,
             `Update git remotes to /${res.data.username}/{repo}.git.`,
@@ -161,17 +142,12 @@ export function ProfilePage() @{
           default_branch: value.default_branch.trim() || "main",
         });
         if (!res.ok) {
-          toastError(
-            res.error.message || "Could not save default branch. Try again.",
-          );
+          toastError(res.error.message || "Could not save default branch. Try again.");
           setBranchPending(false);
           return;
         }
         setPhase({ kind: "ready", user: res.data });
-        branchForm.setFieldValue(
-          "default_branch",
-          res.data.default_branch?.trim() || "main",
-        );
+        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
         setAuthMeCache(queryClient, res.data);
         toastSuccess("Default branch saved.");
         setBranchPending(false);
@@ -189,10 +165,7 @@ export function ProfilePage() @{
       profileForm.setFieldValue("display_name", user.display_name ?? "");
       profileForm.setFieldValue("username", user.username ?? "");
       profileForm.setFieldValue("bio", user.bio ?? "");
-      branchForm.setFieldValue(
-        "default_branch",
-        user.default_branch?.trim() || "main",
-      );
+      branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
       setAvatarUrl(user.avatar_url);
       setPhase({ kind: "ready", user });
       return;
@@ -205,7 +178,7 @@ export function ProfilePage() @{
   useEffect(() => {
     if (loaderData) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const res = await apiClient.user.getProfile();
         if (cancelled) return;
@@ -217,10 +190,7 @@ export function ProfilePage() @{
         profileForm.setFieldValue("display_name", user.display_name ?? "");
         profileForm.setFieldValue("username", user.username ?? "");
         profileForm.setFieldValue("bio", user.bio ?? "");
-        branchForm.setFieldValue(
-          "default_branch",
-          user.default_branch?.trim() || "main",
-        );
+        branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
         setAvatarUrl(user.avatar_url);
         setPhase({ kind: "ready", user });
       } catch {
@@ -330,207 +300,195 @@ export function ProfilePage() @{
   }
 
   @if (phase.kind === "loading") {
-    <></>
+    <></>;
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>
         <p className="text-[16px] text-destructive">{phase.message as string}</p>
-      </SettingsShell>
+      </SettingsShell>;
     } @else {
-    <AccountSettingsLayout active="profile" data-testid="settings-profile-page">
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        Profile
-      </h1>
+      <AccountSettingsLayout active="profile" data-testid="settings-profile-page">
+        <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
+          Profile
+        </h1>
 
-      <div className="mt-8 flex flex-col gap-6">
-        <ProfileAvatarField
-          user={phase.user}
-          src={avatarUrl}
-          uploadPending={avatarUploadPending}
-          removePending={avatarRemovePending}
-          onCroppedFile={(file) => onAvatarSelected(file)}
-          onRemove={() => onAvatarRemove()}
-          onReject={() => {
-            toastWarning("Choose a JPEG, PNG, or WebP image under 2 MB.");
-          }}
-        />
+        <div className="mt-8 flex flex-col gap-6">
+          <ProfileAvatarField
+            user={phase.user}
+            src={avatarUrl}
+            uploadPending={avatarUploadPending}
+            removePending={avatarRemovePending}
+            onCroppedFile={(file) => onAvatarSelected(file)}
+            onRemove={() => onAvatarRemove()}
+            onReject={() => {
+              toastWarning("Choose a JPEG, PNG, or WebP image under 2 MB.");
+            }}
+          />
 
-        <form
-          method="post"
-          action="#"
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void profileForm.handleSubmit();
-          }}
-        >
-          <profileForm.Field name="display_name">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="display-name">Display name</Label>
-                <Input
-                  id="display-name"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onInput={(e) =>
-                    field.handleChange((e.currentTarget as HTMLInputElement).value)
-                  }
-                  autoComplete="name"
-                />
-              </div>
-            )}
-          </profileForm.Field>
-          <profileForm.Field name="username">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onInput={(e) =>
-                    field.handleChange((e.currentTarget as HTMLInputElement).value)
-                  }
-                  autoComplete="username"
-                />
-                <p className="text-[14px] text-muted-foreground">
-                  1–39 characters; letters, numbers, and hyphens. Can't start or end with
-                  a hyphen.
-                </p>
-              </div>
-            )}
-          </profileForm.Field>
-          <profileForm.Field name="bio">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  rows={4}
-                  maxLength={BIO_MAX}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onInput={(e) =>
-                    field.handleChange(
-                      (e.currentTarget as HTMLTextAreaElement).value.slice(0, BIO_MAX),
-                    )
-                  }
-                />
-                <p className="text-[14px] text-muted-foreground">
-                  Optional · up to 160 characters
-                </p>
-              </div>
-            )}
-          </profileForm.Field>
-          <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-            {(pending ? "Working…" : "Save profile") as string}
-          </Button>
-        </form>
-
-        <hr className="border-border" />
-
-        <form
-          method="post"
-          action="#"
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void branchForm.handleSubmit();
-          }}
-        >
-          <branchForm.Field name="default_branch">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="default-branch">Default branch name</Label>
-                <Input
-                  id="default-branch"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onInput={(e) =>
-                    field.handleChange((e.currentTarget as HTMLInputElement).value)
-                  }
-                  autoComplete="off"
-                />
-                <p className="text-[14px] text-muted-foreground">
-                  Applies to new repositories you create. Existing repos keep their
-                  current default branch.
-                </p>
-              </div>
-            )}
-          </branchForm.Field>
-          <Button
-            type="submit"
-            disabled={branchPending}
-            className="w-full sm:w-auto"
+          <form
+            method="post"
+            action="#"
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void profileForm.handleSubmit();
+            }}
           >
-            {(branchPending ? "Working…" : "Save default branch") as string}
-          </Button>
-        </form>
+            <profileForm.Field name="display_name">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="display-name">Display name</Label>
+                  <Input
+                    id="display-name"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="name"
+                  />
+                </div>
+              )}
+            </profileForm.Field>
+            <profileForm.Field name="username">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="username"
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    1–39 characters; letters, numbers, and hyphens. Can't start or end with a
+                    hyphen.
+                  </p>
+                </div>
+              )}
+            </profileForm.Field>
+            <profileForm.Field name="bio">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    rows={4}
+                    maxLength={BIO_MAX}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange(
+                        (e.currentTarget as HTMLTextAreaElement).value.slice(0, BIO_MAX),
+                      )
+                    }
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    Optional · up to 160 characters
+                  </p>
+                </div>
+              )}
+            </profileForm.Field>
+            <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+              {(pending ? "Working…" : "Save profile") as string}
+            </Button>
+          </form>
 
-        <hr className="border-border" />
+          <hr className="border-border" />
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={logoutPending}
-            onClick={() => void logoutThisDevice()}
+          <form
+            method="post"
+            action="#"
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void branchForm.handleSubmit();
+            }}
           >
-            Log out
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={logoutPending}
-            className={cn(
-              "border border-destructive text-destructive hover:bg-destructive/10",
-            )}
-            onClick={() => setConfirmLogoutAll(true)}
-          >
-            Log out all devices
-          </Button>
-        </div>
-      </div>
+            <branchForm.Field name="default_branch">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="default-branch">Default branch name</Label>
+                  <Input
+                    id="default-branch"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    autoComplete="off"
+                  />
+                  <p className="text-[14px] text-muted-foreground">
+                    Applies to new repositories you create. Existing repos keep their current
+                    default branch.
+                  </p>
+                </div>
+              )}
+            </branchForm.Field>
+            <Button type="submit" disabled={branchPending} className="w-full sm:w-auto">
+              {(branchPending ? "Working…" : "Save default branch") as string}
+            </Button>
+          </form>
 
-      @if (confirmLogoutAll) {
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="logout-all-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
-        >
-          <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-lg">
-            <h2
-              id="logout-all-title"
-              className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground"
+          <hr className="border-border" />
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={logoutPending}
+              onClick={() => void logoutThisDevice()}
+            >
+              Log out
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={logoutPending}
+              className={cn("border border-destructive text-destructive hover:bg-destructive/10")}
+              onClick={() => setConfirmLogoutAll(true)}
             >
               Log out all devices
-            </h2>
-            <p className="mt-3 text-[16px] text-muted-foreground">
-              Sign out everywhere? You'll need to sign in again on each device.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button
-                type="button"
-                disabled={logoutPending}
-                className="bg-destructive text-white hover:brightness-110"
-                onClick={() => void logoutAllDevices()}
-              >
-                Log out all devices
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={logoutPending}
-                onClick={() => setConfirmLogoutAll(false)}
-              >
-                Stay signed in
-              </Button>
-            </div>
+            </Button>
           </div>
         </div>
-      }
-    </AccountSettingsLayout>
+
+        @if (confirmLogoutAll) {
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-all-title"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
+          >
+            <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-lg">
+              <h2
+                id="logout-all-title"
+                className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground"
+              >
+                Log out all devices
+              </h2>
+              <p className="mt-3 text-[16px] text-muted-foreground">
+                Sign out everywhere? You'll need to sign in again on each device.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  disabled={logoutPending}
+                  className="bg-destructive text-white hover:brightness-110"
+                  onClick={() => void logoutAllDevices()}
+                >
+                  Log out all devices
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={logoutPending}
+                  onClick={() => setConfirmLogoutAll(false)}
+                >
+                  Stay signed in
+                </Button>
+              </div>
+            </div>
+          </div>;
+        }
+      </AccountSettingsLayout>;
     }
   }
 }

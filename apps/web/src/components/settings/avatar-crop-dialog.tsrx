@@ -1,12 +1,7 @@
 import { useEffect, useRef, useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  clampOffset,
-  cropImageToBlob,
-  displayedSize,
-  type CropFrame,
-} from "@/lib/avatar-crop";
+import { clampOffset, cropImageToBlob, displayedSize, type CropFrame } from "@/lib/avatar-crop";
 import { cn } from "@/lib/utils";
 
 const VIEWPORT = 280;
@@ -30,9 +25,7 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
-  const dragOrigin = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
-    null,
-  );
+  const dragOrigin = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -144,19 +137,13 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
     props.onOpenChange(false);
   }
 
-  const disp =
-    natural.w > 0
-      ? displayedSize(frame())
-      : { width: VIEWPORT, height: VIEWPORT };
+  const disp = natural.w > 0 ? displayedSize(frame()) : { width: VIEWPORT, height: VIEWPORT };
   const saving = props.pending === true || busy;
   const canSave = !saving && natural.w > 0;
   const show = props.open && !!props.imageUrl;
 
   @if (show) {
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
       <button
         type="button"
         aria-label="Dismiss crop"
@@ -219,16 +206,14 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
             value={zoom}
             disabled={!canSave}
             className="h-11 w-full accent-primary"
-            onInput={(e) =>
-              onZoomInput(Number((e.currentTarget as HTMLInputElement).value))
-            }
+            onInput={(e) => onZoomInput(Number((e.currentTarget as HTMLInputElement).value))}
           />
         </div>
 
         @if (error) {
           <p role="alert" className="text-[14px] text-destructive">
             {error as string}
-          </p>
+          </p>;
         }
 
         <div className="-mx-4 -mb-4 mt-2 flex flex-col-reverse gap-2 border-t border-border bg-muted/40 p-4 sm:flex-row sm:justify-end">
@@ -240,15 +225,11 @@ export function AvatarCropDialog(props: AvatarCropDialogProps) @{
           >
             Cancel
           </Button>
-          <Button
-            type="button"
-            disabled={!canSave}
-            onClick={() => void confirmCrop()}
-          >
+          <Button type="button" disabled={!canSave} onClick={() => void confirmCrop()}>
             {(saving ? "Saving…" : "Save picture") as string}
           </Button>
         </div>
       </div>
-    </div>
+    </div>;
   }
 }

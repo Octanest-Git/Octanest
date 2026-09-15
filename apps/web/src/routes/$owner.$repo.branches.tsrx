@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-  useRouter,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
@@ -30,12 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import {
-  isBranchRef,
-  shortOid,
-  shortRefName,
-  treeHref,
-} from "@/lib/repo-browse";
+import { isBranchRef, shortOid, shortRefName, treeHref } from "@/lib/repo-browse";
 import { authSessionQueryOptions } from "@/lib/session-queries";
 import { useRepoStore } from "@/lib/repo-store";
 import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
@@ -53,10 +43,8 @@ type DialogState =
   | { kind: "rename"; from: string }
   | { kind: "delete"; branch: string };
 
-const DEFAULT_SOFT_PROTECT_TITLE =
-  "Default branch can’t be renamed or deleted here.";
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const DEFAULT_SOFT_PROTECT_TITLE = "Default branch can’t be renamed or deleted here.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function sortBranches(refs: RepoRefEntry[]): RepoRefEntry[] {
   return refs
@@ -68,10 +56,7 @@ function sortBranches(refs: RepoRefEntry[]): RepoRefEntry[] {
     );
 }
 
-async function loadBranchesPage(
-  owner: string,
-  repoName: string,
-): Promise<BranchesLoaderData> {
+async function loadBranchesPage(owner: string, repoName: string): Promise<BranchesLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
@@ -144,7 +129,7 @@ export function RepoBranchesPage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadBranchesPage(owner, repoName);
@@ -159,9 +144,7 @@ export function RepoBranchesPage() @{
   }, [owner, repoName, loaderData]);
 
   const isOwner =
-    phase.kind === "ready" &&
-    sessionUser != null &&
-    sessionUser.id === phase.repo.owner_id;
+    phase.kind === "ready" && sessionUser != null && sessionUser.id === phase.repo.owner_id;
 
   function openCreate() {
     if (phase.kind !== "ready") return;
@@ -281,22 +264,18 @@ export function RepoBranchesPage() @{
   }
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading branches…</p>
+    <p className="text-[16px] text-muted-foreground">Loading branches…</p>;
   } @else if (phase.kind === "error") {
     <div className="flex flex-col gap-4">
       <p role="alert" className="text-[16px] text-destructive">
         {phase.message as string}
       </p>
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => void refreshBranches()}
-      >
+      <Button type="button" variant="secondary" onClick={() => void refreshBranches()}>
         Try again
       </Button>
-    </div>
+    </div>;
   } @else {
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -304,12 +283,12 @@ export function RepoBranchesPage() @{
         @if (isOwner) {
           <Button type="button" onClick={() => openCreate()}>
             New branch
-          </Button>
+          </Button>;
         }
       </div>
 
       @if (phase.branches.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No branches yet.</p>
+        <p className="text-[16px] text-muted-foreground">No branches yet.</p>;
       } @else {
         <ul className="divide-y divide-border border-y border-border">
           @for (const b of phase.branches; key b.name) {
@@ -321,9 +300,9 @@ export function RepoBranchesPage() @{
               isOwner={isOwner}
               onRename={(name) => openRename(name)}
               onDelete={(name) => openDelete(name)}
-            />
+            />;
           }
-        </ul>
+        </ul>;
       }
 
       <Dialog
@@ -335,14 +314,14 @@ export function RepoBranchesPage() @{
         <DialogContent showCloseButton={!pending}>
           <DialogHeader>
             <DialogTitle>
-              {(dialog.kind === "rename"
-                ? "Rename branch"
-                : "New branch") as string}
+              {(dialog.kind === "rename" ? "Rename branch" : "New branch") as string}
             </DialogTitle>
             <DialogDescription>
-              {(dialog.kind === "rename"
-                ? `Rename “${dialog.from}” to a new name.`
-                : "Create a branch from an existing ref.") as string}
+              {
+                (dialog.kind === "rename"
+                  ? `Rename “${dialog.from}” to a new name.`
+                  : "Create a branch from an existing ref.") as string
+              }
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
@@ -351,9 +330,7 @@ export function RepoBranchesPage() @{
               <Input
                 id="branch-name-input"
                 value={branchName}
-                onInput={(e) =>
-                  setBranchName((e.currentTarget as HTMLInputElement).value)
-                }
+                onInput={(e) => setBranchName((e.currentTarget as HTMLInputElement).value)}
                 autoComplete="off"
                 disabled={pending}
               />
@@ -364,18 +341,16 @@ export function RepoBranchesPage() @{
                 <Input
                   id="branch-start-input"
                   value={startRef}
-                  onInput={(e) =>
-                    setStartRef((e.currentTarget as HTMLInputElement).value)
-                  }
+                  onInput={(e) => setStartRef((e.currentTarget as HTMLInputElement).value)}
                   autoComplete="off"
                   disabled={pending}
                 />
-              </div>
+              </div>;
             }
             @if (formError) {
               <p role="alert" className="text-[14px] text-destructive">
                 {formError as string}
-              </p>
+              </p>;
             }
           </div>
           <DialogFooter>
@@ -388,15 +363,15 @@ export function RepoBranchesPage() @{
             <Button
               type="button"
               disabled={pending}
-              onClick={() =>
-                void (dialog.kind === "rename" ? submitRename() : submitCreate())
-              }
+              onClick={() => void (dialog.kind === "rename" ? submitRename() : submitCreate())}
             >
-              {(pending
-                ? "Working…"
-                : dialog.kind === "rename"
-                  ? "Rename branch"
-                  : "Create branch") as string}
+              {
+                (pending
+                  ? "Working…"
+                  : dialog.kind === "rename"
+                    ? "Rename branch"
+                    : "Create branch") as string
+              }
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -412,29 +387,28 @@ export function RepoBranchesPage() @{
           <AlertDialogHeader>
             <AlertDialogTitle>Delete branch?</AlertDialogTitle>
             <AlertDialogDescription>
-              This deletes the branch from the repository. Type the branch name
-              to confirm.
+              This deletes the branch from the repository. Type the branch name to confirm.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor="delete-branch-confirm">
-              {(dialog.kind === "delete"
-                ? `Type ${dialog.branch} to confirm`
-                : "Confirm") as string}
+              {
+                (dialog.kind === "delete"
+                  ? `Type ${dialog.branch} to confirm`
+                  : "Confirm") as string
+              }
             </Label>
             <Input
               id="delete-branch-confirm"
               value={confirmName}
-              onInput={(e) =>
-                setConfirmName((e.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(e) => setConfirmName((e.currentTarget as HTMLInputElement).value)}
               autoComplete="off"
               disabled={pending}
             />
             @if (formError) {
               <p role="alert" className="text-[14px] text-destructive">
                 {formError as string}
-              </p>
+              </p>;
             }
           </div>
           <AlertDialogFooter>
@@ -442,11 +416,7 @@ export function RepoBranchesPage() @{
             <Button
               type="button"
               variant="destructive"
-              disabled={
-                pending ||
-                dialog.kind !== "delete" ||
-                confirmName.trim() !== dialog.branch
-              }
+              disabled={pending || dialog.kind !== "delete" || confirmName.trim() !== dialog.branch}
               onClick={() => void submitDelete()}
             >
               {(pending ? "Deleting…" : "Delete branch") as string}
@@ -454,7 +424,7 @@ export function RepoBranchesPage() @{
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </>;
   }
 }
 
@@ -495,9 +465,7 @@ function BranchRow({
       >
         {tip as string}
         @if (isDefault) {
-          <span className="ml-2 font-sans text-[13px] text-muted-foreground">
-            · default
-          </span>
+          <span className="ml-2 font-sans text-[13px] text-muted-foreground">· default</span>;
         }
       </p>
     </div>
@@ -525,7 +493,7 @@ function BranchRow({
         >
           Delete
         </Button>
-      </div>
+      </div>;
     }
-  </li>
+  </li>;
 }

@@ -1,22 +1,11 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoBlameResponse,
-  RepoPublic,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoBlameResponse, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { commitHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import { formatRelativeUpdated } from "@/lib/relative-time";
-import {
-  fetchRepoBlame,
-  fetchRepoGet,
-  fetchRepoRefs,
-} from "@/lib/ssr-repo";
+import { fetchRepoBlame, fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
 
 export type BlameLoaderData =
   | { kind: "not_found" }
@@ -31,8 +20,7 @@ export type BlameLoaderData =
 
 type Phase = { kind: "loading" } | BlameLoaderData;
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadBlamePage(
   owner: string,
@@ -49,9 +37,7 @@ async function loadBlamePage(
   }
   const repo = got.data;
   const refsRes = await fetchRepoRefs({ data: { owner, name: repoName } });
-  const knownRefs = refsRes.ok
-    ? refsRes.data.refs.map((r) => shortRefName(r.name))
-    : [];
+  const knownRefs = refsRes.ok ? refsRes.data.refs.map((r) => shortRefName(r.name)) : [];
   const parsed = parseRefAndPath(splat, knownRefs);
   const refName = parsed.ref || repo.default_branch || "main";
   if (!parsed.path) {
@@ -61,10 +47,7 @@ async function loadBlamePage(
     data: { owner, name: repoName, ref: refName, path: parsed.path },
   });
   if (!blameRes.ok) {
-    if (
-      blameRes.error.code === "repo.not_found" ||
-      blameRes.error.code === "repo.path_not_found"
-    ) {
+    if (blameRes.error.code === "repo.not_found" || blameRes.error.code === "repo.path_not_found") {
       return { kind: "not_found" };
     }
     return {
@@ -84,9 +67,7 @@ async function loadBlamePage(
 export const Route = createFileRoute("/$owner/$repo/blame/$")({
   component: RepoBlamePage,
   head: ({ params }) => {
-    const { path } = parseRefAndPath(
-      (params as { _splat?: string })._splat,
-    );
+    const { path } = parseRefAndPath((params as { _splat?: string })._splat);
     const base = path.split("/").pop() || path || "file";
     const trunc = base.length > 40 ? `…${base.slice(-36)}` : base;
     return {
@@ -126,9 +107,7 @@ export function RepoBlamePage() @{
     | BlameLoaderData
     | undefined;
 
-  const [phase, setPhase] = useState<Phase>(() =>
-    loaderData ?? { kind: "loading" },
-  );
+  const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
 
   useEffect(() => {
     if (loaderData) {
@@ -136,7 +115,7 @@ export function RepoBlamePage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadBlamePage(owner, repoName, splat);
@@ -151,25 +130,18 @@ export function RepoBlamePage() @{
   }, [owner, repoName, splat, loaderData]);
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading blame…</p>
+    <p className="text-[16px] text-muted-foreground">Loading blame…</p>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
-    </p>
+    </p>;
   } @else {
     <>
-      <PathBreadcrumb
-        owner={owner}
-        repo={repoName}
-        refName={phase.refName}
-        path={phase.path}
-      />
+      <PathBreadcrumb owner={owner} repo={repoName} refName={phase.refName} path={phase.path} />
       @if (phase.blame.truncated) {
-        <p className="mb-2 text-[14px] text-muted-foreground">
-          Blame truncated for size.
-        </p>
+        <p className="mb-2 text-[14px] text-muted-foreground">Blame truncated for size.</p>;
       }
       <div className="overflow-x-auto border border-border">
         <table className="w-full border-collapse text-left text-[14px] leading-[1.45]">
@@ -202,11 +174,11 @@ export function RepoBlamePage() @{
                     {line.content as string}
                   </pre>
                 </td>
-              </tr>
+              </tr>;
             }
           </tbody>
         </table>
       </div>
-    </>
+    </>;
   }
 }

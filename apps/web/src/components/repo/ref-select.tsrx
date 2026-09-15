@@ -38,12 +38,9 @@ export function RefSelect({
     const short = shortRefName(r.name);
     return { value: short, label: short, full: r.name };
   });
-  const unique = options.filter(
-    (o, i, arr) => arr.findIndex((x) => x.value === o.value) === i,
-  );
+  const unique = options.filter((o, i, arr) => arr.findIndex((x) => x.value === o.value) === i);
   const current =
-    unique.find((o) => o.value === value) ??
-    ({ value, label: value, full: value } as const);
+    unique.find((o) => o.value === value) ?? ({ value, label: value, full: value } as const);
 
   function navigate(next: string) {
     if (mode === "home" || !pathUnderRef) {
@@ -68,10 +65,7 @@ export function RefSelect({
       if (typeof next === "string" && next !== value) navigate(next);
     }}
   >
-    <SelectTrigger
-      className="min-w-[10rem]"
-      aria-label="Switch branch or tag"
-    >
+    <SelectTrigger className="min-w-[10rem]" aria-label="Switch branch or tag">
       <SelectValue>{current.label as string}</SelectValue>
       <SelectIcon>
         <ChevronDown aria-hidden size={16} />
@@ -87,11 +81,11 @@ export function RefSelect({
                   <Check aria-hidden size={16} className="text-primary" />
                 </SelectItemIndicator>
                 <SelectItemText>{opt.label as string}</SelectItemText>
-              </SelectItem>
+              </SelectItem>;
             }
           </SelectList>
         </SelectPopup>
       </SelectPositioner>
     </SelectPortal>
-  </SelectRoot>
+  </SelectRoot>;
 }

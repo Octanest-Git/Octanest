@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
@@ -25,8 +20,7 @@ export type ReleaseNewLoaderData =
   | { kind: "ready"; repo: RepoPublic; tags: string[] }
   | { kind: "forbidden"; repo: RepoPublic; tags: string[] };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function tagNames(refs: RepoRefEntry[]): string[] {
   return refs
@@ -35,10 +29,7 @@ function tagNames(refs: RepoRefEntry[]): string[] {
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
-async function loadNewReleasePage(
-  owner: string,
-  repoName: string,
-): Promise<ReleaseNewLoaderData> {
+async function loadNewReleasePage(owner: string, repoName: string): Promise<ReleaseNewLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
@@ -84,17 +75,13 @@ export function RepoReleaseNewPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const navigate = useNavigate();
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({
     from: "/$owner/$repo/releases/new",
   }) as ReleaseNewLoaderData | undefined;
 
   const initialTags =
-    routeLoader?.kind === "ready" || routeLoader?.kind === "forbidden"
-      ? routeLoader.tags
-      : [];
+    routeLoader?.kind === "ready" || routeLoader?.kind === "forbidden" ? routeLoader.tags : [];
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -178,18 +165,16 @@ export function RepoReleaseNewPage() @{
   const tags = tagsQ.data ?? [];
 
   @if (layout?.status === "not_found" || (!repoQ.isPending && !repo)) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (!repo) {
-    <p className="text-[16px] text-muted-foreground">Loading…</p>
+    <p className="text-[16px] text-muted-foreground">Loading…</p>;
   } @else if (!repo.can_write) {
     <p role="alert" className="text-[16px] text-destructive">
       You need write access to create releases.
-    </p>
+    </p>;
   } @else {
     <>
-      <h2 className="mb-4 text-[18px] font-semibold text-foreground">
-        New release
-      </h2>
+      <h2 className="mb-4 text-[18px] font-semibold text-foreground">New release</h2>
       <form
         method="post"
         action="#"
@@ -200,7 +185,7 @@ export function RepoReleaseNewPage() @{
         }}
       >
         @if (error) {
-          <AuthErrorBanner message={error} />
+          <AuthErrorBanner message={error} />;
         }
         <form.Field name="tagName">
           {(field) => (
@@ -209,20 +194,18 @@ export function RepoReleaseNewPage() @{
               @if (tags.length === 0) {
                 <p className="text-[14px] text-muted-foreground">
                   No tags yet. Push a tag before creating a release.
-                </p>
+                </p>;
               } @else {
                 <select
                   id="release-tag"
                   className="h-10 rounded-md border border-border bg-background px-3 text-[14px] text-foreground"
                   value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange((e.target as HTMLSelectElement).value)
-                  }
+                  onChange={(e) => field.handleChange((e.target as HTMLSelectElement).value)}
                 >
                   @for (const t of tags; key t) {
-                    <option value={t as string}>{t as string}</option>
+                    <option value={t as string}>{t as string}</option>;
                   }
-                </select>
+                </select>;
               }
             </div>
           )}
@@ -236,9 +219,7 @@ export function RepoReleaseNewPage() @{
                 name="title"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                 placeholder="Optional — defaults to the tag name"
               />
             </div>
@@ -268,10 +249,7 @@ export function RepoReleaseNewPage() @{
                   type="checkbox"
                   checked={values.draft}
                   onChange={(e) =>
-                    form.setFieldValue(
-                      "draft",
-                      (e.target as HTMLInputElement).checked,
-                    )
+                    form.setFieldValue("draft", (e.target as HTMLInputElement).checked)
                   }
                 />
                 Save as draft
@@ -281,10 +259,7 @@ export function RepoReleaseNewPage() @{
                   type="checkbox"
                   checked={values.prerelease}
                   onChange={(e) =>
-                    form.setFieldValue(
-                      "prerelease",
-                      (e.target as HTMLInputElement).checked,
-                    )
+                    form.setFieldValue("prerelease", (e.target as HTMLInputElement).checked)
                   }
                 />
                 Set as a pre-release
@@ -304,6 +279,6 @@ export function RepoReleaseNewPage() @{
           </a>
         </div>
       </form>
-    </>
+    </>;
   }
 }

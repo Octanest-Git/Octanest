@@ -1,7 +1,4 @@
-import {
-  createFileRoute,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
@@ -15,15 +12,11 @@ import { apiClient } from "@/lib/api-client";
 export const Route = createFileRoute("/invites/$token")({
   component: InviteAcceptPage,
   head: () => ({
-    meta: [
-      { title: "Accept invitation · Octanest" },
-      { name: "referrer", content: "no-referrer" },
-    ],
+    meta: [{ title: "Accept invitation · Octanest" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const INVALID_INVITE =
   "This invitation is invalid or has expired. Ask an organization admin to send a new invite.";
 const EMAIL_MISMATCH =
@@ -32,12 +25,9 @@ const LOGIN_REQUIRED =
   "An account with this email already exists. Sign in, then open the invitation link again.";
 const CLOSED_SIGNUP_SUPPORT =
   "This invite lets you join even when public sign-up is closed. You'll create an account for the invited email only.";
-const LOGGED_IN_SUPPORT =
-  "Accept to join the organization with the role you were invited for.";
-const TAKEN_ERROR =
-  "That username is already taken. Try another username.";
-const RESERVED_ERROR =
-  "That username is reserved. Choose a different username.";
+const LOGGED_IN_SUPPORT = "Accept to join the organization with the role you were invited for.";
+const TAKEN_ERROR = "That username is already taken. Try another username.";
+const RESERVED_ERROR = "That username is reserved. Choose a different username.";
 
 type Phase =
   | { kind: "loading" }
@@ -80,7 +70,7 @@ export function InviteAcceptPage() @{
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       if (!token) {
         setError(INVALID_INVITE);
         setPhase({ kind: "anon" });
@@ -104,10 +94,7 @@ export function InviteAcceptPage() @{
     };
   }, [token]);
 
-  async function acceptInvite(fields?: {
-    username?: string;
-    password?: string;
-  }) {
+  async function acceptInvite(fields?: { username?: string; password?: string }) {
     setError("");
     if (!token) {
       setError(INVALID_INVITE);
@@ -131,9 +118,7 @@ export function InviteAcceptPage() @{
           code === "auth.invalid_username" ||
           code === "rpc.bad_input"
         ) {
-          setError(
-            `${res.error.message}. Fix the highlighted fields and try again.`,
-          );
+          setError(`${res.error.message}. Fix the highlighted fields and try again.`);
         } else {
           setError(res.error.message || NETWORK_ERROR);
         }
@@ -151,29 +136,25 @@ export function InviteAcceptPage() @{
   @if (phase.kind === "loading") {
     <AuthShell title="Accept invitation" support="Checking your session…">
       <AuthFormSkeleton />
-    </AuthShell>
+    </AuthShell>;
   } @else {
     @if (phase.kind === "done") {
       <AuthShell
         title="Invitation accepted"
         support={`Redirecting to /${phase.orgSlug as string}…`}
       >
-        <p className="text-sm text-muted-foreground">
-          You're in. Opening the organization…
-        </p>
-      </AuthShell>
+        <p className="text-sm text-muted-foreground">You're in. Opening the organization…</p>
+      </AuthShell>;
     } @else {
       @if (phase.kind === "logged-in") {
         <AuthShell title="Accept invitation" support={LOGGED_IN_SUPPORT}>
           @if (error) {
-            <AuthErrorBanner message={error} />
+            <AuthErrorBanner message={error} />;
           }
           <p className="text-sm text-muted-foreground">
             Signed in as{" "}
-            <span className="font-medium text-foreground">
-              {phase.user.username as string}
-            </span>
-            . Join with this account if it matches the invited email.
+            <span className="font-medium text-foreground">{phase.user.username as string}</span>.
+            Join with this account if it matches the invited email.
           </p>
           <p className="text-sm text-muted-foreground">{CLOSED_SIGNUP_SUPPORT}</p>
           <form
@@ -189,9 +170,9 @@ export function InviteAcceptPage() @{
               {(isSubmitting) => (
                 <Button type="submit" disabled={isSubmitting}>
                   @if (isSubmitting) {
-                    <>Accepting…</>
+                    <>Accepting…</>;
                   } @else {
-                    <>Accept invitation</>
+                    <>Accept invitation</>;
                   }
                 </Button>
               )}
@@ -204,11 +185,11 @@ export function InviteAcceptPage() @{
             </a>
             .
           </p>
-        </AuthShell>
+        </AuthShell>;
       } @else {
         <AuthShell title="Accept invitation" support={CLOSED_SIGNUP_SUPPORT}>
           @if (error) {
-            <AuthErrorBanner message={error} />
+            <AuthErrorBanner message={error} />;
           }
           <p className="text-sm text-muted-foreground">
             Create an account for the invited email, or{" "}
@@ -236,9 +217,7 @@ export function InviteAcceptPage() @{
                     autoComplete="username"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onInput={(e) =>
-                      field.handleChange((e.currentTarget as HTMLInputElement).value)
-                    }
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
                     required
                   />
                 </div>
@@ -255,9 +234,7 @@ export function InviteAcceptPage() @{
                     autoComplete="new-password"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onInput={(e) =>
-                      field.handleChange((e.currentTarget as HTMLInputElement).value)
-                    }
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
                     required
                   />
                 </div>
@@ -274,9 +251,7 @@ export function InviteAcceptPage() @{
                     autoComplete="new-password"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onInput={(e) =>
-                      field.handleChange((e.currentTarget as HTMLInputElement).value)
-                    }
+                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
                     required
                   />
                 </div>
@@ -286,15 +261,15 @@ export function InviteAcceptPage() @{
               {(isSubmitting) => (
                 <Button type="submit" disabled={isSubmitting}>
                   @if (isSubmitting) {
-                    <>Creating account…</>
+                    <>Creating account…</>;
                   } @else {
-                    <>Create account and join</>
+                    <>Create account and join</>;
                   }
                 </Button>
               )}
             </anonForm.Subscribe>
           </form>
-        </AuthShell>
+        </AuthShell>;
       }
     }
   }

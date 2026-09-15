@@ -23,8 +23,7 @@ export type OrgLabelsLoaderData = {
   canAdmin: boolean;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const FORBIDDEN = "You need organization admin access to manage labels.";
 
 function labelsQueryKey(slug: string) {
@@ -174,19 +173,18 @@ export function OrgLabelsPage() @{
 
     <h2 className="mb-1 text-[18px] font-semibold text-foreground">Labels</h2>
     <p className="mb-6 text-[14px] text-muted-foreground">
-      Default labels inherited by organization repositories. Repos can hide or
-      add local labels.
+      Default labels inherited by organization repositories. Repos can hide or add local labels.
     </p>
 
     @if (formError) {
       <div className="mb-4">
         <AuthErrorBanner message={formError} />
-      </div>
+      </div>;
     }
     @if (rowError) {
       <div className="mb-4">
         <AuthErrorBanner message={rowError} />
-      </div>
+      </div>;
     }
 
     <form
@@ -208,9 +206,7 @@ export function OrgLabelsPage() @{
                 id="org-label-name"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                 disabled={pending}
               />
             </div>
@@ -224,9 +220,7 @@ export function OrgLabelsPage() @{
                 id="org-label-color"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(e) =>
-                  field.handleChange((e.target as HTMLInputElement).value)
-                }
+                onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                 disabled={pending}
               />
             </div>
@@ -241,9 +235,7 @@ export function OrgLabelsPage() @{
               id="org-label-desc"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onInput={(e) =>
-                field.handleChange((e.target as HTMLInputElement).value)
-              }
+              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
               disabled={pending}
             />
           </div>
@@ -257,10 +249,10 @@ export function OrgLabelsPage() @{
     </form>
 
     @if (labelsQ.isPending) {
-      <p className="text-[16px] text-muted-foreground">Loading labels…</p>
+      <p className="text-[16px] text-muted-foreground">Loading labels…</p>;
     } @else {
       @if (labels.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No org labels yet.</p>
+        <p className="text-[16px] text-muted-foreground">No org labels yet.</p>;
       } @else {
         <ul className="divide-y divide-border border-y border-border">
           @for (const lab of labels; key lab.id) {
@@ -277,7 +269,7 @@ export function OrgLabelsPage() @{
                 @if (lab.description) {
                   <span className="text-[13px] text-muted-foreground">
                     {lab.description as string}
-                  </span>
+                  </span>;
                 }
               </div>
               <Button
@@ -288,12 +280,12 @@ export function OrgLabelsPage() @{
               >
                 Delete
               </Button>
-            </li>
+            </li>;
           }
-        </ul>
+        </ul>;
       }
     }
-  </div>
+  </div>;
 }
 
 export default OrgLabelsPage;

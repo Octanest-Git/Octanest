@@ -22,8 +22,7 @@ export type SignupLoaderData = {
 };
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const TAKEN_ERROR =
-  "That email or username is already taken. Try another or sign in.";
+const TAKEN_ERROR = "That email or username is already taken. Try another or sign in.";
 const RESERVED_ERROR = "That username is reserved. Choose a different username.";
 const SETUP_ERROR = "This instance needs setup first. Redirecting…";
 
@@ -105,9 +104,7 @@ export function SignupPage() @{
             code === "auth.invalid_email" ||
             code === "rpc.bad_input"
           ) {
-            setError(
-              `${res.error.message}. Fix the highlighted fields and try again.`,
-            );
+            setError(`${res.error.message}. Fix the highlighted fields and try again.`);
           } else {
             setError(NETWORK_ERROR);
           }
@@ -121,8 +118,7 @@ export function SignupPage() @{
   });
 
   function startSso(kind: "workos" | "oidc") {
-    const path =
-      kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
+    const path = kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
     window.location.assign(`${path}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
@@ -133,10 +129,10 @@ export function SignupPage() @{
 
   <AuthShell title="Create your account" support={support}>
     @if (loadError) {
-      <AuthErrorBanner message={loadError} />
+      <AuthErrorBanner message={loadError} />;
     }
     @if (error) {
-      <AuthErrorBanner message={error} />
+      <AuthErrorBanner message={error} />;
     }
 
     @if (mode === "local") {
@@ -184,8 +180,8 @@ export function SignupPage() @{
                 required
               />
               <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-                1–39 characters; letters, numbers, and hyphens. Can't start or end with
-                a hyphen.
+                1–39 characters; letters, numbers, and hyphens. Can't start or end with a
+                hyphen.
               </p>
             </div>
           )}
@@ -235,19 +231,19 @@ export function SignupPage() @{
             </Button>
           )}
         </form.Subscribe>
-      </form>
+      </form>;
     }
 
     @if (mode === "workos") {
       <Button type="button" className="w-full" onClick={() => startSso("workos")}>
         Continue with WorkOS
-      </Button>
+      </Button>;
     }
 
     @if (mode === "oidc") {
       <Button type="button" className="w-full" onClick={() => startSso("oidc")}>
         Continue with SSO
-      </Button>
+      </Button>;
     }
 
     <p className="text-[14px] text-muted-foreground">
@@ -259,5 +255,5 @@ export function SignupPage() @{
         Sign in
       </a>
     </p>
-  </AuthShell>
+  </AuthShell>;
 }

@@ -52,8 +52,7 @@ export const Route = createFileRoute("/setup/")({
 });
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const UNAVAILABLE_ERROR =
-  "Setup is no longer available. Sign in or create an account instead.";
+const UNAVAILABLE_ERROR = "Setup is no longer available. Sign in or create an account instead.";
 
 const PROVIDER_OPTIONS: { value: ProviderMode; label: string }[] = [
   { value: "local", label: "Local accounts" },
@@ -91,10 +90,8 @@ export function SetupPage() @{
           password: value.password,
           allow_signup: value.allowSignup,
           provider_mode: value.providerMode,
-          oidc_issuer:
-            value.providerMode === "oidc" ? value.oidcIssuer.trim() || null : null,
-          oidc_client_id:
-            value.providerMode === "oidc" ? value.oidcClientId.trim() || null : null,
+          oidc_issuer: value.providerMode === "oidc" ? value.oidcIssuer.trim() || null : null,
+          oidc_client_id: value.providerMode === "oidc" ? value.oidcClientId.trim() || null : null,
           workos_client_id:
             value.providerMode === "workos" ? value.workosClientId.trim() || null : null,
         });
@@ -109,9 +106,7 @@ export function SetupPage() @{
             code === "auth.weak_password" ||
             code === "rpc.bad_input"
           ) {
-            setError(
-              `${res.error.message}. Fix the highlighted fields and try again.`,
-            );
+            setError(`${res.error.message}. Fix the highlighted fields and try again.`);
           } else {
             setError(NETWORK_ERROR);
           }
@@ -130,7 +125,7 @@ export function SetupPage() @{
     support="Create the system admin account and choose how people will sign in."
   >
     @if (error) {
-      <AuthErrorBanner message={error} />
+      <AuthErrorBanner message={error} />;
     }
 
     <form
@@ -153,9 +148,7 @@ export function SetupPage() @{
               autoComplete="email"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onInput={(ev) =>
-                field.handleChange((ev.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               required
             />
           </div>
@@ -171,14 +164,11 @@ export function SetupPage() @{
               autoComplete="username"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onInput={(ev) =>
-                field.handleChange((ev.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               required
             />
             <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-              1–39 characters; letters, numbers, and hyphens. Can't start or end with
-              a hyphen.
+              1–39 characters; letters, numbers, and hyphens. Can't start or end with a hyphen.
             </p>
           </div>
         )}
@@ -194,9 +184,7 @@ export function SetupPage() @{
               autoComplete="new-password"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onInput={(ev) =>
-                field.handleChange((ev.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               required
             />
           </div>
@@ -213,9 +201,7 @@ export function SetupPage() @{
               autoComplete="new-password"
               value={field.state.value}
               onBlur={field.handleBlur}
-              onInput={(ev) =>
-                field.handleChange((ev.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               required
             />
           </div>
@@ -231,18 +217,16 @@ export function SetupPage() @{
               className="flex h-11 w-full rounded-md border border-border bg-background px-3 text-[16px] text-foreground"
               value={field.state.value}
               onChange={(e) =>
-                field.handleChange(
-                  (e.currentTarget as HTMLSelectElement).value as ProviderMode,
-                )
+                field.handleChange((e.currentTarget as HTMLSelectElement).value as ProviderMode)
               }
             >
               @for (const opt of PROVIDER_OPTIONS; key opt.value) {
-                <option value={opt.value}>{opt.label as string}</option>
+                <option value={opt.value}>{opt.label as string}</option>;
               }
             </select>
             <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-              Secrets (OIDC client secret, WorkOS API key) stay in environment
-              variables — only public IDs are stored here.
+              Secrets (OIDC client secret, WorkOS API key) stay in environment variables — only
+              public IDs are stored here.
             </p>
           </div>
         )}
@@ -261,15 +245,13 @@ export function SetupPage() @{
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onInput={(ev) =>
-                        field.handleChange(
-                          (ev.currentTarget as HTMLInputElement).value,
-                        )
+                        field.handleChange((ev.currentTarget as HTMLInputElement).value)
                       }
                       autoComplete="off"
                     />
                   </div>
                 )}
-              </form.Field>
+              </form.Field>;
             }
 
             @if (providerMode === "oidc") {
@@ -283,9 +265,7 @@ export function SetupPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(ev) =>
-                          field.handleChange(
-                            (ev.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((ev.currentTarget as HTMLInputElement).value)
                         }
                         autoComplete="off"
                       />
@@ -301,16 +281,14 @@ export function SetupPage() @{
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onInput={(ev) =>
-                          field.handleChange(
-                            (ev.currentTarget as HTMLInputElement).value,
-                          )
+                          field.handleChange((ev.currentTarget as HTMLInputElement).value)
                         }
                         autoComplete="off"
                       />
                     </div>
                   )}
                 </form.Field>
-              </div>
+              </div>;
             }
           </>
         )}
@@ -328,8 +306,8 @@ export function SetupPage() @{
               <Label htmlFor="setup-allow-signup">Allow open signup</Label>
             </div>
             <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-              When off, new accounts can’t self-register. You can change this later in
-              Auth settings.
+              When off, new accounts can’t self-register. You can change this later in Auth
+              settings.
             </p>
           </div>
         )}
@@ -342,5 +320,5 @@ export function SetupPage() @{
         )}
       </form.Subscribe>
     </form>
-  </AuthShell>
+  </AuthShell>;
 }

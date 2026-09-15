@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  redirect,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import type {
   OrgMineEntry,
@@ -33,10 +29,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { listLicensePickerOptions } from "@/lib/spdx-licenses";
-import {
-  fetchRepoCreateDefaults,
-  fetchSessionMe,
-} from "@/lib/ssr-auth";
+import { fetchRepoCreateDefaults, fetchSessionMe } from "@/lib/ssr-auth";
 import { fetchOrgListMine } from "@/lib/ssr-org";
 import { cn } from "@/lib/utils";
 
@@ -47,12 +40,9 @@ export type NewLoaderData = {
   ownerOrgs: OrgMineEntry[];
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
-const NAME_HELPER =
-  "Letters, digits, hyphen, underscore, and period. Reserved names are rejected.";
-const DUPLICATE_NAME_ERROR =
-  "A repository with this name already exists. Choose a different name.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NAME_HELPER = "Letters, digits, hyphen, underscore, and period. Reserved names are rejected.";
+const DUPLICATE_NAME_ERROR = "A repository with this name already exists. Choose a different name.";
 
 export const Route = createFileRoute("/new")({
   component: NewPage,
@@ -82,20 +72,14 @@ export const Route = createFileRoute("/new")({
       }
       const mine = await fetchOrgListMine();
       if (mine.ok) {
-        ownerOrgs = mine.data.orgs.filter(
-          (o) => o.role === "owner" || o.role === "admin",
-        );
+        ownerOrgs = mine.data.orgs.filter((o) => o.role === "owner" || o.role === "admin");
       }
     }
     return { user: me.data, defaults, ownerOrgs };
   },
 });
 
-function ownerOptionLabel(
-  slug: string,
-  selfUsername: string,
-  orgs: OrgMineEntry[],
-): string {
+function ownerOptionLabel(slug: string, selfUsername: string, orgs: OrgMineEntry[]): string {
   if (slug === selfUsername) return `@${selfUsername}`;
   const org = orgs.find((o) => o.slug === slug);
   if (org) {
@@ -169,9 +153,7 @@ export function NewPage() @{
           setPending(false);
           return;
         }
-        window.location.assign(
-          `/${res.data.owner_username}/${res.data.name}`,
-        );
+        window.location.assign(`/${res.data.owner_username}/${res.data.name}`);
       } catch {
         setFormError(NETWORK_ERROR);
         setPending(false);
@@ -180,26 +162,16 @@ export function NewPage() @{
   });
 
   @if (showWall) {
-    <AuthShell
-      title="Verify your email"
-      support="Verify your email before creating a repository."
-    >
-      <a
-        href="/verify"
-        className={cn(buttonVariants({ variant: "default" }))}
-      >
+    <AuthShell title="Verify your email" support="Verify your email before creating a repository.">
+      <a href="/verify" className={cn(buttonVariants({ variant: "default" }))}>
         Verify email
       </a>
-    </AuthShell>
+    </AuthShell>;
   } @else {
     <form.Subscribe selector={(s) => s.values}>
       {(values) => {
         const selectedOwner = values.ownerSlug || selfUsername;
-        const ownerDisplay = ownerOptionLabel(
-          selectedOwner,
-          selfUsername,
-          ownerOrgs,
-        );
+        const ownerDisplay = ownerOptionLabel(selectedOwner, selfUsername, ownerOrgs);
 
         return (
           <div className="mx-auto max-w-2xl px-4 py-16">
@@ -220,7 +192,7 @@ export function NewPage() @{
               }}
             >
               @if (formError) {
-                <AuthErrorBanner message={formError} />
+                <AuthErrorBanner message={formError} />;
               }
 
               <div className="flex flex-col gap-2">
@@ -231,11 +203,7 @@ export function NewPage() @{
                     if (typeof next === "string") form.setFieldValue("ownerSlug", next);
                   }}
                 >
-                  <SelectTrigger
-                    id="repo-owner"
-                    className="w-full max-w-sm"
-                    aria-label="Owner"
-                  >
+                  <SelectTrigger id="repo-owner" className="w-full max-w-sm" aria-label="Owner">
                     <SelectValue>{ownerDisplay as string}</SelectValue>
                     <SelectIcon>
                       <ChevronDown aria-hidden size={16} />
@@ -249,9 +217,7 @@ export function NewPage() @{
                             <SelectItemIndicator>
                               <Check aria-hidden size={16} className="text-primary" />
                             </SelectItemIndicator>
-                            <SelectItemText>
-                              {("@" + selfUsername) as string}
-                            </SelectItemText>
+                            <SelectItemText>{("@" + selfUsername) as string}</SelectItemText>
                           </SelectItem>
                           @for (const org of ownerOrgs; key org.slug) {
                             <SelectItem value={org.slug}>
@@ -259,11 +225,13 @@ export function NewPage() @{
                                 <Check aria-hidden size={16} className="text-primary" />
                               </SelectItemIndicator>
                               <SelectItemText>
-                                {(org.display_name?.trim()
-                                  ? `${org.display_name.trim()} (${org.slug})`
-                                  : org.slug) as string}
+                                {
+                                  (org.display_name?.trim()
+                                    ? `${org.display_name.trim()} (${org.slug})`
+                                    : org.slug) as string
+                                }
                               </SelectItemText>
-                            </SelectItem>
+                            </SelectItem>;
                           }
                         </SelectList>
                       </SelectPopup>
@@ -295,7 +263,7 @@ export function NewPage() @{
                     @if (nameError) {
                       <p role="alert" className="text-[14px] text-destructive">
                         {nameError as string}
-                      </p>
+                      </p>;
                     }
                   </div>
                 )}
@@ -313,9 +281,7 @@ export function NewPage() @{
                       value={field.state.value}
                       onBlur={field.handleBlur}
                       onInput={(ev) =>
-                        field.handleChange(
-                          (ev.currentTarget as HTMLTextAreaElement).value,
-                        )
+                        field.handleChange((ev.currentTarget as HTMLTextAreaElement).value)
                       }
                     />
                   </div>
@@ -326,11 +292,7 @@ export function NewPage() @{
                 <legend className="text-[14px] font-normal leading-[1.4] text-foreground">
                   Visibility
                 </legend>
-                <div
-                  className="flex flex-wrap gap-2"
-                  role="group"
-                  aria-label="Visibility"
-                >
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Visibility">
                   <Button
                     type="button"
                     variant={values.visibility === "public" ? "default" : "secondary"}
@@ -352,12 +314,10 @@ export function NewPage() @{
 
               <div className="flex flex-col gap-5">
                 <div>
-                  <p className="text-[14px] font-semibold text-foreground">
-                    Templates (optional)
-                  </p>
+                  <p className="text-[14px] font-semibold text-foreground">Templates (optional)</p>
                   <p className="mt-1 text-[13px] text-muted-foreground">
-                    Seed an initial commit with a stack, license, and ignore rules —
-                    or leave them as None for an empty Quick setup repo.
+                    Seed an initial commit with a stack, license, and ignore rules — or leave them
+                    as None for an empty Quick setup repo.
                   </p>
                 </div>
                 <TemplatePicker
@@ -404,15 +364,15 @@ export function NewPage() @{
 
               <Button type="submit" disabled={pending}>
                 @if (pending) {
-                  <>Creating…</>
+                  <>Creating…</>;
                 } @else {
-                  <>Create repository</>
+                  <>Create repository</>;
                 }
               </Button>
             </form>
           </div>
         );
       }}
-    </form.Subscribe>
+    </form.Subscribe>;
   }
 }

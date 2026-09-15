@@ -1,9 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import type { OwnerType, RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
@@ -23,10 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import {
-  type RepoLayoutLoaderData,
-  useRepoStore,
-} from "@/lib/repo-store";
+import { type RepoLayoutLoaderData, useRepoStore } from "@/lib/repo-store";
 import { toastError, toastSuccess } from "@/lib/toast";
 
 export const Route = createFileRoute("/$owner/$repo/settings")({
@@ -41,8 +33,7 @@ export const Route = createFileRoute("/$owner/$repo/settings")({
 });
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const PRIVATE_HELPER =
-  "Only people with access can see this private repository.";
+const PRIVATE_HELPER = "Only people with access can see this private repository.";
 const SOFT_DELETE_BODY =
   "Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm.";
 const TRANSFER_BODY =
@@ -57,9 +48,7 @@ export function RepoSettingsPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const navigate = useNavigate();
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const setRepo = useRepoStore((s) => s.setRepo);
 
   const repo = layout?.repo ?? null;
@@ -67,13 +56,9 @@ export function RepoSettingsPage() @{
   // Gate on API can_admin — not me.id === owner_id (D-ORG-04 / T-10-02).
   const canAdmin = !!repo?.can_admin;
   const showNotFound =
-    !layout ||
-    layout.status === "not_found" ||
-    (layout.status === "ok" && !!repo && !canAdmin);
+    !layout || layout.status === "not_found" || (layout.status === "ok" && !!repo && !canAdmin);
 
-  const [visibility, setVisibility] = useState<RepoVisibility>(
-    () => repo?.visibility ?? "public",
-  );
+  const [visibility, setVisibility] = useState<RepoVisibility>(() => repo?.visibility ?? "public");
   const [visPending, setVisPending] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
@@ -164,9 +149,7 @@ export function RepoSettingsPage() @{
       }
       setRepo(res.data.repo);
       toastSuccess("Repository transferred.");
-      window.location.assign(
-        `/${res.data.repo.owner_username}/${res.data.repo.name}/settings`,
-      );
+      window.location.assign(`/${res.data.repo.owner_username}/${res.data.repo.name}/settings`);
     } catch {
       setTransferError(NETWORK_ERROR);
       setTransferPending(false);
@@ -196,13 +179,13 @@ export function RepoSettingsPage() @{
   }
 
   @if (showNotFound) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (layoutError) {
     <div className="max-w-lg py-6 text-center">
       <p role="alert" className="text-[16px] text-destructive">
         {layoutError as string}
       </p>
-    </div>
+    </div>;
   } @else if (repo && canAdmin) {
     <>
       <div className="max-w-3xl">
@@ -213,9 +196,7 @@ export function RepoSettingsPage() @{
           >
             Visibility
           </h2>
-          <p className="text-[14px] text-muted-foreground">
-            Choose who can see this repository.
-          </p>
+          <p className="text-[14px] text-muted-foreground">Choose who can see this repository.</p>
           <div className="flex flex-wrap gap-2" role="group" aria-label="Visibility">
             <Button
               type="button"
@@ -237,7 +218,7 @@ export function RepoSettingsPage() @{
             </Button>
           </div>
           @if (visibility === "private") {
-            <p className="text-[14px] text-muted-foreground">{PRIVATE_HELPER as string}</p>
+            <p className="text-[14px] text-muted-foreground">{PRIVATE_HELPER as string}</p>;
           }
           <Button
             type="button"
@@ -251,11 +232,7 @@ export function RepoSettingsPage() @{
 
         <CollaboratorsPanel owner={owner} name={repoName} />
 
-        <LfsSettingsPanel
-          owner={owner}
-          name={repoName}
-          can_admin={canAdmin}
-        />
+        <LfsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <LfsBrowser owner={owner} name={repoName} />
 
@@ -271,24 +248,18 @@ export function RepoSettingsPage() @{
           </h2>
 
           <div className="flex flex-col gap-3" aria-labelledby="rename-heading">
-            <h3
-              id="rename-heading"
-              className="text-[16px] font-semibold text-foreground"
-            >
+            <h3 id="rename-heading" className="text-[16px] font-semibold text-foreground">
               Rename repository
             </h3>
             <p className="text-[14px] leading-[1.4] text-muted-foreground">
-              Change the repository name. Old URLs redirect for a retention
-              period.
+              Change the repository name. Old URLs redirect for a retention period.
             </p>
             <div className="flex flex-col gap-2">
               <Label htmlFor="repo-rename-name">New name</Label>
               <Input
                 id="repo-rename-name"
                 value={newName}
-                onInput={(e) =>
-                  setNewName((e.currentTarget as HTMLInputElement).value)
-                }
+                onInput={(e) => setNewName((e.currentTarget as HTMLInputElement).value)}
                 autoComplete="off"
                 disabled={renamePending}
                 placeholder={repo.name as string}
@@ -298,11 +269,7 @@ export function RepoSettingsPage() @{
               type="button"
               variant="destructive"
               className="w-full sm:w-auto"
-              disabled={
-                renamePending ||
-                !newName.trim() ||
-                newName.trim() === repo.name
-              }
+              disabled={renamePending || !newName.trim() || newName.trim() === repo.name}
               onClick={() => void submitRename()}
             >
               {(renamePending ? "Renaming…" : "Rename repository") as string}
@@ -310,34 +277,25 @@ export function RepoSettingsPage() @{
           </div>
 
           <div className="flex flex-col gap-3" aria-labelledby="transfer-heading">
-            <h3
-              id="transfer-heading"
-              className="text-[16px] font-semibold text-foreground"
-            >
+            <h3 id="transfer-heading" className="text-[16px] font-semibold text-foreground">
               Transfer ownership
             </h3>
             <p className="text-[14px] leading-[1.4] text-muted-foreground">
-              Move this repository to another user or organization. You must
-              type the repository name to confirm.
+              Move this repository to another user or organization. You must type the repository
+              name to confirm.
             </p>
             <div className="flex flex-col gap-2">
               <Label htmlFor="repo-transfer-dest">Destination owner</Label>
               <Input
                 id="repo-transfer-dest"
                 value={destOwner}
-                onInput={(e) =>
-                  setDestOwner((e.currentTarget as HTMLInputElement).value)
-                }
+                onInput={(e) => setDestOwner((e.currentTarget as HTMLInputElement).value)}
                 autoComplete="off"
                 disabled={transferPending}
                 placeholder="username or org slug"
               />
             </div>
-            <div
-              className="flex flex-wrap gap-2"
-              role="group"
-              aria-label="Destination type"
-            >
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Destination type">
               <Button
                 type="button"
                 variant={destOwnerType === "user" ? "default" : "secondary"}
@@ -374,8 +332,7 @@ export function RepoSettingsPage() @{
 
           <div className="flex flex-col gap-3">
             <p className="text-[14px] leading-[1.4] text-muted-foreground">
-              Soft-delete removes this repository from Octanest. Disk cleanup may
-              run later.
+              Soft-delete removes this repository from Octanest. Disk cleanup may run later.
             </p>
             <Button
               type="button"
@@ -407,18 +364,14 @@ export function RepoSettingsPage() @{
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Transfer repository?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {TRANSFER_BODY as string}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{TRANSFER_BODY as string}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor="transfer-confirm">Repository name</Label>
             <Input
               id="transfer-confirm"
               value={transferConfirm}
-              onInput={(e) =>
-                setTransferConfirm((e.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(e) => setTransferConfirm((e.currentTarget as HTMLInputElement).value)}
               autoComplete="off"
               disabled={transferPending}
               placeholder={repoName as string}
@@ -427,16 +380,14 @@ export function RepoSettingsPage() @{
           @if (transferError) {
             <p role="alert" className="text-[14px] text-destructive">
               {transferError as string}
-            </p>
+            </p>;
           }
           <AlertDialogFooter>
             <AlertDialogCancel disabled={transferPending}>Cancel</AlertDialogCancel>
             <Button
               type="button"
               variant="destructive"
-              disabled={
-                transferPending || transferConfirm.trim() !== repo.name
-              }
+              disabled={transferPending || transferConfirm.trim() !== repo.name}
               onClick={() => void submitTransfer()}
             >
               {(transferPending ? "Transferring…" : "Transfer repository") as string}
@@ -459,18 +410,14 @@ export function RepoSettingsPage() @{
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete repository?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {SOFT_DELETE_BODY as string}
-            </AlertDialogDescription>
+            <AlertDialogDescription>{SOFT_DELETE_BODY as string}</AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor="soft-delete-confirm">Repository name</Label>
             <Input
               id="soft-delete-confirm"
               value={confirmName}
-              onInput={(e) =>
-                setConfirmName((e.currentTarget as HTMLInputElement).value)
-              }
+              onInput={(e) => setConfirmName((e.currentTarget as HTMLInputElement).value)}
               autoComplete="off"
               disabled={deletePending}
               placeholder={repoName as string}
@@ -479,16 +426,14 @@ export function RepoSettingsPage() @{
           @if (deleteError) {
             <p role="alert" className="text-[14px] text-destructive">
               {deleteError as string}
-            </p>
+            </p>;
           }
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deletePending}>Cancel</AlertDialogCancel>
             <Button
               type="button"
               variant="destructive"
-              disabled={
-                deletePending || confirmName.trim() !== repo.name
-              }
+              disabled={deletePending || confirmName.trim() !== repo.name}
               onClick={() => void submitDelete()}
             >
               {(deletePending ? "Deleting…" : "Delete repository") as string}
@@ -496,6 +441,6 @@ export function RepoSettingsPage() @{
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </>;
   }
 }

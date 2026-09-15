@@ -15,9 +15,9 @@
     "test:coverage": "vitest run --coverage --project unit --project integration",
     "test:coverage:unit": "vitest run --coverage --project unit --coverage.reportsDirectory=coverage/unit",
     "test:coverage:integration": "vitest run --coverage --project integration --coverage.reportsDirectory=coverage/integration",
-    "lint": "oxlint --type-aware --deny-warnings .",
-    "format": "oxfmt --write .",
-    "format:check": "oxfmt --check ."
+    "lint": "oxlint --type-aware --deny-warnings . \"src/**/*.tsrx\"",
+    "format": "oxfmt --write . \"src/**/*.tsrx\"",
+    "format:check": "oxfmt --check . \"src/**/*.tsrx\""
   },
   "dependencies": {
     "@octanejs/base-ui": "^0.1.52",

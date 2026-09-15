@@ -72,9 +72,7 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
             value={field.state.value}
             disabled={disabled || add.isPending}
             onBlur={field.handleBlur}
-            onInput={(e) =>
-              field.handleChange((e.currentTarget as HTMLInputElement).value)
-            }
+            onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
             autoComplete="off"
           />
         </div>
@@ -93,9 +91,7 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
             value={field.state.value}
             disabled={disabled || add.isPending}
             onBlur={field.handleBlur}
-            onInput={(e) =>
-              field.handleChange((e.currentTarget as HTMLTextAreaElement).value)
-            }
+            onInput={(e) => field.handleChange((e.currentTarget as HTMLTextAreaElement).value)}
           />
         </div>
       )}
@@ -103,17 +99,14 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
     @if (error) {
       <p role="alert" className="text-[14px] text-destructive">
         {error as string}
-      </p>
+      </p>;
     }
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
-        <Button
-          type="submit"
-          disabled={disabled || add.isPending || isSubmitting}
-        >
+        <Button type="submit" disabled={disabled || add.isPending || isSubmitting}>
           {(add.isPending ? "Adding…" : "Add key") as string}
         </Button>
       )}
     </form.Subscribe>
-  </form>
+  </form>;
 }

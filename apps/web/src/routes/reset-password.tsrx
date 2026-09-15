@@ -29,10 +29,7 @@ import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
-    meta: [
-      { title: "Reset password · Octanest" },
-      { name: "referrer", content: "no-referrer" },
-    ],
+    meta: [{ title: "Reset password · Octanest" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
@@ -67,13 +64,8 @@ export function ResetPasswordPage() @{
       try {
         const res = await apiClient.auth.requestPasswordReset({ email: trimmed });
         if (!res.ok) {
-          if (
-            res.error.code === "rpc.bad_input" ||
-            res.error.code === "auth.invalid_email"
-          ) {
-            setError(
-              `${res.error.message}. Fix the highlighted fields and try again.`,
-            );
+          if (res.error.code === "rpc.bad_input" || res.error.code === "auth.invalid_email") {
+            setError(`${res.error.message}. Fix the highlighted fields and try again.`);
           } else {
             setError(NETWORK_ERROR);
           }
@@ -119,9 +111,7 @@ export function ResetPasswordPage() @{
           password: pwd,
         });
         if (!res.ok) {
-          setError(
-            mapRedeemError(res.error.code, res.error.message, Boolean(token)),
-          );
+          setError(mapRedeemError(res.error.code, res.error.message, Boolean(token)));
           submitLock.current = false;
           return;
         }
@@ -136,7 +126,7 @@ export function ResetPasswordPage() @{
   useEffect(() => {
     let cancelled = false;
     const token = readTokenFromLocation();
-    (async () => {
+    void (async () => {
       try {
         const cfg = await apiClient.auth.providerConfig();
         if (cancelled) return;
@@ -164,8 +154,7 @@ export function ResetPasswordPage() @{
 
   function startSso(kind: "workos" | "oidc") {
     const returnTo = readReturnToFromLocation();
-    const path =
-      kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
+    const path = kind === "workos" ? "/api/auth/workos/start" : "/api/auth/oidc/start";
     window.location.assign(`${path}?returnTo=${encodeURIComponent(returnTo)}`);
   }
 
@@ -188,252 +177,248 @@ export function ResetPasswordPage() @{
   @if (view.kind === "loading") {
     <AuthShell title="Reset your password" support="Preparing reset…">
       <AuthFormSkeleton fields={1} />
-    </AuthShell>
+    </AuthShell>;
   } @else {
     @if (view.kind === "sso") {
-    <AuthShell title="Reset your password" support={SSO_MODE_BODY}>
-      @if (error) {
-        <AuthErrorBanner message={error} />
-      }
-      <Button
-        type="button"
-        className="w-full"
-        onClick={() => startSso(view.mode)}
-      >
-        {(view.mode === "workos" ? "Continue with WorkOS" : "Continue with SSO") as string}
-      </Button>
-      <p className="text-[14px] text-muted-foreground">
-        Remembered it?{" "}
-        <a
-          href="/login"
-          className="font-normal text-foreground underline-offset-4 hover:underline"
-        >
-          Sign in
-        </a>
-      </p>
-    </AuthShell>
+      <AuthShell title="Reset your password" support={SSO_MODE_BODY}>
+        @if (error) {
+          <AuthErrorBanner message={error} />;
+        }
+        <Button type="button" className="w-full" onClick={() => startSso(view.mode)}>
+          {(view.mode === "workos" ? "Continue with WorkOS" : "Continue with SSO") as string}
+        </Button>
+        <p className="text-[14px] text-muted-foreground">
+          Remembered it?{" "}
+          <a
+            href="/login"
+            className="font-normal text-foreground underline-offset-4 hover:underline"
+          >
+            Sign in
+          </a>
+        </p>
+      </AuthShell>;
     } @else {
       @if (view.kind === "request" || view.kind === "request-sent") {
-    <AuthShell title="Reset your password" support={REQUEST_SUPPORT}>
-      @if (error) {
-        <AuthErrorBanner message={error} />
-      }
+        <AuthShell title="Reset your password" support={REQUEST_SUPPORT}>
+          @if (error) {
+            <AuthErrorBanner message={error} />;
+          }
 
-      @if (view.kind === "request-sent") {
-        <div className="flex max-w-md flex-col gap-2" role="status">
-          <p className="text-[16px] font-normal leading-[1.5] text-foreground">
-            {SUCCESS_HEADING}
-          </p>
-          <p className="text-[16px] font-normal leading-[1.5] text-muted-foreground">
-            {SUCCESS_BODY}
-          </p>
-          <Button
-            type="button"
-            className="mt-2 w-full"
-            onClick={() => {
-              setError("");
-              setView({ kind: "redeem", token: null });
-            }}
-          >
-            Enter reset code
-          </Button>
-        </div>
-      } @else {
-        <form
-          className="flex flex-col gap-4"
-          method="post"
-          action="#"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void requestForm.handleSubmit();
-          }}
-        >
-          <requestForm.Field name="email">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="reset-email">Email</Label>
-                <Input
-                  id="reset-email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onInput={(ev) =>
-                    field.handleChange((ev.currentTarget as HTMLInputElement).value)
-                  }
-                  required
-                />
-              </div>
-            )}
-          </requestForm.Field>
-          <requestForm.Subscribe selector={(s) => s.isSubmitting}>
-            {(isSubmitting) => (
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {(isSubmitting ? "Working…" : "Send reset email") as string}
-              </Button>
-            )}
-          </requestForm.Subscribe>
-        </form>
-      }
-
-      @if (view.kind === "request") {
-        <p className="text-[14px] text-muted-foreground">
-          Already have a code?{" "}
-          <button
-            type="button"
-            className="font-normal text-foreground underline-offset-4 hover:underline"
-            onClick={() => {
-              setError("");
-              setView({ kind: "redeem", token: null });
-            }}
-          >
-            Enter it here
-          </button>
-        </p>
-      }
-
-      <p className="text-[14px] text-muted-foreground">
-        Remembered it?{" "}
-        <a
-          href="/login"
-          className="font-normal text-foreground underline-offset-4 hover:underline"
-        >
-          Sign in
-        </a>
-      </p>
-    </AuthShell>
-      } @else {
-    <AuthShell
-      title="Choose a new password"
-      support={viaToken ? REDEEM_SUPPORT_TOKEN : REDEEM_SUPPORT_CODE}
-    >
-      @if (error) {
-        <AuthErrorBanner message={error} />
-      }
-
-      <form
-        className="flex flex-col gap-4"
-        method="post"
-        action="#"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void redeemForm.handleSubmit();
-        }}
-      >
-        @if (!viaToken) {
-          <redeemForm.Field name="code">
-            {(field) => (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="reset-code">Reset code</Label>
-                <InputOtp
-                  id="reset-code"
-                  name="code"
-                  value={field.state.value}
-                  onChange={(next) => {
-                    field.handleChange(next);
-                    if (error) setError("");
-                  }}
-                  onComplete={(next) => {
-                    void redeemWithCode(next);
-                  }}
-                  aria-label="Reset code"
-                  aria-invalid={Boolean(error)}
-                />
-              </div>
-            )}
-          </redeemForm.Field>
-        }
-
-        <redeemForm.Field name="password">
-          {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="reset-password">New password</Label>
-              <Input
-                id="reset-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onInput={(ev) => {
-                  field.handleChange((ev.currentTarget as HTMLInputElement).value);
-                  if (mismatchFields) setMismatchFields(false);
-                  if (error) setError("");
-                }}
-                required
-                aria-invalid={mismatchFields || error === TOO_SHORT}
-                aria-describedby="reset-password-helper"
-              />
-              <p
-                id="reset-password-helper"
-                className="text-[14px] font-normal leading-[1.4] text-muted-foreground"
-              >
-                {PASSWORD_HELPER}
+          @if (view.kind === "request-sent") {
+            <div className="flex max-w-md flex-col gap-2" role="status">
+              <p className="text-[16px] font-normal leading-[1.5] text-foreground">
+                {SUCCESS_HEADING}
               </p>
-            </div>
-          )}
-        </redeemForm.Field>
-
-        <redeemForm.Field name="confirm">
-          {(field) => (
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="reset-confirm">Confirm password</Label>
-              <Input
-                id="reset-confirm"
-                name="confirm"
-                type="password"
-                autoComplete="new-password"
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onInput={(ev) => {
-                  field.handleChange((ev.currentTarget as HTMLInputElement).value);
-                  if (mismatchFields) setMismatchFields(false);
-                  if (error) setError("");
-                }}
-                required
-                aria-invalid={mismatchFields}
-              />
-            </div>
-          )}
-        </redeemForm.Field>
-
-        <redeemForm.Subscribe
-          selector={(s) => ({
-            isSubmitting: s.isSubmitting,
-            password: s.values.password,
-            confirm: s.values.confirm,
-            code: s.values.code,
-          })}
-        >
-          {(state) => {
-            const canSubmit =
-              state.password.length >= 8 &&
-              state.password === state.confirm &&
-              (viaToken || state.code.length === 8);
-            return (
+              <p className="text-[16px] font-normal leading-[1.5] text-muted-foreground">
+                {SUCCESS_BODY}
+              </p>
               <Button
-                type="submit"
-                className="w-full"
-                disabled={state.isSubmitting || !canSubmit}
+                type="button"
+                className="mt-2 w-full"
+                onClick={() => {
+                  setError("");
+                  setView({ kind: "redeem", token: null });
+                }}
               >
-                {(state.isSubmitting ? "Working…" : "Update password") as string}
+                Enter reset code
               </Button>
-            );
-          }}
-        </redeemForm.Subscribe>
-      </form>
+            </div>;
+          } @else {
+            <form
+              className="flex flex-col gap-4"
+              method="post"
+              action="#"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void requestForm.handleSubmit();
+              }}
+            >
+              <requestForm.Field name="email">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onInput={(ev) =>
+                        field.handleChange((ev.currentTarget as HTMLInputElement).value)
+                      }
+                      required
+                    />
+                  </div>
+                )}
+              </requestForm.Field>
+              <requestForm.Subscribe selector={(s) => s.isSubmitting}>
+                {(isSubmitting) => (
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {(isSubmitting ? "Working…" : "Send reset email") as string}
+                  </Button>
+                )}
+              </requestForm.Subscribe>
+            </form>;
+          }
 
-      <p className="text-[14px] text-muted-foreground">
-        Remembered it?{" "}
-        <a
-          href="/login"
-          className="font-normal text-foreground underline-offset-4 hover:underline"
+          @if (view.kind === "request") {
+            <p className="text-[14px] text-muted-foreground">
+              Already have a code?{" "}
+              <button
+                type="button"
+                className="font-normal text-foreground underline-offset-4 hover:underline"
+                onClick={() => {
+                  setError("");
+                  setView({ kind: "redeem", token: null });
+                }}
+              >
+                Enter it here
+              </button>
+            </p>;
+          }
+
+          <p className="text-[14px] text-muted-foreground">
+            Remembered it?{" "}
+            <a
+              href="/login"
+              className="font-normal text-foreground underline-offset-4 hover:underline"
+            >
+              Sign in
+            </a>
+          </p>
+        </AuthShell>;
+      } @else {
+        <AuthShell
+          title="Choose a new password"
+          support={viaToken ? REDEEM_SUPPORT_TOKEN : REDEEM_SUPPORT_CODE}
         >
-          Sign in
-        </a>
-      </p>
-    </AuthShell>
+          @if (error) {
+            <AuthErrorBanner message={error} />;
+          }
+
+          <form
+            className="flex flex-col gap-4"
+            method="post"
+            action="#"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void redeemForm.handleSubmit();
+            }}
+          >
+            @if (!viaToken) {
+              <redeemForm.Field name="code">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="reset-code">Reset code</Label>
+                    <InputOtp
+                      id="reset-code"
+                      name="code"
+                      value={field.state.value}
+                      onChange={(next) => {
+                        field.handleChange(next);
+                        if (error) setError("");
+                      }}
+                      onComplete={(next) => {
+                        void redeemWithCode(next);
+                      }}
+                      aria-label="Reset code"
+                      aria-invalid={Boolean(error)}
+                    />
+                  </div>
+                )}
+              </redeemForm.Field>;
+            }
+
+            <redeemForm.Field name="password">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="reset-password">New password</Label>
+                  <Input
+                    id="reset-password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(ev) => {
+                      field.handleChange((ev.currentTarget as HTMLInputElement).value);
+                      if (mismatchFields) setMismatchFields(false);
+                      if (error) setError("");
+                    }}
+                    required
+                    aria-invalid={mismatchFields || error === TOO_SHORT}
+                    aria-describedby="reset-password-helper"
+                  />
+                  <p
+                    id="reset-password-helper"
+                    className="text-[14px] font-normal leading-[1.4] text-muted-foreground"
+                  >
+                    {PASSWORD_HELPER}
+                  </p>
+                </div>
+              )}
+            </redeemForm.Field>
+
+            <redeemForm.Field name="confirm">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="reset-confirm">Confirm password</Label>
+                  <Input
+                    id="reset-confirm"
+                    name="confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(ev) => {
+                      field.handleChange((ev.currentTarget as HTMLInputElement).value);
+                      if (mismatchFields) setMismatchFields(false);
+                      if (error) setError("");
+                    }}
+                    required
+                    aria-invalid={mismatchFields}
+                  />
+                </div>
+              )}
+            </redeemForm.Field>
+
+            <redeemForm.Subscribe
+              selector={(s) => ({
+                isSubmitting: s.isSubmitting,
+                password: s.values.password,
+                confirm: s.values.confirm,
+                code: s.values.code,
+              })}
+            >
+              {(state) => {
+                const canSubmit =
+                  state.password.length >= 8 &&
+                  state.password === state.confirm &&
+                  (viaToken || state.code.length === 8);
+                return (
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={state.isSubmitting || !canSubmit}
+                  >
+                    {(state.isSubmitting ? "Working…" : "Update password") as string}
+                  </Button>
+                );
+              }}
+            </redeemForm.Subscribe>
+          </form>
+
+          <p className="text-[14px] text-muted-foreground">
+            Remembered it?{" "}
+            <a
+              href="/login"
+              className="font-normal text-foreground underline-offset-4 hover:underline"
+            >
+              Sign in
+            </a>
+          </p>
+        </AuthShell>;
       }
     }
   }

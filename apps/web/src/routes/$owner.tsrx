@@ -10,5 +10,5 @@ export const Route = createFileRoute("/$owner")({
 });
 
 function OwnerLayout() @{
-  <Outlet />
+  <Outlet />;
 }

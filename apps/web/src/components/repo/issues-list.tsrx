@@ -95,11 +95,7 @@ export function IssuesList({
 
   <div className="flex flex-col gap-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div
-        role="tablist"
-        aria-label="Issue state"
-        className="flex flex-wrap gap-1"
-      >
+      <div role="tablist" aria-label="Issue state" className="flex flex-wrap gap-1">
         <button
           type="button"
           role="tab"
@@ -135,7 +131,7 @@ export function IssuesList({
             className="text-[14px] font-medium text-primary no-underline hover:underline"
           >
             Labels
-          </a>
+          </a>;
         }
         @if (canWrite) {
           <a
@@ -143,7 +139,7 @@ export function IssuesList({
             className="inline-flex h-11 items-center rounded-md bg-primary px-4 text-[14px] font-semibold text-primary-foreground no-underline hover:brightness-110"
           >
             New issue
-          </a>
+          </a>;
         }
       </div>
     </div>
@@ -170,9 +166,7 @@ export function IssuesList({
               value={field.state.value as string}
               className={fieldClass() as string}
               onBlur={field.handleBlur}
-              onInput={(e) =>
-                field.handleChange((e.target as HTMLInputElement).value)
-              }
+              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
             />
           </label>
         )}
@@ -186,13 +180,11 @@ export function IssuesList({
               aria-label="Label"
               value={field.state.value as string}
               className={fieldClass() as string}
-              onChange={(e) =>
-                field.handleChange((e.target as HTMLSelectElement).value)
-              }
+              onChange={(e) => field.handleChange((e.target as HTMLSelectElement).value)}
             >
               <option value="">Any label</option>
               @for (const lab of labels; key lab.id) {
-                <option value={lab.id as string}>{lab.name as string}</option>
+                <option value={lab.id as string}>{lab.name as string}</option>;
               }
             </select>
           </label>
@@ -210,9 +202,7 @@ export function IssuesList({
               value={field.state.value as string}
               className={fieldClass() as string}
               onBlur={field.handleBlur}
-              onInput={(e) =>
-                field.handleChange((e.target as HTMLInputElement).value)
-              }
+              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
             />
           </label>
         )}
@@ -229,9 +219,7 @@ export function IssuesList({
               value={field.state.value as string}
               className={fieldClass() as string}
               onBlur={field.handleBlur}
-              onInput={(e) =>
-                field.handleChange((e.target as HTMLInputElement).value)
-              }
+              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
             />
           </label>
         )}
@@ -245,10 +233,10 @@ export function IssuesList({
     </form>
 
     @if (pending) {
-      <p className="text-[16px] text-muted-foreground">Loading issues…</p>
+      <p className="text-[16px] text-muted-foreground">Loading issues…</p>;
     } @else {
       @if (issues.length === 0) {
-        <p className="text-[16px] text-muted-foreground">{emptyCopy as string}</p>
+        <p className="text-[16px] text-muted-foreground">{emptyCopy as string}</p>;
       } @else {
         <>
           <ul className="divide-y divide-border border-y border-border">
@@ -261,9 +249,11 @@ export function IssuesList({
                   {issue.title as string}
                 </a>
                 <p className="text-[13px] text-muted-foreground">
-                  {`#${issue.number} · ${issue.state} · @${issue.author_username}` as string}
+                  {
+                    `#${issue.number} · ${issue.state} · @${issue.author_username}` as string
+                  }
                 </p>
-              </li>
+              </li>;
             }
           </ul>
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -293,8 +283,8 @@ export function IssuesList({
               </button>
             </div>
           </div>
-        </>
+        </>;
       }
     }
-  </div>
+  </div>;
 }

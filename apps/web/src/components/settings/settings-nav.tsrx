@@ -1,9 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type SettingsNavActive =
-  | "profile"
-  | "tokens"
-  | "ssh-keys";
+export type SettingsNavActive = "profile" | "tokens" | "ssh-keys";
 
 type SettingsNavProps = {
   active: SettingsNavActive;
@@ -41,7 +38,7 @@ export function SettingsNav({ active }: SettingsNavProps) @{
         aria-current={active === link.id ? "page" : undefined}
       >
         {link.label as string}
-      </a>
+      </a>;
     }
-  </nav>
+  </nav>;
 }

@@ -1,8 +1,5 @@
 import { Check, ChevronDown } from "@octanejs/lucide";
-import {
-  createFileRoute,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type {
   AuthSettingsPublic,
@@ -22,15 +19,9 @@ import {
   setAuthMeCache,
 } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
-import {
-  fetchAdminAuthSettings,
-  fetchSessionMe,
-} from "@/lib/ssr-auth";
+import { fetchAdminAuthSettings, fetchSessionMe } from "@/lib/ssr-auth";
 import { toastError, toastSuccess } from "@/lib/toast";
-import {
-  AdminSettingsLayout,
-  SettingsShell,
-} from "@/components/settings/settings-shell";
+import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -155,7 +146,7 @@ function EnvBadge({ show }: { show: boolean }) @{
   @if (show) {
     <span className="inline-flex h-11 items-center rounded-md border border-border bg-muted/40 px-3 text-[14px] text-muted-foreground">
       Configured via ENV
-    </span>
+    </span>;
   }
 }
 
@@ -198,22 +189,20 @@ function ModeSelect<T extends string>({
                     <Check aria-hidden size={16} className="text-primary" />
                   </SelectItemIndicator>
                   <SelectItemText>{opt.label as string}</SelectItemText>
-                </SelectItem>
+                </SelectItem>;
               }
             </SelectList>
           </SelectPopup>
         </SelectPositioner>
       </SelectPortal>
     </SelectRoot>
-  </div>
+  </div>;
 }
 
 /** Exported for D-08 integration tests (Allow open signup Switch). */
 export function AdminAuthPage() @{
   const queryClient = useQueryClient();
-  const loaderData = useLoaderData({ from: "/admin/auth" }) as
-    | AdminAuthLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/admin/auth" }) as AdminAuthLoaderData | undefined;
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
@@ -239,13 +228,10 @@ export function AdminAuthPage() @{
   const settingsQ = useQuery({
     ...adminAuthSettingsQueryOptions(),
     enabled: isSysAdmin || loaderData?.kind === "ready",
-    ...(loaderData?.kind === "ready"
-      ? { initialData: loaderData.settings }
-      : {}),
+    ...(loaderData?.kind === "ready" ? { initialData: loaderData.settings } : {}),
   });
 
-  const initialSettings =
-    loaderData?.kind === "ready" ? loaderData.settings : null;
+  const initialSettings = loaderData?.kind === "ready" ? loaderData.settings : null;
 
   const [flags, setFlags] = useState(() =>
     initialSettings
@@ -270,15 +256,10 @@ export function AdminAuthPage() @{
           email_provider: value.email_provider,
           from_address: value.from_address.trim() || null,
           workos_client_id:
-            value.provider_mode === "workos"
-              ? value.workos_client_id.trim() || null
-              : null,
-          oidc_issuer:
-            value.provider_mode === "oidc" ? value.oidc_issuer.trim() || null : null,
+            value.provider_mode === "workos" ? value.workos_client_id.trim() || null : null,
+          oidc_issuer: value.provider_mode === "oidc" ? value.oidc_issuer.trim() || null : null,
           oidc_client_id:
-            value.provider_mode === "oidc"
-              ? value.oidc_client_id.trim() || null
-              : null,
+            value.provider_mode === "oidc" ? value.oidc_client_id.trim() || null : null,
           allow_signup: value.allow_signup,
           default_visibility: value.default_visibility,
         });
@@ -349,19 +330,14 @@ export function AdminAuthPage() @{
     (sessionKnown && me.isSuccess && !!me.data && !isSysAdmin) ||
     settingsErrorCode === "admin.forbidden";
   const loaderError = loaderData?.kind === "error" ? loaderData.message : "";
-  const settings =
-    settingsQ.data ?? (readyFromLoader ? loaderData.settings : undefined);
+  const settings = settingsQ.data ?? (readyFromLoader ? loaderData.settings : undefined);
   const loadError =
-    !!loaderError ||
-    me.isError ||
-    (settingsQ.isError && settingsErrorCode !== "admin.forbidden");
+    !!loaderError || me.isError || (settingsQ.isError && settingsErrorCode !== "admin.forbidden");
   const waitingForDraft =
-    !readyFromLoader &&
-    isSysAdmin &&
-    (settingsQ.isPending || (settingsQ.isSuccess && !draftReady));
+    !readyFromLoader && isSysAdmin && (settingsQ.isPending || (settingsQ.isSuccess && !draftReady));
 
   @if (!sessionKnown || waitingForDraft) {
-    <></>
+    <></>;
   } @else {
     @if (signedOut) {
       <SettingsShell bare>
@@ -376,29 +352,28 @@ export function AdminAuthPage() @{
             Sign in
           </a>
         </div>
-      </SettingsShell>
+      </SettingsShell>;
     } @else {
       @if (forbidden) {
         <SettingsShell bare>
           <p role="alert" className="text-center text-[16px] text-destructive">
             {FORBIDDEN as string}
           </p>
-        </SettingsShell>
+        </SettingsShell>;
       } @else {
         @if (loadError && !settings) {
           <SettingsShell bare>
             <p role="alert" className="text-center text-[16px] text-destructive">
               {(loaderError || NETWORK_ERROR) as string}
             </p>
-          </SettingsShell>
+          </SettingsShell>;
         } @else {
           <AdminSettingsLayout active="auth" data-testid="admin-auth-page">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
               Auth settings
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Instance provider mode and email delivery. Secrets stay in environment
-              variables.
+              Instance provider mode and email delivery. Secrets stay in environment variables.
             </p>
 
             <form
@@ -430,8 +405,8 @@ export function AdminAuthPage() @{
                   <Label htmlFor="admin-allow-signup">Allow open signup</Label>
                 </div>
                 <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-                  When off, new accounts can’t self-register. You can change this later in
-                  Auth settings.
+                  When off, new accounts can’t self-register. You can change this later in Auth
+                  settings.
                 </p>
               </div>
 
@@ -443,8 +418,7 @@ export function AdminAuthPage() @{
                 onChange={(v) => form.setFieldValue("default_visibility", v)}
               />
               <p className="-mt-4 text-[14px] font-normal leading-[1.4] text-muted-foreground">
-                Used when creating a repository if the owner doesn’t pick Public or
-                Private (D-08).
+                Used when creating a repository if the owner doesn’t pick Public or Private (D-08).
               </p>
 
               @if (form.state.values.provider_mode === "workos") {
@@ -469,10 +443,10 @@ export function AdminAuthPage() @{
                     @if (!flags.workos_api_key_configured) {
                       <p className="text-[14px] text-muted-foreground">
                         Not set — configure WORKOS_API_KEY in the environment.
-                      </p>
+                      </p>;
                     }
                   </div>
-                </div>
+                </div>;
               }
 
               @if (form.state.values.provider_mode === "oidc") {
@@ -512,10 +486,10 @@ export function AdminAuthPage() @{
                       <p className="text-[14px] text-muted-foreground">
                         Not set — configure OCTANEST_OIDC_CLIENT_SECRET in the
                         environment.
-                      </p>
+                      </p>;
                     }
                   </div>
-                </div>
+                </div>;
               }
 
               <ModeSelect
@@ -549,9 +523,9 @@ export function AdminAuthPage() @{
                     @if (!flags.smtp_configured) {
                       <p className="text-[14px] text-muted-foreground">
                         Not set — configure OCTANEST_SMTP_URL in the environment.
-                      </p>
+                      </p>;
                     }
-                  </div>
+                  </div>;
                 }
                 @if (form.state.values.email_provider === "resend") {
                   <div className="flex flex-col gap-2">
@@ -559,11 +533,10 @@ export function AdminAuthPage() @{
                     <EnvBadge show={flags.resend_configured} />
                     @if (!flags.resend_configured) {
                       <p className="text-[14px] text-muted-foreground">
-                        Not set — configure OCTANEST_RESEND_API_KEY in the
-                        environment.
-                      </p>
+                        Not set — configure OCTANEST_RESEND_API_KEY in the environment.
+                      </p>;
                     }
-                  </div>
+                  </div>;
                 }
               </div>
 
@@ -573,7 +546,7 @@ export function AdminAuthPage() @{
             </form>
 
             <FactoryResetSection />
-          </AdminSettingsLayout>
+          </AdminSettingsLayout>;
         }
       }
     }
@@ -623,8 +596,8 @@ function FactoryResetSection() @{
       Danger zone
     </h2>
     <p className="text-[14px] leading-[1.4] text-muted-foreground">
-      Wipe this instance back to the empty setup wizard. Choose whether repository
-      files on disk are kept or deleted. This cannot be undone.
+      Wipe this instance back to the empty setup wizard. Choose whether repository files on disk are
+      kept or deleted. This cannot be undone.
     </p>
     <Button
       type="button"
@@ -650,8 +623,8 @@ function FactoryResetSection() @{
         <DialogHeader>
           <DialogTitle>Reset this instance</DialogTitle>
           <DialogDescription>
-            Irreversible. Type RESET to confirm. Scope controls whether bare
-            repositories under storage are deleted.
+            Irreversible. Type RESET to confirm. Scope controls whether bare repositories under
+            storage are deleted.
           </DialogDescription>
         </DialogHeader>
 
@@ -668,9 +641,7 @@ function FactoryResetSection() @{
           <label className="flex cursor-pointer items-start gap-3">
             <RadioGroupItem value="database_only" className="mt-0.5" />
             <span className="flex flex-col gap-1">
-              <span className="text-[14px] font-medium text-foreground">
-                Database only
-              </span>
+              <span className="text-[14px] font-medium text-foreground">Database only</span>
               <span className="text-[14px] leading-[1.4] text-muted-foreground">
                 Wipe users, sessions, and auth. Keep repository files on disk.
               </span>
@@ -694,9 +665,7 @@ function FactoryResetSection() @{
           <Input
             id="factory-reset-confirm"
             value={phrase}
-            onInput={(e) =>
-              setPhrase((e.currentTarget as HTMLInputElement).value)
-            }
+            onInput={(e) => setPhrase((e.currentTarget as HTMLInputElement).value)}
             autoComplete="off"
             placeholder="RESET"
             disabled={pending}
@@ -706,7 +675,7 @@ function FactoryResetSection() @{
         @if (error) {
           <p role="alert" className="text-[14px] text-destructive">
             {error as string}
-          </p>
+          </p>;
         }
 
         <DialogFooter>
@@ -732,5 +701,5 @@ function FactoryResetSection() @{
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  </div>
+  </div>;
 }

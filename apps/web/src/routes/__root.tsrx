@@ -15,11 +15,7 @@ import {
   QueryClientProvider,
   type DehydratedState,
 } from "@octanejs/tanstack-query";
-import type {
-  BootstrapStatus,
-  ProviderConfigPublic,
-  UserPublic,
-} from "@octanest/api-client";
+import type { BootstrapStatus, ProviderConfigPublic, UserPublic } from "@octanest/api-client";
 import { SiteFooter, SiteHeader } from "@/components/chrome";
 import { AppToaster } from "@/components/ui/toaster";
 import { VerifyBanner } from "@/components/verify-banner";
@@ -154,7 +150,7 @@ function RootShell({ children }: { children?: unknown }) @{
       <Scripts />
       <script dangerouslySetInnerHTML={{ __html: SW_REGISTER_SCRIPT }} />
     </Body>
-  </Html>
+  </Html>;
 }
 
 function RootComponent() @{
@@ -174,5 +170,5 @@ function RootComponent() @{
         </div>
       </AppToaster>
     </HydrationBoundary>
-  </QueryClientProvider>
+  </QueryClientProvider>;
 }

@@ -26,5 +26,5 @@ export function GlobalSearch({ className }: GlobalSearchProps) @{
       title="Coming soon — search users, orgs, repos, commits, pull requests, and code"
       aria-label={GLOBAL_SEARCH_LABEL}
     />
-  </div>
+  </div>;
 }

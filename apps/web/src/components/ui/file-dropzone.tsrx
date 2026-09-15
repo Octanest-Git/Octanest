@@ -46,12 +46,8 @@ export function FileDropzone(props: FileDropzoneProps) @{
     className: cn(
       variant === "dropzone" &&
         "flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-card px-4 py-6 text-center transition-colors",
-      variant === "dropzone" &&
-        busy &&
-        "border-primary bg-primary/5",
-      variant === "dropzone" &&
-        props.disabled &&
-        "cursor-not-allowed opacity-60",
+      variant === "dropzone" && busy && "border-primary bg-primary/5",
+      variant === "dropzone" && props.disabled && "cursor-not-allowed opacity-60",
       variant === "button" && "inline-flex",
       props.className,
     ),
@@ -72,26 +68,24 @@ export function FileDropzone(props: FileDropzoneProps) @{
         {(props.buttonLabel ?? "Choose file") as string}
       </button>
       @if (props.hint) {
-        <p className="mt-1 text-[14px] text-muted-foreground">
-          {props.hint as string}
-        </p>
+        <p className="mt-1 text-[14px] text-muted-foreground">{props.hint as string}</p>;
       }
-    </div>
+    </div>;
   } @else {
     <div {...rootProps}>
       <input id={props.id} {...dropzone.getInputProps()} />
       <p className="text-[14px] font-medium text-foreground">
-        {(dropzone.isDragActive
-          ? "Drop files to upload"
-          : dropzone.isProcessing
-            ? "Checking files…"
-            : "Drop files here, or click to browse") as string}
+        {
+          (dropzone.isDragActive
+            ? "Drop files to upload"
+            : dropzone.isProcessing
+              ? "Checking files…"
+              : "Drop files here, or click to browse") as string
+        }
       </p>
       @if (props.hint) {
-        <p className="text-[13px] text-muted-foreground">
-          {props.hint as string}
-        </p>
+        <p className="text-[13px] text-muted-foreground">{props.hint as string}</p>;
       }
-    </div>
+    </div>;
   }
 }

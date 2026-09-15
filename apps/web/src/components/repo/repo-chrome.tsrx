@@ -11,11 +11,7 @@ type RepoChromeProps = {
 };
 
 /** Title row + Code/Commits/Branches/Tags/Issues/Releases/Packages/(Settings) link-row. */
-export function RepoChrome({
-  repo,
-  active,
-  showSettings = false,
-}: RepoChromeProps) @{
+export function RepoChrome({ repo, active, showSettings = false }: RepoChromeProps) @{
   // Gate Settings on API can_admin — not personal username equality (D-REL-07 / D-REL-09).
   const settingsVisible = showSettings || !!repo.can_admin;
 
@@ -48,21 +44,16 @@ export function RepoChrome({
       </h1>
       <Badge variant="outline">
         @if (repo.visibility === "private") {
-          <Lock aria-hidden size={12} />
+          <Lock aria-hidden size={12} />;
         }
         {(repo.visibility === "private" ? "Private" : "Public") as string}
       </Badge>
     </div>
     @if (repo.description.trim()) {
-      <p className="mt-2 text-[16px] text-muted-foreground">
-        {repo.description as string}
-      </p>
+      <p className="mt-2 text-[16px] text-muted-foreground">{repo.description as string}</p>;
     }
 
-    <nav
-      className="mt-6 flex flex-wrap gap-4 border-b border-border pb-0"
-      aria-label="Repository"
-    >
+    <nav className="mt-6 flex flex-wrap gap-4 border-b border-border pb-0" aria-label="Repository">
       <a
         href={codeHref as string}
         className={navClass(active === "code") as string}
@@ -119,8 +110,8 @@ export function RepoChrome({
           aria-current={active === "settings" ? "page" : undefined}
         >
           Settings
-        </a>
+        </a>;
       }
     </nav>
-  </div>
+  </div>;
 }

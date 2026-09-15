@@ -34,11 +34,7 @@ type ButtonProps = {
 } & VariantProps<typeof buttonVariants>;
 
 export function Button({ className, variant, size, children, ...rest }: ButtonProps) @{
-  <button
-    data-slot="button"
-    className={cn(buttonVariants({ variant, size }), className)}
-    {...rest}
-  >
+  <button data-slot="button" className={cn(buttonVariants({ variant, size }), className)} {...rest}>
     {children}
-  </button>
+  </button>;
 }

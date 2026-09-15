@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, RepoPublic } from "@octanest/api-client";
 import { useForm } from "@octanejs/tanstack-form";
@@ -21,8 +17,7 @@ export type RepoLabelsLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function labelsQueryKey(owner: string, name: string) {
   return ["label", "listForRepo", owner, name, "admin"] as const;
@@ -33,10 +28,7 @@ function swatchStyle(color: string): { backgroundColor: string } {
   return { backgroundColor: hex };
 }
 
-async function loadRepoLabels(
-  owner: string,
-  repoName: string,
-): Promise<RepoLabelsLoaderData> {
+async function loadRepoLabels(owner: string, repoName: string): Promise<RepoLabelsLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
@@ -77,9 +69,7 @@ export function RepoIssueLabelsPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
-  const layout = useLoaderData({ from: "/$owner/$repo" }) as
-    | RepoLayoutLoaderData
-    | undefined;
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({
     from: "/$owner/$repo/issues/labels",
   }) as RepoLabelsLoaderData | undefined;
@@ -215,17 +205,15 @@ export function RepoIssueLabelsPage() @{
   }
 
   @if (notFound) {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else {
     @if (!repo) {
-      <p className="text-[16px] text-muted-foreground">Loading labels…</p>
+      <p className="text-[16px] text-muted-foreground">Loading labels…</p>;
     } @else {
       <>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-[18px] font-semibold text-foreground">
-              Labels
-            </h2>
+            <h2 className="text-[18px] font-semibold text-foreground">Labels</h2>
             <p className="text-[14px] text-muted-foreground">
               Hide org defaults or add repository-local labels.
             </p>
@@ -241,12 +229,12 @@ export function RepoIssueLabelsPage() @{
         @if (formError) {
           <div className="mb-4">
             <AuthErrorBanner message={formError} />
-          </div>
+          </div>;
         }
         @if (rowError) {
           <div className="mb-4">
             <AuthErrorBanner message={rowError} />
-          </div>
+          </div>;
         }
 
         <form
@@ -258,9 +246,7 @@ export function RepoIssueLabelsPage() @{
             void form.handleSubmit();
           }}
         >
-          <p className="text-[14px] font-semibold text-foreground">
-            New repository label
-          </p>
+          <p className="text-[14px] font-semibold text-foreground">New repository label</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <form.Field name="name">
               {(field) => (
@@ -270,9 +256,7 @@ export function RepoIssueLabelsPage() @{
                     id="repo-label-name"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onInput={(e) =>
-                      field.handleChange((e.target as HTMLInputElement).value)
-                    }
+                    onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                     disabled={pending}
                   />
                 </div>
@@ -286,9 +270,7 @@ export function RepoIssueLabelsPage() @{
                     id="repo-label-color"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onInput={(e) =>
-                      field.handleChange((e.target as HTMLInputElement).value)
-                    }
+                    onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                     disabled={pending}
                   />
                 </div>
@@ -303,9 +285,7 @@ export function RepoIssueLabelsPage() @{
                   id="repo-label-desc"
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onInput={(e) =>
-                    field.handleChange((e.target as HTMLInputElement).value)
-                  }
+                  onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
                   disabled={pending}
                 />
               </div>
@@ -319,12 +299,12 @@ export function RepoIssueLabelsPage() @{
         </form>
 
         @if (labelsQ.isPending) {
-          <p className="text-[16px] text-muted-foreground">Loading labels…</p>
+          <p className="text-[16px] text-muted-foreground">Loading labels…</p>;
         } @else {
           @if (labels.length === 0) {
             <p className="text-[16px] text-muted-foreground">
               No labels yet. Create a local label or add org defaults.
-            </p>
+            </p>;
           } @else {
             <ul className="divide-y divide-border border-y border-border">
               @for (const lab of labels; key lab.id) {
@@ -344,7 +324,7 @@ export function RepoIssueLabelsPage() @{
                     @if (lab.hidden) {
                       <span className="text-[12px] text-muted-foreground">
                         hidden
-                      </span>
+                      </span>;
                     }
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -356,7 +336,7 @@ export function RepoIssueLabelsPage() @{
                         onClick={() => toggleHidden(lab)}
                       >
                         {(lab.hidden ? "Show" : "Hide") as string}
-                      </Button>
+                      </Button>;
                     }
                     @if (lab.scope === "repo") {
                       <Button
@@ -366,15 +346,15 @@ export function RepoIssueLabelsPage() @{
                         onClick={() => deleteLocal(lab)}
                       >
                         Delete
-                      </Button>
+                      </Button>;
                     }
                   </div>
-                </li>
+                </li>;
               }
-            </ul>
+            </ul>;
           }
         }
-      </>
+      </>;
     }
   }
 }

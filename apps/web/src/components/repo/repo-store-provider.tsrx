@@ -1,9 +1,5 @@
 import { useState } from "octane";
-import {
-  RepoStoreContext,
-  createRepoStore,
-  type RepoLayoutStatus,
-} from "@/lib/repo-store";
+import { RepoStoreContext, createRepoStore, type RepoLayoutStatus } from "@/lib/repo-store";
 import type { RepoPublic, UserPublic } from "@octanest/api-client";
 
 type RepoStoreProviderProps = {
@@ -43,7 +39,5 @@ export function RepoStoreProvider({
     }),
   );
 
-  <RepoStoreContext.Provider value={store}>
-    {children}
-  </RepoStoreContext.Provider>
+  <RepoStoreContext.Provider value={store}>{children}</RepoStoreContext.Provider>;
 }

@@ -4,14 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 type PatClassicFormProps = {
   onCreated: (token: string) => void;
@@ -68,15 +64,11 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
           name: trimmed,
           scopes: scopes as ("repo" | "package:read" | "package:write")[],
           expires_at:
-            value.expiryMode === "date" && value.expiryDate
-              ? expiryToIso(value.expiryDate)
-              : null,
+            value.expiryMode === "date" && value.expiryDate ? expiryToIso(value.expiryDate) : null,
         });
         if (!res.ok) {
           if (res.error.code === "auth.email_unverified") {
-            setFormError(
-              "Verify your email before creating a personal access token.",
-            );
+            setFormError("Verify your email before creating a personal access token.");
           } else if (res.error.code === "pat.note_required") {
             setNoteError("Note is required.");
           } else {
@@ -113,9 +105,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
             autoComplete="off"
             disabled={pending}
             onBlur={field.handleBlur}
-            onInput={(e) =>
-              field.handleChange((e.currentTarget as HTMLInputElement).value)
-            }
+            onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
           />
           <p className="text-[14px] text-muted-foreground">
             What's this token for? e.g. laptop, CI
@@ -123,7 +113,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
           @if (noteError) {
             <p role="alert" className="text-[14px] text-destructive">
               {noteError as string}
-            </p>
+            </p>;
           }
         </div>
       )}
@@ -138,9 +128,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
               checked={values.repoChecked}
               disabled={pending}
               aria-label="Full control of private repositories"
-              onCheckedChange={(checked) =>
-                form.setFieldValue("repoChecked", checked === true)
-              }
+              onCheckedChange={(checked) => form.setFieldValue("repoChecked", checked === true)}
             />
             <span className="text-[14px] text-foreground">
               Full control of private repositories
@@ -152,9 +140,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
               disabled={pending || values.packageWrite}
               aria-label="package:read"
               data-testid="scope-package-read"
-              onCheckedChange={(checked) =>
-                form.setFieldValue("packageRead", checked === true)
-              }
+              onCheckedChange={(checked) => form.setFieldValue("packageRead", checked === true)}
             />
             <span className="text-[14px] text-foreground">
               package:read — download packages (does not include repo alone)
@@ -179,7 +165,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
           @if (scopeError) {
             <p role="alert" className="text-[14px] text-destructive">
               {scopeError as string}
-            </p>
+            </p>;
           }
         </div>
       )}
@@ -222,7 +208,7 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
                   }
                 />
               )}
-            </form.Field>
+            </form.Field>;
           }
         </div>
       )}
@@ -231,19 +217,15 @@ export function PatClassicForm({ onCreated }: PatClassicFormProps) @{
     @if (formError) {
       <p role="alert" className="text-[16px] text-destructive">
         {formError as string}
-      </p>
+      </p>;
     }
 
     <form.Subscribe selector={(s) => s.values.repoChecked}>
       {(repoChecked) => (
-        <Button
-          type="submit"
-          className="h-11 w-fit"
-          disabled={pending || !repoChecked}
-        >
+        <Button type="submit" className="h-11 w-fit" disabled={pending || !repoChecked}>
           {(pending ? "Generating…" : "Generate token") as string}
         </Button>
       )}
     </form.Subscribe>
-  </form>
+  </form>;
 }

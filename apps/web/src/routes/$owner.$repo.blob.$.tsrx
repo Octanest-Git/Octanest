@@ -1,13 +1,5 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoBlobResponse,
-  RepoPublic,
-  RepoRefEntry,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoBlobResponse, RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { BlobViewer } from "@/components/repo/blob-viewer";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
@@ -16,11 +8,7 @@ import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { highlightCode, languageIdForPath, type HighlightTheme } from "@/lib/highlight";
 import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import { resolveSsrHighlightTheme } from "@/lib/ssr-auth";
-import {
-  fetchRepoBlob,
-  fetchRepoGet,
-  fetchRepoRefs,
-} from "@/lib/ssr-repo";
+import { fetchRepoBlob, fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
 
 export type BlobLoaderData =
   | { kind: "not_found" }
@@ -39,8 +27,7 @@ export type BlobLoaderData =
 
 type Phase = { kind: "loading" } | BlobLoaderData;
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function highlightBlob(
   path: string,
@@ -80,10 +67,7 @@ async function loadBlobPage(
     data: { owner, name: repoName, ref: refName, path: parsed.path },
   });
   if (!blobRes.ok) {
-    if (
-      blobRes.error.code === "repo.not_found" ||
-      blobRes.error.code === "git.not_found"
-    ) {
+    if (blobRes.error.code === "repo.not_found" || blobRes.error.code === "git.not_found") {
       return { kind: "not_found" };
     }
     return {
@@ -95,12 +79,7 @@ async function loadBlobPage(
   let highlightedHtml: string | null = null;
   let highlightTheme: HighlightTheme | null = null;
   const blob = blobRes.data;
-  if (
-    !blob.is_binary &&
-    !blob.truncated &&
-    blob.encoding === "utf-8" &&
-    blob.content
-  ) {
+  if (!blob.is_binary && !blob.truncated && blob.encoding === "utf-8" && blob.content) {
     try {
       const hl = await highlightBlob(blob.path || parsed.path, blob.content);
       highlightedHtml = hl.html;
@@ -126,9 +105,7 @@ async function loadBlobPage(
 export const Route = createFileRoute("/$owner/$repo/blob/$")({
   component: RepoBlobPage,
   head: ({ params }) => {
-    const { path } = parseRefAndPath(
-      (params as { _splat?: string })._splat,
-    );
+    const { path } = parseRefAndPath((params as { _splat?: string })._splat);
     const owner = (params as { owner: string }).owner;
     const repo = (params as { repo: string }).repo;
     const base = path.split("/").pop() || path || "file";
@@ -158,13 +135,9 @@ export function RepoBlobPage() @{
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const splat = params._splat;
-  const loaderData = useLoaderData({ from: "/$owner/$repo/blob/$" }) as
-    | BlobLoaderData
-    | undefined;
+  const loaderData = useLoaderData({ from: "/$owner/$repo/blob/$" }) as BlobLoaderData | undefined;
 
-  const [phase, setPhase] = useState<Phase>(() =>
-    loaderData ?? { kind: "loading" },
-  );
+  const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
 
   useEffect(() => {
     if (loaderData) {
@@ -172,7 +145,7 @@ export function RepoBlobPage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadBlobPage(owner, repoName, splat);
@@ -187,13 +160,13 @@ export function RepoBlobPage() @{
   }, [owner, repoName, splat, loaderData]);
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading file…</p>
+    <p className="text-[16px] text-muted-foreground">Loading file…</p>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
-    </p>
+    </p>;
   } @else {
     <>
       <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -205,12 +178,7 @@ export function RepoBlobPage() @{
           pathUnderRef={phase.path}
           mode="blob"
         />
-        <PathBreadcrumb
-          owner={owner}
-          repo={repoName}
-          refName={phase.refName}
-          path={phase.path}
-        />
+        <PathBreadcrumb owner={owner} repo={repoName} refName={phase.refName} path={phase.path} />
       </div>
       <BlobViewer
         owner={owner}
@@ -219,6 +187,6 @@ export function RepoBlobPage() @{
         highlightedHtml={phase.highlightedHtml}
         highlightTheme={phase.highlightTheme}
       />
-    </>
+    </>;
   }
 }

@@ -29,7 +29,7 @@ type BlobViewerProps = {
   /** SSR Shiki HTML when available. */
   highlightedHtml?: string | null;
   /** Theme used for `highlightedHtml` — skip client re-highlight when it matches. */
-  highlightTheme?: HighlightTheme | null;
+  highlightTheme?: HighlightTheme;
 };
 
 function fileBaseName(path: string): string {
@@ -54,9 +54,7 @@ function plainCodeHtml(text: string): string {
 }
 
 function clientHighlightTheme(): HighlightTheme {
-  return resolveTheme(readThemePreference()) === "dark"
-    ? "github-dark"
-    : "github-light";
+  return resolveTheme(readThemePreference()) === "dark" ? "github-dark" : "github-light";
 }
 
 /** Syntax-highlighted blob with forge-style header, line numbers, #L permalinks (D-19, D-20). */
@@ -67,17 +65,12 @@ export function BlobViewer({
   highlightedHtml = null,
   highlightTheme = null,
 }: BlobViewerProps) @{
-  const text =
-    !blob.is_binary && blob.encoding === "utf-8" && blob.content
-      ? blob.content
-      : "";
+  const text = !blob.is_binary && blob.encoding === "utf-8" && blob.content ? blob.content : "";
   const lfsPointer = text ? parseLfsPointer(text) : null;
-  const [hl, setHl] = useState<string | null>(() =>
-    highlightedHtml ?? (text ? plainCodeHtml(text) : null),
+  const [hl, setHl] = useState<string | null>(
+    () => highlightedHtml ?? (text ? plainCodeHtml(text) : null),
   );
-  const [range, setRange] = useState<{ start: number; end: number } | null>(
-    null,
-  );
+  const [range, setRange] = useState<{ start: number; end: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const [lfsDlPending, setLfsDlPending] = useState(false);
   const [lfsDlError, setLfsDlError] = useState("");
@@ -105,12 +98,7 @@ export function BlobViewer({
   }, [highlightedHtml]);
 
   useEffect(() => {
-    if (
-      blob.is_binary ||
-      blob.truncated ||
-      blob.encoding !== "utf-8" ||
-      !blob.content
-    ) {
+    if (blob.is_binary || blob.truncated || blob.encoding !== "utf-8" || !blob.content) {
       setHl(null);
       return;
     }
@@ -119,12 +107,7 @@ export function BlobViewer({
 
     async function run(force: boolean) {
       const theme = clientHighlightTheme();
-      if (
-        !force &&
-        highlightedHtml &&
-        highlightTheme &&
-        theme === highlightTheme
-      ) {
+      if (!force && highlightedHtml && highlightTheme && theme === highlightTheme) {
         return;
       }
       const out = await highlightCode(blob.content ?? "", {
@@ -198,9 +181,7 @@ export function BlobViewer({
         return;
       }
       const bin = Uint8Array.from(atob(res.data.content), (c) => c.charCodeAt(0));
-      const blobUrl = URL.createObjectURL(
-        new Blob([bin], { type: "application/octet-stream" }),
-      );
+      const blobUrl = URL.createObjectURL(new Blob([bin], { type: "application/octet-stream" }));
       const a = document.createElement("a");
       a.href = blobUrl;
       a.download = fileBaseName(blob.path);
@@ -214,10 +195,7 @@ export function BlobViewer({
   }
 
   const showImage =
-    blob.is_binary &&
-    isImagePath(blob.path) &&
-    !!blob.content &&
-    blob.encoding === "base64";
+    blob.is_binary && isImagePath(blob.path) && !!blob.content && blob.encoding === "base64";
 
   const metaBits: string[] = [];
   if (!blob.is_binary && lineCount > 0) {
@@ -228,11 +206,7 @@ export function BlobViewer({
   <div className="overflow-hidden rounded-md border border-border bg-card">
     <div className="flex flex-wrap items-center gap-3 border-b border-border bg-muted/35 px-3 py-2">
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <FileCode2
-          aria-hidden
-          size={16}
-          className="shrink-0 text-muted-foreground"
-        />
+        <FileCode2 aria-hidden size={16} className="shrink-0 text-muted-foreground" />
         <span
           className="truncate font-mono text-[14px] font-semibold text-foreground"
           title={blob.path as string}
@@ -248,29 +222,23 @@ export function BlobViewer({
             data-testid="lfs-pointer-badge"
           >
             LFS
-          </span>
+          </span>;
         }
       </div>
       <div className="flex flex-wrap items-center gap-1">
         @if (lfsPointer) {
           <button
             type="button"
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "h-8 px-2.5 text-[13px]",
-            )}
+            className={cn(buttonVariants({ variant: "secondary" }), "h-8 px-2.5 text-[13px]")}
             disabled={lfsDlPending}
             onClick={() => void downloadLfsObject()}
           >
             {(lfsDlPending ? "Downloading…" : "Download via LFS") as string}
-          </button>
+          </button>;
         }
         <a
           href={rawUrl as string}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            "h-8 px-2.5 text-[13px]",
-          )}
+          className={cn(buttonVariants({ variant: "ghost" }), "h-8 px-2.5 text-[13px]")}
           target="_blank"
           rel="noreferrer"
         >
@@ -278,10 +246,7 @@ export function BlobViewer({
         </a>
         <a
           href={blameUrl as string}
-          className={cn(
-            buttonVariants({ variant: "ghost" }),
-            "h-8 px-2.5 text-[13px]",
-          )}
+          className={cn(buttonVariants({ variant: "ghost" }), "h-8 px-2.5 text-[13px]")}
         >
           Blame
         </a>
@@ -297,24 +262,21 @@ export function BlobViewer({
             title={copied ? "Copied" : "Copy file contents"}
           >
             @if (copied) {
-              <Check aria-hidden size={14} />
+              <Check aria-hidden size={14} />;
             } @else {
-              <Copy aria-hidden size={14} />
+              <Copy aria-hidden size={14} />;
             }
             {(copied ? "Copied" : "Copy") as string}
-          </button>
+          </button>;
         }
         @if (blob.truncated || blob.is_binary) {
           <a
             href={rawUrl as string}
-            className={cn(
-              buttonVariants({ variant: "secondary" }),
-              "h-8 px-2.5 text-[13px]",
-            )}
+            className={cn(buttonVariants({ variant: "secondary" }), "h-8 px-2.5 text-[13px]")}
             download
           >
             Download
-          </a>
+          </a>;
         }
       </div>
     </div>
@@ -322,7 +284,7 @@ export function BlobViewer({
     @if (lfsDlError) {
       <div role="alert" className="border-b border-border px-4 py-2">
         <p className="text-[14px] text-destructive">{lfsDlError as string}</p>
-      </div>
+      </div>;
     }
 
     @if (blob.truncated) {
@@ -330,26 +292,24 @@ export function BlobViewer({
         <p className="text-[14px] text-muted-foreground">
           This file is too large to display. View raw or download.
         </p>
-      </div>
+      </div>;
     }
 
     @if (showImage) {
       <div className="flex justify-center bg-muted/20 p-6">
         <img
-          src={
-            (`data:${imageMimeForPath(blob.path)};base64,${blob.content}` as string)
-          }
+          src={`data:${imageMimeForPath(blob.path)};base64,${blob.content}` as string}
           alt={blob.path as string}
           className="max-h-[70vh] max-w-full"
         />
-      </div>
+      </div>;
     } @else {
       @if (blob.is_binary || blob.encoding !== "utf-8") {
         <div className="px-6 py-10 text-center">
           <p className="text-[16px] text-muted-foreground">
             This file can't be previewed. Download it instead.
           </p>
-        </div>
+        </div>;
       } @else {
         @if (!blob.truncated) {
           <div className="flex overflow-x-auto">
@@ -366,13 +326,13 @@ export function BlobViewer({
                   type="button"
                   id={`L${n}` as string}
                   className={
-                    (`block h-5 min-w-[3.25rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string)
+                    `block h-5 min-w-[3.25rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string
                   }
                   onClick={() => goLine(n)}
                   aria-label={`Line ${n}`}
                 >
                   {String(n) as string}
-                </button>
+                </button>;
               }
             </div>
             <div
@@ -381,9 +341,9 @@ export function BlobViewer({
                 __html: (hl ?? plainCodeHtml(text)) as string,
               }}
             />
-          </div>
+          </div>;
         }
       }
     }
-  </div>
+  </div>;
 }

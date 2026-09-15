@@ -1,12 +1,5 @@
-import {
-  createFileRoute,
-  useLoaderData,
-  useParams,
-} from "@octanejs/tanstack-router";
-import type {
-  RepoCommitResponse,
-  RepoPublic,
-} from "@octanest/api-client";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
+import type { RepoCommitResponse, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -20,8 +13,7 @@ export type CommitLoaderData =
 
 type Phase = { kind: "loading" } | CommitLoaderData;
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 async function loadCommitPage(
   owner: string,
@@ -40,10 +32,7 @@ async function loadCommitPage(
     data: { owner, name: repoName, sha },
   });
   if (!detail.ok) {
-    if (
-      detail.error.code === "repo.not_found" ||
-      detail.error.code === "repo.path_not_found"
-    ) {
+    if (detail.error.code === "repo.not_found" || detail.error.code === "repo.path_not_found") {
       return { kind: "not_found" };
     }
     return {
@@ -96,9 +85,7 @@ export function RepoCommitPage() @{
     | CommitLoaderData
     | undefined;
 
-  const [phase, setPhase] = useState<Phase>(() =>
-    loaderData ?? { kind: "loading" },
-  );
+  const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
 
   useEffect(() => {
     if (loaderData) {
@@ -106,7 +93,7 @@ export function RepoCommitPage() @{
       return;
     }
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setPhase({ kind: "loading" });
       try {
         const next = await loadCommitPage(owner, repoName, sha);
@@ -121,13 +108,13 @@ export function RepoCommitPage() @{
   }, [owner, repoName, sha, loaderData]);
 
   @if (phase.kind === "not_found") {
-    <RepoNotFound />
+    <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading commit…</p>
+    <p className="text-[16px] text-muted-foreground">Loading commit…</p>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
-    </p>
+    </p>;
   } @else {
     <>
       <header className="mb-6 border-b border-border pb-4">
@@ -137,31 +124,23 @@ export function RepoCommitPage() @{
         @if (phase.commit.body.trim()) {
           <pre className="mt-2 whitespace-pre-wrap font-[family-name:var(--font-sans)] text-[16px] text-muted-foreground">
             {phase.commit.body as string}
-          </pre>
+          </pre>;
         }
         <p className="mt-3 text-[14px] text-muted-foreground">
-          <span className="font-medium text-foreground">
-            {phase.commit.author_name as string}
-          </span>
+          <span className="font-medium text-foreground">{phase.commit.author_name as string}</span>
           {" · "}
           <time dateTime={phase.commit.authored_at as string}>
             {relativeCommitTime(phase.commit.authored_at) as string}
           </time>
           {" · "}
-          <code className="font-mono text-[13px]">
-            {phase.commit.short_sha as string}
-          </code>
+          <code className="font-mono text-[13px]">{phase.commit.short_sha as string}</code>
         </p>
         @if (phase.commit.truncated) {
-          <p className="mt-2 text-[14px] text-muted-foreground">
-            Diff truncated for size.
-          </p>
+          <p className="mt-2 text-[14px] text-muted-foreground">Diff truncated for size.</p>;
         }
       </header>
       @if (phase.commit.files.length === 0) {
-        <p className="text-[16px] text-muted-foreground">
-          No file changes in this commit.
-        </p>
+        <p className="text-[16px] text-muted-foreground">No file changes in this commit.</p>;
       } @else {
         <div className="flex flex-col gap-6">
           @for (const f of phase.commit.files; key f.path) {
@@ -169,10 +148,10 @@ export function RepoCommitPage() @{
               path={f.path as string}
               status={f.status as string}
               patch={f.patch as string}
-            />
+            />;
           }
-        </div>
+        </div>;
       }
-    </>
+    </>;
   }
 }

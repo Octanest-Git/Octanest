@@ -1,8 +1,5 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type {
-  CommentRevisionPublic,
-  IssueCommentPublic,
-} from "@octanest/api-client";
+import type { CommentRevisionPublic, IssueCommentPublic } from "@octanest/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -20,18 +17,13 @@ export type IssueCommentsProps = {
   currentUserId: string;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
-function CommentBody(props: {
-  body: string;
-  owner: string;
-  repoName: string;
-}) @{
+function CommentBody(props: { body: string; owner: string; repoName: string }) @{
   const [html, setHtml] = useState("");
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       const rendered = await renderGfm(props.body || "", {
         owner: props.owner,
         repo: props.repoName,
@@ -43,10 +35,7 @@ function CommentBody(props: {
     };
   }, [props.body, props.owner, props.repoName]);
 
-  <div
-    className="prose prose-sm max-w-none"
-    dangerouslySetInnerHTML={{ __html: html }}
-  />
+  <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 function CommentHistoryDisclosure(props: {
@@ -92,15 +81,15 @@ function CommentHistoryDisclosure(props: {
     @if (open) {
       <div className="mt-2" data-testid="comment-history">
         @if (historyQ.isPending) {
-          <p className="text-[13px] text-muted-foreground">Loading…</p>
+          <p className="text-[13px] text-muted-foreground">Loading…</p>;
         } @else {
           @if (historyQ.isError) {
             <p role="alert" className="text-[13px] text-destructive">
               Could not load comment history.
-            </p>
+            </p>;
           } @else {
             @if (revisions.length === 0) {
-              <p className="text-[13px] text-muted-foreground">No prior edits.</p>
+              <p className="text-[13px] text-muted-foreground">No prior edits.</p>;
             } @else {
               <ul className="flex flex-col gap-2">
                 @for (const rev of revisions; key rev.id) {
@@ -111,15 +100,15 @@ function CommentHistoryDisclosure(props: {
                     <pre className="mt-1 whitespace-pre-wrap font-sans text-foreground">
                       {rev.body as string}
                     </pre>
-                  </li>
+                  </li>;
                 }
-              </ul>
+              </ul>;
             }
           }
         }
-      </div>
+      </div>;
     }
-  </div>
+  </div>;
 }
 
 function CommentItem(props: {
@@ -190,10 +179,7 @@ function CommentItem(props: {
     }
   }
 
-  <li
-    className="rounded-md border border-border px-4 py-3"
-    data-testid="issue-comment"
-  >
+  <li className="rounded-md border border-border px-4 py-3" data-testid="issue-comment">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <p className="text-[13px] text-muted-foreground">
         {`@${comment.author_username} · ${comment.created_at}` as string}
@@ -211,7 +197,7 @@ function CommentItem(props: {
             }}
           >
             Edit
-          </Button>
+          </Button>;
         }
         @if (canDelete && !editing) {
           <Button
@@ -221,14 +207,14 @@ function CommentItem(props: {
             onClick={() => void remove()}
           >
             Delete
-          </Button>
+          </Button>;
         }
       </div>
     </div>
     @if (error) {
       <div className="mt-2">
         <AuthErrorBanner message={error} />
-      </div>
+      </div>;
     }
     @if (editing) {
       <form
@@ -269,14 +255,10 @@ function CommentItem(props: {
             Cancel
           </Button>
         </div>
-      </form>
+      </form>;
     } @else {
       <div className="mt-2 flex flex-col gap-2">
-        <CommentBody
-          body={comment.body}
-          owner={props.owner}
-          repoName={props.repoName}
-        />
+        <CommentBody body={comment.body} owner={props.owner} repoName={props.repoName} />
         <IssueReactionsBar
           owner={props.owner}
           repoName={props.repoName}
@@ -293,9 +275,9 @@ function CommentItem(props: {
           number={props.number}
           commentId={comment.id}
         />
-      </div>
+      </div>;
     }
-  </li>
+  </li>;
 }
 
 /** Issue comment thread with create/edit/delete + history (ISS-02 / D-ISS-09 / D-ISS-12). */
@@ -305,14 +287,7 @@ export function IssueComments(props: IssueCommentsProps) @{
   const [error, setError] = useState("");
 
   const listQ = useQuery({
-    queryKey: [
-      "issue",
-      "comments",
-      "list",
-      props.owner,
-      props.repoName,
-      props.number,
-    ] as const,
+    queryKey: ["issue", "comments", "list", props.owner, props.repoName, props.number] as const,
     queryFn: async () => {
       const res = await apiClient.issue.comments.list({
         owner: props.owner,
@@ -329,14 +304,7 @@ export function IssueComments(props: IssueCommentsProps) @{
 
   async function invalidate() {
     await queryClient.invalidateQueries({
-      queryKey: [
-        "issue",
-        "comments",
-        "list",
-        props.owner,
-        props.repoName,
-        props.number,
-      ],
+      queryKey: ["issue", "comments", "list", props.owner, props.repoName, props.number],
     });
   }
 
@@ -376,22 +344,19 @@ export function IssueComments(props: IssueCommentsProps) @{
     data-testid="issue-comments"
     className="flex flex-col gap-4"
   >
-    <h2
-      id="issue-comments-heading"
-      className="text-[16px] font-semibold text-foreground"
-    >
+    <h2 id="issue-comments-heading" className="text-[16px] font-semibold text-foreground">
       Comments
     </h2>
     @if (listQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading comments…</p>
+      <p className="text-[14px] text-muted-foreground">Loading comments…</p>;
     } @else {
       @if (listQ.isError) {
         <p role="alert" className="text-[14px] text-destructive">
           Could not load comments.
-        </p>
+        </p>;
       } @else {
         @if (comments.length === 0) {
-          <p className="text-[14px] text-muted-foreground">No comments yet.</p>
+          <p className="text-[14px] text-muted-foreground">No comments yet.</p>;
         } @else {
           <ul className="flex flex-col gap-3">
             @for (const c of comments; key c.id) {
@@ -403,9 +368,9 @@ export function IssueComments(props: IssueCommentsProps) @{
                 canWrite={props.canWrite}
                 currentUserId={props.currentUserId}
                 onChanged={invalidate}
-              />
+              />;
             }
-          </ul>
+          </ul>;
         }
       }
     }
@@ -422,7 +387,7 @@ export function IssueComments(props: IssueCommentsProps) @{
         }}
       >
         @if (error) {
-          <AuthErrorBanner message={error} />
+          <AuthErrorBanner message={error} />;
         }
         <composeForm.Field name="body">
           {(field) => (
@@ -443,7 +408,7 @@ export function IssueComments(props: IssueCommentsProps) @{
             {(pending ? "Commenting…" : "Comment") as string}
           </Button>
         </div>
-      </form>
+      </form>;
     }
-  </section>
+  </section>;
 }

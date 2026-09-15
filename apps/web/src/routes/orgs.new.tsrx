@@ -1,8 +1,4 @@
-import {
-  createFileRoute,
-  redirect,
-  useLoaderData,
-} from "@octanejs/tanstack-router";
+import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import type { UserPublic } from "@octanest/api-client";
 import { useState } from "octane";
@@ -18,12 +14,9 @@ export type OrgsNewLoaderData = {
   user: UserPublic;
 };
 
-const NETWORK_ERROR =
-  "Can't reach Octanest. Check your connection and try again.";
-const RESERVED_ERROR =
-  "That username is reserved. Choose a different username.";
-const TAKEN_ERROR =
-  "That slug is already used by a user or organization. Choose a different slug.";
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const RESERVED_ERROR = "That username is reserved. Choose a different username.";
+const TAKEN_ERROR = "That slug is already used by a user or organization. Choose a different slug.";
 const SLUG_HELPER =
   "Letters, digits, hyphen, underscore, and period. Same rules as usernames — shared with the user namespace.";
 
@@ -52,9 +45,7 @@ export const Route = createFileRoute("/orgs/new")({
 
 /** Exported for /orgs/new Wave 0 integration tests (ORG-01 / D-ORG-01 / D-ORG-06). */
 export function OrgsNewPage() @{
-  const data = useLoaderData({ from: "/orgs/new" }) as
-    | OrgsNewLoaderData
-    | undefined;
+  const data = useLoaderData({ from: "/orgs/new" }) as OrgsNewLoaderData | undefined;
   const user = data?.user;
   const showWall = !user || !user.email_verified;
 
@@ -110,13 +101,10 @@ export function OrgsNewPage() @{
       title="Verify your email"
       support="Verify your email before creating an organization."
     >
-      <a
-        href="/verify"
-        className={cn(buttonVariants({ variant: "default" }))}
-      >
+      <a href="/verify" className={cn(buttonVariants({ variant: "default" }))}>
         Verify email
       </a>
-    </AuthShell>
+    </AuthShell>;
   } @else {
     <div className="mx-auto max-w-2xl px-4 py-16">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -136,7 +124,7 @@ export function OrgsNewPage() @{
         }}
       >
         @if (formError) {
-          <AuthErrorBanner message={formError} />
+          <AuthErrorBanner message={formError} />;
         }
 
         <form.Field name="slug">
@@ -162,7 +150,7 @@ export function OrgsNewPage() @{
               @if (slugError) {
                 <p role="alert" className="text-[14px] text-destructive">
                   {slugError as string}
-                </p>
+                </p>;
               }
             </div>
           )}
@@ -178,9 +166,7 @@ export function OrgsNewPage() @{
                 autoComplete="organization"
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onInput={(ev) =>
-                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
-                }
+                onInput={(ev) => field.handleChange((ev.currentTarget as HTMLInputElement).value)}
               />
             </div>
           )}
@@ -188,12 +174,12 @@ export function OrgsNewPage() @{
 
         <Button type="submit" disabled={pending}>
           @if (pending) {
-            <>Creating…</>
+            <>Creating…</>;
           } @else {
-            <>Create organization</>
+            <>Create organization</>;
           }
         </Button>
       </form>
-    </div>
+    </div>;
   }
 }

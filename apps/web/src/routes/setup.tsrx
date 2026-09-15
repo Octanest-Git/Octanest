@@ -9,7 +9,7 @@ export const Route = createFileRoute("/setup")({
 });
 
 function SetupLayout() @{
-  <Outlet />
+  <Outlet />;
 }
 
 export { SetupPage } from "./setup.index";
