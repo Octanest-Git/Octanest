@@ -507,7 +507,7 @@ Plans:
 - [x] 11.1-04-PLAN.md
 - [x] 11.1-05-PLAN.md
 - [x] 11.1-06-PLAN.md
-- [ ] 11.1-07-PLAN.md
+- [x] 11.1-07-PLAN.md
 - [ ] 11.1-08-PLAN.md
 - [ ] 11.1-09-PLAN.md
 
