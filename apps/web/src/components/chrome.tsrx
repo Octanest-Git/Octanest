@@ -629,7 +629,7 @@ export function SiteHeader() @{
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
         aria-controls="mobile-nav"
-        onClick={() => setMenuOpen((v) => !v)}
+        onClick={() => setMenuOpen(!menuOpen)}
       >
         @if (menuOpen) {
           <X aria-hidden size={20} />

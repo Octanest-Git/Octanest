@@ -75,6 +75,17 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
         "cursor-not-allowed opacity-60",
     ),
   });
+  // Octane prefers native onInput; react-dropzone-style getInputProps wires onChange + ref.
+  // Spread alone can drop `ref` under Rivet — bind ref/onInput explicitly so open() + picks work.
+  const inputProps = dropzone.getInputProps({
+    id: "profile-avatar",
+    "aria-label": "Upload profile picture",
+  });
+  const {
+    ref: _dropzoneInputRef,
+    onChange: onFileChange,
+    ...inputRest
+  } = inputProps;
 
   function closeCrop() {
     setCropOpen(false);
@@ -88,12 +99,18 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
       <div {...rootProps}>
         <input
-          id="profile-avatar"
-          aria-label="Upload profile picture"
-          {...dropzone.getInputProps({
-            id: "profile-avatar",
-            "aria-label": "Upload profile picture",
-          })}
+          {...inputRest}
+          ref={(node: HTMLInputElement | null) => {
+            // Object refs from useDropzone must be assigned explicitly (Rivet spread can drop `ref`).
+            const r = _dropzoneInputRef as { current: HTMLInputElement | null } | null | undefined;
+            if (r && typeof r === "object") r.current = node;
+          }}
+          onChange={(e) => {
+            if (typeof onFileChange === "function") onFileChange(e as never);
+          }}
+          onInput={(e) => {
+            if (typeof onFileChange === "function") onFileChange(e as never);
+          }}
         />
         <AvatarPreview
           user={props.user}
