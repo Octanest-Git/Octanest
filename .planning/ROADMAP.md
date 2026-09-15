@@ -497,7 +497,7 @@ Plans:
   3. Coverage tooling + docs exist; CI enforces a weighted unit / integration / e2e gate (initial floor documented in TESTING.md)
   4. Phase 09 has VERIFICATION + Nyquist-honest VALIDATION; phases 11/15/20 VERIFICATION annotate known stubs (`pr_stub`, OCI referrers, packages chrome debt closed or explicitly tracked)
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans executed
 
 Plans:
 
@@ -505,15 +505,15 @@ Plans:
 - [x] 11.1-02-PLAN.md
 - [x] 11.1-03-PLAN.md
 - [x] 11.1-04-PLAN.md
-- [ ] 11.1-05-PLAN.md
+- [x] 11.1-05-PLAN.md
 - [x] 11.1-06-PLAN.md
 
-- [ ] `11.1-01-PLAN.md` — Tracer: layout RepoChrome + Packages tab + packages shell (D-QH-01)
-- [ ] `11.1-02-PLAN.md` — Coverage toolchain + TESTING.md weights 25/40/35 + CI weighted gate (D-QH-02)
-- [ ] `11.1-03-PLAN.md` — Strip RepoChrome from code-browse leaves (D-QH-01)
-- [ ] `11.1-04-PLAN.md` — Stack-browser forge matrix + login/verify/profile integration (D-QH-03)
-- [ ] `11.1-05-PLAN.md` — Protocol smokes in CI + GSD residual honesty (D-QH-04, D-QH-05)
-- [ ] `11.1-06-PLAN.md` — Strip RepoChrome from issues/releases/settings + retarget tests (D-QH-01)
+- [x] `11.1-01-PLAN.md` — Tracer: layout RepoChrome + Packages tab + packages shell (D-QH-01)
+- [x] `11.1-02-PLAN.md` — Coverage toolchain + TESTING.md weights 25/40/35 + CI weighted gate (D-QH-02)
+- [x] `11.1-03-PLAN.md` — Strip RepoChrome from code-browse leaves (D-QH-01)
+- [x] `11.1-04-PLAN.md` — Stack-browser forge matrix + login/verify/profile integration (D-QH-03)
+- [x] `11.1-05-PLAN.md` — Protocol smokes in CI + GSD residual honesty (D-QH-04, D-QH-05)
+- [x] `11.1-06-PLAN.md` — Strip RepoChrome from issues/releases/settings + retarget tests (D-QH-01)
 
 **UI hint**: yes
 

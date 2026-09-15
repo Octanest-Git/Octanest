@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase_name: Quality Hardening
 current_plan: 6
 status: executing
-stopped_at: Completed 11.1-04-PLAN.md
-last_updated: "2026-09-15T17:01:03.649Z"
+stopped_at: Completed 11.1-05-PLAN.md
+last_updated: "2026-09-15T17:11:53.857Z"
 last_activity: 2026-09-15
 last_activity_desc: Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded
-state_head: 160934b00d528534f843b8a4229ae47a09f758a6
+state_head: 28ef5027a11b7d3ad3bfeefecc3ec4597c95e576
 progress:
   total_phases: 23
   completed_phases: 0
   total_plans: 153
-  completed_plans: 152
+  completed_plans: 153
 milestone_name: milestone
 current_phase: "11.1"
 ---
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: **11.1** — Quality Hardening (executing) · parallel **12** discuss
-Current Plan: 6
+Phase: **11.1** — Quality Hardening (all plans SUMMARY'd · ready for verification) · parallel **12** discuss
+Current Plan: 6 (complete)
 Total Plans in Phase: 6
-Status: 11.1-01…04 + 06 complete; 11.1-05 protocol smoke CI + residual GSD honesty
-Last activity: 2026-09-15 — Executing 11.1-05-PLAN.md (smoke-protocol + Nyquist/stub closeout)
+Status: 11.1-01…06 plans complete — protocol smoke CI + GSD residual honesty landed
+Last activity: 2026-09-15 — Completed 11.1-05-PLAN.md (smoke-protocol + Nyquist/stub closeout)
 
 Completed on forge-core: **09 SSH** (VERIFICATION gap), **10 Orgs**, **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
 
@@ -163,6 +163,7 @@ See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.
 | Phase 11.1 P06 | 4min | 2 tasks | 11 files |
 | Phase 11.1 P03 | 6min | 2 tasks | 10 files |
 | Phase 11.1 P04 | 95min | 3 tasks | 14 files |
+| Phase 11.1 P05 | 9min | 2 tasks | 16 files |
 
 # Project State
 
@@ -548,6 +549,8 @@ Recent decisions affecting current work:
 - [Phase 11.1]: 11.1-03: Code-browse leaves content-only; layout RepoChrome sole mount for those paths
 - [Phase 11.1]: Extend stack-browser only for D-QH-03 forge matrix (no e2e/component)
 - [Phase 11.1]: Forge e2e uses UI fill + RPC fallback when Octane onClick hydration lags
+- [Phase 11.1]: CI protocol smokes fail-closed; skip seeded client by default (SMOKE_SKIP_*)
+- [Phase 11.1]: 09 nyquist_compliant true after 11.1-04 SSH e2e + 11.1-05 smoke-protocol
 
 ### Pending Todos
 
@@ -569,8 +572,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T17:01:03.524Z
-Stopped at: Completed 11.1-04-PLAN.md
+Last session: 2026-09-15T17:11:53.735Z
+Stopped at: Completed 11.1-05-PLAN.md
 Resume file: None
 
 ## Accumulated Context
