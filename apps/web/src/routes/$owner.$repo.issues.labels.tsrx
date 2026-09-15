@@ -5,6 +5,7 @@ import {
 } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, RepoPublic } from "@octanest/api-client";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -114,12 +115,47 @@ export function RepoIssueLabelsPage() @{
     enabled: !!owner && !!repoName && !!repoQ.data?.can_admin,
   });
 
-  const [name, setName] = useState("");
-  const [color, setColor] = useState("5319e7");
-  const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
   const [rowError, setRowError] = useState("");
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      color: "5319e7",
+      description: "",
+    },
+    onSubmit: async ({ value }) => {
+      setFormError("");
+      const trimmed = value.name.trim();
+      if (!trimmed) {
+        setFormError("Name is required.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.label.create({
+          scope: "repo",
+          owner,
+          repo: repoName,
+          name: trimmed,
+          color: value.color,
+          description: value.description.trim() || null,
+        });
+        if (!res.ok) {
+          setFormError(res.error.message || NETWORK_ERROR);
+          setPending(false);
+          return;
+        }
+        form.reset();
+        setPending(false);
+        await refresh();
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   const repo = repoQ.data ?? null;
   const canAdmin = !!repo?.can_admin;
@@ -137,38 +173,6 @@ export function RepoIssueLabelsPage() @{
     await queryClient.invalidateQueries({
       queryKey: ["label", "listForRepo", owner, repoName],
     });
-  }
-
-  async function createLocal() {
-    setFormError("");
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setFormError("Name is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.label.create({
-        scope: "repo",
-        owner,
-        repo: repoName,
-        name: trimmed,
-        color,
-        description: description.trim() || null,
-      });
-      if (!res.ok) {
-        setFormError(res.error.message || NETWORK_ERROR);
-        setPending(false);
-        return;
-      }
-      setName("");
-      setDescription("");
-      setPending(false);
-      await refresh();
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
   }
 
   async function toggleHidden(lab: LabelPublic) {
@@ -249,46 +253,66 @@ export function RepoIssueLabelsPage() @{
           method="post"
           action="#"
           className="mb-8 flex flex-col gap-3 rounded-md border border-border p-4"
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void form.handleSubmit();
+          }}
         >
           <p className="text-[14px] font-semibold text-foreground">
             New repository label
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="repo-label-name">Name</Label>
-              <Input
-                id="repo-label-name"
-                value={name}
-                onInput={(e) => setName((e.target as HTMLInputElement).value)}
-                disabled={pending}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="repo-label-color">Color (hex)</Label>
-              <Input
-                id="repo-label-color"
-                value={color}
-                onInput={(e) =>
-                  setColor((e.target as HTMLInputElement).value)
-                }
-                disabled={pending}
-              />
-            </div>
+            <form.Field name="name">
+              {(field) => (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="repo-label-name">Name</Label>
+                  <Input
+                    id="repo-label-name"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.target as HTMLInputElement).value)
+                    }
+                    disabled={pending}
+                  />
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="color">
+              {(field) => (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="repo-label-color">Color (hex)</Label>
+                  <Input
+                    id="repo-label-color"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.target as HTMLInputElement).value)
+                    }
+                    disabled={pending}
+                  />
+                </div>
+              )}
+            </form.Field>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="repo-label-desc">Description</Label>
-            <Input
-              id="repo-label-desc"
-              value={description}
-              onInput={(e) =>
-                setDescription((e.target as HTMLInputElement).value)
-              }
-              disabled={pending}
-            />
-          </div>
+          <form.Field name="description">
+            {(field) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="repo-label-desc">Description</Label>
+                <Input
+                  id="repo-label-desc"
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onInput={(e) =>
+                    field.handleChange((e.target as HTMLInputElement).value)
+                  }
+                  disabled={pending}
+                />
+              </div>
+            )}
+          </form.Field>
           <div>
-            <Button type="button" disabled={pending} onClick={createLocal}>
+            <Button type="submit" disabled={pending}>
               Create label
             </Button>
           </div>

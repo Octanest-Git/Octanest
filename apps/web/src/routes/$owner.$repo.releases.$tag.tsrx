@@ -7,6 +7,7 @@ import { useQuery } from "@octanejs/tanstack-query";
 import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { Badge } from "@/components/ui/badge";
+import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Label } from "@/components/ui/label";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
@@ -216,35 +217,31 @@ export function RepoReleaseDetailPage() @{
           <form
             method="post"
             action="#"
-            className="flex flex-wrap items-end gap-3"
+            className="flex flex-col gap-2"
             onSubmit={(e) => {
               e.preventDefault();
             }}
           >
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="release-asset-file">Upload asset</Label>
-              <input
-                id="release-asset-file"
-                type="file"
-                onChange={(e) => {
-                  const input = e.target as HTMLInputElement;
-                  const file = input.files?.[0];
-                  if (!file || !release) return;
-                  void (async () => {
-                    const fd = new FormData();
-                    fd.append("asset", file, file.name);
-                    const res = await fetch(
-                      `/api/repos/${owner}/${repoName}/releases/${release.id}/assets`,
-                      { method: "POST", body: fd, credentials: "include" },
-                    );
-                    if (res.ok) {
-                      await releaseQ.refetch();
-                      input.value = "";
-                    }
-                  })();
-                }}
-              />
-            </div>
+            <Label htmlFor="release-asset-file">Upload asset</Label>
+            <FileDropzone
+              id="release-asset-file"
+              hint="Drop a release asset here, or click to browse"
+              onFiles={(files) => {
+                const file = files[0];
+                if (!file || !release) return;
+                void (async () => {
+                  const fd = new FormData();
+                  fd.append("asset", file, file.name);
+                  const res = await fetch(
+                    `/api/repos/${owner}/${repoName}/releases/${release.id}/assets`,
+                    { method: "POST", body: fd, credentials: "include" },
+                  );
+                  if (res.ok) {
+                    await releaseQ.refetch();
+                  }
+                })();
+              }}
+            />
           </form>
         }
       </section>

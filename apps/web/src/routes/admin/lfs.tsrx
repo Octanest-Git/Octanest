@@ -8,6 +8,7 @@ import type {
   AdminLfsUsageResponse,
   UserPublic,
 } from "@octanest/api-client";
+import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,19 +151,51 @@ export function AdminLfsPage() @{
   const initialSettings =
     loaderData?.kind === "ready" ? loaderData.settings : null;
 
-  const [maxObject, setMaxObject] = useState(() =>
-    initialSettings ? String(initialSettings.max_object_bytes) : "",
-  );
-  const [quotaRepo, setQuotaRepo] = useState(() =>
-    initialSettings ? String(initialSettings.quota_repo_bytes) : "",
-  );
-  const [quotaUser, setQuotaUser] = useState(() =>
-    initialSettings ? String(initialSettings.quota_user_bytes) : "",
-  );
   const [error, setError] = useState(() =>
     loaderData?.kind === "error" ? loaderData.message : "",
   );
   const [pending, setPending] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      maxObject: initialSettings ? String(initialSettings.max_object_bytes) : "",
+      quotaRepo: initialSettings ? String(initialSettings.quota_repo_bytes) : "",
+      quotaUser: initialSettings ? String(initialSettings.quota_user_bytes) : "",
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      const max_object_bytes = Number(value.maxObject);
+      const quota_repo_bytes = Number(value.quotaRepo);
+      const quota_user_bytes = Number(value.quotaUser);
+      if (
+        ![max_object_bytes, quota_repo_bytes, quota_user_bytes].every((n) =>
+          Number.isFinite(n),
+        )
+      ) {
+        setError("Enter valid numeric byte limits.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.admin.lfs.updateSettings({
+          max_object_bytes,
+          quota_repo_bytes,
+          quota_user_bytes,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not save LFS settings.");
+          setPending(false);
+          return;
+        }
+        await queryClient.invalidateQueries({ queryKey: ["admin", "lfs"] });
+        toastSuccess("LFS quotas updated.");
+        setPending(false);
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   useEffect(() => {
     if (loaderData) return;
@@ -175,45 +208,11 @@ export function AdminLfsPage() @{
 
   useEffect(() => {
     if (settingsQ.isSuccess && settingsQ.data) {
-      setMaxObject(String(settingsQ.data.max_object_bytes));
-      setQuotaRepo(String(settingsQ.data.quota_repo_bytes));
-      setQuotaUser(String(settingsQ.data.quota_user_bytes));
+      form.setFieldValue("maxObject", String(settingsQ.data.max_object_bytes));
+      form.setFieldValue("quotaRepo", String(settingsQ.data.quota_repo_bytes));
+      form.setFieldValue("quotaUser", String(settingsQ.data.quota_user_bytes));
     }
   }, [settingsQ.isSuccess, settingsQ.dataUpdatedAt]);
-
-  async function save() {
-    setError("");
-    const max_object_bytes = Number(maxObject);
-    const quota_repo_bytes = Number(quotaRepo);
-    const quota_user_bytes = Number(quotaUser);
-    if (
-      ![max_object_bytes, quota_repo_bytes, quota_user_bytes].every((n) =>
-        Number.isFinite(n),
-      )
-    ) {
-      setError("Enter valid numeric byte limits.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.admin.lfs.updateSettings({
-        max_object_bytes,
-        quota_repo_bytes,
-        quota_user_bytes,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not save LFS settings.");
-        setPending(false);
-        return;
-      }
-      await queryClient.invalidateQueries({ queryKey: ["admin", "lfs"] });
-      toastSuccess("LFS quotas updated.");
-      setPending(false);
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
 
   async function clearOverrides() {
     setError("");
@@ -316,60 +315,81 @@ export function AdminLfsPage() @{
                 className="mt-8 flex flex-col gap-4"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void save();
+                  void form.handleSubmit();
                 }}
               >
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="lfs-max-object">Max object bytes</Label>
-                  <Input
-                    id="lfs-max-object"
-                    inputMode="numeric"
-                    value={maxObject}
-                    onInput={(e) =>
-                      setMaxObject((e.currentTarget as HTMLInputElement).value)
-                    }
-                    disabled={pending}
-                  />
-                  @if (settings?.max_object_bytes_overridden) {
-                    <span className="text-[13px] text-muted-foreground">
-                      Override active
-                    </span>
-                  }
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="lfs-quota-repo">Per-repo quota bytes</Label>
-                  <Input
-                    id="lfs-quota-repo"
-                    inputMode="numeric"
-                    value={quotaRepo}
-                    onInput={(e) =>
-                      setQuotaRepo((e.currentTarget as HTMLInputElement).value)
-                    }
-                    disabled={pending}
-                  />
-                  @if (settings?.quota_repo_bytes_overridden) {
-                    <span className="text-[13px] text-muted-foreground">
-                      Override active
-                    </span>
-                  }
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="lfs-quota-user">Per-user quota bytes</Label>
-                  <Input
-                    id="lfs-quota-user"
-                    inputMode="numeric"
-                    value={quotaUser}
-                    onInput={(e) =>
-                      setQuotaUser((e.currentTarget as HTMLInputElement).value)
-                    }
-                    disabled={pending}
-                  />
-                  @if (settings?.quota_user_bytes_overridden) {
-                    <span className="text-[13px] text-muted-foreground">
-                      Override active
-                    </span>
-                  }
-                </div>
+                <form.Field name="maxObject">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="lfs-max-object">Max object bytes</Label>
+                      <Input
+                        id="lfs-max-object"
+                        inputMode="numeric"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onInput={(e) =>
+                          field.handleChange(
+                            (e.currentTarget as HTMLInputElement).value,
+                          )
+                        }
+                        disabled={pending}
+                      />
+                      @if (settings?.max_object_bytes_overridden) {
+                        <span className="text-[13px] text-muted-foreground">
+                          Override active
+                        </span>
+                      }
+                    </div>
+                  )}
+                </form.Field>
+                <form.Field name="quotaRepo">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="lfs-quota-repo">Per-repo quota bytes</Label>
+                      <Input
+                        id="lfs-quota-repo"
+                        inputMode="numeric"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onInput={(e) =>
+                          field.handleChange(
+                            (e.currentTarget as HTMLInputElement).value,
+                          )
+                        }
+                        disabled={pending}
+                      />
+                      @if (settings?.quota_repo_bytes_overridden) {
+                        <span className="text-[13px] text-muted-foreground">
+                          Override active
+                        </span>
+                      }
+                    </div>
+                  )}
+                </form.Field>
+                <form.Field name="quotaUser">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="lfs-quota-user">Per-user quota bytes</Label>
+                      <Input
+                        id="lfs-quota-user"
+                        inputMode="numeric"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onInput={(e) =>
+                          field.handleChange(
+                            (e.currentTarget as HTMLInputElement).value,
+                          )
+                        }
+                        disabled={pending}
+                      />
+                      @if (settings?.quota_user_bytes_overridden) {
+                        <span className="text-[13px] text-muted-foreground">
+                          Override active
+                        </span>
+                      }
+                    </div>
+                  )}
+                </form.Field>
                 @if (error) {
                   <p role="alert" className="text-[14px] text-destructive">
                     {error as string}

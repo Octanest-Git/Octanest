@@ -5,6 +5,7 @@ import {
   useLoaderData,
   useParams,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, OrgPublic } from "@octanest/api-client";
 import { useState } from "octane";
@@ -97,52 +98,55 @@ export function OrgLabelsPage() @{
     enabled: !!slug,
   });
 
-  const [name, setName] = useState("");
-  const [color, setColor] = useState("0366d6");
-  const [description, setDescription] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
   const [rowError, setRowError] = useState("");
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      color: "0366d6",
+      description: "",
+    },
+    onSubmit: async ({ value }) => {
+      setFormError("");
+      const trimmed = value.name.trim();
+      if (!trimmed) {
+        setFormError("Name is required.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.label.create({
+          scope: "org",
+          owner: slug,
+          name: trimmed,
+          color: value.color,
+          description: value.description.trim() || null,
+        });
+        if (!res.ok) {
+          if (res.error.code === "org.forbidden") {
+            setFormError(FORBIDDEN);
+          } else {
+            setFormError(res.error.message || NETWORK_ERROR);
+          }
+          setPending(false);
+          return;
+        }
+        form.reset();
+        setPending(false);
+        await refresh();
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   const labels: LabelPublic[] = labelsQ.data ?? [];
 
   async function refresh() {
     await queryClient.invalidateQueries({ queryKey: labelsQueryKey(slug) });
-  }
-
-  async function createLabel() {
-    setFormError("");
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setFormError("Name is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.label.create({
-        scope: "org",
-        owner: slug,
-        name: trimmed,
-        color,
-        description: description.trim() || null,
-      });
-      if (!res.ok) {
-        if (res.error.code === "org.forbidden") {
-          setFormError(FORBIDDEN);
-        } else {
-          setFormError(res.error.message || NETWORK_ERROR);
-        }
-        setPending(false);
-        return;
-      }
-      setName("");
-      setDescription("");
-      setPending(false);
-      await refresh();
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
   }
 
   async function deleteLabel(lab: LabelPublic) {
@@ -189,42 +193,64 @@ export function OrgLabelsPage() @{
       method="post"
       action="#"
       className="mb-8 flex flex-col gap-3 rounded-md border border-border p-4"
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.handleSubmit();
+      }}
     >
       <p className="text-[14px] font-semibold text-foreground">New label</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="org-label-name">Name</Label>
-          <Input
-            id="org-label-name"
-            value={name}
-            onInput={(e) => setName((e.target as HTMLInputElement).value)}
-            disabled={pending}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="org-label-color">Color (hex)</Label>
-          <Input
-            id="org-label-color"
-            value={color}
-            onInput={(e) => setColor((e.target as HTMLInputElement).value)}
-            disabled={pending}
-          />
-        </div>
+        <form.Field name="name">
+          {(field) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="org-label-name">Name</Label>
+              <Input
+                id="org-label-name"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(e) =>
+                  field.handleChange((e.target as HTMLInputElement).value)
+                }
+                disabled={pending}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="color">
+          {(field) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="org-label-color">Color (hex)</Label>
+              <Input
+                id="org-label-color"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(e) =>
+                  field.handleChange((e.target as HTMLInputElement).value)
+                }
+                disabled={pending}
+              />
+            </div>
+          )}
+        </form.Field>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="org-label-desc">Description</Label>
-        <Input
-          id="org-label-desc"
-          value={description}
-          onInput={(e) =>
-            setDescription((e.target as HTMLInputElement).value)
-          }
-          disabled={pending}
-        />
-      </div>
+      <form.Field name="description">
+        {(field) => (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="org-label-desc">Description</Label>
+            <Input
+              id="org-label-desc"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onInput={(e) =>
+                field.handleChange((e.target as HTMLInputElement).value)
+              }
+              disabled={pending}
+            />
+          </div>
+        )}
+      </form.Field>
       <div>
-        <Button type="button" disabled={pending} onClick={createLabel}>
+        <Button type="submit" disabled={pending}>
           Create label
         </Button>
       </div>

@@ -4,6 +4,7 @@ import type {
 } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MemberLookup } from "@/components/org/member-lookup";
@@ -124,10 +125,44 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
   const collaborators: RepoCollaboratorPublic[] =
     listQ.data?.collaborators ?? [];
 
-  const [addUsername, setAddUsername] = useState("");
-  const [addPerm, setAddPerm] = useState<CollaboratorPermission>("write");
   const [addError, setAddError] = useState("");
   const [addPending, setAddPending] = useState(false);
+
+  const addForm = useForm({
+    defaultValues: {
+      username: "",
+      permission: "write" as CollaboratorPermission,
+    },
+    onSubmit: async ({ value }) => {
+      setAddError("");
+      const username = value.username.trim();
+      if (!username) {
+        setAddError("Username is required.");
+        return;
+      }
+      setAddPending(true);
+      try {
+        const res = await apiClient.repo.collaborators.add({
+          owner,
+          name,
+          username,
+          permission: value.permission,
+        });
+        if (!res.ok) {
+          setAddError(res.error.message || NETWORK_ERROR);
+          setAddPending(false);
+          return;
+        }
+        addForm.reset();
+        setShowAdd(false);
+        setAddPending(false);
+        await refresh();
+      } catch {
+        setAddError(NETWORK_ERROR);
+        setAddPending(false);
+      }
+    },
+  });
   const [showAdd, setShowAdd] = useState(false);
   const [rowError, setRowError] = useState("");
   const [removeTarget, setRemoveTarget] = useState<RepoCollaboratorPublic | null>(
@@ -140,37 +175,6 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
     await queryClient.invalidateQueries({
       queryKey: collaboratorsQueryKey(owner, name),
     });
-  }
-
-  async function addCollaborator() {
-    setAddError("");
-    const username = addUsername.trim();
-    if (!username) {
-      setAddError("Username is required.");
-      return;
-    }
-    setAddPending(true);
-    try {
-      const res = await apiClient.repo.collaborators.add({
-        owner,
-        name,
-        username,
-        permission: addPerm,
-      });
-      if (!res.ok) {
-        setAddError(res.error.message || NETWORK_ERROR);
-        setAddPending(false);
-        return;
-      }
-      setAddUsername("");
-      setAddPerm("write");
-      setShowAdd(false);
-      setAddPending(false);
-      await refresh();
-    } catch {
-      setAddError(NETWORK_ERROR);
-      setAddPending(false);
-    }
   }
 
   async function updatePermission(
@@ -323,7 +327,7 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
         action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void addCollaborator();
+          void addForm.handleSubmit();
         }}
       >
         <h3 className="text-[16px] font-semibold text-foreground">
@@ -332,27 +336,34 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
         @if (addError) {
           <AuthErrorBanner message={addError} />
         }
-        <MemberLookup
-          id="collab-lookup"
-          label="Username"
-          value={addUsername}
-          onValueChange={setAddUsername}
-        />
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="collab-add-perm">Permission</Label>
-          <PermissionSelect
-            id="collab-add-perm"
-            value={addPerm}
-            onChange={setAddPerm}
-            ariaLabel="Permission"
-          />
-        </div>
+        <addForm.Field name="username">
+          {(field) => (
+            <MemberLookup
+              id="collab-lookup"
+              label="Username"
+              value={field.state.value}
+              onValueChange={field.handleChange}
+            />
+          )}
+        </addForm.Field>
+        <addForm.Subscribe selector={(s) => s.values.permission}>
+          {(addPerm) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="collab-add-perm">Permission</Label>
+              <PermissionSelect
+                id="collab-add-perm"
+                value={addPerm}
+                onChange={(p) => addForm.setFieldValue("permission", p)}
+                ariaLabel="Permission"
+              />
+            </div>
+          )}
+        </addForm.Subscribe>
         <div className="flex flex-wrap gap-2">
           <Button
-            type="button"
+            type="submit"
             className="h-11"
             disabled={addPending}
-            onClick={() => void addCollaborator()}
           >
             @if (addPending) {
               <>Adding…</>
@@ -368,7 +379,7 @@ export function CollaboratorsPanel({ owner, name }: CollaboratorsPanelProps) @{
             onClick={() => {
               setShowAdd(false);
               setAddError("");
-              setAddUsername("");
+              addForm.reset();
             }}
           >
             Cancel

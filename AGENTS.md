@@ -10,7 +10,7 @@ Self-hostable GitHub-style forge (git, issues, orgs, LFS, releases, packages; PR
 
 | Layer | Tech |
 |-------|------|
-| Web UI | **Octane** (`.tsrx`), TanStack Start / Router / Query via `@octanejs/*` |
+| Web UI | **Octane** (`.tsrx`), TanStack Start / Router / Query / Form via `@octanejs/*`; file pickers via `@octanejs/dropzone` |
 | API | Rust Axum + typed JSON RPC (`octanest-api`) |
 | Domain types | `octanest-core` |
 | Persistence | `octanest-db` (Postgres / MySQL / SQLite) |
@@ -28,7 +28,7 @@ Before editing UI under `apps/web`:
 2. Prefer official reference: https://octanejs.dev/llms.txt and https://octanejs.dev/docs/differences-from-react
 3. Author components in **`.tsrx`** with `function Comp() @{ … }`, `@if` / `@else` (no `@else if`), `@for`, native `onInput` for text fields.
 4. Never mix `return (` JSX with Rivet `@{` / `@if` in the same component — that breaks exports/hydration.
-5. Server domain data: **TanStack Query** (`@octanejs/tanstack-query`) via `apps/web/src/lib/session-queries.ts` and friends. Local form state stays in `useState`. Do not add Zustand for server/session data.
+5. Server domain data: **TanStack Query** (`@octanejs/tanstack-query`) via `apps/web/src/lib/session-queries.ts` and friends. Forms: **`@octanejs/tanstack-form`** (`useForm` / `form.Field`, text via `onInput` + `field.handleChange`). File uploads: **`@octanejs/dropzone`** via `apps/web/src/components/ui/file-dropzone.tsrx` (does not upload — callers own `FormData`/`fetch`). Local ephemeral UI state may still use `useState`. Do not add Zustand for server/session data.
 
 ## Hard boundaries
 

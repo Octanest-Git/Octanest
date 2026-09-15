@@ -40,8 +40,8 @@ Full skill: [`.agents/skills/octane/SKILL.md`](../.agents/skills/octane/SKILL.md
 
 - Author in **`.tsrx`** with Rivet templates (`@{`, `@if`/`@else`, `@for`).
 - Do not mix React `return (` JSX with Rivet directives in one component.
-- Server/session data: TanStack Query (`apps/web/src/lib/session-queries.ts`). Form fields: local state.
-- Text fields: native `onInput`. Anonymous auth pages: SSR loaders, no decorative form skeletons.
+- Server/session data: TanStack Query (`apps/web/src/lib/session-queries.ts`). Forms: `@octanejs/tanstack-form`. File uploads: `@octanejs/dropzone` / `FileDropzone`.
+- Text fields: native `onInput` (or `field.handleChange`). Anonymous auth pages: SSR loaders, no decorative form skeletons.
 - Preserve chrome / brand patterns; do not introduce a second design system.
 
 ## RPC & API

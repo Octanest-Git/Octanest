@@ -4,6 +4,7 @@ import {
   useNavigate,
   useParams,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useState } from "octane";
@@ -90,17 +91,58 @@ export function RepoReleaseNewPage() @{
     from: "/$owner/$repo/releases/new",
   }) as ReleaseNewLoaderData | undefined;
 
-  const [tagName, setTagName] = useState(() =>
+  const initialTags =
     routeLoader?.kind === "ready" || routeLoader?.kind === "forbidden"
-      ? (routeLoader.tags[0] ?? "")
-      : "",
-  );
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [draft, setDraft] = useState(false);
-  const [prerelease, setPrerelease] = useState(false);
+      ? routeLoader.tags
+      : [];
+
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  const form = useForm({
+    defaultValues: {
+      tagName: initialTags[0] ?? "",
+      title: "",
+      body: "",
+      draft: false,
+      prerelease: false,
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      if (!value.tagName.trim()) {
+        setError("Choose an existing tag.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.release.create({
+          owner,
+          name: repoName,
+          tag_name: value.tagName.trim(),
+          title: value.title.trim() || value.tagName.trim(),
+          body: value.body || undefined,
+          draft: value.draft,
+          prerelease: value.prerelease,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not create release.");
+          setPending(false);
+          return;
+        }
+        await navigate({
+          to: "/$owner/$repo/releases/$tag",
+          params: {
+            owner,
+            repo: repoName,
+            tag: res.data.tag_name,
+          },
+        });
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -135,42 +177,6 @@ export function RepoReleaseNewPage() @{
   const repo = repoQ.data ?? null;
   const tags = tagsQ.data ?? [];
 
-  async function submit() {
-    setError("");
-    if (!tagName.trim()) {
-      setError("Choose an existing tag.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.release.create({
-        owner,
-        name: repoName,
-        tag_name: tagName.trim(),
-        title: title.trim() || tagName.trim(),
-        body: body || undefined,
-        draft,
-        prerelease,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not create release.");
-        setPending(false);
-        return;
-      }
-      await navigate({
-        to: "/$owner/$repo/releases/$tag",
-        params: {
-          owner,
-          repo: repoName,
-          tag: res.data.tag_name,
-        },
-      });
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
-
   @if (layout?.status === "not_found" || (!repoQ.isPending && !repo)) {
     <RepoNotFound />
   } @else if (!repo) {
@@ -190,83 +196,104 @@ export function RepoReleaseNewPage() @{
         className="flex max-w-2xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          void submit();
+          void form.handleSubmit();
         }}
       >
         @if (error) {
           <AuthErrorBanner message={error} />
         }
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="release-tag">Tag</Label>
-          @if (tags.length === 0) {
-            <p className="text-[14px] text-muted-foreground">
-              No tags yet. Push a tag before creating a release.
-            </p>
-          } @else {
-            <select
-              id="release-tag"
-              className="h-10 rounded-md border border-border bg-background px-3 text-[14px] text-foreground"
-              value={tagName}
-              onChange={(e) =>
-                setTagName((e.target as HTMLSelectElement).value)
+        <form.Field name="tagName">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="release-tag">Tag</Label>
+              @if (tags.length === 0) {
+                <p className="text-[14px] text-muted-foreground">
+                  No tags yet. Push a tag before creating a release.
+                </p>
+              } @else {
+                <select
+                  id="release-tag"
+                  className="h-10 rounded-md border border-border bg-background px-3 text-[14px] text-foreground"
+                  value={field.state.value}
+                  onChange={(e) =>
+                    field.handleChange((e.target as HTMLSelectElement).value)
+                  }
+                >
+                  @for (const t of tags; key t) {
+                    <option value={t as string}>{t as string}</option>
+                  }
+                </select>
               }
-            >
-              @for (const t of tags; key t) {
-                <option value={t as string}>{t as string}</option>
-              }
-            </select>
-          }
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="release-title">Release title</Label>
-          <Input
-            id="release-title"
-            name="title"
-            value={title}
-            onInput={(e) =>
-              setTitle((e.target as HTMLInputElement).value)
-            }
-            placeholder="Optional — defaults to the tag name"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <MarkdownWritePreview
-            id="release-body"
-            value={body}
-            onValueChange={setBody}
-            rows={12}
-            disabled={pending}
-            placeholder="Describe this release (markdown supported)"
-            owner={owner}
-            repo={repoName}
-          />
-        </div>
-        <label className="flex items-center gap-2 text-[14px] text-foreground">
-          <input
-            type="checkbox"
-            checked={draft}
-            onChange={(e) =>
-              setDraft((e.target as HTMLInputElement).checked)
-            }
-          />
-          Save as draft
-        </label>
-        <label className="flex items-center gap-2 text-[14px] text-foreground">
-          <input
-            type="checkbox"
-            checked={prerelease}
-            onChange={(e) =>
-              setPrerelease((e.target as HTMLInputElement).checked)
-            }
-          />
-          Set as a pre-release
-        </label>
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="title">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="release-title">Release title</Label>
+              <Input
+                id="release-title"
+                name="title"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(e) =>
+                  field.handleChange((e.target as HTMLInputElement).value)
+                }
+                placeholder="Optional — defaults to the tag name"
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="body">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <MarkdownWritePreview
+                id="release-body"
+                value={field.state.value}
+                onValueChange={field.handleChange}
+                rows={12}
+                disabled={pending}
+                placeholder="Describe this release (markdown supported)"
+                owner={owner}
+                repo={repoName}
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Subscribe selector={(s) => s.values}>
+          {(values) => (
+            <>
+              <label className="flex items-center gap-2 text-[14px] text-foreground">
+                <input
+                  type="checkbox"
+                  checked={values.draft}
+                  onChange={(e) =>
+                    form.setFieldValue(
+                      "draft",
+                      (e.target as HTMLInputElement).checked,
+                    )
+                  }
+                />
+                Save as draft
+              </label>
+              <label className="flex items-center gap-2 text-[14px] text-foreground">
+                <input
+                  type="checkbox"
+                  checked={values.prerelease}
+                  onChange={(e) =>
+                    form.setFieldValue(
+                      "prerelease",
+                      (e.target as HTMLInputElement).checked,
+                    )
+                  }
+                />
+                Set as a pre-release
+              </label>
+            </>
+          )}
+        </form.Subscribe>
         <div className="flex gap-3">
-          <Button
-            type="button"
-            disabled={pending || tags.length === 0}
-            onClick={() => void submit()}
-          >
+          <Button type="submit" disabled={pending || tags.length === 0}>
             {(pending ? "Publishing…" : "Publish release") as string}
           </Button>
           <a

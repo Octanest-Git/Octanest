@@ -1,10 +1,11 @@
 import { createFileRoute } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import { useState } from "octane";
 import {
   packagesAdminSetQuotaMutationOptions,
   packagesAdminUsageQueryOptions,
 } from "@octanest/api-client";
+import { useState } from "octane";
 import { apiClient } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { DEFAULT_OWNER_QUOTA_HINT } from "@/lib/package-quota-copy";
@@ -16,10 +17,25 @@ export const Route = createFileRoute("/admin/packages")({
 
 /** Admin package storage quota/usage (D-PKG-09). */
 export function AdminPackagesPage() @{
-  const [owner, setOwner] = useState("");
   const [lookup, setLookup] = useState("");
-  const [maxBytes, setMaxBytes] = useState("");
   const qc = useQueryClient();
+
+  const lookupForm = useForm({
+    defaultValues: { owner: "" },
+    onSubmit: ({ value }) => {
+      setLookup(value.owner.trim());
+    },
+  });
+
+  const quotaForm = useForm({
+    defaultValues: { maxBytes: "" },
+    onSubmit: ({ value }) => {
+      const n = Number(value.maxBytes);
+      if (!lookup || !Number.isFinite(n) || n < 0) return;
+      setM.mutate({ owner: lookup, max_bytes: Math.floor(n) });
+    },
+  });
+
   const usageQ = useQuery({
     ...packagesAdminUsageQueryOptions(apiClient, { owner: lookup }),
     enabled: lookup.length > 0,
@@ -28,6 +44,7 @@ export function AdminPackagesPage() @{
     ...packagesAdminSetQuotaMutationOptions(apiClient),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["packages", "adminUsage"] });
+      quotaForm.reset();
     },
   });
 
@@ -53,20 +70,29 @@ export function AdminPackagesPage() @{
 
       <form
         className="mt-10 flex flex-wrap items-end gap-3"
+        method="post"
+        action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          setLookup(owner.trim());
+          void lookupForm.handleSubmit();
         }}
       >
-        <label className="flex flex-col gap-1 text-[14px]">
-          <span className="font-medium">Owner login</span>
-          <input
-            className="h-10 rounded-md border border-border bg-background px-3"
-            data-testid="admin-packages-owner"
-            value={owner as string}
-            onInput={(e) => setOwner((e.target as HTMLInputElement).value)}
-          />
-        </label>
+        <lookupForm.Field name="owner">
+          {(field) => (
+            <label className="flex flex-col gap-1 text-[14px]">
+              <span className="font-medium">Owner login</span>
+              <input
+                className="h-10 rounded-md border border-border bg-background px-3"
+                data-testid="admin-packages-owner"
+                value={field.state.value as string}
+                onBlur={field.handleBlur}
+                onInput={(e) =>
+                  field.handleChange((e.target as HTMLInputElement).value)
+                }
+              />
+            </label>
+          )}
+        </lookupForm.Field>
         <Button type="submit" data-testid="admin-packages-lookup">
           Load usage
         </Button>
@@ -100,22 +126,29 @@ export function AdminPackagesPage() @{
           </ul>
           <form
             className="mt-6 flex flex-wrap items-end gap-3"
+            method="post"
+            action="#"
             onSubmit={(e) => {
               e.preventDefault();
-              const n = Number(maxBytes);
-              if (!lookup || !Number.isFinite(n) || n < 0) return;
-              setM.mutate({ owner: lookup, max_bytes: Math.floor(n) });
+              void quotaForm.handleSubmit();
             }}
           >
-            <label className="flex flex-col gap-1 text-[14px]">
-              <span className="font-medium">Override max bytes</span>
-              <input
-                className="h-10 rounded-md border border-border bg-background px-3"
-                data-testid="admin-packages-max-bytes"
-                value={maxBytes as string}
-                onInput={(e) => setMaxBytes((e.target as HTMLInputElement).value)}
-              />
-            </label>
+            <quotaForm.Field name="maxBytes">
+              {(field) => (
+                <label className="flex flex-col gap-1 text-[14px]">
+                  <span className="font-medium">Override max bytes</span>
+                  <input
+                    className="h-10 rounded-md border border-border bg-background px-3"
+                    data-testid="admin-packages-max-bytes"
+                    value={field.state.value as string}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.target as HTMLInputElement).value)
+                    }
+                  />
+                </label>
+              )}
+            </quotaForm.Field>
             <Button type="submit" data-testid="admin-packages-set-quota">
               Set quota
             </Button>

@@ -1,3 +1,4 @@
+import { useForm } from "@octanejs/tanstack-form";
 import type { IssuePublic, LabelPublic, RepoPublic } from "@octanest/api-client";
 
 export type IssueListStateFilter = "open" | "closed" | "all";
@@ -12,6 +13,13 @@ export type IssueListFilters = {
   limit: number;
 };
 
+export type IssueFilterDraft = {
+  author: string;
+  label: string;
+  assignee: string;
+  q: string;
+};
+
 export const ISSUE_LIST_PAGE_SIZE = 25;
 
 type IssuesListProps = {
@@ -22,16 +30,8 @@ type IssuesListProps = {
   total: number;
   filters: IssueListFilters;
   labels: LabelPublic[];
-  draftAuthor: string;
-  draftLabel: string;
-  draftAssignee: string;
-  draftQ: string;
   onStateChange: (next: IssueListStateFilter) => void;
-  onDraftAuthor: (next: string) => void;
-  onDraftLabel: (next: string) => void;
-  onDraftAssignee: (next: string) => void;
-  onDraftQ: (next: string) => void;
-  onApplyFilters: () => void;
+  onApplyFilters: (draft: IssueFilterDraft) => void;
   onPrevPage: () => void;
   onNextPage: () => void;
   pending?: boolean;
@@ -56,15 +56,7 @@ export function IssuesList({
   total,
   filters,
   labels,
-  draftAuthor,
-  draftLabel,
-  draftAssignee,
-  draftQ,
   onStateChange,
-  onDraftAuthor,
-  onDraftLabel,
-  onDraftAssignee,
-  onDraftQ,
   onApplyFilters,
   onPrevPage,
   onNextPage,
@@ -83,6 +75,23 @@ export function IssuesList({
   const to = Math.min(filters.offset + issues.length, total);
   const canPrev = filters.offset > 0;
   const canNext = filters.offset + filters.limit < total;
+
+  const filterForm = useForm({
+    defaultValues: {
+      author: filters.author,
+      label: filters.label,
+      assignee: filters.assignee,
+      q: filters.q,
+    },
+    onSubmit: ({ value }) => {
+      onApplyFilters({
+        author: value.author.trim(),
+        label: value.label.trim(),
+        assignee: value.assignee.trim(),
+        q: value.q.trim(),
+      });
+    },
+  });
 
   <div className="flex flex-col gap-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -146,68 +155,90 @@ export function IssuesList({
       className="flex flex-wrap items-end gap-3"
       onSubmit={(e) => {
         e.preventDefault();
-        onApplyFilters();
+        void filterForm.handleSubmit();
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-        Author
-        <input
-          type="text"
-          name="author"
-          autocomplete="off"
-          placeholder="username"
-          value={draftAuthor as string}
-          className={fieldClass() as string}
-          onInput={(e) => onDraftAuthor((e.target as HTMLInputElement).value)}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-        Label
-        <select
-          name="label"
-          aria-label="Label"
-          value={draftLabel as string}
-          className={fieldClass() as string}
-          onChange={(e) =>
-            onDraftLabel((e.target as HTMLSelectElement).value)
-          }
-        >
-          <option value="">Any label</option>
-          @for (const lab of labels; key lab.id) {
-            <option value={lab.id as string}>{lab.name as string}</option>
-          }
-        </select>
-      </label>
-      <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-        Assignee
-        <input
-          type="text"
-          name="assignee"
-          autocomplete="off"
-          placeholder="username"
-          value={draftAssignee as string}
-          className={fieldClass() as string}
-          onInput={(e) =>
-            onDraftAssignee((e.target as HTMLInputElement).value)
-          }
-        />
-      </label>
-      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[13px] text-muted-foreground">
-        Search
-        <input
-          type="search"
-          name="q"
-          autocomplete="off"
-          placeholder="Search title or body"
-          value={draftQ as string}
-          className={fieldClass() as string}
-          onInput={(e) => onDraftQ((e.target as HTMLInputElement).value)}
-        />
-      </label>
+      <filterForm.Field name="author">
+        {(field) => (
+          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+            Author
+            <input
+              type="text"
+              name="author"
+              autocomplete="off"
+              placeholder="username"
+              value={field.state.value as string}
+              className={fieldClass() as string}
+              onBlur={field.handleBlur}
+              onInput={(e) =>
+                field.handleChange((e.target as HTMLInputElement).value)
+              }
+            />
+          </label>
+        )}
+      </filterForm.Field>
+      <filterForm.Field name="label">
+        {(field) => (
+          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+            Label
+            <select
+              name="label"
+              aria-label="Label"
+              value={field.state.value as string}
+              className={fieldClass() as string}
+              onChange={(e) =>
+                field.handleChange((e.target as HTMLSelectElement).value)
+              }
+            >
+              <option value="">Any label</option>
+              @for (const lab of labels; key lab.id) {
+                <option value={lab.id as string}>{lab.name as string}</option>
+              }
+            </select>
+          </label>
+        )}
+      </filterForm.Field>
+      <filterForm.Field name="assignee">
+        {(field) => (
+          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+            Assignee
+            <input
+              type="text"
+              name="assignee"
+              autocomplete="off"
+              placeholder="username"
+              value={field.state.value as string}
+              className={fieldClass() as string}
+              onBlur={field.handleBlur}
+              onInput={(e) =>
+                field.handleChange((e.target as HTMLInputElement).value)
+              }
+            />
+          </label>
+        )}
+      </filterForm.Field>
+      <filterForm.Field name="q">
+        {(field) => (
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[13px] text-muted-foreground">
+            Search
+            <input
+              type="search"
+              name="q"
+              autocomplete="off"
+              placeholder="Search title or body"
+              value={field.state.value as string}
+              className={fieldClass() as string}
+              onBlur={field.handleBlur}
+              onInput={(e) =>
+                field.handleChange((e.target as HTMLInputElement).value)
+              }
+            />
+          </label>
+        )}
+      </filterForm.Field>
       <button
-        type="button"
+        type="submit"
         className="inline-flex h-10 items-center rounded-md border border-border bg-muted px-4 text-[14px] font-medium text-foreground hover:bg-muted/80"
-        onClick={() => onApplyFilters()}
       >
         Apply filters
       </button>

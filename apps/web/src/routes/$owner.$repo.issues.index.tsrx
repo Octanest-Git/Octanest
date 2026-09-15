@@ -117,10 +117,6 @@ export function IssuesListPage() @{
   const [filters, setFilters] = useState<IssueListFilters>(() =>
     emptyFilters("open"),
   );
-  const [draftAuthor, setDraftAuthor] = useState("");
-  const [draftLabel, setDraftLabel] = useState("");
-  const [draftAssignee, setDraftAssignee] = useState("");
-  const [draftQ, setDraftQ] = useState("");
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -200,13 +196,18 @@ export function IssuesListPage() @{
     (repoQ.isError &&
       String(repoQ.error?.message ?? "").includes("not found"));
 
-  const applyFilters = () => {
+  const applyFilters = (draft: {
+    author: string;
+    label: string;
+    assignee: string;
+    q: string;
+  }) => {
     setFilters((prev) => ({
       ...prev,
-      author: draftAuthor.trim(),
-      label: draftLabel.trim(),
-      assignee: draftAssignee.trim(),
-      q: draftQ.trim(),
+      author: draft.author,
+      label: draft.label,
+      assignee: draft.assignee,
+      q: draft.q,
       offset: 0,
     }));
   };
@@ -247,15 +248,7 @@ export function IssuesListPage() @{
         total={listQ.data?.total ?? 0}
         filters={filters}
         labels={labelsQ.data ?? []}
-        draftAuthor={draftAuthor}
-        draftLabel={draftLabel}
-        draftAssignee={draftAssignee}
-        draftQ={draftQ}
         onStateChange={setState}
-        onDraftAuthor={setDraftAuthor}
-        onDraftLabel={setDraftLabel}
-        onDraftAssignee={setDraftAssignee}
-        onDraftQ={setDraftQ}
         onApplyFilters={applyFilters}
         onPrevPage={prevPage}
         onNextPage={nextPage}

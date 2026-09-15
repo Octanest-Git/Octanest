@@ -3,6 +3,7 @@ import {
   redirect,
   useLoaderData,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import type { UserPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
@@ -57,48 +58,52 @@ export function OrgsNewPage() @{
   const user = data?.user;
   const showWall = !user || !user.email_verified;
 
-  const [slug, setSlug] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [slugError, setSlugError] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
 
-  async function createOrg() {
-    setSlugError("");
-    setFormError("");
-    const trimmed = slug.trim();
-    if (!trimmed) {
-      setSlugError("Organization slug is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.org.create({
-        slug: trimmed,
-        display_name: displayName.trim() || null,
-      });
-      if (!res.ok) {
-        const code = res.error.code;
-        if (code === "org.slug_taken") {
-          setSlugError(TAKEN_ERROR);
-        } else if (code === "auth.reserved_username") {
-          setSlugError(RESERVED_ERROR);
-        } else if (code === "auth.invalid_username") {
-          setSlugError(res.error.message);
-        } else if (code === "auth.email_unverified") {
-          setFormError("Verify your email before creating an organization.");
-        } else {
-          setFormError(res.error.message || NETWORK_ERROR);
-        }
-        setPending(false);
+  const form = useForm({
+    defaultValues: {
+      slug: "",
+      display_name: "",
+    },
+    onSubmit: async ({ value }) => {
+      setSlugError("");
+      setFormError("");
+      const trimmed = value.slug.trim();
+      if (!trimmed) {
+        setSlugError("Organization slug is required.");
         return;
       }
-      window.location.assign(`/${res.data.slug}`);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+      setPending(true);
+      try {
+        const res = await apiClient.org.create({
+          slug: trimmed,
+          display_name: value.display_name.trim() || null,
+        });
+        if (!res.ok) {
+          const code = res.error.code;
+          if (code === "org.slug_taken") {
+            setSlugError(TAKEN_ERROR);
+          } else if (code === "auth.reserved_username") {
+            setSlugError(RESERVED_ERROR);
+          } else if (code === "auth.invalid_username") {
+            setSlugError(res.error.message);
+          } else if (code === "auth.email_unverified") {
+            setFormError("Verify your email before creating an organization.");
+          } else {
+            setFormError(res.error.message || NETWORK_ERROR);
+          }
+          setPending(false);
+          return;
+        }
+        window.location.assign(`/${res.data.slug}`);
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   @if (showWall) {
     <AuthShell
@@ -127,55 +132,61 @@ export function OrgsNewPage() @{
         action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void createOrg();
+          void form.handleSubmit();
         }}
       >
         @if (formError) {
           <AuthErrorBanner message={formError} />
         }
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-slug">Slug</Label>
-          <Input
-            id="org-slug"
-            name="slug"
-            autoComplete="off"
-            value={slug}
-            aria-invalid={slugError ? true : undefined}
-            onInput={(ev) => {
-              setSlug((ev.currentTarget as HTMLInputElement).value);
-              if (slugError) setSlugError("");
-            }}
-            required
-          />
-          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-            {SLUG_HELPER}
-          </p>
-          @if (slugError) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {slugError as string}
-            </p>
-          }
-        </div>
+        <form.Field name="slug">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="org-slug">Slug</Label>
+              <Input
+                id="org-slug"
+                name="slug"
+                autoComplete="off"
+                value={field.state.value}
+                aria-invalid={slugError ? true : undefined}
+                onBlur={field.handleBlur}
+                onInput={(ev) => {
+                  field.handleChange((ev.currentTarget as HTMLInputElement).value);
+                  if (slugError) setSlugError("");
+                }}
+                required
+              />
+              <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                {SLUG_HELPER}
+              </p>
+              @if (slugError) {
+                <p role="alert" className="text-[14px] text-destructive">
+                  {slugError as string}
+                </p>
+              }
+            </div>
+          )}
+        </form.Field>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-display-name">Display name (optional)</Label>
-          <Input
-            id="org-display-name"
-            name="display_name"
-            autoComplete="organization"
-            value={displayName}
-            onInput={(ev) =>
-              setDisplayName((ev.currentTarget as HTMLInputElement).value)
-            }
-          />
-        </div>
+        <form.Field name="display_name">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="org-display-name">Display name (optional)</Label>
+              <Input
+                id="org-display-name"
+                name="display_name"
+                autoComplete="organization"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(ev) =>
+                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
+                }
+              />
+            </div>
+          )}
+        </form.Field>
 
-        <Button
-          type="button"
-          disabled={pending}
-          onClick={() => void createOrg()}
-        >
+        <Button type="submit" disabled={pending}>
           @if (pending) {
             <>Creating…</>
           } @else {

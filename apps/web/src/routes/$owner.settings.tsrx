@@ -7,6 +7,7 @@ import {
 } from "@octanejs/tanstack-router";
 import type { MemberBasePermission, OrgPublic } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -103,47 +104,44 @@ export function OrgSettingsPage() @{
   const org = data?.org;
   const slug = org?.slug ?? params.owner ?? "";
 
-  const [displayName, setDisplayName] = useState(
-    () => org?.display_name ?? "",
-  );
-  const [memberBase, setMemberBase] = useState<MemberBasePermission>(
-    () => org?.member_base_permission ?? "none",
-  );
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
 
-  const baseLabel =
-    MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ?? "None";
-
-  async function saveSettings() {
-    setFormError("");
-    setSuccess("");
-    setPending(true);
-    try {
-      const res = await apiClient.org.updateSettings({
-        slug,
-        display_name: displayName.trim() || null,
-        member_base_permission: memberBase,
-      });
-      if (!res.ok) {
-        if (res.error.code === "org.forbidden") {
-          setFormError(FORBIDDEN);
-        } else {
-          setFormError(res.error.message || NETWORK_ERROR);
+  const form = useForm({
+    defaultValues: {
+      display_name: org?.display_name ?? "",
+      member_base: (org?.member_base_permission ?? "none") as MemberBasePermission,
+    },
+    onSubmit: async ({ value }) => {
+      setFormError("");
+      setSuccess("");
+      setPending(true);
+      try {
+        const res = await apiClient.org.updateSettings({
+          slug,
+          display_name: value.display_name.trim() || null,
+          member_base_permission: value.member_base,
+        });
+        if (!res.ok) {
+          if (res.error.code === "org.forbidden") {
+            setFormError(FORBIDDEN);
+          } else {
+            setFormError(res.error.message || NETWORK_ERROR);
+          }
+          setPending(false);
+          return;
         }
+        form.setFieldValue("display_name", res.data.display_name ?? "");
+        form.setFieldValue("member_base", res.data.member_base_permission);
+        setSuccess("Settings saved.");
         setPending(false);
-        return;
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
       }
-      setDisplayName(res.data.display_name);
-      setMemberBase(res.data.member_base_permission);
-      setSuccess("Settings saved.");
-      setPending(false);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+    },
+  });
 
   @if (!org) {
     <div className="mx-auto max-w-2xl px-4 py-16">
@@ -168,7 +166,7 @@ export function OrgSettingsPage() @{
         action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void saveSettings();
+          void form.handleSubmit();
         }}
       >
         @if (formError) {
@@ -180,70 +178,83 @@ export function OrgSettingsPage() @{
           </p>
         }
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-display-name">Display name</Label>
-          <Input
-            id="org-display-name"
-            name="display_name"
-            autoComplete="organization"
-            value={displayName}
-            onInput={(ev) =>
-              setDisplayName((ev.currentTarget as HTMLInputElement).value)
-            }
-          />
-        </div>
+        <form.Field name="display_name">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="org-display-name">Display name</Label>
+              <Input
+                id="org-display-name"
+                name="display_name"
+                autoComplete="organization"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(ev) =>
+                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
+                }
+              />
+            </div>
+          )}
+        </form.Field>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="org-member-base">Base permission for Members</Label>
-          <SelectRoot
-            value={memberBase}
-            onValueChange={(next) => {
-              if (typeof next === "string") {
-                setMemberBase(next as MemberBasePermission);
-              }
-            }}
-          >
-            <SelectTrigger
-              id="org-member-base"
-              className="w-full min-w-[12rem]"
-              aria-label="Base permission for Members"
-            >
-              <SelectValue>{baseLabel as string}</SelectValue>
-              <SelectIcon>
-                <ChevronDown aria-hidden size={16} />
-              </SelectIcon>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectPositioner sideOffset={4}>
-                <SelectPopup>
-                  <SelectList>
-                    @for (const opt of MEMBER_BASE_OPTIONS; key opt.value) {
-                      <SelectItem value={opt.value}>
-                        <SelectItemIndicator>
-                          <Check
-                            aria-hidden
-                            size={16}
-                            className="text-primary"
-                          />
-                        </SelectItemIndicator>
-                        <SelectItemText>{opt.label as string}</SelectItemText>
-                      </SelectItem>
+        <form.Subscribe selector={(s) => s.values.member_base}>
+          {(memberBase) => {
+            const baseLabel =
+              MEMBER_BASE_OPTIONS.find((o) => o.value === memberBase)?.label ??
+              "None";
+            return (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="org-member-base">Base permission for Members</Label>
+                <SelectRoot
+                  value={memberBase}
+                  onValueChange={(next) => {
+                    if (typeof next === "string") {
+                      form.setFieldValue("member_base", next as MemberBasePermission);
                     }
-                  </SelectList>
-                </SelectPopup>
-              </SelectPositioner>
-            </SelectPortal>
-          </SelectRoot>
-          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-            {MEMBER_BASE_HELPER}
-          </p>
-        </div>
+                  }}
+                >
+                  <SelectTrigger
+                    id="org-member-base"
+                    className="w-full min-w-[12rem]"
+                    aria-label="Base permission for Members"
+                  >
+                    <SelectValue>{baseLabel as string}</SelectValue>
+                    <SelectIcon>
+                      <ChevronDown aria-hidden size={16} />
+                    </SelectIcon>
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectPositioner sideOffset={4}>
+                      <SelectPopup>
+                        <SelectList>
+                          @for (const opt of MEMBER_BASE_OPTIONS; key opt.value) {
+                            <SelectItem value={opt.value}>
+                              <SelectItemIndicator>
+                                <Check
+                                  aria-hidden
+                                  size={16}
+                                  className="text-primary"
+                                />
+                              </SelectItemIndicator>
+                              <SelectItemText>{opt.label as string}</SelectItemText>
+                            </SelectItem>
+                          }
+                        </SelectList>
+                      </SelectPopup>
+                    </SelectPositioner>
+                  </SelectPortal>
+                </SelectRoot>
+                <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                  {MEMBER_BASE_HELPER}
+                </p>
+              </div>
+            );
+          }}
+        </form.Subscribe>
 
         <Button
-          type="button"
+          type="submit"
           disabled={pending}
           className={cn("h-11")}
-          onClick={() => void saveSettings()}
         >
           @if (pending) {
             <>Saving…</>

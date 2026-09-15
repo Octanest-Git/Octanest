@@ -13,6 +13,7 @@ import type {
   OrgRole,
 } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
+import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MemberLookup } from "@/components/org/member-lookup";
@@ -201,16 +202,92 @@ export function OrgMembersPage() @{
   const members: OrgMemberPublic[] = membersQ.data?.members ?? [];
   const invites: OrgInvitePublic[] = invitesQ.data?.invites ?? [];
 
-  const [addUsername, setAddUsername] = useState("");
-  const [addRole, setAddRole] = useState<OrgRole>("member");
   const [addError, setAddError] = useState("");
   const [addPending, setAddPending] = useState(false);
 
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<OrgRole>("member");
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
   const [invitePending, setInvitePending] = useState(false);
+
+  const addForm = useForm({
+    defaultValues: {
+      username: "",
+      role: "member" as OrgRole,
+    },
+    onSubmit: async ({ value }) => {
+      setAddError("");
+      const username = value.username.trim();
+      if (!username) {
+        setAddError("Username is required.");
+        return;
+      }
+      setAddPending(true);
+      try {
+        const res = await apiClient.org.members.add({
+          slug,
+          username,
+          role: value.role,
+        });
+        if (!res.ok) {
+          if (res.error.code === "org.last_owner") {
+            setAddError(LAST_OWNER_ERROR);
+          } else if (res.error.code === "org.forbidden") {
+            setAddError(FORBIDDEN);
+          } else {
+            setAddError(res.error.message || NETWORK_ERROR);
+          }
+          setAddPending(false);
+          return;
+        }
+        addForm.reset();
+        setAddPending(false);
+        await refreshMembers();
+      } catch {
+        setAddError(NETWORK_ERROR);
+        setAddPending(false);
+      }
+    },
+  });
+
+  const inviteForm = useForm({
+    defaultValues: {
+      email: "",
+      role: "member" as OrgRole,
+    },
+    onSubmit: async ({ value }) => {
+      setInviteError("");
+      setInviteSuccess("");
+      const email = value.email.trim();
+      if (!email) {
+        setInviteError("Email is required.");
+        return;
+      }
+      setInvitePending(true);
+      try {
+        const res = await apiClient.org.invites.create({
+          slug,
+          email,
+          role: value.role,
+        });
+        if (!res.ok) {
+          if (res.error.code === "org.forbidden") {
+            setInviteError(FORBIDDEN);
+          } else {
+            setInviteError(res.error.message || NETWORK_ERROR);
+          }
+          setInvitePending(false);
+          return;
+        }
+        inviteForm.reset();
+        setInviteSuccess("Invitation sent.");
+        setInvitePending(false);
+        await refreshInvites();
+      } catch {
+        setInviteError(NETWORK_ERROR);
+        setInvitePending(false);
+      }
+    },
+  });
 
   const [rowError, setRowError] = useState("");
   const [revokeTarget, setRevokeTarget] = useState<OrgInvitePublic | null>(
@@ -225,41 +302,6 @@ export function OrgMembersPage() @{
 
   async function refreshInvites() {
     await queryClient.invalidateQueries({ queryKey: invitesQueryKey(slug) });
-  }
-
-  async function addMember() {
-    setAddError("");
-    const username = addUsername.trim();
-    if (!username) {
-      setAddError("Username is required.");
-      return;
-    }
-    setAddPending(true);
-    try {
-      const res = await apiClient.org.members.add({
-        slug,
-        username,
-        role: addRole,
-      });
-      if (!res.ok) {
-        if (res.error.code === "org.last_owner") {
-          setAddError(LAST_OWNER_ERROR);
-        } else if (res.error.code === "org.forbidden") {
-          setAddError(FORBIDDEN);
-        } else {
-          setAddError(res.error.message || NETWORK_ERROR);
-        }
-        setAddPending(false);
-        return;
-      }
-      setAddUsername("");
-      setAddRole("member");
-      setAddPending(false);
-      await refreshMembers();
-    } catch {
-      setAddError(NETWORK_ERROR);
-      setAddPending(false);
-    }
   }
 
   async function updateRole(member: OrgMemberPublic, role: OrgRole) {
@@ -303,42 +345,6 @@ export function OrgMembersPage() @{
       await refreshMembers();
     } catch {
       setRowError(NETWORK_ERROR);
-    }
-  }
-
-  async function createInvite() {
-    setInviteError("");
-    setInviteSuccess("");
-    const email = inviteEmail.trim();
-    if (!email) {
-      setInviteError("Email is required.");
-      return;
-    }
-    setInvitePending(true);
-    try {
-      const res = await apiClient.org.invites.create({
-        slug,
-        email,
-        role: inviteRole,
-      });
-      if (!res.ok) {
-        if (res.error.code === "org.forbidden") {
-          setInviteError(FORBIDDEN);
-        } else {
-          // Soft success path may still return ok; other errors surface message.
-          setInviteError(res.error.message || NETWORK_ERROR);
-        }
-        setInvitePending(false);
-        return;
-      }
-      setInviteEmail("");
-      setInviteRole("member");
-      setInviteSuccess("Invitation sent.");
-      setInvitePending(false);
-      await refreshInvites();
-    } catch {
-      setInviteError(NETWORK_ERROR);
-      setInvitePending(false);
     }
   }
 
@@ -464,29 +470,36 @@ export function OrgMembersPage() @{
             action="#"
             onSubmit={(e) => {
               e.preventDefault();
-              void addMember();
+              void addForm.handleSubmit();
             }}
           >
             @if (addError) {
               <AuthErrorBanner message={addError} />
             }
-            <MemberLookup
-              value={addUsername}
-              onValueChange={setAddUsername}
-            />
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="add-member-role">Role</Label>
-              <RoleSelect
-                id="add-member-role"
-                value={addRole}
-                onChange={setAddRole}
-              />
-            </div>
+            <addForm.Field name="username">
+              {(field) => (
+                <MemberLookup
+                  value={field.state.value}
+                  onValueChange={field.handleChange}
+                />
+              )}
+            </addForm.Field>
+            <addForm.Subscribe selector={(s) => s.values.role}>
+              {(addRole) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="add-member-role">Role</Label>
+                  <RoleSelect
+                    id="add-member-role"
+                    value={addRole}
+                    onChange={(role) => addForm.setFieldValue("role", role)}
+                  />
+                </div>
+              )}
+            </addForm.Subscribe>
             <Button
-              type="button"
+              type="submit"
               className="h-11 w-fit"
               disabled={addPending}
-              onClick={() => void addMember()}
             >
               @if (addPending) {
                 <>Adding…</>
@@ -514,7 +527,7 @@ export function OrgMembersPage() @{
             action="#"
             onSubmit={(e) => {
               e.preventDefault();
-              void createInvite();
+              void inviteForm.handleSubmit();
             }}
           >
             @if (inviteError) {
@@ -525,32 +538,40 @@ export function OrgMembersPage() @{
                 {inviteSuccess as string}
               </p>
             }
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-email">Email</Label>
-              <Input
-                id="invite-email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={inviteEmail}
-                onInput={(ev) =>
-                  setInviteEmail((ev.currentTarget as HTMLInputElement).value)
-                }
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-role">Role</Label>
-              <RoleSelect
-                id="invite-role"
-                value={inviteRole}
-                onChange={setInviteRole}
-              />
-            </div>
+            <inviteForm.Field name="email">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invite-email">Email</Label>
+                  <Input
+                    id="invite-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(ev) =>
+                      field.handleChange((ev.currentTarget as HTMLInputElement).value)
+                    }
+                  />
+                </div>
+              )}
+            </inviteForm.Field>
+            <inviteForm.Subscribe selector={(s) => s.values.role}>
+              {(inviteRole) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invite-role">Role</Label>
+                  <RoleSelect
+                    id="invite-role"
+                    value={inviteRole}
+                    onChange={(role) => inviteForm.setFieldValue("role", role)}
+                  />
+                </div>
+              )}
+            </inviteForm.Subscribe>
             <Button
-              type="button"
+              type="submit"
               className="h-11 w-fit"
               disabled={invitePending}
-              onClick={() => void createInvite()}
             >
               @if (invitePending) {
                 <>Sending…</>

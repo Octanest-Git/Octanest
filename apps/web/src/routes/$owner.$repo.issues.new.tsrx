@@ -4,6 +4,7 @@ import {
   useNavigate,
   useParams,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
@@ -80,10 +81,47 @@ export function IssuesNewPage() @{
     | IssuesNewLoaderData
     | undefined;
 
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+
+  const form = useForm({
+    defaultValues: {
+      title: "",
+      body: "",
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      if (!value.title.trim()) {
+        setError("Title is required.");
+        return;
+      }
+      setPending(true);
+      try {
+        const res = await apiClient.issue.create({
+          owner,
+          name: repoName,
+          title: value.title.trim(),
+          body: value.body || undefined,
+        });
+        if (!res.ok) {
+          setError(res.error.message || "Could not create issue.");
+          setPending(false);
+          return;
+        }
+        await navigate({
+          to: "/$owner/$repo/issues/$n",
+          params: {
+            owner,
+            repo: repoName,
+            n: String(res.data.number),
+          },
+        });
+      } catch {
+        setError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   const repoQ = useQuery({
     queryKey: ["repo", "get", owner, repoName] as const,
@@ -102,39 +140,6 @@ export function IssuesNewPage() @{
   });
 
   const repo = repoQ.data ?? null;
-
-  async function submit() {
-    setError("");
-    if (!title.trim()) {
-      setError("Title is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.issue.create({
-        owner,
-        name: repoName,
-        title: title.trim(),
-        body: body || undefined,
-      });
-      if (!res.ok) {
-        setError(res.error.message || "Could not create issue.");
-        setPending(false);
-        return;
-      }
-      await navigate({
-        to: "/$owner/$repo/issues/$n",
-        params: {
-          owner,
-          repo: repoName,
-          n: String(res.data.number),
-        },
-      });
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
 
   @if (layout?.status === "not_found" || (!repoQ.isPending && !repo)) {
     <RepoNotFound />
@@ -155,43 +160,48 @@ export function IssuesNewPage() @{
         className="flex max-w-2xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          void submit();
+          void form.handleSubmit();
         }}
       >
         @if (error) {
           <AuthErrorBanner message={error} />
         }
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="issue-title">Title</Label>
-          <Input
-            id="issue-title"
-            name="title"
-            value={title}
-            onInput={(e) =>
-              setTitle((e.target as HTMLInputElement).value)
-            }
-            placeholder="Issue title"
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <MarkdownWritePreview
-            id="issue-body"
-            value={body}
-            onValueChange={setBody}
-            rows={12}
-            disabled={pending}
-            placeholder="Describe the issue (markdown supported)"
-            owner={owner}
-            repo={repoName}
-          />
-        </div>
+        <form.Field name="title">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="issue-title">Title</Label>
+              <Input
+                id="issue-title"
+                name="title"
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onInput={(e) =>
+                  field.handleChange((e.target as HTMLInputElement).value)
+                }
+                placeholder="Issue title"
+                required
+              />
+            </div>
+          )}
+        </form.Field>
+        <form.Field name="body">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <MarkdownWritePreview
+                id="issue-body"
+                value={field.state.value}
+                onValueChange={field.handleChange}
+                rows={12}
+                disabled={pending}
+                placeholder="Describe the issue (markdown supported)"
+                owner={owner}
+                repo={repoName}
+              />
+            </div>
+          )}
+        </form.Field>
         <div className="flex gap-3">
-          <Button
-            type="button"
-            disabled={pending}
-            onClick={() => void submit()}
-          >
+          <Button type="submit" disabled={pending}>
             {(pending ? "Creating…" : "Submit new issue") as string}
           </Button>
           <a

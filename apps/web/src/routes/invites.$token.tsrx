@@ -2,6 +2,7 @@ import {
   createFileRoute,
   useParams,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
@@ -26,11 +27,11 @@ const NETWORK_ERROR =
 const INVALID_INVITE =
   "This invitation is invalid or has expired. Ask an organization admin to send a new invite.";
 const EMAIL_MISMATCH =
-  "You’re signed in with a different email than this invitation. Sign out, then open the link again or create an account for the invited email.";
+  "You're signed in with a different email than this invitation. Sign out, then open the link again or create an account for the invited email.";
 const LOGIN_REQUIRED =
   "An account with this email already exists. Sign in, then open the invitation link again.";
 const CLOSED_SIGNUP_SUPPORT =
-  "This invite lets you join even when public sign-up is closed. You’ll create an account for the invited email only.";
+  "This invite lets you join even when public sign-up is closed. You'll create an account for the invited email only.";
 const LOGGED_IN_SUPPORT =
   "Accept to join the organization with the role you were invited for.";
 const TAKEN_ERROR =
@@ -49,11 +50,33 @@ export function InviteAcceptPage() @{
   const token = String(params?.token ?? "").trim();
 
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
+
+  const acceptForm = useForm({
+    defaultValues: {},
+    onSubmit: async () => {
+      await acceptInvite();
+    },
+  });
+
+  const anonForm = useForm({
+    defaultValues: {
+      username: "",
+      password: "",
+      confirm: "",
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      if (value.password !== value.confirm) {
+        setError("Passwords do not match. Fix the highlighted fields and try again.");
+        return;
+      }
+      await acceptInvite({
+        username: value.username.trim(),
+        password: value.password,
+      });
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -90,7 +113,6 @@ export function InviteAcceptPage() @{
       setError(INVALID_INVITE);
       return;
     }
-    setPending(true);
     try {
       const res = await apiClient.org.invites.accept({
         token,
@@ -115,27 +137,13 @@ export function InviteAcceptPage() @{
         } else {
           setError(res.error.message || NETWORK_ERROR);
         }
-        setPending(false);
         return;
       }
       setPhase({ kind: "done", orgSlug: res.data.org.slug });
       window.location.assign(`/${res.data.org.slug}`);
     } catch {
       setError(NETWORK_ERROR);
-      setPending(false);
     }
-  }
-
-  async function submitAnon() {
-    setError("");
-    if (password !== confirm) {
-      setError("Passwords do not match. Fix the highlighted fields and try again.");
-      return;
-    }
-    await acceptInvite({
-      username: username.trim(),
-      password,
-    });
   }
 
   const loginHref = `/login?returnTo=${encodeURIComponent(`/invites/${token}`)}`;
@@ -151,7 +159,7 @@ export function InviteAcceptPage() @{
         support={`Redirecting to /${phase.orgSlug as string}…`}
       >
         <p className="text-sm text-muted-foreground">
-          You’re in. Opening the organization…
+          You're in. Opening the organization…
         </p>
       </AuthShell>
     } @else {
@@ -174,16 +182,20 @@ export function InviteAcceptPage() @{
             action="#"
             onSubmit={(e) => {
               e.preventDefault();
-              void acceptInvite();
+              void acceptForm.handleSubmit();
             }}
           >
-            <Button type="submit" disabled={pending}>
-              @if (pending) {
-                <>Accepting…</>
-              } @else {
-                <>Accept invitation</>
-              }
-            </Button>
+            <acceptForm.Subscribe selector={(s) => s.isSubmitting}>
+              {(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting}>
+                  @if (isSubmitting) {
+                    <>Accepting…</>
+                  } @else {
+                    <>Accept invitation</>
+                  }
+                </Button>
+              )}
+            </acceptForm.Subscribe>
           </form>
           <p className="text-sm text-muted-foreground">
             Wrong account?{" "}
@@ -211,60 +223,76 @@ export function InviteAcceptPage() @{
             action="#"
             onSubmit={(e) => {
               e.preventDefault();
-              void submitAnon();
+              void anonForm.handleSubmit();
             }}
           >
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-username">Username</Label>
-              <Input
-                id="invite-username"
-                name="username"
-                autoComplete="username"
-                value={username}
-                onInput={(e) =>
-                  setUsername((e.currentTarget as HTMLInputElement).value)
-                }
-                disabled={pending}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-password">Password</Label>
-              <Input
-                id="invite-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onInput={(e) =>
-                  setPassword((e.currentTarget as HTMLInputElement).value)
-                }
-                disabled={pending}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="invite-confirm">Confirm password</Label>
-              <Input
-                id="invite-confirm"
-                name="confirm"
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onInput={(e) =>
-                  setConfirm((e.currentTarget as HTMLInputElement).value)
-                }
-                disabled={pending}
-                required
-              />
-            </div>
-            <Button type="submit" disabled={pending}>
-              @if (pending) {
-                <>Creating account…</>
-              } @else {
-                <>Create account and join</>
-              }
-            </Button>
+            <anonForm.Field name="username">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invite-username">Username</Label>
+                  <Input
+                    id="invite-username"
+                    name="username"
+                    autoComplete="username"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.currentTarget as HTMLInputElement).value)
+                    }
+                    required
+                  />
+                </div>
+              )}
+            </anonForm.Field>
+            <anonForm.Field name="password">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invite-password">Password</Label>
+                  <Input
+                    id="invite-password"
+                    name="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.currentTarget as HTMLInputElement).value)
+                    }
+                    required
+                  />
+                </div>
+              )}
+            </anonForm.Field>
+            <anonForm.Field name="confirm">
+              {(field) => (
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="invite-confirm">Confirm password</Label>
+                  <Input
+                    id="invite-confirm"
+                    name="confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onInput={(e) =>
+                      field.handleChange((e.currentTarget as HTMLInputElement).value)
+                    }
+                    required
+                  />
+                </div>
+              )}
+            </anonForm.Field>
+            <anonForm.Subscribe selector={(s) => s.isSubmitting}>
+              {(isSubmitting) => (
+                <Button type="submit" disabled={isSubmitting}>
+                  @if (isSubmitting) {
+                    <>Creating account…</>
+                  } @else {
+                    <>Create account and join</>
+                  }
+                </Button>
+              )}
+            </anonForm.Subscribe>
           </form>
         </AuthShell>
       }

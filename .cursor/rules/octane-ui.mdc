@@ -8,8 +8,8 @@ alwaysApply: false
 
 - Prefer `.tsrx` with `function Comp() @{ … }`. Do not mix `return (` JSX with `@if` / `@{`.
 - Control flow: `@if` / `@else` only (no `@else if`); `@for (…; key …)`; `@switch`.
-- Text inputs: `onInput` + `value`. Not React synthetic `onChange` for per-edit typing.
-- Server/session data: `@octanejs/tanstack-query` via `src/lib/session-queries.ts` and cache helpers. Local `useState` for forms only.
+- Text inputs: `onInput` + `value` (or `field.handleChange` from `@octanejs/tanstack-form`). Not React synthetic `onChange` for per-edit typing.
+- Server/session data: `@octanejs/tanstack-query` via `src/lib/session-queries.ts` and cache helpers. Forms: `@octanejs/tanstack-form`. File uploads: `@octanejs/dropzone` via `FileDropzone`.
 - Auth forms: `method="post" action="#"`, submit controls `type="button"` when handling in JS.
 - Bindings: use existing `@octanejs/*` packages. Do not alias `react` → Octane.
 - Before commit: `make web-lint` + `make web-format-check` (type-aware oxlint / oxfmt via `@tsrx/oxc`).

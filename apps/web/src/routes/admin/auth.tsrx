@@ -7,6 +7,7 @@ import type {
   ProviderMode,
   RepoVisibility,
 } from "@octanest/api-client";
+import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
 import {
@@ -136,15 +137,6 @@ export function AdminAuthPage() @{
     enabled: isSysAdmin,
   });
 
-  const [providerMode, setProviderMode] = useState<ProviderMode>("local");
-  const [allowSignup, setAllowSignup] = useState(false);
-  const [defaultVisibility, setDefaultVisibility] =
-    useState<RepoVisibility>("public");
-  const [emailProvider, setEmailProvider] = useState<EmailProviderKind>("log");
-  const [fromAddress, setFromAddress] = useState("");
-  const [workosClientId, setWorkosClientId] = useState("");
-  const [oidcIssuer, setOidcIssuer] = useState("");
-  const [oidcClientId, setOidcClientId] = useState("");
   const [flags, setFlags] = useState({
     smtp_configured: false,
     resend_configured: false,
@@ -156,17 +148,67 @@ export function AdminAuthPage() @{
   const [pending, setPending] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
 
+  const form = useForm({
+    defaultValues: {
+      provider_mode: "local" as ProviderMode,
+      allow_signup: false,
+      default_visibility: "public" as RepoVisibility,
+      email_provider: "log" as EmailProviderKind,
+      from_address: "",
+      workos_client_id: "",
+      oidc_issuer: "",
+      oidc_client_id: "",
+    },
+    onSubmit: async ({ value }) => {
+      setFormError("");
+      setSuccess("");
+      setPending(true);
+      try {
+        const res = await apiClient.admin.auth.updateSettings({
+          provider_mode: value.provider_mode,
+          email_provider: value.email_provider,
+          from_address: value.from_address.trim() || null,
+          workos_client_id:
+            value.provider_mode === "workos"
+              ? value.workos_client_id.trim() || null
+              : null,
+          oidc_issuer:
+            value.provider_mode === "oidc" ? value.oidc_issuer.trim() || null : null,
+          oidc_client_id:
+            value.provider_mode === "oidc"
+              ? value.oidc_client_id.trim() || null
+              : null,
+          allow_signup: value.allow_signup,
+          default_visibility: value.default_visibility,
+        });
+        if (!res.ok) {
+          setFormError(res.error.message || "Could not save auth settings.");
+          setPending(false);
+          return;
+        }
+        applySettings(res.data);
+        setAdminAuthSettingsCache(queryClient, res.data);
+        setSuccess("Auth settings saved.");
+        setPending(false);
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
+
   function applySettings(next: AuthSettingsPublic) {
-    setProviderMode(next.provider_mode);
-    setAllowSignup(next.allow_signup === true);
-    setDefaultVisibility(
+    form.setFieldValue("provider_mode", next.provider_mode);
+    form.setFieldValue("allow_signup", next.allow_signup === true);
+    form.setFieldValue(
+      "default_visibility",
       next.default_visibility === "private" ? "private" : "public",
     );
-    setEmailProvider(next.email_provider);
-    setFromAddress(next.from_address ?? "");
-    setWorkosClientId(next.workos_client_id ?? "");
-    setOidcIssuer(next.oidc_issuer ?? "");
-    setOidcClientId(next.oidc_client_id ?? "");
+    form.setFieldValue("email_provider", next.email_provider);
+    form.setFieldValue("from_address", next.from_address ?? "");
+    form.setFieldValue("workos_client_id", next.workos_client_id ?? "");
+    form.setFieldValue("oidc_issuer", next.oidc_issuer ?? "");
+    form.setFieldValue("oidc_client_id", next.oidc_client_id ?? "");
     setFlags({
       smtp_configured: next.smtp_configured,
       resend_configured: next.resend_configured,
@@ -189,38 +231,6 @@ export function AdminAuthPage() @{
       applySettings(settings.data);
     }
   }, [settings.isSuccess, settings.dataUpdatedAt]);
-
-  async function saveSettings() {
-    setFormError("");
-    setSuccess("");
-    setPending(true);
-    try {
-      const res = await apiClient.admin.auth.updateSettings({
-        provider_mode: providerMode,
-        email_provider: emailProvider,
-        from_address: fromAddress.trim() || null,
-        workos_client_id:
-          providerMode === "workos" ? workosClientId.trim() || null : null,
-        oidc_issuer: providerMode === "oidc" ? oidcIssuer.trim() || null : null,
-        oidc_client_id:
-          providerMode === "oidc" ? oidcClientId.trim() || null : null,
-        allow_signup: allowSignup,
-        default_visibility: defaultVisibility,
-      });
-      if (!res.ok) {
-        setFormError(res.error.message || "Could not save auth settings.");
-        setPending(false);
-        return;
-      }
-      applySettings(res.data);
-      setAdminAuthSettingsCache(queryClient, res.data);
-      setSuccess("Auth settings saved.");
-      setPending(false);
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
 
   const settingsErrorCode =
     settings.isError && settings.error && typeof settings.error === "object"
@@ -265,7 +275,15 @@ export function AdminAuthPage() @{
         variables.
       </p>
 
-      <div className="mt-8 flex flex-col gap-6">
+      <form
+        method="post"
+        action="#"
+        className="mt-8 flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void form.handleSubmit();
+        }}
+      >
         @if (formError) {
           <p role="alert" className="text-[14px] text-destructive">
             {formError as string}
@@ -280,17 +298,19 @@ export function AdminAuthPage() @{
         <ModeSelect
           id="auth-provider"
           label="Auth provider"
-          value={providerMode}
+          value={form.state.values.provider_mode}
           options={PROVIDER_OPTIONS}
-          onChange={setProviderMode}
+          onChange={(v) => form.setFieldValue("provider_mode", v)}
         />
 
         <div className="flex flex-col gap-2">
           <div className="flex min-h-11 items-center gap-2">
             <Switch
               id="admin-allow-signup"
-              checked={allowSignup}
-              onCheckedChange={(checked) => setAllowSignup(checked === true)}
+              checked={form.state.values.allow_signup}
+              onCheckedChange={(checked) =>
+                form.setFieldValue("allow_signup", checked === true)
+              }
             />
             <Label htmlFor="admin-allow-signup">Allow open signup</Label>
           </div>
@@ -303,24 +323,27 @@ export function AdminAuthPage() @{
         <ModeSelect
           id="default-visibility"
           label="Default repository visibility"
-          value={defaultVisibility}
+          value={form.state.values.default_visibility}
           options={VISIBILITY_OPTIONS}
-          onChange={setDefaultVisibility}
+          onChange={(v) => form.setFieldValue("default_visibility", v)}
         />
         <p className="-mt-4 text-[14px] font-normal leading-[1.4] text-muted-foreground">
           Used when creating a repository if the owner doesn’t pick Public or
           Private (D-08).
         </p>
 
-        @if (providerMode === "workos") {
+        @if (form.state.values.provider_mode === "workos") {
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="workos-client-id">WorkOS client ID</Label>
               <Input
                 id="workos-client-id"
-                value={workosClientId}
+                value={form.state.values.workos_client_id}
                 onInput={(e) =>
-                  setWorkosClientId((e.currentTarget as HTMLInputElement).value)
+                  form.setFieldValue(
+                    "workos_client_id",
+                    (e.currentTarget as HTMLInputElement).value,
+                  )
                 }
                 autoComplete="off"
               />
@@ -337,15 +360,18 @@ export function AdminAuthPage() @{
           </div>
         }
 
-        @if (providerMode === "oidc") {
+        @if (form.state.values.provider_mode === "oidc") {
           <div className="flex flex-col gap-4 rounded-md border border-border p-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="oidc-issuer">OIDC issuer</Label>
               <Input
                 id="oidc-issuer"
-                value={oidcIssuer}
+                value={form.state.values.oidc_issuer}
                 onInput={(e) =>
-                  setOidcIssuer((e.currentTarget as HTMLInputElement).value)
+                  form.setFieldValue(
+                    "oidc_issuer",
+                    (e.currentTarget as HTMLInputElement).value,
+                  )
                 }
                 autoComplete="off"
               />
@@ -354,9 +380,12 @@ export function AdminAuthPage() @{
               <Label htmlFor="oidc-client-id">OIDC client ID</Label>
               <Input
                 id="oidc-client-id"
-                value={oidcClientId}
+                value={form.state.values.oidc_client_id}
                 onInput={(e) =>
-                  setOidcClientId((e.currentTarget as HTMLInputElement).value)
+                  form.setFieldValue(
+                    "oidc_client_id",
+                    (e.currentTarget as HTMLInputElement).value,
+                  )
                 }
                 autoComplete="off"
               />
@@ -377,9 +406,9 @@ export function AdminAuthPage() @{
         <ModeSelect
           id="email-delivery"
           label="Email delivery"
-          value={emailProvider}
+          value={form.state.values.email_provider}
           options={EMAIL_OPTIONS}
-          onChange={setEmailProvider}
+          onChange={(v) => form.setFieldValue("email_provider", v)}
         />
 
         <div className="flex flex-col gap-4 rounded-md border border-border p-4">
@@ -387,15 +416,18 @@ export function AdminAuthPage() @{
             <Label htmlFor="from-address">From address</Label>
             <Input
               id="from-address"
-              value={fromAddress}
+              value={form.state.values.from_address}
               onInput={(e) =>
-                setFromAddress((e.currentTarget as HTMLInputElement).value)
+                form.setFieldValue(
+                  "from_address",
+                  (e.currentTarget as HTMLInputElement).value,
+                )
               }
               placeholder="Octanest <noreply@example.com>"
               autoComplete="off"
             />
           </div>
-          @if (emailProvider === "smtp") {
+          @if (form.state.values.email_provider === "smtp") {
             <div className="flex flex-col gap-2">
               <Label>SMTP credentials</Label>
               <EnvBadge show={flags.smtp_configured} />
@@ -406,7 +438,7 @@ export function AdminAuthPage() @{
               }
             </div>
           }
-          @if (emailProvider === "resend") {
+          @if (form.state.values.email_provider === "resend") {
             <div className="flex flex-col gap-2">
               <Label>Resend API key</Label>
               <EnvBadge show={flags.resend_configured} />
@@ -420,17 +452,12 @@ export function AdminAuthPage() @{
           }
         </div>
 
-        <Button
-          type="button"
-          disabled={pending}
-          onClick={() => void saveSettings()}
-          className="w-full sm:w-auto"
-        >
+        <Button type="submit" disabled={pending} className="w-full sm:w-auto">
           {(pending ? "Working…" : "Save auth settings") as string}
         </Button>
+      </form>
 
-        <FactoryResetSection />
-      </div>
+      <FactoryResetSection />
     </div>
       }
     }

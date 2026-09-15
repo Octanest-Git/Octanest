@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { AuthFormSkeleton } from "@/components/page-skeletons";
@@ -36,13 +37,75 @@ export const Route = createFileRoute("/setup/credentials")({
 /** Exported for AUTH-06 integration tests (Keep password Switch + default username). */
 export function CredentialsPage() @{
   const [ready, setReady] = useState(false);
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [keepPassword, setKeepPassword] = useState(true);
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
-  const [pending, setPending] = useState(false);
+
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      username: "",
+      keepPassword: true,
+      password: "",
+      confirm: "",
+    },
+    onSubmit: async ({ value }) => {
+      setError("");
+      const nextUsername = value.username.trim();
+      if (nextUsername.toLowerCase() === DEFAULT_USERNAME) {
+        setError(DEFAULT_USERNAME_ERROR);
+        return;
+      }
+      if (!value.keepPassword) {
+        if (value.password.length < 8) {
+          setError(
+            "Password must be at least 8 characters. Fix the highlighted fields and try again.",
+          );
+          return;
+        }
+        if (value.password !== value.confirm) {
+          setError("Passwords do not match. Fix the highlighted fields and try again.");
+          return;
+        }
+      }
+      try {
+        const res = await apiClient.auth.confirmAdminCredentials({
+          username: nextUsername,
+          email: value.email.trim() || null,
+          password: value.keepPassword ? null : value.password,
+          keep_password: value.keepPassword,
+        });
+        if (!res.ok) {
+          const code = res.error.code;
+          if (code === "auth.invalid_username") {
+            setError(DEFAULT_USERNAME_ERROR);
+          } else if (code === "auth.taken") {
+            setError("That email or username is already taken. Try another.");
+          } else if (
+            code === "auth.invalid_email" ||
+            code === "auth.weak_password" ||
+            code === "rpc.bad_input"
+          ) {
+            setError(
+              `${res.error.message}. Fix the highlighted fields and try again.`,
+            );
+          } else if (code === "auth.credentials_not_required") {
+            window.location.assign(safeReturnTo(readReturnToFromLocation()));
+            return;
+          } else if (code === "auth.unauthenticated") {
+            window.location.assign(
+              `/login?returnTo=${encodeURIComponent("/setup/credentials")}`,
+            );
+            return;
+          } else {
+            setError(NETWORK_ERROR);
+          }
+          return;
+        }
+        window.location.assign(safeReturnTo(readReturnToFromLocation()));
+      } catch {
+        setError(NETWORK_ERROR);
+      }
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -60,8 +123,8 @@ export function CredentialsPage() @{
           window.location.assign(safeReturnTo(readReturnToFromLocation()));
           return;
         }
-        setEmail(me.data.email);
-        setUsername(me.data.username);
+        form.setFieldValue("email", me.data.email);
+        form.setFieldValue("username", me.data.username);
         setReady(true);
       } catch {
         if (cancelled) return;
@@ -73,66 +136,6 @@ export function CredentialsPage() @{
       cancelled = true;
     };
   }, []);
-
-  async function submit() {
-    setError("");
-    const nextUsername = username.trim();
-    if (nextUsername.toLowerCase() === DEFAULT_USERNAME) {
-      setError(DEFAULT_USERNAME_ERROR);
-      return;
-    }
-    if (!keepPassword) {
-      if (password.length < 8) {
-        setError("Password must be at least 8 characters. Fix the highlighted fields and try again.");
-        return;
-      }
-      if (password !== confirm) {
-        setError("Passwords do not match. Fix the highlighted fields and try again.");
-        return;
-      }
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.auth.confirmAdminCredentials({
-        username: nextUsername,
-        email: email.trim() || null,
-        password: keepPassword ? null : password,
-        keep_password: keepPassword,
-      });
-      if (!res.ok) {
-        const code = res.error.code;
-        if (code === "auth.invalid_username") {
-          setError(DEFAULT_USERNAME_ERROR);
-        } else if (code === "auth.taken") {
-          setError("That email or username is already taken. Try another.");
-        } else if (
-          code === "auth.invalid_email" ||
-          code === "auth.weak_password" ||
-          code === "rpc.bad_input"
-        ) {
-          setError(
-            `${res.error.message}. Fix the highlighted fields and try again.`,
-          );
-        } else if (code === "auth.credentials_not_required") {
-          window.location.assign(safeReturnTo(readReturnToFromLocation()));
-          return;
-        } else if (code === "auth.unauthenticated") {
-          window.location.assign(
-            `/login?returnTo=${encodeURIComponent("/setup/credentials")}`,
-          );
-          return;
-        } else {
-          setError(NETWORK_ERROR);
-        }
-        setPending(false);
-        return;
-      }
-      window.location.assign(safeReturnTo(readReturnToFromLocation()));
-    } catch {
-      setError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
 
   <AuthShell
     title="Confirm admin account"
@@ -149,84 +152,124 @@ export function CredentialsPage() @{
     @if (ready) {
       <form
         className="flex flex-col gap-4"
+        method="post"
+        action="#"
         onSubmit={(e) => {
           e.preventDefault();
-          void submit();
+          void form.handleSubmit();
         }}
       >
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="credentials-email">Email</Label>
-          <Input
-            id="credentials-email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onInput={(ev) => setEmail((ev.currentTarget as HTMLInputElement).value)}
-            required
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="credentials-username">Username</Label>
-          <Input
-            id="credentials-username"
-            name="username"
-            autoComplete="username"
-            value={username}
-            onInput={(ev) =>
-              setUsername((ev.currentTarget as HTMLInputElement).value)
-            }
-            required
-          />
-          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-            Change the default system-administrator username before continuing.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2">
-          <div className="flex min-h-11 items-center gap-2">
-            <Switch
-              id="credentials-keep-password"
-              checked={keepPassword}
-              onCheckedChange={(checked) => setKeepPassword(checked === true)}
-            />
-            <Label htmlFor="credentials-keep-password">Keep current password</Label>
-          </div>
-        </div>
-        @if (!keepPassword) {
-          <div className="flex flex-col gap-4">
+        <form.Field name="email">
+          {(field) => (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="credentials-password">New password</Label>
+              <Label htmlFor="credentials-email">Email</Label>
               <Input
-                id="credentials-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
+                id="credentials-email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={field.state.value}
+                onBlur={field.handleBlur}
                 onInput={(ev) =>
-                  setPassword((ev.currentTarget as HTMLInputElement).value)
+                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
                 }
                 required
               />
             </div>
+          )}
+        </form.Field>
+        <form.Field name="username">
+          {(field) => (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="credentials-confirm">Confirm password</Label>
+              <Label htmlFor="credentials-username">Username</Label>
               <Input
-                id="credentials-confirm"
-                name="confirm"
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
+                id="credentials-username"
+                name="username"
+                autoComplete="username"
+                value={field.state.value}
+                onBlur={field.handleBlur}
                 onInput={(ev) =>
-                  setConfirm((ev.currentTarget as HTMLInputElement).value)
+                  field.handleChange((ev.currentTarget as HTMLInputElement).value)
                 }
                 required
               />
+              <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                Change the default system-administrator username before continuing.
+              </p>
             </div>
-          </div>
-        }
-        <Button type="submit" className="w-full" disabled={pending}>
-          {(pending ? "Working…" : "Save and continue") as string}
-        </Button>
+          )}
+        </form.Field>
+        <form.Field name="keepPassword">
+          {(field) => (
+            <div className="flex flex-col gap-2">
+              <div className="flex min-h-11 items-center gap-2">
+                <Switch
+                  id="credentials-keep-password"
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked === true)}
+                />
+                <Label htmlFor="credentials-keep-password">Keep current password</Label>
+              </div>
+            </div>
+          )}
+        </form.Field>
+        <form.Subscribe selector={(s) => s.values.keepPassword}>
+          {(keepPassword) =>
+            !keepPassword ? (
+              <div className="flex flex-col gap-4">
+                <form.Field name="password">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="credentials-password">New password</Label>
+                      <Input
+                        id="credentials-password"
+                        name="password"
+                        type="password"
+                        autoComplete="new-password"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onInput={(ev) =>
+                          field.handleChange(
+                            (ev.currentTarget as HTMLInputElement).value,
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                  )}
+                </form.Field>
+                <form.Field name="confirm">
+                  {(field) => (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="credentials-confirm">Confirm password</Label>
+                      <Input
+                        id="credentials-confirm"
+                        name="confirm"
+                        type="password"
+                        autoComplete="new-password"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onInput={(ev) =>
+                          field.handleChange(
+                            (ev.currentTarget as HTMLInputElement).value,
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                  )}
+                </form.Field>
+              </div>
+            ) : null
+          }
+        </form.Subscribe>
+        <form.Subscribe selector={(s) => s.isSubmitting}>
+          {(isSubmitting) => (
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {(isSubmitting ? "Working…" : "Save and continue") as string}
+            </Button>
+          )}
+        </form.Subscribe>
       </form>
     }
   </AuthShell>

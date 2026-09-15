@@ -3,6 +3,7 @@ import {
   redirect,
   useLoaderData,
 } from "@octanejs/tanstack-router";
+import { useForm } from "@octanejs/tanstack-form";
 import type {
   OrgMineEntry,
   RepoCreateDefaults,
@@ -118,63 +119,65 @@ export function NewPage() @{
   const initialVisibility: RepoVisibility =
     data?.defaults?.default_visibility === "private" ? "private" : "public";
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<RepoVisibility>(initialVisibility);
-  const [stackId, setStackId] = useState("none");
-  const [licenseId, setLicenseId] = useState("none");
-  const [gitignoreId, setGitignoreId] = useState("none");
-  const [ownerSlug, setOwnerSlug] = useState(user?.username ?? "");
   const [nameError, setNameError] = useState("");
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
 
   const selfUsername = user?.username ?? "";
-  const selectedOwner = ownerSlug || selfUsername;
-  const ownerDisplay = ownerOptionLabel(selectedOwner, selfUsername, ownerOrgs);
 
-  async function createRepo() {
-    setNameError("");
-    setFormError("");
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setNameError("Repository name is required.");
-      return;
-    }
-    setPending(true);
-    try {
-      const res = await apiClient.repo.create({
-        name: trimmed,
-        description: description.trim() || null,
-        visibility,
-        stack_id: stackId === "none" ? null : stackId,
-        license_id: licenseId === "none" ? null : licenseId,
-        // Send explicit "none" so stack default gitignore is not re-applied server-side.
-        gitignore_id: gitignoreId,
-        owner: selectedOwner || null,
-      });
-      if (!res.ok) {
-        const code = res.error.code;
-        if (code === "repo.name_taken") {
-          setNameError(DUPLICATE_NAME_ERROR);
-        } else if (code === "repo.invalid_name") {
-          setNameError(res.error.message);
-        } else if (code === "auth.email_unverified") {
-          setFormError("Verify your email before creating a repository.");
-        } else {
-          setFormError(res.error.message || NETWORK_ERROR);
-        }
-        setPending(false);
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+      visibility: initialVisibility,
+      stackId: "none",
+      licenseId: "none",
+      gitignoreId: "none",
+      ownerSlug: user?.username ?? "",
+    },
+    onSubmit: async ({ value }) => {
+      setNameError("");
+      setFormError("");
+      const trimmed = value.name.trim();
+      if (!trimmed) {
+        setNameError("Repository name is required.");
         return;
       }
-      window.location.assign(
-        `/${res.data.owner_username}/${res.data.name}`,
-      );
-    } catch {
-      setFormError(NETWORK_ERROR);
-      setPending(false);
-    }
-  }
+      const selectedOwner = value.ownerSlug || selfUsername;
+      setPending(true);
+      try {
+        const res = await apiClient.repo.create({
+          name: trimmed,
+          description: value.description.trim() || null,
+          visibility: value.visibility,
+          stack_id: value.stackId === "none" ? null : value.stackId,
+          license_id: value.licenseId === "none" ? null : value.licenseId,
+          gitignore_id: value.gitignoreId,
+          owner: selectedOwner || null,
+        });
+        if (!res.ok) {
+          const code = res.error.code;
+          if (code === "repo.name_taken") {
+            setNameError(DUPLICATE_NAME_ERROR);
+          } else if (code === "repo.invalid_name") {
+            setNameError(res.error.message);
+          } else if (code === "auth.email_unverified") {
+            setFormError("Verify your email before creating a repository.");
+          } else {
+            setFormError(res.error.message || NETWORK_ERROR);
+          }
+          setPending(false);
+          return;
+        }
+        window.location.assign(
+          `/${res.data.owner_username}/${res.data.name}`,
+        );
+      } catch {
+        setFormError(NETWORK_ERROR);
+        setPending(false);
+      }
+    },
+  });
 
   @if (showWall) {
     <AuthShell
@@ -189,206 +192,227 @@ export function NewPage() @{
       </a>
     </AuthShell>
   } @else {
-    <div className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        Create a new repository
-      </h1>
-      <p className="mt-2 text-[16px] text-muted-foreground">
-        Choose a personal account or an organization you administer.
-      </p>
+    <form.Subscribe selector={(s) => s.values}>
+      {(values) => {
+        const selectedOwner = values.ownerSlug || selfUsername;
+        const ownerDisplay = ownerOptionLabel(
+          selectedOwner,
+          selfUsername,
+          ownerOrgs,
+        );
 
-      <form
-        className="mt-8 flex flex-col gap-6"
-        method="post"
-        action="#"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void createRepo();
-        }}
-      >
-        @if (formError) {
-          <AuthErrorBanner message={formError} />
-        }
-
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="repo-owner">Owner</Label>
-          <SelectRoot
-            value={selectedOwner}
-            onValueChange={(next) => {
-              if (typeof next === "string") setOwnerSlug(next);
-            }}
-          >
-            <SelectTrigger
-              id="repo-owner"
-              className="w-full max-w-sm"
-              aria-label="Owner"
-            >
-              <SelectValue>{ownerDisplay as string}</SelectValue>
-              <SelectIcon>
-                <ChevronDown aria-hidden size={16} />
-              </SelectIcon>
-            </SelectTrigger>
-            <SelectPortal>
-              <SelectPositioner sideOffset={4}>
-                <SelectPopup className="min-w-[12rem]">
-                  <SelectList>
-                    <SelectItem value={selfUsername}>
-                      <SelectItemIndicator>
-                        <Check aria-hidden size={16} className="text-primary" />
-                      </SelectItemIndicator>
-                      <SelectItemText>
-                        {("@" + selfUsername) as string}
-                      </SelectItemText>
-                    </SelectItem>
-                    @for (const org of ownerOrgs; key org.slug) {
-                      <SelectItem value={org.slug}>
-                        <SelectItemIndicator>
-                          <Check aria-hidden size={16} className="text-primary" />
-                        </SelectItemIndicator>
-                        <SelectItemText>
-                          {(org.display_name?.trim()
-                            ? `${org.display_name.trim()} (${org.slug})`
-                            : org.slug) as string}
-                        </SelectItemText>
-                      </SelectItem>
-                    }
-                  </SelectList>
-                </SelectPopup>
-              </SelectPositioner>
-            </SelectPortal>
-          </SelectRoot>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="repo-name">Repository name</Label>
-          <Input
-            id="repo-name"
-            name="name"
-            autoComplete="off"
-            value={name}
-            aria-invalid={nameError ? true : undefined}
-            onInput={(ev) => {
-              setName((ev.currentTarget as HTMLInputElement).value);
-              if (nameError) setNameError("");
-            }}
-            required
-          />
-          <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-            {NAME_HELPER}
-          </p>
-          @if (nameError) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {nameError as string}
+        return (
+          <div className="mx-auto max-w-2xl px-4 py-16">
+            <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
+              Create a new repository
+            </h1>
+            <p className="mt-2 text-[16px] text-muted-foreground">
+              Choose a personal account or an organization you administer.
             </p>
-          }
-        </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="repo-description">Description (optional)</Label>
-          <Textarea
-            id="repo-description"
-            name="description"
-            rows={3}
-            className="max-w-full break-words [overflow-wrap:anywhere]"
-            value={description}
-            onInput={(ev) =>
-              setDescription((ev.currentTarget as HTMLTextAreaElement).value)
-            }
-          />
-        </div>
-
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-[14px] font-normal leading-[1.4] text-foreground">
-            Visibility
-          </legend>
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-label="Visibility"
-          >
-            <Button
-              type="button"
-              variant={visibility === "public" ? "default" : "secondary"}
-              aria-pressed={visibility === "public"}
-              onClick={() => setVisibility("public")}
+            <form
+              className="mt-8 flex flex-col gap-6"
+              method="post"
+              action="#"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void form.handleSubmit();
+              }}
             >
-              Public
-            </Button>
-            <Button
-              type="button"
-              variant={visibility === "private" ? "default" : "secondary"}
-              aria-pressed={visibility === "private"}
-              onClick={() => setVisibility("private")}
-            >
-              Private
-            </Button>
-          </div>
-        </fieldset>
-
-        <div className="flex flex-col gap-5">
-          <div>
-            <p className="text-[14px] font-semibold text-foreground">
-              Templates (optional)
-            </p>
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              Seed an initial commit with a stack, license, and ignore rules —
-              or leave them as None for an empty Quick setup repo.
-            </p>
-          </div>
-          <TemplatePicker
-            id="repo-stack"
-            label="Stack template"
-            description="Project skeleton files committed on create. Picking a stack also selects a matching .gitignore (changeable below)."
-            value={stackId}
-            options={stacks}
-            noneLabel="None"
-            noneDescription="No stack files — empty repo with Quick setup."
-            onChange={(id) => {
-              setStackId(id);
-              if (id === "none") {
-                setGitignoreId("none");
-                return;
+              @if (formError) {
+                <AuthErrorBanner message={formError} />
               }
-              const pack = stacks.find((s) => s.id === id);
-              setGitignoreId(pack?.default_gitignore ?? "none");
-            }}
-          />
-          <TemplatePicker
-            id="repo-license"
-            label="License"
-            description="LICENSE file for the initial commit. Browse popular licenses or search the full SPDX catalog."
-            value={licenseId}
-            options={licenseOptions}
-            noneLabel="None"
-            noneDescription="No LICENSE in the initial commit."
-            browseGroups={["Popular"]}
-            searchPlaceholder="Search SPDX licenses…"
-            onChange={setLicenseId}
-          />
-          <TemplatePicker
-            id="repo-gitignore"
-            label=".gitignore"
-            description="Language and tooling ignore rules. Auto-filled from the stack; set to None to skip."
-            value={gitignoreId}
-            options={gitignores}
-            noneLabel="None"
-            noneDescription="No .gitignore in the initial commit."
-            onChange={setGitignoreId}
-          />
-        </div>
 
-        <Button
-          type="button"
-          disabled={pending}
-          onClick={() => void createRepo()}
-        >
-          @if (pending) {
-            <>Creating…</>
-          } @else {
-            <>Create repository</>
-          }
-        </Button>
-      </form>
-    </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="repo-owner">Owner</Label>
+                <SelectRoot
+                  value={selectedOwner}
+                  onValueChange={(next) => {
+                    if (typeof next === "string") form.setFieldValue("ownerSlug", next);
+                  }}
+                >
+                  <SelectTrigger
+                    id="repo-owner"
+                    className="w-full max-w-sm"
+                    aria-label="Owner"
+                  >
+                    <SelectValue>{ownerDisplay as string}</SelectValue>
+                    <SelectIcon>
+                      <ChevronDown aria-hidden size={16} />
+                    </SelectIcon>
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectPositioner sideOffset={4}>
+                      <SelectPopup className="min-w-[12rem]">
+                        <SelectList>
+                          <SelectItem value={selfUsername}>
+                            <SelectItemIndicator>
+                              <Check aria-hidden size={16} className="text-primary" />
+                            </SelectItemIndicator>
+                            <SelectItemText>
+                              {("@" + selfUsername) as string}
+                            </SelectItemText>
+                          </SelectItem>
+                          @for (const org of ownerOrgs; key org.slug) {
+                            <SelectItem value={org.slug}>
+                              <SelectItemIndicator>
+                                <Check aria-hidden size={16} className="text-primary" />
+                              </SelectItemIndicator>
+                              <SelectItemText>
+                                {(org.display_name?.trim()
+                                  ? `${org.display_name.trim()} (${org.slug})`
+                                  : org.slug) as string}
+                              </SelectItemText>
+                            </SelectItem>
+                          }
+                        </SelectList>
+                      </SelectPopup>
+                    </SelectPositioner>
+                  </SelectPortal>
+                </SelectRoot>
+              </div>
+
+              <form.Field name="name">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="repo-name">Repository name</Label>
+                    <Input
+                      id="repo-name"
+                      name="name"
+                      autoComplete="off"
+                      value={field.state.value}
+                      aria-invalid={nameError ? true : undefined}
+                      onBlur={field.handleBlur}
+                      onInput={(ev) => {
+                        field.handleChange((ev.currentTarget as HTMLInputElement).value);
+                        if (nameError) setNameError("");
+                      }}
+                      required
+                    />
+                    <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                      {NAME_HELPER}
+                    </p>
+                    @if (nameError) {
+                      <p role="alert" className="text-[14px] text-destructive">
+                        {nameError as string}
+                      </p>
+                    }
+                  </div>
+                )}
+              </form.Field>
+
+              <form.Field name="description">
+                {(field) => (
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="repo-description">Description (optional)</Label>
+                    <Textarea
+                      id="repo-description"
+                      name="description"
+                      rows={3}
+                      className="max-w-full break-words [overflow-wrap:anywhere]"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onInput={(ev) =>
+                        field.handleChange(
+                          (ev.currentTarget as HTMLTextAreaElement).value,
+                        )
+                      }
+                    />
+                  </div>
+                )}
+              </form.Field>
+
+              <fieldset className="flex flex-col gap-2">
+                <legend className="text-[14px] font-normal leading-[1.4] text-foreground">
+                  Visibility
+                </legend>
+                <div
+                  className="flex flex-wrap gap-2"
+                  role="group"
+                  aria-label="Visibility"
+                >
+                  <Button
+                    type="button"
+                    variant={values.visibility === "public" ? "default" : "secondary"}
+                    aria-pressed={values.visibility === "public"}
+                    onClick={() => form.setFieldValue("visibility", "public")}
+                  >
+                    Public
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={values.visibility === "private" ? "default" : "secondary"}
+                    aria-pressed={values.visibility === "private"}
+                    onClick={() => form.setFieldValue("visibility", "private")}
+                  >
+                    Private
+                  </Button>
+                </div>
+              </fieldset>
+
+              <div className="flex flex-col gap-5">
+                <div>
+                  <p className="text-[14px] font-semibold text-foreground">
+                    Templates (optional)
+                  </p>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    Seed an initial commit with a stack, license, and ignore rules —
+                    or leave them as None for an empty Quick setup repo.
+                  </p>
+                </div>
+                <TemplatePicker
+                  id="repo-stack"
+                  label="Stack template"
+                  description="Project skeleton files committed on create. Picking a stack also selects a matching .gitignore (changeable below)."
+                  value={values.stackId}
+                  options={stacks}
+                  noneLabel="None"
+                  noneDescription="No stack files — empty repo with Quick setup."
+                  onChange={(id) => {
+                    form.setFieldValue("stackId", id);
+                    if (id === "none") {
+                      form.setFieldValue("gitignoreId", "none");
+                      return;
+                    }
+                    const pack = stacks.find((s) => s.id === id);
+                    form.setFieldValue("gitignoreId", pack?.default_gitignore ?? "none");
+                  }}
+                />
+                <TemplatePicker
+                  id="repo-license"
+                  label="License"
+                  description="LICENSE file for the initial commit. Browse popular licenses or search the full SPDX catalog."
+                  value={values.licenseId}
+                  options={licenseOptions}
+                  noneLabel="None"
+                  noneDescription="No LICENSE in the initial commit."
+                  browseGroups={["Popular"]}
+                  searchPlaceholder="Search SPDX licenses…"
+                  onChange={(id) => form.setFieldValue("licenseId", id)}
+                />
+                <TemplatePicker
+                  id="repo-gitignore"
+                  label=".gitignore"
+                  description="Language and tooling ignore rules. Auto-filled from the stack; set to None to skip."
+                  value={values.gitignoreId}
+                  options={gitignores}
+                  noneLabel="None"
+                  noneDescription="No .gitignore in the initial commit."
+                  onChange={(id) => form.setFieldValue("gitignoreId", id)}
+                />
+              </div>
+
+              <Button type="submit" disabled={pending}>
+                @if (pending) {
+                  <>Creating…</>
+                } @else {
+                  <>Create repository</>
+                }
+              </Button>
+            </form>
+          </div>
+        );
+      }}
+    </form.Subscribe>
   }
 }
