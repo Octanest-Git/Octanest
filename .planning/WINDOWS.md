@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 49
+open_count: 51
 waived_count: 1
 fixed_count: 2
-total_count: 52
-last_updated: 2026-09-14T17:31:23.559Z
+total_count: 54
+last_updated: 2026-09-15T16:21:58.697Z
 ---
 
 # Broken Windows Ledger
@@ -67,6 +67,8 @@ last_updated: 2026-09-14T17:31:23.559Z
 | 50 | 11 | unmet-truth | crates/octanest-api/src/issue/mod.rs |  | Closing-keyword auto-close deferred to Phase 12 (D-ISS-15) — verified not enforced in issue_links_no_closing_keyword_enforcement | waived | Intentional Phase 12 deferral (D-ISS-15), not a defect | 2026-09-14T16:28:25.718Z | 2026-09-14T16:29:16.230Z |
 | 51 | 15 | stub | crates/octanest-api/tests/release_rpc.rs |  | release_* tests #[ignore] until 15-01/15-02 | open |  | 2026-09-14T16:59:15.548Z |  |
 | 52 | 15 | deviation | crates/octanest-api/src/repo/rename_transfer.rs |  | 15-03 combined T1-T3 into single commit due to shared redirect wiring | open |  | 2026-09-14T17:31:23.559Z |  |
+| 53 | 11.1 | deviation | scripts/coverage-weighted.sh |  | Bootstrap floor 0.65 instead of plan ~0.70; ratchet target 0.70 documented | open |  | 2026-09-15T16:21:58.576Z |  |
+| 54 | 11.1 | deviation | .github/workflows/ci.yml |  | CI skips cargo-llvm-cov collect (Make target remains); web+checklist drive gate | open |  | 2026-09-15T16:21:58.697Z |  |
 
 ````json
 [
@@ -692,6 +694,30 @@ last_updated: 2026-09-14T17:31:23.559Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-14T17:31:23.559Z",
+    "resolved_at": null
+  },
+  {
+    "id": 53,
+    "kind": "deviation",
+    "phase": "11.1",
+    "file": "scripts/coverage-weighted.sh",
+    "line": null,
+    "description": "Bootstrap floor 0.65 instead of plan ~0.70; ratchet target 0.70 documented",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-15T16:21:58.576Z",
+    "resolved_at": null
+  },
+  {
+    "id": 54,
+    "kind": "deviation",
+    "phase": "11.1",
+    "file": ".github/workflows/ci.yml",
+    "line": null,
+    "description": "CI skips cargo-llvm-cov collect (Make target remains); web+checklist drive gate",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-15T16:21:58.697Z",
     "resolved_at": null
   }
 ]

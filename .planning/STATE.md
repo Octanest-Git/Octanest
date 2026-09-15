@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: 11.1
 current_phase_name: Quality Hardening
 current_plan: 0
 status: planning
-stopped_at: "Dual-track feat/phase-12-and-quality: parallel GSD truth pass (09/11/15/20 VERIFICATION); 11.1 CONTEXT ready; Phase 12 discuss paused (Review model)"
-last_updated: "2026-09-15T15:40:00.000Z"
+stopped_at: Completed 11.1-02-PLAN.md
+last_updated: "2026-09-15T16:22:39.332Z"
 last_activity: 2026-09-15
-last_activity_desc: "Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded"
-state_head: dual-track-11.1-and-12
+last_activity_desc: Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded
+state_head: bc179573373a3bff5eb787e4af93c3fd2860e8a3
 progress:
   total_phases: 23
-  completed_phases: 14
-  total_plans: 147
-  completed_plans: 147
+  completed_phases: 0
+  total_plans: 153
+  completed_plans: 149
 milestone_name: milestone
+current_phase: "11.1"
 ---
 
 # Project State
@@ -158,6 +158,7 @@ See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.
 | Phase 20 P03 | 25min | 3 tasks | 11 files |
 | Phase 20 P04 | 12min | 2 tasks | 8 files |
 | Phase 20 P05 | 15min | 3 tasks | 2 files |
+| Phase 11.1 P02 | 6min | 3 tasks | 9 files |
 
 # Project State
 
@@ -534,6 +535,8 @@ Recent decisions affecting current work:
 - [Phase 11]: Per-file immutability within generic versions (409 on same filename)
 - [Phase 11]: GET /v2 and /v2/ discovery on app router; nest serves OCI subpaths only
 - [Phase 11]: OCI repo path is {owner}/{image}; nested names deferred
+- [Phase 11.1]: D-QH-02 coverage: bootstrap floor 0.65 with ratchet target 0.70; Vitest v8 + checklist e2e
+- [Phase 11.1]: CI coverage-weighted skips cargo-llvm-cov collect this wave; Make coverage-rust remains
 
 ### Pending Todos
 
@@ -555,8 +558,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-14T20:30:00.000Z
-Stopped at: Merged Phase 20 into feat/forge-core (LFS 0012/0013 + releases 0014 + packages 0015)
+Last session: 2026-09-15T16:22:39.210Z
+Stopped at: Completed 11.1-02-PLAN.md
 Resume file: None
 
 ## Accumulated Context

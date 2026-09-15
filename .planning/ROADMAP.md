@@ -497,9 +497,16 @@ Plans:
   3. Coverage tooling + docs exist; CI enforces a weighted unit / integration / e2e gate (initial floor documented in TESTING.md)
   4. Phase 09 has VERIFICATION + Nyquist-honest VALIDATION; phases 11/15/20 VERIFICATION annotate known stubs (`pr_stub`, OCI referrers, packages chrome debt closed or explicitly tracked)
 
-**Plans:** 6 plans
+**Plans:** 2/6 plans executed
 
 Plans:
+
+- [x] 11.1-01-PLAN.md
+- [x] 11.1-02-PLAN.md
+- [ ] 11.1-03-PLAN.md
+- [ ] 11.1-04-PLAN.md
+- [ ] 11.1-05-PLAN.md
+- [ ] 11.1-06-PLAN.md
 
 - [ ] `11.1-01-PLAN.md` — Tracer: layout RepoChrome + Packages tab + packages shell (D-QH-01)
 - [ ] `11.1-02-PLAN.md` — Coverage toolchain + TESTING.md weights 25/40/35 + CI weighted gate (D-QH-02)
