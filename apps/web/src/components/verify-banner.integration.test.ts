@@ -3,8 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 vi.mock("@/lib/toast", () => ({
+  toast: vi.fn(),
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  toastInfo: vi.fn(),
+  toastWarning: vi.fn(),
 }));
 
 vi.mock("@/lib/api-client", () => ({

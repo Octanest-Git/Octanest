@@ -26,6 +26,7 @@ import {
   fetchAdminAuthSettings,
   fetchSessionMe,
 } from "@/lib/ssr-auth";
+import { toastError, toastSuccess } from "@/lib/toast";
 import {
   AdminSettingsLayout,
   SettingsShell,
@@ -256,16 +257,12 @@ export function AdminAuthPage() @{
           oidc_client_secret_configured: false,
         },
   );
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
   const [draftReady, setDraftReady] = useState(() => !!initialSettings);
 
   const form = useForm({
     defaultValues: formDefaultsFromSettings(initialSettings),
     onSubmit: async ({ value }) => {
-      setFormError("");
-      setSuccess("");
       setPending(true);
       try {
         const res = await apiClient.admin.auth.updateSettings({
@@ -286,16 +283,16 @@ export function AdminAuthPage() @{
           default_visibility: value.default_visibility,
         });
         if (!res.ok) {
-          setFormError(res.error.message || "Could not save auth settings.");
+          toastError(res.error.message || "Could not save auth settings.");
           setPending(false);
           return;
         }
         applySettings(res.data);
         setAdminAuthSettingsCache(queryClient, res.data);
-        setSuccess("Auth settings saved.");
+        toastSuccess("Auth settings saved.");
         setPending(false);
       } catch {
-        setFormError(NETWORK_ERROR);
+        toastError(NETWORK_ERROR);
         setPending(false);
       }
     },
@@ -413,17 +410,6 @@ export function AdminAuthPage() @{
                 void form.handleSubmit();
               }}
             >
-              @if (formError) {
-                <p role="alert" className="text-[14px] text-destructive">
-                  {formError as string}
-                </p>
-              }
-              @if (success) {
-                <p role="status" className="text-[14px] text-foreground">
-                  {success as string}
-                </p>
-              }
-
               <ModeSelect
                 id="auth-provider"
                 label="Auth provider"

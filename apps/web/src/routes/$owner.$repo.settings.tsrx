@@ -27,7 +27,7 @@ import {
   type RepoLayoutLoaderData,
   useRepoStore,
 } from "@/lib/repo-store";
-import { toastSuccess } from "@/lib/toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 export const Route = createFileRoute("/$owner/$repo/settings")({
   component: RepoSettingsPage,
@@ -75,7 +75,6 @@ export function RepoSettingsPage() @{
     () => repo?.visibility ?? "public",
   );
   const [visPending, setVisPending] = useState(false);
-  const [visError, setVisError] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [deletePending, setDeletePending] = useState(false);
@@ -83,7 +82,6 @@ export function RepoSettingsPage() @{
 
   const [newName, setNewName] = useState("");
   const [renamePending, setRenamePending] = useState(false);
-  const [renameError, setRenameError] = useState("");
 
   const [destOwner, setDestOwner] = useState("");
   const [destOwnerType, setDestOwnerType] = useState<OwnerType>("user");
@@ -94,7 +92,6 @@ export function RepoSettingsPage() @{
 
   async function saveVisibility() {
     if (!repo) return;
-    setVisError("");
     setVisPending(true);
     try {
       const res = await apiClient.repo.updateVisibility({
@@ -103,7 +100,7 @@ export function RepoSettingsPage() @{
         visibility,
       });
       if (!res.ok) {
-        setVisError(res.error.message || "Could not update visibility.");
+        toastError(res.error.message || "Could not update visibility.");
         setVisPending(false);
         return;
       }
@@ -112,7 +109,7 @@ export function RepoSettingsPage() @{
       toastSuccess("Visibility updated.");
       setVisPending(false);
     } catch {
-      setVisError(NETWORK_ERROR);
+      toastError(NETWORK_ERROR);
       setVisPending(false);
     }
   }
@@ -121,7 +118,6 @@ export function RepoSettingsPage() @{
     if (!repo) return;
     const trimmed = newName.trim();
     if (!trimmed || trimmed === repo.name) return;
-    setRenameError("");
     setRenamePending(true);
     try {
       const res = await apiClient.repo.rename({
@@ -130,7 +126,7 @@ export function RepoSettingsPage() @{
         newName: trimmed,
       });
       if (!res.ok) {
-        setRenameError(res.error.message || "Could not rename repository.");
+        toastError(res.error.message || "Could not rename repository.");
         setRenamePending(false);
         return;
       }
@@ -144,7 +140,7 @@ export function RepoSettingsPage() @{
         },
       });
     } catch {
-      setRenameError(NETWORK_ERROR);
+      toastError(NETWORK_ERROR);
       setRenamePending(false);
     }
   }
@@ -243,11 +239,6 @@ export function RepoSettingsPage() @{
           @if (visibility === "private") {
             <p className="text-[14px] text-muted-foreground">{PRIVATE_HELPER as string}</p>
           }
-          @if (visError) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {visError as string}
-            </p>
-          }
           <Button
             type="button"
             disabled={visPending || visibility === repo.visibility}
@@ -303,11 +294,6 @@ export function RepoSettingsPage() @{
                 placeholder={repo.name as string}
               />
             </div>
-            @if (renameError) {
-              <p role="alert" className="text-[14px] text-destructive">
-                {renameError as string}
-              </p>
-            }
             <Button
               type="button"
               variant="destructive"

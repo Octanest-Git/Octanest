@@ -39,32 +39,39 @@ function AccountAvatar({
 }: {
   user: UserPublic;
   size?: "sm" | "md";
-}) {
+}) @{
   const box = size === "md" ? "size-9" : "size-7";
   const text = size === "md" ? "text-[12px]" : "text-[11px]";
-  if (user.avatar_url) {
-    return (
+  const px = size === "md" ? 36 : 28;
+  const dim = `${px}px`;
+
+  <div
+    className={cn(
+      "octanest-squircle relative block shrink-0 overflow-hidden bg-muted",
+      box,
+    )}
+    style={{ width: dim, height: dim, minWidth: dim, minHeight: dim }}
+  >
+    @if (user.avatar_url) {
       <img
-        src={user.avatar_url}
+        src={user.avatar_url as string}
         alt=""
-        width={size === "md" ? 36 : 28}
-        height={size === "md" ? 36 : 28}
-        className={cn("octanest-squircle shrink-0 object-cover", box)}
+        width={px}
+        height={px}
+        className="block size-full object-cover"
       />
-    );
-  }
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "octanest-squircle inline-flex shrink-0 items-center justify-center bg-muted font-semibold text-foreground",
-        box,
-        text,
-      )}
-    >
-      {initialsFor(user)}
-    </span>
-  );
+    } @else {
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-full items-center justify-center font-semibold leading-none text-foreground",
+          text,
+        )}
+      >
+        {initialsFor(user) as string}
+      </span>
+    }
+  </div>
 }
 
 function useRepoContext(): { owner: string; repo: string } | null {

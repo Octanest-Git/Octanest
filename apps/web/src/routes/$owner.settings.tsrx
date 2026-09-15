@@ -9,7 +9,6 @@ import type { MemberBasePermission, OrgPublic } from "@octanest/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
-import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +31,7 @@ import {
   fetchOrgListMine,
 } from "@/lib/ssr-org";
 import { fetchSessionMe } from "@/lib/ssr-auth";
+import { toastError, toastSuccess } from "@/lib/toast";
 import { OrgSettingsNav } from "@/components/org/org-settings-nav";
 import { cn } from "@/lib/utils";
 
@@ -104,8 +104,6 @@ export function OrgSettingsPage() @{
   const org = data?.org;
   const slug = org?.slug ?? params.owner ?? "";
 
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
   const [pending, setPending] = useState(false);
 
   const form = useForm({
@@ -114,8 +112,6 @@ export function OrgSettingsPage() @{
       member_base: (org?.member_base_permission ?? "none") as MemberBasePermission,
     },
     onSubmit: async ({ value }) => {
-      setFormError("");
-      setSuccess("");
       setPending(true);
       try {
         const res = await apiClient.org.updateSettings({
@@ -125,19 +121,19 @@ export function OrgSettingsPage() @{
         });
         if (!res.ok) {
           if (res.error.code === "org.forbidden") {
-            setFormError(FORBIDDEN);
+            toastError(FORBIDDEN);
           } else {
-            setFormError(res.error.message || NETWORK_ERROR);
+            toastError(res.error.message || NETWORK_ERROR);
           }
           setPending(false);
           return;
         }
         form.setFieldValue("display_name", res.data.display_name ?? "");
         form.setFieldValue("member_base", res.data.member_base_permission);
-        setSuccess("Settings saved.");
+        toastSuccess("Settings saved.");
         setPending(false);
       } catch {
-        setFormError(NETWORK_ERROR);
+        toastError(NETWORK_ERROR);
         setPending(false);
       }
     },
@@ -169,15 +165,6 @@ export function OrgSettingsPage() @{
           void form.handleSubmit();
         }}
       >
-        @if (formError) {
-          <AuthErrorBanner message={formError} />
-        }
-        @if (success) {
-          <p role="status" className="text-[14px] text-foreground">
-            {success as string}
-          </p>
-        }
-
         <form.Field name="display_name">
           {(field) => (
             <div className="flex flex-col gap-2">

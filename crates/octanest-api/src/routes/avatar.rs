@@ -1,4 +1,4 @@
-//! Avatar multipart upload + static serve (AUTH-08, D-18, T-04-19/20).
+//! Avatar multipart upload, delete, and static serve (AUTH-08, D-18, T-04-19/20).
 //!
 //! Files land under `var/uploads/avatars/{user_id}.webp` (uploads_dir default `var/uploads`).
 
@@ -14,7 +14,7 @@ use image::{DynamicImage, GenericImageView, ImageFormat};
 use octanest_core::AppError;
 
 use crate::app::AppState;
-use crate::auth::session::SESSION_COOKIE_NAME;
+use crate::auth::session::{ResolvedSession, SESSION_COOKIE_NAME};
 
 /// Max upload body size (2 MiB).
 pub const AVATAR_MAX_BYTES: usize = 2 * 1024 * 1024;
@@ -42,6 +42,35 @@ fn err_response(status: StatusCode, code: &str, message: &str) -> Response {
         })),
     )
         .into_response()
+}
+
+async fn require_session(
+    state: &AppState,
+    headers: &HeaderMap,
+) -> Result<ResolvedSession, Response> {
+    let Some(token) = session_token_from_headers(headers) else {
+        return Err(err_response(
+            StatusCode::UNAUTHORIZED,
+            "auth.unauthenticated",
+            "not authenticated",
+        ));
+    };
+    match state.sessions.resolve(&state.db, &token).await {
+        Ok(Some(s)) => Ok(s),
+        Ok(None) => Err(err_response(
+            StatusCode::UNAUTHORIZED,
+            "auth.unauthenticated",
+            "not authenticated",
+        )),
+        Err(e) => {
+            tracing::warn!(error = %e, "session resolve failed on avatar route");
+            Err(err_response(
+                StatusCode::UNAUTHORIZED,
+                "auth.unauthenticated",
+                "not authenticated",
+            ))
+        }
+    }
 }
 
 fn public_avatar_url(user_id: &str) -> String {
@@ -100,30 +129,9 @@ pub async fn upload_avatar(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Response {
-    let Some(token) = session_token_from_headers(&headers) else {
-        return err_response(
-            StatusCode::UNAUTHORIZED,
-            "auth.unauthenticated",
-            "not authenticated",
-        );
-    };
-    let session = match state.sessions.resolve(&state.db, &token).await {
-        Ok(Some(s)) => s,
-        Ok(None) => {
-            return err_response(
-                StatusCode::UNAUTHORIZED,
-                "auth.unauthenticated",
-                "not authenticated",
-            )
-        }
-        Err(e) => {
-            tracing::warn!(error = %e, "session resolve failed on avatar upload");
-            return err_response(
-                StatusCode::UNAUTHORIZED,
-                "auth.unauthenticated",
-                "not authenticated",
-            );
-        }
+    let session = match require_session(&state, &headers).await {
+        Ok(s) => s,
+        Err(r) => return r,
     };
 
     let mut avatar_bytes: Option<Bytes> = None;
@@ -265,6 +273,71 @@ pub async fn upload_avatar(
         Json(serde_json::json!({
             "ok": true,
             "avatar_url": avatar_url
+        })),
+    )
+        .into_response()
+}
+
+/// `DELETE /api/user/avatar` — clear `avatar_path` and remove stored WebP if present.
+pub async fn delete_avatar(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    let session = match require_session(&state, &headers).await {
+        Ok(s) => s,
+        Err(r) => return r,
+    };
+
+    let existing = match state.db.find_user_by_id(&session.user_id).await {
+        Ok(Some(u)) => u,
+        Ok(None) => {
+            return err_response(
+                StatusCode::UNAUTHORIZED,
+                "auth.unauthenticated",
+                "not authenticated",
+            )
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "find user on avatar delete");
+            return err_response(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "avatar.delete_failed",
+                "could not update profile",
+            );
+        }
+    };
+
+    if let Err(e) = state
+        .db
+        .update_user_profile(
+            &session.user_id,
+            &existing.display_name,
+            &existing.username,
+            &existing.bio,
+            None,
+        )
+        .await
+    {
+        tracing::error!(error = %e, "clear avatar_path failed");
+        return err_response(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "avatar.delete_failed",
+            "could not update profile",
+        );
+    }
+
+    let fs_path = avatar_fs_path(&state.uploads_dir, &session.user_id);
+    match tokio::fs::remove_file(&fs_path).await {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => {
+            // Profile already cleared — log and still succeed (idempotent UX).
+            tracing::warn!(error = %e, path = %fs_path.display(), "avatar file remove failed");
+        }
+    }
+
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "ok": true,
+            "avatar_url": null
         })),
     )
         .into_response()

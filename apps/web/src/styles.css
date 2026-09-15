@@ -211,6 +211,11 @@
     mask-repeat: no-repeat;
   }
 
+  /* Keep form toasts above the fixed verify callout (same bottom-right corner). */
+  body:has(.oct-verify-callout) .oct-toast-viewport {
+    bottom: calc(1rem + 11rem);
+  }
+
   /* Named region for TanStack Router / View Transitions — header & footer stay put. */
   .octanest-main {
     view-transition-name: octanest-main;

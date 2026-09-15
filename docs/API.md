@@ -51,6 +51,7 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/api/auth/oidc/start` | Start OIDC + PKCE (optional `?return_to=`) | No (redirect) |
 | `GET` | `/api/auth/oidc/callback` | OIDC code exchange; sets session cookie | No (redirect) |
 | `POST` | `/api/user/avatar` | Multipart avatar upload (field `avatar`) | Yes (`octanest_session`) |
+| `DELETE` | `/api/user/avatar` | Remove profile picture | Yes (`octanest_session`) |
 | `GET` | `/uploads/avatars/{file}` | Public WebP avatar bytes (`{user_id}.webp`) | No |
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
@@ -230,6 +231,14 @@ curl -sS http://127.0.0.1:8080/api/user/avatar \
 - Max body: **2 MiB**
 - Stored as WebP under `var/uploads/avatars/{user_id}.webp`; public URL `/uploads/avatars/{user_id}.webp`
 - Success: `{"ok":true,"avatar_url":"/uploads/avatars/….webp"}`
+
+```bash
+curl -sS -X DELETE http://127.0.0.1:8080/api/user/avatar \
+  -H 'Cookie: octanest_session=…'
+```
+
+- Clears `avatar_path` and deletes `{user_id}.webp` when present (idempotent if already absent)
+- Success: `{"ok":true,"avatar_url":null}`
 
 ### Admin auth settings
 

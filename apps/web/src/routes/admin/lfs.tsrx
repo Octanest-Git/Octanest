@@ -27,7 +27,7 @@ import {
   fetchAdminLfsUsage,
   fetchSessionMe,
 } from "@/lib/ssr-auth";
-import { toastSuccess } from "@/lib/toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
 
 export type AdminLfsLoaderData =
   | { kind: "unauthenticated" }
@@ -155,9 +155,6 @@ export function AdminLfsPage() @{
   const initialSettings =
     loaderData?.kind === "ready" ? loaderData.settings : null;
 
-  const [error, setError] = useState(() =>
-    loaderData?.kind === "error" ? loaderData.message : "",
-  );
   const [pending, setPending] = useState(false);
 
   const form = useForm({
@@ -167,7 +164,6 @@ export function AdminLfsPage() @{
       quotaUser: initialSettings ? String(initialSettings.quota_user_bytes) : "",
     },
     onSubmit: async ({ value }) => {
-      setError("");
       const max_object_bytes = Number(value.maxObject);
       const quota_repo_bytes = Number(value.quotaRepo);
       const quota_user_bytes = Number(value.quotaUser);
@@ -176,7 +172,7 @@ export function AdminLfsPage() @{
           Number.isFinite(n),
         )
       ) {
-        setError("Enter valid numeric byte limits.");
+        toastWarning("Enter valid numeric byte limits.");
         return;
       }
       setPending(true);
@@ -187,7 +183,7 @@ export function AdminLfsPage() @{
           quota_user_bytes,
         });
         if (!res.ok) {
-          setError(res.error.message || "Could not save LFS settings.");
+          toastError(res.error.message || "Could not save LFS settings.");
           setPending(false);
           return;
         }
@@ -195,7 +191,7 @@ export function AdminLfsPage() @{
         toastSuccess("LFS quotas updated.");
         setPending(false);
       } catch {
-        setError(NETWORK_ERROR);
+        toastError(NETWORK_ERROR);
         setPending(false);
       }
     },
@@ -219,14 +215,13 @@ export function AdminLfsPage() @{
   }, [settingsQ.isSuccess, settingsQ.dataUpdatedAt]);
 
   async function clearOverrides() {
-    setError("");
     setPending(true);
     try {
       const res = await apiClient.admin.lfs.updateSettings({
         clear_overrides: true,
       });
       if (!res.ok) {
-        setError(res.error.message || "Could not clear overrides.");
+        toastError(res.error.message || "Could not clear overrides.");
         setPending(false);
         return;
       }
@@ -234,7 +229,7 @@ export function AdminLfsPage() @{
       toastSuccess("Reverted to environment defaults.");
       setPending(false);
     } catch {
-      setError(NETWORK_ERROR);
+      toastError(NETWORK_ERROR);
       setPending(false);
     }
   }
@@ -388,11 +383,6 @@ export function AdminLfsPage() @{
                     </div>
                   )}
                 </form.Field>
-                @if (error) {
-                  <p role="alert" className="text-[14px] text-destructive">
-                    {error as string}
-                  </p>
-                }
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" disabled={pending}>
                     {(pending ? "Saving…" : "Save quotas") as string}

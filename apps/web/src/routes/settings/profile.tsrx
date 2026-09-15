@@ -22,6 +22,7 @@ import {
 } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { fetchUserGetProfile } from "@/lib/ssr-auth";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 export type ProfileLoaderData =
@@ -88,9 +89,8 @@ export function ProfilePage() @{
   const [avatarUrl, setAvatarUrl] = useState<string | null | undefined>(
     () => initialUser?.avatar_url,
   );
-  const [avatarStatus, setAvatarStatus] = useState("");
-  const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [avatarUploadPending, setAvatarUploadPending] = useState(false);
+  const [avatarRemovePending, setAvatarRemovePending] = useState(false);
   const [pending, setPending] = useState(false);
   const [branchPending, setBranchPending] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
@@ -103,8 +103,6 @@ export function ProfilePage() @{
       bio: initialUser?.bio ?? "",
     },
     onSubmit: async ({ value }) => {
-      setFormError("");
-      setSuccess("");
       setPending(true);
       const previousUsername = phase.kind === "ready" ? phase.user.username : "";
       try {
@@ -114,7 +112,7 @@ export function ProfilePage() @{
           bio: value.bio.slice(0, BIO_MAX),
         });
         if (!res.ok) {
-          setFormError(res.error.message || "Could not save profile. Try again.");
+          toastError(res.error.message || "Could not save profile. Try again.");
           setPending(false);
           return;
         }
@@ -133,15 +131,16 @@ export function ProfilePage() @{
           res.data.username &&
           previousUsername !== res.data.username
         ) {
-          setSuccess(
-            `Username updated to @${res.data.username}. Update git remotes to /${res.data.username}/{repo}.git.`,
+          toastSuccess(
+            `Username updated to @${res.data.username}`,
+            `Update git remotes to /${res.data.username}/{repo}.git.`,
           );
         } else {
-          setSuccess("Profile saved.");
+          toastSuccess("Profile saved.");
         }
         setPending(false);
       } catch {
-        setFormError(NETWORK_ERROR);
+        toastError(NETWORK_ERROR);
         setPending(false);
       }
     },
@@ -152,8 +151,6 @@ export function ProfilePage() @{
       default_branch: initialUser?.default_branch?.trim() || "main",
     },
     onSubmit: async ({ value }) => {
-      setFormError("");
-      setSuccess("");
       setBranchPending(true);
       const profileValues = profileForm.state.values;
       try {
@@ -164,7 +161,9 @@ export function ProfilePage() @{
           default_branch: value.default_branch.trim() || "main",
         });
         if (!res.ok) {
-          setFormError(res.error.message || "Could not save default branch. Try again.");
+          toastError(
+            res.error.message || "Could not save default branch. Try again.",
+          );
           setBranchPending(false);
           return;
         }
@@ -174,10 +173,10 @@ export function ProfilePage() @{
           res.data.default_branch?.trim() || "main",
         );
         setAuthMeCache(queryClient, res.data);
-        setSuccess("Default branch saved.");
+        toastSuccess("Default branch saved.");
         setBranchPending(false);
       } catch {
-        setFormError(NETWORK_ERROR);
+        toastError(NETWORK_ERROR);
         setBranchPending(false);
       }
     },
@@ -236,9 +235,7 @@ export function ProfilePage() @{
 
   async function onAvatarSelected(file: File | undefined) {
     if (!file) return;
-    setAvatarStatus(file.name);
-    setFormError("");
-    setSuccess("");
+    setAvatarUploadPending(true);
     const formData = new FormData();
     formData.append("avatar", file);
     try {
@@ -253,22 +250,54 @@ export function ProfilePage() @{
         error?: { message?: string };
       };
       if (!res.ok || !json.ok || !json.avatar_url) {
-        setFormError(json.error?.message || "Avatar upload failed. Try again.");
-        setAvatarStatus("");
+        toastError(json.error?.message || "Avatar upload failed. Try again.");
+        setAvatarUploadPending(false);
         return;
       }
       const nextUrl = `${json.avatar_url}?t=${Date.now()}`;
       setAvatarUrl(nextUrl);
-      setAvatarStatus("Avatar updated.");
       setPhase((prev) => {
         if (prev.kind !== "ready") return prev;
         const nextUser = { ...prev.user, avatar_url: json.avatar_url };
         setAuthMeCache(queryClient, nextUser);
         return { kind: "ready", user: nextUser };
       });
+      toastSuccess("Profile picture updated.");
+      setAvatarUploadPending(false);
     } catch {
-      setFormError(NETWORK_ERROR);
-      setAvatarStatus("");
+      toastError(NETWORK_ERROR);
+      setAvatarUploadPending(false);
+    }
+  }
+
+  async function onAvatarRemove() {
+    setAvatarRemovePending(true);
+    try {
+      const res = await fetch("/api/user/avatar", {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        error?: { message?: string };
+      };
+      if (!res.ok || !json.ok) {
+        toastError(json.error?.message || "Could not remove profile picture.");
+        setAvatarRemovePending(false);
+        return;
+      }
+      setAvatarUrl(null);
+      setPhase((prev) => {
+        if (prev.kind !== "ready") return prev;
+        const nextUser = { ...prev.user, avatar_url: null };
+        setAuthMeCache(queryClient, nextUser);
+        return { kind: "ready", user: nextUser };
+      });
+      toastSuccess("Profile picture removed.");
+      setAvatarRemovePending(false);
+    } catch {
+      toastError(NETWORK_ERROR);
+      setAvatarRemovePending(false);
     }
   }
 
@@ -313,26 +342,14 @@ export function ProfilePage() @{
         <ProfileAvatarField
           user={phase.user}
           src={avatarUrl}
-          status={avatarStatus}
-          onFile={(file) => {
-            void onAvatarSelected(file);
-          }}
+          uploadPending={avatarUploadPending}
+          removePending={avatarRemovePending}
+          onCroppedFile={(file) => onAvatarSelected(file)}
+          onRemove={() => onAvatarRemove()}
           onReject={() => {
-            setFormError("Choose a JPEG, PNG, or WebP image under 2 MB.");
-            setAvatarStatus("");
+            toastWarning("Choose a JPEG, PNG, or WebP image under 2 MB.");
           }}
         />
-
-        @if (formError) {
-          <p role="alert" className="text-[14px] text-destructive">
-            {formError as string}
-          </p>
-        }
-        @if (success) {
-          <p role="status" className="text-[14px] text-foreground">
-            {success as string}
-          </p>
-        }
 
         <form
           method="post"

@@ -49,6 +49,21 @@ type PlaywrightPage = {
     click: () => Promise<unknown>;
     press: (key: string) => Promise<unknown>;
     check?: () => Promise<unknown>;
+    setInputFiles?: (
+      files:
+        | string
+        | string[]
+        | {
+            name: string;
+            mimeType: string;
+            buffer: Buffer;
+          }
+        | Array<{
+            name: string;
+            mimeType: string;
+            buffer: Buffer;
+          }>,
+    ) => Promise<unknown>;
   };
   waitForURL: (url: string | RegExp | ((url: URL) => boolean), opts?: object) => Promise<unknown>;
   content: () => Promise<string>;
@@ -82,6 +97,20 @@ function asPlaywright(ctx: unknown): PlaywrightCommandCtx {
     throw new Error(`requires playwright provider, got ${c.provider.name}`);
   }
   return c;
+}
+
+/**
+ * Fail fast on Vite overlay, runtime ReferenceErrors, or Octane's default
+ * error UI (`<strong style="font-size:1rem">Something went wrong!</strong>`).
+ */
+function assertNoOctaneOverlay(html: string, label: string) {
+  if (
+    html.includes("vite-error-overlay") ||
+    html.includes("Something went wrong!") ||
+    /is not defined|ReferenceError|Octane error|@else if/i.test(html)
+  ) {
+    throw new Error(`${label} showed Vite/Octane render error. body=${html.slice(0, 1200)}`);
+  }
 }
 
 function envVar(key: string): string | undefined {
@@ -162,6 +191,7 @@ export const signupThroughUi: BrowserCommand<
     if (html.includes("Loading form") || html.includes("Preparing signup")) {
       throw new Error("signup showed auth form skeleton; expected prerendered form");
     }
+    assertNoOctaneOverlay(html, "signup");
     await page.getByLabel("Email").fill(creds.email);
     await page.getByLabel("Username").fill(creds.username);
     await page.getByLabel("Password", { exact: true }).fill(creds.password);
@@ -215,8 +245,10 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
         .waitFor({ state: "visible", timeout: 30_000 });
     } catch (e) {
       const html = await page.content();
+      assertNoOctaneOverlay(html, "login WorkOS CTA");
       throw new Error(`WorkOS CTA not found. body snippet=${html.slice(0, 800)}`, { cause: e });
     }
+    assertNoOctaneOverlay(await page.content(), "login WorkOS CTA");
     return true;
   } finally {
     await page.close();
@@ -246,6 +278,7 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
     if (html.includes("Loading form") || html.includes("Preparing sign-in")) {
       throw new Error("login showed auth form skeleton; expected prerendered CTA");
     }
+    assertNoOctaneOverlay(html, "OIDC login");
     await page
       .getByRole("button", { name: /continue with sso/i })
       .waitFor({ state: "visible", timeout: 15_000 });
@@ -281,6 +314,7 @@ export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
       .getByRole("heading", { name: "System status" })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.getByText("All systems operational").waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "status");
     return true;
   } finally {
     await page.close();
@@ -331,6 +365,7 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
 
     // Settle chrome + banner observers after first paint / hydration.
     await new Promise((r) => setTimeout(r, 2500));
+    assertNoOctaneOverlay(await page.content(), "home auth.me dedupe");
 
     // Soft session + header/banner consumers should share; allow a small remount budget.
     // Zero client auth.me is OK when SSR dehydrated the Query cache (still proves no fan-out).
@@ -502,6 +537,7 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByText(/No linked packages|Packages linked to this repository/i)
       .waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "repo packages");
     return true;
   } finally {
     await page.close();
@@ -529,6 +565,7 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
     await page
       .getByRole("heading", { name: "New issue" })
       .waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "new issue");
     await page.locator("#issue-title").fill(title);
     await page.getByRole("button", { name: /Submit new issue/i }).click();
     await new Promise((r) => setTimeout(r, 800));
@@ -561,6 +598,7 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
 
     await page.getByTestId("issue-title").waitFor({ state: "visible", timeout: 30_000 });
     const html = await page.content();
+    assertNoOctaneOverlay(html, "issue detail");
     if (!html.includes(title)) {
       throw new Error(`issue detail missing title ${title}`);
     }
@@ -593,6 +631,7 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
         .getByRole("button", { name: "Reopen" })
         .waitFor({ state: "visible", timeout: 30_000 });
     }
+    assertNoOctaneOverlay(await page.content(), "issue after close");
     return true;
   } finally {
     await page.close();
@@ -628,6 +667,7 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
       .getByRole("heading", { name: "New release" })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.locator("#release-tag").waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "new release");
     await page.locator("#release-title").fill(releaseTitle);
     await page.getByRole("button", { name: /Publish release/i }).click();
     await new Promise((r) => setTimeout(r, 800));
@@ -659,6 +699,7 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
     // that Playwright getByText(exact) can see until hydration.
     for (let i = 0; i < 20; i++) {
       const body = await page.content();
+      assertNoOctaneOverlay(body, "release detail");
       if (body.includes(tag) || body.includes(releaseTitle)) {
         return true;
       }
@@ -697,14 +738,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
     await page.getByLabel(/Max object bytes/i).waitFor({ state: "visible", timeout: 30_000 });
 
     const lfsHtml = await page.content();
-    if (
-      lfsHtml.includes("vite-error-overlay") ||
-      /is not defined|ReferenceError|@else if/i.test(lfsHtml)
-    ) {
-      throw new Error(
-        `admin LFS showed error overlay / runtime break. body=${lfsHtml.slice(0, 1000)}`,
-      );
-    }
+    assertNoOctaneOverlay(lfsHtml, "admin LFS");
 
     // Packages admin quotas page (same forge-admin session).
     await page.goto(`${webOrigin()}/admin/packages`, {
@@ -715,10 +749,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
       .getByRole("heading", { name: "Package storage" })
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.getByTestId("admin-packages").waitFor({ state: "visible", timeout: 15_000 });
-    const pkgHtml = await page.content();
-    if (pkgHtml.includes("vite-error-overlay") || /is not defined|ReferenceError/i.test(pkgHtml)) {
-      throw new Error(`admin packages showed error overlay. body=${pkgHtml.slice(0, 1000)}`);
-    }
+    assertNoOctaneOverlay(await page.content(), "admin packages");
 
     // Auth settings chrome only — never click factory reset (T-11.1-73).
     await page.goto(`${webOrigin()}/admin/auth`, {
@@ -734,9 +765,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
         throw new Error(`admin auth redirected to login (session cookie missing?). url=${url}`);
       }
       const body = await page.content();
-      if (body.includes("vite-error-overlay") || /is not defined|ReferenceError/i.test(body)) {
-        throw new Error(`admin auth showed error overlay. body=${body.slice(0, 1000)}`);
-      }
+      assertNoOctaneOverlay(body, "admin auth");
       if (
         body.includes("Auth settings") &&
         body.includes("Danger zone") &&
@@ -804,6 +833,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
     await page
       .getByRole("button", { name: /Add SSH key/i })
       .waitFor({ state: "visible", timeout: 15_000 });
+    assertNoOctaneOverlay(await page.content(), "settings ssh-keys (SSH flow)");
 
     const added = await rpc("sshKey.add", { title: keyTitle, public_key: pubKey }, cookie);
     if (!added.ok) {
@@ -817,6 +847,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
     for (let i = 0; i < 30; i++) {
       const url = page.url();
       const body = await page.content();
+      assertNoOctaneOverlay(body, "org members");
       if (
         url.includes(`/${orgSlug}/settings/members`) &&
         (body.includes("Members") || body.includes("Add member")) &&
@@ -833,6 +864,195 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
     throw new Error(
       `org members page not ready. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
     );
+  } finally {
+    await page.close();
+  }
+};
+
+/** 1×1 PNG for avatar upload e2e (valid image/png). */
+const TINY_PNG_BUFFER = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+/**
+ * Signed-in chrome: Create (+) and Account menus (happy).
+ * Anonymous: no Create menu; Sign in present (unhappy).
+ */
+export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+
+  // --- Unhappy: anonymous ---
+  await context.clearCookies();
+  const anon = await context.newPage();
+  try {
+    await anon.goto(`${webOrigin()}/`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await anon.getByRole("link", { name: /sign in/i }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    const anonHtml = await anon.content();
+    assertNoOctaneOverlay(anonHtml, "anonymous home");
+    if (anonHtml.includes('aria-label="Create new') || anonHtml.includes("Create new…")) {
+      throw new Error("anonymous chrome unexpectedly exposed Create new menu");
+    }
+    if (anonHtml.includes('aria-label="Account menu"')) {
+      throw new Error("anonymous chrome unexpectedly exposed Account menu");
+    }
+  } finally {
+    await anon.close();
+  }
+
+  // --- Happy: signed-in forge admin ---
+  await context.clearCookies();
+  const { cookie } = await ensureForgeAdminSession();
+  await injectSessionCookie(context, cookie);
+  const page = await context.newPage();
+  try {
+    await page.goto(`${webOrigin()}/`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+
+    await page.getByRole("button", { name: /create new/i }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    await page.getByRole("button", { name: /account menu/i }).waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+
+    await page.getByRole("button", { name: /create new/i }).click();
+    await page.getByText("New repository").waitFor({ state: "visible", timeout: 10_000 });
+    await page.getByText("New organization").waitFor({ state: "visible", timeout: 5_000 });
+
+    // Dismiss create menu by opening account menu.
+    await page.getByRole("button", { name: /account menu/i }).click();
+    await page.getByText("Your repositories").waitFor({ state: "visible", timeout: 10_000 });
+    await page.getByText("Settings").waitFor({ state: "visible", timeout: 5_000 });
+    await page.getByText("Admin").waitFor({ state: "visible", timeout: 5_000 });
+    await page.getByText("Sign out").waitFor({ state: "visible", timeout: 5_000 });
+
+    assertNoOctaneOverlay(await page.content(), "signed-in chrome menus");
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
+ * Account settings SSR pages render shell + content without skeleton flash / overlay.
+ * Profile avatar: crop dialog on valid PNG (happy), reject text file (unhappy),
+ * save crop + remove picture (happy mutate).
+ */
+export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const { cookie } = await ensureForgeAdminSession();
+  await injectSessionCookie(context, cookie);
+
+  const page = await context.newPage();
+  try {
+    // Tokens SSR (list seeded, no bare skeleton).
+    await page.goto(`${webOrigin()}/settings/tokens`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "Personal access tokens" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("settings-tokens-page").waitFor({ state: "visible", timeout: 15_000 });
+    assertNoOctaneOverlay(await page.content(), "settings tokens");
+
+    // SSH keys SSR.
+    await page.goto(`${webOrigin()}/settings/ssh-keys`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "SSH keys" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("settings-ssh-keys-page").waitFor({ state: "visible", timeout: 15_000 });
+    assertNoOctaneOverlay(await page.content(), "settings ssh-keys");
+
+    // Profile + avatar crop.
+    await page.goto(`${webOrigin()}/settings/profile`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByRole("heading", { name: "Profile" }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    await page.getByTestId("settings-profile-page").waitFor({ state: "visible", timeout: 15_000 });
+    assertNoOctaneOverlay(await page.content(), "settings profile initial");
+
+    const fileInput = page.locator("#profile-avatar");
+    if (!fileInput.setInputFiles) {
+      throw new Error("Playwright locator.setInputFiles unavailable in e2e harness");
+    }
+
+    // Unhappy: non-image rejected before crop dialog (warning toast).
+    await fileInput.setInputFiles({
+      name: "notes.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("not an image"),
+    });
+    await page
+      .getByText(/Choose a JPEG, PNG, or WebP image under 2 MB/i)
+      .waitFor({ state: "visible", timeout: 10_000 });
+    assertNoOctaneOverlay(await page.content(), "settings profile reject toast");
+    if ((await page.content()).includes("Crop profile picture")) {
+      throw new Error("crop dialog opened for rejected text upload");
+    }
+
+    // Happy: open crop dialog with PNG.
+    await fileInput.setInputFiles({
+      name: "avatar.png",
+      mimeType: "image/png",
+      buffer: TINY_PNG_BUFFER,
+    });
+    await page.getByText("Crop profile picture").waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "settings profile crop dialog");
+
+    // Cancel leaves page intact.
+    await page.getByRole("button", { name: /^Cancel$/i }).click();
+    await page.getByRole("heading", { name: "Profile" }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+
+    // Happy: crop + save, then remove (success toasts — no inline status shift).
+    await fileInput.setInputFiles({
+      name: "avatar.png",
+      mimeType: "image/png",
+      buffer: TINY_PNG_BUFFER,
+    });
+    await page.getByText("Crop profile picture").waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: /Save picture/i }).click();
+    await page.getByText(/Profile picture updated/i).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "settings profile after upload");
+
+    await page.getByRole("button", { name: /Remove picture/i }).click();
+    await page.getByText(/Profile picture removed/i).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "settings profile after remove");
+    return true;
   } finally {
     await page.close();
   }
