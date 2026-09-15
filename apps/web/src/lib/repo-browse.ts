@@ -65,6 +65,16 @@ export function joinRepoPath(...parts: string[]): string {
     .join("/");
 }
 
+/** Parent directory path for tree `..` navigation (empty = repo root). */
+export function parentRepoPath(path: string): string {
+  const parts = path
+    .replace(/^\/+|\/+$/g, "")
+    .split("/")
+    .filter(Boolean);
+  if (parts.length <= 1) return "";
+  return parts.slice(0, -1).join("/");
+}
+
 /** Crumb segments for tree/blob path chrome (D-17 / UI long-path backstop). */
 export type PathCrumb = {
   seg: string;

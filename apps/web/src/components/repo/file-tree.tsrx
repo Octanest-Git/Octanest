@@ -1,6 +1,12 @@
 import type { RepoTreeEntry } from "@octanest/api-client";
 import { FileCode2, Folder, Package } from "@octanejs/lucide";
-import { blobHref, joinRepoPath, sortTreeEntries, treeHref } from "@/lib/repo-browse";
+import {
+  blobHref,
+  joinRepoPath,
+  parentRepoPath,
+  sortTreeEntries,
+  treeHref,
+} from "@/lib/repo-browse";
 
 type FileTreeProps = {
   owner: string;
@@ -10,15 +16,30 @@ type FileTreeProps = {
   entries: RepoTreeEntry[];
 };
 
-/** Sorted directory listing — dirs/gitlinks first (D-15, D-21). */
+/** Sorted directory listing — dirs/gitlinks first; `..` when nested (D-15, D-21). */
 export function FileTree({ owner, repo, refName, basePath, entries }: FileTreeProps) @{
   const sorted = sortTreeEntries(entries);
+  const nested = Boolean(basePath.replace(/^\/+|\/+$/g, ""));
+  const parentHref = nested ? treeHref(owner, repo, refName, parentRepoPath(basePath)) : "";
 
   <ul
     role="list"
     aria-label="Directories and files"
     className="divide-y divide-border overflow-y-auto rounded-md border border-border bg-card/40"
+    data-testid="repo-file-tree"
   >
+    @if (nested) {
+      <li className="flex min-h-11 items-center gap-3 px-3 py-2">
+        <Folder aria-hidden size={16} className="shrink-0 text-muted-foreground" />
+        <a
+          href={parentHref as string}
+          className="min-w-0 flex-1 truncate text-[14px] font-normal text-muted-foreground no-underline hover:underline"
+          title="Parent directory"
+        >
+          ..
+        </a>
+      </li>;
+    }
     @for (const entry of sorted; key entry.oid + entry.name) {
       const childPath = joinRepoPath(basePath, entry.name);
       const isTree = entry.kind === "tree";
@@ -64,9 +85,11 @@ export function FileTree({ owner, repo, refName, basePath, entries }: FileTreePr
         }
       </li>;
     } @empty {
-      <li className="px-3 py-6 text-center text-[14px] text-muted-foreground">
-        This directory is empty.
-      </li>;
+      @if (!nested) {
+        <li className="px-3 py-6 text-center text-[14px] text-muted-foreground">
+          This directory is empty.
+        </li>;
+      }
     }
   </ul>;
 }

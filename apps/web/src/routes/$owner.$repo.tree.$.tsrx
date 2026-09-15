@@ -2,11 +2,14 @@ import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-ro
 import type { RepoPublic, RepoRefEntry, RepoTreeEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
-import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
-import { RefSelect } from "@/components/repo/ref-select";
+import { RepoBrowseToolbar } from "@/components/repo/repo-browse-toolbar";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
-import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
-import { fetchRepoGet, fetchRepoRefs, fetchRepoTree } from "@/lib/ssr-repo";
+import { ReadmePanel } from "@/components/repo/readme-panel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiClient } from "@/lib/api-client";
+import { findReadmeName, joinRepoPath, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
+import { renderGfm } from "@/lib/markdown";
+import { fetchRepoBlob, fetchRepoGet, fetchRepoRefs, fetchRepoTree } from "@/lib/ssr-repo";
 
 export type TreeLoaderData =
   | { kind: "not_found" }
@@ -18,6 +21,8 @@ export type TreeLoaderData =
       path: string;
       entries: RepoTreeEntry[];
       refs: RepoRefEntry[];
+      /** Nested-dir README when present (same rules as code home). */
+      readme: { name: string; html: string } | null;
     };
 
 type Phase = { kind: "loading" } | TreeLoaderData;
@@ -28,8 +33,12 @@ async function loadTreePage(
   owner: string,
   repoName: string,
   splat: string | undefined,
+  fetchGet: typeof fetchRepoGet = fetchRepoGet,
+  fetchTree: typeof fetchRepoTree = fetchRepoTree,
+  fetchRefs: typeof fetchRepoRefs = fetchRepoRefs,
+  fetchBlob: typeof fetchRepoBlob = fetchRepoBlob,
 ): Promise<TreeLoaderData> {
-  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  const got = await fetchGet({ data: { owner, name: repoName } });
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
     return {
@@ -38,17 +47,18 @@ async function loadTreePage(
     };
   }
   const repo = got.data;
-  const refsRes = await fetchRepoRefs({ data: { owner, name: repoName } });
+  const refsRes = await fetchRefs({ data: { owner, name: repoName } });
   const refs = refsRes.ok ? refsRes.data.refs : [];
   const knownRefs = refs.map((r) => shortRefName(r.name));
   const parsed = parseRefAndPath(splat, knownRefs);
   const refName = parsed.ref || repo.default_branch || "main";
-  const treeRes = await fetchRepoTree({
+  const path = parsed.path || "";
+  const treeRes = await fetchTree({
     data: {
       owner,
       name: repoName,
       ref: refName,
-      path: parsed.path || "",
+      path,
     },
   });
   if (!treeRes.ok) {
@@ -58,13 +68,39 @@ async function loadTreePage(
       message: treeRes.error.message || "Could not load tree.",
     };
   }
+  const entries = treeRes.data.entries;
+  const dirPath = treeRes.data.path || path;
+  const readmeName = findReadmeName(entries);
+  let readme: { name: string; html: string } | null = null;
+  if (readmeName) {
+    const blobRes = await fetchBlob({
+      data: {
+        owner,
+        name: repoName,
+        ref: refName,
+        path: joinRepoPath(dirPath, readmeName),
+      },
+    });
+    if (
+      blobRes.ok &&
+      !blobRes.data.is_binary &&
+      blobRes.data.encoding === "utf-8" &&
+      blobRes.data.content
+    ) {
+      readme = {
+        name: readmeName,
+        html: await renderGfm(blobRes.data.content),
+      };
+    }
+  }
   return {
     kind: "ready",
     repo,
     refName: shortRefName(treeRes.data.ref) || refName,
-    path: treeRes.data.path || parsed.path,
-    entries: treeRes.data.entries,
+    path: dirPath,
+    entries,
     refs,
+    readme,
   };
 }
 
@@ -92,6 +128,7 @@ export const Route = createFileRoute("/$owner/$repo/tree/$")({
   },
 });
 
+/** Nested tree — same toolbar / file list / README chrome as code home (GitHub/Gitea). */
 export function RepoTreePage() @{
   const params = useParams({ from: "/$owner/$repo/tree/$" }) as {
     owner: string;
@@ -114,7 +151,15 @@ export function RepoTreePage() @{
     void (async () => {
       setPhase({ kind: "loading" });
       try {
-        const next = await loadTreePage(owner, repoName, splat);
+        const next = await loadTreePage(
+          owner,
+          repoName,
+          splat,
+          async ({ data }) => apiClient.repo.get(data) as never,
+          async ({ data }) => apiClient.repo.tree(data) as never,
+          async ({ data }) => apiClient.repo.refs(data) as never,
+          async ({ data }) => apiClient.repo.blob(data) as never,
+        );
         if (!cancelled) setPhase(next);
       } catch {
         if (!cancelled) setPhase({ kind: "error", message: NETWORK_ERROR });
@@ -128,24 +173,26 @@ export function RepoTreePage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading tree…</p>;
+    <div className="flex flex-col gap-4" aria-busy="true" data-testid="repo-tree-loading">
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-48 w-full" />
+    </div>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
     </p>;
   } @else {
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <RefSelect
-          owner={owner}
-          repo={repoName}
-          refs={phase.refs}
-          value={phase.refName}
-          pathUnderRef={phase.path}
-          mode="tree"
-        />
-      </div>
-      <PathBreadcrumb owner={owner} repo={repoName} refName={phase.refName} path={phase.path} />
+      <RepoBrowseToolbar
+        owner={owner}
+        repo={repoName}
+        refName={phase.refName}
+        refs={phase.refs}
+        path={phase.path}
+        showPathCrumbs={true}
+        empty={false}
+      />
       <FileTree
         owner={owner}
         repo={repoName}
@@ -153,6 +200,9 @@ export function RepoTreePage() @{
         basePath={phase.path}
         entries={phase.entries}
       />
+      @if (phase.readme) {
+        <ReadmePanel html={phase.readme.html} fileName={phase.readme.name} />;
+      }
     </>;
   }
 }
