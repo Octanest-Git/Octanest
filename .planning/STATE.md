@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase_name: Quality Hardening
 current_plan: 0
 status: planning
-stopped_at: Completed 11.1-02-PLAN.md
-last_updated: "2026-09-15T16:22:39.332Z"
+stopped_at: Completed 11.1-01-PLAN.md
+last_updated: "2026-09-15T16:22:51.645Z"
 last_activity: 2026-09-15
 last_activity_desc: Parallel GSD honesty fixups for phases 09/11/15/20; ROADMAP caveats; 11.1 CONTEXT seeded
-state_head: bc179573373a3bff5eb787e4af93c3fd2860e8a3
+state_head: 93aee6bc85443e989170aaec5cac1899e1b0df18
 progress:
   total_phases: 23
   completed_phases: 0
@@ -159,6 +159,7 @@ See also: `.planning/ROADMAP.md` · `.planning/phases/11.1-quality-hardening/11.
 | Phase 20 P04 | 12min | 2 tasks | 8 files |
 | Phase 20 P05 | 15min | 3 tasks | 2 files |
 | Phase 11.1 P02 | 6min | 3 tasks | 9 files |
+| Phase 11.1 P01 | 5min | 3 tasks | 7 files |
 
 # Project State
 
@@ -537,6 +538,7 @@ Recent decisions affecting current work:
 - [Phase 11]: OCI repo path is {owner}/{image}; nested names deferred
 - [Phase 11.1]: D-QH-02 coverage: bootstrap floor 0.65 with ratchet target 0.70; Vitest v8 + checklist e2e
 - [Phase 11.1]: CI coverage-weighted skips cargo-llvm-cov collect this wave; Make coverage-rust remains
+- [Phase 11.1]: Active tab from first path segment under /owner/repo; packages leaf keeps repo.get fallback; leaf chrome dedupe deferred to 11.1-03
 
 ### Pending Todos
 
@@ -558,8 +560,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T16:22:39.210Z
-Stopped at: Completed 11.1-02-PLAN.md
+Last session: 2026-09-15T16:22:51.521Z
+Stopped at: Completed 11.1-01-PLAN.md
 Resume file: None
 
 ## Accumulated Context
