@@ -550,7 +550,7 @@ Recent decisions affecting current work:
 - [Phase 11.1]: Forge e2e uses UI fill + RPC fallback when Octane onClick hydration lags
 - [Phase 11.1]: CI protocol smokes fail-closed; skip seeded client by default (SMOKE_SKIP_*)
 - [Phase 11.1]: 09 nyquist_compliant true after 11.1-04 SSH e2e + 11.1-05 smoke-protocol
-- [Phase 12]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
+- [Phase 11.1]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
 
 ### Pending Todos
 
