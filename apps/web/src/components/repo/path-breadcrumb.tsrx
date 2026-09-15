@@ -7,18 +7,18 @@ type PathBreadcrumbProps = {
   path: string;
 };
 
-/** Label-size path crumbs — each segment links to tree (D-17).
+/** Label-size path crumbs — repo → code home; segments → tree (D-17).
  * Long segments truncate with `title`; deep paths wrap (UI-SPEC long-path). */
 export function PathBreadcrumb({ owner, repo, refName, path }: PathBreadcrumbProps) @{
   const crumbs = pathBreadcrumbCrumbs(path);
-  const rootHref = treeHref(owner, repo, refName, "");
+  const homeHref = `/${owner}/${repo}/`;
 
   <nav
     aria-label="Path"
     className="flex min-w-0 max-w-full flex-wrap items-center gap-1 text-[14px]"
   >
     <a
-      href={rootHref as string}
+      href={homeHref as string}
       className="min-w-0 max-w-[min(100%,12rem)] truncate font-semibold text-primary no-underline hover:underline"
       title={repo as string}
     >

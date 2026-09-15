@@ -5,7 +5,7 @@ import { FileTree } from "@/components/repo/file-tree";
 import { CloneBox } from "@/components/repo/clone-box";
 import { QuickSetup } from "@/components/repo/quick-setup";
 import { ReadmePanel } from "@/components/repo/readme-panel";
-import { RefSelect } from "@/components/repo/ref-select";
+import { RepoBrowseToolbar } from "@/components/repo/repo-browse-toolbar";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
@@ -197,18 +197,13 @@ export function RepoCodeHome() @{
         </>;
       } @else {
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <RefSelect
-              owner={owner}
-              repo={repoName}
-              refs={phase.refs}
-              value={phase.refName}
-              mode="home"
-            />
-            <div className="ml-auto">
-              <CloneBox owner={owner} repo={repoName} refName={phase.refName} empty={false} />
-            </div>
-          </div>
+          <RepoBrowseToolbar
+            owner={owner}
+            repo={repoName}
+            refName={phase.refName}
+            refs={phase.refs}
+            empty={false}
+          />
           <FileTree
             owner={owner}
             repo={repoName}
