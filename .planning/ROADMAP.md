@@ -514,6 +514,8 @@ Plans:
 - [x] `11.1-04-PLAN.md` — Stack-browser forge matrix + login/verify/profile integration (D-QH-03)
 - [x] `11.1-05-PLAN.md` — Protocol smokes in CI + GSD residual honesty (D-QH-04, D-QH-05)
 - [x] `11.1-06-PLAN.md` — Strip RepoChrome from issues/releases/settings + retarget tests (D-QH-01)
+- [ ] `11.1-07-PLAN.md` — Gap G-11.1-15: Admin LFS quotas render + stack-browser (gap_closure)
+- [ ] `11.1-08-PLAN.md` — Gap G-11.1-15: route coverage CI gate for all `.tsrx` pages (gap_closure)
 
 **UI hint**: yes
 
