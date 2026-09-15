@@ -3,7 +3,8 @@
 	smoke-packages \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
-	db-migrate db-switch-dialect db-matrix
+	db-migrate db-switch-dialect db-matrix \
+	coverage-web coverage-rust coverage-weighted coverage-contract
 
 COMPOSE ?= docker compose
 COMPOSE_FILE ?= docker-compose.yml
@@ -26,6 +27,10 @@ help:
 	@echo "  make down-with-dev-auth - tear down full stack from up-with-dev-auth"
 	@echo "  make logs           - follow compose logs"
 	@echo "  make test           - cargo nextest + JS Vitest (unit/integration/e2e)"
+	@echo "  make coverage-web   - Vitest unit+integration coverage (json-summary/lcov)"
+	@echo "  make coverage-rust  - Rust lib/test coverage via cargo-llvm-cov (optional)"
+	@echo "  make coverage-weighted - D-QH-02 weighted gate (25/40/35, floor 0.65→0.70)"
+	@echo "  make coverage-contract - aggregator contract self-test"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
@@ -169,3 +174,44 @@ db-switch-dialect:
 
 db-matrix:
 	cargo test -p octanest-db --test dialect_probe -- --nocapture
+
+# D-QH-02 coverage collect + weighted gate (see docs/TESTING.md).
+# Collect continues when Vitest exits non-zero so summaries are still emitted
+# (reportOnFailure); web-octane remains the hard test pass/fail job.
+coverage-web:
+	@mkdir -p var/coverage
+	@bun run --filter @octanest/web test:coverage:unit \
+		|| echo "==> unit coverage finished with test failures (summaries may still exist)"
+	@bun run --filter @octanest/web test:coverage:integration \
+		|| echo "==> integration coverage finished with test failures (summaries may still exist)"
+	@test -f apps/web/coverage/unit/coverage-summary.json
+	@test -f apps/web/coverage/integration/coverage-summary.json
+	@cp -f apps/web/coverage/unit/coverage-summary.json var/coverage/web-unit-summary.json
+	@cp -f apps/web/coverage/integration/coverage-summary.json var/coverage/web-integration-summary.json
+	@echo "==> web coverage summaries in var/coverage/"
+
+# Prefer cargo-llvm-cov when installed. Residual: CI may skip until llvm-tools are budgeted.
+coverage-rust:
+	@mkdir -p var/coverage
+	@if command -v cargo-llvm-cov >/dev/null 2>&1; then \
+		cargo llvm-cov --workspace --lcov --output-path var/coverage/rust-lcov.info; \
+		cargo llvm-cov report --json --output-path var/coverage/rust-summary.json; \
+		echo "==> rust coverage in var/coverage/rust-*.{info,json}"; \
+	else \
+		echo "==> cargo-llvm-cov not installed; skipping Rust coverage collect"; \
+		echo "    install: cargo install cargo-llvm-cov --locked"; \
+		echo "    CI: taiki-e/install-action tool: cargo-llvm-cov"; \
+		echo "skipped" > var/coverage/rust-skipped.txt; \
+	fi
+
+coverage-contract:
+	@./scripts/coverage-weighted.contract.sh
+
+coverage-weighted: coverage-web
+	@mkdir -p var/coverage
+	@$(MAKE) --no-print-directory coverage-rust
+	@./scripts/coverage-e2e-checklist.sh | tee var/coverage/e2e-checklist.txt
+	@./scripts/coverage-weighted.sh \
+		--unit-json var/coverage/web-unit-summary.json \
+		--integration-json var/coverage/web-integration-summary.json \
+		--e2e-checklist | tee var/coverage/weighted.txt

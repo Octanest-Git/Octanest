@@ -131,7 +131,50 @@ Add `*.test.ts` beside the module under `packages/api-client/src/` (Vitest picks
 
 ## Coverage requirements
 
-No coverage threshold configured (no Vitest/Jest `coverageThreshold`, `.nycrc`, or c8 thresholds in the repo).
+Weighted forge-core gate (**D-QH-02**). Layers and weights:
+
+| Layer | Weight | What is measured |
+|-------|--------|------------------|
+| Unit | **25%** (`0.25`) | Web Vitest `--project unit` line coverage (`@vitest/coverage-v8`). Rust lib units via `cargo-llvm-cov` when available (optional today; see residual below). |
+| Integration | **40%** (`0.40`) | Web Vitest `--project integration` (happy-dom) line coverage. Rust `tests/` included when llvm-cov runs. |
+| E2E / hydration | **35%** (`0.35`) | Interim **checklist score** (fraction of required stack-browser + stack HTTP + smoke script paths present). Not Playwright % coverage yet — expands when the forge matrix (Phase 11.1-03) lands. |
+
+**Weighted score**
+
+```
+score = 0.25 * unit + 0.40 * integration + 0.35 * e2e
+```
+
+**Initial floor:** bootstrap **`0.65`** (`COVERAGE_WEIGHTED_FLOOR` default in `scripts/coverage-weighted.sh`). Measured baseline after enabling `@vitest/coverage-v8` is ~0.68 (unit ≈61% / integration ≈45% / e2e checklist 1.0). **Ratchet target `0.70`** once integration depth and the forge e2e matrix (11.1-03) land — raise the env default and this doc together. Do not lower without an explicit residual note.
+
+**E2E checklist formula (interim)**
+
+`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge flows (repo code, issues, releases, packages list, SSH keys, org members) are **not** in the interim list until 11.1-03 adds them.
+
+**Commands**
+
+```bash
+make coverage-web          # unit + integration Vitest coverage → var/coverage/*-summary.json
+make coverage-rust         # cargo-llvm-cov when installed; otherwise skips with residual note
+make coverage-weighted     # collect web (+ optional rust) then run weighted gate
+make coverage-contract     # aggregator self-test (under/over floor)
+./scripts/coverage-weighted.sh --unit 0.9 --integration 0.9 --e2e 0.9
+./scripts/coverage-e2e-checklist.sh
+```
+
+From `apps/web`:
+
+```bash
+bun run test:coverage:unit
+bun run test:coverage:integration
+```
+
+Reports: `apps/web/coverage/{unit,integration}/` (`coverage-summary.json`, `lcov.info`). Aggregator copies summaries under `var/coverage/` (gitignored).
+
+**Residual (this wave)**
+
+- Rust `cargo-llvm-cov` is preferred and wired as a Make target + CI install hook, but **CI does not yet fail on Rust coverage numbers** when llvm-cov is too heavy for the job budget — web unit/integration + e2e checklist drive the gate. Revisit when llvm-tools runtime is budgeted.
+- Do not revive the removed Playwright component e2e project for coverage (**D-QH-03**).
 
 ## CI integration
 
@@ -140,13 +183,14 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | Job | What it runs |
 |-----|----------------|
 | `api-rust` | Install nextest → `cargo nextest run --workspace --profile ci` |
-| `web-octane` | `bun install --frozen-lockfile` → Playwright Chromium → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `web-octane` | `bun install --frozen-lockfile` → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` |
 | `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` |
 
-Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job.
+Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright.
 
 ## Dev-auth stubs (stack e2e)
 

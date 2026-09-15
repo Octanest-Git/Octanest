@@ -63,6 +63,22 @@ export default defineConfig({
   },
   test: {
     globals: false,
+    coverage: {
+      provider: "v8",
+      reporter: ["text-summary", "json-summary", "lcov"],
+      reportsDirectory: "./coverage",
+      // Default: only files exercised by tests (keeps D-QH-02 floor meaningful).
+      // Do not set `all: true` / broad include until suite depth catches up.
+      exclude: [
+        "**/*.{test,spec}.{ts,tsx}",
+        "**/test/**",
+        "e2e/**",
+        "**/*.d.ts",
+        "src/routeTree.gen.ts",
+        "src/styles/**",
+      ],
+      reportOnFailure: true,
+    },
     projects: [
       {
         extends: true,
