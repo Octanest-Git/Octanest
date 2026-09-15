@@ -8,10 +8,10 @@ score_only=0
 [[ "${1:-}" == "--score-only" ]] && score_only=1
 
 # Interim checklist (auth + protocol smokes + stack HTTP e2e presence).
-# Forge-matrix flows (repo code, issues, releases, packages, SSH keys, org members)
-# are added by 11.1-03 — do not invent them here.
+# Forge-matrix + admin quota/auth suites (11.1-04 / 11.1-07 / 11.1-08).
 ITEMS=(
   "apps/web/e2e/stack-browser/auth-ui.stack.browser.test.tsx"
+  "apps/web/e2e/stack-browser/forge-admin.stack.browser.test.tsx"
   "apps/web/e2e/stack/smtp.stack.test.ts"
   "apps/web/e2e/stack/oidc.stack.test.ts"
   "scripts/smoke-git-https.sh"

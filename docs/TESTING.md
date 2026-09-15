@@ -126,13 +126,13 @@ Import from `vitest` explicitly (`globals: false` in the web Vitest config).
 | `forge-repo.stack.browser.test.tsx` | Seeded repo code home + Packages tab / packages list |
 | `forge-issues-releases.stack.browser.test.tsx` | Issues create→close; release create from seeded tag |
 | `forge-packages-ssh-orgs.stack.browser.test.tsx` | SSH keys add/list; org members settings |
-| `forge-admin.stack.browser.test.tsx` | Forge admin `/admin/lfs` Git LFS quotas + `/admin/packages` (G-11.1-15) |
+| `forge-admin.stack.browser.test.tsx` | Forge admin `/admin/lfs`, `/admin/packages`, `/admin/auth` chrome (no factory-reset click) (G-11.1-15) |
 
 login / verify / profile also have happy-dom `*.integration.test.ts` export/render contracts (RESEARCH P1).
 
-**Render mounts required for Octane pages (G-11.1-15)** — Wave 0 **raw-source** stubs (`import "./page.tsrx?raw"` + regex for exports / RPC names / absence of `@else if`) are **not enough** to prove a `.tsrx` page works. They miss missing `useState`, broken Rivet control flow, and hydration-time ReferenceErrors. User-facing routes under `apps/web/src/routes/` must keep at least one **happy-dom render mount** (e.g. `AdminLfsPage` via `renderWithQueryClient` + `getByTestId("admin-lfs-page")`) and, for admin quotas, **stack-browser** coverage (`forge-admin.stack.browser.test.tsx` → `/admin/lfs`). Do not regress `/admin/lfs` back to raw-source-only.
+**Render mounts required for Octane pages (G-11.1-15)** — Wave 0 **raw-source** stubs (`import "./page.tsrx?raw"` + regex for exports / RPC names / absence of `@else if`) are **not enough** to prove a `.tsrx` page works. They miss missing `useState`, broken Rivet control flow, and hydration-time ReferenceErrors. User-facing routes under `apps/web/src/routes/` must keep at least one **happy-dom render mount** (e.g. `AdminLfsPage` / `AdminPackagesPage` via `renderWithQueryClient`) and, for admin surfaces, **stack-browser** coverage (`forge-admin.stack.browser.test.tsx` → `/admin/lfs`, `/admin/packages`, `/admin/auth`). Do not regress those routes back to raw-source-only.
 
-**Route coverage gate (G-11.1-15 / 11.1-08)** — CI fails if any user-facing `apps/web/src/routes/**/*.tsrx` page is missing from the manifest (or lacks valid evidence). Outlet-only layouts and `__root` are marked `layoutOnly` and excluded.
+**Route coverage gate (G-11.1-15 / 11.1-09)** — CI fails if any user-facing `apps/web/src/routes/**/*.tsrx` page is missing from the manifest (or lacks valid evidence). Outlet-only layouts and `__root` are marked `layoutOnly` and excluded.
 
 | Artifact | Role |
 |----------|------|
@@ -178,7 +178,7 @@ score = 0.25 * unit + 0.40 * integration + 0.35 * e2e
 
 **E2E checklist formula (interim)**
 
-`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge stack-browser suites (repo code, issues, releases, packages list, SSH keys, org members) live under `apps/web/e2e/stack-browser/` (D-QH-03 / 11.1-04); expand the checklist when promoting those paths into the weighted e2e score.
+`e2e = present / total` where `total` is the item count in `scripts/coverage-e2e-checklist.sh` (auth + forge-admin stack-browser, SMTP/OIDC stack tests, git/packages smoke scripts). Missing paths lower the score. Forge stack-browser suites (repo code, issues, releases, packages list, SSH keys, org members, admin LFS/packages/auth) live under `apps/web/e2e/stack-browser/` (D-QH-03 / 11.1-04 / 11.1-08); expand the checklist when promoting additional forge paths into the weighted e2e score.
 
 **Commands**
 

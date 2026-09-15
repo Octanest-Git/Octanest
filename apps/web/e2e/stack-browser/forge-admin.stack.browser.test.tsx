@@ -8,13 +8,13 @@ declare module "vitest/browser" {
   }
 }
 
-describe("stack browser e2e: forge admin LFS + packages quotas (G-11.1-15)", () => {
+describe("stack browser e2e: forge admin LFS + packages + auth (G-11.1-15)", () => {
   beforeAll(() => {
     requireStack();
   });
 
-  it("opens /admin/lfs (and packages) as forge admin without error overlay", async () => {
+  it("opens /admin/lfs, /admin/packages, and /admin/auth as forge admin without error overlay", async () => {
     const ok = await commands.expectAdminLfsQuotasFlow();
     expect(ok).toBe(true);
-  }, 120_000);
+  }, 180_000);
 });

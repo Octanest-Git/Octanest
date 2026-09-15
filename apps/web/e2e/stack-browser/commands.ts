@@ -714,9 +714,10 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
 };
 
 /**
- * Forge admin opens /admin/lfs (G-11.1-15) and optionally /admin/packages.
- * Asserts quotas UI renders without Vite/Octane error overlay (raw-source-only
+ * Forge admin opens /admin/lfs, /admin/packages, and /admin/auth (G-11.1-15).
+ * Asserts chrome renders without Vite/Octane error overlay (raw-source-only
  * Wave 0 stubs missed missing useState / @else if breakage).
+ * Does not click factory reset (T-11.1-73).
  */
 export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
@@ -750,7 +751,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
       );
     }
 
-    // Cheap sibling: packages admin quotas page (same forge-admin session).
+    // Packages admin quotas page (same forge-admin session).
     await page.goto(`${webOrigin()}/admin/packages`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -768,6 +769,27 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
     ) {
       throw new Error(
         `admin packages showed error overlay. body=${pkgHtml.slice(0, 1000)}`,
+      );
+    }
+
+    // Auth settings chrome only — never click factory reset.
+    await page.goto(`${webOrigin()}/admin/auth`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "Auth settings" })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByText("Danger zone")
+      .waitFor({ state: "visible", timeout: 15_000 });
+    const authHtml = await page.content();
+    if (
+      authHtml.includes("vite-error-overlay") ||
+      /is not defined|ReferenceError/i.test(authHtml)
+    ) {
+      throw new Error(
+        `admin auth showed error overlay. body=${authHtml.slice(0, 1000)}`,
       );
     }
     return true;
