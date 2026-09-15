@@ -1,25 +1,92 @@
-import { createFileRoute } from "@octanejs/tanstack-router";
+import {
+  createFileRoute,
+  useLoaderData,
+} from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type {
   AdminLfsSettingsPublic,
   AdminLfsUsageResponse,
+  UserPublic,
 } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { AdminAuthSkeleton } from "@/components/page-skeletons";
+import { AdminLfsSkeleton } from "@/components/page-skeletons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { authSessionQueryOptions } from "@/lib/session-queries";
+import {
+  authSessionQueryOptions,
+  setAuthMeCache,
+} from "@/lib/session-queries";
+import {
+  fetchAdminLfsSettings,
+  fetchAdminLfsUsage,
+  fetchSessionMe,
+} from "@/lib/ssr-auth";
 import { toastSuccess } from "@/lib/toast";
+
+export type AdminLfsLoaderData =
+  | { kind: "unauthenticated" }
+  | { kind: "forbidden" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      me: UserPublic;
+      settings: AdminLfsSettingsPublic;
+      usage: AdminLfsUsageResponse;
+    };
+
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const FORBIDDEN = "You need admin access to manage LFS quotas.";
+
+const settingsQueryKey = ["admin", "lfs", "settings"] as const;
+const usageQueryKey = ["admin", "lfs", "usage"] as const;
 
 export const Route = createFileRoute("/admin/lfs")({
   component: AdminLfsPage,
   head: () => ({ meta: [{ title: "LFS quotas · Octanest" }] }),
+  loader: async (): Promise<AdminLfsLoaderData> => {
+    try {
+      const meRes = await fetchSessionMe();
+      if (!meRes.ok) {
+        if (meRes.error.code === "auth.unauthenticated") {
+          return { kind: "unauthenticated" };
+        }
+        return {
+          kind: "error",
+          message: meRes.error.message || "Could not load session.",
+        };
+      }
+      if (meRes.data.role !== "sys-admin") {
+        return { kind: "forbidden" };
+      }
+      const [settingsRes, usageRes] = await Promise.all([
+        fetchAdminLfsSettings(),
+        fetchAdminLfsUsage(),
+      ]);
+      if (!settingsRes.ok) {
+        return {
+          kind: "error",
+          message: settingsRes.error.message || FORBIDDEN,
+        };
+      }
+      if (!usageRes.ok) {
+        return {
+          kind: "error",
+          message: usageRes.error.message || "Could not load usage.",
+        };
+      }
+      return {
+        kind: "ready",
+        me: meRes.data,
+        settings: settingsRes.data,
+        usage: usageRes.data,
+      };
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
 });
-
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
-const FORBIDDEN = "You need admin access to manage LFS quotas.";
 
 function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return "0 B";
@@ -32,12 +99,37 @@ function formatBytes(n: number): string {
 /** Exported for admin/lfs integration tests (D-LFS-12 / D-LFS-13 / D-LFS-19). */
 export function AdminLfsPage() @{
   const queryClient = useQueryClient();
-  const me = useQuery(authSessionQueryOptions());
+  const loaderData = useLoaderData({ from: "/admin/lfs" }) as
+    | AdminLfsLoaderData
+    | undefined;
+
+  useEffect(() => {
+    if (loaderData?.kind === "unauthenticated") {
+      window.location.assign("/login?returnTo=/admin/lfs");
+      return;
+    }
+    if (loaderData?.kind === "ready") {
+      setAuthMeCache(queryClient, loaderData.me);
+      queryClient.setQueryData(settingsQueryKey, loaderData.settings);
+      queryClient.setQueryData(usageQueryKey, loaderData.usage);
+    }
+  }, [loaderData, queryClient]);
+
+  const me = useQuery({
+    ...authSessionQueryOptions(),
+    ...(loaderData?.kind === "ready"
+      ? { initialData: loaderData.me }
+      : loaderData?.kind === "unauthenticated"
+        ? { initialData: null as UserPublic | null }
+        : {}),
+  });
   const isSysAdmin = me.isSuccess && me.data?.role === "sys-admin";
 
   const settingsQ = useQuery({
-    queryKey: ["admin", "lfs", "settings"] as const,
-    enabled: isSysAdmin,
+    queryKey: settingsQueryKey,
+    enabled: isSysAdmin || loaderData?.kind === "ready",
+    initialData:
+      loaderData?.kind === "ready" ? loaderData.settings : undefined,
     queryFn: async (): Promise<AdminLfsSettingsPublic> => {
       const res = await apiClient.admin.lfs.getSettings();
       if (!res.ok) throw new Error(res.error.message || FORBIDDEN);
@@ -46,8 +138,9 @@ export function AdminLfsPage() @{
   });
 
   const usageQ = useQuery({
-    queryKey: ["admin", "lfs", "usage"] as const,
-    enabled: isSysAdmin,
+    queryKey: usageQueryKey,
+    enabled: isSysAdmin || loaderData?.kind === "ready",
+    initialData: loaderData?.kind === "ready" ? loaderData.usage : undefined,
     queryFn: async (): Promise<AdminLfsUsageResponse> => {
       const res = await apiClient.admin.lfs.getUsage();
       if (!res.ok) throw new Error(res.error.message || FORBIDDEN);
@@ -55,19 +148,31 @@ export function AdminLfsPage() @{
     },
   });
 
-  const [maxObject, setMaxObject] = useState("");
-  const [quotaRepo, setQuotaRepo] = useState("");
-  const [quotaUser, setQuotaUser] = useState("");
-  const [error, setError] = useState("");
+  const initialSettings =
+    loaderData?.kind === "ready" ? loaderData.settings : null;
+
+  const [maxObject, setMaxObject] = useState(() =>
+    initialSettings ? String(initialSettings.max_object_bytes) : "",
+  );
+  const [quotaRepo, setQuotaRepo] = useState(() =>
+    initialSettings ? String(initialSettings.quota_repo_bytes) : "",
+  );
+  const [quotaUser, setQuotaUser] = useState(() =>
+    initialSettings ? String(initialSettings.quota_user_bytes) : "",
+  );
+  const [error, setError] = useState(() =>
+    loaderData?.kind === "error" ? loaderData.message : "",
+  );
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    if (loaderData) return;
     if (me.isPending) return;
     if (me.isError) return;
     if (me.data === null) {
       window.location.assign("/login?returnTo=/admin/lfs");
     }
-  }, [me.isPending, me.isError, me.data]);
+  }, [loaderData, me.isPending, me.isError, me.data]);
 
   useEffect(() => {
     if (settingsQ.isSuccess && settingsQ.data) {
@@ -132,12 +237,25 @@ export function AdminLfsPage() @{
     }
   }
 
-  const loading = me.isPending;
-  const signedOut = !me.isPending && (!me.isSuccess || !me.data);
-  const forbidden = me.isSuccess && !!me.data && !isSysAdmin;
+  const fromLoader = !!loaderData;
+  const loadingSession = !fromLoader && me.isPending;
+  const signedOut =
+    loaderData?.kind === "unauthenticated" ||
+    (!fromLoader && !me.isPending && (!me.isSuccess || !me.data));
+  const forbidden =
+    loaderData?.kind === "forbidden" ||
+    (me.isSuccess && !!me.data && !isSysAdmin);
+  const loaderError = loaderData?.kind === "error" ? loaderData.message : "";
+  const awaitingData =
+    !fromLoader &&
+    isSysAdmin &&
+    (settingsQ.isPending || usageQ.isPending) &&
+    !settingsQ.data &&
+    !usageQ.data;
+  const showSkeleton = loadingSession || awaitingData;
 
-  @if (loading) {
-    <AdminAuthSkeleton />
+  @if (showSkeleton) {
+    <AdminLfsSkeleton />
   } @else {
     @if (signedOut) {
       <div className="mx-auto max-w-lg py-12 text-center">
@@ -159,27 +277,31 @@ export function AdminLfsPage() @{
           </p>
         </div>
       } @else {
-        <div className="mx-auto max-w-3xl py-8" data-testid="admin-lfs-page">
-          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
-            Git LFS quotas
-          </h1>
-          <p className="mt-2 text-[14px] text-muted-foreground">
-            Override instance defaults for max object size and storage quotas.
-            Environment variables remain the fallback when overrides are cleared.
-          </p>
-          <p className="mt-1 text-[14px]">
-            <a
-              href="/admin/auth"
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              Auth settings
-            </a>
-          </p>
+        @if (loaderError && !settingsQ.data) {
+          <div className="mx-auto max-w-lg py-12 text-center">
+            <p role="alert" className="text-[16px] text-destructive">
+              {loaderError as string}
+            </p>
+          </div>
+        } @else {
+          <div className="mx-auto max-w-3xl py-8" data-testid="admin-lfs-page">
+            <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
+              Git LFS quotas
+            </h1>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              Override instance defaults for max object size and storage quotas.
+              Environment variables remain the fallback when overrides are cleared.
+            </p>
+            <p className="mt-1 text-[14px]">
+              <a
+                href="/admin/auth"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Auth settings
+              </a>
+            </p>
 
-          @if (settingsQ.isPending) {
-            <p className="mt-8 text-[14px] text-muted-foreground">Loading…</p>
-          } @else {
-            @if (settingsQ.isError) {
+            @if (settingsQ.isError && !settingsQ.data) {
               <p role="alert" className="mt-8 text-[14px] text-destructive">
                 {(settingsQ.error instanceof Error
                   ? settingsQ.error.message
@@ -266,22 +388,18 @@ export function AdminLfsPage() @{
                 </div>
               </form>
             }
-          }
 
-          <section
-            className="mt-12 flex flex-col gap-4"
-            aria-labelledby="lfs-inst-usage"
-          >
-            <h2
-              id="lfs-inst-usage"
-              className="font-[family-name:var(--font-display)] text-[18px] font-semibold"
+            <section
+              className="mt-12 flex flex-col gap-4"
+              aria-labelledby="lfs-inst-usage"
             >
-              Instance usage breakdown
-            </h2>
-            @if (usageQ.isPending) {
-              <p className="text-[14px] text-muted-foreground">Loading usage…</p>
-            } @else {
-              @if (usageQ.isError) {
+              <h2
+                id="lfs-inst-usage"
+                className="font-[family-name:var(--font-display)] text-[18px] font-semibold"
+              >
+                Instance usage breakdown
+              </h2>
+              @if (usageQ.isError && !usageQ.data) {
                 <p role="alert" className="text-[14px] text-destructive">
                   {(usageQ.error instanceof Error
                     ? usageQ.error.message
@@ -336,9 +454,9 @@ export function AdminLfsPage() @{
                   </>
                 }
               }
-            }
-          </section>
-        </div>
+            </section>
+          </div>
+        }
       }
     }
   }

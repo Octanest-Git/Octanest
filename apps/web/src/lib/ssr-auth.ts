@@ -85,6 +85,22 @@ export const fetchUserGetProfile = createServerFn({ method: "GET" }).handler(
   },
 );
 
+/** SSR: admin.lfs.getSettings with Cookie forward. */
+export const fetchAdminLfsSettings = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.admin.lfs.getSettings();
+  },
+);
+
+/** SSR: admin.lfs.getUsage with Cookie forward. */
+export const fetchAdminLfsUsage = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const client = createSsrClient(incomingCookie());
+    return client.admin.lfs.getUsage();
+  },
+);
+
 /** SSR: system.health (status page). */
 export const fetchSystemHealth = createServerFn({ method: "GET" }).handler(
   async () => {

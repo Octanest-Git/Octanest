@@ -77,6 +77,54 @@ export function AdminAuthSkeleton() @{
   </div>
 }
 
+/** Admin LFS quotas at `/admin/lfs` — mirrors form + usage layout. */
+export function AdminLfsSkeleton() @{
+  <div
+    className="mx-auto max-w-3xl px-4 py-8"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading LFS quotas"
+  >
+    <Skeleton className="h-8 w-56" />
+    <Skeleton className="mt-2 h-5 w-full max-w-xl" />
+    <Skeleton className="mt-1 h-4 w-28" />
+    <div className="mt-8 flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-11 w-28" />
+        <Skeleton className="h-11 w-36" />
+      </div>
+    </div>
+    <div className="mt-12 flex flex-col gap-4">
+      <Skeleton className="h-6 w-52" />
+      <Skeleton className="h-4 w-full max-w-md" />
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 export function StatusPageSkeleton() @{
   <div
     className="mx-auto max-w-3xl px-4 py-16"
