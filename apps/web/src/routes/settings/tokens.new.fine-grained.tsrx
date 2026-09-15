@@ -12,7 +12,6 @@ import {
 import { PatFgForm } from "@/components/settings/pat-fg-form";
 import { PatReveal } from "@/components/settings/pat-reveal";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 import { cn } from "@/lib/utils";
@@ -121,12 +120,7 @@ export function TokensNewFineGrainedPage() @{
   const showWall = phase.kind === "ready" && !verified;
 
   @if (phase.kind === "loading") {
-    <SettingsShell bare>
-      <div aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-8 h-40 w-full" />
-      </div>
-    </SettingsShell>
+    <></>
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>

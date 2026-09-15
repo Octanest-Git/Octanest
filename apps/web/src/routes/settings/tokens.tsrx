@@ -2,7 +2,7 @@ import {
   createFileRoute,
   useLoaderData,
 } from "@octanejs/tanstack-router";
-import type { UserPublic } from "@octanest/api-client";
+import type { PatListItem, UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { ChevronDown } from "@octanejs/lucide";
 import { PatList } from "@/components/settings/pat-list";
@@ -17,15 +17,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { fetchSessionMe } from "@/lib/ssr-auth";
+import { fetchPatList, fetchSessionMe } from "@/lib/ssr-auth";
 import { cn } from "@/lib/utils";
 
 export type TokensLoaderData =
   | { kind: "unauthenticated" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; user: UserPublic };
+  | { kind: "ready"; user: UserPublic; tokens: PatListItem[] };
 
 const NETWORK_ERROR =
   "Can't reach Octanest. Check your connection and try again.";
@@ -45,7 +44,14 @@ export const Route = createFileRoute("/settings/tokens")({
           message: res.error.message || "Could not load session.",
         };
       }
-      return { kind: "ready", user: res.data };
+      const listRes = await fetchPatList();
+      if (!listRes.ok) {
+        return {
+          kind: "error",
+          message: listRes.error.message || "Could not load tokens.",
+        };
+      }
+      return { kind: "ready", user: res.data, tokens: listRes.data };
     } catch {
       return { kind: "error", message: NETWORK_ERROR };
     }
@@ -82,10 +88,15 @@ export function TokensPage() @{
     return { kind: "loading" };
   });
 
+  const [tokens, setTokens] = useState<PatListItem[] | undefined>(() =>
+    loaderData?.kind === "ready" ? loaderData.tokens : undefined,
+  );
+
   useEffect(() => {
     if (!loaderData) return;
     if (loaderData.kind === "ready") {
       setPhase({ kind: "ready", user: loaderData.user });
+      setTokens(loaderData.tokens);
       return;
     }
     if (loaderData.kind === "error") {
@@ -105,6 +116,16 @@ export function TokensPage() @{
           window.location.assign("/login?returnTo=/settings/tokens");
           return;
         }
+        const listRes = await apiClient.pat.list();
+        if (cancelled) return;
+        if (!listRes.ok) {
+          setPhase({
+            kind: "error",
+            message: listRes.error.message || "Could not load tokens.",
+          });
+          return;
+        }
+        setTokens(listRes.data);
         setPhase({ kind: "ready", user: res.data });
       } catch {
         if (cancelled) return;
@@ -120,13 +141,7 @@ export function TokensPage() @{
     phase.kind === "ready" ? phase.user.email_verified === true : false;
 
   @if (phase.kind === "loading") {
-    <SettingsShell bare>
-      <div aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-6 h-11 w-48" />
-        <Skeleton className="mt-8 h-24 w-full" />
-      </div>
-    </SettingsShell>
+    <></>
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>
@@ -135,7 +150,7 @@ export function TokensPage() @{
         </p>
       </SettingsShell>
     } @else {
-      <AccountSettingsLayout active="tokens">
+      <AccountSettingsLayout active="tokens" data-testid="settings-tokens-page">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -181,7 +196,7 @@ export function TokensPage() @{
             Verify your email to create a token.
           </p>
         }
-        <PatList enabled={true} />
+        <PatList enabled={true} initialData={tokens} />
       </AccountSettingsLayout>
     }
   }

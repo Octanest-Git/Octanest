@@ -25,19 +25,22 @@ function lastUsedLabel(item: SshKeyListItem): string {
 
 type SshKeyListProps = {
   enabled?: boolean;
+  /** SSR / loader seed — skips the pending skeleton when provided. */
+  initialData?: SshKeyListItem[];
 };
 
 /** SSH key list rows + empty/loading/error (D-SSH-05 / D-SSH-06). */
-export function SshKeyList({ enabled = true }: SshKeyListProps) @{
+export function SshKeyList({ enabled = true, initialData }: SshKeyListProps) @{
   const queryClient = useQueryClient();
   const list = useQuery({
     ...sshKeyListQueryOptions(apiClient),
     enabled,
+    ...(initialData !== undefined ? { initialData } : {}),
   });
   const [revokeTarget, setRevokeTarget] = useState<SshKeyListItem | null>(null);
 
   <>
-  @if (list.isPending) {
+  @if (list.isPending && initialData === undefined) {
     <div className="mt-8 flex flex-col gap-3" aria-busy="true" aria-label="Loading SSH keys">
       <Skeleton className="h-24 w-full" />
       <Skeleton className="h-24 w-full" />

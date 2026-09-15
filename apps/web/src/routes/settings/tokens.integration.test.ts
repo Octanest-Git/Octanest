@@ -51,6 +51,7 @@ type LoaderShape =
         email_verified: boolean;
         must_change_credentials: boolean;
       };
+      tokens?: unknown[];
     };
 
 let loaderData: LoaderShape;
@@ -98,7 +99,7 @@ beforeEach(() => {
   createFineGrainedMock.mockReset();
   listMineMock.mockReset();
   meMock.mockReset();
-  loaderData = { kind: "ready", user: verifiedUser };
+  loaderData = { kind: "ready", user: verifiedUser, tokens: [] };
   listMock.mockResolvedValue({ ok: true, data: [] });
   listMineMock.mockResolvedValue({
     ok: true,
@@ -171,6 +172,7 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     loaderData = {
       kind: "ready",
       user: { ...verifiedUser, email_verified: false },
+      tokens: [],
     };
     meMock.mockResolvedValue({
       ok: true,

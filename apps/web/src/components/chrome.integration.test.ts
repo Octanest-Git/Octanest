@@ -15,6 +15,7 @@ vi.mock("@octanejs/tanstack-router", () => ({
       props.children as never,
     ),
   useNavigate: () => () => undefined,
+  useParams: () => ({}),
 }));
 
 vi.mock("@/lib/api-client", () => ({
@@ -32,6 +33,10 @@ vi.mock("@/lib/api-client", () => ({
         ok: true,
         data: { mode: "local", allow_signup: false },
       })),
+      logout: vi.fn(async () => ({ ok: true, data: { ok: true } })),
+    },
+    org: {
+      listMine: vi.fn(async () => ({ ok: true, data: { orgs: [] } })),
     },
   },
 }));
@@ -125,5 +130,55 @@ describe("chrome Wave 0 (D-06 omit Sign up)", () => {
     expect(apiClient.auth.me.mock.calls.length).toBeLessThanOrEqual(2);
     expect(apiClient.auth.bootstrapStatus.mock.calls.length).toBeLessThanOrEqual(2);
     expect(apiClient.auth.providerConfig.mock.calls.length).toBeLessThanOrEqual(2);
+  });
+});
+
+describe("chrome signed-in create + account menus", () => {
+  const signedInUser = {
+    id: "u1",
+    email: "ada@example.com",
+    username: "ada",
+    display_name: "Ada",
+    bio: "",
+    avatar_url: null,
+    role: "user" as const,
+    profile_incomplete: false,
+    email_verified: true,
+    must_change_credentials: false,
+    default_branch: "main",
+  };
+
+  beforeEach(() => {
+    vi.mocked(apiClient.auth.me).mockResolvedValue({
+      ok: true,
+      data: signedInUser,
+    } as never);
+    vi.mocked(apiClient.org.listMine).mockResolvedValue({
+      ok: true,
+      data: {
+        orgs: [
+          {
+            id: "o1",
+            slug: "acme",
+            display_name: "Acme",
+            member_base_permission: "read",
+            role: "owner",
+            created_at: "2026-01-01T00:00:00Z",
+            updated_at: "2026-01-01T00:00:00Z",
+          },
+        ],
+      },
+    } as never);
+  });
+
+  it("shows Create new and Account menu triggers when signed in", async () => {
+    renderWithQueryClient(SiteHeader);
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /create new/i })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole("link", { name: /sign in/i })).not.toBeInTheDocument();
   });
 });

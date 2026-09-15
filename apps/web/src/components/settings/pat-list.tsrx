@@ -57,19 +57,22 @@ function lastUsedLabel(item: PatListItem): string {
 type PatListProps = {
   /** When false, list query is still enabled for viewing existing tokens. */
   enabled?: boolean;
+  /** SSR / loader seed — skips the pending skeleton when provided. */
+  initialData?: PatListItem[];
 };
 
 /** PAT list rows + empty/loading/error (D-14 / D-09). */
-export function PatList({ enabled = true }: PatListProps) @{
+export function PatList({ enabled = true, initialData }: PatListProps) @{
   const queryClient = useQueryClient();
   const list = useQuery({
     ...patListQueryOptions(apiClient),
     enabled,
+    ...(initialData !== undefined ? { initialData } : {}),
   });
   const [revokeTarget, setRevokeTarget] = useState<PatListItem | null>(null);
 
   <>
-  @if (list.isPending) {
+  @if (list.isPending && initialData === undefined) {
     <div className="mt-8 flex flex-col gap-3" aria-busy="true" aria-label="Loading tokens">
       <Skeleton className="h-24 w-full" />
       <Skeleton className="h-24 w-full" />

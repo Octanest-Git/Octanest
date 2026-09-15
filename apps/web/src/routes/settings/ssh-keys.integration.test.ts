@@ -45,6 +45,7 @@ type LoaderShape =
         email_verified: boolean;
         must_change_credentials: boolean;
       };
+      keys?: unknown[];
     };
 
 let loaderData: LoaderShape;
@@ -90,7 +91,7 @@ beforeEach(() => {
   revokeMock.mockReset();
   addMock.mockReset();
   meMock.mockReset();
-  loaderData = { kind: "ready", user: verifiedUser };
+  loaderData = { kind: "ready", user: verifiedUser, keys: [] };
   listMock.mockResolvedValue({ ok: true, data: [] });
   meMock.mockResolvedValue({ ok: true, data: verifiedUser });
 });
@@ -133,6 +134,7 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     loaderData = {
       kind: "ready",
       user: { ...verifiedUser, email_verified: false },
+      keys: [],
     };
     meMock.mockResolvedValue({
       ok: true,

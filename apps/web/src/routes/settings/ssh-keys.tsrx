@@ -2,7 +2,11 @@ import {
   createFileRoute,
   useLoaderData,
 } from "@octanejs/tanstack-router";
-import { sshKeyListQueryOptions, type UserPublic } from "@octanest/api-client";
+import {
+  sshKeyListQueryOptions,
+  type SshKeyListItem,
+  type UserPublic,
+} from "@octanest/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { SshKeyAddForm } from "@/components/settings/ssh-key-add-form";
@@ -12,14 +16,13 @@ import {
   SettingsShell,
 } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { fetchSessionMe } from "@/lib/ssr-auth";
+import { fetchSessionMe, fetchSshKeyList } from "@/lib/ssr-auth";
 
 export type SshKeysLoaderData =
   | { kind: "unauthenticated" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; user: UserPublic };
+  | { kind: "ready"; user: UserPublic; keys: SshKeyListItem[] };
 
 const NETWORK_ERROR =
   "Can't reach Octanest. Check your connection and try again.";
@@ -39,7 +42,14 @@ export const Route = createFileRoute("/settings/ssh-keys")({
           message: res.error.message || "Could not load session.",
         };
       }
-      return { kind: "ready", user: res.data };
+      const listRes = await fetchSshKeyList();
+      if (!listRes.ok) {
+        return {
+          kind: "error",
+          message: listRes.error.message || "Could not load SSH keys.",
+        };
+      }
+      return { kind: "ready", user: res.data, keys: listRes.data };
     } catch {
       return { kind: "error", message: NETWORK_ERROR };
     }
@@ -76,12 +86,16 @@ export function SshKeysPage() @{
     return { kind: "loading" };
   });
 
+  const [keys, setKeys] = useState<SshKeyListItem[] | undefined>(() =>
+    loaderData?.kind === "ready" ? loaderData.keys : undefined,
+  );
   const [showForm, setShowForm] = useState(false);
 
   useEffect(() => {
     if (!loaderData) return;
     if (loaderData.kind === "ready") {
       setPhase({ kind: "ready", user: loaderData.user });
+      setKeys(loaderData.keys);
       return;
     }
     if (loaderData.kind === "error") {
@@ -100,6 +114,16 @@ export function SshKeysPage() @{
           window.location.assign("/login?returnTo=/settings/ssh-keys");
           return;
         }
+        const listRes = await apiClient.sshKey.list();
+        if (cancelled) return;
+        if (!listRes.ok) {
+          setPhase({
+            kind: "error",
+            message: listRes.error.message || "Could not load SSH keys.",
+          });
+          return;
+        }
+        setKeys(listRes.data);
         setPhase({ kind: "ready", user: res.data });
       } catch {
         if (cancelled) return;
@@ -117,19 +141,14 @@ export function SshKeysPage() @{
   const keyList = useQuery({
     ...sshKeyListQueryOptions(apiClient),
     enabled: phase.kind === "ready",
+    ...(keys !== undefined ? { initialData: keys } : {}),
   });
-  const keyCount = keyList.data?.length ?? 0;
+  const keyCount = keyList.data?.length ?? keys?.length ?? 0;
   const atCap = keyCount >= 25;
   const canAdd = verified && !atCap;
 
   @if (phase.kind === "loading") {
-    <SettingsShell bare>
-      <div aria-busy="true">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-6 h-11 w-48" />
-        <Skeleton className="mt-8 h-24 w-full" />
-      </div>
-    </SettingsShell>
+    <></>
   } @else {
     @if (phase.kind === "error") {
       <SettingsShell bare>
@@ -138,7 +157,7 @@ export function SshKeysPage() @{
         </p>
       </SettingsShell>
     } @else {
-      <AccountSettingsLayout active="ssh-keys">
+      <AccountSettingsLayout active="ssh-keys" data-testid="settings-ssh-keys-page">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
@@ -174,7 +193,7 @@ export function SshKeysPage() @{
             onAdded={() => setShowForm(false)}
           />
         }
-        <SshKeyList enabled={true} />
+        <SshKeyList enabled={true} initialData={keys} />
       </AccountSettingsLayout>
     }
   }

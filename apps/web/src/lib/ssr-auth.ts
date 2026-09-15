@@ -70,6 +70,24 @@ export const fetchUserGetProfile = createServerFn({ method: "GET" }).handler(asy
   return client.user.getProfile();
 });
 
+/** SSR: pat.list with Cookie forward. */
+export const fetchPatList = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.pat.list();
+});
+
+/** SSR: sshKey.list with Cookie forward. */
+export const fetchSshKeyList = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.sshKey.list();
+});
+
+/** SSR: admin.auth.getSettings with Cookie forward. */
+export const fetchAdminAuthSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.admin.auth.getSettings();
+});
+
 /** SSR: admin.lfs.getSettings with Cookie forward. */
 export const fetchAdminLfsSettings = createServerFn({ method: "GET" }).handler(async () => {
   const client = createSsrClient(incomingCookie());

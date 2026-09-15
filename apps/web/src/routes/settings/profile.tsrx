@@ -6,14 +6,12 @@ import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
-import { AvatarPreview } from "@/components/avatar-preview";
-import { ProfilePageSkeleton } from "@/components/page-skeletons";
+import { ProfileAvatarField } from "@/components/settings/profile-avatar-field";
 import {
   AccountSettingsLayout,
   SettingsShell,
 } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
-import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -299,47 +297,31 @@ export function ProfilePage() @{
   }
 
   @if (phase.kind === "loading") {
-    <ProfilePageSkeleton />
-  } @else if (phase.kind === "error") {
-    <SettingsShell bare>
-      <p className="text-[16px] text-destructive">{phase.message as string}</p>
-    </SettingsShell>
+    <></>
   } @else {
-    <AccountSettingsLayout active="profile">
+    @if (phase.kind === "error") {
+      <SettingsShell bare>
+        <p className="text-[16px] text-destructive">{phase.message as string}</p>
+      </SettingsShell>
+    } @else {
+    <AccountSettingsLayout active="profile" data-testid="settings-profile-page">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
         Profile
       </h1>
 
       <div className="mt-8 flex flex-col gap-6">
-        <div className="flex items-center gap-4">
-          <AvatarPreview user={phase.user} src={avatarUrl} size={64} />
-          <div className="flex min-w-0 flex-col gap-2">
-            <FileDropzone
-              id="profile-avatar"
-              variant="button"
-              buttonLabel="Change avatar"
-              hint="JPEG, PNG, or WebP · max 2 MB"
-              accept={{
-                "image/jpeg": [".jpg", ".jpeg"],
-                "image/png": [".png"],
-                "image/webp": [".webp"],
-              }}
-              maxSize={2 * 1024 * 1024}
-              onFiles={(files) => {
-                void onAvatarSelected(files[0]);
-              }}
-              onReject={() => {
-                setFormError("Choose a JPEG, PNG, or WebP image under 2 MB.");
-                setAvatarStatus("");
-              }}
-            />
-            @if (avatarStatus) {
-              <p className="truncate text-[14px] text-muted-foreground">
-                {avatarStatus as string}
-              </p>
-            }
-          </div>
-        </div>
+        <ProfileAvatarField
+          user={phase.user}
+          src={avatarUrl}
+          status={avatarStatus}
+          onFile={(file) => {
+            void onAvatarSelected(file);
+          }}
+          onReject={() => {
+            setFormError("Choose a JPEG, PNG, or WebP image under 2 MB.");
+            setAvatarStatus("");
+          }}
+        />
 
         @if (formError) {
           <p role="alert" className="text-[14px] text-destructive">
@@ -528,5 +510,6 @@ export function ProfilePage() @{
         </div>
       }
     </AccountSettingsLayout>
+    }
   }
 }

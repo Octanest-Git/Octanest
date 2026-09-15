@@ -1,6 +1,6 @@
-import { Menu, X } from "@octanejs/lucide";
-import { Link, useNavigate } from "@octanejs/tanstack-router";
-import { useQueryClient } from "@octanejs/tanstack-query";
+import { Menu, Plus, X } from "@octanejs/lucide";
+import { Link, useNavigate, useParams } from "@octanejs/tanstack-router";
+import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useEffectEvent, useState } from "octane";
 import { GlobalSearch } from "@/components/global-search";
@@ -15,7 +15,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from "@/lib/api-client";
-import { clearSessionQueries } from "@/lib/session-queries";
+import {
+  clearSessionQueries,
+  orgListMineQueryOptions,
+} from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { cn } from "@/lib/utils";
@@ -64,6 +67,76 @@ function AccountAvatar({
   );
 }
 
+function useRepoContext(): { owner: string; repo: string } | null {
+  const params = useParams({ strict: false }) as {
+    owner?: string;
+    repo?: string;
+  };
+  if (params.owner && params.repo) {
+    return { owner: params.owner, repo: params.repo };
+  }
+  return null;
+}
+
+function CreateMenu({ onNavigated }: { onNavigated?: () => void }) @{
+  const repo = useRepoContext();
+
+  <DropdownMenu>
+    <DropdownMenuTrigger
+      className={cn(
+        "inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+        "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+      )}
+      aria-label="Create new…"
+    >
+      <Plus aria-hidden size={18} />
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end" className="min-w-52">
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/new");
+        }}
+      >
+        New repository
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/orgs/new");
+        }}
+      >
+        New organization
+      </DropdownMenuItem>
+      @if (repo) {
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigated?.();
+              window.location.assign(
+                `/${repo.owner}/${repo.repo}/issues/new`,
+              );
+            }}
+          >
+            New issue
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              onNavigated?.();
+              window.location.assign(
+                `/${repo.owner}/${repo.repo}/releases/new`,
+              );
+            }}
+          >
+            New release
+          </DropdownMenuItem>
+        </>
+      }
+    </DropdownMenuContent>
+  </DropdownMenu>
+}
+
 function AccountMenu({
   user,
   onNavigated,
@@ -72,6 +145,8 @@ function AccountMenu({
   onNavigated?: () => void;
 }) @{
   const queryClient = useQueryClient();
+  const orgsQ = useQuery(orgListMineQueryOptions());
+  const orgs = orgsQ.data ?? [];
 
   async function logout() {
     try {
@@ -84,6 +159,8 @@ function AccountMenu({
     onNavigated?.();
     window.location.assign("/");
   }
+
+  const displayName = (user.display_name?.trim() || user.username) as string;
 
   <DropdownMenu>
     <DropdownMenuTrigger
@@ -98,38 +175,31 @@ function AccountMenu({
         {"@" + user.username}
       </span>
     </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="min-w-48">
+    <DropdownMenuContent align="end" className="min-w-56">
+      <div className="px-2 py-2" role="presentation">
+        <p className="truncate text-[14px] font-medium text-foreground">
+          {displayName}
+        </p>
+        <p className="truncate text-[13px] text-muted-foreground">
+          {"@" + user.username}
+        </p>
+      </div>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign("/");
+        }}
+      >
+        Your repositories
+      </DropdownMenuItem>
       <DropdownMenuItem
         onClick={() => {
           onNavigated?.();
           window.location.assign("/settings/profile");
         }}
       >
-        Profile
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/orgs/new");
-        }}
-      >
-        New organization
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/settings/tokens");
-        }}
-      >
-        Personal access tokens
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        onClick={() => {
-          onNavigated?.();
-          window.location.assign("/settings/ssh-keys");
-        }}
-      >
-        SSH keys
+        Settings
       </DropdownMenuItem>
       @if (user.role === "sys-admin") {
         <DropdownMenuItem
@@ -138,11 +208,32 @@ function AccountMenu({
             window.location.assign("/admin/auth");
           }}
         >
-          Auth settings
+          Admin
         </DropdownMenuItem>
       }
+      @if (orgs.length > 0) {
+        <>
+          <DropdownMenuSeparator />
+          <div
+            className="px-2 py-1.5 text-[12px] font-medium text-muted-foreground"
+            role="presentation"
+          >
+            Organizations
+          </div>
+          @for (const org of orgs; key org.id) {
+            <DropdownMenuItem
+              onClick={() => {
+                onNavigated?.();
+                window.location.assign(`/${org.slug}`);
+              }}
+            >
+              {(org.display_name?.trim() || org.slug) as string}
+            </DropdownMenuItem>
+          }
+        </>
+      }
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={() => void logout()}>Log out</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
 }
@@ -163,12 +254,12 @@ function AccountActions({
         aria-label="Account"
         aria-busy="true"
         className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
+          "flex h-11 shrink-0 items-center justify-end gap-1",
           className,
         )}
       >
-        <Skeleton className="h-11 w-[4.75rem]" />
-        <Skeleton className="h-11 w-[4.75rem]" />
+        <Skeleton className="h-11 w-11" />
+        <Skeleton className="h-11 w-24" />
       </div>
     );
   }
@@ -180,7 +271,7 @@ function AccountActions({
         role="group"
         aria-label="Account"
         className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
+          "flex h-11 shrink-0 items-center justify-end gap-1",
           className,
         )}
       />
@@ -193,10 +284,11 @@ function AccountActions({
         role="group"
         aria-label="Account"
         className={cn(
-          "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
+          "flex h-11 shrink-0 items-center justify-end gap-1",
           className,
         )}
       >
+        <CreateMenu onNavigated={onNavigated} />
         <AccountMenu user={user} onNavigated={onNavigated} />
       </div>
     );
@@ -207,7 +299,7 @@ function AccountActions({
       role="group"
       aria-label="Account"
       className={cn(
-        "flex h-11 w-[11.5rem] shrink-0 items-center justify-end gap-2",
+        "flex h-11 shrink-0 items-center justify-end gap-2",
         className,
       )}
     >
@@ -240,6 +332,12 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { pending, user, needsSetup, allowSignup } = useChromeAccountState();
+  const repo = useRepoContext();
+  const orgsQ = useQuery({
+    ...orgListMineQueryOptions(),
+    enabled: !!user,
+  });
+  const orgs = orgsQ.data ?? [];
 
   async function logout() {
     try {
@@ -302,12 +400,11 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               >
                 Home
               </button>
-              <a
-                href="/settings/profile"
-                className={mobileNavItemClass}
-                onClick={onClose}
-              >
-                Profile
+              <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                Create
+              </p>
+              <a href="/new" className={mobileNavItemClass} onClick={onClose}>
+                New repository
               </a>
               <a
                 href="/orgs/new"
@@ -316,22 +413,64 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               >
                 New organization
               </a>
-              @if (user.role === "sys-admin") {
+              @if (repo) {
                 <>
                   <a
-                    href="/admin/auth"
+                    href={`/${repo.owner}/${repo.repo}/issues/new`}
                     className={mobileNavItemClass}
                     onClick={onClose}
                   >
-                    Auth settings
+                    New issue
                   </a>
                   <a
-                    href="/admin/lfs"
+                    href={`/${repo.owner}/${repo.repo}/releases/new`}
                     className={mobileNavItemClass}
                     onClick={onClose}
                   >
-                    LFS quotas
+                    New release
                   </a>
+                </>
+              }
+              <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                Account
+              </p>
+              <a
+                href="/"
+                className={mobileNavItemClass}
+                onClick={onClose}
+              >
+                Your repositories
+              </a>
+              <a
+                href="/settings/profile"
+                className={mobileNavItemClass}
+                onClick={onClose}
+              >
+                Settings
+              </a>
+              @if (user.role === "sys-admin") {
+                <a
+                  href="/admin/auth"
+                  className={mobileNavItemClass}
+                  onClick={onClose}
+                >
+                  Admin
+                </a>
+              }
+              @if (orgs.length > 0) {
+                <>
+                  <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
+                    Organizations
+                  </p>
+                  @for (const org of orgs; key org.id) {
+                    <a
+                      href={`/${org.slug}`}
+                      className={mobileNavItemClass}
+                      onClick={onClose}
+                    >
+                      {(org.display_name?.trim() || org.slug) as string}
+                    </a>
+                  }
                 </>
               }
               <Link
@@ -356,7 +495,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                   void logout();
                 }}
               >
-                Log out
+                Sign out
               </button>
             </div>
           </div>
