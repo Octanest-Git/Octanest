@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Code / tree / blob browse (D-15, D-17, D-25 / GIT-05 UI).
+ * Layout chrome mount (D-QH-01).
  */
 
 const getMock = vi.fn();
@@ -82,6 +83,23 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+describe("/$owner/$repo layout chrome (D-QH-01)", () => {
+  it(
+    "ok-status layout mounts RepoChrome above Outlet from useRepoStore",
+    async () => {
+      const src = await import("./$owner.$repo.tsrx?raw").then((m) =>
+        String((m as { default: string }).default),
+      );
+      expect(src).toMatch(/RepoChrome/);
+      expect(src).toMatch(/useRepoStore/);
+      expect(src).toMatch(/repoChromeActiveFromPath/);
+      expect(src).toMatch(/Outlet/);
+      expect(src).toMatch(/RepoLayoutChrome/);
+    },
+    30_000,
+  );
+});
 
 describe("/{owner}/{repo} Code home (D-15, D-25)", () => {
   it(
