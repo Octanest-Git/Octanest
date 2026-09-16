@@ -171,14 +171,14 @@ jobs:
   # D-CI-01…04: Compose bring-up health (build + / + /health + system.db_probe).
   # Reuses make smoke* → scripts/compose-smoke.sh. Kept separate from smoke-protocol (D-CI-05).
   # Image proof = compose up --build inside smoke (D-CI-06). No production/Railway secrets.
-  # Matrix legs: postgres (D-CI-01) + sqlite (D-CI-02); mysql added in D-CI-03.
+  # Matrix legs: postgres (D-CI-01) + sqlite (D-CI-02) + mysql (D-CI-03).
   compose-smoke:
     name: compose-smoke (${{ matrix.dialect }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        dialect: [postgres, sqlite]
+        dialect: [postgres, sqlite, mysql]
     steps:
       - uses: actions/checkout@v4
       - name: free disk for compose image builds
