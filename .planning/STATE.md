@@ -1,9 +1,9 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Branch Protection
-current_plan: 9
-status: phase_complete
+current_phase_name: "Compose CI & Cloud Deploy"
+current_plan: 2
+status: executing
 stopped_at: Completed 22-01-PLAN.md
 last_updated: "2026-09-16T18:21:04.724Z"
 last_activity: 2026-09-16
@@ -15,7 +15,7 @@ progress:
   total_plans: 198
   completed_plans: 196
 milestone_name: milestone
-current_phase: 13
+current_phase: 22
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 13
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/phase-13-branch-protection-c82f` — **Phase 13** Branch Protection executed (9/9 plans); ready for verify/ship to integrate
+**Current focus:** `cursor/phase-22-compose-ci-deploy-c82f` — **Phase 22** Compose CI & Cloud Deploy (1/3 plans complete)
 
 ## Current Position
 
-Phase: **13** — Branch Protection **complete** (ORG-05, ORG-06, PR-08)
-Current Plan: 9/9
-Total Plans in Phase: 9
-Status: All Phase 13 plans SUMMARY'd. Next: `/gsd-verify-work` / ship PR #13 onto integrate
-Last activity: 2026-09-16 — Executed 13-00…13-08 on cursor/phase-13-branch-protection-c82f
+Phase: **22** — Compose CI & Cloud Deploy
+Current Plan: 2 of 3
+Total Plans in Phase: 3
+Status: Plan 22-01 complete; starting 22-02 (blocked on package legitimacy checkpoint)
+Last activity: 2026-09-16 — Completed 22-01 compose-smoke CI matrix
 
-See also: `.planning/phases/13-branch-protection/13-CONTEXT.md` · `.planning/phases/12-pull-requests/`
+See also: `.planning/phases/22-compose-ci-deploy/22-CONTEXT.md`
 
 ## Performance Metrics
 
