@@ -119,11 +119,12 @@ describe("repo search route (GIT-18 / D-SRCH-02 / D-SRCH-15)", () => {
       String((m as { default: string }).default),
     );
     expect(entry).toMatch(/\/search/);
-    // Header GlobalSearch discovers public repos via /explore (SOC-03), not a disabled stub.
+    // Header GlobalSearch is a multi-entity omnibar that lands on /search (not public-only /explore).
     const global = await import("../components/global-search.tsrx?raw").then((m) =>
       String((m as { default: string }).default),
     );
-    expect(global).toMatch(/\/explore/);
-    expect(global).toMatch(/goExplore/);
+    expect(global).toMatch(/\/search/);
+    expect(global).toMatch(/fetchSearchSuggestions|global-search-suggest/);
+    expect(global).not.toMatch(/goExplore/);
   });
 });

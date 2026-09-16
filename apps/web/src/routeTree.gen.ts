@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as NewRouteImport } from './routes/new'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StatusRouteImport } from './routes/status'
@@ -31,6 +32,7 @@ import { Route as AdminPackagesRouteImport } from './routes/admin/packages'
 import { Route as AdminRunnersRouteImport } from './routes/admin/runners'
 import { Route as InvitesTokenRouteImport } from './routes/invites.$token'
 import { Route as OrgsNewRouteImport } from './routes/orgs.new'
+import { Route as SettingsGeneralRouteImport } from './routes/settings/general'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsSshKeysRouteImport } from './routes/settings/ssh-keys'
 import { Route as SettingsTokensRouteImport } from './routes/settings/tokens'
@@ -47,8 +49,10 @@ import { Route as OwnerRepoReleasesRouteImport } from './routes/$owner.$repo.rel
 import { Route as OwnerRepoSearchRouteImport } from './routes/$owner.$repo.search'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
+import { Route as OwnerSettingsIndexRouteImport } from './routes/$owner.settings.index'
 import { Route as OwnerSettingsLabelsRouteImport } from './routes/$owner.settings.labels'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner.settings.members'
+import { Route as SettingsTokensIndexRouteImport } from './routes/settings/tokens.index'
 import { Route as SettingsTokensNewRouteImport } from './routes/settings/tokens.new'
 import { Route as OwnerRepoActionsIndexRouteImport } from './routes/$owner.$repo.actions.index'
 import { Route as OwnerRepoActionsRunRouteImport } from './routes/$owner.$repo.actions.$run'
@@ -69,6 +73,7 @@ import { Route as OwnerRepoReleasesTagRouteImport } from './routes/$owner.$repo.
 import { Route as OwnerRepoReleasesNewRouteImport } from './routes/$owner.$repo.releases.new'
 import { Route as OwnerRepoSettingsActionsRouteImport } from './routes/$owner.$repo.settings.actions'
 import { Route as OwnerRepoTreeSplatRouteImport } from './routes/$owner.$repo.tree.$'
+import { Route as SettingsTokensNewIndexRouteImport } from './routes/settings/tokens.new.index'
 import { Route as SettingsTokensNewFineGrainedRouteImport } from './routes/settings/tokens.new.fine-grained'
 
 const IndexRoute = IndexRouteImport.update({
@@ -109,6 +114,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SetupRoute = SetupRouteImport.update({
@@ -179,6 +189,11 @@ const InvitesTokenRoute = InvitesTokenRouteImport.update({
 const OrgsNewRoute = OrgsNewRouteImport.update({
   id: '/orgs/new',
   path: '/orgs/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsGeneralRoute = SettingsGeneralRouteImport.update({
+  id: '/settings/general',
+  path: '/settings/general',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
@@ -261,6 +276,11 @@ const OwnerRepoTagsRoute = OwnerRepoTagsRouteImport.update({
   path: '/tags',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerSettingsIndexRoute = OwnerSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerSettingsRoute,
+} as any)
 const OwnerSettingsLabelsRoute = OwnerSettingsLabelsRouteImport.update({
   id: '/labels',
   path: '/labels',
@@ -270,6 +290,11 @@ const OwnerSettingsMembersRoute = OwnerSettingsMembersRouteImport.update({
   id: '/members',
   path: '/members',
   getParentRoute: () => OwnerSettingsRoute,
+} as any)
+const SettingsTokensIndexRoute = SettingsTokensIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsTokensRoute,
 } as any)
 const SettingsTokensNewRoute = SettingsTokensNewRouteImport.update({
   id: '/new',
@@ -372,6 +397,11 @@ const OwnerRepoTreeSplatRoute = OwnerRepoTreeSplatRouteImport.update({
   path: '/tree/$',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const SettingsTokensNewIndexRoute = SettingsTokensNewIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsTokensNewRoute,
+} as any)
 const SettingsTokensNewFineGrainedRoute =
   SettingsTokensNewFineGrainedRouteImport.update({
     id: '/fine-grained',
@@ -388,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/search': typeof SearchRoute
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
@@ -401,6 +432,7 @@ export interface FileRoutesByFullPath {
   '/admin/runners': typeof AdminRunnersRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
+  '/settings/general': typeof SettingsGeneralRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -421,6 +453,8 @@ export interface FileRoutesByFullPath {
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/settings/': typeof OwnerSettingsIndexRoute
+  '/settings/tokens/': typeof SettingsTokensIndexRoute
   '/$owner/$repo/actions/$run': typeof OwnerRepoActionsRunRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -441,6 +475,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/issues/': typeof OwnerRepoIssuesIndexRoute
   '/$owner/$repo/pulls/': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases/': typeof OwnerRepoReleasesIndexRoute
+  '/settings/tokens/new/': typeof SettingsTokensNewIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -450,20 +485,20 @@ export interface FileRoutesByTo {
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/search': typeof SearchRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
   '/verify': typeof VerifyRoute
   '/$owner/packages': typeof OwnerPackagesRoute
-  '/$owner/settings': typeof OwnerSettingsRouteWithChildren
   '/admin/auth': typeof AdminAuthRoute
   '/admin/lfs': typeof AdminLfsRoute
   '/admin/packages': typeof AdminPackagesRoute
   '/admin/runners': typeof AdminRunnersRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
+  '/settings/general': typeof SettingsGeneralRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
-  '/settings/tokens': typeof SettingsTokensRouteWithChildren
   '/setup/credentials': typeof SetupCredentialsRoute
   '/$owner': typeof OwnerIndexRoute
   '/setup': typeof SetupIndexRoute
@@ -475,8 +510,9 @@ export interface FileRoutesByTo {
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
-  '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo': typeof OwnerRepoIndexRoute
+  '/$owner/settings': typeof OwnerSettingsIndexRoute
+  '/settings/tokens': typeof SettingsTokensIndexRoute
   '/$owner/$repo/actions/$run': typeof OwnerRepoActionsRunRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -497,6 +533,7 @@ export interface FileRoutesByTo {
   '/$owner/$repo/issues': typeof OwnerRepoIssuesIndexRoute
   '/$owner/$repo/pulls': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases': typeof OwnerRepoReleasesIndexRoute
+  '/settings/tokens/new': typeof SettingsTokensNewIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -508,6 +545,7 @@ export interface FileRoutesById {
   '/new': typeof NewRoute
   '/notifications': typeof NotificationsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/search': typeof SearchRoute
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
@@ -521,6 +559,7 @@ export interface FileRoutesById {
   '/admin/runners': typeof AdminRunnersRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
+  '/settings/general': typeof SettingsGeneralRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/ssh-keys': typeof SettingsSshKeysRoute
   '/settings/tokens': typeof SettingsTokensRouteWithChildren
@@ -541,6 +580,8 @@ export interface FileRoutesById {
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
+  '/$owner/settings/': typeof OwnerSettingsIndexRoute
+  '/settings/tokens/': typeof SettingsTokensIndexRoute
   '/$owner/$repo/actions/$run': typeof OwnerRepoActionsRunRoute
   '/$owner/$repo/blame/$': typeof OwnerRepoBlameSplatRoute
   '/$owner/$repo/blob/$': typeof OwnerRepoBlobSplatRoute
@@ -561,6 +602,7 @@ export interface FileRoutesById {
   '/$owner/$repo/issues/': typeof OwnerRepoIssuesIndexRoute
   '/$owner/$repo/pulls/': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases/': typeof OwnerRepoReleasesIndexRoute
+  '/settings/tokens/new/': typeof SettingsTokensNewIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -573,6 +615,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/notifications'
     | '/reset-password'
+    | '/search'
     | '/setup'
     | '/signup'
     | '/status'
@@ -586,6 +629,7 @@ export interface FileRouteTypes {
     | '/admin/runners'
     | '/invites/$token'
     | '/orgs/new'
+    | '/settings/general'
     | '/settings/profile'
     | '/settings/ssh-keys'
     | '/settings/tokens'
@@ -606,6 +650,8 @@ export interface FileRouteTypes {
     | '/$owner/settings/members'
     | '/settings/tokens/new'
     | '/$owner/$repo/'
+    | '/$owner/settings/'
+    | '/settings/tokens/'
     | '/$owner/$repo/actions/$run'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -626,6 +672,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/'
     | '/$owner/$repo/pulls/'
     | '/$owner/$repo/releases/'
+    | '/settings/tokens/new/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -635,20 +682,20 @@ export interface FileRouteTypes {
     | '/new'
     | '/notifications'
     | '/reset-password'
+    | '/search'
     | '/signup'
     | '/status'
     | '/verify'
     | '/$owner/packages'
-    | '/$owner/settings'
     | '/admin/auth'
     | '/admin/lfs'
     | '/admin/packages'
     | '/admin/runners'
     | '/invites/$token'
     | '/orgs/new'
+    | '/settings/general'
     | '/settings/profile'
     | '/settings/ssh-keys'
-    | '/settings/tokens'
     | '/setup/credentials'
     | '/$owner'
     | '/setup'
@@ -660,8 +707,9 @@ export interface FileRouteTypes {
     | '/$owner/$repo/tags'
     | '/$owner/settings/labels'
     | '/$owner/settings/members'
-    | '/settings/tokens/new'
     | '/$owner/$repo'
+    | '/$owner/settings'
+    | '/settings/tokens'
     | '/$owner/$repo/actions/$run'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -682,6 +730,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues'
     | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
+    | '/settings/tokens/new'
   id:
     | '__root__'
     | '/'
@@ -692,6 +741,7 @@ export interface FileRouteTypes {
     | '/new'
     | '/notifications'
     | '/reset-password'
+    | '/search'
     | '/setup'
     | '/signup'
     | '/status'
@@ -705,6 +755,7 @@ export interface FileRouteTypes {
     | '/admin/runners'
     | '/invites/$token'
     | '/orgs/new'
+    | '/settings/general'
     | '/settings/profile'
     | '/settings/ssh-keys'
     | '/settings/tokens'
@@ -725,6 +776,8 @@ export interface FileRouteTypes {
     | '/$owner/settings/members'
     | '/settings/tokens/new'
     | '/$owner/$repo/'
+    | '/$owner/settings/'
+    | '/settings/tokens/'
     | '/$owner/$repo/actions/$run'
     | '/$owner/$repo/blame/$'
     | '/$owner/$repo/blob/$'
@@ -745,6 +798,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/'
     | '/$owner/$repo/pulls/'
     | '/$owner/$repo/releases/'
+    | '/settings/tokens/new/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -756,6 +810,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   NotificationsRoute: typeof NotificationsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SearchRoute: typeof SearchRoute
   SetupRoute: typeof SetupRouteWithChildren
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
@@ -766,6 +821,7 @@ export interface RootRouteChildren {
   AdminRunnersRoute: typeof AdminRunnersRoute
   InvitesTokenRoute: typeof InvitesTokenRoute
   OrgsNewRoute: typeof OrgsNewRoute
+  SettingsGeneralRoute: typeof SettingsGeneralRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsSshKeysRoute: typeof SettingsSshKeysRoute
   SettingsTokensRoute: typeof SettingsTokensRouteWithChildren
@@ -827,6 +883,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/setup': {
@@ -925,6 +988,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/orgs/new'
       fullPath: '/orgs/new'
       preLoaderRoute: typeof OrgsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/general': {
+      id: '/settings/general'
+      path: '/settings/general'
+      fullPath: '/settings/general'
+      preLoaderRoute: typeof SettingsGeneralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/profile': {
@@ -1039,6 +1109,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoTagsRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/settings/': {
+      id: '/$owner/settings/'
+      path: '/'
+      fullPath: '/$owner/settings/'
+      preLoaderRoute: typeof OwnerSettingsIndexRouteImport
+      parentRoute: typeof OwnerSettingsRoute
+    }
     '/$owner/settings/labels': {
       id: '/$owner/settings/labels'
       path: '/labels'
@@ -1052,6 +1129,13 @@ declare module '@octanejs/tanstack-router' {
       fullPath: '/$owner/settings/members'
       preLoaderRoute: typeof OwnerSettingsMembersRouteImport
       parentRoute: typeof OwnerSettingsRoute
+    }
+    '/settings/tokens/': {
+      id: '/settings/tokens/'
+      path: '/'
+      fullPath: '/settings/tokens/'
+      preLoaderRoute: typeof SettingsTokensIndexRouteImport
+      parentRoute: typeof SettingsTokensRoute
     }
     '/settings/tokens/new': {
       id: '/settings/tokens/new'
@@ -1193,6 +1277,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoTreeSplatRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/settings/tokens/new/': {
+      id: '/settings/tokens/new/'
+      path: '/'
+      fullPath: '/settings/tokens/new/'
+      preLoaderRoute: typeof SettingsTokensNewIndexRouteImport
+      parentRoute: typeof SettingsTokensNewRoute
+    }
     '/settings/tokens/new/fine-grained': {
       id: '/settings/tokens/new/fine-grained'
       path: '/fine-grained'
@@ -1323,11 +1414,13 @@ const OwnerRepoRouteWithChildren = OwnerRepoRoute._addFileChildren(
 interface OwnerSettingsRouteChildren {
   OwnerSettingsLabelsRoute: typeof OwnerSettingsLabelsRoute
   OwnerSettingsMembersRoute: typeof OwnerSettingsMembersRoute
+  OwnerSettingsIndexRoute: typeof OwnerSettingsIndexRoute
 }
 
 const OwnerSettingsRouteChildren: OwnerSettingsRouteChildren = {
   OwnerSettingsLabelsRoute: OwnerSettingsLabelsRoute,
   OwnerSettingsMembersRoute: OwnerSettingsMembersRoute,
+  OwnerSettingsIndexRoute: OwnerSettingsIndexRoute,
 }
 
 const OwnerSettingsRouteWithChildren = OwnerSettingsRoute._addFileChildren(
@@ -1364,10 +1457,12 @@ const SetupRouteWithChildren = SetupRoute._addFileChildren(SetupRouteChildren)
 
 interface SettingsTokensNewRouteChildren {
   SettingsTokensNewFineGrainedRoute: typeof SettingsTokensNewFineGrainedRoute
+  SettingsTokensNewIndexRoute: typeof SettingsTokensNewIndexRoute
 }
 
 const SettingsTokensNewRouteChildren: SettingsTokensNewRouteChildren = {
   SettingsTokensNewFineGrainedRoute: SettingsTokensNewFineGrainedRoute,
+  SettingsTokensNewIndexRoute: SettingsTokensNewIndexRoute,
 }
 
 const SettingsTokensNewRouteWithChildren =
@@ -1375,10 +1470,12 @@ const SettingsTokensNewRouteWithChildren =
 
 interface SettingsTokensRouteChildren {
   SettingsTokensNewRoute: typeof SettingsTokensNewRouteWithChildren
+  SettingsTokensIndexRoute: typeof SettingsTokensIndexRoute
 }
 
 const SettingsTokensRouteChildren: SettingsTokensRouteChildren = {
   SettingsTokensNewRoute: SettingsTokensNewRouteWithChildren,
+  SettingsTokensIndexRoute: SettingsTokensIndexRoute,
 }
 
 const SettingsTokensRouteWithChildren = SettingsTokensRoute._addFileChildren(
@@ -1394,6 +1491,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewRoute: NewRoute,
   NotificationsRoute: NotificationsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SearchRoute: SearchRoute,
   SetupRoute: SetupRouteWithChildren,
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
@@ -1404,6 +1502,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRunnersRoute: AdminRunnersRoute,
   InvitesTokenRoute: InvitesTokenRoute,
   OrgsNewRoute: OrgsNewRoute,
+  SettingsGeneralRoute: SettingsGeneralRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsSshKeysRoute: SettingsSshKeysRoute,
   SettingsTokensRoute: SettingsTokensRouteWithChildren,

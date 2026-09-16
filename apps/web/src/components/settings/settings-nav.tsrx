@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils";
 
-export type SettingsNavActive = "profile" | "tokens" | "ssh-keys";
+export type SettingsNavActive = "general" | "profile" | "tokens" | "ssh-keys";
 
 type SettingsNavProps = {
   active: SettingsNavActive;
 };
 
 const LINKS: { id: SettingsNavActive; href: string; label: string }[] = [
+  { id: "general", href: "/settings/general", label: "General" },
   { id: "profile", href: "/settings/profile", label: "Profile" },
   {
     id: "tokens",
@@ -25,7 +26,7 @@ function linkClass(isActive: boolean): string {
   );
 }
 
-/** Account settings sidebar: Profile | Personal access tokens | SSH keys. */
+/** Account settings sidebar: General | Profile | Personal access tokens | SSH keys. */
 export function SettingsNav({ active }: SettingsNavProps) @{
   <nav className="flex flex-col gap-1" aria-label="Account settings">
     <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">

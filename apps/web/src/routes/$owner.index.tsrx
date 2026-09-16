@@ -94,6 +94,12 @@ export function OrgOverviewPage() @{
             >
               Members
             </a>
+            <a
+              href={`/${slug}/settings/labels`}
+              className={cn(buttonVariants({ variant: "outline" }), "h-11")}
+            >
+              Labels
+            </a>
           </div>;
         }
       </div>

@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { PullReviewPublic } from "@octanest/api-client";
 import { useState } from "octane";
+import { MarkdownBody } from "@/components/repo/markdown-body";
+import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
@@ -143,7 +145,12 @@ export function PullReviews(props: PullReviewsProps) @{
                 }
               </div>
               @if (r.body) {
-                <p className="mt-1 whitespace-pre-wrap">{r.body as string}</p>;
+                <MarkdownBody
+                  markdown={r.body}
+                  owner={props.owner}
+                  repo={props.repoName}
+                  className="mt-2"
+                />;
               }
             </li>;
           }
@@ -153,11 +160,14 @@ export function PullReviews(props: PullReviewsProps) @{
 
     @if (props.canWrite) {
       <div className="space-y-2 rounded-md border border-border p-3">
-        <textarea
-          className="min-h-20 w-full rounded-md border border-border bg-background px-2 py-1 text-sm"
+        <MarkdownWritePreview
           value={body}
-          placeholder="Review comment (optional)"
-          onInput={(e) => setBody((e.currentTarget as HTMLTextAreaElement).value)}
+          onValueChange={setBody}
+          placeholder="Review comment (markdown supported)"
+          rows={4}
+          disabled={busy}
+          owner={props.owner}
+          repo={props.repoName}
         />
         <div className="flex flex-wrap gap-2">
           @if (!props.isAuthor) {

@@ -106,5 +106,9 @@ describe("/settings/profile Wave 0 contracts (RESEARCH P1)", () => {
       expect(screen.getByRole("heading", { name: "Profile" })).toBeInTheDocument();
     });
     expect(screen.getByDisplayValue("profileuser")).toBeInTheDocument();
+    // Profile is profile-only — theme / default branch / logout live on General.
+    expect(screen.queryByLabelText("Default branch name")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("listbox", { name: "Theme" })).not.toBeInTheDocument();
   });
 });

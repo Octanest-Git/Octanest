@@ -62,10 +62,10 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
       : "pb-2 text-[14px] font-normal text-muted-foreground no-underline hover:text-foreground";
   }
 
-  <div className="mb-6">
-    <div className="flex flex-wrap items-center gap-3">
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        <a href="/" className="text-primary no-underline hover:underline">
+  <div className="mb-8">
+    <div className="mb-4 flex flex-wrap items-center gap-3">
+      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold tracking-tight leading-[1.2] text-foreground">
+        <a href={"/" + owner} className="text-primary no-underline hover:underline">
           {owner as string}
         </a>
         <span className="mx-1 text-muted-foreground">/</span>
@@ -82,8 +82,8 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         @if (signedIn) {
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="secondary"
+            className="h-8 gap-1.5 px-2.5 text-[13px]"
             disabled={starBusy}
             aria-pressed={starred}
             onClick={() => void toggleStar()}

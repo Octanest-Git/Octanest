@@ -1,6 +1,7 @@
 import { Check, Copy, FileCode2 } from "@octanejs/lucide";
 import { useEffect, useEffectEvent, useState } from "octane";
 import type { RepoBlobResponse } from "@octanest/api-client";
+import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { buttonVariants } from "@/components/ui/button";
 import {
   countCodeLines,
@@ -9,6 +10,7 @@ import {
   stripTrailingNewline,
   type HighlightTheme,
 } from "@/lib/highlight";
+import { isMarkdownPath } from "@/lib/markdown";
 import {
   blameHref,
   formatFileSize,
@@ -30,6 +32,8 @@ type BlobViewerProps = {
   highlightedHtml?: string | null;
   /** Theme used for `highlightedHtml` — skip client re-highlight when it matches. */
   highlightTheme?: HighlightTheme;
+  /** SSR GFM HTML for markdown paths (Preview tab). */
+  markdownHtml?: string | null;
 };
 
 function fileBaseName(path: string): string {
@@ -64,9 +68,13 @@ export function BlobViewer({
   blob,
   highlightedHtml = null,
   highlightTheme = null,
+  markdownHtml = null,
 }: BlobViewerProps) @{
   const text = !blob.is_binary && blob.encoding === "utf-8" && blob.content ? blob.content : "";
   const lfsPointer = text ? parseLfsPointer(text) : null;
+  const isMd =
+    !!markdownHtml || (!blob.is_binary && blob.encoding === "utf-8" && isMarkdownPath(blob.path));
+  const [view, setView] = useState<"preview" | "code">(() => (isMd ? "preview" : "code"));
   const [hl, setHl] = useState<string | null>(
     () => highlightedHtml ?? (text ? plainCodeHtml(text) : null),
   );
@@ -226,6 +234,42 @@ export function BlobViewer({
         }
       </div>
       <div className="flex flex-wrap items-center gap-1">
+        @if (isMd && markdownHtml) {
+          <div
+            className="mr-1 flex rounded-md border border-border p-0.5"
+            role="group"
+            aria-label="Markdown view"
+          >
+            <button
+              type="button"
+              className={cn(
+                "h-7 rounded px-2 text-[12px] font-medium",
+                view === "preview"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={view === "preview"}
+              onClick={() => setView("preview")}
+              data-testid="blob-md-preview"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "h-7 rounded px-2 text-[12px] font-medium",
+                view === "code"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={view === "code"}
+              onClick={() => setView("code")}
+              data-testid="blob-md-code"
+            >
+              Code
+            </button>
+          </div>;
+        }
         @if (lfsPointer) {
           <button
             type="button"
@@ -312,36 +356,42 @@ export function BlobViewer({
         </div>;
       } @else {
         @if (!blob.truncated) {
-          <div className="flex overflow-x-auto">
-            <div
-              className="sticky left-0 z-10 shrink-0 select-none border-r border-border bg-muted/50 py-3 font-mono text-[12px] leading-5 text-muted-foreground"
-              aria-label="Line numbers"
-            >
-              @for (const n of lineNums; key n) {
-                const wash =
-                  range && n >= range.start && n <= range.end
-                    ? "bg-primary/15 text-foreground"
-                    : "";
-                <button
-                  type="button"
-                  id={`L${n}` as string}
-                  className={
-                    `block h-5 min-w-[3.25rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string
-                  }
-                  onClick={() => goLine(n)}
-                  aria-label={`Line ${n}`}
-                >
-                  {String(n) as string}
-                </button>;
-              }
-            </div>
-            <div
-              className="blob-code min-w-0 flex-1 overflow-x-auto py-3 font-mono text-[12px] leading-5 [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-0 [&_pre]:leading-5 [&_code]:block [&_code]:font-mono [&_code]:leading-5 [&_code]:px-3"
-              dangerouslySetInnerHTML={{
-                __html: (hl ?? plainCodeHtml(text)) as string,
-              }}
-            />
-          </div>;
+          @if (isMd && markdownHtml && view === "preview") {
+            <div className="px-6 py-6" data-testid="blob-markdown-preview">
+              <MarkdownHtml html={markdownHtml as string} />
+            </div>;
+          } @else {
+            <div className="flex overflow-x-auto">
+              <div
+                className="sticky left-0 z-10 shrink-0 select-none border-r border-border bg-muted/50 py-3 font-mono text-[12px] leading-5 text-muted-foreground"
+                aria-label="Line numbers"
+              >
+                @for (const n of lineNums; key n) {
+                  const wash =
+                    range && n >= range.start && n <= range.end
+                      ? "bg-primary/15 text-foreground"
+                      : "";
+                  <button
+                    type="button"
+                    id={`L${n}` as string}
+                    className={
+                      `block h-5 min-w-[3.25rem] px-2 text-right leading-5 hover:text-foreground ${wash}` as string
+                    }
+                    onClick={() => goLine(n)}
+                    aria-label={`Line ${n}`}
+                  >
+                    {String(n) as string}
+                  </button>;
+                }
+              </div>
+              <div
+                className="blob-code min-w-0 flex-1 overflow-x-auto py-3 font-mono text-[12px] leading-5 [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-0 [&_pre]:leading-5 [&_code]:block [&_code]:font-mono [&_code]:leading-5 [&_code]:px-3"
+                dangerouslySetInnerHTML={{
+                  __html: (hl ?? plainCodeHtml(text)) as string,
+                }}
+              />
+            </div>;
+          }
         }
       }
     }

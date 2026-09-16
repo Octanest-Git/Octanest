@@ -139,8 +139,10 @@ export function ActionsSettingsPanel(props: {
       Actions
     </h2>
     <p className="text-[14px] text-muted-foreground">
-      Run workflows on registered self-hosted runners. Octanest does not sell managed CI minutes —
-      you bring your own runners (ACT-07). Secret values are write-only after create.
+      Workflows under{" "}
+      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px]">.github/workflows/</code>{" "}
+      run on registered self-hosted runners. Secret values are write-only after create. Instance
+      admins manage runners under Admin → Actions runners.
     </p>
 
     @if (enabledQ.isPending) {

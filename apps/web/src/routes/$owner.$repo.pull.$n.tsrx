@@ -1,5 +1,6 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import type { PullPublic, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { PullCommits } from "@/components/repo/pull-commits";
 import { PullConversation } from "@/components/repo/pull-conversation";
@@ -8,10 +9,35 @@ import { PullMergePanel } from "@/components/repo/pull-merge-panel";
 import { PullReviews } from "@/components/repo/pull-reviews";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
-import { fetchRepoGet } from "@/lib/ssr-repo";
+import { fetchPullGet, fetchRepoGet } from "@/lib/ssr-repo";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+
+type PullDetailLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; repo: RepoPublic; pull: PullPublic };
+
+async function loadPullDetail(
+  owner: string,
+  repoName: string,
+  number: number,
+): Promise<PullDetailLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return { kind: "error", message: got.error.message || NETWORK_ERROR };
+  }
+  const pull = await fetchPullGet({ data: { owner, name: repoName, number } });
+  if (!pull.ok) {
+    if (pull.error.code === "repo.not_found" || pull.error.code === "pull.not_found") {
+      return { kind: "not_found" };
+    }
+    return { kind: "error", message: pull.error.message || NETWORK_ERROR };
+  }
+  return { kind: "ready", repo: got.data, pull: pull.data };
+}
 
 export const Route = createFileRoute("/$owner/$repo/pull/$n")({
   component: PullDetailPage,
@@ -22,23 +48,15 @@ export const Route = createFileRoute("/$owner/$repo/pull/$n")({
       },
     ],
   }),
-  loader: async ({ params }) => {
+  loader: async ({ params }): Promise<PullDetailLoaderData> => {
     const owner = String((params as { owner?: string }).owner ?? "");
     const repoName = String((params as { repo?: string }).repo ?? "");
     const n = Number((params as { n?: string }).n ?? 0);
-    const got = await fetchRepoGet({ data: { owner, name: repoName } });
-    if (!got.ok) {
-      if (got.error.code === "repo.not_found") return { kind: "not_found" as const };
-      return { kind: "error" as const, message: got.error.message || NETWORK_ERROR };
+    try {
+      return await loadPullDetail(owner, repoName, n);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
     }
-    const pull = await apiClient.pull.get({ owner, name: repoName, number: n });
-    if (!pull.ok) {
-      if (pull.error.code === "repo.not_found" || pull.error.code === "pull.not_found") {
-        return { kind: "not_found" as const };
-      }
-      return { kind: "error" as const, message: pull.error.message || NETWORK_ERROR };
-    }
-    return { kind: "ready" as const, repo: got.data, pull: pull.data };
   },
 });
 
@@ -56,6 +74,8 @@ export function PullDetailPage() @{
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const loader = Route.useLoaderData() as PullDetailLoaderData;
+
   const pullQ = useQuery({
     queryKey: ["pull", "get", owner, repoName, number] as const,
     queryFn: async () => {
@@ -64,22 +84,8 @@ export function PullDetailPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName && number > 0,
-    initialData: (() => {
-      const d = Route.useLoaderData() as
-        | { kind: "ready"; pull: import("@octanest/api-client").PullPublic }
-        | { kind: string };
-      return d.kind === "ready" ? d.pull : undefined;
-    })(),
+    initialData: loader.kind === "ready" ? loader.pull : undefined,
   });
-
-  const loader = Route.useLoaderData() as
-    | { kind: "not_found" }
-    | { kind: "error"; message: string }
-    | {
-        kind: "ready";
-        repo: { can_write?: boolean };
-        pull: import("@octanest/api-client").PullPublic;
-      };
 
   const account = useChromeAccountState();
   const pull = pullQ.data;

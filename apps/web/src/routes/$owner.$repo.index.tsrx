@@ -75,7 +75,10 @@ async function loadCodeHome(
     ) {
       readme = {
         name: readmeName,
-        html: await renderGfm(blobRes.data.content),
+        html: await renderGfm(blobRes.data.content, {
+          owner,
+          repo: repoName,
+        }),
       };
     }
   }

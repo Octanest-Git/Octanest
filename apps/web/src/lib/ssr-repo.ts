@@ -223,6 +223,42 @@ export const fetchIssueGet = createServerFn({ method: "GET" })
     });
   });
 
+/** SSR: `pull.get` with Cookie forward. */
+export const fetchPullGet = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { number: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    number: typeof data?.number === "number" ? data.number : Number(data?.number),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.pull.get({
+      owner: data.owner,
+      name: data.name,
+      number: data.number,
+    });
+  });
+
+/** SSR: `pull.list` with Cookie forward. */
+export const fetchPullList = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { state?: string | null; offset?: number; limit?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    state: data?.state == null || data.state === "" ? null : String(data.state),
+    offset: typeof data?.offset === "number" ? data.offset : Number(data?.offset ?? 0),
+    limit: typeof data?.limit === "number" ? data.limit : Number(data?.limit ?? 25),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.pull.list({
+      owner: data.owner,
+      name: data.name,
+      state: data.state,
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
 /** SSR: `release.list` with Cookie forward. */
 export const fetchReleaseList = createServerFn({ method: "GET" })
   .validator(ownerNameValidator)

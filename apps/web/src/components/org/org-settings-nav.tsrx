@@ -1,41 +1,41 @@
-function navClass(isActive: boolean): string {
-  return isActive
-    ? "border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground no-underline"
-    : "pb-2 text-[14px] font-normal text-muted-foreground no-underline hover:text-foreground";
+import { cn } from "@/lib/utils";
+
+export type OrgSettingsNavActive = "general" | "members" | "labels";
+
+type OrgSettingsNavProps = {
+  slug: string;
+  active: OrgSettingsNavActive;
+};
+
+function linkClass(isActive: boolean): string {
+  return cn(
+    "block rounded-md px-3 py-2 text-[14px] no-underline transition-colors",
+    isActive
+      ? "bg-muted font-semibold text-foreground"
+      : "font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+  );
 }
 
-/** Org settings secondary nav: General | Members | Labels (D-ORG-06 / D-ISS-05). */
-export function OrgSettingsNav({
-  slug,
-  active,
-}: {
-  slug: string;
-  active: "general" | "members" | "labels";
-}) @{
-  <nav
-    className="mb-6 flex flex-wrap gap-4 border-b border-border pb-0"
-    aria-label="Organization settings"
-  >
-    <a
-      href={`/${slug}/settings`}
-      className={navClass(active === "general") as string}
-      aria-current={active === "general" ? "page" : undefined}
-    >
-      General
-    </a>
-    <a
-      href={`/${slug}/settings/members`}
-      className={navClass(active === "members") as string}
-      aria-current={active === "members" ? "page" : undefined}
-    >
-      Members
-    </a>
-    <a
-      href={`/${slug}/settings/labels`}
-      className={navClass(active === "labels") as string}
-      aria-current={active === "labels" ? "page" : undefined}
-    >
-      Labels
-    </a>
+/** Org settings sidebar: General | Members | Labels. */
+export function OrgSettingsNav({ slug, active }: OrgSettingsNavProps) @{
+  const links: { id: OrgSettingsNavActive; href: string; label: string }[] = [
+    { id: "general", href: `/${slug}/settings`, label: "General" },
+    { id: "members", href: `/${slug}/settings/members`, label: "Members" },
+    { id: "labels", href: `/${slug}/settings/labels`, label: "Labels" },
+  ];
+
+  <nav className="flex flex-col gap-1" aria-label="Organization settings">
+    <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+      Organization
+    </p>
+    @for (const link of links; key link.id) {
+      <a
+        href={link.href as string}
+        className={linkClass(active === link.id) as string}
+        aria-current={active === link.id ? "page" : undefined}
+      >
+        {link.label as string}
+      </a>;
+    }
   </nav>;
 }

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@octanejs/tanstack-router";
 import { useState } from "octane";
+import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
@@ -150,10 +151,14 @@ export function NewPullPage() @{
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Body
-          <textarea
-            className="min-h-32 rounded-md border border-border bg-background px-3 py-2"
-            value={body as string}
-            onInput={(e: Event) => setBody((e.target as HTMLTextAreaElement).value)}
+          <MarkdownWritePreview
+            value={body}
+            onValueChange={setBody}
+            placeholder="Describe this pull request (markdown supported)"
+            rows={8}
+            disabled={busy}
+            owner={owner}
+            repo={repoName}
           />
         </label>
         @if (error) {

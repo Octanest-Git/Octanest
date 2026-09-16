@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { PullCommentPublic } from "@octanest/api-client";
-import { useEffect, useState } from "octane";
+import { useState } from "octane";
+import { MarkdownBody } from "@/components/repo/markdown-body";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
-import { renderGfm } from "@/lib/markdown";
 
 export type PullConversationProps = {
   owner: string;
@@ -17,22 +17,7 @@ export type PullConversationProps = {
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
 function CommentBody(props: { body: string; owner: string; repoName: string }) @{
-  const [html, setHtml] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const rendered = await renderGfm(props.body || "", {
-        owner: props.owner,
-        repo: props.repoName,
-      });
-      if (!cancelled) setHtml(rendered);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [props.body, props.owner, props.repoName]);
-
-  <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
+  <MarkdownBody markdown={props.body} owner={props.owner} repo={props.repoName} />;
 }
 
 export function PullConversation(props: PullConversationProps) @{

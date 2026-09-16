@@ -13,6 +13,18 @@ export type RenderGfmOptions = {
   repo?: string;
 };
 
+/** True for paths that should default to rendered GFM (blob preview / README). */
+export function isMarkdownPath(path: string): boolean {
+  const base = path.split("/").pop()?.toLowerCase() ?? "";
+  return (
+    base.endsWith(".md") ||
+    base.endsWith(".markdown") ||
+    base.endsWith(".mdown") ||
+    base.endsWith(".mkd") ||
+    base === "readme"
+  );
+}
+
 /**
  * Render GitHub-flavored Markdown to HTML with rehype-sanitize last (D-18 / D-ISS-10).
  * Never passes raw HTML through — XSS vectors from README/issue blobs are stripped.

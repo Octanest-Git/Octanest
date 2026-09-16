@@ -12,7 +12,6 @@ import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MemberLookup } from "@/components/org/member-lookup";
-import { OrgSettingsNav } from "@/components/org/org-settings-nav";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -358,20 +357,9 @@ export function OrgMembersPage() @{
   }
 
   @if (!org) {
-    <div className="mx-auto max-w-3xl px-4 py-16">
-      <p className="text-[16px] text-muted-foreground">Loading…</p>
-    </div>;
+    <p className="text-[16px] text-muted-foreground">Loading…</p>;
   } @else {
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-        Members
-      </h1>
-      <p className="mt-1 text-[14px] text-muted-foreground">{"@" + (slug as string)}</p>
-
-      <div className="mt-6">
-        <OrgSettingsNav slug={slug} active="members" />
-      </div>
-
+    <div data-testid="org-settings-members">
       @if (rowError) {
         <div className="mb-4">
           <AuthErrorBanner message={rowError} />
@@ -380,7 +368,7 @@ export function OrgMembersPage() @{
 
       <section aria-labelledby="members-table-heading" className="mb-12">
         <h2 id="members-table-heading" className="text-[18px] font-semibold text-foreground">
-          Organization members
+          Members
         </h2>
         @if (membersQ.isPending) {
           <p className="mt-4 text-[14px] text-muted-foreground">Loading members…</p>;

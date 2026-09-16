@@ -5,7 +5,7 @@ import { useState } from "octane";
 import { PullsList } from "@/components/repo/pulls-list";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
-import { fetchRepoGet } from "@/lib/ssr-repo";
+import { fetchPullList, fetchRepoGet } from "@/lib/ssr-repo";
 
 export type PullsLoaderData =
   | { kind: "not_found" }
@@ -33,12 +33,14 @@ async function loadPullsPage(
       message: got.error.message || "Could not load repository.",
     };
   }
-  const listRes = await apiClient.pull.list({
-    owner,
-    name: repoName,
-    state,
-    offset: 0,
-    limit: PAGE_SIZE,
+  const listRes = await fetchPullList({
+    data: {
+      owner,
+      name: repoName,
+      state,
+      offset: 0,
+      limit: PAGE_SIZE,
+    },
   });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };

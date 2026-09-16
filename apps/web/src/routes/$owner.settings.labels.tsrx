@@ -10,7 +10,6 @@ import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, OrgPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
-import { OrgSettingsNav } from "@/components/org/org-settings-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -165,12 +164,7 @@ export function OrgLabelsPage() @{
     }
   }
 
-  <div className="mx-auto max-w-3xl px-4 py-8">
-    <h1 className="mb-2 font-[family-name:var(--font-display)] text-[24px] font-semibold text-foreground">
-      Organization settings
-    </h1>
-    <OrgSettingsNav slug={slug} active="labels" />
-
+  <div data-testid="org-settings-labels">
     <h2 className="mb-1 text-[18px] font-semibold text-foreground">Labels</h2>
     <p className="mb-6 text-[14px] text-muted-foreground">
       Default labels inherited by organization repositories. Repos can hide or add local labels.

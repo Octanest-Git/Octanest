@@ -66,6 +66,9 @@ services:
       # Actions job logs (D-ACT-13) — distinct from repos / LFS / packages / release-assets.
       OCTANEST_ACTIONS_LOG_DIR: /var/actions-logs
       OCTANEST_ACTIONS_ENABLED: ${OCTANEST_ACTIONS_ENABLED:-true}
+      # Local-only default so repo Actions secrets work out of the box (D-ACT-17).
+      # Production must set a unique OCTANEST_ACTIONS_SECRETS_KEY — never reuse this value.
+      OCTANEST_ACTIONS_SECRETS_KEY: ${OCTANEST_ACTIONS_SECRETS_KEY:-compose-dev-actions-secrets-key-not-for-production}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
