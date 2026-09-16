@@ -106,7 +106,6 @@ async fn rpc_json(app: &axum::Router, cookie: Option<&str>, body: &str) -> serde
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-03"]
 async fn user_public_profile_get_no_email() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -139,7 +138,6 @@ async fn user_public_profile_get_no_email() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-03"]
 async fn user_public_profile_unknown_not_found() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -159,7 +157,6 @@ async fn user_public_profile_unknown_not_found() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-03"]
 async fn user_public_profile_repos_acl() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");

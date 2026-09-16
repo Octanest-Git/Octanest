@@ -47,6 +47,35 @@ pub async fn get_profile(ctx: &RpcCtx) -> Result<UserPublic, AppError> {
     Ok(user_to_public(&user))
 }
 
+/// `user.getPublicProfile` — public profile by username; never includes email (D-SOC-06/08).
+pub async fn get_public_profile(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::PublicUserProfile, AppError> {
+    let req: octanest_core::GetPublicProfileRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid user.getPublicProfile input: {e}"),
+        )
+    })?;
+    let username = req.username.trim();
+    if username.is_empty() {
+        return Err(AppError::new("user.not_found", "User not found"));
+    }
+    let user = ctx
+        .db
+        .find_user_by_username(username)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("user.not_found", "User not found"))?;
+    Ok(octanest_core::PublicUserProfile {
+        username: user.username,
+        display_name: user.display_name,
+        bio: user.bio,
+        avatar_url: user.avatar_path,
+    })
+}
+
 /// `user.update_profile` — display name, username, bio (avatar via multipart route).
 pub async fn update_profile(
     ctx: &RpcCtx,

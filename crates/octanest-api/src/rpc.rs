@@ -211,6 +211,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
+        "user.getPublicProfile" => match profile::get_public_profile(ctx, req.input).await {
+            Ok(profile) => RpcResponse::ok(profile),
+            Err(e) => RpcResponse::err(e),
+        },
         "user.update_profile" => match profile::update_profile(ctx, req.input).await {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
@@ -325,6 +329,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "repo.unstar" => match repo::unstar(ctx, req.input).await {
             Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.explore" => match repo::explore(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
         "repo.get" => match repo::get(ctx, req.input).await {

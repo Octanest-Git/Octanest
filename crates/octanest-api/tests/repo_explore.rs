@@ -106,7 +106,6 @@ async fn rpc_json(app: &axum::Router, cookie: Option<&str>, body: &str) -> serde
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-04"]
 async fn repo_explore_anonymous_public_sorted() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -150,7 +149,6 @@ async fn repo_explore_anonymous_public_sorted() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-04"]
 async fn repo_explore_q_filter() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");

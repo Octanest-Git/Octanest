@@ -324,12 +324,16 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
             )
         } else {
             let head = crate::repo::resolve_repo_for_read(ctx, &head_owner, &head_name).await?;
-            let parent = ctx
+            let network = ctx
                 .db
-                .get_repo_forked_from(&head.row.id)
+                .get_repo_fork_network_id(&head.row.id)
                 .await
                 .map_err(db_err)?;
-            if parent.as_deref() != Some(accessible.row.id.as_str()) {
+            if !crate::repo::head_valid_for_base(
+                &accessible.row.id,
+                &head.row.id,
+                network.as_deref(),
+            ) {
                 return Err(AppError::new(
                     "pull.invalid_head",
                     "head repository must be this repo or a fork of it",

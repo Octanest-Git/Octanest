@@ -108,7 +108,6 @@ async fn rpc_json(app: &axum::Router, cookie: &str, body: &str) -> serde_json::V
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-05"]
 async fn repo_fork_public_ok_network_id() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -155,7 +154,6 @@ async fn repo_fork_public_ok_network_id() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-05"]
 async fn repo_fork_private_source_denied() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -182,7 +180,6 @@ async fn repo_fork_private_source_denied() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-05"]
 async fn repo_fork_one_per_owner_network() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -217,12 +214,10 @@ async fn repo_fork_one_per_owner_network() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-05 (exports fork_network::head_valid_for_base)"]
 async fn repo_fork_head_valid_for_base() {
-    // Placeholder until fork_network module ships in 21-05.
-    // Expected: same repo → true; head.fork_network_id == base.id → true; else false.
-    assert!(
-        false,
-        "head_valid_for_base helper not yet exported — implement in 21-05"
-    );
+    use octanest_api::repo::head_valid_for_base;
+    assert!(head_valid_for_base("base-id", "base-id", Some("base-id")));
+    assert!(head_valid_for_base("base-id", "fork-id", Some("base-id")));
+    assert!(!head_valid_for_base("base-id", "other-id", Some("other-root")));
+    assert!(!head_valid_for_base("base-id", "other-id", None));
 }
