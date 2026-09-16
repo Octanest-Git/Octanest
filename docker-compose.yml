@@ -127,11 +127,21 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/"]
-      interval: 10s
+      # Same shape as api /health — dedicated probe, not SSR `/` (avoids "Started" forever).
+      # Requires Octanest-Health-Probe (public /health without header → 404).
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "-H",
+          "Octanest-Health-Probe: 1",
+          "http://127.0.0.1:3000/health",
+        ]
+      interval: 5s
       timeout: 5s
       retries: 12
-      start_period: 20s
+      start_period: 10s
     labels:
       - traefik.enable=true
       - traefik.docker.network=octanest_octanest
