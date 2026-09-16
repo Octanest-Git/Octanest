@@ -706,7 +706,23 @@ Plans:
   3. Operator can register and run the official Octanest runner image; docs cover Compose sidecar or standalone bring-up
   4. Forge exposes an Actions-compatible registration/job-dispatch protocol (custom `runs-on` labels); jobs only run on registered runners — no managed Octanest Cloud minutes in v1
 
-**Plans**: TBD
+**Plans:** 12 plans
+
+Plans:
+
+- [ ] 19-00-PLAN.md — Wave 0 Rust stubs (parse/triggers/RPC/protocol/policy/statuses/dialect)
+- [ ] 19-01-PLAN.md — Wave 0 Vitest Actions stubs + smoke-actions
+- [ ] 19-02-PLAN.md — Schema, ACTIONS_LOG_DIR, factory reset wipe
+- [ ] 19-03-PLAN.md — Workflow discover + YAML subset parse (ACT-01)
+- [ ] 19-04-PLAN.md — Tracer: push → enqueue → FetchTask → logs
+- [ ] 19-05-PLAN.md — Full runner protocol + labels + registration tokens
+- [ ] 19-06-PLAN.md — pull_request triggers + Phase 12 hook
+- [ ] 19-07-PLAN.md — Commit statuses for Phase 13 required checks
+- [ ] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
+- [ ] 19-09-PLAN.md — Actions UI list/detail/logs + RepoChrome tab
+- [ ] 19-10-PLAN.md — Admin tokens, repo secrets/enable, no managed minutes
+- [ ] 19-11-PLAN.md — Docs + smoke + phase gate
+
 **UI hint**: yes
 
 ### Phase 20: Packages Registry
