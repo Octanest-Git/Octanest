@@ -752,7 +752,18 @@ Plans:
   3. Anonymous or signed-in user can browse an explore/discover page of public repositories
   4. User can fork a public repository they can read
 
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 21-00-PLAN.md — Wave 0 Nyquist stubs (stars/fork/explore/profile/dialect/web)
+- [ ] 21-01-PLAN.md — Tracer: star/unstar RPC + social migration
+- [ ] 21-02-PLAN.md — Stars UI (RepoChrome) + listStarred
+- [ ] 21-03-PLAN.md — Public user profiles at /{username}
+- [ ] 21-04-PLAN.md — Explore page + repo.explore + nav link
+- [ ] 21-05-PLAN.md — Fork RPC + bare copy + fork_network helper (D-PR)
+- [ ] 21-06-PLAN.md — Fork UI (chrome + confirm route)
+- [ ] 21-07-PLAN.md — Docs + phase gate
+
 **UI hint**: yes
 
 ### Phase 22: Compose CI & Cloud Deploy
@@ -797,7 +808,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
-| 21. Social & Explore | 0/TBD | Not started | - |
+| 21. Social & Explore | 0/8 | Planned | - |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 
 ---
