@@ -923,6 +923,102 @@ export type UpdatePullRequest = {
   draft?: boolean | null;
 };
 
+export type MergeMethod = "merge" | "squash" | "rebase";
+
+export type MergePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  method: MergeMethod;
+  commit_title?: string | null;
+  commit_message?: string | null;
+  delete_branch?: boolean | null;
+};
+
+export type MergePullResponse = {
+  pull: PullPublic;
+  merge_commit_sha: string;
+};
+
+export type RepoMergeSettings = {
+  allow_merge_commit: boolean;
+  allow_squash_merge: boolean;
+  allow_rebase_merge: boolean;
+};
+
+export type UpdateRepoMergeSettingsRequest = {
+  owner: string;
+  name: string;
+  allow_merge_commit?: boolean | null;
+  allow_squash_merge?: boolean | null;
+  allow_rebase_merge?: boolean | null;
+};
+
+export type PullCommentPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+  outdated: boolean;
+  resolved: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+};
+
+export type PullCommentsListResponse = {
+  comments: PullCommentPublic[];
+};
+
+export type ResolvePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  comment_id: string;
+  resolved: boolean;
+};
+
+export type PullDiffFile = {
+  path: string;
+  status: string;
+  patch: string;
+};
+
+export type PullFilesResponse = {
+  files: PullDiffFile[];
+  empty: boolean;
+};
+
+export type PullCommitSummary = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+};
+
+export type PullCommitsResponse = {
+  commits: PullCommitSummary[];
+};
+
 export type RemoveIssueLinkResponse = {
   ok: boolean;
 };
@@ -1465,6 +1561,26 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<PullPublic>(opts, "pull.close", input),
       reopen: (input: PullRefRequest) =>
         rpcCall<PullPublic>(opts, "pull.reopen", input),
+      files: (input: PullRefRequest) =>
+        rpcCall<PullFilesResponse>(opts, "pull.files", input),
+      commits: (input: PullRefRequest) =>
+        rpcCall<PullCommitsResponse>(opts, "pull.commits", input),
+      merge: (input: MergePullRequest) =>
+        rpcCall<MergePullResponse>(opts, "pull.merge", input),
+      comments: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullCommentsListResponse>(opts, "pull.comments.list", input),
+        create: (input: CreatePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.create", input),
+        resolve: (input: ResolvePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.resolve", input),
+      },
+    },
+    mergeSettings: {
+      get: (input: RepoGetRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.get", input),
+      update: (input: UpdateRepoMergeSettingsRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.update", input),
     },
     release: {
       create: (input: CreateReleaseRequest) =>

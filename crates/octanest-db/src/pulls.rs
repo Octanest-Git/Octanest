@@ -731,3 +731,375 @@ pub async fn mark_merged(
     }
     Ok(())
 }
+
+#[derive(Debug, Clone)]
+pub struct PullCommentRow {
+    pub id: String,
+    pub pull_id: String,
+    pub author_id: String,
+    pub body: String,
+    pub path: Option<String>,
+    pub side: Option<String>,
+    pub line: Option<i64>,
+    pub start_line: Option<i64>,
+    pub commit_sha: Option<String>,
+    pub outdated: bool,
+    pub resolved: bool,
+    pub review_id: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+macro_rules! map_pull_comment {
+    ($row:expr) => {{
+        let row = $row;
+        PullCommentRow {
+            id: row.try_get("id").map_err(|e| format!("pull comment: {e}"))?,
+            pull_id: row
+                .try_get("pull_id")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            author_id: row
+                .try_get("author_id")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            body: row
+                .try_get("body")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            path: row
+                .try_get("path")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            side: row
+                .try_get("side")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            line: row
+                .try_get("line")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            start_line: row
+                .try_get("start_line")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            commit_sha: row
+                .try_get("commit_sha")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            outdated: flag_col!(row, "outdated"),
+            resolved: flag_col!(row, "resolved"),
+            review_id: row
+                .try_get("review_id")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("pull comment: {e}"))?,
+            updated_at: row
+                .try_get("updated_at")
+                .map_err(|e| format!("pull comment: {e}"))?,
+        }
+    }};
+}
+
+const PC_SELECT_PG: &str = "SELECT id, pull_id, author_id, body, path, side, line, start_line, commit_sha,
+       outdated, resolved, review_id,
+       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
+FROM pull_comments";
+
+const PC_SELECT_MYSQL: &str = "SELECT id, pull_id, author_id, body, path, side, line, start_line, commit_sha,
+       outdated, resolved, review_id,
+       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+       DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
+FROM pull_comments";
+
+const PC_SELECT_SQLITE: &str = "SELECT id, pull_id, author_id, body, path, side, line, start_line, commit_sha,
+       outdated, resolved, review_id,
+       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
+FROM pull_comments";
+
+pub async fn insert_pull_comment(
+    pool: &DbPool,
+    id: &str,
+    pull_id: &str,
+    author_id: &str,
+    body: &str,
+    path: Option<&str>,
+    side: Option<&str>,
+    line: Option<i64>,
+    start_line: Option<i64>,
+    commit_sha: Option<&str>,
+) -> Result<PullCommentRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO pull_comments
+ (id, pull_id, author_id, body, path, side, line, start_line, commit_sha)
+ VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(body)
+            .bind(path)
+            .bind(side)
+            .bind(line)
+            .bind(start_line)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull comment failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO pull_comments
+ (id, pull_id, author_id, body, path, side, line, start_line, commit_sha)
+ VALUES (?,?,?,?,?,?,?,?,?)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(body)
+            .bind(path)
+            .bind(side)
+            .bind(line)
+            .bind(start_line)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull comment failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO pull_comments
+ (id, pull_id, author_id, body, path, side, line, start_line, commit_sha)
+ VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(body)
+            .bind(path)
+            .bind(side)
+            .bind(line)
+            .bind(start_line)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull comment failed: {e}"))?;
+        }
+    }
+    find_pull_comment_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "insert pull comment failed: row missing".into())
+}
+
+pub async fn find_pull_comment_by_id(
+    pool: &DbPool,
+    id: &str,
+) -> Result<Option<PullCommentRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{PC_SELECT_PG} WHERE id = $1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_comment!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{PC_SELECT_MYSQL} WHERE id = ?");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_comment!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{PC_SELECT_SQLITE} WHERE id = ?1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull comment failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_comment!(&r)),
+                None => None,
+            })
+        }
+    }
+}
+
+pub async fn list_pull_comments(
+    pool: &DbPool,
+    pull_id: &str,
+) -> Result<Vec<PullCommentRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{PC_SELECT_PG} WHERE pull_id = $1 ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_comment!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{PC_SELECT_MYSQL} WHERE pull_id = ? ORDER BY created_at ASC, id ASC");
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_comment!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{PC_SELECT_SQLITE} WHERE pull_id = ?1 ORDER BY created_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull comments failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_comment!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+pub async fn set_pull_comment_resolved(
+    pool: &DbPool,
+    id: &str,
+    resolved: bool,
+) -> Result<PullCommentRow, String> {
+    let r = if resolved { 1i64 } else { 0 };
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE pull_comments SET resolved = $2, updated_at = NOW() WHERE id = $1")
+                .bind(id)
+                .bind(resolved)
+                .execute(p)
+                .await
+                .map_err(|e| format!("resolve pull comment failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_comments SET resolved = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?",
+            )
+            .bind(r)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("resolve pull comment failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_comments SET resolved = ?2,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(r)
+            .execute(p)
+            .await
+            .map_err(|e| format!("resolve pull comment failed: {e}"))?;
+        }
+    }
+    find_pull_comment_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "resolve pull comment failed: row missing".into())
+}
+
+pub async fn mark_pull_line_comments_outdated(
+    pool: &DbPool,
+    pull_id: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE pull_comments SET outdated = TRUE, updated_at = NOW()
+ WHERE pull_id = $1 AND path IS NOT NULL",
+            )
+            .bind(pull_id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark outdated failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_comments SET outdated = 1, updated_at = UTC_TIMESTAMP()
+ WHERE pull_id = ? AND path IS NOT NULL",
+            )
+            .bind(pull_id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark outdated failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_comments SET outdated = 1,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+ WHERE pull_id = ?1 AND path IS NOT NULL",
+            )
+            .bind(pull_id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark outdated failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn update_pull_head_sha(
+    pool: &DbPool,
+    id: &str,
+    head_sha: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET head_sha = $2, updated_at = NOW() WHERE id = $1",
+            )
+            .bind(id)
+            .bind(head_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update head_sha failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET head_sha = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?",
+            )
+            .bind(head_sha)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update head_sha failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET head_sha = ?2,
+ updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(head_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update head_sha failed: {e}"))?;
+        }
+    }
+    Ok(())
+}

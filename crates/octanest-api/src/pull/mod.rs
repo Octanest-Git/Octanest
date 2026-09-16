@@ -1,8 +1,10 @@
 //! Pull request RPC — lifecycle create/get/list/close/reopen (PR-01 / PR-06 / D-PR-02 / D-PR-29).
 
 pub(crate) mod acl;
+mod comments;
 mod merge_ops;
 
+pub use comments::{comments_create, comments_list, comments_resolve};
 pub use merge_ops::{
     commits, files, merge, merge_settings_get, merge_settings_update,
 };
@@ -446,7 +448,21 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         (row.base_ref.clone(), row.base_sha.clone())
     };
 
-    // Minimal update via SQL in pulls module — extend if needed.
+    let new_head_sha = if row.head_repo_id == row.repo_id {
+        resolve_ref_sha(
+            ctx,
+            &accessible.owner_username,
+            &accessible.row.name,
+            &row.head_ref,
+        )
+        .await
+        .unwrap_or_else(|_| row.head_sha.clone())
+    } else {
+        row.head_sha.clone()
+    };
+    let head_changed = new_head_sha != row.head_sha;
+    let base_changed = base_ref != row.base_ref || base_sha != row.base_sha;
+
     ctx.db
         .update_pull_fields(
             &row.id,
@@ -458,6 +474,18 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         )
         .await
         .map_err(db_err)?;
+    if head_changed {
+        ctx.db
+            .update_pull_head_sha(&row.id, &new_head_sha)
+            .await
+            .map_err(db_err)?;
+    }
+    if head_changed || base_changed {
+        ctx.db
+            .mark_pull_line_comments_outdated(&row.id)
+            .await
+            .map_err(db_err)?;
+    }
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
     to_public(ctx, &updated).await
 }

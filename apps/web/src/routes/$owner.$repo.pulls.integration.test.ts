@@ -57,8 +57,13 @@ describe("Phase 12 Pulls UI", () => {
     expect(pullDetail).toMatch(/Files changed/);
   });
 
-  it.fails("unified and split diff toggle", () => {
-    expect(true).toBe(false);
+  it("unified and split diff toggle", () => {
+    const pullFiles = readFileSync(
+      join(process.cwd(), "src/components/repo/pull-files.tsrx"),
+      "utf8",
+    );
+    expect(pullFiles).toMatch(/Unified/);
+    expect(pullFiles).toMatch(/Split/);
   });
 
   it.fails("review actions Approve / Request changes / Comment", () => {
@@ -74,7 +79,12 @@ describe("Phase 12 Pulls UI", () => {
     expect(true).toBe(false);
   });
 
-  it.fails("Write|Preview on PR comments", () => {
-    expect(true).toBe(false);
+  it("Write|Preview on PR comments", () => {
+    const conversation = readFileSync(
+      join(process.cwd(), "src/components/repo/pull-conversation.tsrx"),
+      "utf8",
+    );
+    expect(conversation).toMatch(/MarkdownWritePreview/);
+    expect(conversation).toMatch(/Outdated/);
   });
 });

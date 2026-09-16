@@ -37,7 +37,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
-pub use pulls::{PullRow, RepoMergeSettingsRow};
+pub use pulls::{PullCommentRow, PullRow, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -586,6 +586,63 @@ impl Database {
             merged_at,
         )
         .await
+    }
+
+    pub async fn insert_pull_comment(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        body: &str,
+        path: Option<&str>,
+        side: Option<&str>,
+        line: Option<i64>,
+        start_line: Option<i64>,
+        commit_sha: Option<&str>,
+    ) -> Result<PullCommentRow, String> {
+        pulls::insert_pull_comment(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            body,
+            path,
+            side,
+            line,
+            start_line,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_comment_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullCommentRow>, String> {
+        pulls::find_pull_comment_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_comments(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<PullCommentRow>, String> {
+        pulls::list_pull_comments(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn set_pull_comment_resolved(
+        &self,
+        id: &str,
+        resolved: bool,
+    ) -> Result<PullCommentRow, String> {
+        pulls::set_pull_comment_resolved(self.require_pool()?, id, resolved).await
+    }
+
+    pub async fn mark_pull_line_comments_outdated(&self, pull_id: &str) -> Result<(), String> {
+        pulls::mark_pull_line_comments_outdated(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn update_pull_head_sha(&self, id: &str, head_sha: &str) -> Result<(), String> {
+        pulls::update_pull_head_sha(self.require_pool()?, id, head_sha).await
     }
 
     // --- issues ---

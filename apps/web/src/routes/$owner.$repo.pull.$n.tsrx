@@ -1,6 +1,9 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
+import { PullCommits } from "@/components/repo/pull-commits";
+import { PullConversation } from "@/components/repo/pull-conversation";
+import { PullFiles } from "@/components/repo/pull-files";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { fetchRepoGet } from "@/lib/ssr-repo";
@@ -76,6 +79,7 @@ export function PullDetailPage() @{
       };
 
   const pull = pullQ.data;
+  const canWrite = loader.kind === "ready" && !!loader.repo.can_write;
 
   async function closePull() {
     setBusy(true);
@@ -126,7 +130,7 @@ export function PullDetailPage() @{
                 {pull.head_ref as string} into {pull.base_ref as string}
               </p>
             </div>
-            @if (loader.repo.can_write) {
+            @if (canWrite) {
               <div className="flex gap-2">
                 @if (pull.state === "open") {
                   <button
@@ -190,19 +194,24 @@ export function PullDetailPage() @{
             </button>
           </div>
           @if (tab === "conversation") {
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm">
-              {(pull.body || "_No description_") as string}
-            </div>;
+            <PullConversation
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+              body={(pull.body || "") as string}
+            />;
           }
           @if (tab === "commits") {
-            <p className="text-sm text-muted-foreground">
-              Commits for this pull request will appear here.
-            </p>;
+            <PullCommits owner={owner} repoName={repoName} number={number} />;
           }
           @if (tab === "files") {
-            <p className="text-sm text-muted-foreground">
-              Diff / files changed will appear here.
-            </p>;
+            <PullFiles
+              owner={owner}
+              repoName={repoName}
+              number={number}
+              canWrite={canWrite}
+            />;
           }
         </div>;
       }
