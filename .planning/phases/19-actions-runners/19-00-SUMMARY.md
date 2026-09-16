@@ -37,7 +37,7 @@ key-decisions:
 patterns-established:
   - "Phase 19 Actions integration stubs live under crates/octanest-api/tests/actions_*.rs and commit_statuses.rs"
 
-requirements-completed: [ACT-01, ACT-02, ACT-03, ACT-04, ACT-05, ACT-06, ACT-07]
+requirements-completed: []
 
 coverage:
   - id: D1
@@ -76,6 +76,7 @@ status: complete
 - **Files modified:** 7
 
 ## Accomplishments
+- **Note:** Wave 0 stubs do not complete ACT-01…07 — those land with plans 02–11.
 - Added six API integration stub binaries covering ACT-01…07 expectations (D-ACT-01..20 / D-ACT-15)
 - Added dialect_actions stub expecting runners/runs/jobs/statuses/secrets/actions_enabled
 - Stubs intentionally fail until later plans green them; listed by default nextest list (19 matches)
