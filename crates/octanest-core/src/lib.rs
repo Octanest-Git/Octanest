@@ -1,5 +1,6 @@
 //! Shared domain types for Octanest.
 
+pub mod action_types;
 pub mod auth_types;
 pub mod issue_types;
 pub mod notification_types;
@@ -13,6 +14,7 @@ pub mod repo_types;
 pub mod ssh_key_types;
 pub mod webhook_types;
 
+pub use action_types::*;
 pub use auth_types::*;
 pub use issue_types::*;
 pub use notification_types::*;

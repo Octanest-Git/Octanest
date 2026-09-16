@@ -5,6 +5,7 @@ pub mod events;
 pub mod hooks;
 pub mod logs;
 pub mod parse;
+pub mod rpc;
 pub mod runner_proto;
 pub mod statuses;
 pub mod tokens;

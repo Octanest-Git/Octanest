@@ -720,6 +720,58 @@ export type CommitStatusListResponse = {
   statuses: CommitStatusPublic[];
 };
 
+export type ActionRunPublic = {
+  id: string;
+  repository_id: string;
+  workflow_path: string;
+  workflow_name: string;
+  event: string;
+  head_sha: string;
+  head_ref: string;
+  status: string;
+  title: string;
+};
+
+export type ActionJobPublic = {
+  id: string;
+  run_id: string;
+  job_key: string;
+  name: string;
+  status: string;
+  runs_on: string[];
+};
+
+export type ActionRunsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionRunsListResponse = {
+  runs: ActionRunPublic[];
+};
+
+export type ActionRunGetRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+};
+
+export type ActionRunGetResponse = {
+  run: ActionRunPublic;
+  jobs: ActionJobPublic[];
+};
+
+export type ActionJobLogRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+  job_id: string;
+};
+
+export type ActionJobLogResponse = {
+  content: string;
+};
+
 
 export type MemberBasePermission = "none" | "read" | "write";
 
@@ -1844,6 +1896,14 @@ export function createClient(opts: CreateClientOptions) {
         list: (input: CommitStatusListRequest) =>
           rpcCall<CommitStatusListResponse>(opts, "repo.commitStatus.list", input),
       },
+      actions: {
+        listRuns: (input: ActionRunsListRequest) =>
+          rpcCall<ActionRunsListResponse>(opts, "repo.actions.listRuns", input),
+        getRun: (input: ActionRunGetRequest) =>
+          rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
+        getJobLog: (input: ActionJobLogRequest) =>
+          rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+      },
     },
     org: {
       create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
@@ -2458,6 +2518,56 @@ export function packagesListQueryOptions(
     queryKey: ["packages", "list", input] as const,
     queryFn: async () => {
       const res = await client.packages.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsListRunsQueryOptions(
+  client: OctanestClient,
+  input: ActionRunsListRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "listRuns", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.listRuns(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetRunQueryOptions(
+  client: OctanestClient,
+  input: ActionRunGetRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "getRun", input.owner, input.name, input.run_id] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getRun(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetJobLogQueryOptions(
+  client: OctanestClient,
+  input: ActionJobLogRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "actions",
+      "getJobLog",
+      input.owner,
+      input.name,
+      input.run_id,
+      input.job_id,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getJobLog(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },
