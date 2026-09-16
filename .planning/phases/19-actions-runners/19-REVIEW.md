@@ -34,11 +34,12 @@ files_reviewed_list:
   - apps/web/src/components/repo/actions-settings-panel.tsrx
   - docker/octanest-runner/entrypoint.sh
 findings:
-  critical: 4
+  critical: 0
   warning: 7
   info: 4
-  total: 15
-status: issues_found
+  total: 11
+  critical_remediated: 4
+status: remediated_pending_ci
 ---
 
 # Phase 19: Code Review Report
@@ -46,7 +47,7 @@ status: issues_found
 **Reviewed:** 2026-09-16T20:55:00Z
 **Depth:** standard
 **Files Reviewed:** 29
-**Status:** issues_found
+**Status:** remediated_pending_ci (CR-01…04 fixed on integrate; WR/IN open)
 
 ## Remediation (2026-09-16)
 
