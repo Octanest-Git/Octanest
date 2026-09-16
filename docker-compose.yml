@@ -38,6 +38,8 @@ services:
       - octanest
 
   api:
+    # Stable tag for CI same-run image reuse (docker save/load); local up --build retags too.
+    image: octanest-api:ci
     build:
       context: .
       dockerfile: crates/octanest-api/Dockerfile
@@ -142,6 +144,7 @@ services:
       - octanest
 
   web:
+    image: octanest-web:ci
     build:
       context: .
       dockerfile: apps/web/Dockerfile
