@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: "Compose CI & Cloud Deploy"
-current_plan: 2
+current_phase_name: Compose CI & Cloud Deploy
+current_plan: 3
 status: executing
-stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-09-16T18:21:04.724Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-09-16T18:26:57.775Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 13 plans 00–08 executed (protection evaluate/hooks/CRUD/statuses/UI/docs); SUMMARYs written
-state_head: f690a96bd287d9aebb9d128b652cb35ca3e16ed9
+state_head: 1e1e2e7a5393aa6ff3b1232afd70970af1ab8c6a
 progress:
   total_phases: 23
   completed_phases: 0
   total_plans: 198
-  completed_plans: 196
+  completed_plans: 197
 milestone_name: milestone
 current_phase: 22
 ---
@@ -25,15 +25,15 @@ current_phase: 22
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/phase-22-compose-ci-deploy-c82f` — **Phase 22** Compose CI & Cloud Deploy (1/3 plans complete)
+**Current focus:** `cursor/phase-22-compose-ci-deploy-c82f` — **Phase 22** Compose CI & Cloud Deploy (2/3 plans complete)
 
 ## Current Position
 
 Phase: **22** — Compose CI & Cloud Deploy
-Current Plan: 2 of 3
+Current Plan: 3 of 3
 Total Plans in Phase: 3
-Status: Plan 22-01 complete; starting 22-02 (blocked on package legitimacy checkpoint)
-Last activity: 2026-09-16 — Completed 22-01 compose-smoke CI matrix
+Status: Plans 22-01 and 22-02 complete; executing 22-03 validation/docs
+Last activity: 2026-09-16 — Completed 22-02 Railway IaC + Caddy gateway
 
 See also: `.planning/phases/22-compose-ci-deploy/22-CONTEXT.md`
 
@@ -166,6 +166,7 @@ See also: `.planning/phases/22-compose-ci-deploy/22-CONTEXT.md`
 | Phase 11.1 P08 | 6min | 2 tasks | 6 files |
 | Phase 13 P08 | 20min | 2 tasks | 4 files |
 | Phase 22 P01 | 2min | 3 tasks | 4 files |
+| Phase 22 P02 | 12min | 3 tasks | 11 files |
 
 # Project State
 
@@ -558,6 +559,7 @@ Recent decisions affecting current work:
 - [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
 - [Phase 12]: Branch protection: Settings panel CRUD + merge blockers + shared evaluate/hooks
 - [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
+- [Phase 22]: Cloud gateway is Caddy file-config; forge-data volume at /var; human-only railway apply
 
 ### Pending Todos
 
@@ -579,8 +581,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T18:21:04.440Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-09-16T18:26:57.638Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
 
 ## Accumulated Context

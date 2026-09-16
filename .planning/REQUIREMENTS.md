@@ -10,7 +10,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 ### Platform & delivery
 
 - [ ] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
-- [ ] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
+- [x] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
 - [x] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
@@ -167,7 +167,7 @@ Deferred; not in the current roadmap until promoted.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PLAT-01 | Phase 1 | Pending |
-| PLAT-02 | Phase 22 | Pending |
+| PLAT-02 | Phase 22 | Complete |
 | PLAT-03 | Phase 22 | Complete |
 | PLAT-04 | Phase 1 | Pending |
 | PLAT-05 | Phase 1 | Pending |
