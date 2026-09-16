@@ -407,9 +407,6 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               >
                 Home
               </button>
-              <a href="/explore" className={mobileNavItemClass} onClick={onClose}>
-                Explore
-              </a>
               <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
                 Create
               </p>
@@ -603,12 +600,6 @@ export function SiteHeader() @{
       <GlobalSearch className="col-start-2 row-start-1" />
 
       <div className="col-start-3 row-start-1 hidden items-center justify-end gap-2 md:flex">
-        <a
-          href="/explore"
-          className="text-[14px] font-medium text-muted-foreground no-underline hover:text-foreground"
-        >
-          Explore
-        </a>
         <ThemeSelect />
         <AccountActions />
       </div>

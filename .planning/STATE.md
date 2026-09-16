@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Compose CI & Cloud Deploy
-current_plan: 3
-status: phase_complete
-stopped_at: Completed 22-03-PLAN.md — Phase 22 complete
-last_updated: "2026-09-16T18:28:41.104Z"
+current_phase_name: Actions & Runners
+current_plan: 5
+status: executing
+stopped_at: Phase 22 on integrate; Phase 19 executing off-branch
+last_updated: "2026-09-16T18:56:03.000Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 13 plans 00–08 executed (protection evaluate/hooks/CRUD/statuses/UI/docs); SUMMARYs written
+last_activity_desc: Honesty pass — Phase 17 + HOOK marked complete on integrate; Phase 19 remaining
 state_head: c2bb9984649de7333248ed9b7ce1d234ba005aa2
 progress:
   total_phases: 23
-  completed_phases: 0
+  completed_phases: 21
   total_plans: 198
   completed_plans: 198
 milestone_name: milestone
-current_phase: 22
+current_phase: 19
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 22
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/phase-22-compose-ci-deploy-c82f` — **Phase 22** Compose CI & Cloud Deploy **complete** (3/3 plans)
+**Current focus:** `cursor/gsd-remaining-integrate-c82f` — phases **12–18, 21–22** on integrate; **Phase 19** Actions finishing on `cursor/phase-19-actions-runners-c82f`
 
 ## Current Position
 
-Phase: **22** — Compose CI & Cloud Deploy **complete** (PLAT-02, PLAT-03, PLAT-09)
-Current Plan: 3 of 3
-Total Plans in Phase: 3
-Status: All Phase 22 plans SUMMARY'd. Next: verify/ship PR onto integrate (do not merge yet from executor)
-Last activity: 2026-09-16 — Completed 22-01…22-03 on cursor/phase-22-compose-ci-deploy-c82f
+Phase: **19** — Actions & Runners (**in progress** off-branch) · integrate holds 12–18 + 21–22
+Current Plan: 05–11 remaining (00–04 SUMMARY'd on phase branch)
+Total Plans in Phase: 12
+Status: Docs honesty synced (Phase 17 + HOOK complete). Next: finish Phase 19 then umbrella #16
+Last activity: 2026-09-16 — Honesty pass + header Explore→searchbar
 
-See also: `.planning/phases/22-compose-ci-deploy/22-CONTEXT.md` · `22-VALIDATION.md`
+See also: `.planning/phases/19-actions-runners/` · integrate `cursor/gsd-remaining-integrate-c82f`
 
 ## Performance Metrics
 

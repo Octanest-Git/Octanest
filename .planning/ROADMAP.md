@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
 - [x] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
-- [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
+- [x] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [x] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
@@ -659,15 +659,15 @@ Plans:
   1. Signed-in user receives in-app notifications for relevant issue and PR activity
   2. User can list notifications and mark them as read
 
-**Plans:** 5 plans
+**Plans:** 5/5 plans executed
 
 Plans:
 
-- [ ] 17-00-PLAN.md — Wave 0 Nyquist stubs (RPC, dialect, bell, inbox)
-- [ ] 17-01-PLAN.md — Tracer: schema + notification.* RPC + comment→author fan-out
-- [ ] 17-02-PLAN.md — Issue lifecycle/assignee/@mention emitters
-- [ ] 17-03-PLAN.md — PR emitters (after Phase 12 lands)
-- [ ] 17-04-PLAN.md — SiteHeader bell + `/notifications` UI
+- [x] 17-00-PLAN.md — Wave 0 Nyquist stubs (RPC, dialect, bell, inbox)
+- [x] 17-01-PLAN.md — Tracer: schema + notification.* RPC + comment→author fan-out
+- [x] 17-02-PLAN.md — Issue lifecycle/assignee/@mention emitters
+- [x] 17-03-PLAN.md — PR emitters (after Phase 12 lands)
+- [x] 17-04-PLAN.md — SiteHeader bell + `/notifications` UI
 
 **UI hint**: yes
 
@@ -812,7 +812,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 4/4 | Complete |  |
-| 17. Notifications | 0/TBD | Not started | - |
+| 17. Notifications | 5/5 | Complete | 2026-09-16 |
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
@@ -821,5 +821,5 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 
 ---
 *Roadmap created: 2026-09-09*
-*Last updated: 2026-09-14 — forge-core pre-ship: phases 11/14/15/20 Complete*
+*Last updated: 2026-09-16 — integrate campaign: 12–18, 21–22 on integrate; Phase 19 in progress*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*

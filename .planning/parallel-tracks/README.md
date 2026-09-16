@@ -4,6 +4,15 @@
 **Umbrella PR:** [#16](https://github.com/Octanest-Git/Octanest/pull/16) → `main` after manual UAT  
 **Phase PRs:** each targets this integrate branch (not `main`)
 
+## Status (2026-09-16)
+
+| Phase | Integrate |
+|-------|-----------|
+| 12, 13, 16, 17, 18, 21, 22 | Merged |
+| 19 Actions & Runners | In progress on `cursor/phase-19-actions-runners-c82f` |
+
+GitHub Actions: repo is public; hosted runners available again. Prefer green CI; local validation still required before merge.
+
 ## Merge gates (required)
 
 Each phase PR is **standalone** and must be reviewed on its own.

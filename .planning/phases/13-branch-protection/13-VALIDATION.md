@@ -28,3 +28,8 @@ bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.pull.protection.int
 - `crates/octanest-db/tests/dialect_branch_protection.rs`
 - `apps/web/src/routes/$owner.$repo.settings.branches.integration.test.ts`
 - `apps/web/src/routes/$owner.$repo.pull.protection.integration.test.ts`
+
+
+## Gate status (integrate honesty pass)
+
+**Gate status: GREEN** — Wave 0 stubs greened; phase shipped on integrate `cursor/gsd-remaining-integrate-c82f` (2026-09-16).

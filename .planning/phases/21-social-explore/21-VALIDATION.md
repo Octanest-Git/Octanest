@@ -26,5 +26,5 @@
 
 ## ASSUME
 
-- Migration logical name resolved to **`0017_social`** (0016 is `pull_requests` from Phase 12).
+- Migration logical name resolved to **`0020_social`** (0016 is `pull_requests` from Phase 12).
 - Phase 12 `forked_from_repo_id` + `repo.fork` / `clone_bare` extended — not duplicated.
