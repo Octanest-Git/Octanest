@@ -21,6 +21,43 @@ impl CliGitBackend {
     }
 }
 
+/// Install bare-repo `hooks/update` for branch protection (Phase 13 / D-19).
+/// Idempotent — overwrites with the known-good script.
+pub async fn install_protection_hooks(bare: &Path) -> Result<(), GitError> {
+    let hooks = bare.join("hooks");
+    tokio::fs::create_dir_all(&hooks).await?;
+    let update = hooks.join("update");
+    let script = r#"#!/bin/sh
+# Octanest branch protection update hook (Phase 13 / D-19)
+refname="$1"
+oldrev="$2"
+newrev="$3"
+helper="${OCTANEST_PROTECTION_HELPER:-}"
+if [ -z "$helper" ] || [ ! -x "$helper" ]; then
+  exit 0
+fi
+exec "$helper" update "$refname" "$oldrev" "$newrev"
+"#;
+    tokio::fs::write(&update, script).await?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = tokio::fs::metadata(&update).await?.permissions();
+        perms.set_mode(0o755);
+        tokio::fs::set_permissions(&update, perms).await?;
+    }
+    Ok(())
+}
+
+/// Ensure protection hooks exist (lazy reconcile).
+pub async fn reconcile_protection_hooks(bare: &Path) -> Result<(), GitError> {
+    let update = bare.join("hooks").join("update");
+    if tokio::fs::metadata(&update).await.is_ok() {
+        return Ok(());
+    }
+    install_protection_hooks(bare).await
+}
+
 async fn run_git(args: &[&str]) -> Result<(), GitError> {
     let _ = run_git_stdout(args).await?;
     Ok(())
@@ -356,6 +393,8 @@ impl GitBackend for CliGitBackend {
         run_git(&["init", "--bare", path_str]).await?;
         let head_ref = format!("refs/heads/{branch}");
         run_git(&["-C", path_str, "symbolic-ref", "HEAD", &head_ref]).await?;
+        // Phase 13 / D-19: install branch-protection update hook (reconcile-safe).
+        install_protection_hooks(path).await?;
         Ok(())
     }
 

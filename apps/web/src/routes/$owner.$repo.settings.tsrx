@@ -2,6 +2,7 @@ import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanej
 import type { OwnerType, RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
+import { BranchProtectionPanel } from "@/components/repo/branch-protection-panel";
 import { LfsBrowser } from "@/components/repo/lfs-browser";
 import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
 import { MergeSettingsPanel } from "@/components/repo/merge-settings-panel";
@@ -232,6 +233,8 @@ export function RepoSettingsPage() @{
         </section>
 
         <CollaboratorsPanel owner={owner} name={repoName} />
+
+        <BranchProtectionPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <LfsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
 

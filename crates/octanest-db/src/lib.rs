@@ -2,6 +2,7 @@
 
 pub mod auth_identities;
 pub mod auth_settings;
+pub mod branch_protection;
 pub mod dialect;
 pub mod email_tokens;
 pub mod issue_labels;
@@ -24,6 +25,7 @@ pub mod sessions;
 pub mod ssh_keys;
 pub mod users;
 
+pub use branch_protection::{BranchProtectionRuleRow, CommitStatusRow};
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
 pub use issues::{
@@ -708,6 +710,145 @@ impl Database {
         pull_id: &str,
     ) -> Result<Vec<String>, String> {
         pulls::list_review_request_user_ids(self.require_pool()?, pull_id).await
+    }
+
+    // --- branch protection + commit statuses (Phase 13) ---
+
+    pub async fn list_branch_protection_rules(
+        &self,
+        repo_id: &str,
+    ) -> Result<Vec<BranchProtectionRuleRow>, String> {
+        branch_protection::list_rules(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn find_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+    ) -> Result<Option<BranchProtectionRuleRow>, String> {
+        branch_protection::find_rule(self.require_pool()?, repo_id, rule_id).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_branch_protection_rule(
+        &self,
+        id: &str,
+        repo_id: &str,
+        pattern: &str,
+        require_reviews: bool,
+        required_approving_review_count: i32,
+        dismiss_stale_reviews: bool,
+        require_conversation_resolution: bool,
+        require_last_push_approval: bool,
+        required_status_contexts: &str,
+        strict_status_checks: bool,
+        allow_force_pushes: bool,
+        allow_deletions: bool,
+        enforce_admins: bool,
+        required_linear_history: bool,
+        lock_branch: bool,
+    ) -> Result<BranchProtectionRuleRow, String> {
+        branch_protection::insert_rule(
+            self.require_pool()?,
+            id,
+            repo_id,
+            pattern,
+            require_reviews,
+            required_approving_review_count,
+            dismiss_stale_reviews,
+            require_conversation_resolution,
+            require_last_push_approval,
+            required_status_contexts,
+            strict_status_checks,
+            allow_force_pushes,
+            allow_deletions,
+            enforce_admins,
+            required_linear_history,
+            lock_branch,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn update_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+        pattern: &str,
+        require_reviews: bool,
+        required_approving_review_count: i32,
+        dismiss_stale_reviews: bool,
+        require_conversation_resolution: bool,
+        require_last_push_approval: bool,
+        required_status_contexts: &str,
+        strict_status_checks: bool,
+        allow_force_pushes: bool,
+        allow_deletions: bool,
+        enforce_admins: bool,
+        required_linear_history: bool,
+        lock_branch: bool,
+    ) -> Result<BranchProtectionRuleRow, String> {
+        branch_protection::update_rule(
+            self.require_pool()?,
+            repo_id,
+            rule_id,
+            pattern,
+            require_reviews,
+            required_approving_review_count,
+            dismiss_stale_reviews,
+            require_conversation_resolution,
+            require_last_push_approval,
+            required_status_contexts,
+            strict_status_checks,
+            allow_force_pushes,
+            allow_deletions,
+            enforce_admins,
+            required_linear_history,
+            lock_branch,
+        )
+        .await
+    }
+
+    pub async fn delete_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+    ) -> Result<(), String> {
+        branch_protection::delete_rule(self.require_pool()?, repo_id, rule_id).await
+    }
+
+    pub async fn list_commit_statuses(
+        &self,
+        repo_id: &str,
+        sha: &str,
+    ) -> Result<Vec<CommitStatusRow>, String> {
+        branch_protection::list_statuses_for_sha(self.require_pool()?, repo_id, sha).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn upsert_commit_status(
+        &self,
+        id: &str,
+        repo_id: &str,
+        sha: &str,
+        context: &str,
+        state: &str,
+        description: &str,
+        target_url: Option<&str>,
+        creator_id: Option<&str>,
+    ) -> Result<CommitStatusRow, String> {
+        branch_protection::upsert_status(
+            self.require_pool()?,
+            id,
+            repo_id,
+            sha,
+            context,
+            state,
+            description,
+            target_url,
+            creator_id,
+        )
+        .await
     }
 
     // --- issues ---

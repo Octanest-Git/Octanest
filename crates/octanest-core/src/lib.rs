@@ -5,6 +5,7 @@ pub mod issue_types;
 pub mod org_types;
 pub mod package_types;
 pub mod pat_types;
+pub mod protection_types;
 pub mod pull_types;
 pub mod release_types;
 pub mod repo_types;
@@ -15,6 +16,7 @@ pub use issue_types::*;
 pub use org_types::*;
 pub use package_types::*;
 pub use pat_types::*;
+pub use protection_types::*;
 pub use pull_types::*;
 pub use release_types::*;
 pub use repo_types::*;
@@ -44,6 +46,11 @@ impl AppError {
             message: message.into(),
             data: None,
         }
+    }
+
+    pub fn with_data(mut self, data: serde_json::Value) -> Self {
+        self.data = Some(data);
+        self
     }
 }
 

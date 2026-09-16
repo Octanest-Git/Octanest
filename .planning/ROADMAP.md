@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
 - [x] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 9/9; G-11.1-15 gap-closure 07–09 done)
 - [x] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
-- [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
+- [x] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
 - [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
@@ -561,7 +561,18 @@ Plans:
   2. Protected rules block non-compliant direct pushes
   3. PR merge is blocked when applicable branch protection rules are not satisfied
 
-**Plans**: TBD
+**Plans**: 9/9 (13-00…13-08)
+
+- [x] 13-00-PLAN.md
+- [x] 13-01-PLAN.md
+- [x] 13-02-PLAN.md
+- [x] 13-03-PLAN.md
+- [x] 13-04-PLAN.md
+- [x] 13-05-PLAN.md
+- [x] 13-06-PLAN.md
+- [x] 13-07-PLAN.md
+- [x] 13-08-PLAN.md
+
 **UI hint**: yes
 
 ### Phase 14: Git LFS
@@ -753,7 +764,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
 | 11. Issues | 13/13 | Complete    | 2026-09-14 |
 | 12. Pull Requests | 8/8 | Complete | cursor/phase-12-pull-requests-c82f |
-| 13. Branch Protection | 0/TBD | Not started | - |
+| 13. Branch Protection | 9/9 | Complete | cursor/phase-13-branch-protection-c82f |
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 0/TBD | Not started | - |

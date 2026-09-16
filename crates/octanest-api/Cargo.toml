@@ -16,6 +16,10 @@ path = "src/main.rs"
 name = "rpc-gen"
 path = "src/bin/rpc_gen.rs"
 
+[[bin]]
+name = "octanest-protection-hook"
+path = "src/bin/protection_hook.rs"
+
 [dependencies]
 octanest-core = { path = "../octanest-core" }
 octanest-db = { path = "../octanest-db" }

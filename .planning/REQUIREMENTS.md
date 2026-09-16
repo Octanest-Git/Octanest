@@ -65,8 +65,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **ORG-02**: Org owner can assign member roles that control repo access
 - [x] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
 - [x] **ORG-04**: Unauthorized users cannot read private repos or push without permission
-- [ ] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
-- [ ] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
+- [x] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
+- [x] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
 
 ### Pull requests & review
 
@@ -77,7 +77,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
 - [x] **PR-06**: User can close or reopen a PR
 - [x] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
-- [ ] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
+- [x] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
 
 ### Issues
 
@@ -213,8 +213,8 @@ Deferred; not in the current roadmap until promoted.
 | ORG-02 | Phase 10 | Complete |
 | ORG-03 | Phase 10 | Complete |
 | ORG-04 | Phase 10 | Complete |
-| ORG-05 | Phase 13 | Pending |
-| ORG-06 | Phase 13 | Pending |
+| ORG-05 | Phase 13 | Complete |
+| ORG-06 | Phase 13 | Complete |
 | PR-01 | Phase 12 | Complete |
 | PR-02 | Phase 12 | Complete |
 | PR-03 | Phase 12 | Complete |
@@ -222,7 +222,7 @@ Deferred; not in the current roadmap until promoted.
 | PR-05 | Phase 12 | Complete |
 | PR-06 | Phase 12 | Complete |
 | PR-07 | Phase 12 | Complete |
-| PR-08 | Phase 13 | Pending |
+| PR-08 | Phase 13 | Complete |
 | ISS-01 | Phase 11 | Complete |
 | ISS-02 | Phase 11 | Complete |
 | ISS-03 | Phase 11 | Complete |

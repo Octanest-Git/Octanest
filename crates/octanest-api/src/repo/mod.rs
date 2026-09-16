@@ -1,6 +1,8 @@
 //! Repository RPC handlers (`repo.create` + browse ACL — GIT-01 / GIT-05 / D-23–D-25).
 
 mod acl;
+mod branch_protection;
+mod commit_status;
 mod collaborators;
 mod rename_transfer;
 mod templates;
@@ -11,6 +13,11 @@ pub use acl::{
     resolve_owner_slug, resolve_repo_for_read, AccessibleRepo, Capability, MemberBasePermission,
     OrgRole, OwnerRef,
 };
+pub use branch_protection::{
+    create as branch_protection_create, delete as branch_protection_delete,
+    list as branch_protection_list, update as branch_protection_update,
+};
+pub use commit_status::{create as commit_status_create, list as commit_status_list};
 pub use collaborators::{
     add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
     resolve_repo_for_admin, update as collaborators_update,
@@ -679,6 +686,22 @@ pub async fn branch_delete(
     }
     if branch == accessible.row.default_branch {
         return Err(soft_protect_err());
+    }
+    // Phase 13 / D-20: honor allow_deletions on matching protection rules.
+    {
+        let eff = crate::protection::effective_for_branch(
+            &ctx.db,
+            &accessible.row.id,
+            branch,
+        )
+        .await?;
+        if let Err(e) = crate::protection::evaluate_push(
+            &eff,
+            crate::protection::ProtectionIntent::Delete,
+            accessible.capability,
+        ) {
+            return Err(e);
+        }
     }
     let path = bare_repo_path(
         &ctx.repos_dir,
