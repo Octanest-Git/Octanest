@@ -174,8 +174,13 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         .insert_issue(&id, &accessible.row.id, &user.id, &title, &body)
         .await
         .map_err(db_err)?;
-    // Notify mentioned users on create (author is actor → not self-notified) (D-01 / D-03).
+    // Notify on create: issue_opened to repo owner (when not the author) + mentions (D-01 / D-03).
     let subject = notify::subject_for_issue(&row);
+    let mut opened_recipients: Vec<String> = Vec::new();
+    if accessible.row.owner_type == "user" && accessible.row.owner_id != user.id {
+        opened_recipients.push(accessible.row.owner_id.clone());
+    }
+    notify::fanout(ctx, &user.id, opened_recipients, "issue_opened", &subject).await;
     let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
     notify::fanout(ctx, &user.id, mentions, "issue_mention", &subject).await;
     let payload = dispatch::issues_payload(
