@@ -8,10 +8,33 @@ use octanest_core::{
 use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
 use crate::notify;
+use crate::protection::{
+    effective_for_branch, evaluate_merge, MergeEvalInput,
+};
 use crate::pull::acl;
 use crate::rpc::RpcCtx;
 
 use super::{db_err, load_pull_in_repo, to_public};
+
+async fn git_is_ancestor(bare: &std::path::Path, maybe_ancestor: &str, tip: &str) -> Result<bool, String> {
+    if maybe_ancestor.is_empty() || tip.is_empty() || maybe_ancestor == tip {
+        return Ok(true);
+    }
+    let bare_str = bare.to_str().ok_or("non-utf8 bare path")?;
+    let out = tokio::process::Command::new("git")
+        .args([
+            "-C",
+            bare_str,
+            "merge-base",
+            "--is-ancestor",
+            maybe_ancestor,
+            tip,
+        ])
+        .output()
+        .await
+        .map_err(|e| format!("git merge-base: {e}"))?;
+    Ok(out.status.success())
+}
 
 fn parse_closing_issue_numbers(text: &str) -> Vec<i64> {
     let lower = text.to_lowercase();
@@ -177,6 +200,84 @@ pub async fn merge(ctx: &RpcCtx, input: serde_json::Value) -> Result<MergePullRe
             ));
         }
         _ => {}
+    }
+
+    // Phase 13 / PR-08: shared protection evaluate against base branch (D-22).
+    {
+        let eff = effective_for_branch(&ctx.db, &accessible.row.id, &row.base_ref).await?;
+        if eff.matched {
+            let reviews = ctx
+                .db
+                .list_pull_reviews(&row.id)
+                .await
+                .map_err(db_err)?;
+            // Latest-per-user review state (D-PR-07); dismiss_stale excludes Approves on older SHAs.
+            let mut latest: std::collections::BTreeMap<String, &octanest_db::PullReviewRow> =
+                std::collections::BTreeMap::new();
+            for r in &reviews {
+                match latest.get(&r.author_id) {
+                    Some(prev) if prev.submitted_at >= r.submitted_at => {}
+                    _ => {
+                        latest.insert(r.author_id.clone(), r);
+                    }
+                }
+            }
+            let mut approving_reviewer_ids = Vec::new();
+            for r in latest.values() {
+                if r.state != "approved" {
+                    continue;
+                }
+                if eff.dismiss_stale_reviews {
+                    if r.commit_sha.as_deref() != Some(row.head_sha.as_str()) {
+                        continue;
+                    }
+                }
+                approving_reviewer_ids.push(r.author_id.clone());
+            }
+            let comments = ctx
+                .db
+                .list_pull_comments(&row.id)
+                .await
+                .map_err(db_err)?;
+            let unresolved = comments
+                .iter()
+                .filter(|c| c.path.is_some() && !c.resolved)
+                .count() as i32;
+            let statuses = ctx
+                .db
+                .list_commit_statuses(&accessible.row.id, &row.head_sha)
+                .await
+                .map_err(db_err)?;
+            let mut status_by_context = std::collections::BTreeMap::new();
+            for s in statuses {
+                status_by_context.insert(s.context, s.state);
+            }
+            let path_for_anc = bare_repo_path(
+                &ctx.repos_dir,
+                &accessible.owner_username,
+                &accessible.row.name,
+            )?;
+            let head_up_to_date = git_is_ancestor(&path_for_anc, &row.base_sha, &row.head_sha)
+                .await
+                .unwrap_or(true);
+            let merge_input = MergeEvalInput {
+                approving_review_count: approving_reviewer_ids.len() as i32,
+                unresolved_review_threads: unresolved,
+                last_head_pusher_id: None,
+                approving_reviewer_ids,
+                head_sha: row.head_sha.clone(),
+                base_sha: row.base_sha.clone(),
+                head_up_to_date,
+                merge_method: Some(match req.method {
+                    MergeMethod::Merge => "merge".into(),
+                    MergeMethod::Squash => "squash".into(),
+                    MergeMethod::Rebase => "rebase".into(),
+                }),
+                is_draft: row.draft,
+                status_by_context,
+            };
+            evaluate_merge(&eff, accessible.capability, &merge_input)?;
+        }
     }
 
     let path = bare_repo_path(
