@@ -87,14 +87,20 @@ export function PullsListPage() @{
     | undefined;
 
   const [state, setState] = useState<"open" | "closed" | "all">("open");
+  const [author, setAuthor] = useState("");
+  const [reviewState, setReviewState] = useState("");
+  const [appliedAuthor, setAppliedAuthor] = useState("");
+  const [appliedReviewState, setAppliedReviewState] = useState("");
 
   const listQ = useQuery({
-    queryKey: ["pull", "list", owner, repoName, state] as const,
+    queryKey: ["pull", "list", owner, repoName, state, appliedAuthor, appliedReviewState] as const,
     queryFn: async () => {
       const res = await apiClient.pull.list({
         owner,
         name: repoName,
         state,
+        author: appliedAuthor || null,
+        review_state: appliedReviewState || null,
         offset: 0,
         limit: PAGE_SIZE,
       });
@@ -102,7 +108,10 @@ export function PullsListPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName,
-    initialData: routeLoader?.kind === "ready" && state === "open" ? routeLoader.list : undefined,
+    initialData:
+      routeLoader?.kind === "ready" && state === "open" && !appliedAuthor && !appliedReviewState
+        ? routeLoader.list
+        : undefined,
   });
 
   const repo = routeLoader?.kind === "ready" ? routeLoader.repo : null;
@@ -160,6 +169,45 @@ export function PullsListPage() @{
             </a>;
           }
         </div>
+        <form
+          method="post"
+          action="#"
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setAppliedAuthor(author.trim());
+            setAppliedReviewState(reviewState);
+          }}
+        >
+          <label className="flex flex-col gap-1 text-sm">
+            Author
+            <input
+              className="rounded-md border border-border bg-background px-2 py-1.5"
+              value={author as string}
+              placeholder="username"
+              onInput={(e: Event) => setAuthor((e.target as HTMLInputElement).value)}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Review state
+            <select
+              className="rounded-md border border-border bg-background px-2 py-1.5"
+              value={reviewState as string}
+              onChange={(e: Event) => setReviewState((e.target as HTMLSelectElement).value)}
+            >
+              <option value="">Any</option>
+              <option value="approved">Approved</option>
+              <option value="changes_requested">Changes requested</option>
+              <option value="review_required">Review required</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium"
+          >
+            Apply
+          </button>
+        </form>
         @if (list) {
           <PullsList
             owner={owner as string}

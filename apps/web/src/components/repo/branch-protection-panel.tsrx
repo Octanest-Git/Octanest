@@ -47,10 +47,46 @@ export function BranchProtectionPanel(props: {
   const [enforceAdmins, setEnforceAdmins] = useState(false);
   const [linearHistory, setLinearHistory] = useState(false);
   const [lockBranch, setLockBranch] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
-  async function createRule() {
+  function resetForm() {
+    setEditingId(null);
+    setPattern("main");
+    setRequireReviews(true);
+    setReviewCount("1");
+    setContexts("");
+    setStrict(false);
+    setDismissStale(false);
+    setRequireConversations(false);
+    setRequireLastPush(false);
+    setAllowForce(false);
+    setAllowDeletes(false);
+    setEnforceAdmins(false);
+    setLinearHistory(false);
+    setLockBranch(false);
+  }
+
+  function loadRuleForEdit(rule: BranchProtectionRulePublic) {
+    setEditingId(rule.id);
+    setPattern(rule.pattern);
+    setRequireReviews(rule.require_reviews);
+    setReviewCount(String(rule.required_approving_review_count || 1));
+    setContexts(rule.required_status_contexts.join(", "));
+    setStrict(rule.strict_status_checks);
+    setDismissStale(rule.dismiss_stale_reviews);
+    setRequireConversations(rule.require_conversation_resolution);
+    setRequireLastPush(rule.require_last_push_approval);
+    setAllowForce(rule.allow_force_pushes);
+    setAllowDeletes(rule.allow_deletions);
+    setEnforceAdmins(rule.enforce_admins);
+    setLinearHistory(rule.required_linear_history);
+    setLockBranch(rule.lock_branch);
+    setError("");
+  }
+
+  async function saveRule() {
     if (!canAdmin) return;
     setError("");
     setPending(true);
@@ -59,31 +95,37 @@ export function BranchProtectionPanel(props: {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean);
+    const body = {
+      owner,
+      name,
+      pattern: pattern.trim(),
+      require_reviews: requireReviews,
+      required_approving_review_count: count,
+      dismiss_stale_reviews: dismissStale,
+      require_conversation_resolution: requireConversations,
+      require_last_push_approval: requireLastPush,
+      required_status_contexts: ctxList,
+      strict_status_checks: strict,
+      allow_force_pushes: allowForce,
+      allow_deletions: allowDeletes,
+      enforce_admins: enforceAdmins,
+      required_linear_history: linearHistory,
+      lock_branch: lockBranch,
+    };
     try {
-      const res = await apiClient.repo.branchProtection.create({
-        owner,
-        name,
-        pattern: pattern.trim(),
-        require_reviews: requireReviews,
-        required_approving_review_count: count,
-        dismiss_stale_reviews: dismissStale,
-        require_conversation_resolution: requireConversations,
-        require_last_push_approval: requireLastPush,
-        required_status_contexts: ctxList,
-        strict_status_checks: strict,
-        allow_force_pushes: allowForce,
-        allow_deletions: allowDeletes,
-        enforce_admins: enforceAdmins,
-        required_linear_history: linearHistory,
-        lock_branch: lockBranch,
-      });
+      const res = editingId
+        ? await apiClient.repo.branchProtection.update({ ...body, id: editingId })
+        : await apiClient.repo.branchProtection.create(body);
       if (!res.ok) {
-        setError(res.error.message || "Could not create rule.");
+        setError(
+          res.error.message || (editingId ? "Could not update rule." : "Could not create rule."),
+        );
         setPending(false);
         return;
       }
       await queryClient.invalidateQueries({ queryKey: protectionQueryKey(owner, name) });
-      toastSuccess("Branch protection rule added.");
+      toastSuccess(editingId ? "Branch protection rule updated." : "Branch protection rule added.");
+      resetForm();
       setPending(false);
     } catch {
       setError(NETWORK_ERROR);
@@ -102,6 +144,7 @@ export function BranchProtectionPanel(props: {
         setPending(false);
         return;
       }
+      if (editingId === id) resetForm();
       await queryClient.invalidateQueries({ queryKey: protectionQueryKey(owner, name) });
       toastSuccess("Branch protection rule deleted.");
       setPending(false);
@@ -163,14 +206,24 @@ export function BranchProtectionPanel(props: {
                         <strong className="font-mono">
                           {rule.pattern as string}
                         </strong>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          disabled={pending}
-                          onClick={() => void deleteRule(rule.id)}
-                        >
-                          Delete
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={pending}
+                            onClick={() => loadRuleForEdit(rule)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            disabled={pending}
+                            onClick={() => void deleteRule(rule.id)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                       <p className="mt-1 text-muted-foreground">
                         @if (
@@ -211,10 +264,12 @@ export function BranchProtectionPanel(props: {
                 data-testid="bp-add-form"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  void createRule();
+                  void saveRule();
                 }}
               >
-                <h3 className="text-[16px] font-semibold text-foreground">Add rule</h3>
+                <h3 className="text-[16px] font-semibold text-foreground">
+                  {(editingId ? "Edit rule" : "Add rule") as string}
+                </h3>
                 <div className="flex flex-col gap-1">
                   <Label for="bp-pattern">Branch name pattern</Label>
                   <Input
@@ -357,9 +412,27 @@ export function BranchProtectionPanel(props: {
                     {error as string}
                   </p>;
                 }
-                <Button type="submit" disabled={pending || !pattern.trim()}>
-                  {(pending ? "Saving…" : "Add rule") as string}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="submit" disabled={pending || !pattern.trim()}>
+                    {
+                      (pending
+                        ? "Saving…"
+                        : editingId
+                          ? "Update rule"
+                          : "Add rule") as string
+                    }
+                  </Button>
+                  @if (editingId) {
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={pending}
+                      onClick={() => resetForm()}
+                    >
+                      Cancel
+                    </Button>;
+                  }
+                </div>
               </form>
             </>;
           }
