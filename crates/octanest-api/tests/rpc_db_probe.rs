@@ -54,6 +54,35 @@ async fn db_probe_requires_version_header() {
 }
 
 #[tokio::test]
+async fn db_probe_allowed_during_needs_setup() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let db_path = dir.path().join("octanest-setup.db");
+    let url = format!("sqlite:{}", db_path.display());
+
+    let db = Database::connect(&url).await.expect("connect sqlite");
+    db.migrate().await.expect("migrate sqlite");
+    // No admin seeded — needs_setup=true. db_probe must still succeed (compose smoke).
+    let app = app_with(db);
+
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/rpc")
+                .header("content-type", "application/json")
+                .header("Octanest-RPC-Version", "1")
+                .body(Body::from(r#"{"procedure":"system.db_probe","input":{}}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["data"]["dialect"], "sqlite");
+}
+
+#[tokio::test]
 async fn db_probe_round_trip_sqlite() {
     let dir = tempfile::tempdir().expect("tempdir");
     let db_path = dir.path().join("octanest.db");
@@ -61,8 +90,7 @@ async fn db_probe_round_trip_sqlite() {
 
     let db = Database::connect(&url).await.expect("connect sqlite");
     db.migrate().await.expect("migrate sqlite");
-    // Empty migrated DB is needs_setup=true; D-11 blocks system.db_probe until
-    // an admin exists. Seed a sys-admin so this Phase-1 smoke stays post-bootstrap.
+    // Seed admin for a post-bootstrap round-trip (probe_count still increases either way).
     support::unlock_signup(&db).await;
     let app = app_with(db);
 
