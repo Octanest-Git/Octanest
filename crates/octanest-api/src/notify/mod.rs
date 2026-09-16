@@ -115,3 +115,37 @@ pub async fn resolve_mention_user_ids(ctx: &RpcCtx, body: &str) -> Vec<String> {
     }
     ids
 }
+
+/// Issue participants: author + assignees + prior commenters (D-03).
+pub async fn issue_participant_ids(ctx: &RpcCtx, issue_id: &str, author_id: &str) -> Vec<String> {
+    let mut ids = HashSet::new();
+    if !author_id.is_empty() {
+        ids.insert(author_id.to_string());
+    }
+    match ctx.db.list_issue_assignees(issue_id).await {
+        Ok(rows) => {
+            for a in rows {
+                ids.insert(a.user_id);
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "list_issue_assignees for notify failed"),
+    }
+    match ctx.db.list_issue_comments(issue_id).await {
+        Ok(rows) => {
+            for c in rows {
+                ids.insert(c.author_id);
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "list_issue_comments for notify failed"),
+    }
+    ids.into_iter().collect()
+}
+
+pub fn subject_for_issue(issue: &octanest_db::IssueRow) -> NotifySubject {
+    NotifySubject {
+        kind: "issue",
+        repo_id: issue.repo_id.clone(),
+        number: issue.number,
+        title: issue.title.clone(),
+    }
+}

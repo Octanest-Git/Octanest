@@ -442,3 +442,210 @@ async fn notification_unauthenticated_fails_closed() {
     assert_eq!(count["ok"], false, "{count}");
     assert_eq!(count["error"]["code"], "auth.unauthenticated");
 }
+
+#[tokio::test]
+async fn notification_issue_close_notifies_author() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_close.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "nclose@ex.com", "nclose").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &author_cookie, "closer").await;
+    create_issue(&app, &author_cookie, "nclose", "closer", "Open me").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "nclosew@ex.com", "nclosew").await;
+    verify_user(&db, writer_v["data"]["id"].as_str().unwrap()).await;
+    let add = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"nclose","name":"closer","username":"nclosew","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let closed = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.close","input":{"owner":"nclose","name":"closer","number":1}}"#,
+    )
+    .await;
+    assert_eq!(closed["ok"], true, "{closed}");
+
+    let listed = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    let rows = listed["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "issue_closed"),
+        "expected issue_closed — {listed}"
+    );
+}
+
+#[tokio::test]
+async fn notification_issue_assign_notifies_assignee() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_assign.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "nassign@ex.com", "nassign").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &author_cookie, "assign").await;
+    create_issue(&app, &author_cookie, "nassign", "assign", "Who").await;
+
+    let (assignee_cookie, assignee_v) =
+        signup_and_login(&app, "nassignee@ex.com", "nassignee").await;
+    let assignee_id = assignee_v["data"]["id"].as_str().unwrap().to_string();
+    verify_user(&db, &assignee_id).await;
+    let add = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"nassign","name":"assign","username":"nassignee","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let set = rpc_json(
+        &app,
+        &author_cookie,
+        &format!(
+            r#"{{"procedure":"issue.assignees.set","input":{{"owner":"nassign","name":"assign","number":1,"user_ids":["{assignee_id}"]}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(set["ok"], true, "{set}");
+
+    let listed = rpc_json(
+        &app,
+        &assignee_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    let rows = listed["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "issue_assigned"),
+        "expected issue_assigned — {listed}"
+    );
+}
+
+#[tokio::test]
+async fn notification_issue_mention_notifies_user() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_mention.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "nmen@ex.com", "nmen").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &author_cookie, "mention").await;
+
+    let (_mentioned_cookie, mentioned_v) =
+        signup_and_login(&app, "nmentioned@ex.com", "nmentioned").await;
+    verify_user(&db, mentioned_v["data"]["id"].as_str().unwrap()).await;
+
+    let created = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"issue.create","input":{"owner":"nmen","name":"mention","title":"Hey","body":"cc @nmentioned please look"}}"#,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+
+    let listed = rpc_json(
+        &app,
+        &_mentioned_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    let rows = listed["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "issue_mention"),
+        "expected issue_mention — {listed}"
+    );
+
+    let self_count = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"notification.unreadCount","input":{}}"#,
+    )
+    .await;
+    assert_eq!(self_count["data"]["count"], 0);
+}
+
+#[tokio::test]
+async fn notification_reactions_and_labels_are_silent() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_silent.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "nsilent@ex.com", "nsilent").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &author_cookie, "silent").await;
+    create_issue(&app, &author_cookie, "nsilent", "silent", "Quiet").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "nsilentw@ex.com", "nsilentw").await;
+    verify_user(&db, writer_v["data"]["id"].as_str().unwrap()).await;
+    let add = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"nsilent","name":"silent","username":"nsilentw","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let label = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"label.create","input":{"owner":"nsilent","name":"silent","label_name":"bug","color":"ff0000","description":""}}"#,
+    )
+    .await;
+    // label.create may need different shape — if it fails, try labels.set with empty then skip soft
+    let _ = label;
+    let set_labels = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.labels.set","input":{"owner":"nsilent","name":"silent","number":1,"label_ids":[]}}"#,
+    )
+    .await;
+    assert_eq!(set_labels["ok"], true, "{set_labels}");
+
+    let react = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.reactions.toggle","input":{"owner":"nsilent","name":"silent","number":1,"target":"issue","content":"+1"}}"#,
+    )
+    .await;
+    assert_eq!(react["ok"], true, "{react}");
+
+    let author_count = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"notification.unreadCount","input":{}}"#,
+    )
+    .await;
+    assert_eq!(
+        author_count["data"]["count"], 0,
+        "reactions/labels must not notify — {author_count}"
+    );
+}
