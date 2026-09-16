@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
-- [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
+- [x] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
 ## Phase Details
 
@@ -783,12 +783,9 @@ Plans:
 
 Plans:
 
-- [x] 22-01-PLAN.md
-- [x] 22-02-PLAN.md
-- [x] 22-03-PLAN.md
-- [ ] `22-01-PLAN.md` — CI Compose bring-up matrix (Postgres + SQLite + MySQL via make smoke*)
-- [ ] `22-02-PLAN.md` — Railway-class IaC + file gateway + deploy docs (same Dockerfiles)
-- [ ] `22-03-PLAN.md` — VALIDATION + architecture/testing doc sync
+- [x] `22-01-PLAN.md` — CI Compose bring-up matrix (Postgres + SQLite + MySQL via make smoke*)
+- [x] `22-02-PLAN.md` — Railway-class IaC + file gateway + deploy docs (same Dockerfiles)
+- [x] `22-03-PLAN.md` — VALIDATION + architecture/testing doc sync
 
 ## Progress
 
@@ -820,7 +817,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
-| 22. Compose CI & Cloud Deploy | 3/3 | In Progress|  |
+| 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
 
 ---
 *Roadmap created: 2026-09-09*
