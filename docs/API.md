@@ -361,7 +361,7 @@ Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / 
 
 ### Notifications (`notification.*`)
 
-Phase 17 ships in-app activity notifications (NOTF-01 / NOTF-02) on migration `0017_notifications`:
+Phase 17 ships in-app activity notifications (NOTF-01 / NOTF-02) on migration `0018_notifications`:
 
 | Concern | Contract |
 | --- | --- |

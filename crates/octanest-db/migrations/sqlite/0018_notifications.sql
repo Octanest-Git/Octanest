@@ -1,4 +1,4 @@
--- logical: 0017_notifications — in-app activity inbox (NOTF-01 / NOTF-02 / D-12)
+-- logical: 0018_notifications — in-app activity inbox (NOTF-01 / NOTF-02 / D-12)
 
 CREATE TABLE IF NOT EXISTS notifications (
   id               TEXT PRIMARY KEY,
