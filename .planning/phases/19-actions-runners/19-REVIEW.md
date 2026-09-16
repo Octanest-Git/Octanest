@@ -39,7 +39,7 @@ findings:
   info: 4
   total: 11
   critical_remediated: 4
-status: remediated_pending_ci
+status: remediated_ci_green
 ---
 
 # Phase 19: Code Review Report
@@ -47,11 +47,11 @@ status: remediated_pending_ci
 **Reviewed:** 2026-09-16T20:55:00Z
 **Depth:** standard
 **Files Reviewed:** 29
-**Status:** remediated_pending_ci (CR-01…04 fixed on integrate; WR/IN open)
+**Status:** remediated_ci_green (CR-01…04 fixed; integrate CI green on `ee9e97ea`; ship held for manual test)
 
 ## Remediation (2026-09-16)
 
-Criticals addressed on integrate branch (pending CI + manual verify before ship):
+Criticals addressed on integrate branch (CI green; ship held for manual verify):
 
 | ID | Status | Change |
 |----|--------|--------|
