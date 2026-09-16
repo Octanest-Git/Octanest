@@ -23,6 +23,7 @@ COPY --from=build /app/packages/api-client ./packages/api-client
 WORKDIR /app/apps/web
 ENV PORT=3000
 EXPOSE 3000
-HEALTHCHECK --interval=10s --timeout=5s --retries=12 \
-  CMD curl -fsS http://127.0.0.1:3000/ || exit 1
+# Header-gated probe (see vite-plugins/web-health.ts). Mirrors API /health cadence.
+HEALTHCHECK --interval=5s --timeout=5s --retries=12 --start-period=10s \
+  CMD curl -fsS -H 'Octanest-Health-Probe: 1' http://127.0.0.1:3000/health || exit 1
 CMD ["bun", "run", "preview"]

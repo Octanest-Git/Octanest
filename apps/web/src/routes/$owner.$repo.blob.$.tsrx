@@ -6,6 +6,7 @@ import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RefSelect } from "@/components/repo/ref-select";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { highlightCode, languageIdForPath, type HighlightTheme } from "@/lib/highlight";
+import { isMarkdownPath, renderGfm } from "@/lib/markdown";
 import { parseRefAndPath, shortRefName } from "@/lib/repo-browse";
 import { resolveSsrHighlightTheme } from "@/lib/ssr-auth";
 import { fetchRepoBlob, fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
@@ -23,6 +24,8 @@ export type BlobLoaderData =
       /** Pre-rendered Shiki HTML (SSR). */
       highlightedHtml: string | null;
       highlightTheme: HighlightTheme | null;
+      /** Pre-rendered GFM HTML for markdown paths. */
+      markdownHtml: string | null;
     };
 
 type Phase = { kind: "loading" } | BlobLoaderData;
@@ -78,10 +81,22 @@ async function loadBlobPage(
 
   let highlightedHtml: string | null = null;
   let highlightTheme: HighlightTheme | null = null;
+  let markdownHtml: string | null = null;
   const blob = blobRes.data;
+  const pathForRender = blob.path || parsed.path;
   if (!blob.is_binary && !blob.truncated && blob.encoding === "utf-8" && blob.content) {
+    if (isMarkdownPath(pathForRender)) {
+      try {
+        markdownHtml = await renderGfm(blob.content, {
+          owner,
+          repo: repoName,
+        });
+      } catch {
+        markdownHtml = null;
+      }
+    }
     try {
-      const hl = await highlightBlob(blob.path || parsed.path, blob.content);
+      const hl = await highlightBlob(pathForRender, blob.content);
       highlightedHtml = hl.html;
       highlightTheme = hl.theme;
     } catch {
@@ -94,11 +109,12 @@ async function loadBlobPage(
     kind: "ready",
     repo,
     refName: shortRefName(blob.ref) || refName,
-    path: blob.path || parsed.path,
+    path: pathForRender,
     blob,
     refs,
     highlightedHtml,
     highlightTheme,
+    markdownHtml,
   };
 }
 
@@ -186,6 +202,7 @@ export function RepoBlobPage() @{
         blob={phase.blob}
         highlightedHtml={phase.highlightedHtml}
         highlightTheme={phase.highlightTheme}
+        markdownHtml={phase.markdownHtml}
       />
     </>;
   }

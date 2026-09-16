@@ -1,0 +1,21 @@
+{
+  "phase": "13-branch-protection",
+  "gathered": "2026-09-16",
+  "mode": "github-parity-auto",
+  "note": "Gray areas locked to GitHub classic branch protection parity without human wait (campaign default; mirrors Phase 12).",
+  "locked_areas": [
+    "rule-model-classic",
+    "required-reviews",
+    "status-checks-commit-status-api",
+    "push-enforcement-hooks",
+    "merge-gate",
+    "settings-ui"
+  ],
+  "deferred": [
+    "CODEOWNERS",
+    "rulesets",
+    "merge-queue",
+    "signed-commits",
+    "push-allowlists-teams"
+  ]
+}

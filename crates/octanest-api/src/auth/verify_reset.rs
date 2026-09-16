@@ -658,6 +658,7 @@ mod tests {
             repos_dir: PathBuf::from("/tmp/octanest-test-repos"),
             lfs_dir: PathBuf::from("/tmp/octanest-test-lfs"),
             release_assets_dir: PathBuf::from("/tmp/octanest-test-release-assets"),
+            actions_log_dir: PathBuf::from("/tmp/octanest-test-actions-logs"),
             git: Arc::new(octanest_git::CliGitBackend::new()),
             env_name: "development".into(),
             session: Some(ResolvedSession {
@@ -670,6 +671,9 @@ mod tests {
             lookup_limiter: Arc::new(std::sync::Mutex::new(
                 crate::user::rate_limit::LookupLimiter::new(),
             )),
+            search_timeout_ms: 8000,
+            search_max_matches: 100,
+            search_max_files: 50,
         }
     }
 

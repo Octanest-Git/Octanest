@@ -19,9 +19,10 @@ type IssueLinkedPrsPanelProps = {
 
 function stubLabel(link: IssueLinkPublic): string {
   const n = link.target_number != null ? `#${link.target_number}` : "";
-  if (link.kind === "pr_stub") {
+  if (link.kind === "pr" || link.kind === "pr_stub") {
     const title = (link.title ?? "").trim();
-    return title ? `PR stub ${n}: ${title}` : `PR stub ${n}`.trim();
+    const prefix = link.kind === "pr" ? "PR" : "PR stub";
+    return title ? `${prefix} ${n}: ${title}` : `${prefix} ${n}`.trim();
   }
   const title = (link.title ?? "").trim();
   return title ? `Issue ${n}: ${title}` : `Issue ${n}`.trim();
@@ -40,7 +41,7 @@ export function IssueLinkedPrsPanel({
 
   const form = useForm({
     defaultValues: {
-      kind: "pr_stub" as IssueLinkKind,
+      kind: "pr" as IssueLinkKind,
       targetNumber: "",
       title: "",
     },
@@ -141,9 +142,24 @@ export function IssueLinkedPrsPanel({
         <ul className="mt-2 flex flex-col gap-1.5" data-testid="issue-linked-prs-list">
           @for (const link of links; key link.id) {
             <li className="flex items-start justify-between gap-2 text-[13px] text-foreground">
-              <span data-testid={`issue-link-${link.id}`}>
-                {stubLabel(link) as string}
-              </span>
+              @if (
+                link.kind === "pr" &&
+                link.target_number != null
+              ) {
+                <a
+                  className="text-primary underline-offset-2 hover:underline"
+                  href={
+                    `/${owner}/${repoName}/pull/${link.target_number}` as string
+                  }
+                  data-testid={`issue-link-${link.id}`}
+                >
+                  {stubLabel(link) as string}
+                </a>;
+              } @else {
+                <span data-testid={`issue-link-${link.id}`}>
+                  {stubLabel(link) as string}
+                </span>;
+              }
               @if (canWrite) {
                 <button
                   type="button"
@@ -180,15 +196,12 @@ export function IssueLinkedPrsPanel({
                 className="h-8 rounded-md border border-border bg-background px-2 text-[13px] text-foreground"
                 value={field.state.value}
                 onChange={(e) =>
-                  field.handleChange(
-                    ((e.target as HTMLSelectElement).value === "issue"
-                      ? "issue"
-                      : "pr_stub") as IssueLinkKind,
-                  )
+                  field.handleChange((e.target as HTMLSelectElement).value as IssueLinkKind)
                 }
                 disabled={pending}
               >
-                <option value="pr_stub">PR stub</option>
+                <option value="pr">Pull request</option>
+                <option value="pr_stub">PR stub (legacy)</option>
                 <option value="issue">Issue</option>
               </select>
             </div>

@@ -66,6 +66,11 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `*` | `/v2/{owner}/{image}/…` | OCI blobs, manifests, tags | PAT with `package:read` / `package:write` ∩ ACL |
 | `*` | `/npm/{owner}/…` | npm registry (publish, packument, tarball, dist-tags) | PAT Basic; cookie ignored |
 | `PUT/GET/DELETE` | `/generic/{owner}/{name}/{version}/…` | Generic/raw package files | PAT Basic; cookie ignored |
+| `POST` | `/api/actions/register` | Runner registration (registration token) | Registration token only (not session cookie) |
+| `POST` | `/api/actions/declare` | Runner label declaration | Bearer runner token |
+| `POST` | `/api/actions/fetch_task` | Claim queued workflow job | Bearer runner token |
+| `POST` | `/api/actions/update_task` | Job state transition | Bearer runner token |
+| `POST` | `/api/actions/update_log` | Append job log chunk | Bearer runner token |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -98,6 +103,11 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `org.invites.accept` | Redeem invite token; may create verified user under closed signup | Token (optional session) |
 | `repo.listMine` / `repo.listByOwner` | Personal / owner-scoped repo lists (ACL-filtered) | Session |
 | `repo.create` / `repo.get` / browse / branch / settings | Forge RPC (Capability ACL) | Session (+ capability) |
+| `repo.star` / `repo.unstar` | Idempotent star membership + `star_count` / `viewer_has_starred` on `RepoPublic` | Session + Read (anonymous rejected; private without Read → `repo.not_found`) |
+| `user.listStarred` | Caller's starred repos (newest-starred first; Read ACL filter; offset/limit) | Session + verified |
+| `user.getPublicProfile` | Public profile by username (`username`, `display_name`, `bio`, `avatar_url` — **never email**) | Anonymous OK; unknown → `user.not_found` |
+| `repo.explore` | Public repos sorted by `star_count` desc then `updated_at` desc; optional `q` substring | Anonymous OK |
+| `repo.fork` | Fork public readable source (bare copy); sets `forked_from_repo_id` + `fork_network_id`; one active fork per (owner, network) | Session + Read on public source |
 | `repo.rename` | Rename repo; moves bare dir; inserts redirect | Repo Admin |
 | `repo.transfer` | Transfer ownership (type-confirm `confirmName`); moves bare dir; redirect | Repo Admin |
 | `repo.softDelete` | Soft-delete with type-confirm | Repo Admin |
@@ -110,7 +120,18 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `issue.comments.*` | Comment CRUD + history; author or Write+ moderate-delete | Session (+ capability) |
 | `issue.labels.set` / `assignees.set` / `assigneeCandidates` | Assign labels / assignees (Write+; assignees must have Read+) | Session (+ capability) |
 | `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
-| `issue.links.list` / `add` / `remove` | Linked PR stubs + manual links (`pr_stub`) | Session (+ capability) |
+| `issue.links.list` / `add` / `remove` | Linked issues/PRs (`pr` preferred; legacy `pr_stub` kept) | Session (+ capability) |
+| `notification.list` | Own notifications; filter `unread` (default) \| `all`; offset pagination | Session |
+| `notification.unreadCount` | Unread badge count for session user | Session |
+| `notification.markRead` | Mark own notification ids read (foreign ids no-op) | Session |
+| `notification.markAllRead` | Mark all own unread notifications read | Session |
+| `pull.create` / `get` / `list` / `update` / `close` / `reopen` | Pull requests; shared `#N` with issues | Session (+ capability) |
+| `pull.files` / `pull.commits` | Diff + commit list for a PR | Session (+ Read+) |
+| `pull.comments.list` / `create` / `resolve` | General + line comments; resolve threads | Session (+ capability) |
+| `pull.reviews.list` / `submit` / `dismiss` | Approve / request changes / comment; dismiss | Session (+ Write+) |
+| `pull.reviewRequests.list` / `add` / `remove` | Optional requested reviewers (UX only) | Session (+ capability) |
+| `pull.merge` | Merge / squash / rebase; optional delete head; closing keywords on default branch | Session (+ Write+) |
+| `repo.mergeSettings.get` / `update` | Per-repo allow merge/squash/rebase (Admin for update) | Session (+ Admin for update) |
 | `label.listForRepo` / `listForOrg` / `create` / `update` / `delete` | Org/repo label definitions (Admin for defs) | Session (+ capability) |
 | `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response. Classic scopes include optional `package:read` / `package:write` (repo scope does **not** imply packages) | Session + verified email |
 | `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); optional Packages Read/Write | Session + verified email |
@@ -123,6 +144,12 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `sshKey.add` | Register an OpenSSH public key; returns fingerprint metadata | Session + verified email |
 | `sshKey.list` | List registered SSH public keys (no private keys) | Session |
 | `sshKey.revoke` | Hard-delete an SSH public key by `id` | Session |
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Workflow run list, detail, job log text | Session + Read+ |
+| `repo.actions.secrets.list` / `put` / `delete` | Repo Actions secrets (names only on list) | Session + Admin |
+| `repo.actions.getEnabled` / `setEnabled` | Per-repo Actions enable toggle | Session + Read+ / Admin |
+| `repo.commitStatus.create` / `list` | Commit statuses (Phase 13 + Actions publisher) | Session + Write+ / Read+ |
+| `admin.actions.createRegistrationToken` | Mint one-time runner registration token | Sys-admin |
+| `admin.actions.listRunners` | List registered runners (no secrets) | Sys-admin |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -332,10 +359,34 @@ Phase 11 ships per-repository issues (ISS-01…04) on migration `0011_issues`:
 | **Numbering** | Each repo allocates monotonic `#N` via `issue_counters`. Hard-delete does **not** reclaim numbers. |
 | **ACL** | Capability gates: Read+ to view; Write+ to create/comment/assign/react/link; author or Write+ to edit own issue/comment; Admin (or typed confirm) for hard-delete. Private unauthorized access returns soft `repo.not_found` / `issue.not_found` (no enumeration). |
 | **Markdown** | Web Write\|Preview uses `renderGfm` with `#N` / `owner/repo#N` autolink and sanitize-last. `@mention` / commit SHA autolink are off. |
-| **Linked PRs** | `issue.links.*` stores stub rows (`pr_stub`) until Phase 12 PR objects exist. Manual add/remove only. |
-| **Deferred** | Closing keywords (`fixes` / `closes` `#N`) are **not** enforced (D-ISS-15 → Phase 12). |
+| **Linked PRs** | `issue.links.*` supports `pr` (real PR `#N`) and legacy `pr_stub`. Prefer `pr` when linking to an open/merged pull. |
+| **Closing keywords** | On `pull.merge` into the **default branch**, `fixes` / `closes` / `resolves` `#N` in the PR body (and merge commit message) close matching open issues. Keywords do **not** fire on close-without-merge or non-default bases. |
 
-Client surface: `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
+### Pull requests (`pull.*`)
+
+Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
+
+| Concern | Contract |
+| --- | --- |
+| **Numbering** | Shared per-repo `#N` with issues (`issue_counters`). |
+| **ACL** | Read+ list/get/diff/comments; Write+ open/comment/review/merge/close/reopen; Admin merge-strategy settings. Author cannot Approve / Request changes on own PR. |
+| **Merge** | Methods `merge` \| `squash` \| `rebase` gated by `repo.mergeSettings.*` (defaults all enabled). Conflict → `pull.merge_conflict`. Optional `delete_branch`. |
+| **Diff UX** | `pull.files` unified patch; web supports unified/split. Line comments carry path/side/line; outdated after head/base change. |
+
+Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
+
+### Notifications (`notification.*`)
+
+Phase 17 ships in-app activity notifications (NOTF-01 / NOTF-02) on migration `0018_notifications`:
+
+| Concern | Contract |
+| --- | --- |
+| **Ownership** | Every list/mark/unread query is forced to `recipient_id = session.user_id`. Clients cannot address another user's inbox. |
+| **Read model** | `read_at` null = unread. `notification.list` filter `unread` (default) or `all`; newest-first offset pagination. |
+| **Payload** | Rows include `reason`, `subject_kind` (`issue` \| `pull_request`), `owner` / `repo` slugs, `subject_number`, `subject_title`, `actor_username` for deep links `/{owner}/{repo}/issues\|pull/{n}`. |
+| **Fan-out** | Domain writes (e.g. `issue.comments.create`) insert best-effort rows; actors are never notified. Activity email is out of scope. |
+
+Client surface: `client.notification.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
 
 ### Git Smart HTTP
 
@@ -484,6 +535,74 @@ Avatar and SSO JSON errors use the same `{ ok: false, error: { code, message } }
 Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Client IP uses the rightmost `X-Forwarded-For` hop from a trusted proxy; do not expose the API without a proxy that sanitizes forwarded headers. Successful PAT auth clears the user bucket. Git-over-SSH failed pubkey auth uses the same windows with the key **fingerprint** as the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
 
 `user.lookup` is rate-limited per session (**60** requests / **60s**). Other RPC routes do not apply in-process limiters; rely on reverse-proxy / edge controls for deployment-wide limits.
+
+## Actions (Phase 19)
+
+Octanest Actions is a **control plane**: workflows are discovered under `.github/workflows/*.yml`, runs/jobs are queued, and **registered runners** execute them. There is **no managed CI minutes** product and no in-process job executor (ACT-07 / D-ACT-10).
+
+### Workflow layout & triggers (ACT-01 / ACT-02)
+
+- Workflow files live at `.github/workflows/*.yml` (or `.yaml`) on the evaluated ref.
+- **push** — evaluated after Smart HTTP / SSH receive (and related notify hooks).
+- **pull_request** — evaluated on PR open/sync/reopen-style events (Phase 12 hook).
+- Instance gate: `OCTANEST_ACTIONS_ENABLED`. Per-repo Admin toggle: `repo.actions.setEnabled` / Settings → Actions.
+
+### Runner protocol HTTP (`/api/actions`) (ACT-06)
+
+Mounted under `/api/actions` on the same HTTP port as RPC (Traefik `/api` PathPrefix → API). **Session cookies are ignored** — only registration tokens and runner bearer tokens authenticate (D-ACT-18). Use placeholders in docs/examples; never commit real tokens.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env `OCTANEST_RUNNER_REGISTRATION_TOKEN`) | Register runner; returns `runner_token` once |
+| POST | `/api/actions/declare` | Bearer runner token | Update labels (`label[:schema[:args]]`, D-ACT-09) |
+| POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job matching labels; may include decrypted `secrets` map |
+| POST | `/api/actions/update_task` | Bearer runner token | Job state updates (`queued` → `in_progress` / `success` / `failure` / `cancelled`) |
+| POST | `/api/actions/update_log` | Bearer runner token | Append job log chunks |
+
+Example register body (placeholders only):
+
+```json
+{
+  "name": "compose-runner",
+  "labels": ["ubuntu-latest:docker://node:20-bookworm", "self-hosted"],
+  "token": "reg_REPLACE_ME"
+}
+```
+
+Runner protocol ignores session cookies (D-ACT-18).
+
+**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]` (Gitea/act_runner parity), e.g. `ubuntu-latest:docker://node:20-bookworm`. Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
+
+Session RPC (Read+/Admin as noted):
+
+| Procedure | ACL | Notes |
+|-----------|-----|-------|
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Read+ | UI list/detail |
+| `repo.actions.secrets.list` / `put` / `delete` | Admin | Names only on list; values never echoed |
+| `repo.actions.getEnabled` / `setEnabled` | Read+ / Admin | Per-repo enable |
+| `admin.actions.createRegistrationToken` | SysAdmin | One-time plaintext token (`reg_…`) |
+| `admin.actions.listRunners` | SysAdmin | Registered runners (no token hashes) |
+
+### Commit statuses for Phase 13 (D-ACT-15 / D-ACT-16)
+
+Job updates publish commit statuses via `repo.commitStatus.*` with context (D-ACT-15):
+
+```text
+{workflow_name} / {job_key}
+```
+
+Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Target URL points at `/{owner}/{repo}/actions/runs/{run_id}` when public origin is configured. Phase 13 required checks should match these contexts (`repo.commitStatus.list`).
+
+### UI routes (ACT-03)
+
+- `/{owner}/{repo}/actions` — run list
+- `/{owner}/{repo}/actions/{runId}` — jobs + logs
+- `/{owner}/{repo}/settings/actions` — Actions enable + secrets (Admin)
+- `/admin/runners` — registration tokens + runner list
+
+### Official runner image (ACT-04 / ACT-05)
+
+Operators attach compute via `docker/octanest-runner` (act_runner lineage). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
 
 ## Regenerating the TypeScript client
 

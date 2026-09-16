@@ -1,22 +1,32 @@
 //! Shared domain types for Octanest.
 
+pub mod action_types;
 pub mod auth_types;
 pub mod issue_types;
+pub mod notification_types;
 pub mod org_types;
 pub mod package_types;
 pub mod pat_types;
+pub mod protection_types;
+pub mod pull_types;
 pub mod release_types;
 pub mod repo_types;
 pub mod ssh_key_types;
+pub mod webhook_types;
 
+pub use action_types::*;
 pub use auth_types::*;
 pub use issue_types::*;
+pub use notification_types::*;
 pub use org_types::*;
 pub use package_types::*;
 pub use pat_types::*;
+pub use protection_types::*;
+pub use pull_types::*;
 pub use release_types::*;
 pub use repo_types::*;
 pub use ssh_key_types::*;
+pub use webhook_types::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -42,6 +52,11 @@ impl AppError {
             message: message.into(),
             data: None,
         }
+    }
+
+    pub fn with_data(mut self, data: serde_json::Value) -> Self {
+        self.data = Some(data);
+        self
     }
 }
 

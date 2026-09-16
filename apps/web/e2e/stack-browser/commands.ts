@@ -856,17 +856,46 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
         (body.includes("Members") || body.includes("Add member")) &&
         body.includes(username)
       ) {
-        return true;
+        break;
       }
       // Follow soft redirect once if sent to login.
       if (url.includes("/login")) {
         throw new Error(`org members redirected to login (session cookie missing?). url=${url}`);
       }
       await new Promise((r) => setTimeout(r, 500));
+      if (i === 29) {
+        throw new Error(
+          `org members page not ready. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
+        );
+      }
     }
-    throw new Error(
-      `org members page not ready. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
-    );
+
+    // Org General (happy sidebar layout).
+    await page.goto(`${webOrigin()}/${orgSlug}/settings`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("org-settings-layout").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("org-settings-general").waitFor({ state: "visible", timeout: 15_000 });
+    await page.locator("#org-display-name").waitFor({ state: "visible", timeout: 10_000 });
+    assertNoOctaneOverlay(await page.content(), "org settings general");
+
+    // Org Labels (happy — was blank before Outlet fix).
+    await page.goto(`${webOrigin()}/${orgSlug}/settings/labels`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("org-settings-labels").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByRole("heading", { name: "Labels", exact: true }).waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+    await page.getByRole("button", { name: "Create label" }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "org settings labels");
+    return true;
   } finally {
     await page.close();
   }
@@ -935,15 +964,87 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
  * Account settings SSR pages render shell + content without skeleton flash / overlay.
  * Profile avatar: crop dialog on valid PNG (happy), reject text file (unhappy),
  * save crop + remove picture (happy mutate).
+ * General: theme + default branch + logout (happy).
+ * Unhappy: anonymous redirect away from settings.
+ * Home: GitHub-classic three-column dashboard (happy).
  */
 export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
+
+  // Unhappy first (same order as chrome menus): anonymous cannot open settings.
+  // Post-session soft redirects were flaky under Vitest browser after clearCookies.
+  await context.clearCookies();
+  const anon = await context.newPage();
+  try {
+    await anon.goto(`${webOrigin()}/settings/general`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    for (let i = 0; i < 40; i++) {
+      const url = anon.url();
+      if (url.includes("/login")) {
+        assertNoOctaneOverlay(await anon.content(), "anonymous settings → login");
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+      if (i === 39) {
+        throw new Error(
+          `anonymous /settings/general did not redirect to login. url=${anon.url()} body=${(await anon.content()).slice(0, 800)}`,
+        );
+      }
+    }
+  } finally {
+    await anon.close();
+  }
+
   await context.clearCookies();
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
 
   const page = await context.newPage();
   try {
+    // Signed-in home dashboard (happy).
+    await page.goto(`${webOrigin()}/`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("signed-in-home").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("home-top-repos").waitFor({ state: "visible", timeout: 15_000 });
+    await page.getByTestId("home-feed").waitFor({ state: "visible", timeout: 10_000 });
+    await page.getByRole("heading", { name: "Home", exact: true }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
+    const homeBody = await page.content();
+    if (homeBody.includes('data-testid="home-aside"') || homeBody.includes(">Shortcuts<")) {
+      throw new Error("signed-in home still shows Shortcuts aside");
+    }
+    assertNoOctaneOverlay(homeBody, "signed-in home dashboard");
+
+    // Theme absent from signed-in chrome (happy relocation).
+    const homeHtml = await page.content();
+    if (homeHtml.includes("data-theme-menu")) {
+      throw new Error("signed-in chrome still exposes ThemeSelect (should live on General)");
+    }
+
+    // General settings (happy).
+    await page.goto(`${webOrigin()}/settings/general`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "General", exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByTestId("settings-general-page").waitFor({ state: "visible", timeout: 15_000 });
+    await page
+      .getByRole("listbox", { name: "Theme" })
+      .waitFor({ state: "visible", timeout: 10_000 });
+    await page.locator("#default-branch").waitFor({ state: "visible", timeout: 10_000 });
+    await page
+      .getByRole("button", { name: "Log out", exact: true })
+      .waitFor({ state: "visible", timeout: 10_000 });
+    assertNoOctaneOverlay(await page.content(), "settings general");
+
     // Tokens SSR (list seeded, no bare skeleton).
     await page.goto(`${webOrigin()}/settings/tokens`, {
       waitUntil: "domcontentloaded",
@@ -954,6 +1055,27 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       .waitFor({ state: "visible", timeout: 30_000 });
     await page.getByTestId("settings-tokens-page").waitFor({ state: "visible", timeout: 15_000 });
     assertNoOctaneOverlay(await page.content(), "settings tokens");
+
+    // Tokens create classic (happy — Outlet nesting).
+    await page.goto(`${webOrigin()}/settings/tokens/new`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByRole("heading", { name: "New classic token", exact: true }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "settings tokens new classic");
+
+    // Tokens fine-grained (happy — nested under /new Outlet).
+    await page.goto(`${webOrigin()}/settings/tokens/new/fine-grained`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page
+      .getByRole("heading", { name: "New fine-grained token", exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "settings tokens new fine-grained");
 
     // SSH keys SSR.
     await page.goto(`${webOrigin()}/settings/ssh-keys`, {
@@ -966,7 +1088,7 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
     await page.getByTestId("settings-ssh-keys-page").waitFor({ state: "visible", timeout: 15_000 });
     assertNoOctaneOverlay(await page.content(), "settings ssh-keys");
 
-    // Profile + avatar crop.
+    // Profile + avatar crop (profile-only — no default branch / logout).
     await page.goto(`${webOrigin()}/settings/profile`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -977,6 +1099,10 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
     });
     await page.getByTestId("settings-profile-page").waitFor({ state: "visible", timeout: 15_000 });
     assertNoOctaneOverlay(await page.content(), "settings profile initial");
+    const profileHtml = await page.content();
+    if (profileHtml.includes("Default branch name") || profileHtml.includes(">Log out<")) {
+      throw new Error("profile page still contains General controls (default branch / logout)");
+    }
 
     // Avatar field is mounted (dropzone input). Full crop/upload is covered by happy-dom
     // + API tests; Vitest browser does not reliably deliver file input events to dropzone.

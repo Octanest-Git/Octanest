@@ -17,6 +17,8 @@ use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
+use crate::notify;
+use crate::webhook::dispatch;
 use crate::repo::not_found;
 use crate::rpc::RpcCtx;
 
@@ -172,6 +174,28 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         .insert_issue(&id, &accessible.row.id, &user.id, &title, &body)
         .await
         .map_err(db_err)?;
+    // Notify on create: issue_opened to repo owner (when not the author) + mentions (D-01 / D-03).
+    let subject = notify::subject_for_issue(&row);
+    let mut opened_recipients: Vec<String> = Vec::new();
+    if accessible.row.owner_type == "user" && accessible.row.owner_id != user.id {
+        opened_recipients.push(accessible.row.owner_id.clone());
+    }
+    notify::fanout(ctx, &user.id, opened_recipients, "issue_opened", &subject).await;
+    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
+    notify::fanout(ctx, &user.id, mentions, "issue_mention", &subject).await;
+    let payload = dispatch::issues_payload(
+        "opened",
+        row.number,
+        &row.title,
+        &row.body,
+        &row.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "opened", payload, &ctx.env_name).await;
     to_public(ctx, &row).await
 }
 
@@ -310,6 +334,19 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         .update_issue_content(&row.id, &new_title, &new_body)
         .await
         .map_err(db_err)?;
+    let payload = dispatch::issues_payload(
+        "edited",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "edited", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -329,6 +366,22 @@ pub async fn close(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePublic
         .close_issue(&row.id, &user.id)
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_issue(&updated);
+    let recipients = notify::issue_participant_ids(ctx, &updated.id, &updated.author_id).await;
+    notify::fanout(ctx, &user.id, recipients, "issue_closed", &subject).await;
+    let payload = dispatch::issues_payload(
+        "closed",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "closed", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -347,6 +400,22 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         return to_public(ctx, &row).await;
     }
     let updated = ctx.db.reopen_issue(&row.id).await.map_err(db_err)?;
+    let subject = notify::subject_for_issue(&updated);
+    let recipients = notify::issue_participant_ids(ctx, &updated.id, &updated.author_id).await;
+    notify::fanout(ctx, &_user.id, recipients, "issue_reopened", &subject).await;
+    let payload = dispatch::issues_payload(
+        "reopened",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &_user.username,
+        &_user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "reopened", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -506,6 +575,16 @@ pub async fn comments_create(
         .insert_issue_comment(&id, &issue.id, &user.id, &body)
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_issue(&issue);
+    let participants = notify::issue_participant_ids(ctx, &issue.id, &issue.author_id).await;
+    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
+    notify::fanout(ctx, &user.id, participants.clone(), "issue_comment", &subject).await;
+    let participant_set: std::collections::HashSet<_> = participants.into_iter().collect();
+    let mention_only: Vec<_> = mentions
+        .into_iter()
+        .filter(|m| !participant_set.contains(m))
+        .collect();
+    notify::fanout(ctx, &user.id, mention_only, "issue_mention", &subject).await;
     comment_to_public(ctx, &row).await
 }
 
@@ -664,7 +743,7 @@ pub async fn assignees_set(
     ctx: &RpcCtx,
     input: serde_json::Value,
 ) -> Result<IssuePublic, AppError> {
-    let _user = require_verified(ctx).await?;
+    let user = require_verified(ctx).await?;
     let req: SetIssueAssigneesRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -681,6 +760,15 @@ pub async fn assignees_set(
             AppError::new("issue.internal", "issue operation failed")
         })?
         .ok_or_else(not_found)?;
+
+    let before: std::collections::HashSet<String> = ctx
+        .db
+        .list_issue_assignees(&issue.id)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|a| a.user_id)
+        .collect();
 
     let mut seen = std::collections::HashSet::new();
     let mut unique_ids = Vec::new();
@@ -722,6 +810,13 @@ pub async fn assignees_set(
         .set_issue_assignees(&issue.id, &unique_ids)
         .await
         .map_err(db_err)?;
+
+    let after: std::collections::HashSet<String> = unique_ids.iter().cloned().collect();
+    let newly_assigned: Vec<_> = after.difference(&before).cloned().collect();
+    let newly_unassigned: Vec<_> = before.difference(&after).cloned().collect();
+    let subject = notify::subject_for_issue(&issue);
+    notify::fanout(ctx, &user.id, newly_assigned, "issue_assigned", &subject).await;
+    notify::fanout(ctx, &user.id, newly_unassigned, "issue_unassigned", &subject).await;
 
     let refreshed = ctx
         .db
@@ -991,7 +1086,7 @@ pub async fn links_add(
                 .unwrap_or(accessible.row.id.as_str())
                 .to_string(),
         ),
-        IssueLinkKind::PrStub => req
+        IssueLinkKind::PrStub | IssueLinkKind::Pr => req
             .target_repo_id
             .as_deref()
             .map(str::trim)

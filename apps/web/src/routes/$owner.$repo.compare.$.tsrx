@@ -218,6 +218,20 @@ export function RepoComparePage() @{
         >
           Compare
         </button>
+        @if (
+          phase.compare &&
+          !phase.compare.empty &&
+          phase.repo.can_write
+        ) {
+          <a
+            className="rounded-md border border-border px-3 py-2 text-[14px] font-medium text-foreground"
+            href={
+              `/${owner}/${repoName}/pulls/new?base=${encodeURIComponent(phase.base)}&head=${encodeURIComponent(phase.head)}` as string
+            }
+          >
+            Create pull request
+          </a>;
+        }
       </div>
       @if (!phase.compare) {
         <p className="text-[16px] text-muted-foreground">

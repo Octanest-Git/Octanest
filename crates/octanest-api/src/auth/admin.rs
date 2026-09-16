@@ -74,7 +74,7 @@ fn db_err(e: String) -> AppError {
     }
 }
 
-async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
+pub(crate) async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
     let Some(session) = &ctx.session else {
         return Err(AppError::new(
             "auth.unauthenticated",
@@ -209,6 +209,14 @@ pub async fn factory_reset(
     }
 
     ctx.db.factory_reset_instance().await.map_err(db_err)?;
+
+    // D-ACT-19: always clear Actions logs when run metadata is wiped.
+    wipe_dir_contents(
+        &ctx.actions_log_dir,
+        "admin.factory_reset_actions_logs",
+        "Actions log storage",
+    )
+    .await?;
 
     if matches!(req.scope, FactoryResetScope::DatabaseAndRepositories) {
         wipe_repos_dir_contents(&ctx.repos_dir).await?;

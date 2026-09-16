@@ -25,17 +25,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
 - [x] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 9/9; G-11.1-15 gap-closure 07–09 done)
-- [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
-- [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
+- [x] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
+- [x] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
-- [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
-- [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
-- [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
-- [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
+- [x] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
+- [x] **Phase 17: Notifications** - In-app notifications for issue and PR activity
+- [x] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
+- [x] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol (completed 2026-09-16)
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
-- [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
-- [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
+- [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
+- [x] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
 ## Phase Details
 
@@ -535,7 +535,19 @@ Plans:
   3. User with permission can merge choosing merge commit, squash, or rebase; can close or reopen a PR
   4. Repo settings can enable/disable each merge strategy independently
 
-**Plans**: TBD
+**Plans:** 8/8 executed
+
+Plans:
+
+- [x] `12-00-PLAN.md` — Wave 0: API/DB Nyquist stubs (pull_*, dialect_pulls)
+- [x] `12-01-PLAN.md` — Wave 0: Vitest Pulls UI stubs
+- [x] `12-02-PLAN.md` — Schema 0016 + pull_types + GitBackend merge ops
+- [x] `12-03-PLAN.md` — Tracer: pull lifecycle RPC + Pulls chrome/list/new/detail
+- [x] `12-04-PLAN.md` — Diff/commits + comments (Conversation|Files|Commits)
+- [x] `12-05-PLAN.md` — Reviews approve/changes/comment/dismiss
+- [x] `12-06-PLAN.md` — Merge strategies + settings + closing keywords
+- [x] `12-07-PLAN.md` — Fork heads + pr links + filters + docs/VALIDATION
+
 **UI hint**: yes
 
 ### Phase 13: Branch Protection
@@ -549,7 +561,18 @@ Plans:
   2. Protected rules block non-compliant direct pushes
   3. PR merge is blocked when applicable branch protection rules are not satisfied
 
-**Plans**: TBD
+**Plans**: 9/9 (13-00…13-08)
+
+- [x] 13-00-PLAN.md
+- [x] 13-01-PLAN.md
+- [x] 13-02-PLAN.md
+- [x] 13-03-PLAN.md
+- [x] 13-04-PLAN.md
+- [x] 13-05-PLAN.md
+- [x] 13-06-PLAN.md
+- [x] 13-07-PLAN.md
+- [x] 13-08-PLAN.md
+
 **UI hint**: yes
 
 ### Phase 14: Git LFS
@@ -615,7 +638,15 @@ Plans:
   1. User can search code and commits within a repository they can read
   2. User can search issues and PRs within a repository they can read
 
-**Plans**: TBD
+**Plans:** 4/4 plans executed
+
+Plans:
+
+- [x] 16-00-PLAN.md — Wave 0 RED stubs for repo.search + Vitest
+- [x] 16-01-PLAN.md — Tracer: git grep + repo.search code + thin UI
+- [x] 16-02-PLAN.md — Commits/issues/pulls backends + qualifiers
+- [x] 16-03-PLAN.md — Full search UI, ENV caps, phase gate
+
 **UI hint**: yes
 
 ### Phase 17: Notifications
@@ -628,7 +659,16 @@ Plans:
   1. Signed-in user receives in-app notifications for relevant issue and PR activity
   2. User can list notifications and mark them as read
 
-**Plans**: TBD
+**Plans:** 5/5 plans executed
+
+Plans:
+
+- [x] 17-00-PLAN.md — Wave 0 Nyquist stubs (RPC, dialect, bell, inbox)
+- [x] 17-01-PLAN.md — Tracer: schema + notification.* RPC + comment→author fan-out
+- [x] 17-02-PLAN.md — Issue lifecycle/assignee/@mention emitters
+- [x] 17-03-PLAN.md — PR emitters (after Phase 12 lands)
+- [x] 17-04-PLAN.md — SiteHeader bell + `/notifications` UI
+
 **UI hint**: yes
 
 ### Phase 18: Webhooks
@@ -642,7 +682,16 @@ Plans:
   2. Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
   3. Repo admin can view recent webhook delivery attempts and response status
 
-**Plans**: TBD
+**Plans:** 5/5 plans executed
+
+Plans:
+
+- [x] 18-00-PLAN.md — Wave 0 Nyquist stubs (webhook RPC, delivery, dialect, settings UI)
+- [x] 18-01-PLAN.md — Tracer: schema + Admin CRUD + issues→signed delivery
+- [x] 18-02-PLAN.md — Delivery hardening: SSRF, HMAC, retries, deliveries/ping RPC
+- [x] 18-03-PLAN.md — push + pull_request emitters (Phase 12-aligned payloads)
+- [x] 18-04-PLAN.md — Repo Settings Webhooks UI + delivery history
+
 **UI hint**: yes
 
 ### Phase 19: Actions & Runners
@@ -657,7 +706,23 @@ Plans:
   3. Operator can register and run the official Octanest runner image; docs cover Compose sidecar or standalone bring-up
   4. Forge exposes an Actions-compatible registration/job-dispatch protocol (custom `runs-on` labels); jobs only run on registered runners — no managed Octanest Cloud minutes in v1
 
-**Plans**: TBD
+**Plans:** 12/12 plans complete
+
+Plans:
+
+- [x] 19-00-PLAN.md — Wave 0 Rust stubs (parse/triggers/RPC/protocol/policy/statuses/dialect)
+- [x] 19-01-PLAN.md — Wave 0 Vitest Actions stubs + smoke-actions
+- [x] 19-02-PLAN.md — Schema, ACTIONS_LOG_DIR, factory reset wipe
+- [x] 19-03-PLAN.md — Workflow discover + YAML subset parse (ACT-01)
+- [x] 19-04-PLAN.md — Tracer: push → enqueue → FetchTask → logs
+- [x] 19-05-PLAN.md — Full runner protocol + labels + registration tokens
+- [x] 19-06-PLAN.md — pull_request triggers + Phase 12 hook
+- [x] 19-07-PLAN.md — Commit statuses for Phase 13 required checks
+- [x] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
+- [x] 19-09-PLAN.md — Actions UI list/detail/logs + RepoChrome tab
+- [x] 19-10-PLAN.md — Admin tokens, repo secrets/enable, no managed minutes
+- [x] 19-11-PLAN.md — Docs + smoke + phase gate
+
 **UI hint**: yes
 
 ### Phase 20: Packages Registry
@@ -704,7 +769,19 @@ Plans:
   3. Anonymous or signed-in user can browse an explore/discover page of public repositories
   4. User can fork a public repository they can read
 
-**Plans**: TBD
+**Plans**: 8/8 plans executed
+
+Plans:
+
+- [x] 21-00-PLAN.md — Wave 0 Nyquist stubs (stars/fork/explore/profile/dialect/web)
+- [x] 21-01-PLAN.md — Tracer: star/unstar RPC + social migration
+- [x] 21-02-PLAN.md — Stars UI (RepoChrome) + listStarred
+- [x] 21-03-PLAN.md — Public user profiles at /{username}
+- [x] 21-04-PLAN.md — Explore page + repo.explore + nav link
+- [x] 21-05-PLAN.md — Fork RPC + bare copy + fork_network helper (D-PR)
+- [x] 21-06-PLAN.md — Fork UI (chrome + confirm route)
+- [x] 21-07-PLAN.md — Docs + phase gate
+
 **UI hint**: yes
 
 ### Phase 22: Compose CI & Cloud Deploy
@@ -718,7 +795,13 @@ Plans:
   2. Project CI exercises at least PostgreSQL and SQLite; MySQL is in CI or covered by an explicit compatibility test job
   3. Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
 
-**Plans**: TBD
+**Plans:** 3/3 plans executed
+
+Plans:
+
+- [x] `22-01-PLAN.md` — CI Compose bring-up matrix (Postgres + SQLite + MySQL via make smoke*)
+- [x] `22-02-PLAN.md` — Railway-class IaC + file gateway + deploy docs (same Dockerfiles)
+- [x] `22-03-PLAN.md` — VALIDATION + architecture/testing doc sync
 
 ## Progress
 
@@ -740,19 +823,19 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
 | 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
 | 11. Issues | 13/13 | Complete    | 2026-09-14 |
-| 12. Pull Requests | 0/TBD | Not started | - |
-| 13. Branch Protection | 0/TBD | Not started | - |
+| 12. Pull Requests | 8/8 | Complete | cursor/phase-12-pull-requests-c82f |
+| 13. Branch Protection | 9/9 | Complete | cursor/phase-13-branch-protection-c82f |
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
-| 16. In-Repo Search | 0/TBD | Not started | - |
-| 17. Notifications | 0/TBD | Not started | - |
-| 18. Webhooks | 0/TBD | Not started | - |
-| 19. Actions & Runners | 0/TBD | Not started | - |
+| 16. In-Repo Search | 4/4 | Complete |  |
+| 17. Notifications | 5/5 | Complete | 2026-09-16 |
+| 18. Webhooks | 5/5 | Complete | 2026-09-16 |
+| 19. Actions & Runners | 12/12 | Complete   | 2026-09-16 |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
-| 21. Social & Explore | 0/TBD | Not started | - |
-| 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
+| 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
+| 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
 
 ---
 *Roadmap created: 2026-09-09*
-*Last updated: 2026-09-14 — forge-core pre-ship: phases 11/14/15/20 Complete*
+*Last updated: 2026-09-16 — Phase 19 Actions & Runners complete (12/12 plans on cursor/phase-19-actions-runners-c82f)*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*

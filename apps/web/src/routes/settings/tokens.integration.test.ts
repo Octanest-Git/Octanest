@@ -126,7 +126,7 @@ afterEach(cleanup);
 
 /** Load tokens page; @vite-ignore keeps the suite collectable before ./tokens exists. */
 async function loadTokensModule(): Promise<Record<string, unknown>> {
-  const rel = "./tokens";
+  const rel = "./tokens.index";
   try {
     return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
   } catch (err) {
@@ -191,13 +191,15 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
       name: /Generate new token/i,
     })[0]!;
     expect(generate).toBeDisabled();
-    expect(screen.getByText("Verify your email to create a token.")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Verify your email to create a token.").length,
+    ).toBeGreaterThanOrEqual(1);
     await waitFor(() => {
-      expect(screen.getByText("No personal access tokens")).toBeInTheDocument();
+      expect(screen.getAllByText("No personal access tokens").length).toBeGreaterThanOrEqual(1);
     });
   }, 15_000);
 
-  it("settings secondary nav Profile | Personal access tokens", async () => {
+  it("settings secondary nav General | Profile | Personal access tokens", async () => {
     const mod = await loadTokensModule();
     const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(TokensPage);
@@ -207,8 +209,10 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     });
 
     const nav = container.querySelector('nav[aria-label="Account settings"]')!;
+    const general = nav.querySelector('a[href="/settings/general"]');
     const profile = nav.querySelector('a[href="/settings/profile"]');
     const tokens = nav.querySelector('a[href="/settings/tokens"]');
+    expect(general?.textContent).toBe("General");
     expect(profile?.textContent).toBe("Profile");
     expect(tokens?.textContent).toBe("Personal access tokens");
     expect(tokens?.getAttribute("aria-current")).toBe("page");
@@ -310,7 +314,7 @@ describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
 
 /** Load classic create page; @vite-ignore keeps suite collectable before route exists. */
 async function loadTokensNewModule(): Promise<Record<string, unknown>> {
-  const rel = "./tokens.new";
+  const rel = "./tokens.new.index";
   try {
     return (await import(/* @vite-ignore */ rel)) as Record<string, unknown>;
   } catch (err) {
@@ -324,7 +328,7 @@ function tokensNewPage(mod: Record<string, unknown>): unknown {
   const page = mod.TokensNewPage ?? mod.ClassicCreatePage ?? mod.default;
   expect(
     page,
-    "Wave 0: TokensNewPage (or ClassicCreatePage) must be exported from tokens.new",
+    "Wave 0: TokensNewPage (or ClassicCreatePage) must be exported from tokens.new.index",
   ).toBeTruthy();
   return page;
 }

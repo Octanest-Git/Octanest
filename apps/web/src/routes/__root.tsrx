@@ -140,8 +140,8 @@ function RootShell({ children }: { children?: unknown }) @{
       <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
       <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       <link rel="manifest" href="/manifest.webmanifest" />
-      <meta name="theme-color" content="#dfe8f0" media="(prefers-color-scheme: light)" />
-      <meta name="theme-color" content="#07080a" media="(prefers-color-scheme: dark)" />
+      <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+      <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)" />
       <meta name="apple-mobile-web-app-title" content="Octanest" />
       <HeadContent />
     </Head>

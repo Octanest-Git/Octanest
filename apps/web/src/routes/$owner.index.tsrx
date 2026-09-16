@@ -5,41 +5,62 @@ import {
   useLoaderData,
   useParams,
 } from "@octanejs/tanstack-router";
+import { useState } from "octane";
 import { buttonVariants } from "@/components/ui/button";
 import { fetchOrgOverview, type OrgOverviewPayload } from "@/lib/ssr-org";
+import { fetchUserProfile, type UserProfilePayload } from "@/lib/ssr-user-profile";
 import { cn } from "@/lib/utils";
 
-export type OrgOverviewLoaderData = OrgOverviewPayload;
+export type OwnerIndexLoaderData =
+  | { kind: "org"; org: OrgOverviewPayload }
+  | { kind: "user"; user: UserProfilePayload };
 
 export const Route = createFileRoute("/$owner/")({
-  component: OrgOverviewPage,
+  component: OwnerIndexPage,
   head: ({ loaderData, params }) => {
-    const data = loaderData as OrgOverviewLoaderData | undefined;
+    const data = loaderData as OwnerIndexLoaderData | undefined;
     const owner = String((params as { owner?: string }).owner ?? "");
-    const title = data?.org
-      ? `${data.org.display_name || data.org.slug} · Octanest`
-      : `${owner} · Octanest`;
+    let title = `${owner} · Octanest`;
+    if (data?.kind === "org" && data.org.org) {
+      title = `${data.org.org.display_name || data.org.org.slug} · Octanest`;
+    } else if (data?.kind === "user" && data.user.profile) {
+      const p = data.user.profile;
+      title = `${p.display_name || p.username} · Octanest`;
+    }
     return { meta: [{ title }] };
   },
-  loader: async ({ params }): Promise<OrgOverviewLoaderData> => {
+  loader: async ({ params }): Promise<OwnerIndexLoaderData> => {
     const owner = String((params as { owner?: string }).owner ?? "");
-    const data = await fetchOrgOverview({ data: { owner } });
-    if (!data) throw notFound();
-    return data;
+    const org = await fetchOrgOverview({ data: { owner } });
+    if (org) return { kind: "org", org };
+    const user = await fetchUserProfile({ data: { username: owner } });
+    if (user) return { kind: "user", user };
+    throw notFound();
   },
 });
+
+export function OwnerIndexPage() @{
+  const data = useLoaderData({ from: "/$owner/" }) as OwnerIndexLoaderData | undefined;
+
+  @if (data?.kind === "org") {
+    <OrgOverviewPage />;
+  } @else {
+    <UserProfilePage />;
+  }
+}
 
 /** Org overview at exact `/{owner}` (D-ORG-06). */
 export function OrgOverviewPage() @{
   const params = useParams({ from: "/$owner/" }) as { owner?: string };
-  const data = useLoaderData({ from: "/$owner/" }) as OrgOverviewLoaderData | undefined;
+  const data = useLoaderData({ from: "/$owner/" }) as OwnerIndexLoaderData | undefined;
+  const orgData = data?.kind === "org" ? data.org : undefined;
 
-  const org = data?.org;
+  const org = orgData?.org;
   const slug = org?.slug ?? params.owner ?? "";
   const display = org?.display_name?.trim() || slug;
-  const memberCount = data?.memberCount;
-  const repos = data?.repos ?? [];
-  const canAdmin = data?.canAdmin === true;
+  const memberCount = orgData?.memberCount;
+  const repos = orgData?.repos ?? [];
+  const canAdmin = orgData?.canAdmin === true;
 
   @if (!org) {
     <div className="mx-auto max-w-6xl px-4 py-16">
@@ -72,6 +93,12 @@ export function OrgOverviewPage() @{
               className={cn(buttonVariants({ variant: "outline" }), "h-11")}
             >
               Members
+            </a>
+            <a
+              href={`/${slug}/settings/labels`}
+              className={cn(buttonVariants({ variant: "outline" }), "h-11")}
+            >
+              Labels
             </a>
           </div>;
         }
@@ -113,6 +140,138 @@ export function OrgOverviewPage() @{
           </ul>;
         }
       </section>
+    </div>;
+  }
+}
+
+/** Public user profile at `/{username}` (D-SOC-05…08). */
+export function UserProfilePage() @{
+  const data = useLoaderData({ from: "/$owner/" }) as OwnerIndexLoaderData | undefined;
+  const payload = data?.kind === "user" ? data.user : undefined;
+  const profile = payload?.profile;
+  const repos = payload?.repos ?? [];
+  const starred = payload?.starred ?? [];
+  const isSelf = payload?.isSelf === true;
+  const [tab, setTab] = useState<"repos" | "stars">("repos");
+
+  const display = profile?.display_name?.trim() || profile?.username || "";
+  const username = profile?.username ?? "";
+
+  @if (!profile) {
+    <div className="mx-auto max-w-6xl px-4 py-16">
+      <p className="text-[16px] text-muted-foreground">User not found.</p>
+    </div>;
+  } @else {
+    <div className="mx-auto max-w-6xl px-4 py-12">
+      <div className="flex flex-wrap items-start gap-4">
+        @if (profile.avatar_url) {
+          <img
+            src={profile.avatar_url as string}
+            alt=""
+            className="size-20 rounded-full object-cover"
+          />;
+        }
+        <div>
+          <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold leading-[1.2] text-foreground">
+            {display as string}
+          </h1>
+          <p className="mt-1 text-[16px] text-muted-foreground">{"@" + (username as string)}</p>
+          @if (profile.bio?.trim()) {
+            <p className="mt-3 max-w-xl text-[16px] text-muted-foreground">
+              {profile.bio as string}
+            </p>;
+          }
+        </div>
+      </div>
+
+      <div className="mt-8 flex gap-4 border-b border-border">
+        <button
+          type="button"
+          className={
+            (tab === "repos"
+              ? "border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground"
+              : "pb-2 text-[14px] text-muted-foreground") as string
+          }
+          onClick={() => setTab("repos")}
+        >
+          Repositories
+        </button>
+        @if (isSelf) {
+          <button
+            type="button"
+            className={
+              (tab === "stars"
+                ? "border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground"
+                : "pb-2 text-[14px] text-muted-foreground") as string
+            }
+            onClick={() => setTab("stars")}
+          >
+            Stars
+          </button>;
+        }
+      </div>
+
+      @if (tab === "stars" && isSelf) {
+        <section className="mt-6" aria-label="Starred repositories">
+          @if (starred.length === 0) {
+            <p className="text-[16px] text-muted-foreground">
+              No starred repositories yet.
+            </p>;
+          } @else {
+            <ul className="divide-y divide-border border-y border-border">
+              @for (const repo of starred; key repo.id) {
+                <li className="py-4">
+                  <a
+                    href={("/" + repo.owner_username + "/" + repo.name) as string}
+                    className="text-[16px] font-medium text-foreground no-underline hover:underline"
+                  >
+                    {(repo.owner_username + "/" + repo.name) as string}
+                  </a>
+                  @if (repo.description?.trim()) {
+                    <p className="mt-1 text-[14px] text-muted-foreground">
+                      {repo.description as string}
+                    </p>;
+                  }
+                </li>;
+              }
+            </ul>;
+          }
+        </section>;
+      } @else {
+        <section className="mt-6" aria-label="Repositories">
+          @if (repos.length === 0) {
+            <p className="text-[16px] text-muted-foreground">No repositories yet.</p>;
+          } @else {
+            <ul className="divide-y divide-border border-y border-border">
+              @for (const repo of repos; key repo.id) {
+                <li className="py-4">
+                  <Link
+                    to="/$owner/$repo"
+                    params={{ owner: username, repo: repo.name }}
+                    preload="intent"
+                    className="text-[16px] font-medium text-foreground no-underline hover:underline"
+                  >
+                    {repo.name as string}
+                  </Link>
+                  @if (repo.description?.trim()) {
+                    <p className="mt-1 text-[14px] text-muted-foreground">
+                      {repo.description as string}
+                    </p>;
+                  }
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {
+                      ((repo.visibility === "private" ? "Private" : "Public") +
+                        (repo.star_count
+                          ? ` · ${repo.star_count} stars`
+                          : "")) as string
+                    }
+                  </p>
+                </li>;
+              }
+            </ul>;
+          }
+        </section>;
+      }
     </div>;
   }
 }

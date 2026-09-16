@@ -1,6 +1,6 @@
 import type { RepoPublic, UserPublic } from "@octanest/api-client";
 import { createElement } from "octane";
-import { cleanup, render, screen } from "@octanejs/testing-library";
+import { cleanup, fireEvent, render, screen } from "@octanejs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@octanejs/tanstack-router", () => ({
@@ -48,64 +48,58 @@ function repo(overrides: Partial<RepoPublic> = {}): RepoPublic {
   };
 }
 
-describe("SignedInHome New repository CTA (D-01 / D-11)", () => {
-  it("unverified: disabled CTA + verify-email hint", () => {
+describe("SignedInHome New repository CTA", () => {
+  it("unverified: disabled New CTA + verify-email hint (unhappy)", () => {
     render(SignedInHome, {
       props: { user: user({ email_verified: false }), repos: [] },
     });
 
-    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Top repositories" })).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Create your first repository" }),
     ).toBeInTheDocument();
 
-    const ctas = screen.getAllByRole("button", { name: "New repository" });
+    const ctas = screen.getAllByRole("button", { name: /New( repository)?/ });
     expect(ctas.length).toBeGreaterThanOrEqual(1);
     for (const cta of ctas) {
       expect(cta).toBeDisabled();
-      expect(cta).toHaveAttribute("aria-disabled", "true");
-      expect(cta).toHaveAttribute("title", "Verify your email to create a repository.");
     }
     expect(screen.getByText("Verify your email to create a repository.")).toBeInTheDocument();
   });
 
-  it("verified: enabled New repository navigates to /new", () => {
+  it("verified: enabled New navigates to /new (happy)", () => {
     render(SignedInHome, {
       props: { user: user({ email_verified: true }), repos: [] },
     });
 
-    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Create your first repository" }),
-    ).toBeInTheDocument();
-
-    const ctas = screen.getAllByRole("link", { name: "New repository" });
-    expect(ctas.length).toBeGreaterThanOrEqual(1);
-    for (const cta of ctas) {
+    const news = screen.getAllByRole("link", { name: /^New( repository)?$/ });
+    expect(news.length).toBeGreaterThanOrEqual(1);
+    for (const cta of news) {
       expect(cta).toHaveAttribute("href", "/new");
-      expect(cta).not.toHaveAttribute("aria-disabled", "true");
     }
     expect(screen.queryByText("Verify your email to create a repository.")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Repository creation arrives in a later phase."),
-    ).not.toBeInTheDocument();
   });
 });
 
-describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
-  it("empty list shows Create your first repository hero and activity placeholder", () => {
+describe("SignedInHome dashboard IA (GitHub-classic)", () => {
+  it("empty list shows hero + feed placeholder + shortcuts", () => {
     render(SignedInHome, {
       props: { user: user({ email_verified: true }), repos: [] },
     });
 
+    expect(screen.getByTestId("signed-in-home")).toBeInTheDocument();
+    expect(screen.getByTestId("home-top-repos")).toBeInTheDocument();
+    expect(screen.getByTestId("home-feed")).toBeInTheDocument();
+    expect(screen.queryByTestId("home-aside")).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Create your first repository" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
-    expect(screen.getByText("Activity will show up here.")).toBeInTheDocument();
+    expect(screen.getByText("No repositories yet.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Shortcuts" })).not.toBeInTheDocument();
   });
 
-  it("populated list shows owner/name and visibility Badge", () => {
+  it("populated list shows top repos and recent in feed", () => {
     render(SignedInHome, {
       props: {
         user: user({ email_verified: true }),
@@ -121,17 +115,42 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
       },
     });
 
-    expect(screen.getByText("ada/hello")).toBeInTheDocument();
-    expect(screen.getByText("ada/secrets")).toBeInTheDocument();
-    expect(screen.getByText("Public")).toBeInTheDocument();
-    expect(screen.getByText("Private")).toBeInTheDocument();
+    expect(screen.getAllByText("ada/hello").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("ada/secrets").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Create your first repository" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("Activity will show up here.")).toBeInTheDocument();
   });
 
-  it("keeps incomplete-profile banner above the list", () => {
+  it("filters top repositories (edge)", () => {
+    render(SignedInHome, {
+      props: {
+        user: user({ email_verified: true }),
+        repos: [repo({ name: "hello" }), repo({ id: "r2", name: "secrets" })],
+      },
+    });
+
+    const search = screen.getByRole("searchbox", { name: "Find a repository" });
+    fireEvent.input(search, { target: { value: "sec" } });
+    const top = screen.getByTestId("home-top-repos");
+    expect(top.textContent).toContain("ada/secrets");
+    expect(top.textContent).not.toContain("ada/hello");
+  });
+
+  it("shows Show more when more than 7 repos (edge)", () => {
+    const repos = Array.from({ length: 9 }, (_, i) => repo({ id: `r${i}`, name: `repo${i}` }));
+    render(SignedInHome, {
+      props: { user: user({ email_verified: true }), repos },
+    });
+
+    expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(screen.getByText("ada/repo8")).toBeInTheDocument();
+  });
+
+  it("keeps incomplete-profile banner above the dashboard", () => {
     render(SignedInHome, {
       props: {
         user: user({ profile_incomplete: true, email_verified: true }),
@@ -140,10 +159,10 @@ describe("SignedInHome dashboard IA (D-13 / UI E1)", () => {
     });
 
     expect(screen.getByRole("status")).toHaveTextContent("Choose a username to finish setup.");
-    expect(screen.getByRole("heading", { name: "Your repositories" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
   });
 
-  it("shows reposError without empty hero", () => {
+  it("shows reposError without empty hero (unhappy)", () => {
     render(SignedInHome, {
       props: {
         user: user({ email_verified: true }),

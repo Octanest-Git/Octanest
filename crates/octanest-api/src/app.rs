@@ -45,6 +45,10 @@ pub struct AppState {
     pub repo_redirect_retention_days: u32,
     /// Package blob store root (`OCTANEST_PACKAGES_DIR`, default `var/packages`) — D-PKG-07.
     pub packages_dir: PathBuf,
+    /// Actions job log store (`OCTANEST_ACTIONS_LOG_DIR`, default `var/actions-logs`) — D-ACT-13.
+    pub actions_log_dir: PathBuf,
+    /// Instance Actions gate (`OCTANEST_ACTIONS_ENABLED`, default true) — D-ACT-06.
+    pub actions_enabled: bool,
     /// Git forge backend — Phase 7 registers [`CliGitBackend`] only (D-32).
     pub git: Arc<dyn GitBackend>,
     pub sessions: SessionService,
@@ -54,6 +58,10 @@ pub struct AppState {
     /// `user.lookup` per-session counters (T-10-03) — per process.
     pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
     pub env_name: String,
+    /// In-repo search soft caps (D-SRCH-08 / Phase 16).
+    pub search_timeout_ms: u64,
+    pub search_max_matches: u32,
+    pub search_max_files: u32,
 }
 
 impl AppState {
@@ -113,6 +121,34 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(packages_dir)
         };
+        let actions_log_dir = std::env::var("OCTANEST_ACTIONS_LOG_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/actions-logs"));
+        let actions_log_dir = if actions_log_dir.is_absolute() {
+            actions_log_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(actions_log_dir)
+        };
+        let actions_enabled = std::env::var("OCTANEST_ACTIONS_ENABLED")
+            .map(|v| {
+                let t = v.trim().to_ascii_lowercase();
+                !(t.is_empty() || t == "0" || t == "false" || t == "no" || t == "off")
+            })
+            .unwrap_or(true);
+        let search_timeout_ms = std::env::var("OCTANEST_SEARCH_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(8000u64);
+        let search_max_matches = std::env::var("OCTANEST_SEARCH_MAX_MATCHES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(100u32);
+        let search_max_files = std::env::var("OCTANEST_SEARCH_MAX_FILES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(50u32);
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
@@ -123,12 +159,17 @@ impl AppState {
             release_asset_max_bytes,
             repo_redirect_retention_days,
             packages_dir,
+            actions_log_dir,
+            actions_enabled,
             git: Arc::new(CliGitBackend::new()) as Arc<dyn GitBackend>,
             sessions: SessionService::new(env_name.clone()),
             pending: PendingAuthStore::new(),
             git_auth_limiter: Arc::new(Mutex::new(FailedAuthLimiter::new())),
             lookup_limiter: Arc::new(Mutex::new(LookupLimiter::new())),
             env_name,
+            search_timeout_ms,
+            search_max_matches,
+            search_max_files,
         }
     }
 
@@ -162,6 +203,16 @@ impl AppState {
         self
     }
 
+    pub fn with_actions_log_dir(mut self, dir: PathBuf) -> Self {
+        self.actions_log_dir = dir;
+        self
+    }
+
+    pub fn with_actions_enabled(mut self, enabled: bool) -> Self {
+        self.actions_enabled = enabled;
+        self
+    }
+
     pub fn with_git(mut self, git: Arc<dyn GitBackend>) -> Self {
         self.git = git;
         self
@@ -188,6 +239,7 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
         .route("/health", get(health))
         .route("/api/rpc", post(rpc_http))
         .route("/api/rpc/ws", get(rpc_ws))
+        .nest("/api/actions", crate::actions::runner_proto::router())
         .route("/api/auth/workos/start", get(auth_callbacks::workos_start))
         .route(
             "/api/auth/workos/callback",
@@ -297,11 +349,15 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         repos_dir: state.repos_dir.clone(),
         lfs_dir: state.lfs_dir.clone(),
         release_assets_dir: state.release_assets_dir.clone(),
+        actions_log_dir: state.actions_log_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),
         session,
         set_cookie: None,
         lookup_limiter: state.lookup_limiter.clone(),
+        search_timeout_ms: state.search_timeout_ms,
+        search_max_matches: state.search_max_matches,
+        search_max_files: state.search_max_files,
     }
 }
 

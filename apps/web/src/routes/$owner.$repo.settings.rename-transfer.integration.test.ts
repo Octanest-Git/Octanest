@@ -19,6 +19,9 @@ describe("repo settings rename/transfer danger zone (GIT-16/17)", () => {
     expect(settingsSrc, "Wave 0: transfer must use type-the-repo-name confirm (D-REL-10)").toMatch(
       /confirm|Confirm|type.*name|repo\.transfer/,
     );
+    expect(settingsSrc, "Transfer destination should autocomplete via OwnerLookup").toMatch(
+      /OwnerLookup/,
+    );
   }, 30_000);
 
   it("Settings gate uses can_admin for Admin danger-zone actions", async () => {

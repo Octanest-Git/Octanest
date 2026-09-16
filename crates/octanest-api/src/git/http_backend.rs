@@ -36,6 +36,15 @@ pub struct CgiRequest<'a> {
     pub body: &'a [u8],
     pub remote_user: Option<&'a str>,
     pub git_protocol: Option<&'a str>,
+    /// Phase 13: pass-through env for bare-repo protection hooks (D-19).
+    pub protection_env: Option<&'a ProtectionCgiEnv<'a>>,
+}
+
+/// Env forwarded to git-http-backend so `hooks/update` can evaluate protection.
+pub struct ProtectionCgiEnv<'a> {
+    pub database_url: &'a str,
+    pub actor_capability: &'a str,
+    pub helper_path: Option<&'a str>,
 }
 
 /// Run git-http-backend and map CGI stdout to an Axum [`Response`].
@@ -71,6 +80,14 @@ pub async fn run_git_http_backend(req: CgiRequest<'_>) -> Result<Response, Strin
     }
     if let Some(proto) = req.git_protocol {
         cmd.env("GIT_PROTOCOL", proto);
+    }
+    if let Some(pe) = req.protection_env {
+        cmd.env("OCTANEST_REPOS_DIR", req.repos_dir);
+        cmd.env("OCTANEST_DATABASE_URL", pe.database_url);
+        cmd.env("OCTANEST_ACTOR_CAPABILITY", pe.actor_capability);
+        if let Some(helper) = pe.helper_path {
+            cmd.env("OCTANEST_PROTECTION_HELPER", helper);
+        }
     }
 
     let mut child = cmd

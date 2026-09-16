@@ -430,6 +430,7 @@ async fn authorize_and_cgi(
         return unauthorized_basic();
     }
 
+    let mut actor_capability_label = "read";
     if let Some(ref auth) = authed {
         let caller_id = auth.owner.id.as_str();
         let capability = match effective_capability(
@@ -445,6 +446,11 @@ async fn authorize_and_cgi(
                 tracing::error!(error = %e, "effective_capability");
                 return StatusCode::INTERNAL_SERVER_ERROR.into_response();
             }
+        };
+        actor_capability_label = match capability {
+            Some(Capability::Admin) => "admin",
+            Some(Capability::Write) => "write",
+            Some(Capability::Read) | None => "read",
         };
         // Private + no Read → 401 (D-21 / T-10-01), not web not_found.
         if is_private && !meets(capability, Capability::Read) {
@@ -482,6 +488,20 @@ async fn authorize_and_cgi(
 
     let remote_user = authed.as_ref().map(|a| a.owner.username.as_str());
 
+    let db_url = std::env::var("OCTANEST_DATABASE_URL")
+        .or_else(|_| std::env::var("DATABASE_URL"))
+        .unwrap_or_default();
+    let helper = std::env::var("OCTANEST_PROTECTION_HELPER").ok();
+    let protection = if receive && !db_url.is_empty() {
+        Some(http_backend::ProtectionCgiEnv {
+            database_url: &db_url,
+            actor_capability: actor_capability_label,
+            helper_path: helper.as_deref(),
+        })
+    } else {
+        None
+    };
+
     match http_backend::run_git_http_backend(CgiRequest {
         repos_dir: &state.repos_dir,
         path_info: &path_info,
@@ -491,10 +511,79 @@ async fn authorize_and_cgi(
         body,
         remote_user,
         git_protocol: git_protocol.as_deref(),
+        protection_env: protection.as_ref(),
     })
     .await
     {
-        Ok(resp) => resp,
+        Ok(resp) => {
+            if receive && resp.status().is_success() {
+                if let Some(auth) = &authed {
+                    let updates = crate::webhook::payloads::parse_receive_ref_updates(body);
+                    // Only emit when the client sent at least one ref update command.
+                    if !updates.is_empty() {
+                        let db = state.db.clone();
+                        let repos_dir = state.repos_dir.clone();
+                        let repo_id = resolved.row.id.clone();
+                        let owner_slug = resolved.disk_owner.clone();
+                        let repo_name = resolved.disk_name.clone();
+                        let login = auth.owner.username.clone();
+                        let uid = auth.owner.id.clone();
+                        let env_name = state.env_name.clone();
+                        let updates_wh = updates.clone();
+                        let updates_pull = updates.clone();
+                        tokio::spawn(async move {
+                            crate::webhook::dispatch::notify_push(
+                                &db,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &login,
+                                &uid,
+                                &updates_wh,
+                                &env_name,
+                            )
+                            .await;
+                            crate::pull::synchronize_after_push(
+                                &db,
+                                &repos_dir,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &login,
+                                &uid,
+                                &updates_pull,
+                                &env_name,
+                            )
+                            .await;
+                        });
+                        let db2 = state.db.clone();
+                        let git2 = state.git.clone();
+                        let repos_dir2 = state.repos_dir.clone();
+                        let repo_id2 = resolved.row.id.clone();
+                        let owner2 = resolved.disk_owner.clone();
+                        let name2 = resolved.disk_name.clone();
+                        let uid2 = auth.owner.id.clone();
+                        let updates2 = updates;
+                        let actions_on = state.actions_enabled;
+                        tokio::spawn(async move {
+                            crate::actions::notify_push_actions(
+                                &db2,
+                                git2,
+                                &repos_dir2,
+                                &repo_id2,
+                                &owner2,
+                                &name2,
+                                Some(&uid2),
+                                &updates2,
+                                actions_on,
+                            )
+                            .await;
+                        });
+                    }
+                }
+            }
+            resp
+        }
         Err(e) => {
             tracing::error!(error = %e, "git-http-backend failed");
             (

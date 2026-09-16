@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { renderGfm } from "./markdown";
+import { isMarkdownPath, renderGfm } from "./markdown";
+
+describe("isMarkdownPath", () => {
+  it("detects common markdown extensions and bare README", () => {
+    expect(isMarkdownPath("docs/guide.md")).toBe(true);
+    expect(isMarkdownPath("README.markdown")).toBe(true);
+    expect(isMarkdownPath("README")).toBe(true);
+    expect(isMarkdownPath("src/main.rs")).toBe(false);
+  });
+});
 
 describe("renderGfm", () => {
   it("strips script tags and unsafe HTML", async () => {

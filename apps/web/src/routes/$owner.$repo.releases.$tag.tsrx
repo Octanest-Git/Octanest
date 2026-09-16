@@ -5,6 +5,7 @@ import { useEffect, useState } from "octane";
 import { Badge } from "@/components/ui/badge";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { Label } from "@/components/ui/label";
+import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
@@ -175,9 +176,10 @@ export function RepoReleaseDetailPage() @{
           </>;
         }
       </p>
-      <div
-        className="prose prose-sm max-w-none text-foreground"
-        dangerouslySetInnerHTML={{ __html: bodyHtml }}
+      <MarkdownHtml
+        html={bodyHtml as string}
+        className="text-foreground"
+        data-testid="release-body"
       />
       <section className="mt-8">
         <h3 className="mb-3 text-[16px] font-semibold text-foreground">Assets</h3>

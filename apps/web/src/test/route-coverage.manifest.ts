@@ -102,6 +102,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
 
   // --- user settings ---
   {
+    route: "settings/general.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/settings/general.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "settings/profile.tsrx",
     coverage: [
       {
@@ -122,6 +131,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "settings/tokens.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "settings/tokens.index.tsrx",
     coverage: [
       {
         kind: "happy-dom",
@@ -131,6 +145,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "settings/tokens.new.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "settings/tokens.new.index.tsrx",
     coverage: [
       {
         kind: "happy-dom",
@@ -208,6 +227,16 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       },
     ],
   },
+  {
+    route: "admin/runners.tsrx",
+    coverage: [
+      {
+        kind: "skip",
+        rationale:
+          "Phase 19 admin registration-token UI; happy-dom deferred — covered by actions_secrets/dispatch_policy nextest + manual Admin runners smoke",
+      },
+    ],
+  },
 
   // --- forge repo chrome + code browse (11.1-04) ---
   {
@@ -234,6 +263,39 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   {
     route: "$owner.$repo.packages.tsrx",
     coverage: [{ kind: "stack-browser", test: FORGE_REPO }],
+  },
+  {
+    route: "$owner.$repo.actions.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.$repo.actions.index.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.actions.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.actions.$run.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.actions.$run.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.settings.actions.tsrx",
+    coverage: [
+      {
+        kind: "skip",
+        rationale:
+          "Phase 19 repo Actions enable/secrets settings panel; happy-dom deferred — RPC covered by actions_secrets nextest",
+      },
+    ],
   },
   {
     route: "$owner.$repo.tree.$.tsrx",
@@ -314,6 +376,58 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       {
         kind: "happy-dom",
         test: "apps/web/src/routes/$owner.$repo.settings.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.fork.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.fork.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.search.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.search.integration.test.ts",
+      },
+    ],
+  },
+
+  // --- pulls (Phase 12) ---
+  {
+    route: "$owner.$repo.pulls.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.$repo.pulls.index.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.pulls.new.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.pull.$n.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
       },
     ],
   },
@@ -401,16 +515,28 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "$owner.settings.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.settings.index.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale: "Org settings hub deferred; members child has stack-browser",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.settings.integration.test.ts",
       },
+      { kind: "stack-browser", test: FORGE_SSH_ORGS },
     ],
   },
   {
     route: "$owner.settings.members.tsrx",
-    coverage: [{ kind: "stack-browser", test: FORGE_SSH_ORGS }],
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.settings.integration.test.ts",
+      },
+      { kind: "stack-browser", test: FORGE_SSH_ORGS },
+    ],
   },
   {
     route: "$owner.settings.labels.tsrx",
@@ -418,6 +544,35 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       {
         kind: "skip",
         rationale: "Org-wide labels settings deferred behind repo issue labels",
+      },
+    ],
+  },
+
+  // --- explore / notifications / global search (Phases 17 / 21) ---
+  {
+    route: "search.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/search.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "explore.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/explore.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "notifications.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/notifications.integration.test.ts",
       },
     ],
   },

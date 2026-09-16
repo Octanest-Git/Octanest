@@ -10,11 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
-import { clearSessionQueries, setAuthMeCache } from "@/lib/session-queries";
-import { syncSessionPresenceHint } from "@/lib/session-hint";
+import { setAuthMeCache } from "@/lib/session-queries";
 import { fetchUserGetProfile } from "@/lib/ssr-auth";
 import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 
 export type ProfileLoaderData =
   | { kind: "unauthenticated" }
@@ -80,9 +78,6 @@ export function ProfilePage() @{
   const [avatarUploadPending, setAvatarUploadPending] = useState(false);
   const [avatarRemovePending, setAvatarRemovePending] = useState(false);
   const [pending, setPending] = useState(false);
-  const [branchPending, setBranchPending] = useState(false);
-  const [logoutPending, setLogoutPending] = useState(false);
-  const [confirmLogoutAll, setConfirmLogoutAll] = useState(false);
 
   const profileForm = useForm({
     defaultValues: {
@@ -108,7 +103,6 @@ export function ProfilePage() @{
         profileForm.setFieldValue("display_name", res.data.display_name ?? "");
         profileForm.setFieldValue("username", res.data.username ?? "");
         profileForm.setFieldValue("bio", res.data.bio ?? "");
-        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
         setAvatarUrl(res.data.avatar_url);
         setAuthMeCache(queryClient, res.data);
         if (previousUsername && res.data.username && previousUsername !== res.data.username) {
@@ -127,37 +121,6 @@ export function ProfilePage() @{
     },
   });
 
-  const branchForm = useForm({
-    defaultValues: {
-      default_branch: initialUser?.default_branch?.trim() || "main",
-    },
-    onSubmit: async ({ value }) => {
-      setBranchPending(true);
-      const profileValues = profileForm.state.values;
-      try {
-        const res = await apiClient.user.updateProfile({
-          display_name: profileValues.display_name.trim(),
-          username: profileValues.username.trim(),
-          bio: profileValues.bio.slice(0, BIO_MAX),
-          default_branch: value.default_branch.trim() || "main",
-        });
-        if (!res.ok) {
-          toastError(res.error.message || "Could not save default branch. Try again.");
-          setBranchPending(false);
-          return;
-        }
-        setPhase({ kind: "ready", user: res.data });
-        branchForm.setFieldValue("default_branch", res.data.default_branch?.trim() || "main");
-        setAuthMeCache(queryClient, res.data);
-        toastSuccess("Default branch saved.");
-        setBranchPending(false);
-      } catch {
-        toastError(NETWORK_ERROR);
-        setBranchPending(false);
-      }
-    },
-  });
-
   useEffect(() => {
     if (!loaderData) return;
     if (loaderData.kind === "ready") {
@@ -165,7 +128,6 @@ export function ProfilePage() @{
       profileForm.setFieldValue("display_name", user.display_name ?? "");
       profileForm.setFieldValue("username", user.username ?? "");
       profileForm.setFieldValue("bio", user.bio ?? "");
-      branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
       setAvatarUrl(user.avatar_url);
       setPhase({ kind: "ready", user });
       return;
@@ -190,7 +152,6 @@ export function ProfilePage() @{
         profileForm.setFieldValue("display_name", user.display_name ?? "");
         profileForm.setFieldValue("username", user.username ?? "");
         profileForm.setFieldValue("bio", user.bio ?? "");
-        branchForm.setFieldValue("default_branch", user.default_branch?.trim() || "main");
         setAvatarUrl(user.avatar_url);
         setPhase({ kind: "ready", user });
       } catch {
@@ -273,30 +234,6 @@ export function ProfilePage() @{
       toastError(NETWORK_ERROR);
       setAvatarRemovePending(false);
     }
-  }
-
-  async function logoutThisDevice() {
-    setLogoutPending(true);
-    try {
-      await apiClient.auth.logout();
-    } catch {
-      /* still leave */
-    }
-    syncSessionPresenceHint(false);
-    clearSessionQueries(queryClient);
-    window.location.assign("/");
-  }
-
-  async function logoutAllDevices() {
-    setLogoutPending(true);
-    try {
-      await apiClient.auth.logoutAll();
-    } catch {
-      /* still leave */
-    }
-    syncSessionPresenceHint(false);
-    clearSessionQueries(queryClient);
-    window.location.assign("/");
   }
 
   @if (phase.kind === "loading") {
@@ -392,102 +329,7 @@ export function ProfilePage() @{
               {(pending ? "Working…" : "Save profile") as string}
             </Button>
           </form>
-
-          <hr className="border-border" />
-
-          <form
-            method="post"
-            action="#"
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void branchForm.handleSubmit();
-            }}
-          >
-            <branchForm.Field name="default_branch">
-              {(field) => (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="default-branch">Default branch name</Label>
-                  <Input
-                    id="default-branch"
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
-                    autoComplete="off"
-                  />
-                  <p className="text-[14px] text-muted-foreground">
-                    Applies to new repositories you create. Existing repos keep their current
-                    default branch.
-                  </p>
-                </div>
-              )}
-            </branchForm.Field>
-            <Button type="submit" disabled={branchPending} className="w-full sm:w-auto">
-              {(branchPending ? "Working…" : "Save default branch") as string}
-            </Button>
-          </form>
-
-          <hr className="border-border" />
-
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={logoutPending}
-              onClick={() => void logoutThisDevice()}
-            >
-              Log out
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={logoutPending}
-              className={cn("border border-destructive text-destructive hover:bg-destructive/10")}
-              onClick={() => setConfirmLogoutAll(true)}
-            >
-              Log out all devices
-            </Button>
-          </div>
         </div>
-
-        @if (confirmLogoutAll) {
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-all-title"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
-          >
-            <div className="w-full max-w-md rounded-md border border-border bg-card p-6 shadow-lg">
-              <h2
-                id="logout-all-title"
-                className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground"
-              >
-                Log out all devices
-              </h2>
-              <p className="mt-3 text-[16px] text-muted-foreground">
-                Sign out everywhere? You'll need to sign in again on each device.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  disabled={logoutPending}
-                  className="bg-destructive text-white hover:brightness-110"
-                  onClick={() => void logoutAllDevices()}
-                >
-                  Log out all devices
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={logoutPending}
-                  onClick={() => setConfirmLogoutAll(false)}
-                >
-                  Stay signed in
-                </Button>
-              </div>
-            </div>
-          </div>;
-        }
       </AccountSettingsLayout>;
     }
   }

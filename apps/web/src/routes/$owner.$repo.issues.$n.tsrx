@@ -10,6 +10,7 @@ import { IssueHistoryPanel } from "@/components/repo/issue-history";
 import { IssueLabelsPanel } from "@/components/repo/issue-labels-panel";
 import { IssueLinkedPrsPanel } from "@/components/repo/issue-linked-prs";
 import { IssueReactionsBar } from "@/components/repo/issue-reactions";
+import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
@@ -402,9 +403,10 @@ export function IssueDetailPage() @{
                 </div>
               </div>;
             } @else {
-              <div
-                className="prose prose-sm max-w-none rounded-md border border-border px-4 py-3"
-                dangerouslySetInnerHTML={{ __html: bodyHtml }}
+              <MarkdownHtml
+                html={bodyHtml as string}
+                className="rounded-md border border-border px-4 py-3"
+                data-testid="issue-body"
               />;
             }
 
