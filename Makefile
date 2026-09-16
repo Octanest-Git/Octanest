@@ -1,7 +1,7 @@
 .PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
-	smoke-protocol-ci \
+	smoke-protocol-ci smoke-compose-ci \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
@@ -43,6 +43,7 @@ help:
 	@echo "  make smoke-git-lfs   - Traefik .git/info/lfs batch routing smoke (GIT-12)"
 	@echo "  make smoke-packages  - Traefik /v2|/npm|/generic → API smoke (PKG-01..03)"
 	@echo "  make smoke-protocol-ci - Compose up + smoke-git-* + smoke-packages (D-QH-04; fail-closed)"
+	@echo "  make smoke-compose-ci - Compose dialect bring-up smoke for CI (D-CI-01; DIALECT=postgres|sqlite|mysql)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
@@ -166,6 +167,11 @@ smoke-packages:
 # Default skips client ls-remote/LFS push (no seeded repo); set SMOKE_SKIP_*=0 + fixtures for full.
 smoke-protocol-ci:
 	@./scripts/ci-smoke-protocol.sh
+
+# D-CI-01…04: fail-closed Compose bring-up for one dialect (default postgres).
+# Usage: make smoke-compose-ci DIALECT=sqlite
+smoke-compose-ci:
+	@./scripts/ci-compose-smoke.sh "$(or $(DIALECT),postgres)"
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh
