@@ -18,6 +18,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as StatusRouteImport } from './routes/status'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as VerifyRouteImport } from './routes/verify'
 import { Route as OwnerIndexRouteImport } from './routes/$owner.index'
 import { Route as OwnerRepoRouteImport } from './routes/$owner.$repo'
@@ -106,6 +107,11 @@ const SignupRoute = SignupRouteImport.update({
 const StatusRoute = StatusRouteImport.update({
   id: '/status',
   path: '/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyRoute = VerifyRouteImport.update({
@@ -340,6 +346,7 @@ export interface FileRoutesByFullPath {
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/notifications': typeof NotificationsRoute
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/$owner/packages': typeof OwnerPackagesRoute
@@ -393,6 +400,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/notifications': typeof NotificationsRoute
   '/verify': typeof VerifyRoute
   '/$owner/packages': typeof OwnerPackagesRoute
   '/$owner/settings': typeof OwnerSettingsRouteWithChildren
@@ -445,6 +453,7 @@ export interface FileRoutesById {
   '/setup': typeof SetupRouteWithChildren
   '/signup': typeof SignupRoute
   '/status': typeof StatusRoute
+  '/notifications': typeof NotificationsRoute
   '/verify': typeof VerifyRoute
   '/$owner/$repo': typeof OwnerRepoRouteWithChildren
   '/$owner/packages': typeof OwnerPackagesRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/signup'
     | '/status'
+    | '/notifications'
     | '/verify'
     | '/$owner/$repo'
     | '/$owner/packages'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/status'
+    | '/notifications'
     | '/verify'
     | '/$owner/packages'
     | '/$owner/settings'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/signup'
     | '/status'
+    | '/notifications'
     | '/verify'
     | '/$owner/$repo'
     | '/$owner/packages'
@@ -662,6 +674,7 @@ export interface RootRouteChildren {
   SetupRoute: typeof SetupRouteWithChildren
   SignupRoute: typeof SignupRoute
   StatusRoute: typeof StatusRoute
+  NotificationsRoute: typeof NotificationsRoute
   VerifyRoute: typeof VerifyRoute
   AdminAuthRoute: typeof AdminAuthRoute
   AdminLfsRoute: typeof AdminLfsRoute
@@ -736,6 +749,13 @@ declare module '@octanejs/tanstack-router' {
       path: '/status'
       fullPath: '/status'
       preLoaderRoute: typeof StatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify': {
@@ -1213,6 +1233,7 @@ const rootRouteChildren: RootRouteChildren = {
   SetupRoute: SetupRouteWithChildren,
   SignupRoute: SignupRoute,
   StatusRoute: StatusRoute,
+  NotificationsRoute: NotificationsRoute,
   VerifyRoute: VerifyRoute,
   AdminAuthRoute: AdminAuthRoute,
   AdminLfsRoute: AdminLfsRoute,

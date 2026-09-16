@@ -1,4 +1,4 @@
-import { Menu, Plus, X } from "@octanejs/lucide";
+import { Bell, Menu, Plus, X } from "@octanejs/lucide";
 import { Link, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from "@/lib/api-client";
+import { notificationUnreadCountQueryOptions } from "@/lib/notification-queries";
 import { clearSessionQueries, orgListMineQueryOptions } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
@@ -223,6 +224,38 @@ function AccountMenu({
   </DropdownMenu>;
 }
 
+function NotificationsBell({ onNavigated }: { onNavigated?: () => void }) @{
+  const unreadQ = useQuery(notificationUnreadCountQueryOptions());
+  const countNum = Number(unreadQ.data ?? 0);
+  const count = Number.isFinite(countNum) ? countNum : 0;
+  const label =
+    count > 0
+      ? (("Notifications (" + String(count) + " unread)") as string)
+      : ("Notifications" as string);
+  const badgeText = (count > 99 ? "99+" : String(count)) as string;
+
+  <Link
+    to="/notifications"
+    preload="intent"
+    aria-label={label}
+    className={cn(
+      "relative inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+      "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+    )}
+    onClick={onNavigated}
+  >
+    <Bell aria-hidden size={18} />
+    @if (count > 0) {
+      <span
+        aria-hidden
+        className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
+      >
+        {badgeText}
+      </span>;
+    }
+  </Link>;
+}
+
 function AccountActions({
   className,
   onNavigated,
@@ -265,6 +298,7 @@ function AccountActions({
         className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
       >
         <CreateMenu onNavigated={onNavigated} />
+        <NotificationsBell onNavigated={onNavigated} />
         <AccountMenu user={user} onNavigated={onNavigated} />
       </div>
     );
