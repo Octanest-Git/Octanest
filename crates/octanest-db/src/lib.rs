@@ -569,6 +569,25 @@ impl Database {
         .await
     }
 
+    pub async fn mark_pull_merged(
+        &self,
+        id: &str,
+        merged_by: &str,
+        merge_commit_sha: &str,
+        merge_method: &str,
+        merged_at: &str,
+    ) -> Result<(), String> {
+        pulls::mark_merged(
+            self.require_pool()?,
+            id,
+            merged_by,
+            merge_commit_sha,
+            merge_method,
+            merged_at,
+        )
+        .await
+    }
+
     // --- issues ---
 
     pub async fn allocate_next_issue_number(&self, repo_id: &str) -> Result<i64, String> {

@@ -1,6 +1,11 @@
 //! Pull request RPC — lifecycle create/get/list/close/reopen (PR-01 / PR-06 / D-PR-02 / D-PR-29).
 
 pub(crate) mod acl;
+mod merge_ops;
+
+pub use merge_ops::{
+    commits, files, merge, merge_settings_get, merge_settings_update,
+};
 
 use octanest_core::{
     AppError, CreatePullRequest, MergeMethod, PullListRequest, PullListResponse, PullPublic,

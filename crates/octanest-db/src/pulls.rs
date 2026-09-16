@@ -671,3 +671,63 @@ pub async fn update_fields(
     }
     Ok(())
 }
+
+pub async fn mark_merged(
+    pool: &DbPool,
+    id: &str,
+    merged_by: &str,
+    merge_commit_sha: &str,
+    merge_method: &str,
+    merged_at: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET state = 'merged', merged_by = ?1, merge_commit_sha = ?2,
+                 merge_method = ?3, merged_at = ?4, closed_at = ?4, closed_by = ?1,
+                 updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?5",
+            )
+            .bind(merged_by)
+            .bind(merge_commit_sha)
+            .bind(merge_method)
+            .bind(merged_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark merged failed: {e}"))?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET state = 'merged', merged_by = $1, merge_commit_sha = $2,
+                 merge_method = $3, merged_at = $4, closed_at = $4, closed_by = $1,
+                 updated_at = now() WHERE id = $5",
+            )
+            .bind(merged_by)
+            .bind(merge_commit_sha)
+            .bind(merge_method)
+            .bind(merged_at)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark merged failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET state = 'merged', merged_by = ?, merge_commit_sha = ?,
+                 merge_method = ?, merged_at = ?, closed_at = ?, closed_by = ?,
+                 updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(merged_by)
+            .bind(merge_commit_sha)
+            .bind(merge_method)
+            .bind(merged_at)
+            .bind(merged_at)
+            .bind(merged_by)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("mark merged failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
