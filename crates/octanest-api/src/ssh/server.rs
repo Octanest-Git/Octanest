@@ -223,6 +223,30 @@ impl Handler for SshHandler {
                                 &env_name,
                             )
                             .await;
+                            let git: std::sync::Arc<dyn octanest_git::GitBackend> =
+                                std::sync::Arc::new(octanest_git::CliGitBackend::new());
+                            let actions_enabled = std::env::var("OCTANEST_ACTIONS_ENABLED")
+                                .map(|v| {
+                                    let t = v.trim().to_ascii_lowercase();
+                                    !(t.is_empty()
+                                        || t == "0"
+                                        || t == "false"
+                                        || t == "no"
+                                        || t == "off")
+                                })
+                                .unwrap_or(true);
+                            crate::actions::notify_push_actions(
+                                &db,
+                                git,
+                                &repos_dir,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                Some(&user.id),
+                                &[],
+                                actions_enabled,
+                            )
+                            .await;
                         }
                     }
                     let _ = handle.exit_status_request(channel, code as u32).await;

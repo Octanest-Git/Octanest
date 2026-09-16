@@ -2870,6 +2870,7 @@ name = "octanest-db"
 version = "0.1.0"
 dependencies = [
  "octanest-core",
+ "serde_json",
  "sqlx",
  "tempfile",
  "tokio",

@@ -1898,6 +1898,50 @@ impl Database {
         .await
     }
 
+    pub async fn get_repo_actions_enabled(&self, repo_id: &str) -> Result<bool, String> {
+        actions::get_actions_enabled(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_actions_enabled(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        actions::set_actions_enabled(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn consume_action_runner_registration_token(
+        &self,
+        token_hash: &str,
+    ) -> Result<bool, String> {
+        actions::consume_registration_token(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_action_runner_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<actions::ActionRunnerRow>, String> {
+        actions::find_runner_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn claim_queued_action_job_for_labels(
+        &self,
+        runner_id: &str,
+        labels: &[String],
+    ) -> Result<Option<actions::ActionJobRow>, String> {
+        actions::claim_queued_job_for_labels(self.require_pool()?, runner_id, labels).await
+    }
+
+    pub async fn list_action_runs_for_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionRunRow>, String> {
+        actions::list_runs_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_jobs_for_run(
+        &self,
+        run_id: &str,
+    ) -> Result<Vec<actions::ActionJobRow>, String> {
+        actions::list_jobs_for_run(self.require_pool()?, run_id).await
+    }
+
     pub async fn wipe_actions_domain(&self) -> Result<(), String> {
         actions::wipe_actions_domain(self.require_pool()?).await
     }
