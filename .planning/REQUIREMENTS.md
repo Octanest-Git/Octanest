@@ -11,13 +11,13 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 - [ ] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
 - [ ] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
-- [ ] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
+- [x] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
 - [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
 - [ ] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
 - [ ] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
-- [ ] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
+- [x] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
 - [ ] **PLAT-10**: UI components are built with ShadCN + Base UI
 - [ ] **PLAT-11**: Styles use Tailwind CSS v4 with CSS-based configuration (CSS is the Tailwind config source of truth)
 
@@ -168,13 +168,13 @@ Deferred; not in the current roadmap until promoted.
 |-------------|-------|--------|
 | PLAT-01 | Phase 1 | Pending |
 | PLAT-02 | Phase 22 | Pending |
-| PLAT-03 | Phase 22 | Pending |
+| PLAT-03 | Phase 22 | Complete |
 | PLAT-04 | Phase 1 | Pending |
 | PLAT-05 | Phase 1 | Pending |
 | PLAT-06 | Phase 1 | Pending |
 | PLAT-07 | Phase 2 | Pending |
 | PLAT-08 | Phase 2 | Pending |
-| PLAT-09 | Phase 22 | Pending |
+| PLAT-09 | Phase 22 | Complete |
 | PLAT-10 | Phase 1 | Pending |
 | PLAT-11 | Phase 1 | Pending |
 | AUTH-01 | Phase 4 | Complete |

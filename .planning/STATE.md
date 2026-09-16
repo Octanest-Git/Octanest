@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase_name: Branch Protection
 current_plan: 9
 status: phase_complete
-stopped_at: Completed 13-08-PLAN.md
-last_updated: "2026-09-16T14:16:25.839Z"
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-09-16T18:21:04.724Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 13 plans 00–08 executed (protection evaluate/hooks/CRUD/statuses/UI/docs); SUMMARYs written
-state_head: 58bbeb71d2a3e90311b3a96520a326f390e09067
+state_head: f690a96bd287d9aebb9d128b652cb35ca3e16ed9
 progress:
   total_phases: 23
-  completed_phases: 16
-  total_plans: 173
-  completed_plans: 173
+  completed_phases: 0
+  total_plans: 198
+  completed_plans: 196
 milestone_name: milestone
 current_phase: 13
 ---
@@ -165,6 +165,7 @@ See also: `.planning/phases/13-branch-protection/13-CONTEXT.md` · `.planning/ph
 | Phase 11.1 P07 | 5min | 3 tasks | 9 files |
 | Phase 11.1 P08 | 6min | 2 tasks | 6 files |
 | Phase 13 P08 | 20min | 2 tasks | 4 files |
+| Phase 22 P01 | 2min | 3 tasks | 4 files |
 
 # Project State
 
@@ -556,6 +557,7 @@ Recent decisions affecting current work:
 - [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
 - [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
 - [Phase 12]: Branch protection: Settings panel CRUD + merge blockers + shared evaluate/hooks
+- [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
 
 ### Pending Todos
 
@@ -577,8 +579,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T14:16:25.715Z
-Stopped at: Completed 13-08-PLAN.md
+Last session: 2026-09-16T18:21:04.440Z
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
 
 ## Accumulated Context
