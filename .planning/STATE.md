@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase_name: Pull Requests
 current_plan: 0
-status: planning
+status: executing
 stopped_at: Completed 11.1-08-PLAN.md
 last_updated: "2026-09-15T18:01:52.315Z"
 last_activity: 2026-09-15
@@ -25,14 +25,14 @@ current_phase: 12
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** ready to plan (`12-CONTEXT.md`)
+**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** plans locked (8 PLANs); executing
 
 ## Current Position
 
 Phase: **12** — Pull Requests (CONTEXT locked, GitHub parity) · **11.1** plans complete
 Current Plan: —
-Total Plans in Phase: TBD
-Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: `/gsd-plan-phase 12` or `/gsd-verify-work 11.1`
+Total Plans in Phase: 8
+Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: execute 12-00…12-07 (`/gsd-execute-phase 12`)
 Last activity: 2026-09-15 — Completed 11.1-05; Phase 12 discuss closed to GitHub parity
 
 See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
@@ -178,7 +178,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 12 — Pull Requests (discuss)
 Current Plan: —
-Total Plans in Phase: TBD
+Total Plans in Phase: 8
 Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
 Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
 

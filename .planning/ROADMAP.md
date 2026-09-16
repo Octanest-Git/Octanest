@@ -535,7 +535,19 @@ Plans:
   3. User with permission can merge choosing merge commit, squash, or rebase; can close or reopen a PR
   4. Repo settings can enable/disable each merge strategy independently
 
-**Plans**: TBD
+**Plans:** 0/8 executed
+
+Plans:
+
+- [ ] `12-00-PLAN.md` — Wave 0: API/DB Nyquist stubs (pull_*, dialect_pulls)
+- [ ] `12-01-PLAN.md` — Wave 0: Vitest Pulls UI stubs
+- [ ] `12-02-PLAN.md` — Schema 0016 + pull_types + GitBackend merge ops
+- [ ] `12-03-PLAN.md` — Tracer: pull lifecycle RPC + Pulls chrome/list/new/detail
+- [ ] `12-04-PLAN.md` — Diff/commits + comments (Conversation|Files|Commits)
+- [ ] `12-05-PLAN.md` — Reviews approve/changes/comment/dismiss
+- [ ] `12-06-PLAN.md` — Merge strategies + settings + closing keywords
+- [ ] `12-07-PLAN.md` — Fork heads + pr links + filters + docs/VALIDATION
+
 **UI hint**: yes
 
 ### Phase 13: Branch Protection
