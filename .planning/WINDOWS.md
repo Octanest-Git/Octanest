@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 51
+open_count: 55
 waived_count: 1
 fixed_count: 2
-total_count: 54
-last_updated: 2026-09-15T16:21:58.697Z
+total_count: 58
+last_updated: 2026-09-16T13:43:57.702Z
 ---
 
 # Broken Windows Ledger
@@ -69,6 +69,10 @@ last_updated: 2026-09-15T16:21:58.697Z
 | 52 | 15 | deviation | crates/octanest-api/src/repo/rename_transfer.rs |  | 15-03 combined T1-T3 into single commit due to shared redirect wiring | open |  | 2026-09-14T17:31:23.559Z |  |
 | 53 | 11.1 | deviation | scripts/coverage-weighted.sh |  | Bootstrap floor 0.65 instead of plan ~0.70; ratchet target 0.70 documented | open |  | 2026-09-15T16:21:58.576Z |  |
 | 54 | 11.1 | deviation | .github/workflows/ci.yml |  | CI skips cargo-llvm-cov collect (Make target remains); web+checklist drive gate | open |  | 2026-09-15T16:21:58.697Z |  |
+| 55 | 18 | stub | crates/octanest-api/tests/webhook_rpc.rs |  | All webhook_* RPC tests #[ignore] until 18-01/18-02 | open |  | 2026-09-16T13:43:57.313Z |  |
+| 56 | 18 | stub | crates/octanest-api/tests/webhook_delivery.rs |  | All webhook_* delivery tests #[ignore] until 18-01..18-03 | open |  | 2026-09-16T13:43:57.452Z |  |
+| 57 | 18 | stub | crates/octanest-db/tests/dialect_webhooks.rs |  | dialect_webhooks #[ignore] until 18-01 | open |  | 2026-09-16T13:43:57.578Z |  |
+| 58 | 18 | stub | apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts |  | Settings Webhooks Vitest it.fails until 18-04 | open |  | 2026-09-16T13:43:57.702Z |  |
 
 ````json
 [
@@ -719,6 +723,58 @@ last_updated: 2026-09-15T16:21:58.697Z
     "reason": "",
     "recorded_at": "2026-09-15T16:21:58.697Z",
     "resolved_at": null
+  },
+  {
+    "id": 55,
+    "kind": "stub",
+    "phase": "18",
+    "file": "crates/octanest-api/tests/webhook_rpc.rs",
+    "line": null,
+    "description": "All webhook_* RPC tests #[ignore] until 18-01/18-02",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-16T13:43:57.313Z",
+    "resolved_at": null,
+    "milestone": "v1.0"
+  },
+  {
+    "id": 56,
+    "kind": "stub",
+    "phase": "18",
+    "file": "crates/octanest-api/tests/webhook_delivery.rs",
+    "line": null,
+    "description": "All webhook_* delivery tests #[ignore] until 18-01..18-03",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-16T13:43:57.452Z",
+    "resolved_at": null,
+    "milestone": "v1.0"
+  },
+  {
+    "id": 57,
+    "kind": "stub",
+    "phase": "18",
+    "file": "crates/octanest-db/tests/dialect_webhooks.rs",
+    "line": null,
+    "description": "dialect_webhooks #[ignore] until 18-01",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-16T13:43:57.578Z",
+    "resolved_at": null,
+    "milestone": "v1.0"
+  },
+  {
+    "id": 58,
+    "kind": "stub",
+    "phase": "18",
+    "file": "apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts",
+    "line": null,
+    "description": "Settings Webhooks Vitest it.fails until 18-04",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-09-16T13:43:57.702Z",
+    "resolved_at": null,
+    "milestone": "v1.0"
   }
 ]
 ````

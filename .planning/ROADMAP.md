@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
 - [x] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
-- [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
+- [x] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
@@ -681,7 +681,16 @@ Plans:
   2. Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
   3. Repo admin can view recent webhook delivery attempts and response status
 
-**Plans**: TBD
+**Plans:** 5/5 plans executed
+
+Plans:
+
+- [x] 18-00-PLAN.md — Wave 0 Nyquist stubs (webhook RPC, delivery, dialect, settings UI)
+- [x] 18-01-PLAN.md — Tracer: schema + Admin CRUD + issues→signed delivery
+- [x] 18-02-PLAN.md — Delivery hardening: SSRF, HMAC, retries, deliveries/ping RPC
+- [x] 18-03-PLAN.md — push + pull_request emitters (Phase 12-aligned payloads)
+- [x] 18-04-PLAN.md — Repo Settings Webhooks UI + delivery history
+
 **UI hint**: yes
 
 ### Phase 19: Actions & Runners
@@ -785,7 +794,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 0/TBD | Not started | - |
-| 18. Webhooks | 0/TBD | Not started | - |
+| 18. Webhooks | 5/5 | Complete | 2026-09-16 |
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 0/TBD | Not started | - |

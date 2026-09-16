@@ -1491,6 +1491,103 @@ export type DeleteReleaseAssetResponse = {
   ok: boolean;
 };
 
+export type WebhookPublic = {
+  id: string;
+  repo_id: string;
+  url: string;
+  secret_masked: string;
+  active: boolean;
+  events: string[];
+  name: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  secret?: string | null;
+};
+
+export type CreateWebhookRequest = {
+  owner: string;
+  name: string;
+  url: string;
+  secret: string;
+  events: string[];
+  active?: boolean | null;
+  description?: string | null;
+};
+
+export type UpdateWebhookRequest = {
+  owner: string;
+  name: string;
+  id: string;
+  url?: string | null;
+  secret?: string | null;
+  events?: string[] | null;
+  active?: boolean | null;
+  description?: string | null;
+};
+
+export type WebhookIdRequest = {
+  owner: string;
+  name: string;
+  id: string;
+};
+
+export type WebhookListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type WebhookListResponse = {
+  webhooks: WebhookPublic[];
+};
+
+export type DeleteWebhookResponse = {
+  ok: boolean;
+};
+
+export type WebhookDeliveryPublic = {
+  id: string;
+  webhook_id: string;
+  delivery_guid: string;
+  event: string;
+  action: string;
+  status: string;
+  created_at: string;
+  http_status?: number | null;
+  error_message?: string | null;
+  attempt_count?: number;
+};
+
+export type WebhookDeliveriesListRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  limit?: number | null;
+};
+
+export type WebhookDeliveriesListResponse = {
+  deliveries: WebhookDeliveryPublic[];
+};
+
+export type WebhookDeliveryGetRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  delivery_id: string;
+};
+
+export type WebhookRedeliverRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  delivery_id: string;
+};
+
+export type WebhookPingResponse = {
+  delivery_id: string;
+  delivery_guid: string;
+};
+
 export type IssueRevisionPublic = {
   id: string;
   issue_id: string;
@@ -1876,6 +1973,28 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<DeleteReleaseResponse>(opts, "release.delete", input),
       deleteAsset: (input: DeleteReleaseAssetRequest) =>
         rpcCall<DeleteReleaseAssetResponse>(opts, "release.deleteAsset", input),
+    },
+    webhook: {
+      create: (input: CreateWebhookRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.create", input),
+      list: (input: WebhookListRequest) =>
+        rpcCall<WebhookListResponse>(opts, "webhook.list", input),
+      get: (input: WebhookIdRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.get", input),
+      update: (input: UpdateWebhookRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.update", input),
+      delete: (input: WebhookIdRequest) =>
+        rpcCall<DeleteWebhookResponse>(opts, "webhook.delete", input),
+      ping: (input: WebhookIdRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.ping", input),
+      redeliver: (input: WebhookRedeliverRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.redeliver", input),
+      deliveries: {
+        list: (input: WebhookDeliveriesListRequest) =>
+          rpcCall<WebhookDeliveriesListResponse>(opts, "webhook.deliveries.list", input),
+        get: (input: WebhookDeliveryGetRequest) =>
+          rpcCall<WebhookDeliveryPublic>(opts, "webhook.deliveries.get", input),
+      },
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>

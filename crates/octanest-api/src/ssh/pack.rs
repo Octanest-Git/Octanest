@@ -26,7 +26,13 @@ pub enum PackAction {
 
 #[derive(Debug)]
 pub enum AuthzDecision {
-    Allow { bare: PathBuf },
+    Allow {
+        bare: PathBuf,
+        repo_id: String,
+        owner_slug: String,
+        repo_name: String,
+        is_push: bool,
+    },
     Deny { message: String },
 }
 
@@ -131,7 +137,13 @@ pub async fn authorize_pack(
                     message: "ERROR: Permission denied to this repository.\n".into(),
                 };
             }
-            AuthzDecision::Allow { bare }
+            AuthzDecision::Allow {
+                bare,
+                repo_id: row.id.clone(),
+                owner_slug: disk_owner.to_string(),
+                repo_name: disk_name.to_string(),
+                is_push: false,
+            }
         }
         PackAction::Push => {
             if !meets(capability, Capability::Write) {
@@ -157,7 +169,13 @@ pub async fn authorize_pack(
                     message: "ERROR: Email verification required to push.\n".into(),
                 };
             }
-            AuthzDecision::Allow { bare }
+            AuthzDecision::Allow {
+                bare,
+                repo_id: row.id.clone(),
+                owner_slug: disk_owner.to_string(),
+                repo_name: disk_name.to_string(),
+                is_push: true,
+            }
         }
     }
 }

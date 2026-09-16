@@ -18,6 +18,7 @@ use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
 use crate::notify;
+use crate::webhook::dispatch;
 use crate::repo::not_found;
 use crate::rpc::RpcCtx;
 
@@ -177,6 +178,19 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
     let subject = notify::subject_for_issue(&row);
     let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
     notify::fanout(ctx, &user.id, mentions, "issue_mention", &subject).await;
+    let payload = dispatch::issues_payload(
+        "opened",
+        row.number,
+        &row.title,
+        &row.body,
+        &row.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "opened", payload, &ctx.env_name).await;
     to_public(ctx, &row).await
 }
 
@@ -315,6 +329,19 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         .update_issue_content(&row.id, &new_title, &new_body)
         .await
         .map_err(db_err)?;
+    let payload = dispatch::issues_payload(
+        "edited",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "edited", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -337,6 +364,19 @@ pub async fn close(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePublic
     let subject = notify::subject_for_issue(&updated);
     let recipients = notify::issue_participant_ids(ctx, &updated.id, &updated.author_id).await;
     notify::fanout(ctx, &user.id, recipients, "issue_closed", &subject).await;
+    let payload = dispatch::issues_payload(
+        "closed",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "closed", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -358,6 +398,19 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
     let subject = notify::subject_for_issue(&updated);
     let recipients = notify::issue_participant_ids(ctx, &updated.id, &updated.author_id).await;
     notify::fanout(ctx, &_user.id, recipients, "issue_reopened", &subject).await;
+    let payload = dispatch::issues_payload(
+        "reopened",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &_user.username,
+        &_user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "reopened", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 

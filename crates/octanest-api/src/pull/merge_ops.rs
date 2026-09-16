@@ -382,6 +382,16 @@ pub async fn merge(ctx: &RpcCtx, input: serde_json::Value) -> Result<MergePullRe
     }
 
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    super::emit_pull_event(
+        ctx,
+        &accessible,
+        &updated,
+        "closed",
+        &user.username,
+        &user.id,
+        true,
+    )
+    .await;
     let subject = notify::subject_for_pull(&updated);
     let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
     notify::fanout(ctx, &user.id, recipients, "pr_merged", &subject).await;
