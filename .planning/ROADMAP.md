@@ -706,7 +706,23 @@ Plans:
   3. Operator can register and run the official Octanest runner image; docs cover Compose sidecar or standalone bring-up
   4. Forge exposes an Actions-compatible registration/job-dispatch protocol (custom `runs-on` labels); jobs only run on registered runners — no managed Octanest Cloud minutes in v1
 
-**Plans**: TBD
+**Plans:** 11/12 plans executed
+
+Plans:
+
+- [x] 19-00-PLAN.md — Wave 0 Rust stubs (parse/triggers/RPC/protocol/policy/statuses/dialect)
+- [x] 19-01-PLAN.md — Wave 0 Vitest Actions stubs + smoke-actions
+- [x] 19-02-PLAN.md — Schema, ACTIONS_LOG_DIR, factory reset wipe
+- [x] 19-03-PLAN.md — Workflow discover + YAML subset parse (ACT-01)
+- [x] 19-04-PLAN.md — Tracer: push → enqueue → FetchTask → logs
+- [x] 19-05-PLAN.md — Full runner protocol + labels + registration tokens
+- [x] 19-06-PLAN.md — pull_request triggers + Phase 12 hook
+- [x] 19-07-PLAN.md — Commit statuses for Phase 13 required checks
+- [x] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
+- [x] 19-09-PLAN.md — Actions UI list/detail/logs + RepoChrome tab
+- [x] 19-10-PLAN.md — Admin tokens, repo secrets/enable, no managed minutes
+- [ ] 19-11-PLAN.md — Docs + smoke + phase gate
+
 **UI hint**: yes
 
 ### Phase 20: Packages Registry
@@ -814,12 +830,12 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 5/5 | Complete | 2026-09-16 |
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
-| 19. Actions & Runners | 0/TBD | Not started | - |
+| 19. Actions & Runners | 12/12 | Complete    | 2026-09-16 |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
 
 ---
 *Roadmap created: 2026-09-09*
-*Last updated: 2026-09-16 — integrate campaign: 12–18, 21–22 on integrate; Phase 19 in progress*
+*Last updated: 2026-09-16 — Phase 19 Actions & Runners complete (12/12 plans on cursor/phase-19-actions-runners-c82f)*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*

@@ -1,5 +1,6 @@
 //! Uniform database adapter boundary — the only place dialect branching is allowed (D-08).
 
+pub mod actions;
 pub mod auth_identities;
 pub mod auth_settings;
 pub mod branch_protection;
@@ -28,6 +29,9 @@ pub mod ssh_keys;
 pub mod stars;
 pub mod users;
 
+pub use actions::{
+    ActionJobRow, ActionRunRow, ActionRunnerRow, ActionSecretCipherRow, ActionSecretMetaRow,
+};
 pub use branch_protection::{BranchProtectionRuleRow, CommitStatusRow};
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
@@ -1770,6 +1774,211 @@ impl Database {
         packages::delete_package_blob(self.require_pool()?, digest).await
     }
 
+    // --- actions (Phase 19) ---
+
+    pub async fn insert_action_runner(
+        &self,
+        id: &str,
+        name: &str,
+        token_hash: &str,
+        labels_json: &str,
+        repository_id: Option<&str>,
+        ephemeral: bool,
+    ) -> Result<actions::ActionRunnerRow, String> {
+        actions::insert_runner(
+            self.require_pool()?,
+            id,
+            name,
+            token_hash,
+            labels_json,
+            repository_id,
+            ephemeral,
+        )
+        .await
+    }
+
+    pub async fn find_action_runner_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionRunnerRow>, String> {
+        actions::find_runner_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_run(
+        &self,
+        id: &str,
+        repository_id: &str,
+        workflow_path: &str,
+        workflow_name: &str,
+        event: &str,
+        head_sha: &str,
+        head_ref: &str,
+        title: &str,
+        triggered_by: Option<&str>,
+    ) -> Result<actions::ActionRunRow, String> {
+        actions::insert_run(
+            self.require_pool()?,
+            id,
+            repository_id,
+            workflow_path,
+            workflow_name,
+            event,
+            head_sha,
+            head_ref,
+            title,
+            triggered_by,
+        )
+        .await
+    }
+
+    pub async fn find_action_run_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionRunRow>, String> {
+        actions::find_run_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_job(
+        &self,
+        id: &str,
+        run_id: &str,
+        job_key: &str,
+        name: &str,
+        runs_on_json: &str,
+    ) -> Result<actions::ActionJobRow, String> {
+        actions::insert_job(
+            self.require_pool()?,
+            id,
+            run_id,
+            job_key,
+            name,
+            runs_on_json,
+        )
+        .await
+    }
+
+    pub async fn find_action_job_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionJobRow>, String> {
+        actions::find_job_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_secret(
+        &self,
+        id: &str,
+        repository_id: &str,
+        name: &str,
+        ciphertext: &str,
+    ) -> Result<(), String> {
+        actions::insert_secret(self.require_pool()?, id, repository_id, name, ciphertext).await
+    }
+
+    pub async fn list_action_secret_names(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionSecretMetaRow>, String> {
+        actions::list_secret_names(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_secret_ciphertexts(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionSecretCipherRow>, String> {
+        actions::list_secret_ciphertexts(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn delete_action_secret_by_name(
+        &self,
+        repository_id: &str,
+        name: &str,
+    ) -> Result<bool, String> {
+        actions::delete_secret_by_name(self.require_pool()?, repository_id, name).await
+    }
+
+    pub async fn list_action_runners(&self) -> Result<Vec<actions::ActionRunnerRow>, String> {
+        actions::list_runners(self.require_pool()?).await
+    }
+
+    pub async fn insert_action_runner_token(
+        &self,
+        id: &str,
+        token_hash: &str,
+        scope_type: &str,
+        scope_id: Option<&str>,
+        active: bool,
+    ) -> Result<(), String> {
+        actions::insert_runner_token(
+            self.require_pool()?,
+            id,
+            token_hash,
+            scope_type,
+            scope_id,
+            active,
+        )
+        .await
+    }
+
+    pub async fn get_repo_actions_enabled(&self, repo_id: &str) -> Result<bool, String> {
+        actions::get_actions_enabled(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_actions_enabled(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        actions::set_actions_enabled(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn consume_action_runner_registration_token(
+        &self,
+        token_hash: &str,
+    ) -> Result<bool, String> {
+        actions::consume_registration_token(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_action_runner_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<actions::ActionRunnerRow>, String> {
+        actions::find_runner_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn claim_queued_action_job_for_labels(
+        &self,
+        runner_id: &str,
+        labels: &[String],
+    ) -> Result<Option<actions::ActionJobRow>, String> {
+        actions::claim_queued_job_for_labels(self.require_pool()?, runner_id, labels).await
+    }
+
+    pub async fn list_action_runs_for_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionRunRow>, String> {
+        actions::list_runs_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_jobs_for_run(
+        &self,
+        run_id: &str,
+    ) -> Result<Vec<actions::ActionJobRow>, String> {
+        actions::list_jobs_for_run(self.require_pool()?, run_id).await
+    }
+
+    pub async fn update_action_job_status(&self, job_id: &str, status: &str) -> Result<(), String> {
+        actions::update_job_status(self.require_pool()?, job_id, status).await
+    }
+
+    pub async fn update_action_runner_labels(
+        &self,
+        runner_id: &str,
+        labels_json: &str,
+    ) -> Result<(), String> {
+        actions::update_runner_labels(self.require_pool()?, runner_id, labels_json).await
+    }
+
+    pub async fn wipe_actions_domain(&self) -> Result<(), String> {
+        actions::wipe_actions_domain(self.require_pool()?).await
+    }
+
     pub async fn find_package_by_id(&self, id: &str) -> Result<Option<packages::PackageRow>, String> {
         packages::find_package_by_id(self.require_pool()?, id).await
     }
@@ -2089,6 +2298,8 @@ impl Database {
 
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
+        // D-ACT-19: wipe Actions domain before cascading repo deletes (instance runners/tokens).
+        actions::wipe_actions_domain(pool).await?;
         match pool {
             Pool::Postgres(p) => {
                 // Polymorphic repos no longer cascade from users — wipe explicitly (T-10-15).

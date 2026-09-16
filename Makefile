@@ -1,6 +1,8 @@
-.PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
+.PHONY: help \
+	dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
+	smoke-actions \
 	smoke-protocol-ci smoke-compose-ci \
 	cloud-plan cloud-docs \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
@@ -38,6 +40,7 @@ help:
 	@echo "  make route-coverage-check - G-11.1-15 every .tsrx page has happy-dom/browser/skip"
 	@echo "  make web-lint       - oxlint type-aware + deny-warnings (@tsrx/oxc)"
 	@echo "  make web-format-check - oxfmt --check (@tsrx/oxc)"
+	@echo "  make smoke-actions  - Actions/runner Compose smoke (ACT-04/05; skip-ok without Docker)"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
@@ -264,3 +267,7 @@ coverage-weighted: coverage-web
 		--unit-json var/coverage/web-unit-summary.json \
 		--integration-json var/coverage/web-integration-summary.json \
 		--e2e-checklist | tee var/coverage/weighted.txt
+
+# See scripts/smoke-actions.sh.
+smoke-actions:
+	@./scripts/smoke-actions.sh

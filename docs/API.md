@@ -66,6 +66,11 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `*` | `/v2/{owner}/{image}/…` | OCI blobs, manifests, tags | PAT with `package:read` / `package:write` ∩ ACL |
 | `*` | `/npm/{owner}/…` | npm registry (publish, packument, tarball, dist-tags) | PAT Basic; cookie ignored |
 | `PUT/GET/DELETE` | `/generic/{owner}/{name}/{version}/…` | Generic/raw package files | PAT Basic; cookie ignored |
+| `POST` | `/api/actions/register` | Runner registration (registration token) | Registration token only (not session cookie) |
+| `POST` | `/api/actions/declare` | Runner label declaration | Bearer runner token |
+| `POST` | `/api/actions/fetch_task` | Claim queued workflow job | Bearer runner token |
+| `POST` | `/api/actions/update_task` | Job state transition | Bearer runner token |
+| `POST` | `/api/actions/update_log` | Append job log chunk | Bearer runner token |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -139,6 +144,12 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `sshKey.add` | Register an OpenSSH public key; returns fingerprint metadata | Session + verified email |
 | `sshKey.list` | List registered SSH public keys (no private keys) | Session |
 | `sshKey.revoke` | Hard-delete an SSH public key by `id` | Session |
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Workflow run list, detail, job log text | Session + Read+ |
+| `repo.actions.secrets.list` / `put` / `delete` | Repo Actions secrets (names only on list) | Session + Admin |
+| `repo.actions.getEnabled` / `setEnabled` | Per-repo Actions enable toggle | Session + Read+ / Admin |
+| `repo.commitStatus.create` / `list` | Commit statuses (Phase 13 + Actions publisher) | Session + Write+ / Read+ |
+| `admin.actions.createRegistrationToken` | Mint one-time runner registration token | Sys-admin |
+| `admin.actions.listRunners` | List registered runners (no secrets) | Sys-admin |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -524,6 +535,74 @@ Avatar and SSO JSON errors use the same `{ ok: false, error: { code, message } }
 Smart HTTP failed-authentication attempts are rate-limited in-process: **20 failures per client IP** and **10 per username** per **15 minutes**, then HTTP `429` with `Retry-After`. Client IP uses the rightmost `X-Forwarded-For` hop from a trusted proxy; do not expose the API without a proxy that sanitizes forwarded headers. Successful PAT auth clears the user bucket. Git-over-SSH failed pubkey auth uses the same windows with the key **fingerprint** as the user bucket. Other RPC routes do not apply this limiter; rely on reverse-proxy / edge controls for deployment-wide limits.
 
 `user.lookup` is rate-limited per session (**60** requests / **60s**). Other RPC routes do not apply in-process limiters; rely on reverse-proxy / edge controls for deployment-wide limits.
+
+## Actions (Phase 19)
+
+Octanest Actions is a **control plane**: workflows are discovered under `.github/workflows/*.yml`, runs/jobs are queued, and **registered runners** execute them. There is **no managed CI minutes** product and no in-process job executor (ACT-07 / D-ACT-10).
+
+### Workflow layout & triggers (ACT-01 / ACT-02)
+
+- Workflow files live at `.github/workflows/*.yml` (or `.yaml`) on the evaluated ref.
+- **push** — evaluated after Smart HTTP / SSH receive (and related notify hooks).
+- **pull_request** — evaluated on PR open/sync/reopen-style events (Phase 12 hook).
+- Instance gate: `OCTANEST_ACTIONS_ENABLED`. Per-repo Admin toggle: `repo.actions.setEnabled` / Settings → Actions.
+
+### Runner protocol HTTP (`/api/actions`) (ACT-06)
+
+Mounted under `/api/actions` on the same HTTP port as RPC (Traefik `/api` PathPrefix → API). **Session cookies are ignored** — only registration tokens and runner bearer tokens authenticate (D-ACT-18). Use placeholders in docs/examples; never commit real tokens.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env `OCTANEST_RUNNER_REGISTRATION_TOKEN`) | Register runner; returns `runner_token` once |
+| POST | `/api/actions/declare` | Bearer runner token | Update labels (`label[:schema[:args]]`, D-ACT-09) |
+| POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job matching labels; may include decrypted `secrets` map |
+| POST | `/api/actions/update_task` | Bearer runner token | Job state updates (`queued` → `in_progress` / `success` / `failure` / `cancelled`) |
+| POST | `/api/actions/update_log` | Bearer runner token | Append job log chunks |
+
+Example register body (placeholders only):
+
+```json
+{
+  "name": "compose-runner",
+  "labels": ["ubuntu-latest:docker://node:20-bookworm", "self-hosted"],
+  "token": "reg_REPLACE_ME"
+}
+```
+
+Runner protocol ignores session cookies (D-ACT-18).
+
+**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]` (Gitea/act_runner parity), e.g. `ubuntu-latest:docker://node:20-bookworm`. Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
+
+Session RPC (Read+/Admin as noted):
+
+| Procedure | ACL | Notes |
+|-----------|-----|-------|
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Read+ | UI list/detail |
+| `repo.actions.secrets.list` / `put` / `delete` | Admin | Names only on list; values never echoed |
+| `repo.actions.getEnabled` / `setEnabled` | Read+ / Admin | Per-repo enable |
+| `admin.actions.createRegistrationToken` | SysAdmin | One-time plaintext token (`reg_…`) |
+| `admin.actions.listRunners` | SysAdmin | Registered runners (no token hashes) |
+
+### Commit statuses for Phase 13 (D-ACT-15 / D-ACT-16)
+
+Job updates publish commit statuses via `repo.commitStatus.*` with context (D-ACT-15):
+
+```text
+{workflow_name} / {job_key}
+```
+
+Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Target URL points at `/{owner}/{repo}/actions/runs/{run_id}` when public origin is configured. Phase 13 required checks should match these contexts (`repo.commitStatus.list`).
+
+### UI routes (ACT-03)
+
+- `/{owner}/{repo}/actions` — run list
+- `/{owner}/{repo}/actions/{runId}` — jobs + logs
+- `/{owner}/{repo}/settings/actions` — Actions enable + secrets (Admin)
+- `/admin/runners` — registration tokens + runner list
+
+### Official runner image (ACT-04 / ACT-05)
+
+Operators attach compute via `docker/octanest-runner` (act_runner lineage). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
 
 ## Regenerating the TypeScript client
 

@@ -239,3 +239,21 @@ octanest/
 - **`deploy/`** — Traefik notes for Compose; cloud ingress under `deploy/cloud/`.
 - **Stack presets** — Day-one `/new` templates are in-repo packs under `crates/octanest-api/assets/stack-presets/` (community PRs; no marketplace UI yet). See [guides/stack-presets.md](guides/stack-presets.md).
 - **Repos volume** — Compose binds `./var/repos` for bare git objects and `./var/lfs` for Git LFS OIDs; cloud mounts `forge-data` at `/var`. Knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, `OCTANEST_LFS_DIR`, orphan/gc/LFS intervals).
+
+
+## Actions control plane (Phase 19)
+
+Actions lives in `crates/octanest-api/src/actions/`:
+
+| Module | Role |
+|--------|------|
+| `parse` / `workflow` | YAML workflow discovery under `.github/workflows` |
+| `dispatch` / `events` | push + pull_request enqueue (queued jobs only) |
+| `runner_proto` | `/api/actions/*` runner HTTP |
+| `tokens` / `secrets` | Registration tokens; AES-GCM repo secrets |
+| `statuses` | Commit status publish for Phase 13 |
+| `rpc` / UI | Session RPC + Octane routes under `/$owner/$repo/actions` |
+
+**Registered runners only:** jobs stay `queued` until a compatible runner `fetch_task`s them. Custom `runs-on` labels match declared runner labels (`label[:schema[:args]]`, D-ACT-09). Official image: `docker/octanest-runner` (act_runner lineage). Compose profile `actions` — see [DEPLOYMENT.md](DEPLOYMENT.md). Operators bring compute; Octanest does not sell managed minutes (ACT-07 / D-ACT-10).
+
+Commit status contexts for Phase 13 required checks: `{workflow_name} / {job_key}` (YAML job id), published on job state transitions and queryable via `repo.commitStatus.list` (D-ACT-15 / D-ACT-16).

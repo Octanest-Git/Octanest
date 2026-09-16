@@ -50,6 +50,12 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_PACKAGES_OWNER_QUOTA_BYTES` | Optional | `10737418240` (10 GiB) | Default per-owner storage quota; Admin may override per owner (D-PKG-09). |
 | `OCTANEST_PACKAGES_GC_INTERVAL_SECS` | Optional | `86400` | Package blob GC interval; `0` disables. |
 | `OCTANEST_PACKAGES_GC_GRACE_SECS` | Optional | `604800` (7d) | Grace before deleting refcount-0 blobs. |
+| `OCTANEST_ACTIONS_LOG_DIR` | Optional | `var/actions-logs` | Root for Actions job logs (`{run_id}/{job_id}.log`). Compose binds `./var/actions-logs:/var/actions-logs` and sets `/var/actions-logs`. **Must not** share repos/LFS/packages/release-asset paths (D-ACT-13). |
+| `OCTANEST_ACTIONS_ENABLED` | Optional | `true` | Instance-wide Actions gate. When `false`/`0`/`off`, no workflows are evaluated (D-ACT-06). Per-repo Admin toggle still applies when instance gate is on. |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Optional | — | Bootstrap registration token for official runners (Compose profile `actions`). Prefer secret/env injection; rotate on compromise (D-ACT-08). **Never commit real tokens.** |
+| `OCTANEST_RUNNER_NAME` | Optional | `compose-runner` | Display name passed to runner register. |
+| `OCTANEST_RUNNER_LABELS` | Optional | `ubuntu-latest:docker://node:20-bookworm,self-hosted` | Comma-separated runner labels (`label[:schema[:args]]`). |
+| `OCTANEST_ACTIONS_SECRETS_KEY` | Optional | derived from `OCTANEST_SESSION_SECRET` | AES-256-GCM key material for repo Actions secrets at rest (D-ACT-17). Prefer a dedicated secret; never commit real keys. |
 | `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
@@ -282,3 +288,24 @@ Host-local Postgres (API outside Compose): point `DATABASE_URL` at `localhost:54
 <!-- VERIFY: Production WorkOS cloud API hostname when OCTANEST_WORKOS_BASE_URL is unset (SDK default; tests mention api.workos.com) -->
 <!-- VERIFY: Deployed public origin / SSO redirect URIs for non-local environments -->
 <!-- VERIFY: Production SMTP / Resend / WorkOS / OIDC secret values (ENV-only; not in repo) -->
+
+
+## Actions runners (ACT-01…ACT-07)
+
+Octanest Actions evaluates workflows from `.github/workflows/*.{yml,yaml}` on **push** and **pull_request** events. The forge queues jobs; **registered runners** execute them via `/api/actions` — there is **no managed-minutes product** and no in-process job executor (ACT-07 / D-ACT-10).
+
+| Knob | Role |
+| --- | --- |
+| `OCTANEST_ACTIONS_ENABLED` | Instance-wide gate (default `true`). When off, no workflows are evaluated. |
+| `OCTANEST_ACTIONS_LOG_DIR` | Job log blobs (`{run_id}/{job_id}.log`); distinct from repos/LFS/packages volumes. |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Bootstrap registration token for Compose profile `actions` — **never commit real values**. |
+| `OCTANEST_RUNNER_NAME` / `OCTANEST_RUNNER_LABELS` | Default runner display name and labels (`label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm`). |
+| `OCTANEST_ACTIONS_SECRETS_KEY` | AES-256-GCM key for repo Actions secrets at rest (D-ACT-17). Prefer a dedicated secret. |
+
+**Registration tokens:** instance admins mint via `admin.actions.createRegistrationToken` (one-time plaintext `reg_…`) or env bootstrap above. **Runner tokens** (`ort_…`) are returned once at register and used as Bearer on `/api/actions/*` — session cookies are ignored (D-ACT-18).
+
+**Per-repo:** Admin enables Actions with `repo.actions.setEnabled`; secrets via `repo.actions.secrets.*` (list returns names only).
+
+**Commit statuses (Phase 13):** Actions publishes contexts `{workflow_name} / {job_key}` — configure branch protection required checks to match. Query with `repo.commitStatus.list`.
+
+Bring-up: [DEPLOYMENT.md](DEPLOYMENT.md#actions-runner-optional). Protocol: [API.md](API.md#actions-phase-19).

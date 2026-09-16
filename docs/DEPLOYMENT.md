@@ -74,6 +74,21 @@ make down-sqlite
 make logs          # follow default compose logs
 ```
 
+### Actions runner (optional)
+
+Octanest does **not** run CI jobs inside the API. Operators attach compute via the official runner image (`docker/octanest-runner`, act_runner lineage).
+
+```bash
+# Instance / Admin registration token — never commit real values
+export OCTANEST_RUNNER_REGISTRATION_TOKEN=...
+# Prefer a hostname job containers can reach (not 127.0.0.1 from nested Docker)
+export OCTANEST_COMPOSE_PUBLIC_ORIGIN=http://localhost
+
+docker compose --profile actions up -d --build runner
+```
+
+Standalone `docker run` instructions: [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md). Smoke: `bash scripts/smoke-actions.sh`.
+
 Network name: `octanest_octanest`. Avatar uploads bind `./var/uploads` → `/var/uploads` on `api`.
 
 ### Forge volumes & ports
@@ -90,6 +105,7 @@ Default Compose publishes HTTP via Traefik and raw TCP for Git-over-SSH. Persist
 | `./var/release-assets` | `/var/release-assets` (`OCTANEST_RELEASE_ASSETS_DIR`) | Release asset files (distinct from LFS) |
 | `./var/ssh` | `/var/ssh` (`OCTANEST_SSH_HOST_KEY_DIR`) | SSH host keys (TOFU across restarts) |
 | `./var/uploads` | `/var/uploads` | Avatars / uploads |
+| `./var/actions-logs` | `/var/actions-logs` (`OCTANEST_ACTIONS_LOG_DIR`) | Actions job logs (distinct from repos/LFS/packages) |
 
 Env knobs: [CONFIGURATION.md](CONFIGURATION.md).
 
@@ -151,6 +167,7 @@ Full variable table and defaults: [CONFIGURATION.md](CONFIGURATION.md). Cloud se
 | `make smoke` | Default Compose; `EXPECT_DIALECT=postgres` |
 | `make smoke-mysql` | MySQL overlay + profile; dialect `mysql` |
 | `make smoke-sqlite` | SQLite overlay; dialect `sqlite` |
+| `make smoke-actions` | Runner Dockerfile/Compose + optional Docker build; `/api/actions` protocol reachability when stack up (skip-ok without Docker) |
 
 Checks performed:
 

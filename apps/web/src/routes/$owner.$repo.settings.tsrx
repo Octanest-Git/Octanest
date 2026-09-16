@@ -4,6 +4,7 @@ import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
 import { BranchProtectionPanel } from "@/components/repo/branch-protection-panel";
 import { LfsBrowser } from "@/components/repo/lfs-browser";
+import { ActionsSettingsPanel } from "@/components/repo/actions-settings-panel";
 import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
 import { MergeSettingsPanel } from "@/components/repo/merge-settings-panel";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -238,6 +239,7 @@ export function RepoSettingsPage() @{
         <BranchProtectionPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <LfsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
+        <ActionsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <MergeSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
 

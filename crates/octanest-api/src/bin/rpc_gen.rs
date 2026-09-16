@@ -730,6 +730,113 @@ export type CommitStatusListResponse = {
   statuses: CommitStatusPublic[];
 };
 
+export type ActionRunPublic = {
+  id: string;
+  repository_id: string;
+  workflow_path: string;
+  workflow_name: string;
+  event: string;
+  head_sha: string;
+  head_ref: string;
+  status: string;
+  title: string;
+};
+
+export type ActionJobPublic = {
+  id: string;
+  run_id: string;
+  job_key: string;
+  name: string;
+  status: string;
+  runs_on: string[];
+};
+
+export type ActionRunsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionRunsListResponse = {
+  runs: ActionRunPublic[];
+};
+
+export type ActionRunGetRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+};
+
+export type ActionRunGetResponse = {
+  run: ActionRunPublic;
+  jobs: ActionJobPublic[];
+};
+
+export type ActionJobLogRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+  job_id: string;
+};
+
+export type ActionJobLogResponse = {
+  content: string;
+};
+
+export type ActionSecretMetaPublic = {
+  name: string;
+  updated_at: string;
+};
+
+export type ActionSecretsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionSecretsListResponse = {
+  secrets: ActionSecretMetaPublic[];
+};
+
+export type ActionSecretPutRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+  value: string;
+};
+
+export type ActionSecretDeleteRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+};
+
+export type ActionEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionEnabledResponse = {
+  enabled: boolean;
+};
+
+export type ActionSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type ActionRunnerPublic = {
+  id: string;
+  name: string;
+  labels: string[];
+  ephemeral: boolean;
+  last_online?: string | null;
+  created_at: string;
+};
+
+export type ActionListRunnersResponse = {
+  runners: ActionRunnerPublic[];
+};
+
 
 export type MemberBasePermission = "none" | "read" | "write";
 
@@ -1854,6 +1961,26 @@ export function createClient(opts: CreateClientOptions) {
         list: (input: CommitStatusListRequest) =>
           rpcCall<CommitStatusListResponse>(opts, "repo.commitStatus.list", input),
       },
+      actions: {
+        listRuns: (input: ActionRunsListRequest) =>
+          rpcCall<ActionRunsListResponse>(opts, "repo.actions.listRuns", input),
+        getRun: (input: ActionRunGetRequest) =>
+          rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
+        getJobLog: (input: ActionJobLogRequest) =>
+          rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+        secrets: {
+          list: (input: ActionSecretsListRequest) =>
+            rpcCall<ActionSecretsListResponse>(opts, "repo.actions.secrets.list", input),
+          put: (input: ActionSecretPutRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.put", input),
+          delete: (input: ActionSecretDeleteRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.delete", input),
+        },
+        getEnabled: (input: ActionEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.getEnabled", input),
+        setEnabled: (input: ActionSetEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.setEnabled", input),
+      },
     },
     org: {
       create: (input: CreateOrgRequest) => rpcCall<OrgPublic>(opts, "org.create", input),
@@ -2109,6 +2236,16 @@ export function createClient(opts: CreateClientOptions) {
         updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
           rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
         getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
+      },
+      actions: {
+        createRegistrationToken: () =>
+          rpcCall<ActionRegistrationTokenResponse>(
+            opts,
+            "admin.actions.createRegistrationToken",
+            {},
+          ),
+        listRunners: () =>
+          rpcCall<ActionListRunnersResponse>(opts, "admin.actions.listRunners", {}),
       },
     },
   };
@@ -2468,6 +2605,56 @@ export function packagesListQueryOptions(
     queryKey: ["packages", "list", input] as const,
     queryFn: async () => {
       const res = await client.packages.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsListRunsQueryOptions(
+  client: OctanestClient,
+  input: ActionRunsListRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "listRuns", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.listRuns(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetRunQueryOptions(
+  client: OctanestClient,
+  input: ActionRunGetRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "getRun", input.owner, input.name, input.run_id] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getRun(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetJobLogQueryOptions(
+  client: OctanestClient,
+  input: ActionJobLogRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "actions",
+      "getJobLog",
+      input.owner,
+      input.name,
+      input.run_id,
+      input.job_id,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getJobLog(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

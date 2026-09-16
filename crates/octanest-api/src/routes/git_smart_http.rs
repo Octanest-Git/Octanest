@@ -529,6 +529,8 @@ async fn authorize_and_cgi(
                         let login = auth.owner.username.clone();
                         let uid = auth.owner.id.clone();
                         let env_name = state.env_name.clone();
+                        let updates_wh = updates.clone();
+                        let updates_pull = updates.clone();
                         tokio::spawn(async move {
                             crate::webhook::dispatch::notify_push(
                                 &db,
@@ -537,7 +539,7 @@ async fn authorize_and_cgi(
                                 &repo_name,
                                 &login,
                                 &uid,
-                                &updates,
+                                &updates_wh,
                                 &env_name,
                             )
                             .await;
@@ -549,8 +551,31 @@ async fn authorize_and_cgi(
                                 &repo_name,
                                 &login,
                                 &uid,
-                                &updates,
+                                &updates_pull,
                                 &env_name,
+                            )
+                            .await;
+                        });
+                        let db2 = state.db.clone();
+                        let git2 = state.git.clone();
+                        let repos_dir2 = state.repos_dir.clone();
+                        let repo_id2 = resolved.row.id.clone();
+                        let owner2 = resolved.disk_owner.clone();
+                        let name2 = resolved.disk_name.clone();
+                        let uid2 = auth.owner.id.clone();
+                        let updates2 = updates;
+                        let actions_on = state.actions_enabled;
+                        tokio::spawn(async move {
+                            crate::actions::notify_push_actions(
+                                &db2,
+                                git2,
+                                &repos_dir2,
+                                &repo_id2,
+                                &owner2,
+                                &name2,
+                                Some(&uid2),
+                                &updates2,
+                                actions_on,
                             )
                             .await;
                         });
