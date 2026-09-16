@@ -1,5 +1,9 @@
 FROM rust:1-bookworm AS builder
 WORKDIR /app
+# prost-build needs `protoc` for proto/runner.proto (Phase 19 Actions protocol).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends protobuf-compiler \
+  && rm -rf /var/lib/apt/lists/*
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
 RUN cargo build --release -p octanest-api --bin octanest-api

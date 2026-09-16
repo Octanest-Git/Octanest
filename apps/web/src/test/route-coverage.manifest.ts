@@ -208,6 +208,16 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       },
     ],
   },
+  {
+    route: "admin/runners.tsrx",
+    coverage: [
+      {
+        kind: "skip",
+        rationale:
+          "Phase 19 admin registration-token UI; happy-dom deferred — covered by actions_secrets/dispatch_policy nextest + manual Admin runners smoke",
+      },
+    ],
+  },
 
   // --- forge repo chrome + code browse (11.1-04) ---
   {
@@ -255,6 +265,16 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       {
         kind: "happy-dom",
         test: "apps/web/src/routes/$owner.$repo.actions.$run.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.settings.actions.tsrx",
+    coverage: [
+      {
+        kind: "skip",
+        rationale:
+          "Phase 19 repo Actions enable/secrets settings panel; happy-dom deferred — RPC covered by actions_secrets nextest",
       },
     ],
   },

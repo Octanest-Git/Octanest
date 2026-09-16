@@ -25,15 +25,15 @@ current_phase: 19
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase **19** Actions & Runners **complete** on `cursor/phase-19-actions-runners-c82f` (ready to integrate); other remaining work on `cursor/gsd-remaining-integrate-c82f`
+**Current focus:** Phase **19** Actions & Runners **complete** merged into `cursor/gsd-remaining-integrate-c82f` (umbrella #16 → main pending CI)
 
 ## Current Position
 
 Phase: **19** — Actions & Runners (**complete** — 12/12 plans)
 Current Plan: 12 / 12
 Total Plans in Phase: 12
-Status: Phase 19 complete (ACT-01…07). Branch tip ready for integrate merge.
-Last activity: 2026-09-16 — Phase 19 docs/smoke gate + STATE/ROADMAP close-out
+Status: Phase 19 complete (ACT-01…07) and merged to integrate.
+Last activity: 2026-09-16 — protoc CI/Docker + route-coverage for Actions settings/admin runners
 
 See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-actions-runners-c82f`
 
