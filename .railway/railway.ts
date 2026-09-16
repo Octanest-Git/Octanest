@@ -15,6 +15,7 @@ import {
   preserve,
   project,
   service,
+  volume,
 } from "railway/iac";
 
 /** GitHub source for DOCKERFILE builds (repo-root context). */
@@ -22,6 +23,10 @@ const REPO = "Octanest-Git/Octanest";
 
 export default defineRailway(() => {
   const db = postgres("postgres");
+
+  // Single forge volume covering Compose /var/* paths (D-CLOUD-04).
+  // Subdirs: repos, lfs, packages, release-assets, uploads, ssh.
+  const forgeData = volume("forge-data", { sizeMB: 20480 });
 
   const api = service("api", {
     source: github(REPO),
@@ -32,6 +37,9 @@ export default defineRailway(() => {
     healthcheck: "/health",
     // API image has no migrate binary; keep AUTO_MIGRATE=false and run migrations
     // via a one-off / temporary AUTO_MIGRATE=true first boot (see docs/DEPLOYMENT.md).
+    volumeMounts: {
+      "/var": forgeData,
+    },
     env: {
       DATABASE_URL: db.env.DATABASE_URL,
       OCTANEST_ENV: "production",
@@ -90,7 +98,7 @@ export default defineRailway(() => {
     },
   });
 
-  const forge = group("Octanest Cloud", [db, api, web, gateway]);
+  const forge = group("Octanest Cloud", [db, forgeData, api, web, gateway]);
 
   return project("octanest-cloud", {
     resources: [forge],

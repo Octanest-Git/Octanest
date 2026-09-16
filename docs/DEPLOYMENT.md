@@ -16,10 +16,42 @@ Related docs: [CONFIGURATION.md](CONFIGURATION.md), [ARCHITECTURE.md](ARCHITECTU
 | API image | `crates/octanest-api/Dockerfile` | Multi-stage Rust release binary `octanest-api`, listens `0.0.0.0:8080` |
 | Web image | `apps/web/Dockerfile` | Bun build of `@octanest/web`, runs `bun run preview` on `:3000` |
 | Traefik extras | `deploy/traefik/` | Optional static YAML notes; default routing is Compose labels + Traefik CLI flags |
+| Octanest Cloud (Railway-class) | `.railway/railway.ts` + `deploy/cloud/` | Same api/web Dockerfiles; managed Postgres; Caddy file gateway (no Docker socket) |
 
-<!-- VERIFY: Railway (or equivalent) project URL, service mapping, and Octanest Cloud domain for production container host -->
+### Octanest Cloud (Railway)
 
-There is no `railway.json`, `fly.toml`, `vercel.json`, or deploy workflow in the repository. Operators should treat Compose-built images as the deploy unit on any container host.
+Cloud deploys the **same** `crates/octanest-api/Dockerfile` and `apps/web/Dockerfile` images as Compose (D-CLOUD-01). Default database is **managed Postgres** (D-CLOUD-02). HTTP ingress is a **file-configured Caddy** gateway under `deploy/cloud/` — not Traefik’s Docker provider (D-CLOUD-03).
+
+| Railway service | Role |
+|-----------------|------|
+| `postgres` | Managed Postgres plugin |
+| `api` | Forge API + volumes under `/var/*` |
+| `web` | SPA (`bun run preview`) — private |
+| `gateway` | Public HTTPS edge (`deploy/cloud/Caddyfile`) |
+
+**Operator steps (D-CLOUD-07 — human apply only):**
+
+1. Create/link a Railway project: `railway login` → `railway link` (token stays in the operator environment — never commit; never expose to fork PRs).
+2. Install IaC SDK: `cd .railway && npm ci` (isolated from the Bun monorepo).
+3. Preview: `make cloud-plan` (wraps `railway config plan`).
+4. In the Railway dashboard (or via plan), set secrets / shared vars:
+   - `OCTANEST_PUBLIC_ORIGIN=https://<your-cloud-domain>`
+   - `OCTANEST_CORS_ORIGINS=https://<your-cloud-domain>`
+   - Optional: `OCTANEST_ADMIN_EMAIL` / `OCTANEST_ADMIN_PASSWORD`, email/SSO keys
+5. Attach a custom domain to the **`gateway`** service.
+6. Review the plan, then **only with explicit approval**: `railway config apply`.
+7. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=false`. For first boot, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
+8. Confirm `GET https://<domain>/health` and browser `/`.
+
+**Volumes (D-CLOUD-04):** `forge-data` mounts at `/var` on `api` (repos, lfs, packages, release-assets, uploads, ssh host keys as subdirs — same paths as Compose).
+
+**Git (D-CLOUD-08):** HTTPS Smart HTTP through the gateway is the always-on cloud clone path. Optional TCP publish for `OCTANEST_SSH_PORT` (2222) on `api` when the host supports it — do not route SSH through the HTTP gateway.
+
+**Rollback:** Railway → previous successful deployment for `gateway` / `api` / `web`, or `railway redeploy` of a known-good revision after `git checkout` of that commit.
+
+See [`.railway/README.md`](../.railway/README.md) and [`deploy/cloud/README.md`](../deploy/cloud/README.md).
+
+There is no `railway.json` / `railway.toml` (deprecated). Production tokens never land in this repository.
 
 ### Compose bring-up
 
@@ -74,7 +106,7 @@ Traefik `v3.3` is configured in Compose (`--providers.docker=true`, `--providers
 
 Both services set `traefik.enable=true` and `traefik.docker.network=octanest_octanest`. Browser traffic uses `http://localhost` (no TLS in default Compose). Git SSH stays on host `:2222` and does not use Traefik.
 
-<!-- VERIFY: Production Host() rules, TLS / ACME, and public DNS for non-localhost Traefik deployments -->
+For **Octanest Cloud**, path priorities are mirrored in [`deploy/cloud/Caddyfile`](../deploy/cloud/Caddyfile) with a public Host catch-all (platform TLS). Do not run Docker-socket Traefik on Railway.
 
 ### Dialect overlays
 
@@ -93,9 +125,7 @@ CI (`.github/workflows/ci.yml`, triggers: push to `main`, pull requests) **valid
 5. `compose` — `docker compose … config` for default, MySQL, SQLite, and dev-auth files
 6. `db-matrix` — migrate + `dialect_probe` for postgres / mysql / sqlite
 
-Local image build happens on `docker compose … up --build` (or `make up` / `up-mysql` / `up-sqlite`). API Dockerfile: `cargo build --release -p octanest-api --bin octanest-api`. Web Dockerfile: `bun run --filter @octanest/web build`, then `preview`.
-
-<!-- VERIFY: Any external registry publish or CD steps run outside this repository -->
+Local image build happens on `docker compose … up --build` (or `make up` / `up-mysql` / `up-sqlite`). API Dockerfile: `cargo build --release -p octanest-api --bin octanest-api`. Web Dockerfile: `bun run --filter @octanest/web build`, then `preview`. Cloud uses the same Dockerfiles via Railway `DOCKERFILE` builder (no mandatory registry publish in this phase).
 
 ## Environment setup
 
@@ -110,9 +140,7 @@ Production-like Compose should copy [`.env.example`](../.env.example) to `.env` 
 | `OCTANEST_PUBLIC_ORIGIN` | Browser-facing origin for SSO callbacks behind Traefik |
 | Auth / email secrets | `WORKOS_*`, `OCTANEST_OIDC_*`, `OCTANEST_RESEND_API_KEY` / `OCTANEST_SMTP_URL` as needed |
 
-Full variable table and defaults: [CONFIGURATION.md](CONFIGURATION.md).
-
-<!-- VERIFY: Production secret store names and values for DATABASE_URL, CORS origins, SSO, and email providers -->
+Full variable table and defaults: [CONFIGURATION.md](CONFIGURATION.md). Cloud secrets live in the Railway dashboard / `preserve()` — see Octanest Cloud section above.
 
 ## Smoke targets
 
@@ -143,7 +171,7 @@ No automated rollback is defined in CI or platform config files.
 2. Redeploy a known-good revision: check out the previous git tag/commit, then `make up` (or rebuild with the prior image tags if you publish images externally).
 3. Confirm with `make smoke` (or the dialect-specific smoke target) and `GET /health` / `system.health`.
 
-<!-- VERIFY: Platform-specific rollback (e.g. Railway previous deployment) if used for Octanest Cloud -->
+**Octanest Cloud:** Redeploy the previous successful Railway deployment for `gateway` / `api` / `web`, or check out a known-good git revision and redeploy after `make cloud-plan` review.
 
 ## Monitoring
 
@@ -157,5 +185,6 @@ In-repo observability is health-oriented only — no Sentry, Datadog, New Relic,
 | DB reachability | RPC `system.db_probe` (used by smoke) |
 | App status UI | Web `/status` surfaces API reachability (see product copy) |
 | Logs | `make logs` / `docker compose logs -f` |
+| Cloud logs | Railway service logs for `gateway` / `api` / `web` |
 
-<!-- VERIFY: Production metrics dashboards, log aggregation, and alert webhooks -->
+Platform metrics/alerting are operator-chosen (not defined in-repo).

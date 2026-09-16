@@ -2,6 +2,7 @@
 	smoke-git-lfs \
 	smoke-packages \
 	smoke-protocol-ci smoke-compose-ci \
+	cloud-plan cloud-docs \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
@@ -46,6 +47,8 @@ help:
 	@echo "  make smoke-compose-ci - Compose dialect bring-up smoke for CI (D-CI-01; DIALECT=postgres|sqlite|mysql)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
+	@echo "  make cloud-plan     - railway config plan (Octanest Cloud IaC; no apply)"
+	@echo "  make cloud-docs     - print pointers to cloud deploy docs"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
 	@echo "  make db-switch-dialect - migrate an EMPTY target DB to a new dialect"
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
@@ -172,6 +175,24 @@ smoke-protocol-ci:
 # Usage: make smoke-compose-ci DIALECT=sqlite
 smoke-compose-ci:
 	@./scripts/ci-compose-smoke.sh "$(or $(DIALECT),postgres)"
+
+# D-CLOUD-07: preview Railway IaC diff only — never auto-apply from Make/CI.
+cloud-plan:
+	@if ! command -v railway >/dev/null 2>&1; then \
+		echo "railway CLI not found. Install CLI ≥ 5.42.1, run railway link, then retry."; \
+		echo "Docs: .railway/README.md and docs/DEPLOYMENT.md"; \
+		exit 1; \
+	fi
+	@echo "==> railway config plan (review only — apply requires explicit human approval)"
+	@railway config plan
+
+cloud-docs:
+	@echo "Octanest Cloud:"
+	@echo "  IaC:       .railway/railway.ts"
+	@echo "  Gateway:   deploy/cloud/Caddyfile"
+	@echo "  Operator:  docs/DEPLOYMENT.md (Octanest Cloud section)"
+	@echo "  Plan only: make cloud-plan"
+	@echo "  Apply:     railway config apply  # human-approved only"
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh

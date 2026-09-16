@@ -37,4 +37,5 @@ Pinned base: `caddy:2.11.4-alpine` (Docker Official Image).
 
 - Do **not** mount a Docker socket on the cloud host.
 - Git-over-SSH stays on the **api** service TCP publish (optional); HTTPS Smart HTTP via this gateway is the always-on cloud clone path (D-CLOUD-08).
+- Forge persistence: Railway volume `forge-data` mounts at `/var` on `api` (repos / lfs / packages / release-assets / uploads / ssh).
 - Plan/apply discipline: see [`.railway/README.md`](../../.railway/README.md).
