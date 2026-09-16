@@ -1,0 +1,84 @@
+//! In-app notification DTOs (NOTF-01 / NOTF-02 / D-12 / D-15).
+
+use serde::{Deserialize, Serialize};
+
+/// Subject kind for deep links (D-05).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NotificationSubjectKind {
+    Issue,
+    PullRequest,
+}
+
+impl NotificationSubjectKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Issue => "issue",
+            Self::PullRequest => "pull_request",
+        }
+    }
+
+    pub fn parse(s: &str) -> Result<Self, String> {
+        match s {
+            "issue" => Ok(Self::Issue),
+            "pull_request" => Ok(Self::PullRequest),
+            other => Err(format!("unknown notification subject_kind: {other}")),
+        }
+    }
+}
+
+/// Public notification row for list UI + deep links (D-05 / D-09 / D-10).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationPublic {
+    pub id: String,
+    pub reason: String,
+    pub subject_kind: String,
+    pub subject_repo_id: String,
+    pub owner: String,
+    pub repo: String,
+    pub subject_number: i64,
+    pub subject_title: String,
+    pub actor_id: String,
+    pub actor_username: String,
+    pub created_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read_at: Option<String>,
+}
+
+/// List filter: unread only or all (D-09 / D-12).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationListRequest {
+    /// `unread` | `all` — default `unread`.
+    #[serde(default)]
+    pub filter: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationListResponse {
+    pub notifications: Vec<NotificationPublic>,
+    pub total: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationUnreadCountResponse {
+    pub count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationMarkReadRequest {
+    pub ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationMarkReadResponse {
+    pub marked: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationMarkAllReadResponse {
+    pub marked: i64,
+}

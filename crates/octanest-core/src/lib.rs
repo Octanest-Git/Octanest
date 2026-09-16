@@ -2,6 +2,7 @@
 
 pub mod auth_types;
 pub mod issue_types;
+pub mod notification_types;
 pub mod org_types;
 pub mod package_types;
 pub mod pat_types;
@@ -13,6 +14,7 @@ pub mod ssh_key_types;
 
 pub use auth_types::*;
 pub use issue_types::*;
+pub use notification_types::*;
 pub use org_types::*;
 pub use package_types::*;
 pub use pat_types::*;

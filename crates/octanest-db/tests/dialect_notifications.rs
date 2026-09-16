@@ -1,9 +1,8 @@
-//! Phase 17 Wave 0 — notifications migration parity stub (sqlite/postgres/mysql).
-//!
-//! Greened by 17-01 when `00NN_notifications.sql` lands for all dialects.
+//! 17-01: `0017_notifications` migration parity across dialects.
+
+use octanest_db::Database;
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened when notifications migration exists for all dialects"]
 async fn dialect_notifications_migration_module_present() {
     let sqlite = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -36,4 +35,9 @@ async fn dialect_notifications_migration_module_present() {
             "{path} must include read_at (null = unread)"
         );
     }
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("notif.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate 0017_notifications");
 }

@@ -7,6 +7,8 @@ pub mod issue;
 pub mod jobs;
 pub mod label;
 pub mod lfs;
+pub mod notification;
+pub mod notify;
 pub mod org;
 pub mod packages;
 pub mod pat;

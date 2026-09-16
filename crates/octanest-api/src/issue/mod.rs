@@ -17,6 +17,7 @@ use octanest_db::{IssueCommentRow, IssueRow};
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
+use crate::notify::{self, NotifySubject};
 use crate::repo::not_found;
 use crate::rpc::RpcCtx;
 
@@ -506,6 +507,23 @@ pub async fn comments_create(
         .insert_issue_comment(&id, &issue.id, &user.id, &body)
         .await
         .map_err(db_err)?;
+    // Tracer fan-out: notify issue author when someone else comments (NOTF-01 / D-01 / D-03).
+    if issue.author_id != user.id {
+        let subject = NotifySubject {
+            kind: "issue",
+            repo_id: issue.repo_id.clone(),
+            number: issue.number,
+            title: issue.title.clone(),
+        };
+        notify::fanout(
+            ctx,
+            &user.id,
+            std::iter::once(issue.author_id.clone()),
+            "issue_comment",
+            &subject,
+        )
+        .await;
+    }
     comment_to_public(ctx, &row).await
 }
 

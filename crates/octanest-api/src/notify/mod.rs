@@ -1,0 +1,117 @@
+//! Best-effort notification fan-out after domain writes (NOTF-01 / D-03).
+
+use std::collections::HashSet;
+
+use uuid::Uuid;
+
+use crate::rpc::RpcCtx;
+
+/// Subject metadata for a notification row.
+#[derive(Debug, Clone)]
+pub struct NotifySubject {
+    pub kind: &'static str,
+    pub repo_id: String,
+    pub number: i64,
+    pub title: String,
+}
+
+/// Insert one notification per recipient, excluding the actor (D-03).
+/// Soft-fails: logs errors and does not abort the caller.
+pub async fn fanout(
+    ctx: &RpcCtx,
+    actor_id: &str,
+    recipients: impl IntoIterator<Item = String>,
+    reason: &str,
+    subject: &NotifySubject,
+) {
+    let mut seen = HashSet::new();
+    for recipient_id in recipients {
+        if recipient_id.is_empty() || recipient_id == actor_id {
+            continue;
+        }
+        if !seen.insert(recipient_id.clone()) {
+            continue;
+        }
+        let id = Uuid::new_v4().to_string();
+        if let Err(e) = ctx
+            .db
+            .insert_notification(
+                &id,
+                &recipient_id,
+                actor_id,
+                reason,
+                subject.kind,
+                &subject.repo_id,
+                subject.number,
+                &subject.title,
+            )
+            .await
+        {
+            tracing::warn!(
+                error = %e,
+                recipient_id = %recipient_id,
+                reason = %reason,
+                "notification fanout insert failed (soft-fail)"
+            );
+        }
+    }
+}
+
+/// Extract `@username` handles (GitHub-like) from plain text.
+pub fn extract_mention_usernames(body: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+    let bytes = body.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'@' {
+            let start = i + 1;
+            let mut end = start;
+            while end < bytes.len() {
+                let c = bytes[end] as char;
+                if c.is_ascii_alphanumeric() || c == '-' {
+                    end += 1;
+                    if end - start > 39 {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            if end > start && end - start <= 39 {
+                let prev_ok = i == 0
+                    || matches!(
+                        bytes[i - 1] as char,
+                        ' ' | '\t' | '\n' | '\r' | '(' | '[' | '{' | ',' | ':' | ';'
+                    );
+                if prev_ok {
+                    if let Ok(name) = std::str::from_utf8(&bytes[start..end]) {
+                        let lower = name.to_ascii_lowercase();
+                        if seen.insert(lower.clone()) {
+                            out.push(lower);
+                        }
+                    }
+                }
+            }
+            i = end.max(i + 1);
+            continue;
+        }
+        i += 1;
+    }
+    out
+}
+
+/// Resolve `@username` mentions to user ids (unknown handles ignored).
+pub async fn resolve_mention_user_ids(ctx: &RpcCtx, body: &str) -> Vec<String> {
+    let mut ids = Vec::new();
+    for username in extract_mention_usernames(body) {
+        match ctx.db.find_user_by_username(&username).await {
+            Ok(Some(u)) => ids.push(u.id),
+            Ok(None) => {}
+            Err(e) => {
+                tracing::warn!(error = %e, username = %username, "mention resolve failed");
+            }
+        }
+    }
+    ids
+}

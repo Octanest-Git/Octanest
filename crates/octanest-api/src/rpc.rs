@@ -18,6 +18,7 @@ use crate::auth::verify_reset;
 use crate::email::EmailSender;
 use crate::issue;
 use crate::label;
+use crate::notification;
 use crate::org;
 use crate::pat;
 use crate::pull;
@@ -484,6 +485,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "issue.comments.create" => match issue::comments_create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.list" => match notification::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.unreadCount" => match notification::unread_count(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.markRead" => match notification::mark_read(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.markAllRead" => match notification::mark_all_read(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
