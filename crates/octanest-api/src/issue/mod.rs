@@ -329,6 +329,19 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         .update_issue_content(&row.id, &new_title, &new_body)
         .await
         .map_err(db_err)?;
+    let payload = dispatch::issues_payload(
+        "edited",
+        updated.number,
+        &updated.title,
+        &updated.body,
+        &updated.state,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        &user.username,
+        &user.id,
+    );
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "edited", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
