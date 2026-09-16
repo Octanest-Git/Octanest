@@ -23,6 +23,7 @@ use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
+use crate::notify;
 use crate::rpc::RpcCtx;
 
 const TITLE_MAX_CHARS: usize = 1_024;
@@ -299,6 +300,21 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         )
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_pull(&row);
+    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
+    let requested = ctx
+        .db
+        .list_pull_review_request_user_ids(&row.id)
+        .await
+        .unwrap_or_default();
+    let mut recipients = requested;
+    for m in &mentions {
+        if !recipients.iter().any(|r| r == m) {
+            recipients.push(m.clone());
+        }
+    }
+    notify::fanout(ctx, &user.id, recipients.clone(), "pr_opened", &subject).await;
+    notify::fanout(ctx, &user.id, mentions, "pr_mention", &subject).await;
     to_public(ctx, &row).await
 }
 
@@ -392,12 +408,15 @@ pub async fn close(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic,
         .await
         .map_err(db_err)?;
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let subject = notify::subject_for_pull(&updated);
+    let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
+    notify::fanout(ctx, &user.id, recipients, "pr_closed", &subject).await;
     to_public(ctx, &updated).await
 }
 
 /// `pull.reopen` — Write+; closed → open (not merged) (PR-06).
 pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic, AppError> {
-    let _user = require_verified(ctx).await?;
+    let user = require_verified(ctx).await?;
     let req: PullRefRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid pull.reopen input: {e}"))
     })?;
@@ -414,6 +433,9 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         .await
         .map_err(db_err)?;
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let subject = notify::subject_for_pull(&updated);
+    let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
+    notify::fanout(ctx, &user.id, recipients, "pr_reopened", &subject).await;
     to_public(ctx, &updated).await
 }
 

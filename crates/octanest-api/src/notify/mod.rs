@@ -149,3 +149,45 @@ pub fn subject_for_issue(issue: &octanest_db::IssueRow) -> NotifySubject {
         title: issue.title.clone(),
     }
 }
+
+pub fn subject_for_pull(pull: &octanest_db::PullRow) -> NotifySubject {
+    NotifySubject {
+        kind: "pull_request",
+        repo_id: pull.repo_id.clone(),
+        number: pull.number,
+        title: pull.title.clone(),
+    }
+}
+
+/// PR participants: author + prior commenters + requested reviewers (D-02 / D-03).
+pub async fn pull_participant_ids(ctx: &RpcCtx, pull_id: &str, author_id: &str) -> Vec<String> {
+    let mut ids = HashSet::new();
+    if !author_id.is_empty() {
+        ids.insert(author_id.to_string());
+    }
+    match ctx.db.list_pull_comments(pull_id).await {
+        Ok(rows) => {
+            for c in rows {
+                ids.insert(c.author_id);
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "list_pull_comments for notify failed"),
+    }
+    match ctx.db.list_pull_review_request_user_ids(pull_id).await {
+        Ok(rows) => {
+            for uid in rows {
+                ids.insert(uid);
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "list_pull_review_requests for notify failed"),
+    }
+    match ctx.db.list_pull_reviews(pull_id).await {
+        Ok(rows) => {
+            for r in rows {
+                ids.insert(r.author_id);
+            }
+        }
+        Err(e) => tracing::warn!(error = %e, "list_pull_reviews for notify failed"),
+    }
+    ids.into_iter().collect()
+}

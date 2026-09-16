@@ -9,6 +9,7 @@ use octanest_db::PullReviewRow;
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
+use crate::notify;
 use crate::pull::acl;
 use crate::rpc::RpcCtx;
 
@@ -118,6 +119,15 @@ pub async fn reviews_submit(
         )
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_pull(&pull);
+    notify::fanout(
+        ctx,
+        &user.id,
+        std::iter::once(pull.author_id.clone()),
+        "pr_review",
+        &subject,
+    )
+    .await;
     review_to_public(ctx, &row).await
 }
 
@@ -210,6 +220,15 @@ pub async fn review_requests_add(
         .upsert_pull_review_request(&pull.id, &target.id, &user.id)
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_pull(&pull);
+    notify::fanout(
+        ctx,
+        &user.id,
+        std::iter::once(target.id.clone()),
+        "pr_review_requested",
+        &subject,
+    )
+    .await;
     review_requests_list(
         ctx,
         serde_json::json!({

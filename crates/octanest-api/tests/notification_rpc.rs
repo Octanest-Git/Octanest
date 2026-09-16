@@ -649,3 +649,170 @@ async fn notification_reactions_and_labels_are_silent() {
         "reactions/labels must not notify — {author_count}"
     );
 }
+
+async fn create_repo_with_stack(app: &axum::Router, cookie: &str, name: &str) {
+    let body = format!(
+        r#"{{"procedure":"repo.create","input":{{"name":"{name}","visibility":"public","description":"","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}}}"#
+    );
+    let create = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(&body, cookie))
+        .await
+        .unwrap();
+    assert_eq!(create.status(), StatusCode::OK);
+    let bytes = create.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(v["ok"], true, "repo.create — {v}");
+}
+
+async fn create_branch(app: &axum::Router, cookie: &str, owner: &str, name: &str, branch: &str) {
+    let body = format!(
+        r#"{{"procedure":"repo.branchCreate","input":{{"owner":"{owner}","name":"{name}","branch":"{branch}","start":"main"}}}}"#
+    );
+    let v = rpc_json(app, cookie, &body).await;
+    assert_eq!(v["ok"], true, "branchCreate — {v}");
+}
+
+#[tokio::test]
+async fn notification_pr_comment_and_review_request() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_pr.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "npr@ex.com", "npr").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo_with_stack(&app, &author_cookie, "prrepo").await;
+    create_branch(&app, &author_cookie, "npr", "prrepo", "feature").await;
+
+    let (reviewer_cookie, reviewer_v) =
+        signup_and_login(&app, "nreviewer@ex.com", "nreviewer").await;
+    verify_user(&db, reviewer_v["data"]["id"].as_str().unwrap()).await;
+    let add = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"npr","name":"prrepo","username":"nreviewer","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let create = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"pull.create","input":{"owner":"npr","name":"prrepo","title":"PR","body":"please","base_ref":"main","head_ref":"feature"}}"#,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+    let number = create["data"]["number"].as_i64().unwrap();
+
+    let req = rpc_json(
+        &app,
+        &author_cookie,
+        &format!(
+            r#"{{"procedure":"pull.reviewRequests.add","input":{{"owner":"npr","name":"prrepo","number":{number},"username":"nreviewer"}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(req["ok"], true, "{req}");
+
+    let reviewer_list = rpc_json(
+        &app,
+        &reviewer_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(reviewer_list["ok"], true, "{reviewer_list}");
+    let rows = reviewer_list["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "pr_review_requested"
+            && r["subject_kind"] == "pull_request"
+            && r["subject_number"] == number),
+        "expected pr_review_requested — {reviewer_list}"
+    );
+
+    let comment = rpc_json(
+        &app,
+        &reviewer_cookie,
+        &format!(
+            r#"{{"procedure":"pull.comments.create","input":{{"owner":"npr","name":"prrepo","number":{number},"body":"looks good"}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(comment["ok"], true, "{comment}");
+
+    let author_list = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(author_list["ok"], true, "{author_list}");
+    let arows = author_list["data"]["notifications"].as_array().unwrap();
+    assert!(
+        arows.iter().any(|r| r["reason"] == "pr_comment"
+            && r["subject_kind"] == "pull_request"),
+        "expected pr_comment — {author_list}"
+    );
+}
+
+#[tokio::test]
+async fn notification_pr_close_notifies_author() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_pr_close.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (author_cookie, author_v) = signup_and_login(&app, "nprc@ex.com", "nprc").await;
+    verify_user(&db, author_v["data"]["id"].as_str().unwrap()).await;
+    create_repo_with_stack(&app, &author_cookie, "prclose").await;
+    create_branch(&app, &author_cookie, "nprc", "prclose", "feat").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "nprcw@ex.com", "nprcw").await;
+    verify_user(&db, writer_v["data"]["id"].as_str().unwrap()).await;
+    let add = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"nprc","name":"prclose","username":"nprcw","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let create = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"pull.create","input":{"owner":"nprc","name":"prclose","title":"Close me","body":"","base_ref":"main","head_ref":"feat"}}"#,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+    let number = create["data"]["number"].as_i64().unwrap();
+
+    let closed = rpc_json(
+        &app,
+        &writer_cookie,
+        &format!(
+            r#"{{"procedure":"pull.close","input":{{"owner":"nprc","name":"prclose","number":{number}}}}}"#
+        ),
+    )
+    .await;
+    assert_eq!(closed["ok"], true, "{closed}");
+
+    let listed = rpc_json(
+        &app,
+        &author_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    let rows = listed["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "pr_closed"
+            && r["subject_kind"] == "pull_request"),
+        "expected pr_closed — {listed}"
+    );
+}
