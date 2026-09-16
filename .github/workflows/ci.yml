@@ -168,12 +168,17 @@ jobs:
       - name: docker compose dev-auth stubs config
         run: docker compose -f docker-compose.dev-auth.yml --profile dev-auth config
 
-  # D-CI-01 / D-CI-04: Compose bring-up health (build + / + /health + system.db_probe).
+  # D-CI-01…04: Compose bring-up health (build + / + /health + system.db_probe).
   # Reuses make smoke* → scripts/compose-smoke.sh. Kept separate from smoke-protocol (D-CI-05).
   # Image proof = compose up --build inside smoke (D-CI-06). No production/Railway secrets.
+  # Matrix legs: postgres (D-CI-01) + sqlite (D-CI-02); mysql added in D-CI-03.
   compose-smoke:
-    name: compose-smoke (postgres)
+    name: compose-smoke (${{ matrix.dialect }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dialect: [postgres, sqlite]
     steps:
       - uses: actions/checkout@v4
       - name: free disk for compose image builds
@@ -181,16 +186,16 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
             /usr/local/share/boost /usr/share/swift || true
           df -h /
-      - name: Compose bring-up smoke (postgres)
+      - name: Compose bring-up smoke (${{ matrix.dialect }})
         env:
           CI: "true"
           SMOKE_REQUIRE_STACK: "1"
-        run: ./scripts/ci-compose-smoke.sh postgres
+        run: ./scripts/ci-compose-smoke.sh ${{ matrix.dialect }}
       - name: upload compose smoke logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: compose-smoke-postgres-logs
+          name: compose-smoke-${{ matrix.dialect }}-logs
           path: |
             /tmp/octanest-smoke*.json
           if-no-files-found: ignore
