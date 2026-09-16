@@ -1,4 +1,4 @@
--- logical: 0017_webhooks — outbound repo webhooks + delivery history (HOOK-01..03)
+-- logical: 0019_webhooks — outbound repo webhooks + delivery history (HOOK-01..03)
 
 CREATE TABLE IF NOT EXISTS webhooks (
   id             CHAR(36)      PRIMARY KEY,
