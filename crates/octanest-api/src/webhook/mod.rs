@@ -2,6 +2,7 @@
 
 pub mod deliver;
 pub mod dispatch;
+pub mod payloads;
 pub mod worker;
 
 use octanest_core::{

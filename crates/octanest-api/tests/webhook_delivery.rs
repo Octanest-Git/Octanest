@@ -440,20 +440,238 @@ async fn webhook_retry_transient() {
     assert!(pending_with_attempt, "expected 503 attempt recorded");
 }
 
+
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_push_https_receive() {
-    assert!(false);
+    use octanest_api::webhook::dispatch;
+    use octanest_api::webhook::payloads::parse_receive_ref_updates;
+
+    // pkt-line: "40zero 40one refs/heads/main\n"
+    let before = "0".repeat(40);
+    let after = "1".repeat(40);
+    let line = format!("{before} {after} refs/heads/main\n");
+    let pkt = format!("{:04x}{}", 4 + line.len(), line);
+    let updates = parse_receive_ref_updates(pkt.as_bytes());
+    assert_eq!(updates.len(), 1);
+    assert_eq!(updates[0].2, "refs/heads/main");
+
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/push"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("push_https.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "ph@ex.com", "phown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/push", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"phown","name":"demo","url":"{hook_url}","secret":"s","events":["push"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+    let repo_id = created["data"]["repo_id"].as_str().unwrap().to_string();
+
+    // Same notify path Smart HTTP uses after successful receive-pack with ref updates.
+    dispatch::notify_push(
+        &db,
+        &repo_id,
+        "phown",
+        "demo",
+        "phown",
+        "user-id",
+        &updates,
+        "development",
+    )
+    .await;
+
+    let mut ok = false;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.unwrap();
+        if deliveries.iter().any(|d| d.event == "push") {
+            ok = true;
+            break;
+        }
+    }
+    assert!(ok, "expected push delivery");
+    let reqs = sink.received_requests().await.unwrap_or_default();
+    assert!(!reqs.is_empty());
+    assert_eq!(
+        reqs[0].headers.get("x-github-event").and_then(|v| v.to_str().ok()),
+        Some("push")
+    );
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_push_ssh_receive() {
-    assert!(false);
+    use octanest_api::webhook::dispatch;
+
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/sshpush"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("push_ssh.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "ps@ex.com", "psown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/sshpush", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"psown","name":"demo","url":"{hook_url}","secret":"s","events":["push"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+    let repo_id = created["data"]["repo_id"].as_str().unwrap().to_string();
+
+    // SSH path emits with empty updates (generic push payload).
+    dispatch::notify_push(
+        &db,
+        &repo_id,
+        "psown",
+        "demo",
+        "psown",
+        "uid",
+        &[],
+        "development",
+    )
+    .await;
+
+    let mut ok = false;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.unwrap();
+        if deliveries.iter().any(|d| d.event == "push") {
+            ok = true;
+            break;
+        }
+    }
+    assert!(ok);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_pull_request_lifecycle() {
-    assert!(false);
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/pr"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("pr_hook.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+    let cookie = verified_owner(&app, &db, "pr@ex.com", "prown").await;
+    let created_repo = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":"","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(created_repo["ok"], true, "{created_repo}");
+    let br = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"prown","name":"demo","branch":"feature","start":"main"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(br["ok"], true, "{br}");
+
+    let hook_url = format!("{}/pr", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"prown","name":"demo","url":"{hook_url}","secret":"s","events":["pull_request"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+
+    let pr = rpc_json(
+        &app,
+        r#"{"procedure":"pull.create","input":{"owner":"prown","name":"demo","title":"PR1","body":"b","base_ref":"main","head_ref":"feature"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(pr["ok"], true, "{pr}");
+    assert_eq!(pr["data"]["number"], 1);
+
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"pull.update","input":{"owner":"prown","name":"demo","number":1,"title":"PR1 edited"}}"#,
+        &cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"pull.close","input":{"owner":"prown","name":"demo","number":1}}"#,
+        &cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"pull.reopen","input":{"owner":"prown","name":"demo","number":1}}"#,
+        &cookie,
+    )
+    .await;
+
+    let mut actions = std::collections::HashSet::new();
+    for _ in 0..50 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 50).await.unwrap();
+        for d in deliveries {
+            if d.event == "pull_request" {
+                actions.insert(d.action);
+            }
+        }
+        if actions.contains("opened")
+            && actions.contains("edited")
+            && actions.contains("closed")
+            && actions.contains("reopened")
+        {
+            break;
+        }
+    }
+    assert!(actions.contains("opened"), "{actions:?}");
+    assert!(actions.contains("edited"), "{actions:?}");
+    assert!(actions.contains("closed"), "{actions:?}");
+    assert!(actions.contains("reopened"), "{actions:?}");
 }

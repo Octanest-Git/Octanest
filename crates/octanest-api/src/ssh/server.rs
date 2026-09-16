@@ -168,7 +168,13 @@ impl Handler for SshHandler {
                 });
                 Ok(())
             }
-            AuthzDecision::Allow { bare } => {
+            AuthzDecision::Allow {
+                bare,
+                repo_id,
+                owner_slug,
+                repo_name,
+                is_push,
+            } => {
                 let program = match &cmd {
                     PackCommand::UploadPack { .. } => "upload-pack",
                     PackCommand::ReceivePack { .. } => "receive-pack",
@@ -179,6 +185,9 @@ impl Handler for SshHandler {
                     return Ok(());
                 };
                 let handle = session.handle();
+                let db = self.state.db.clone();
+                let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
+                let user_id = user_id.clone();
                 tokio::spawn(async move {
                     let writer = ch.make_writer();
                     let stderr_writer = ch.make_writer_ext(Some(1));
@@ -187,6 +196,21 @@ impl Handler for SshHandler {
                         pack::run_pack_command(program, &bare, reader, writer, stderr_writer)
                             .await
                             .unwrap_or(1);
+                    if code == 0 && is_push {
+                        if let Ok(Some(user)) = db.find_user_by_id(&user_id).await {
+                            crate::webhook::dispatch::notify_push(
+                                &db,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &user.username,
+                                &user.id,
+                                &[],
+                                &env_name,
+                            )
+                            .await;
+                        }
+                    }
                     let _ = handle.exit_status_request(channel, code as u32).await;
                     let _ = handle.eof(channel).await;
                     let _ = handle.close(channel).await;

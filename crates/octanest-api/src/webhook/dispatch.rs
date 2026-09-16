@@ -111,3 +111,44 @@ pub fn ping_payload(hook_id: &str, owner: &str, repo_name: &str) -> serde_json::
         }
     })
 }
+
+/// Notify subscribed `push` hooks after a successful receive (D-HOOK-10 / D-HOOK-22).
+pub async fn notify_push(
+    db: &Database,
+    repository_id: &str,
+    owner: &str,
+    repo_name: &str,
+    pusher_login: &str,
+    pusher_id: &str,
+    updates: &[(String, String, String)],
+    env_name: &str,
+) {
+    if updates.is_empty() {
+        // Still emit a generic push so SSH paths without parsed pkt-lines notify subscribers.
+        let payload = super::payloads::push_payload(
+            owner,
+            repo_name,
+            repository_id,
+            "refs/heads/main",
+            "0000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000001",
+            pusher_login,
+            pusher_id,
+        );
+        emit(db, repository_id, "push", "", payload, env_name).await;
+        return;
+    }
+    for (before, after, ref_name) in updates {
+        let payload = super::payloads::push_payload(
+            owner,
+            repo_name,
+            repository_id,
+            ref_name,
+            before,
+            after,
+            pusher_login,
+            pusher_id,
+        );
+        emit(db, repository_id, "push", "", payload, env_name).await;
+    }
+}

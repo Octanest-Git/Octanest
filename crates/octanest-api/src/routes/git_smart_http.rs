@@ -515,7 +515,37 @@ async fn authorize_and_cgi(
     })
     .await
     {
-        Ok(resp) => resp,
+        Ok(resp) => {
+            if receive && resp.status().is_success() {
+                if let Some(auth) = &authed {
+                    let updates = crate::webhook::payloads::parse_receive_ref_updates(body);
+                    // Only emit when the client sent at least one ref update command.
+                    if !updates.is_empty() {
+                        let db = state.db.clone();
+                        let repo_id = resolved.row.id.clone();
+                        let owner_slug = resolved.disk_owner.clone();
+                        let repo_name = resolved.disk_name.clone();
+                        let login = auth.owner.username.clone();
+                        let uid = auth.owner.id.clone();
+                        let env_name = state.env_name.clone();
+                        tokio::spawn(async move {
+                            crate::webhook::dispatch::notify_push(
+                                &db,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &login,
+                                &uid,
+                                &updates,
+                                &env_name,
+                            )
+                            .await;
+                        });
+                    }
+                }
+            }
+            resp
+        }
         Err(e) => {
             tracing::error!(error = %e, "git-http-backend failed");
             (

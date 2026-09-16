@@ -23,8 +23,9 @@ use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
-use crate::notify;
 use crate::rpc::RpcCtx;
+use crate::webhook::dispatch;
+use crate::webhook::payloads;
 
 const TITLE_MAX_CHARS: usize = 1_024;
 const BODY_MAX_CHARS: usize = 65_536;
@@ -39,6 +40,77 @@ fn db_err(e: String) -> AppError {
         tracing::error!("pull db error: {e}");
         AppError::new("pull.internal", "pull operation failed")
     }
+}
+
+pub(crate) async fn emit_pull_event(
+    ctx: &RpcCtx,
+    accessible: &crate::repo::AccessibleRepo,
+    row: &PullRow,
+    action: &str,
+    sender_login: &str,
+    sender_id: &str,
+    merged: bool,
+) {
+    let (head_owner, head_name) = if row.head_repo_id == row.repo_id {
+        (
+            accessible.owner_username.clone(),
+            accessible.row.name.clone(),
+        )
+    } else if let Ok(Some(head_repo)) = ctx.db.find_repository_by_id(&row.head_repo_id).await {
+        let owner = match head_repo.owner_type.as_str() {
+            "org" => ctx
+                .db
+                .find_organization_by_id(&head_repo.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|o| o.slug)
+                .unwrap_or_default(),
+            _ => ctx
+                .db
+                .find_user_by_id(&head_repo.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|u| u.username)
+                .unwrap_or_default(),
+        };
+        (owner, head_repo.name)
+    } else {
+        (
+            accessible.owner_username.clone(),
+            accessible.row.name.clone(),
+        )
+    };
+    let state = if merged { "closed" } else { row.state.as_str() };
+    let payload = payloads::pull_request_payload(
+        action,
+        row.number,
+        &row.title,
+        &row.body,
+        state,
+        row.draft,
+        merged,
+        &row.base_ref,
+        &row.head_ref,
+        &row.head_sha,
+        &head_owner,
+        &head_name,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        sender_login,
+        sender_id,
+    );
+    dispatch::emit(
+        &ctx.db,
+        &accessible.row.id,
+        "pull_request",
+        action,
+        payload,
+        &ctx.env_name,
+    )
+    .await;
 }
 
 fn pull_not_found() -> AppError {
@@ -300,21 +372,16 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         )
         .await
         .map_err(db_err)?;
-    let subject = notify::subject_for_pull(&row);
-    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
-    let requested = ctx
-        .db
-        .list_pull_review_request_user_ids(&row.id)
-        .await
-        .unwrap_or_default();
-    let mut recipients = requested;
-    for m in &mentions {
-        if !recipients.iter().any(|r| r == m) {
-            recipients.push(m.clone());
-        }
-    }
-    notify::fanout(ctx, &user.id, recipients.clone(), "pr_opened", &subject).await;
-    notify::fanout(ctx, &user.id, mentions, "pr_mention", &subject).await;
+    emit_pull_event(
+        ctx,
+        &accessible,
+        &row,
+        "opened",
+        &user.username,
+        &user.id,
+        false,
+    )
+    .await;
     to_public(ctx, &row).await
 }
 
@@ -408,9 +475,16 @@ pub async fn close(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic,
         .await
         .map_err(db_err)?;
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
-    let subject = notify::subject_for_pull(&updated);
-    let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
-    notify::fanout(ctx, &user.id, recipients, "pr_closed", &subject).await;
+    emit_pull_event(
+        ctx,
+        &accessible,
+        &updated,
+        "closed",
+        &user.username,
+        &user.id,
+        false,
+    )
+    .await;
     to_public(ctx, &updated).await
 }
 
@@ -433,15 +507,22 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         .await
         .map_err(db_err)?;
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
-    let subject = notify::subject_for_pull(&updated);
-    let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
-    notify::fanout(ctx, &user.id, recipients, "pr_reopened", &subject).await;
+    emit_pull_event(
+        ctx,
+        &accessible,
+        &updated,
+        "reopened",
+        &user.username,
+        &user.id,
+        false,
+    )
+    .await;
     to_public(ctx, &updated).await
 }
 
 /// `pull.update` — Write+; title/body/base_ref/draft (D-PR-04 partial).
 pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic, AppError> {
-    let _user = require_verified(ctx).await?;
+    let user = require_verified(ctx).await?;
     let req: UpdatePullRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -489,6 +570,7 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
     };
     let head_changed = new_head_sha != row.head_sha;
     let base_changed = base_ref != row.base_ref || base_sha != row.base_sha;
+    let content_changed = title != row.title || body != row.body || draft != row.draft;
 
     ctx.db
         .update_pull_fields(
@@ -514,5 +596,22 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
             .map_err(db_err)?;
     }
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let action = if head_changed {
+        "synchronize"
+    } else if content_changed || base_changed {
+        "edited"
+    } else {
+        "edited"
+    };
+    emit_pull_event(
+        ctx,
+        &accessible,
+        &updated,
+        action,
+        &user.username,
+        &user.id,
+        false,
+    )
+    .await;
     to_public(ctx, &updated).await
 }

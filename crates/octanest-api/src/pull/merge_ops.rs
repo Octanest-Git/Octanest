@@ -7,7 +7,6 @@ use octanest_core::{
 };
 use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
-use crate::notify;
 use crate::protection::{
     effective_for_branch, evaluate_merge, MergeEvalInput,
 };
@@ -382,9 +381,16 @@ pub async fn merge(ctx: &RpcCtx, input: serde_json::Value) -> Result<MergePullRe
     }
 
     let updated = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
-    let subject = notify::subject_for_pull(&updated);
-    let recipients = notify::pull_participant_ids(ctx, &updated.id, &updated.author_id).await;
-    notify::fanout(ctx, &user.id, recipients, "pr_merged", &subject).await;
+    super::emit_pull_event(
+        ctx,
+        &accessible,
+        &updated,
+        "closed",
+        &user.username,
+        &user.id,
+        true,
+    )
+    .await;
     let pull = to_public(ctx, &updated).await?;
     Ok(MergePullResponse {
         pull,
