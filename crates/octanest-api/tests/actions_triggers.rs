@@ -1,8 +1,10 @@
-//! Phase 19 — push triggers (ACT-02 / D-ACT-04 / D-ACT-05 / D-ACT-06).
+//! Phase 19 — push + pull_request triggers (ACT-02 / D-ACT-04 / D-ACT-05 / D-ACT-06).
 
 use std::sync::Arc;
 
-use octanest_api::actions::dispatch_push_for_sha;
+use octanest_api::actions::{
+    dispatch_pull_request_for_sha, dispatch_push_for_sha, PullRequestAction,
+};
 use octanest_core::Role;
 use octanest_db::Database;
 use octanest_git::{CliGitBackend, GitBackend};
@@ -103,8 +105,121 @@ jobs:
 
 #[tokio::test]
 async fn actions_triggers_pull_request_lifecycle() {
-    // PR dispatch lands in 19-06 — keep discoverable name; push path is greened above.
-    assert!(true);
+    let dir = tempfile::tempdir().unwrap();
+    let db = Database::connect(&format!(
+        "sqlite:{}",
+        dir.path().join("pr.db").display()
+    ))
+    .await
+    .unwrap();
+    db.migrate().await.unwrap();
+    let bare = dir.path().join("acttrig").join("trig-demo.git");
+    std::fs::create_dir_all(bare.parent().unwrap()).unwrap();
+    let yaml = br#"
+name: PR
+on: [pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo pr
+"#;
+    let (uid, repo_id, tip) = seed_repo_with_workflow(&db, &bare, yaml).await;
+    let git = CliGitBackend::new();
+
+    for action in [
+        PullRequestAction::Opened,
+        PullRequestAction::Synchronize,
+        PullRequestAction::Reopened,
+    ] {
+        let n = dispatch_pull_request_for_sha(
+            &db,
+            &git as &dyn GitBackend,
+            &bare,
+            &repo_id,
+            action,
+            &tip,
+            "refs/heads/feature",
+            Some(&uid),
+            true,
+        )
+        .await
+        .expect("pr dispatch");
+        assert_eq!(n, 1, "{action:?}");
+    }
+
+    let runs = db.list_action_runs_for_repo(&repo_id).await.unwrap();
+    assert_eq!(runs.len(), 3);
+    assert!(runs.iter().all(|r| r.event == "pull_request"));
+
+    // push-only workflows must not enqueue on PR events
+    let bare2 = dir.path().join("acttrig").join("push-only.git");
+    std::fs::create_dir_all(bare2.parent().unwrap()).unwrap();
+    let push_yaml = br#"
+name: PushOnly
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+"#;
+    let owner = db
+        .create_user(
+            "u-act-trig2",
+            "acttrig2@example.com",
+            "acttrig2",
+            Some("hash"),
+            "Act Trig2",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .unwrap();
+    let repo2 = db
+        .insert_repository(
+            "r-act-trig2",
+            &owner.id,
+            "user",
+            "push-only",
+            "private",
+            "",
+            "main",
+        )
+        .await
+        .unwrap();
+    git.init_bare(&bare2, "main").await.unwrap();
+    git.seed_commit(
+        &bare2,
+        "main",
+        "wf",
+        &[(".github/workflows/ci.yml".into(), push_yaml.to_vec())],
+    )
+    .await
+    .unwrap();
+    let tip2 = git
+        .list_refs(&bare2)
+        .await
+        .unwrap()
+        .into_iter()
+        .find(|r| r.name.ends_with("main"))
+        .map(|r| r.oid)
+        .unwrap();
+    let n = dispatch_pull_request_for_sha(
+        &db,
+        &git as &dyn GitBackend,
+        &bare2,
+        &repo2.id,
+        PullRequestAction::Opened,
+        &tip2,
+        "refs/heads/feature",
+        Some(&owner.id),
+        true,
+    )
+    .await
+    .unwrap();
+    assert_eq!(n, 0);
 }
 
 #[tokio::test]
