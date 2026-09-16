@@ -66,6 +66,11 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `*` | `/v2/{owner}/{image}/…` | OCI blobs, manifests, tags | PAT with `package:read` / `package:write` ∩ ACL |
 | `*` | `/npm/{owner}/…` | npm registry (publish, packument, tarball, dist-tags) | PAT Basic; cookie ignored |
 | `PUT/GET/DELETE` | `/generic/{owner}/{name}/{version}/…` | Generic/raw package files | PAT Basic; cookie ignored |
+| `POST` | `/api/actions/register` | Runner registration (registration token) | Registration token only (not session cookie) |
+| `POST` | `/api/actions/declare` | Runner label declaration | Bearer runner token |
+| `POST` | `/api/actions/fetch_task` | Claim queued workflow job | Bearer runner token |
+| `POST` | `/api/actions/update_task` | Job state transition | Bearer runner token |
+| `POST` | `/api/actions/update_log` | Append job log chunk | Bearer runner token |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -139,6 +144,12 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `sshKey.add` | Register an OpenSSH public key; returns fingerprint metadata | Session + verified email |
 | `sshKey.list` | List registered SSH public keys (no private keys) | Session |
 | `sshKey.revoke` | Hard-delete an SSH public key by `id` | Session |
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Workflow run list, detail, job log text | Session + Read+ |
+| `repo.actions.secrets.list` / `put` / `delete` | Repo Actions secrets (names only on list) | Session + Admin |
+| `repo.actions.getEnabled` / `setEnabled` | Per-repo Actions enable toggle | Session + Read+ / Admin |
+| `repo.commitStatus.create` / `list` | Commit statuses (Phase 13 + Actions publisher) | Session + Write+ / Read+ |
+| `admin.actions.createRegistrationToken` | Mint one-time runner registration token | Sys-admin |
+| `admin.actions.listRunners` | List registered runners (no secrets) | Sys-admin |
 
 Unknown procedure → `rpc.unknown_procedure` (HTTP 404).
 
@@ -538,7 +549,7 @@ Octanest Actions is a **control plane**: workflows are discovered under `.github
 
 ### Runner protocol HTTP (`/api/actions`) (ACT-06)
 
-Mounted under `/api/actions` (placeholders only — never commit real tokens):
+Mounted under `/api/actions` on the same HTTP port as RPC (Traefik `/api` PathPrefix → API). **Session cookies are ignored** — only registration tokens and runner bearer tokens authenticate (D-ACT-18). Use placeholders in docs/examples; never commit real tokens.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
@@ -547,6 +558,8 @@ Mounted under `/api/actions` (placeholders only — never commit real tokens):
 | POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job; may include decrypted `secrets` map |
 | POST | `/api/actions/update_task` | Bearer runner token | Job state updates |
 | POST | `/api/actions/update_log` | Bearer runner token | Append job log chunks |
+
+**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]` (Gitea/act_runner parity), e.g. `ubuntu-latest:docker://node:20-bookworm`. Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
 
 Session RPC (Read+/Admin as noted):
 
@@ -572,8 +585,12 @@ Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Ta
 
 - `/{owner}/{repo}/actions` — run list
 - `/{owner}/{repo}/actions/{runId}` — jobs + logs
-- `/{owner}/{repo}/settings` — Actions enable + secrets
+- `/{owner}/{repo}/settings/actions` — Actions enable + secrets (Admin)
 - `/admin/runners` — registration tokens + runner list
+
+### Official runner image (ACT-04 / ACT-05)
+
+Operators attach compute via `docker/octanest-runner` (act_runner lineage). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
 
 ## Regenerating the TypeScript client
 
