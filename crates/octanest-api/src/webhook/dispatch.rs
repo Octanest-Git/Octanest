@@ -13,6 +13,7 @@ pub async fn emit(
     event: &str,
     action: &str,
     payload: serde_json::Value,
+    env_name: &str,
 ) {
     let hooks = match db
         .list_active_webhooks_for_event(repository_id, event)
@@ -51,7 +52,12 @@ pub async fn emit(
             .await
         {
             Ok(_) => {
-                deliver::spawn_deliver(db.clone(), hook.id.clone(), delivery_id);
+                deliver::spawn_deliver(
+                    db.clone(),
+                    hook.id.clone(),
+                    delivery_id,
+                    env_name.to_string(),
+                );
             }
             Err(e) => {
                 tracing::warn!(error = %e, webhook_id = %hook.id, "webhook emit: insert delivery failed");

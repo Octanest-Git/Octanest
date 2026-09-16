@@ -712,3 +712,46 @@ pub async fn mark_delivery_result(
     }
     Ok(())
 }
+
+/// Pending deliveries whose next_attempt_at is due (or null treated as due).
+pub async fn list_pending_deliveries(
+    pool: &DbPool,
+    limit: i64,
+) -> Result<Vec<WebhookDeliveryRow>, String> {
+    let limit = limit.clamp(1, 100);
+    match pool {
+        DbPool::Postgres(pool) => {
+            let q = format!(
+                "{DEL_SEL_PG} WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= now()) ORDER BY created_at ASC LIMIT $1"
+            );
+            let rows = sqlx::query(&q)
+                .bind(limit)
+                .fetch_all(pool)
+                .await
+                .map_err(|e| format!("list pending deliveries: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_delivery!(r))).collect()
+        }
+        DbPool::MySql(pool) => {
+            let q = format!(
+                "{DEL_SEL_MY} WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP) ORDER BY created_at ASC LIMIT ?"
+            );
+            let rows = sqlx::query(&q)
+                .bind(limit)
+                .fetch_all(pool)
+                .await
+                .map_err(|e| format!("list pending deliveries: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_delivery!(r))).collect()
+        }
+        DbPool::Sqlite(pool) => {
+            let q = format!(
+                "{DEL_SEL_SQ} WHERE status = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= strftime('%Y-%m-%d %H:%M:%S','now')) ORDER BY created_at ASC LIMIT ?"
+            );
+            let rows = sqlx::query(&q)
+                .bind(limit)
+                .fetch_all(pool)
+                .await
+                .map_err(|e| format!("list pending deliveries: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_delivery!(r))).collect()
+        }
+    }
+}

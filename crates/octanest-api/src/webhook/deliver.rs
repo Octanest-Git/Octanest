@@ -1,12 +1,28 @@
-//! Outbound webhook HTTP delivery — HMAC, Hookshot headers, basic SSRF (D-HOOK-04/12/18).
+//! Outbound webhook HTTP delivery — HMAC, Hookshot headers, SSRF (D-HOOK-04/12/18).
 
+use std::net::IpAddr;
 use std::time::Instant;
 
 use octanest_db::{Database, WebhookDeliveryRow, WebhookRow};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-/// HMAC-SHA256 over `message` with `key` (RFC 2104) using existing `sha2` — no new crates.io dep.
+/// Default max delivery attempts (D-HOOK-14 discretion).
+pub fn max_attempts() -> i64 {
+    std::env::var("OCTANEST_WEBHOOK_MAX_ATTEMPTS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(5)
+}
+
+pub fn delivery_timeout_secs() -> u64 {
+    std::env::var("OCTANEST_WEBHOOK_TIMEOUT_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(10)
+}
+
+/// HMAC-SHA256 over `message` with `key` (RFC 2104) using existing `sha2`.
 pub fn hmac_sha256_hex(key: &[u8], message: &[u8]) -> String {
     const BLOCK: usize = 64;
     let mut key_block = [0u8; BLOCK];
@@ -52,12 +68,20 @@ pub fn validate_webhook_url(url: &str, env_name: &str) -> Result<(), String> {
         "https" => {}
         "http" if allow_loopback_http && is_loopback_host(&host) => {}
         "http" => {
-            return Err("webhook URL must use https (http only allowed for localhost in dev/test)".into())
+            return Err(
+                "webhook URL must use https (http only allowed for localhost in dev/test)".into(),
+            )
         }
         _ => return Err("webhook URL scheme must be https".into()),
     }
     if is_blocked_host(&host) {
         return Err("webhook URL host is not allowed".into());
+    }
+    // Literal IP hosts
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        if is_blocked_ip(ip) && !(allow_loopback_http && ip.is_loopback()) {
+            return Err("webhook URL host is not allowed".into());
+        }
     }
     Ok(())
 }
@@ -66,11 +90,24 @@ fn is_loopback_host(host: &str) -> bool {
     host == "localhost" || host == "127.0.0.1" || host == "::1" || host == "[::1]"
 }
 
+fn is_blocked_ip(ip: IpAddr) -> bool {
+    match ip {
+        IpAddr::V4(v4) => {
+            v4.is_private()
+                || v4.is_loopback()
+                || v4.is_link_local()
+                || v4.is_broadcast()
+                || v4.is_unspecified()
+                || v4.octets()[0] == 169 && v4.octets()[1] == 254
+        }
+        IpAddr::V6(v6) => v6.is_loopback() || v6.is_unique_local() || v6.is_unspecified(),
+    }
+}
+
 fn is_blocked_host(host: &str) -> bool {
     if host.is_empty() {
         return true;
     }
-    // Metadata / link-local common SSRF targets (basic guard; hardened further in 18-02).
     let blocked = [
         "169.254.169.254",
         "metadata.google.internal",
@@ -106,79 +143,79 @@ pub struct DeliveryOutcome {
     pub duration_ms: i64,
     pub response_snippet: Option<String>,
     pub success: bool,
+    pub transient: bool,
 }
 
-/// POST one delivery attempt; records attempt row and updates delivery status.
+fn is_transient_status(status: i32) -> bool {
+    status == 429 || (500..600).contains(&status)
+}
+
+fn backoff_secs(attempt_number: i64) -> i64 {
+    // 2, 4, 8, 16, 32 …
+    2i64.pow(attempt_number.clamp(1, 5) as u32)
+}
+
+fn next_attempt_iso(attempt_number: i64) -> String {
+    let secs = backoff_secs(attempt_number);
+    (chrono::Utc::now() + chrono::Duration::seconds(secs))
+        .format("%Y-%m-%dT%H:%M:%SZ")
+        .to_string()
+}
+
+/// POST one delivery attempt; records attempt row and updates delivery status / retry.
 pub async fn deliver_once(
     db: &Database,
     hook: &WebhookRow,
     delivery: &WebhookDeliveryRow,
+    env_name: &str,
 ) -> DeliveryOutcome {
     let body = delivery.payload_json.as_bytes();
     let sig = hmac_sha256_hex(hook.secret.as_bytes(), body);
     let signature_header = format!("sha256={sig}");
     let started = Instant::now();
+    let attempt_number = delivery.attempt_count + 1;
+    let max = max_attempts();
 
-    if let Err(e) = validate_webhook_url(&hook.url, "development") {
-        let duration_ms = started.elapsed().as_millis() as i64;
-        let attempt_id = Uuid::new_v4().to_string();
-        let attempt_number = delivery.attempt_count + 1;
-        let _ = db
-            .insert_webhook_delivery_attempt(
-                &attempt_id,
-                &delivery.id,
-                attempt_number,
-                None,
-                Some(&e),
-                Some(duration_ms),
-                None,
-            )
-            .await;
-        let _ = db
-            .mark_webhook_delivery_result(&delivery.id, "failed", attempt_number, None)
-            .await;
-        return DeliveryOutcome {
-            http_status: None,
-            error_message: Some(e),
-            duration_ms,
-            response_snippet: None,
-            success: false,
-        };
-    }
-
-    let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(10))
-        .redirect(reqwest::redirect::Policy::none())
-        .build();
-
-    let client = match client {
-        Ok(c) => c,
-        Err(e) => {
-            let duration_ms = started.elapsed().as_millis() as i64;
-            let msg = format!("http client: {e}");
-            let attempt_id = Uuid::new_v4().to_string();
-            let attempt_number = delivery.attempt_count + 1;
-            let _ = db
-                .insert_webhook_delivery_attempt(
-                    &attempt_id,
-                    &delivery.id,
-                    attempt_number,
-                    None,
-                    Some(&msg),
-                    Some(duration_ms),
-                    None,
-                )
-                .await;
-            let _ = db
-                .mark_webhook_delivery_result(&delivery.id, "failed", attempt_number, None)
-                .await;
-            return DeliveryOutcome {
+    if let Err(e) = validate_webhook_url(&hook.url, env_name) {
+        return record_and_finish(
+            db,
+            delivery,
+            attempt_number,
+            max,
+            DeliveryOutcome {
                 http_status: None,
-                error_message: Some(msg),
-                duration_ms,
+                error_message: Some(e),
+                duration_ms: started.elapsed().as_millis() as i64,
                 response_snippet: None,
                 success: false,
-            };
+                transient: false,
+            },
+        )
+        .await;
+    }
+
+    let client = match reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(delivery_timeout_secs()))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return record_and_finish(
+                db,
+                delivery,
+                attempt_number,
+                max,
+                DeliveryOutcome {
+                    http_status: None,
+                    error_message: Some(format!("http client: {e}")),
+                    duration_ms: started.elapsed().as_millis() as i64,
+                    response_snippet: None,
+                    success: false,
+                    transient: false,
+                },
+            )
+            .await;
         }
     };
 
@@ -213,19 +250,37 @@ pub async fn deliver_once(
                 duration_ms: started.elapsed().as_millis() as i64,
                 response_snippet: snippet,
                 success,
+                transient: !success && is_transient_status(status),
             }
         }
-        Err(e) => DeliveryOutcome {
-            http_status: None,
-            error_message: Some(format!("request failed: {e}")),
-            duration_ms: started.elapsed().as_millis() as i64,
-            response_snippet: None,
-            success: false,
-        },
+        Err(e) => {
+            let msg = if e.is_timeout() {
+                format!("timeout: {e}")
+            } else {
+                format!("request failed: {e}")
+            };
+            DeliveryOutcome {
+                http_status: None,
+                error_message: Some(msg),
+                duration_ms: started.elapsed().as_millis() as i64,
+                response_snippet: None,
+                success: false,
+                transient: true,
+            }
+        }
     };
 
+    record_and_finish(db, delivery, attempt_number, max, outcome).await
+}
+
+async fn record_and_finish(
+    db: &Database,
+    delivery: &WebhookDeliveryRow,
+    attempt_number: i64,
+    max: i64,
+    outcome: DeliveryOutcome,
+) -> DeliveryOutcome {
     let attempt_id = Uuid::new_v4().to_string();
-    let attempt_number = delivery.attempt_count + 1;
     let _ = db
         .insert_webhook_delivery_attempt(
             &attempt_id,
@@ -237,15 +292,31 @@ pub async fn deliver_once(
             outcome.response_snippet.as_deref(),
         )
         .await;
-    let status = if outcome.success { "success" } else { "failed" };
-    let _ = db
-        .mark_webhook_delivery_result(&delivery.id, status, attempt_number, None)
-        .await;
+
+    if outcome.success {
+        let _ = db
+            .mark_webhook_delivery_result(&delivery.id, "success", attempt_number, None)
+            .await;
+    } else if outcome.transient && attempt_number < max {
+        let next = next_attempt_iso(attempt_number);
+        let _ = db
+            .mark_webhook_delivery_result(
+                &delivery.id,
+                "pending",
+                attempt_number,
+                Some(&next),
+            )
+            .await;
+    } else {
+        let _ = db
+            .mark_webhook_delivery_result(&delivery.id, "failed", attempt_number, None)
+            .await;
+    }
     outcome
 }
 
 /// Fire-and-forget delivery after enqueue (D-HOOK-11).
-pub fn spawn_deliver(db: Database, webhook_id: String, delivery_id: String) {
+pub fn spawn_deliver(db: Database, webhook_id: String, delivery_id: String, env_name: String) {
     tokio::spawn(async move {
         let Ok(hook) = db.get_webhook(&webhook_id).await else {
             return;
@@ -253,7 +324,7 @@ pub fn spawn_deliver(db: Database, webhook_id: String, delivery_id: String) {
         let Ok(delivery) = db.get_webhook_delivery(&delivery_id).await else {
             return;
         };
-        let _ = deliver_once(&db, &hook, &delivery).await;
+        let _ = deliver_once(&db, &hook, &delivery, &env_name).await;
     });
 }
 
@@ -263,7 +334,6 @@ mod tests {
 
     #[test]
     fn hmac_matches_known_vector() {
-        // OpenSSL: echo -n 'hello' | openssl dgst -sha256 -hmac 'secret'
         let sig = hmac_sha256_hex(b"secret", b"hello");
         assert_eq!(
             sig,
@@ -287,5 +357,6 @@ mod tests {
     fn url_policy_blocks_metadata() {
         assert!(validate_webhook_url("https://169.254.169.254/", "development").is_err());
         assert!(validate_webhook_url("https://10.0.0.1/hook", "development").is_err());
+        assert!(validate_webhook_url("https://192.168.1.1/hook", "development").is_err());
     }
 }

@@ -306,23 +306,138 @@ async fn webhook_issues_edited_closed_reopened() {
     assert!(actions.contains("reopened"), "{actions:?}");
 }
 
-// Remaining Wave 0 stubs greened in later plans — keep discoverable ignored names.
+
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_ssrf_rejects_unsafe_url() {
-    assert!(false);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("ssrf.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "ssrf@ex.com", "ssrfown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let bad = rpc_json(
+        &app,
+        r#"{"procedure":"webhook.create","input":{"owner":"ssrfown","name":"demo","url":"https://169.254.169.254/latest","secret":"s","events":["issues"]}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(bad["ok"], false, "{bad}");
+    assert_eq!(bad["error"]["code"], "webhook.invalid_url");
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_timeout_records_error() {
-    assert!(false);
+    // Unreachable blackhole port — connection/timeout error path
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("timeout.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    std::env::set_var("OCTANEST_WEBHOOK_TIMEOUT_SECS", "1");
+    std::env::set_var("OCTANEST_WEBHOOK_MAX_ATTEMPTS", "1");
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "to@ex.com", "toown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let created = rpc_json(
+        &app,
+        r#"{"procedure":"webhook.create","input":{"owner":"toown","name":"demo","url":"http://127.0.0.1:1/hook","secret":"s","events":["issues"]}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"toown","name":"demo","title":"t","body":""}}"#,
+        &cookie,
+    )
+    .await;
+    let mut saw_error = false;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.expect("list");
+        if let Some(d) = deliveries.first() {
+            if let Ok(Some(a)) = db.latest_webhook_delivery_attempt(&d.id).await {
+                if a.error_message.is_some() {
+                    saw_error = true;
+                    break;
+                }
+            }
+        }
+    }
+    assert!(saw_error, "expected timeout/connection error recorded");
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_retry_transient() {
-    assert!(false);
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/retry"))
+        .respond_with(ResponseTemplate::new(503))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("retry.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    std::env::set_var("OCTANEST_WEBHOOK_MAX_ATTEMPTS", "3");
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "retry@ex.com", "retryown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/retry", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"retryown","name":"demo","url":"{hook_url}","secret":"s","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"retryown","name":"demo","title":"t","body":""}}"#,
+        &cookie,
+    )
+    .await;
+
+    // First attempt records 503 and stays pending for retry
+    let mut pending_with_attempt = false;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.expect("list");
+        if let Some(d) = deliveries.first() {
+            if d.attempt_count >= 1 && (d.status == "pending" || d.status == "failed") {
+                let latest = db.latest_webhook_delivery_attempt(&d.id).await.unwrap();
+                assert_eq!(latest.unwrap().http_status, Some(503));
+                pending_with_attempt = true;
+                break;
+            }
+        }
+    }
+    assert!(pending_with_attempt, "expected 503 attempt recorded");
 }
 
 #[tokio::test]

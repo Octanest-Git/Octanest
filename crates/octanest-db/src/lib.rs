@@ -2296,4 +2296,11 @@ impl Database {
         )
         .await
     }
+
+    pub async fn list_pending_webhook_deliveries(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<WebhookDeliveryRow>, String> {
+        webhooks::list_pending_deliveries(self.require_pool()?, limit).await
+    }
 }

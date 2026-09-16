@@ -48,7 +48,7 @@ fn parse_u64_env(key: &str, default: u64) -> u64 {
         .unwrap_or(default)
 }
 
-/// Spawn in-process orphan reconcile + scheduled gc + LFS GC + package blob GC loops.
+/// Spawn in-process orphan reconcile + scheduled gc + LFS GC + package blob GC + webhook delivery loops.
 pub fn spawn_background_jobs(
     db: Database,
     git: Arc<dyn GitBackend>,
@@ -57,6 +57,8 @@ pub fn spawn_background_jobs(
     packages_dir: PathBuf,
     config: JobConfig,
 ) {
+    let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
+    crate::webhook::worker::spawn_webhook_worker(db.clone(), env_name);
     if config.orphan_interval.as_secs() > 0 {
         let db_o = db.clone();
         let repos_o = repos_dir.clone();

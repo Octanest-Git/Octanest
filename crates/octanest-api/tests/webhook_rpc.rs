@@ -306,3 +306,165 @@ async fn webhook_inactive_skips_enqueue() {
     let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.expect("list");
     assert!(deliveries.is_empty(), "inactive hook must not enqueue");
 }
+
+
+#[tokio::test]
+async fn webhook_deliveries_list() {
+    let sink = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .respond_with(wiremock::ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("deliv_list.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "dl@ex.com", "dlown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/h", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"dlown","name":"demo","url":"{hook_url}","secret":"s","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap();
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"dlown","name":"demo","title":"t","body":""}}"#,
+        &cookie,
+    )
+    .await;
+    let mut listed_ok = false;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let listed = rpc_json(
+            &app,
+            &format!(
+                r#"{{"procedure":"webhook.deliveries.list","input":{{"owner":"dlown","name":"demo","webhook_id":"{hook_id}","limit":25}}}}"#
+            ),
+            &cookie,
+        )
+        .await;
+        assert_eq!(listed["ok"], true, "{listed}");
+        let arr = listed["data"]["deliveries"].as_array().unwrap();
+        if !arr.is_empty() {
+            assert!(arr[0]["status"].as_str().is_some());
+            listed_ok = true;
+            break;
+        }
+    }
+    assert!(listed_ok);
+}
+
+#[tokio::test]
+async fn webhook_ping() {
+    let sink = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .respond_with(wiremock::ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("ping.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "ping@ex.com", "pingown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/p", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"pingown","name":"demo","url":"{hook_url}","secret":"s","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap();
+    let pinged = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.ping","input":{{"owner":"pingown","name":"demo","id":"{hook_id}"}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    assert_eq!(pinged["ok"], true, "{pinged}");
+    assert!(pinged["data"]["delivery_id"].as_str().is_some());
+}
+
+#[tokio::test]
+async fn webhook_redeliver() {
+    let sink = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .respond_with(wiremock::ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("redel.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "re@ex.com", "reown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/r", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"reown","name":"demo","url":"{hook_url}","secret":"s","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"reown","name":"demo","title":"t","body":""}}"#,
+        &cookie,
+    )
+    .await;
+    let mut delivery_id = None;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.unwrap();
+        if let Some(d) = deliveries.first() {
+            delivery_id = Some(d.id.clone());
+            break;
+        }
+    }
+    let delivery_id = delivery_id.expect("delivery");
+    let red = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.redeliver","input":{{"owner":"reown","name":"demo","webhook_id":"{hook_id}","delivery_id":"{delivery_id}"}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    assert_eq!(red["ok"], true, "{red}");
+    assert_ne!(red["data"]["delivery_id"].as_str().unwrap(), delivery_id);
+}

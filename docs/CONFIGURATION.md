@@ -60,9 +60,10 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_RELEASE_ASSETS_DIR` | Optional | `var/release-assets` | Directory for release binary assets keyed by opaque `asset_id` (not the LFS OID store). Compose binds `./var/release-assets:/var/release-assets`. |
 | `OCTANEST_RELEASE_ASSET_MAX_BYTES` | Optional | `536870912` (512 MiB) | Max multipart size for a single release asset upload. |
 | `OCTANEST_GIT_GC_INTERVAL_SECS` | Optional | `604800` (7d) | In-process scheduled `git gc --auto` across active repos. Set `0` to disable. Sys-admins can also trigger `admin.repos.gc` manually. |
-| `OCTANEST_SEARCH_TIMEOUT_MS` | Optional | `8000` | Wall-clock timeout for in-repo `git grep` / `git log` search (D-SRCH-08). Timed-out RPCs return `search.timeout`. |
-| `OCTANEST_SEARCH_MAX_MATCHES` | Optional | `100` | Soft cap on code/commit hits returned before `truncated: true`. |
-| `OCTANEST_SEARCH_MAX_FILES` | Optional | `50` | Soft cap on distinct file paths in code search results. |
+| `OCTANEST_WEBHOOK_MAX_ATTEMPTS` | Optional | `5` | Max delivery attempts per webhook event (retries on 5xx/timeout/connection errors). |
+| `OCTANEST_WEBHOOK_TIMEOUT_SECS` | Optional | `10` | Outbound webhook HTTP timeout. |
+| `OCTANEST_WEBHOOK_WORKER_INTERVAL_SECS` | Optional | `5` | Pending-delivery drain interval. Set `0` to disable the retry worker. |
+| `OCTANEST_WEBHOOK_RETENTION_DAYS` | Optional | `30` | Soft retention hint for delivery history (UI/list caps also apply). |
 
 \* Strongly recommended for any real instance; without it the API runs with a skipped DB pool.  
 † Required only when the corresponding auth provider mode is enabled (Admin → Auth / ENV bootstrap).

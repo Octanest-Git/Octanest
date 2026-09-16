@@ -2,12 +2,15 @@
 
 pub mod deliver;
 pub mod dispatch;
+pub mod worker;
 
 use octanest_core::{
-    AppError, CreateWebhookRequest, DeleteWebhookResponse, UpdateWebhookRequest, WebhookIdRequest,
-    WebhookListRequest, WebhookListResponse, WebhookPublic,
+    AppError, CreateWebhookRequest, DeleteWebhookResponse, UpdateWebhookRequest,
+    WebhookDeliveriesListRequest, WebhookDeliveriesListResponse, WebhookDeliveryGetRequest,
+    WebhookDeliveryPublic, WebhookIdRequest, WebhookListRequest, WebhookListResponse,
+    WebhookPingResponse, WebhookPublic, WebhookRedeliverRequest,
 };
-use octanest_db::WebhookRow;
+use octanest_db::{WebhookDeliveryRow, WebhookRow};
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
@@ -23,6 +26,8 @@ fn db_err(e: String) -> AppError {
         AppError::new("db.not_configured", "no database configured for this instance")
     } else if e == "webhook not found" {
         AppError::new("webhook.not_found", "Webhook not found")
+    } else if e == "delivery not found" {
+        AppError::new("webhook.delivery_not_found", "Delivery not found")
     } else {
         tracing::error!("webhook db error: {e}");
         AppError::new("webhook.internal", "webhook operation failed")
@@ -55,6 +60,29 @@ fn to_public(row: &WebhookRow, reveal: Option<String>) -> WebhookPublic {
         updated_at: row.updated_at.clone(),
         secret: reveal,
     }
+}
+
+async fn delivery_public(
+    ctx: &RpcCtx,
+    row: &WebhookDeliveryRow,
+) -> Result<WebhookDeliveryPublic, AppError> {
+    let latest = ctx
+        .db
+        .latest_webhook_delivery_attempt(&row.id)
+        .await
+        .map_err(db_err)?;
+    Ok(WebhookDeliveryPublic {
+        id: row.id.clone(),
+        webhook_id: row.webhook_id.clone(),
+        delivery_guid: row.delivery_guid.clone(),
+        event: row.event.clone(),
+        action: row.action.clone(),
+        status: row.status.clone(),
+        created_at: row.created_at.clone(),
+        http_status: latest.as_ref().and_then(|a| a.http_status),
+        error_message: latest.and_then(|a| a.error_message),
+        attempt_count: row.attempt_count,
+    })
 }
 
 fn normalize_events(events: &[String]) -> Result<Vec<String>, AppError> {
@@ -194,10 +222,7 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<WebhookPub
     } else {
         None
     };
-    let name = req
-        .description
-        .as_deref()
-        .map(|s| s.trim().to_string());
+    let name = req.description.as_deref().map(|s| s.trim().to_string());
 
     let row = ctx
         .db
@@ -214,7 +239,10 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<WebhookPub
     Ok(to_public(&row, secret_reveal))
 }
 
-pub async fn delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<DeleteWebhookResponse, AppError> {
+pub async fn delete(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<DeleteWebhookResponse, AppError> {
     let _user = require_verified(ctx).await?;
     let req: WebhookIdRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid webhook.delete input: {e}"))
@@ -223,4 +251,140 @@ pub async fn delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<DeleteWebh
     let _ = load_hook_in_repo(ctx, &accessible.row.id, &req.id).await?;
     ctx.db.delete_webhook(&req.id).await.map_err(db_err)?;
     Ok(DeleteWebhookResponse { ok: true })
+}
+
+pub async fn deliveries_list(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<WebhookDeliveriesListResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: WebhookDeliveriesListRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid webhook.deliveries.list input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    let _ = load_hook_in_repo(ctx, &accessible.row.id, &req.webhook_id).await?;
+    let limit = req.limit.unwrap_or(25);
+    let rows = ctx
+        .db
+        .list_webhook_deliveries(&req.webhook_id, limit)
+        .await
+        .map_err(db_err)?;
+    let mut deliveries = Vec::with_capacity(rows.len());
+    for row in &rows {
+        deliveries.push(delivery_public(ctx, row).await?);
+    }
+    Ok(WebhookDeliveriesListResponse { deliveries })
+}
+
+pub async fn deliveries_get(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<WebhookDeliveryPublic, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: WebhookDeliveryGetRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid webhook.deliveries.get input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    let _ = load_hook_in_repo(ctx, &accessible.row.id, &req.webhook_id).await?;
+    let row = ctx
+        .db
+        .get_webhook_delivery(&req.delivery_id)
+        .await
+        .map_err(db_err)?;
+    if row.webhook_id != req.webhook_id {
+        return Err(AppError::new(
+            "webhook.delivery_not_found",
+            "Delivery not found",
+        ));
+    }
+    delivery_public(ctx, &row).await
+}
+
+pub async fn ping(ctx: &RpcCtx, input: serde_json::Value) -> Result<WebhookPingResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: WebhookIdRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid webhook.ping input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    let hook = load_hook_in_repo(ctx, &accessible.row.id, &req.id).await?;
+    let payload = dispatch::ping_payload(&hook.id, &accessible.owner_username, &accessible.row.name);
+    let delivery_id = Uuid::new_v4().to_string();
+    let delivery_guid = Uuid::new_v4().to_string();
+    let payload_json = serde_json::to_string(&payload).unwrap_or_else(|_| "{}".into());
+    ctx.db
+        .insert_webhook_delivery(
+            &delivery_id,
+            &hook.id,
+            &delivery_guid,
+            "ping",
+            "",
+            &payload_json,
+        )
+        .await
+        .map_err(db_err)?;
+    deliver::spawn_deliver(
+        ctx.db.clone(),
+        hook.id,
+        delivery_id.clone(),
+        ctx.env_name.clone(),
+    );
+    Ok(WebhookPingResponse {
+        delivery_id,
+        delivery_guid,
+    })
+}
+
+pub async fn redeliver(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<WebhookPingResponse, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: WebhookRedeliverRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid webhook.redeliver input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+    let hook = load_hook_in_repo(ctx, &accessible.row.id, &req.webhook_id).await?;
+    let prior = ctx
+        .db
+        .get_webhook_delivery(&req.delivery_id)
+        .await
+        .map_err(db_err)?;
+    if prior.webhook_id != hook.id {
+        return Err(AppError::new(
+            "webhook.delivery_not_found",
+            "Delivery not found",
+        ));
+    }
+    let delivery_id = Uuid::new_v4().to_string();
+    let delivery_guid = Uuid::new_v4().to_string();
+    ctx.db
+        .insert_webhook_delivery(
+            &delivery_id,
+            &hook.id,
+            &delivery_guid,
+            &prior.event,
+            &prior.action,
+            &prior.payload_json,
+        )
+        .await
+        .map_err(db_err)?;
+    deliver::spawn_deliver(
+        ctx.db.clone(),
+        hook.id,
+        delivery_id.clone(),
+        ctx.env_name.clone(),
+    );
+    Ok(WebhookPingResponse {
+        delivery_id,
+        delivery_guid,
+    })
 }

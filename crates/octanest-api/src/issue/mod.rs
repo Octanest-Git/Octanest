@@ -185,7 +185,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         &user.username,
         &user.id,
     );
-    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "opened", payload).await;
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "opened", payload, &ctx.env_name).await;
     to_public(ctx, &row).await
 }
 
@@ -336,7 +336,7 @@ pub async fn update(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         &user.username,
         &user.id,
     );
-    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "edited", payload).await;
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "edited", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -368,7 +368,7 @@ pub async fn close(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePublic
         &user.username,
         &user.id,
     );
-    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "closed", payload).await;
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "closed", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 
@@ -399,7 +399,7 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssuePubli
         &user.username,
         &user.id,
     );
-    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "reopened", payload).await;
+    dispatch::emit(&ctx.db, &accessible.row.id, "issues", "reopened", payload, &ctx.env_name).await;
     to_public(ctx, &updated).await
 }
 

@@ -1985,6 +1985,16 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<WebhookPublic>(opts, "webhook.update", input),
       delete: (input: WebhookIdRequest) =>
         rpcCall<DeleteWebhookResponse>(opts, "webhook.delete", input),
+      ping: (input: WebhookIdRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.ping", input),
+      redeliver: (input: WebhookRedeliverRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.redeliver", input),
+      deliveries: {
+        list: (input: WebhookDeliveriesListRequest) =>
+          rpcCall<WebhookDeliveriesListResponse>(opts, "webhook.deliveries.list", input),
+        get: (input: WebhookDeliveryGetRequest) =>
+          rpcCall<WebhookDeliveryPublic>(opts, "webhook.deliveries.get", input),
+      },
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>
