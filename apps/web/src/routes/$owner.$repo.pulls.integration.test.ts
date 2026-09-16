@@ -66,8 +66,14 @@ describe("Phase 12 Pulls UI", () => {
     expect(pullFiles).toMatch(/Split/);
   });
 
-  it.fails("review actions Approve / Request changes / Comment", () => {
-    expect(true).toBe(false);
+  it("review actions Approve / Request changes / Comment", () => {
+    const reviews = readFileSync(
+      join(process.cwd(), "src/components/repo/pull-reviews.tsrx"),
+      "utf8",
+    );
+    expect(reviews).toMatch(/Approve/);
+    expect(reviews).toMatch(/Request changes/);
+    expect(reviews).toMatch(/Comment/);
   });
 
   it("merge method picker + close/reopen", () => {

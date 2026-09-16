@@ -329,6 +329,19 @@ pub struct PullReviewsListResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PullReviewRequestMutate {
+    pub owner: String,
+    pub name: String,
+    pub number: i64,
+    pub username: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PullReviewRequestsListResponse {
+    pub usernames: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PullFilesResponse {
     pub files: Vec<PullDiffFile>,
     pub empty: bool,

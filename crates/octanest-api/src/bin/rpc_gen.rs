@@ -1019,6 +1019,56 @@ export type PullCommitsResponse = {
   commits: PullCommitSummary[];
 };
 
+export type PullReviewState =
+  | "approved"
+  | "changes_requested"
+  | "commented"
+  | "dismissed";
+
+export type PullReviewPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  state: PullReviewState;
+  body: string;
+  commit_sha?: string | null;
+  submitted_at: string;
+  dismissed_at?: string | null;
+  dismiss_reason?: string | null;
+};
+
+export type SubmitPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  state: string;
+  body?: string | null;
+};
+
+export type DismissPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  review_id: string;
+  reason?: string | null;
+};
+
+export type PullReviewsListResponse = {
+  reviews: PullReviewPublic[];
+};
+
+export type PullReviewRequestMutate = {
+  owner: string;
+  name: string;
+  number: number;
+  username: string;
+};
+
+export type PullReviewRequestsListResponse = {
+  usernames: string[];
+};
+
 export type RemoveIssueLinkResponse = {
   ok: boolean;
 };
@@ -1574,6 +1624,34 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<PullCommentPublic>(opts, "pull.comments.create", input),
         resolve: (input: ResolvePullCommentRequest) =>
           rpcCall<PullCommentPublic>(opts, "pull.comments.resolve", input),
+      },
+      reviews: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewsListResponse>(opts, "pull.reviews.list", input),
+        submit: (input: SubmitPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.submit", input),
+        dismiss: (input: DismissPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.dismiss", input),
+      },
+      reviewRequests: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.list",
+            input,
+          ),
+        add: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.add",
+            input,
+          ),
+        remove: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.remove",
+            input,
+          ),
       },
     },
     mergeSettings: {

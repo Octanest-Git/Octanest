@@ -37,7 +37,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
-pub use pulls::{PullCommentRow, PullRow, RepoMergeSettingsRow};
+pub use pulls::{PullCommentRow, PullReviewRow, PullRow, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -643,6 +643,71 @@ impl Database {
 
     pub async fn update_pull_head_sha(&self, id: &str, head_sha: &str) -> Result<(), String> {
         pulls::update_pull_head_sha(self.require_pool()?, id, head_sha).await
+    }
+
+    pub async fn insert_pull_review(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        state: &str,
+        body: &str,
+        commit_sha: Option<&str>,
+    ) -> Result<PullReviewRow, String> {
+        pulls::insert_pull_review(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            state,
+            body,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_review_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullReviewRow>, String> {
+        pulls::find_pull_review_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_reviews(&self, pull_id: &str) -> Result<Vec<PullReviewRow>, String> {
+        pulls::list_pull_reviews(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn dismiss_pull_review(
+        &self,
+        id: &str,
+        reason: Option<&str>,
+        dismissed_at: &str,
+    ) -> Result<PullReviewRow, String> {
+        pulls::dismiss_pull_review(self.require_pool()?, id, reason, dismissed_at).await
+    }
+
+    pub async fn upsert_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+        requested_by: &str,
+    ) -> Result<(), String> {
+        pulls::upsert_review_request(self.require_pool()?, pull_id, user_id, requested_by).await
+    }
+
+    pub async fn delete_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+    ) -> Result<(), String> {
+        pulls::delete_review_request(self.require_pool()?, pull_id, user_id).await
+    }
+
+    pub async fn list_pull_review_request_user_ids(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<String>, String> {
+        pulls::list_review_request_user_ids(self.require_pool()?, pull_id).await
     }
 
     // --- issues ---

@@ -4,9 +4,11 @@ import { useState } from "octane";
 import { PullCommits } from "@/components/repo/pull-commits";
 import { PullConversation } from "@/components/repo/pull-conversation";
 import { PullFiles } from "@/components/repo/pull-files";
+import { PullReviews } from "@/components/repo/pull-reviews";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { fetchRepoGet } from "@/lib/ssr-repo";
+import { useChromeAccountState } from "@/lib/use-chrome-account";
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
@@ -78,8 +80,10 @@ export function PullDetailPage() @{
         pull: import("@octanest/api-client").PullPublic;
       };
 
+  const account = useChromeAccountState();
   const pull = pullQ.data;
   const canWrite = loader.kind === "ready" && !!loader.repo.can_write;
+  const isAuthor = !!pull && !!account.user && account.user.id === (pull.author_id as string);
 
   async function closePull() {
     setBusy(true);
@@ -194,13 +198,22 @@ export function PullDetailPage() @{
             </button>
           </div>
           @if (tab === "conversation") {
-            <PullConversation
-              owner={owner}
-              repoName={repoName}
-              number={number}
-              canWrite={canWrite}
-              body={(pull.body || "") as string}
-            />;
+            <div className="space-y-6">
+              <PullConversation
+                owner={owner}
+                repoName={repoName}
+                number={number}
+                canWrite={canWrite}
+                body={(pull.body || "") as string}
+              />
+              <PullReviews
+                owner={owner}
+                repoName={repoName}
+                number={number}
+                canWrite={canWrite}
+                isAuthor={isAuthor}
+              />
+            </div>;
           }
           @if (tab === "commits") {
             <PullCommits owner={owner} repoName={repoName} number={number} />;

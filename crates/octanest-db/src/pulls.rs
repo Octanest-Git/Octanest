@@ -1103,3 +1103,396 @@ pub async fn update_pull_head_sha(
     }
     Ok(())
 }
+
+#[derive(Debug, Clone)]
+pub struct PullReviewRow {
+    pub id: String,
+    pub pull_id: String,
+    pub author_id: String,
+    pub state: String,
+    pub body: String,
+    pub commit_sha: Option<String>,
+    pub submitted_at: String,
+    pub dismissed_at: Option<String>,
+    pub dismiss_reason: Option<String>,
+}
+
+macro_rules! map_pull_review {
+    ($row:expr) => {{
+        let row = $row;
+        PullReviewRow {
+            id: row.try_get("id").map_err(|e| format!("pull review: {e}"))?,
+            pull_id: row
+                .try_get("pull_id")
+                .map_err(|e| format!("pull review: {e}"))?,
+            author_id: row
+                .try_get("author_id")
+                .map_err(|e| format!("pull review: {e}"))?,
+            state: row
+                .try_get("state")
+                .map_err(|e| format!("pull review: {e}"))?,
+            body: row
+                .try_get("body")
+                .map_err(|e| format!("pull review: {e}"))?,
+            commit_sha: row
+                .try_get("commit_sha")
+                .map_err(|e| format!("pull review: {e}"))?,
+            submitted_at: row
+                .try_get("submitted_at")
+                .map_err(|e| format!("pull review: {e}"))?,
+            dismissed_at: row
+                .try_get("dismissed_at")
+                .map_err(|e| format!("pull review: {e}"))?,
+            dismiss_reason: row
+                .try_get("dismiss_reason")
+                .map_err(|e| format!("pull review: {e}"))?,
+        }
+    }};
+}
+
+const PRV_SELECT_PG: &str = "SELECT id, pull_id, author_id, state, body, commit_sha,
+       to_char(submitted_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS submitted_at,
+       CASE WHEN dismissed_at IS NULL THEN NULL ELSE to_char(dismissed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS dismissed_at,
+       dismiss_reason
+FROM pull_reviews";
+
+const PRV_SELECT_MYSQL: &str = "SELECT id, pull_id, author_id, state, body, commit_sha,
+       DATE_FORMAT(submitted_at, '%Y-%m-%dT%H:%i:%sZ') AS submitted_at,
+       CASE WHEN dismissed_at IS NULL THEN NULL ELSE DATE_FORMAT(dismissed_at, '%Y-%m-%dT%H:%i:%sZ') END AS dismissed_at,
+       dismiss_reason
+FROM pull_reviews";
+
+const PRV_SELECT_SQLITE: &str = "SELECT id, pull_id, author_id, state, body, commit_sha,
+       strftime('%Y-%m-%dT%H:%M:%SZ', submitted_at) AS submitted_at,
+       CASE WHEN dismissed_at IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%SZ', dismissed_at) END AS dismissed_at,
+       dismiss_reason
+FROM pull_reviews";
+
+pub async fn insert_pull_review(
+    pool: &DbPool,
+    id: &str,
+    pull_id: &str,
+    author_id: &str,
+    state: &str,
+    body: &str,
+    commit_sha: Option<&str>,
+) -> Result<PullReviewRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO pull_reviews (id, pull_id, author_id, state, body, commit_sha)
+ VALUES ($1,$2,$3,$4,$5,$6)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(state)
+            .bind(body)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull review failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT INTO pull_reviews (id, pull_id, author_id, state, body, commit_sha)
+ VALUES (?,?,?,?,?,?)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(state)
+            .bind(body)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull review failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT INTO pull_reviews (id, pull_id, author_id, state, body, commit_sha)
+ VALUES (?1,?2,?3,?4,?5,?6)",
+            )
+            .bind(id)
+            .bind(pull_id)
+            .bind(author_id)
+            .bind(state)
+            .bind(body)
+            .bind(commit_sha)
+            .execute(p)
+            .await
+            .map_err(|e| format!("insert pull review failed: {e}"))?;
+        }
+    }
+    find_pull_review_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "insert pull review failed: row missing".into())
+}
+
+pub async fn find_pull_review_by_id(
+    pool: &DbPool,
+    id: &str,
+) -> Result<Option<PullReviewRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!("{PRV_SELECT_PG} WHERE id = $1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull review failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_review!(&r)),
+                None => None,
+            })
+        }
+        DbPool::MySql(p) => {
+            let q = format!("{PRV_SELECT_MYSQL} WHERE id = ?");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull review failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_review!(&r)),
+                None => None,
+            })
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!("{PRV_SELECT_SQLITE} WHERE id = ?1");
+            let row = sqlx::query(&q)
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("find pull review failed: {e}"))?;
+            Ok(match row {
+                Some(r) => Some(map_pull_review!(&r)),
+                None => None,
+            })
+        }
+    }
+}
+
+pub async fn list_pull_reviews(
+    pool: &DbPool,
+    pull_id: &str,
+) -> Result<Vec<PullReviewRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!(
+                "{PRV_SELECT_PG} WHERE pull_id = $1 ORDER BY submitted_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull reviews failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_review!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let q = format!(
+                "{PRV_SELECT_MYSQL} WHERE pull_id = ? ORDER BY submitted_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull reviews failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_review!(&r));
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let q = format!(
+                "{PRV_SELECT_SQLITE} WHERE pull_id = ?1 ORDER BY submitted_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull reviews failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull_review!(&r));
+            }
+            Ok(out)
+        }
+    }
+}
+
+pub async fn dismiss_pull_review(
+    pool: &DbPool,
+    id: &str,
+    reason: Option<&str>,
+    dismissed_at: &str,
+) -> Result<PullReviewRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE pull_reviews SET state = 'dismissed', dismissed_at = $2, dismiss_reason = $3 WHERE id = $1",
+            )
+            .bind(id)
+            .bind(dismissed_at)
+            .bind(reason)
+            .execute(p)
+            .await
+            .map_err(|e| format!("dismiss review failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_reviews SET state = 'dismissed', dismissed_at = ?, dismiss_reason = ? WHERE id = ?",
+            )
+            .bind(dismissed_at)
+            .bind(reason)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("dismiss review failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_reviews SET state = 'dismissed', dismissed_at = ?2, dismiss_reason = ?3 WHERE id = ?1",
+            )
+            .bind(id)
+            .bind(dismissed_at)
+            .bind(reason)
+            .execute(p)
+            .await
+            .map_err(|e| format!("dismiss review failed: {e}"))?;
+        }
+    }
+    find_pull_review_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "dismiss review failed: row missing".into())
+}
+
+pub async fn upsert_review_request(
+    pool: &DbPool,
+    pull_id: &str,
+    user_id: &str,
+    requested_by: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "INSERT INTO pull_review_requests (pull_id, user_id, requested_by)
+ VALUES ($1,$2,$3) ON CONFLICT (pull_id, user_id) DO NOTHING",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .bind(requested_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("upsert review request failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "INSERT IGNORE INTO pull_review_requests (pull_id, user_id, requested_by)
+ VALUES (?,?,?)",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .bind(requested_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("upsert review request failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "INSERT OR IGNORE INTO pull_review_requests (pull_id, user_id, requested_by)
+ VALUES (?1,?2,?3)",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .bind(requested_by)
+            .execute(p)
+            .await
+            .map_err(|e| format!("upsert review request failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn delete_review_request(
+    pool: &DbPool,
+    pull_id: &str,
+    user_id: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM pull_review_requests WHERE pull_id = $1 AND user_id = $2")
+                .bind(pull_id)
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete review request failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM pull_review_requests WHERE pull_id = ? AND user_id = ?")
+                .bind(pull_id)
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete review request failed: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM pull_review_requests WHERE pull_id = ?1 AND user_id = ?2")
+                .bind(pull_id)
+                .bind(user_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("delete review request failed: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn list_review_request_user_ids(
+    pool: &DbPool,
+    pull_id: &str,
+) -> Result<Vec<String>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query("SELECT user_id FROM pull_review_requests WHERE pull_id = $1")
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list review requests failed: {e}"))?;
+            let mut out = Vec::new();
+            for r in rows {
+                out.push(r.try_get("user_id").map_err(|e| format!("review request: {e}"))?);
+            }
+            Ok(out)
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query("SELECT user_id FROM pull_review_requests WHERE pull_id = ?")
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list review requests failed: {e}"))?;
+            let mut out = Vec::new();
+            for r in rows {
+                out.push(r.try_get("user_id").map_err(|e| format!("review request: {e}"))?);
+            }
+            Ok(out)
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query("SELECT user_id FROM pull_review_requests WHERE pull_id = ?1")
+                .bind(pull_id)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list review requests failed: {e}"))?;
+            let mut out = Vec::new();
+            for r in rows {
+                out.push(r.try_get("user_id").map_err(|e| format!("review request: {e}"))?);
+            }
+            Ok(out)
+        }
+    }
+}

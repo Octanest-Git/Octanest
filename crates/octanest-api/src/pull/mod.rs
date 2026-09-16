@@ -3,10 +3,15 @@
 pub(crate) mod acl;
 mod comments;
 mod merge_ops;
+mod reviews;
 
 pub use comments::{comments_create, comments_list, comments_resolve};
 pub use merge_ops::{
     commits, files, merge, merge_settings_get, merge_settings_update,
+};
+pub use reviews::{
+    review_requests_add, review_requests_list, review_requests_remove, reviews_dismiss,
+    reviews_list, reviews_submit,
 };
 
 use octanest_core::{
