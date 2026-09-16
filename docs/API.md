@@ -553,11 +553,23 @@ Mounted under `/api/actions` on the same HTTP port as RPC (Traefik `/api` PathPr
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env) | Register runner; returns `runner_token` once |
-| POST | `/api/actions/declare` | Bearer runner token | Update labels |
-| POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job; may include decrypted `secrets` map |
-| POST | `/api/actions/update_task` | Bearer runner token | Job state updates |
+| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env `OCTANEST_RUNNER_REGISTRATION_TOKEN`) | Register runner; returns `runner_token` once |
+| POST | `/api/actions/declare` | Bearer runner token | Update labels (`label[:schema[:args]]`, D-ACT-09) |
+| POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job matching labels; may include decrypted `secrets` map |
+| POST | `/api/actions/update_task` | Bearer runner token | Job state updates (`queued` → `in_progress` / `success` / `failure` / `cancelled`) |
 | POST | `/api/actions/update_log` | Bearer runner token | Append job log chunks |
+
+Example register body (placeholders only):
+
+```json
+{
+  "name": "compose-runner",
+  "labels": ["ubuntu-latest:docker://node:20-bookworm", "self-hosted"],
+  "token": "reg_REPLACE_ME"
+}
+```
+
+Runner protocol ignores session cookies (D-ACT-18).
 
 **Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]` (Gitea/act_runner parity), e.g. `ubuntu-latest:docker://node:20-bookworm`. Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
 

@@ -290,6 +290,22 @@ Host-local Postgres (API outside Compose): point `DATABASE_URL` at `localhost:54
 <!-- VERIFY: Production SMTP / Resend / WorkOS / OIDC secret values (ENV-only; not in repo) -->
 
 
-## Actions runners (ACT-07)
+## Actions runners (ACT-01…ACT-07)
 
-Octanest Cloud and self-hosted deployments require **registered runners** (official `octanest-runner` image or compatible clients). There is **no managed-minutes product switch** and no in-process job executor — operators bring their own compute (D-ACT-10 / D-ACT-08). Registration tokens are created by instance admins (`admin.actions.createRegistrationToken`) or bootstrapped via `OCTANEST_RUNNER_REGISTRATION_TOKEN`. Repo Actions secrets are encrypted with `OCTANEST_ACTIONS_SECRETS_KEY` (D-ACT-17) and never returned after create.
+Octanest Actions evaluates workflows from `.github/workflows/*.{yml,yaml}` on **push** and **pull_request** events. The forge queues jobs; **registered runners** execute them via `/api/actions` — there is **no managed-minutes product** and no in-process job executor (ACT-07 / D-ACT-10).
+
+| Knob | Role |
+| --- | --- |
+| `OCTANEST_ACTIONS_ENABLED` | Instance-wide gate (default `true`). When off, no workflows are evaluated. |
+| `OCTANEST_ACTIONS_LOG_DIR` | Job log blobs (`{run_id}/{job_id}.log`); distinct from repos/LFS/packages volumes. |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Bootstrap registration token for Compose profile `actions` — **never commit real values**. |
+| `OCTANEST_RUNNER_NAME` / `OCTANEST_RUNNER_LABELS` | Default runner display name and labels (`label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm`). |
+| `OCTANEST_ACTIONS_SECRETS_KEY` | AES-256-GCM key for repo Actions secrets at rest (D-ACT-17). Prefer a dedicated secret. |
+
+**Registration tokens:** instance admins mint via `admin.actions.createRegistrationToken` (one-time plaintext `reg_…`) or env bootstrap above. **Runner tokens** (`ort_…`) are returned once at register and used as Bearer on `/api/actions/*` — session cookies are ignored (D-ACT-18).
+
+**Per-repo:** Admin enables Actions with `repo.actions.setEnabled`; secrets via `repo.actions.secrets.*` (list returns names only).
+
+**Commit statuses (Phase 13):** Actions publishes contexts `{workflow_name} / {job_key}` — configure branch protection required checks to match. Query with `repo.commitStatus.list`.
+
+Bring-up: [DEPLOYMENT.md](DEPLOYMENT.md#actions-runner-optional). Protocol: [API.md](API.md#actions-phase-19).
