@@ -1,8 +1,8 @@
 .PHONY: help dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
-	smoke-protocol-ci smoke-compose-ci \
-	cloud-plan cloud-docs \
+	smoke-actions \
+	smoke-protocol-ci \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
@@ -43,12 +43,10 @@ help:
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
 	@echo "  make smoke-git-lfs   - Traefik .git/info/lfs batch routing smoke (GIT-12)"
 	@echo "  make smoke-packages  - Traefik /v2|/npm|/generic → API smoke (PKG-01..03)"
+	@echo "  make smoke-actions   - Actions/runner Compose smoke (ACT-04/05; skip-ok without Docker)"
 	@echo "  make smoke-protocol-ci - Compose up + smoke-git-* + smoke-packages (D-QH-04; fail-closed)"
-	@echo "  make smoke-compose-ci - Compose dialect bring-up smoke for CI (D-CI-01; DIALECT=postgres|sqlite|mysql)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
-	@echo "  make cloud-plan     - railway config plan (Octanest Cloud IaC; no apply)"
-	@echo "  make cloud-docs     - print pointers to cloud deploy docs"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
 	@echo "  make db-switch-dialect - migrate an EMPTY target DB to a new dialect"
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
@@ -166,33 +164,15 @@ smoke-git-lfs:
 smoke-packages:
 	@./scripts/smoke-packages.sh
 
+# Actions / runners smoke (ACT-04/05). Skip-ok without Docker; greened in 19-08/19-11.
+# See scripts/smoke-actions.sh.
+smoke-actions:
+	@./scripts/smoke-actions.sh
+
 # D-QH-04: bring up Compose, run protocol smokes fail-closed, tear down.
 # Default skips client ls-remote/LFS push (no seeded repo); set SMOKE_SKIP_*=0 + fixtures for full.
 smoke-protocol-ci:
 	@./scripts/ci-smoke-protocol.sh
-
-# D-CI-01…04: fail-closed Compose bring-up for one dialect (default postgres).
-# Usage: make smoke-compose-ci DIALECT=sqlite
-smoke-compose-ci:
-	@./scripts/ci-compose-smoke.sh "$(or $(DIALECT),postgres)"
-
-# D-CLOUD-07: preview Railway IaC diff only — never auto-apply from Make/CI.
-cloud-plan:
-	@if ! command -v railway >/dev/null 2>&1; then \
-		echo "railway CLI not found. Install CLI ≥ 5.42.1, run railway link, then retry."; \
-		echo "Docs: .railway/README.md and docs/DEPLOYMENT.md"; \
-		exit 1; \
-	fi
-	@echo "==> railway config plan (review only — apply requires explicit human approval)"
-	@railway config plan
-
-cloud-docs:
-	@echo "Octanest Cloud:"
-	@echo "  IaC:       .railway/railway.ts"
-	@echo "  Gateway:   deploy/cloud/Caddyfile"
-	@echo "  Operator:  docs/DEPLOYMENT.md (Octanest Cloud section)"
-	@echo "  Plan only: make cloud-plan"
-	@echo "  Apply:     railway config apply  # human-approved only"
 
 smoke-mysql:
 	@COMPOSE_FILES="-f docker-compose.yml -f docker-compose.mysql.yml" COMPOSE_PROFILES=mysql EXPECT_DIALECT=mysql ./scripts/compose-smoke.sh
