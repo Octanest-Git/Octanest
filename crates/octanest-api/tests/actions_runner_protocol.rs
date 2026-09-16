@@ -14,7 +14,7 @@ use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::{build_cors, router_with_state, AppState};
 use octanest_core::Role;
 use octanest_db::Database;
-use octanest_git::{CliGitBackend, GitBackend};
+use octanest_git::CliGitBackend;
 use tower::ServiceExt;
 
 async fn app_db() -> (axum::Router, Database, tempfile::TempDir) {
@@ -286,4 +286,165 @@ async fn actions_runner_protocol_env_bootstrap_token() {
         .unwrap();
     std::env::remove_var("OCTANEST_RUNNER_REGISTRATION_TOKEN");
     assert_eq!(res.status(), StatusCode::OK);
+}
+
+/// ACT-06: claimed runner can append logs and transition job state via protocol.
+#[tokio::test]
+async fn actions_runner_protocol_update_task_and_log() {
+    let dir = tempfile::tempdir().unwrap();
+    let log_dir = dir.path().join("actions-logs");
+    std::fs::create_dir_all(&log_dir).unwrap();
+    let db = Database::connect(&format!(
+        "sqlite:{}",
+        dir.path().join("r.db").display()
+    ))
+    .await
+    .unwrap();
+    db.migrate().await.unwrap();
+    support::unlock_signup(&db).await;
+    let state = AppState::new(
+        db.clone(),
+        Arc::new(LogSink) as Arc<dyn EmailSender>,
+        "development",
+    )
+    .with_actions_enabled(true)
+    .with_actions_log_dir(log_dir.clone());
+    let app = router_with_state(state, build_cors("development", None).unwrap());
+
+    let owner = db
+        .create_user(
+            "u-upd",
+            "upd@example.com",
+            "upd",
+            Some("h"),
+            "U",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .unwrap();
+    let repo = db
+        .insert_repository("r-upd", &owner.id, "user", "upd", "private", "", "main")
+        .await
+        .unwrap();
+    let doc = parse_workflow_yaml(
+        br#"
+name: CI
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hi
+"#,
+    )
+    .unwrap();
+    enqueue_run(
+        &db,
+        &repo.id,
+        ".github/workflows/ci.yml",
+        &doc,
+        "push",
+        "cafebabe",
+        "refs/heads/main",
+        Some(&owner.id),
+    )
+    .await
+    .unwrap();
+
+    let reg = mint_registration_token(&db).await.unwrap();
+    let reg_res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/register")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": "r-upd",
+                        "labels": ["ubuntu-latest"],
+                        "token": reg
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let reg_v: serde_json::Value =
+        serde_json::from_slice(&reg_res.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    let runner_token = reg_v["runner_token"].as_str().unwrap();
+
+    let fetch = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/fetch_task")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {runner_token}"))
+                .body(Body::from("{}"))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(fetch.status(), StatusCode::OK);
+    let fetch_v: serde_json::Value =
+        serde_json::from_slice(&fetch.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    let job_id = fetch_v["job_id"].as_str().expect("claimed job_id");
+    let run_id = fetch_v["run_id"].as_str().expect("claimed run_id");
+
+    let log_res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/update_log")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {runner_token}"))
+                .body(Body::from(
+                    serde_json::json!({
+                        "run_id": run_id,
+                        "job_id": job_id,
+                        "chunk": "hello from runner\n"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(log_res.status(), StatusCode::OK);
+
+    let upd = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/update_task")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {runner_token}"))
+                .body(Body::from(
+                    serde_json::json!({
+                        "job_id": job_id,
+                        "state": "success"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(upd.status(), StatusCode::OK);
+
+    let job = db.find_action_job_by_id(job_id).await.unwrap().unwrap();
+    assert_eq!(job.status, "success");
+
+    let log_path = log_dir.join(run_id).join(format!("{job_id}.log"));
+    let log_bytes = std::fs::read(&log_path).expect("log file written by update_log");
+    assert!(
+        String::from_utf8_lossy(&log_bytes).contains("hello from runner"),
+        "update_log chunk must persist under ACTIONS_LOG_DIR"
+    );
 }
