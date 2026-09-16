@@ -9,7 +9,7 @@ use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use octanest_api::actions::dispatch::{dispatch_push_for_sha, enqueue_run};
 use octanest_api::actions::parse_workflow_yaml;
-use octanest_api::actions::runner_proto::mint_registration_token;
+use octanest_api::actions::mint_registration_token;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::{build_cors, router_with_state, AppState};
 use octanest_core::Role;
@@ -66,8 +66,48 @@ async fn actions_runner_protocol_register() {
 
 #[tokio::test]
 async fn actions_runner_protocol_declare_labels() {
-    // Declare expands in 19-05; register already accepts labels for FetchTask match.
-    assert!(true);
+    let (app, db, _dir) = app_db().await;
+    let reg = mint_registration_token(&db).await.unwrap();
+    let reg_res = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/register")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": "r1",
+                        "labels": ["ubuntu-latest"],
+                        "token": reg
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let reg_body = reg_res.into_body().collect().await.unwrap().to_bytes();
+    let reg_v: serde_json::Value = serde_json::from_slice(&reg_body).unwrap();
+    let runner_token = reg_v["runner_token"].as_str().unwrap();
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/declare")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {runner_token}"))
+                .body(Body::from(
+                    serde_json::json!({
+                        "labels": ["ubuntu-latest:docker://node:20", "self-hosted"]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[tokio::test]
@@ -219,4 +259,31 @@ async fn actions_runner_protocol_ignores_session_cookie() {
         .unwrap();
     assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     let _ = db;
+}
+
+
+#[tokio::test]
+async fn actions_runner_protocol_env_bootstrap_token() {
+    let (app, _db, _dir) = app_db().await;
+    std::env::set_var("OCTANEST_RUNNER_REGISTRATION_TOKEN", "bootstrap-secret-token");
+    let res = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/register")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": "ephemeral",
+                        "labels": ["ubuntu-latest"],
+                        "token": "bootstrap-secret-token"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    std::env::remove_var("OCTANEST_RUNNER_REGISTRATION_TOKEN");
+    assert_eq!(res.status(), StatusCode::OK);
 }

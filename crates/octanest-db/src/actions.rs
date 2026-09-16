@@ -945,3 +945,48 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
         }
     }
 }
+
+
+pub async fn update_job_status(
+    pool: &DbPool,
+    job_id: &str,
+    status: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE action_jobs SET status = ? WHERE id = ?")
+                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE action_jobs SET status = $1 WHERE id = $2")
+                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE action_jobs SET status = ? WHERE id = ?")
+                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+pub async fn update_runner_labels(
+    pool: &DbPool,
+    runner_id: &str,
+    labels_json: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE action_runners SET labels_json = ? WHERE id = ?")
+                .bind(labels_json).bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE action_runners SET labels_json = $1 WHERE id = $2")
+                .bind(labels_json).bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE action_runners SET labels_json = ? WHERE id = ?")
+                .bind(labels_json).bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}

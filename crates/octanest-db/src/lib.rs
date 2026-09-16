@@ -1942,6 +1942,18 @@ impl Database {
         actions::list_jobs_for_run(self.require_pool()?, run_id).await
     }
 
+    pub async fn update_action_job_status(&self, job_id: &str, status: &str) -> Result<(), String> {
+        actions::update_job_status(self.require_pool()?, job_id, status).await
+    }
+
+    pub async fn update_action_runner_labels(
+        &self,
+        runner_id: &str,
+        labels_json: &str,
+    ) -> Result<(), String> {
+        actions::update_runner_labels(self.require_pool()?, runner_id, labels_json).await
+    }
+
     pub async fn wipe_actions_domain(&self) -> Result<(), String> {
         actions::wipe_actions_domain(self.require_pool()?).await
     }
