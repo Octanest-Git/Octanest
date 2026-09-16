@@ -659,7 +659,15 @@ Plans:
   1. Signed-in user receives in-app notifications for relevant issue and PR activity
   2. User can list notifications and mark them as read
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 17-00-PLAN.md — Wave 0 Nyquist stubs (RPC, dialect, bell, inbox)
+- [ ] 17-01-PLAN.md — Tracer: schema + notification.* RPC + comment→author fan-out
+- [ ] 17-02-PLAN.md — Issue lifecycle/assignee/@mention emitters
+- [ ] 17-03-PLAN.md — PR emitters (after Phase 12 lands)
+- [ ] 17-04-PLAN.md — SiteHeader bell + `/notifications` UI
+
 **UI hint**: yes
 
 ### Phase 18: Webhooks
