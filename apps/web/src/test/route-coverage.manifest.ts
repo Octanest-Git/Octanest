@@ -317,6 +317,58 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       },
     ],
   },
+  {
+    route: "$owner.$repo.fork.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.fork.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.search.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.search.integration.test.ts",
+      },
+    ],
+  },
+
+  // --- pulls (Phase 12) ---
+  {
+    route: "$owner.$repo.pulls.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.$repo.pulls.index.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.pulls.new.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.pull.$n.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.pulls.integration.test.ts",
+      },
+    ],
+  },
 
   // --- issues ---
   {
@@ -418,6 +470,26 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       {
         kind: "skip",
         rationale: "Org-wide labels settings deferred behind repo issue labels",
+      },
+    ],
+  },
+
+  // --- explore / notifications (Phases 17 / 21) ---
+  {
+    route: "explore.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/explore.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "notifications.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/notifications.integration.test.ts",
       },
     ],
   },
