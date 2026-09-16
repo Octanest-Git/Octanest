@@ -378,6 +378,40 @@ export type RepoBlameResponse = {
   truncated: boolean;
 };
 
+export type RepoSearchType = "code" | "commits" | "issues" | "pulls";
+
+export type RepoSearchRequest = {
+  owner: string;
+  name: string;
+  type: RepoSearchType;
+  q?: string;
+  ref?: string | null;
+  offset?: number;
+  limit?: number;
+};
+
+export type RepoSearchHit =
+  | { kind: "code"; path: string; line: number; content: string }
+  | {
+      kind: "commit";
+      sha: string;
+      short_sha: string;
+      subject: string;
+      author_name: string;
+      authored_at: string;
+    }
+  | { kind: "issue"; number: number; title: string; state: string }
+  | { kind: "pull"; number: number; title: string; state: string };
+
+export type RepoSearchResponse = {
+  type: RepoSearchType;
+  q: string;
+  hits: RepoSearchHit[];
+  truncated: boolean;
+  offset: number;
+  limit: number;
+};
+
 export type RepoBranchCreateRequest = {
   owner: string;
   name: string;
@@ -1579,6 +1613,8 @@ export function createClient(opts: CreateClientOptions) {
       compare: (input: RepoCompareRequest) =>
         rpcCall<RepoCompareResponse>(opts, "repo.compare", input),
       blame: (input: RepoBlameRequest) => rpcCall<RepoBlameResponse>(opts, "repo.blame", input),
+      search: (input: RepoSearchRequest) =>
+        rpcCall<RepoSearchResponse>(opts, "repo.search", input),
       branchCreate: (input: RepoBranchCreateRequest) =>
         rpcCall<RepoBranchMutationResponse>(opts, "repo.branchCreate", input),
       branchRename: (input: RepoBranchRenameRequest) =>
@@ -2171,6 +2207,30 @@ export function repoBlameQueryOptions(
   };
 }
 
+export function repoSearchQueryOptions(
+  client: OctanestClient,
+  input: RepoSearchRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "search",
+      input.owner,
+      input.name,
+      input.type,
+      input.q ?? "",
+      input.ref ?? "",
+      input.offset ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.search(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function packagesListQueryOptions(
   client: OctanestClient,
   input: PackagesListRequest,
@@ -2673,6 +2733,7 @@ export const queryOptions = {
   repoCommit: repoCommitQueryOptions,
   repoCompare: repoCompareQueryOptions,
   repoBlame: repoBlameQueryOptions,
+  repoSearch: repoSearchQueryOptions,
   patList: patListQueryOptions,
   sshKeyList: sshKeyListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,

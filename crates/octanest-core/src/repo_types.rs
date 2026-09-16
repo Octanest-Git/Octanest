@@ -202,6 +202,91 @@ fn default_commits_limit() -> u32 {
     30
 }
 
+/// `repo.search` type discriminator (D-SRCH-14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RepoSearchType {
+    Code,
+    Commits,
+    Issues,
+    Pulls,
+}
+
+impl RepoSearchType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Code => "code",
+            Self::Commits => "commits",
+            Self::Issues => "issues",
+            Self::Pulls => "pulls",
+        }
+    }
+}
+
+fn default_search_limit() -> u32 {
+    30
+}
+
+/// `repo.search` input (GIT-18 / D-SRCH-14).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSearchRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub search_type: RepoSearchType,
+    #[serde(default)]
+    pub q: String,
+    /// Optional tree-ish; omit / empty → default branch (D-SRCH-06).
+    #[serde(default, rename = "ref")]
+    pub ref_name: Option<String>,
+    #[serde(default)]
+    pub offset: u32,
+    #[serde(default = "default_search_limit")]
+    pub limit: u32,
+}
+
+/// One hit in `repo.search` results (tagged by `kind`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum RepoSearchHit {
+    Code {
+        path: String,
+        line: u32,
+        content: String,
+    },
+    Commit {
+        sha: String,
+        short_sha: String,
+        subject: String,
+        author_name: String,
+        authored_at: String,
+    },
+    Issue {
+        number: i64,
+        title: String,
+        state: String,
+    },
+    Pull {
+        number: i64,
+        title: String,
+        state: String,
+    },
+}
+
+/// `repo.search` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSearchResponse {
+    #[serde(rename = "type")]
+    pub search_type: RepoSearchType,
+    pub q: String,
+    pub hits: Vec<RepoSearchHit>,
+    /// Soft cap / timeout truncated (D-SRCH-08).
+    #[serde(default)]
+    pub truncated: bool,
+    pub offset: u32,
+    pub limit: u32,
+}
+
 /// One commit row for history list.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoCommitSummary {

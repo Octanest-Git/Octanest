@@ -342,6 +342,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(blame) => RpcResponse::ok(blame),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.search" => match repo::search(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.branchCreate" => match repo::branch_create(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
