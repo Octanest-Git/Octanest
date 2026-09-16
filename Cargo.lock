@@ -2831,12 +2831,14 @@ dependencies = [
 name = "octanest-api"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm 0.10.3",
  "argon2",
  "async-trait",
  "axum",
  "chrono",
  "cookie",
  "futures-util",
+ "getrandom 0.2.17",
  "http",
  "http-body-util",
  "image",

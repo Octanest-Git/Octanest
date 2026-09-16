@@ -59,6 +59,12 @@ pub struct ActionSecretMetaRow {
     pub updated_at: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct ActionSecretCipherRow {
+    pub name: String,
+    pub ciphertext: String,
+}
+
 pub async fn insert_runner(
     pool: &DbPool,
     id: &str,
@@ -374,6 +380,62 @@ pub async fn insert_secret(
     Ok(())
 }
 
+pub async fn list_secret_ciphertexts(
+    pool: &DbPool,
+    repository_id: &str,
+) -> Result<Vec<ActionSecretCipherRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT name, ciphertext FROM action_secrets WHERE repository_id = $1 ORDER BY name",
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|row| ActionSecretCipherRow {
+                    name: row.get("name"),
+                    ciphertext: row.get("ciphertext"),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT name, ciphertext FROM action_secrets WHERE repository_id = ? ORDER BY name",
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|row| ActionSecretCipherRow {
+                    name: row.get("name"),
+                    ciphertext: row.get("ciphertext"),
+                })
+                .collect())
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT name, ciphertext FROM action_secrets WHERE repository_id = ? ORDER BY name",
+            )
+            .bind(repository_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|row| ActionSecretCipherRow {
+                    name: row.get("name"),
+                    ciphertext: row.get("ciphertext"),
+                })
+                .collect())
+        }
+    }
+}
+
 pub async fn list_secret_names(
     pool: &DbPool, repository_id: &str,
 ) -> Result<Vec<ActionSecretMetaRow>, String> {
@@ -416,6 +478,137 @@ pub async fn list_secret_names(
                 created_at: row.try_get("created_at").unwrap_or_default(),
                 updated_at: row.try_get("updated_at").unwrap_or_default(),
             }).collect())
+        }
+    }
+}
+
+pub async fn delete_secret_by_name(
+    pool: &DbPool,
+    repository_id: &str,
+    name: &str,
+) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let r = sqlx::query("DELETE FROM action_secrets WHERE repository_id = $1 AND name = $2")
+                .bind(repository_id)
+                .bind(name)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(r.rows_affected() > 0)
+        }
+        DbPool::MySql(p) => {
+            let r = sqlx::query("DELETE FROM action_secrets WHERE repository_id = ? AND name = ?")
+                .bind(repository_id)
+                .bind(name)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(r.rows_affected() > 0)
+        }
+        DbPool::Sqlite(p) => {
+            let r = sqlx::query("DELETE FROM action_secrets WHERE repository_id = ? AND name = ?")
+                .bind(repository_id)
+                .bind(name)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+            Ok(r.rows_affected() > 0)
+        }
+    }
+}
+
+pub async fn list_runners(pool: &DbPool) -> Result<Vec<ActionRunnerRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral,
+                          to_char(last_online AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS last_online,
+                          to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at,
+                          to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS updated_at
+                   FROM action_runners ORDER BY name"#,
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|r| ActionRunnerRow {
+                    id: r.get("id"),
+                    name: r.get("name"),
+                    token_hash: r.get("token_hash"),
+                    labels_json: r.get("labels_json"),
+                    owner_type: r.try_get("owner_type").ok(),
+                    owner_id: r.try_get("owner_id").ok(),
+                    repository_id: r.try_get("repository_id").ok(),
+                    ephemeral: r.try_get::<bool, _>("ephemeral").unwrap_or(false),
+                    last_online: r.try_get("last_online").ok(),
+                    created_at: r.try_get("created_at").unwrap_or_default(),
+                    updated_at: r.try_get("updated_at").unwrap_or_default(),
+                })
+                .collect())
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral,
+                          DATE_FORMAT(last_online, '%Y-%m-%dT%H:%i:%sZ') AS last_online,
+                          DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+                          DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
+                   FROM action_runners ORDER BY name"#,
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|r| {
+                    let eph: i8 = r.try_get("ephemeral").unwrap_or(0);
+                    ActionRunnerRow {
+                        id: r.get("id"),
+                        name: r.get("name"),
+                        token_hash: r.get("token_hash"),
+                        labels_json: r.get("labels_json"),
+                        owner_type: r.try_get("owner_type").ok(),
+                        owner_id: r.try_get("owner_id").ok(),
+                        repository_id: r.try_get("repository_id").ok(),
+                        ephemeral: eph != 0,
+                        last_online: r.try_get("last_online").ok(),
+                        created_at: r.try_get("created_at").unwrap_or_default(),
+                        updated_at: r.try_get("updated_at").unwrap_or_default(),
+                    }
+                })
+                .collect())
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                r#"SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral,
+                          strftime('%Y-%m-%dT%H:%M:%SZ', last_online) AS last_online,
+                          strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
+                          strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
+                   FROM action_runners ORDER BY name"#,
+            )
+            .fetch_all(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(rows
+                .iter()
+                .map(|r| {
+                    let eph: i64 = r.try_get("ephemeral").unwrap_or(0);
+                    ActionRunnerRow {
+                        id: r.get("id"),
+                        name: r.get("name"),
+                        token_hash: r.get("token_hash"),
+                        labels_json: r.get("labels_json"),
+                        owner_type: r.try_get("owner_type").ok(),
+                        owner_id: r.try_get("owner_id").ok(),
+                        repository_id: r.try_get("repository_id").ok(),
+                        ephemeral: eph != 0,
+                        last_online: r.try_get("last_online").ok(),
+                        created_at: r.try_get("created_at").unwrap_or_default(),
+                        updated_at: r.try_get("updated_at").unwrap_or_default(),
+                    }
+                })
+                .collect())
         }
     }
 }

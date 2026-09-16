@@ -74,7 +74,7 @@ fn db_err(e: String) -> AppError {
     }
 }
 
-async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
+pub(crate) async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
     let Some(session) = &ctx.session else {
         return Err(AppError::new(
             "auth.unauthenticated",

@@ -782,6 +782,61 @@ export type ActionJobLogResponse = {
   content: string;
 };
 
+export type ActionSecretMetaPublic = {
+  name: string;
+  updated_at: string;
+};
+
+export type ActionSecretsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionSecretsListResponse = {
+  secrets: ActionSecretMetaPublic[];
+};
+
+export type ActionSecretPutRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+  value: string;
+};
+
+export type ActionSecretDeleteRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+};
+
+export type ActionEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionEnabledResponse = {
+  enabled: boolean;
+};
+
+export type ActionSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type ActionRunnerPublic = {
+  id: string;
+  name: string;
+  labels: string[];
+  ephemeral: boolean;
+  last_online?: string | null;
+  created_at: string;
+};
+
+export type ActionListRunnersResponse = {
+  runners: ActionRunnerPublic[];
+};
+
 
 export type MemberBasePermission = "none" | "read" | "write";
 
@@ -1913,6 +1968,18 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
         getJobLog: (input: ActionJobLogRequest) =>
           rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+        secrets: {
+          list: (input: ActionSecretsListRequest) =>
+            rpcCall<ActionSecretsListResponse>(opts, "repo.actions.secrets.list", input),
+          put: (input: ActionSecretPutRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.put", input),
+          delete: (input: ActionSecretDeleteRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.delete", input),
+        },
+        getEnabled: (input: ActionEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.getEnabled", input),
+        setEnabled: (input: ActionSetEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.setEnabled", input),
       },
     },
     org: {
@@ -2169,6 +2236,16 @@ export function createClient(opts: CreateClientOptions) {
         updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
           rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
         getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
+      },
+      actions: {
+        createRegistrationToken: () =>
+          rpcCall<ActionRegistrationTokenResponse>(
+            opts,
+            "admin.actions.createRegistrationToken",
+            {},
+          ),
+        listRunners: () =>
+          rpcCall<ActionListRunnersResponse>(opts, "admin.actions.listRunners", {}),
       },
     },
   };

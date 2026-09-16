@@ -29,7 +29,9 @@ pub mod ssh_keys;
 pub mod stars;
 pub mod users;
 
-pub use actions::{ActionJobRow, ActionRunRow, ActionRunnerRow, ActionSecretMetaRow};
+pub use actions::{
+    ActionJobRow, ActionRunRow, ActionRunnerRow, ActionSecretCipherRow, ActionSecretMetaRow,
+};
 pub use branch_protection::{BranchProtectionRuleRow, CommitStatusRow};
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
@@ -1877,6 +1879,25 @@ impl Database {
         repository_id: &str,
     ) -> Result<Vec<actions::ActionSecretMetaRow>, String> {
         actions::list_secret_names(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_secret_ciphertexts(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionSecretCipherRow>, String> {
+        actions::list_secret_ciphertexts(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn delete_action_secret_by_name(
+        &self,
+        repository_id: &str,
+        name: &str,
+    ) -> Result<bool, String> {
+        actions::delete_secret_by_name(self.require_pool()?, repository_id, name).await
+    }
+
+    pub async fn list_action_runners(&self) -> Result<Vec<actions::ActionRunnerRow>, String> {
+        actions::list_runners(self.require_pool()?).await
     }
 
     pub async fn insert_action_runner_token(

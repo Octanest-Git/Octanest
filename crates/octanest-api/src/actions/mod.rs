@@ -7,6 +7,7 @@ pub mod logs;
 pub mod parse;
 pub mod rpc;
 pub mod runner_proto;
+pub mod secrets;
 pub mod statuses;
 pub mod tokens;
 pub mod workflow;

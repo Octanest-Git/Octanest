@@ -530,6 +530,7 @@ async fn authorize_and_cgi(
                         let uid = auth.owner.id.clone();
                         let env_name = state.env_name.clone();
                         let updates_wh = updates.clone();
+                        let updates_pull = updates.clone();
                         tokio::spawn(async move {
                             crate::webhook::dispatch::notify_push(
                                 &db,
@@ -550,7 +551,7 @@ async fn authorize_and_cgi(
                                 &repo_name,
                                 &login,
                                 &uid,
-                                &updates,
+                                &updates_pull,
                                 &env_name,
                             )
                             .await;

@@ -137,6 +137,7 @@ struct FetchTaskResponse {
     run_id: Option<String>,
     job_key: Option<String>,
     runs_on: Option<Vec<String>>,
+    secrets: Option<std::collections::HashMap<String, String>>,
 }
 
 async fn fetch_task(
@@ -154,11 +155,24 @@ async fn fetch_task(
     Ok(Json(match job {
         Some(j) => {
             let runs_on: Vec<String> = serde_json::from_str(&j.runs_on_json).unwrap_or_default();
+            let run = state
+                .db
+                .find_action_run_by_id(&j.run_id)
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            let secrets = if let Some(run) = run {
+                crate::actions::secrets::decrypted_secrets_for_repo(&state.db, &run.repository_id)
+                    .await
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+            } else {
+                std::collections::HashMap::new()
+            };
             FetchTaskResponse {
                 job_id: Some(j.id),
                 run_id: Some(j.run_id),
                 job_key: Some(j.job_key),
                 runs_on: Some(runs_on),
+                secrets: Some(secrets),
             }
         }
         None => FetchTaskResponse {
@@ -166,6 +180,7 @@ async fn fetch_task(
             run_id: None,
             job_key: None,
             runs_on: None,
+            secrets: None,
         },
     }))
 }
