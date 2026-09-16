@@ -1,8 +1,8 @@
 ---
 phase: "19"
 slug: "actions-runners"
-status: executed
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-16"
 updated: "2026-09-16"
@@ -12,6 +12,7 @@ updated: "2026-09-16"
 
 > Per-phase validation contract. Seeded from `19-RESEARCH.md` Validation Architecture.
 > Updated by plan **19-11** after docs + smoke + phase gate execution.
+> Nyquist audit by `/gsd-validate-phase` (2026-09-16).
 
 ---
 
@@ -33,6 +34,22 @@ updated: "2026-09-16"
 - **After every plan wave:** actions nextest + web Actions Vitest + `make rpc-sync-check` after RPC changes
 - **Before `/gsd-verify-work`:** `make test` + `make smoke-actions` (skip-ok) green
 - **Max feedback latency:** 300 seconds
+
+---
+
+## Requirement Coverage (ACT-01…07)
+
+| Req | Behavior | Automated proof | Status |
+|-----|----------|-----------------|--------|
+| ACT-01 | GHA-compatible `.github/workflows` YAML | `actions_workflow_parse_*` | COVERED |
+| ACT-02 | push + pull_request dispatch | `actions_triggers_*` | COVERED |
+| ACT-03 | Run status + logs UI | `actions_rpc_*` + Vitest Actions list/detail | COVERED |
+| ACT-04 | Official runner image register/run | `smoke-actions` Dockerfile/Compose + register probe; live job manual | COVERED* |
+| ACT-05 | Compose / standalone docs | `smoke-actions` README/Compose rg + DEPLOYMENT.md | COVERED* |
+| ACT-06 | Registration + job-dispatch + labels | `actions_runner_protocol_*` (register/declare/fetch/`update_task`/`update_log`) + secrets | COVERED |
+| ACT-07 | Registered runners only; no managed minutes | `actions_dispatch_policy_*` | COVERED |
+
+\*Live end-to-end runner job and multi-host standalone remain **manual-only** (environment). Static/smoke + protocol integration cover the forge-side contract.
 
 ---
 
@@ -62,7 +79,7 @@ updated: "2026-09-16"
 - [x] `crates/octanest-api/tests/actions_workflow_parse.rs` — ACT-01
 - [x] `crates/octanest-api/tests/actions_triggers.rs` — ACT-02
 - [x] `crates/octanest-api/tests/actions_rpc.rs` — ACT-03
-- [x] `crates/octanest-api/tests/actions_runner_protocol.rs` — ACT-06
+- [x] `crates/octanest-api/tests/actions_runner_protocol.rs` — ACT-06 (includes `update_task` / `update_log`)
 - [x] `crates/octanest-api/tests/actions_dispatch_policy.rs` — ACT-07
 - [x] `crates/octanest-api/tests/actions_secrets.rs` — ACT-06 secrets
 - [x] `crates/octanest-api/tests/commit_statuses.rs` — Phase 13 surface / D-ACT-15
@@ -81,6 +98,13 @@ updated: "2026-09-16"
 | Standalone runner against public origin | ACT-05 | Multi-host networking | Register with non-loopback ORIGIN; checkout works in job container |
 | Phase 13 required check blocks merge | ORG-05/PR-08 | Phase 13 not this phase | Verify status contexts exist and are queryable for Phase 13 |
 
+### Soft gaps (non-blocking)
+
+| Gap | Notes |
+|-----|-------|
+| No Vitest for `admin/runners.tsrx` / settings Actions panel | Admin token mint + `listRunners` covered by `actions_secrets_admin_create_registration_token`; repo enable by `actions_secrets_enable_toggle_persists`. ACT-03 UI requirement is Actions list/detail/logs. |
+| Nextest quick filter also matches `issue_reactions_*` / one notification test | Expression `test(actions_)` / `test(commit_status)` is broad; all still pass. Tighten later if noise matters. |
+
 ---
 
 ## Phase gate (19-11)
@@ -93,6 +117,8 @@ cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_s
 make rpc-sync-check
 ```
 
+**Validate-phase re-run (2026-09-16):** actions nextest 34 passed (includes new `actions_runner_protocol_update_task_and_log`); db dialect/factory_reset actions 3 passed; Vitest Actions routes 6 passed; `smoke-actions` skip-ok (no Docker engine).
+
 ---
 
 ## Validation Sign-Off
@@ -102,6 +128,19 @@ make rpc-sync-check
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [x] Feedback latency < 300s
-- [ ] `nyquist_compliant: true` — owned by `/gsd-validate-phase`
+- [x] `nyquist_compliant: true` — `/gsd-validate-phase` 2026-09-16
 
-**Approval:** pending validate-phase (executor completed docs + smoke + targeted nextest gate)
+**Approval:** validated (Nyquist) — ACT-01…07 automated or intentional manual-only
+
+---
+
+## Validation Audit 2026-09-16
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 1 |
+| Resolved | 1 |
+| Escalated | 0 |
+| Manual-only (intentional) | 3 |
+
+**Gap filled:** ACT-06 protocol `POST /api/actions/update_task` + `update_log` had no behavioral test (register/fetch covered; job state/log via HTTP untested). Added `actions_runner_protocol_update_task_and_log` — green.
