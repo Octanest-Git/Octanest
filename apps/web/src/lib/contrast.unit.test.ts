@@ -40,11 +40,11 @@ describe("contrast helpers", () => {
   });
 
   it("keeps styles.css dark canvas deeper than #0d1117 and muted text AA", async () => {
-    const { readFileSync } = await import("node:fs");
-    const { fileURLToPath } = await import("node:url");
-    const { dirname, join } = await import("node:path");
-    const cssPath = join(dirname(fileURLToPath(import.meta.url)), "../styles.css");
-    const css = readFileSync(cssPath, "utf8");
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const url = await import("node:url");
+    const cssPath = path.join(path.dirname(url.fileURLToPath(import.meta.url)), "../styles.css");
+    const css = fs.readFileSync(cssPath, "utf8");
     expect(css).toMatch(/\.dark\s*\{[^}]*--background:\s*#010409/s);
     expect(css).toMatch(/\.dark\s*\{[^}]*--muted-foreground:\s*#9da7b3/s);
     expect(css).not.toMatch(/feTurbulence/);

@@ -307,12 +307,18 @@ struct UpdateLogRequest {
     runner_token: Option<String>,
 }
 
+/// Cap per-request log appends so a stolen runner token cannot fill the disk in one call.
+const MAX_LOG_CHUNK_BYTES: usize = 256 * 1024;
+
 async fn update_log(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(req): Json<UpdateLogRequest>,
 ) -> Result<Json<OkResponse>, StatusCode> {
     let runner = runner_from_headers(&state, &headers, req.runner_token.as_deref()).await?;
+    if req.chunk.len() > MAX_LOG_CHUNK_BYTES {
+        return Err(StatusCode::PAYLOAD_TOO_LARGE);
+    }
     let job = state
         .db
         .find_action_job_by_id(&req.job_id)
@@ -322,10 +328,14 @@ async fn update_log(
     if job.runner_id.as_deref() != Some(runner.id.as_str()) {
         return Err(StatusCode::FORBIDDEN);
     }
+    // Bind path to the job row — never trust client run_id for disk layout.
+    if req.run_id != job.run_id {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     append_job_log(
         &state.actions_log_dir,
-        &req.run_id,
-        &req.job_id,
+        &job.run_id,
+        &job.id,
         req.chunk.as_bytes(),
     )
     .await

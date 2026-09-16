@@ -52,7 +52,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_PACKAGES_GC_GRACE_SECS` | Optional | `604800` (7d) | Grace before deleting refcount-0 blobs. |
 | `OCTANEST_ACTIONS_LOG_DIR` | Optional | `var/actions-logs` | Root for Actions job logs (`{run_id}/{job_id}.log`). Compose binds `./var/actions-logs:/var/actions-logs` and sets `/var/actions-logs`. **Must not** share repos/LFS/packages/release-asset paths (D-ACT-13). |
 | `OCTANEST_ACTIONS_ENABLED` | Optional | `true` | Instance-wide Actions gate. When `false`/`0`/`off`, no workflows are evaluated (D-ACT-06). Per-repo Admin toggle still applies when instance gate is on. |
-| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Optional | — | Bootstrap registration token for official runners (Compose profile `actions`). Prefer secret/env injection; rotate on compromise (D-ACT-08). **Never commit real tokens.** |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Optional | — | Bootstrap registration token for official runners (Compose profile `actions`). **Reusable while set** — never leave on an internet-facing API; prefer `admin.actions.createRegistrationToken` (one-time). Unset after local runner bootstrap. Rotate on compromise (D-ACT-08). **Never commit real tokens.** |
 | `OCTANEST_RUNNER_NAME` | Optional | `compose-runner` | Display name passed to runner register. |
 | `OCTANEST_RUNNER_LABELS` | Optional | `ubuntu-latest:docker://node:20-bookworm,self-hosted` | Comma-separated runner labels (`label[:schema[:args]]`). |
 | `OCTANEST_ACTIONS_SECRETS_KEY` | Required for secrets* | Compose: `compose-dev-actions-secrets-key-not-for-production` (or `OCTANEST_SESSION_SECRET`) | AES-256-GCM key material for repo Actions secrets at rest (D-ACT-17). Encrypt/decrypt **fail closed** if neither env is set (no hardcoded app fallback). Compose/`make up` supplies a local-only default so secrets work out of the box; **production must set a unique key** — never reuse the Compose default. Prefer a dedicated secret; never commit real keys. |
@@ -298,7 +298,7 @@ Octanest Actions evaluates workflows from `.github/workflows/*.{yml,yaml}` on **
 | --- | --- |
 | `OCTANEST_ACTIONS_ENABLED` | Instance-wide gate (default `true`). When off, no workflows are evaluated. |
 | `OCTANEST_ACTIONS_LOG_DIR` | Job log blobs (`{run_id}/{job_id}.log`); distinct from repos/LFS/packages volumes. |
-| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Bootstrap registration token for Compose profile `actions` — **never commit real values**. |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Bootstrap registration token for Compose profile `actions` only — **reusable while set**; never leave on a public API. Prefer Admin-minted one-time tokens. **Never commit real values**. |
 | `OCTANEST_RUNNER_NAME` / `OCTANEST_RUNNER_LABELS` | Default runner display name and labels (`label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm`). |
 | `OCTANEST_ACTIONS_SECRETS_KEY` | AES-256-GCM key for repo Actions secrets at rest (D-ACT-17). Required (or `OCTANEST_SESSION_SECRET`); encrypt fails closed if unset. Compose/`make up` defaults to a local-only value — **set a unique key in production**. Prefer a dedicated secret. |
 

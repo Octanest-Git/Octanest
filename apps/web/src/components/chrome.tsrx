@@ -451,6 +451,9 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
                 Account
               </p>
+              <a href="/notifications" className={mobileNavItemClass} onClick={onClose}>
+                Notifications
+              </a>
               <a href="/" className={mobileNavItemClass} onClick={onClose}>
                 Your repositories
               </a>
