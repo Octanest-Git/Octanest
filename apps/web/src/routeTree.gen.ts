@@ -37,6 +37,7 @@ import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
 import { Route as OwnerRepoIssuesRouteImport } from './routes/$owner.$repo.issues'
 import { Route as OwnerRepoPackagesRouteImport } from './routes/$owner.$repo.packages'
+import { Route as OwnerRepoPullsRouteImport } from './routes/$owner.$repo.pulls'
 import { Route as OwnerRepoReleasesRouteImport } from './routes/$owner.$repo.releases'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
@@ -52,6 +53,9 @@ import { Route as OwnerRepoIssuesIndexRouteImport } from './routes/$owner.$repo.
 import { Route as OwnerRepoIssuesNRouteImport } from './routes/$owner.$repo.issues.$n'
 import { Route as OwnerRepoIssuesLabelsRouteImport } from './routes/$owner.$repo.issues.labels'
 import { Route as OwnerRepoIssuesNewRouteImport } from './routes/$owner.$repo.issues.new'
+import { Route as OwnerRepoPullNRouteImport } from './routes/$owner.$repo.pull.$n'
+import { Route as OwnerRepoPullsIndexRouteImport } from './routes/$owner.$repo.pulls.index'
+import { Route as OwnerRepoPullsNewRouteImport } from './routes/$owner.$repo.pulls.new'
 import { Route as OwnerRepoReleasesIndexRouteImport } from './routes/$owner.$repo.releases.index'
 import { Route as OwnerRepoReleasesTagRouteImport } from './routes/$owner.$repo.releases.$tag'
 import { Route as OwnerRepoReleasesNewRouteImport } from './routes/$owner.$repo.releases.new'
@@ -198,6 +202,11 @@ const OwnerRepoPackagesRoute = OwnerRepoPackagesRouteImport.update({
   path: '/packages',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoPullsRoute = OwnerRepoPullsRouteImport.update({
+  id: '/pulls',
+  path: '/pulls',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoReleasesRoute = OwnerRepoReleasesRouteImport.update({
   id: '/releases',
   path: '/releases',
@@ -273,6 +282,21 @@ const OwnerRepoIssuesNewRoute = OwnerRepoIssuesNewRouteImport.update({
   path: '/new',
   getParentRoute: () => OwnerRepoIssuesRoute,
 } as any)
+const OwnerRepoPullNRoute = OwnerRepoPullNRouteImport.update({
+  id: '/pull/$n',
+  path: '/pull/$n',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoPullsIndexRoute = OwnerRepoPullsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerRepoPullsRoute,
+} as any)
+const OwnerRepoPullsNewRoute = OwnerRepoPullsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => OwnerRepoPullsRoute,
+} as any)
 const OwnerRepoReleasesIndexRoute = OwnerRepoReleasesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -328,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
+  '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
@@ -343,11 +368,14 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
   '/$owner/$repo/issues/labels': typeof OwnerRepoIssuesLabelsRoute
   '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
+  '/$owner/$repo/pull/$n': typeof OwnerRepoPullNRoute
+  '/$owner/$repo/pulls/new': typeof OwnerRepoPullsNewRoute
   '/$owner/$repo/releases/$tag': typeof OwnerRepoReleasesTagRoute
   '/$owner/$repo/releases/new': typeof OwnerRepoReleasesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
   '/$owner/$repo/issues/': typeof OwnerRepoIssuesIndexRoute
+  '/$owner/$repo/pulls/': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases/': typeof OwnerRepoReleasesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -388,11 +416,14 @@ export interface FileRoutesByTo {
   '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
   '/$owner/$repo/issues/labels': typeof OwnerRepoIssuesLabelsRoute
   '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
+  '/$owner/$repo/pull/$n': typeof OwnerRepoPullNRoute
+  '/$owner/$repo/pulls/new': typeof OwnerRepoPullsNewRoute
   '/$owner/$repo/releases/$tag': typeof OwnerRepoReleasesTagRoute
   '/$owner/$repo/releases/new': typeof OwnerRepoReleasesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
   '/$owner/$repo/issues': typeof OwnerRepoIssuesIndexRoute
+  '/$owner/$repo/pulls': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases': typeof OwnerRepoReleasesIndexRoute
 }
 export interface FileRoutesById {
@@ -424,6 +455,7 @@ export interface FileRoutesById {
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
+  '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
@@ -439,11 +471,14 @@ export interface FileRoutesById {
   '/$owner/$repo/issues/$n': typeof OwnerRepoIssuesNRoute
   '/$owner/$repo/issues/labels': typeof OwnerRepoIssuesLabelsRoute
   '/$owner/$repo/issues/new': typeof OwnerRepoIssuesNewRoute
+  '/$owner/$repo/pull/$n': typeof OwnerRepoPullNRoute
+  '/$owner/$repo/pulls/new': typeof OwnerRepoPullsNewRoute
   '/$owner/$repo/releases/$tag': typeof OwnerRepoReleasesTagRoute
   '/$owner/$repo/releases/new': typeof OwnerRepoReleasesNewRoute
   '/$owner/$repo/tree/$': typeof OwnerRepoTreeSplatRoute
   '/settings/tokens/new/fine-grained': typeof SettingsTokensNewFineGrainedRoute
   '/$owner/$repo/issues/': typeof OwnerRepoIssuesIndexRoute
+  '/$owner/$repo/pulls/': typeof OwnerRepoPullsIndexRoute
   '/$owner/$repo/releases/': typeof OwnerRepoReleasesIndexRoute
 }
 export interface FileRouteTypes {
@@ -476,6 +511,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/packages'
+    | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
@@ -491,11 +527,14 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/$n'
     | '/$owner/$repo/issues/labels'
     | '/$owner/$repo/issues/new'
+    | '/$owner/$repo/pull/$n'
+    | '/$owner/$repo/pulls/new'
     | '/$owner/$repo/releases/$tag'
     | '/$owner/$repo/releases/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
     | '/$owner/$repo/issues/'
+    | '/$owner/$repo/pulls/'
     | '/$owner/$repo/releases/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -536,11 +575,14 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/$n'
     | '/$owner/$repo/issues/labels'
     | '/$owner/$repo/issues/new'
+    | '/$owner/$repo/pull/$n'
+    | '/$owner/$repo/pulls/new'
     | '/$owner/$repo/releases/$tag'
     | '/$owner/$repo/releases/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
     | '/$owner/$repo/issues'
+    | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
   id:
     | '__root__'
@@ -571,6 +613,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/branches'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/packages'
+    | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
@@ -586,11 +629,14 @@ export interface FileRouteTypes {
     | '/$owner/$repo/issues/$n'
     | '/$owner/$repo/issues/labels'
     | '/$owner/$repo/issues/new'
+    | '/$owner/$repo/pull/$n'
+    | '/$owner/$repo/pulls/new'
     | '/$owner/$repo/releases/$tag'
     | '/$owner/$repo/releases/new'
     | '/$owner/$repo/tree/$'
     | '/settings/tokens/new/fine-grained'
     | '/$owner/$repo/issues/'
+    | '/$owner/$repo/pulls/'
     | '/$owner/$repo/releases/'
   fileRoutesById: FileRoutesById
 }
@@ -813,6 +859,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoPackagesRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/pulls': {
+      id: '/$owner/$repo/pulls'
+      path: '/pulls'
+      fullPath: '/$owner/$repo/pulls'
+      preLoaderRoute: typeof OwnerRepoPullsRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/releases': {
       id: '/$owner/$repo/releases'
       path: '/releases'
@@ -918,6 +971,27 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoIssuesNewRouteImport
       parentRoute: typeof OwnerRepoIssuesRoute
     }
+    '/$owner/$repo/pull/$n': {
+      id: '/$owner/$repo/pull/$n'
+      path: '/pull/$n'
+      fullPath: '/$owner/$repo/pull/$n'
+      preLoaderRoute: typeof OwnerRepoPullNRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/pulls/': {
+      id: '/$owner/$repo/pulls/'
+      path: '/'
+      fullPath: '/$owner/$repo/pulls/'
+      preLoaderRoute: typeof OwnerRepoPullsIndexRouteImport
+      parentRoute: typeof OwnerRepoPullsRoute
+    }
+    '/$owner/$repo/pulls/new': {
+      id: '/$owner/$repo/pulls/new'
+      path: '/new'
+      fullPath: '/$owner/$repo/pulls/new'
+      preLoaderRoute: typeof OwnerRepoPullsNewRouteImport
+      parentRoute: typeof OwnerRepoPullsRoute
+    }
     '/$owner/$repo/releases/': {
       id: '/$owner/$repo/releases/'
       path: '/'
@@ -974,6 +1048,20 @@ const OwnerRepoIssuesRouteWithChildren = OwnerRepoIssuesRoute._addFileChildren(
   OwnerRepoIssuesRouteChildren,
 )
 
+interface OwnerRepoPullsRouteChildren {
+  OwnerRepoPullsNewRoute: typeof OwnerRepoPullsNewRoute
+  OwnerRepoPullsIndexRoute: typeof OwnerRepoPullsIndexRoute
+}
+
+const OwnerRepoPullsRouteChildren: OwnerRepoPullsRouteChildren = {
+  OwnerRepoPullsNewRoute: OwnerRepoPullsNewRoute,
+  OwnerRepoPullsIndexRoute: OwnerRepoPullsIndexRoute,
+}
+
+const OwnerRepoPullsRouteWithChildren = OwnerRepoPullsRoute._addFileChildren(
+  OwnerRepoPullsRouteChildren,
+)
+
 interface OwnerRepoReleasesRouteChildren {
   OwnerRepoReleasesTagRoute: typeof OwnerRepoReleasesTagRoute
   OwnerRepoReleasesNewRoute: typeof OwnerRepoReleasesNewRoute
@@ -993,6 +1081,7 @@ interface OwnerRepoRouteChildren {
   OwnerRepoBranchesRoute: typeof OwnerRepoBranchesRoute
   OwnerRepoIssuesRoute: typeof OwnerRepoIssuesRouteWithChildren
   OwnerRepoPackagesRoute: typeof OwnerRepoPackagesRoute
+  OwnerRepoPullsRoute: typeof OwnerRepoPullsRouteWithChildren
   OwnerRepoReleasesRoute: typeof OwnerRepoReleasesRouteWithChildren
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoTagsRoute: typeof OwnerRepoTagsRoute
@@ -1002,6 +1091,7 @@ interface OwnerRepoRouteChildren {
   OwnerRepoCommitShaRoute: typeof OwnerRepoCommitShaRoute
   OwnerRepoCommitsSplatRoute: typeof OwnerRepoCommitsSplatRoute
   OwnerRepoCompareSplatRoute: typeof OwnerRepoCompareSplatRoute
+  OwnerRepoPullNRoute: typeof OwnerRepoPullNRoute
   OwnerRepoTreeSplatRoute: typeof OwnerRepoTreeSplatRoute
 }
 
@@ -1009,6 +1099,7 @@ const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoBranchesRoute: OwnerRepoBranchesRoute,
   OwnerRepoIssuesRoute: OwnerRepoIssuesRouteWithChildren,
   OwnerRepoPackagesRoute: OwnerRepoPackagesRoute,
+  OwnerRepoPullsRoute: OwnerRepoPullsRouteWithChildren,
   OwnerRepoReleasesRoute: OwnerRepoReleasesRouteWithChildren,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoTagsRoute: OwnerRepoTagsRoute,
@@ -1018,6 +1109,7 @@ const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoCommitShaRoute: OwnerRepoCommitShaRoute,
   OwnerRepoCommitsSplatRoute: OwnerRepoCommitsSplatRoute,
   OwnerRepoCompareSplatRoute: OwnerRepoCompareSplatRoute,
+  OwnerRepoPullNRoute: OwnerRepoPullNRoute,
   OwnerRepoTreeSplatRoute: OwnerRepoTreeSplatRoute,
 }
 

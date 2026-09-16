@@ -1160,3 +1160,96 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         can_write: true,
     })
 }
+
+/// `repo.fork` — Read+ on source; creates a user-owned fork (minimal Phase 12; D-PR-01).
+pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::ForkRepoRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.fork input: {e}"))
+    })?;
+    let source = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let into_owner = req
+        .into_owner
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(user.username.as_str());
+    if into_owner != user.username.as_str() {
+        return Err(AppError::new(
+            "repo.fork_owner",
+            "Phase 12 forks must land under the signed-in user",
+        ));
+    }
+    let into_name = req
+        .into_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(source.row.name.as_str())
+        .to_string();
+    validate_repo_name(&into_name).map_err(|msg| AppError::new("repo.invalid_name", msg))?;
+
+    if ctx
+        .db
+        .find_repository_by_owner_name(&user.id, &into_name)
+        .await
+        .map_err(db_err)?
+        .is_some()
+    {
+        return Err(AppError::new(
+            "repo.name_taken",
+            "A repository with this name already exists. Choose a different name.",
+        ));
+    }
+
+    let id = Uuid::new_v4().to_string();
+    let row = ctx
+        .db
+        .insert_repository(
+            &id,
+            &user.id,
+            "user",
+            &into_name,
+            source.row.visibility.as_str(),
+            &source.row.description,
+            &source.row.default_branch,
+        )
+        .await
+        .map_err(db_err)?;
+    ctx.db
+        .set_repo_forked_from(&row.id, Some(&source.row.id))
+        .await
+        .map_err(db_err)?;
+
+    let source_path = bare_repo_path(
+        &ctx.repos_dir,
+        &source.owner_username,
+        &source.row.name,
+    )?;
+    let dest_path = bare_repo_path(&ctx.repos_dir, &user.username, &into_name)?;
+    if let Err(e) = ctx.git.clone_bare(&source_path, &dest_path).await {
+        tracing::error!(error = %e, "clone_bare failed after fork insert");
+        compensate_failed_create(ctx, &row.id, &dest_path).await;
+        return Err(AppError::new(
+            "repo.fork_failed",
+            "failed to copy repository storage",
+        ));
+    }
+
+    Ok(RepoPublic {
+        id: row.id,
+        owner_id: row.owner_id,
+        owner_type: octanest_core::OwnerType::User,
+        owner_username: user.username.clone(),
+        name: row.name,
+        description: row.description,
+        visibility: match row.visibility.as_str() {
+            "private" => octanest_core::RepoVisibility::Private,
+            _ => octanest_core::RepoVisibility::Public,
+        },
+        default_branch: row.default_branch,
+        updated_at: row.updated_at,
+        can_admin: true,
+        can_write: true,
+    })
+}

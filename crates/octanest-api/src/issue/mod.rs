@@ -991,7 +991,7 @@ pub async fn links_add(
                 .unwrap_or(accessible.row.id.as_str())
                 .to_string(),
         ),
-        IssueLinkKind::PrStub => req
+        IssueLinkKind::PrStub | IssueLinkKind::Pr => req
             .target_repo_id
             .as_deref()
             .map(str::trim)

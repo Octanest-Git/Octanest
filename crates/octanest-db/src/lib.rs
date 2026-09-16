@@ -15,6 +15,7 @@ pub mod packages;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod pulls;
 pub mod redirects;
 pub mod releases;
 pub mod repo_collaborators;
@@ -36,6 +37,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
+pub use pulls::{PullCommentRow, PullReviewRow, PullRow, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -445,6 +447,267 @@ impl Database {
 
     pub async fn hard_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::hard_delete(self.require_pool()?, id).await
+    }
+
+    // --- pulls ---
+
+    pub async fn insert_pull(
+        &self,
+        id: &str,
+        repo_id: &str,
+        number: i64,
+        title: &str,
+        body: &str,
+        author_id: &str,
+        base_ref: &str,
+        base_sha: &str,
+        head_repo_id: &str,
+        head_ref: &str,
+        head_sha: &str,
+        draft: bool,
+    ) -> Result<PullRow, String> {
+        pulls::insert_pull(
+            self.require_pool()?,
+            id,
+            repo_id,
+            number,
+            title,
+            body,
+            author_id,
+            base_ref,
+            base_sha,
+            head_repo_id,
+            head_ref,
+            head_sha,
+            draft,
+        )
+        .await
+    }
+
+    pub async fn find_pull_by_repo_number(
+        &self,
+        repo_id: &str,
+        number: i64,
+    ) -> Result<Option<PullRow>, String> {
+        pulls::find_by_repo_and_number(self.require_pool()?, repo_id, number).await
+    }
+
+    pub async fn list_pulls_for_repo(
+        &self,
+        repo_id: &str,
+        state: Option<&str>,
+        offset: u32,
+        limit: u32,
+    ) -> Result<(Vec<PullRow>, i64), String> {
+        pulls::list_by_repo(self.require_pool()?, repo_id, state, offset, limit).await
+    }
+
+    pub async fn set_pull_state(
+        &self,
+        id: &str,
+        state: &str,
+        closed_at: Option<&str>,
+        closed_by: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_state(self.require_pool()?, id, state, closed_at, closed_by).await
+    }
+
+    pub async fn get_repo_merge_settings(
+        &self,
+        repo_id: &str,
+    ) -> Result<RepoMergeSettingsRow, String> {
+        pulls::get_merge_settings(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_merge_settings(
+        &self,
+        repo_id: &str,
+        allow_merge_commit: bool,
+        allow_squash_merge: bool,
+        allow_rebase_merge: bool,
+    ) -> Result<(), String> {
+        pulls::set_merge_settings(
+            self.require_pool()?,
+            repo_id,
+            allow_merge_commit,
+            allow_squash_merge,
+            allow_rebase_merge,
+        )
+        .await
+    }
+
+    pub async fn set_repo_forked_from(
+        &self,
+        repo_id: &str,
+        forked_from: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_forked_from(self.require_pool()?, repo_id, forked_from).await
+    }
+
+    pub async fn get_repo_forked_from(&self, repo_id: &str) -> Result<Option<String>, String> {
+        pulls::get_forked_from(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn update_pull_fields(
+        &self,
+        id: &str,
+        title: &str,
+        body: &str,
+        draft: bool,
+        base_ref: &str,
+        base_sha: &str,
+    ) -> Result<(), String> {
+        pulls::update_fields(
+            self.require_pool()?,
+            id,
+            title,
+            body,
+            draft,
+            base_ref,
+            base_sha,
+        )
+        .await
+    }
+
+    pub async fn mark_pull_merged(
+        &self,
+        id: &str,
+        merged_by: &str,
+        merge_commit_sha: &str,
+        merge_method: &str,
+        merged_at: &str,
+    ) -> Result<(), String> {
+        pulls::mark_merged(
+            self.require_pool()?,
+            id,
+            merged_by,
+            merge_commit_sha,
+            merge_method,
+            merged_at,
+        )
+        .await
+    }
+
+    pub async fn insert_pull_comment(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        body: &str,
+        path: Option<&str>,
+        side: Option<&str>,
+        line: Option<i64>,
+        start_line: Option<i64>,
+        commit_sha: Option<&str>,
+    ) -> Result<PullCommentRow, String> {
+        pulls::insert_pull_comment(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            body,
+            path,
+            side,
+            line,
+            start_line,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_comment_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullCommentRow>, String> {
+        pulls::find_pull_comment_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_comments(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<PullCommentRow>, String> {
+        pulls::list_pull_comments(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn set_pull_comment_resolved(
+        &self,
+        id: &str,
+        resolved: bool,
+    ) -> Result<PullCommentRow, String> {
+        pulls::set_pull_comment_resolved(self.require_pool()?, id, resolved).await
+    }
+
+    pub async fn mark_pull_line_comments_outdated(&self, pull_id: &str) -> Result<(), String> {
+        pulls::mark_pull_line_comments_outdated(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn update_pull_head_sha(&self, id: &str, head_sha: &str) -> Result<(), String> {
+        pulls::update_pull_head_sha(self.require_pool()?, id, head_sha).await
+    }
+
+    pub async fn insert_pull_review(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        state: &str,
+        body: &str,
+        commit_sha: Option<&str>,
+    ) -> Result<PullReviewRow, String> {
+        pulls::insert_pull_review(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            state,
+            body,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_review_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullReviewRow>, String> {
+        pulls::find_pull_review_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_reviews(&self, pull_id: &str) -> Result<Vec<PullReviewRow>, String> {
+        pulls::list_pull_reviews(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn dismiss_pull_review(
+        &self,
+        id: &str,
+        reason: Option<&str>,
+        dismissed_at: &str,
+    ) -> Result<PullReviewRow, String> {
+        pulls::dismiss_pull_review(self.require_pool()?, id, reason, dismissed_at).await
+    }
+
+    pub async fn upsert_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+        requested_by: &str,
+    ) -> Result<(), String> {
+        pulls::upsert_review_request(self.require_pool()?, pull_id, user_id, requested_by).await
+    }
+
+    pub async fn delete_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+    ) -> Result<(), String> {
+        pulls::delete_review_request(self.require_pool()?, pull_id, user_id).await
+    }
+
+    pub async fn list_pull_review_request_user_ids(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<String>, String> {
+        pulls::list_review_request_user_ids(self.require_pool()?, pull_id).await
     }
 
     // --- issues ---

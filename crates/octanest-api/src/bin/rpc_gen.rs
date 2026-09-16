@@ -196,6 +196,13 @@ export type CreateRepoRequest = {
   owner?: string | null;
 };
 
+export type ForkRepoRequest = {
+  owner: string;
+  name: string;
+  into_owner?: string | null;
+  into_name?: string | null;
+};
+
 export type RepoTemplateOption = {
   id: string;
   label: string;
@@ -814,7 +821,7 @@ export type IssueState = "open" | "closed";
 
 export type LabelScope = "org" | "repo";
 
-export type IssueLinkKind = "issue" | "pr_stub";
+export type IssueLinkKind = "issue" | "pr_stub" | "pr";
 
 export type IssueLinkPublic = {
   id: string;
@@ -845,6 +852,228 @@ export type RemoveIssueLinkRequest = {
 
 export type IssueLinksListResponse = {
   links: IssueLinkPublic[];
+};
+
+export type PullState = "open" | "closed" | "merged";
+
+export type PullPublic = {
+  id: string;
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: PullState;
+  draft: boolean;
+  author_id: string;
+  author_username: string;
+  base_ref: string;
+  base_sha: string;
+  head_repo_id: string;
+  head_owner: string;
+  head_name: string;
+  head_ref: string;
+  head_sha: string;
+  merged_at?: string | null;
+  merged_by?: string | null;
+  merge_commit_sha?: string | null;
+  merge_method?: "merge" | "squash" | "rebase" | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullRequest = {
+  owner: string;
+  name: string;
+  title: string;
+  body?: string | null;
+  base_ref: string;
+  head_ref: string;
+  head_owner?: string | null;
+  head_name?: string | null;
+  draft?: boolean | null;
+};
+
+export type PullRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+};
+
+export type PullListRequest = {
+  owner: string;
+  name: string;
+  state?: string | null;
+  author?: string | null;
+  label?: string | null;
+  assignee?: string | null;
+  review?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type PullListResponse = {
+  pulls: PullPublic[];
+  total: number;
+  offset: number;
+  limit: number;
+};
+
+export type UpdatePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  title?: string | null;
+  body?: string | null;
+  base_ref?: string | null;
+  draft?: boolean | null;
+};
+
+export type MergeMethod = "merge" | "squash" | "rebase";
+
+export type MergePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  method: MergeMethod;
+  commit_title?: string | null;
+  commit_message?: string | null;
+  delete_branch?: boolean | null;
+};
+
+export type MergePullResponse = {
+  pull: PullPublic;
+  merge_commit_sha: string;
+};
+
+export type RepoMergeSettings = {
+  allow_merge_commit: boolean;
+  allow_squash_merge: boolean;
+  allow_rebase_merge: boolean;
+};
+
+export type UpdateRepoMergeSettingsRequest = {
+  owner: string;
+  name: string;
+  allow_merge_commit?: boolean | null;
+  allow_squash_merge?: boolean | null;
+  allow_rebase_merge?: boolean | null;
+};
+
+export type PullCommentPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+  outdated: boolean;
+  resolved: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+};
+
+export type PullCommentsListResponse = {
+  comments: PullCommentPublic[];
+};
+
+export type ResolvePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  comment_id: string;
+  resolved: boolean;
+};
+
+export type PullDiffFile = {
+  path: string;
+  status: string;
+  patch: string;
+};
+
+export type PullFilesResponse = {
+  files: PullDiffFile[];
+  empty: boolean;
+};
+
+export type PullCommitSummary = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+};
+
+export type PullCommitsResponse = {
+  commits: PullCommitSummary[];
+};
+
+export type PullReviewState =
+  | "approved"
+  | "changes_requested"
+  | "commented"
+  | "dismissed";
+
+export type PullReviewPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  state: PullReviewState;
+  body: string;
+  commit_sha?: string | null;
+  submitted_at: string;
+  dismissed_at?: string | null;
+  dismiss_reason?: string | null;
+};
+
+export type SubmitPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  state: string;
+  body?: string | null;
+};
+
+export type DismissPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  review_id: string;
+  reason?: string | null;
+};
+
+export type PullReviewsListResponse = {
+  reviews: PullReviewPublic[];
+};
+
+export type PullReviewRequestMutate = {
+  owner: string;
+  name: string;
+  number: number;
+  username: string;
+};
+
+export type PullReviewRequestsListResponse = {
+  usernames: string[];
 };
 
 export type RemoveIssueLinkResponse = {
@@ -1249,6 +1478,7 @@ export function createClient(opts: CreateClientOptions) {
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
+      fork: (input: ForkRepoRequest) => rpcCall<RepoPublic>(opts, "repo.fork", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
       tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
       blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
@@ -1376,6 +1606,67 @@ export function createClient(opts: CreateClientOptions) {
         remove: (input: RemoveIssueLinkRequest) =>
           rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
       },
+    },
+    pull: {
+      create: (input: CreatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.create", input),
+      get: (input: PullRefRequest) => rpcCall<PullPublic>(opts, "pull.get", input),
+      list: (input: PullListRequest) =>
+        rpcCall<PullListResponse>(opts, "pull.list", input),
+      update: (input: UpdatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.update", input),
+      close: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.close", input),
+      reopen: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.reopen", input),
+      files: (input: PullRefRequest) =>
+        rpcCall<PullFilesResponse>(opts, "pull.files", input),
+      commits: (input: PullRefRequest) =>
+        rpcCall<PullCommitsResponse>(opts, "pull.commits", input),
+      merge: (input: MergePullRequest) =>
+        rpcCall<MergePullResponse>(opts, "pull.merge", input),
+      comments: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullCommentsListResponse>(opts, "pull.comments.list", input),
+        create: (input: CreatePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.create", input),
+        resolve: (input: ResolvePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.resolve", input),
+      },
+      reviews: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewsListResponse>(opts, "pull.reviews.list", input),
+        submit: (input: SubmitPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.submit", input),
+        dismiss: (input: DismissPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.dismiss", input),
+      },
+      reviewRequests: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.list",
+            input,
+          ),
+        add: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.add",
+            input,
+          ),
+        remove: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.remove",
+            input,
+          ),
+      },
+    },
+    mergeSettings: {
+      get: (input: RepoGetRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.get", input),
+      update: (input: UpdateRepoMergeSettingsRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.update", input),
     },
     release: {
       create: (input: CreateReleaseRequest) =>

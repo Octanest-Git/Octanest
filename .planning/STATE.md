@@ -2,12 +2,12 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase_name: Pull Requests
-current_plan: 0
-status: planning
-stopped_at: Completed 11.1-08-PLAN.md
-last_updated: "2026-09-15T18:01:52.315Z"
-last_activity: 2026-09-15
-last_activity_desc: 11.1-05 complete (smoke-protocol CI + GSD residual); all 11.1 SUMMARYs present; Phase 12 GitHub-parity CONTEXT locked
+current_plan: 8
+status: phase_complete
+stopped_at: Completed 12-07-PLAN.md
+last_updated: "2026-09-16T13:25:00.000Z"
+last_activity: 2026-09-16
+last_activity_desc: Phase 12 plans 00–07 executed (PRs schema/RPC/merge/UI/fork); SUMMARYs + VALIDATION updated
 state_head: d17d2854650cb1d13d1a66ab9e324b57a0309bff
 progress:
   total_phases: 23
@@ -25,15 +25,15 @@ current_phase: 12
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** ready to plan (`12-CONTEXT.md`)
+**Current focus:** `cursor/phase-12-pull-requests-c82f` — **Phase 12** Pull Requests executed (8/8 plans); ready for verify/ship
 
 ## Current Position
 
-Phase: **12** — Pull Requests (CONTEXT locked, GitHub parity) · **11.1** plans complete
-Current Plan: —
-Total Plans in Phase: TBD
-Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: `/gsd-plan-phase 12` or `/gsd-verify-work 11.1`
-Last activity: 2026-09-15 — Completed 11.1-05; Phase 12 discuss closed to GitHub parity
+Phase: **12** — Pull Requests **complete** (PR-01…PR-07)
+Current Plan: 8/8
+Total Plans in Phase: 8
+Status: All Phase 12 plans SUMMARY'd. Next: `/gsd-verify-work` / ship PR #12; Phase 13 branch protection (PR-08)
+Last activity: 2026-09-16 — Executed 12-00…12-07 on cursor/phase-12-pull-requests-c82f
 
 See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
 
@@ -178,7 +178,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 12 — Pull Requests (discuss)
 Current Plan: —
-Total Plans in Phase: TBD
+Total Plans in Phase: 8
 Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
 Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
 

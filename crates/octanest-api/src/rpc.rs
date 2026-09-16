@@ -20,6 +20,7 @@ use crate::issue;
 use crate::label;
 use crate::org;
 use crate::pat;
+use crate::pull;
 use crate::release;
 use crate::ssh_keys;
 use crate::repo;
@@ -305,6 +306,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.fork" => match repo::fork(ctx, req.input).await {
+            Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.get" => match repo::get(ctx, req.input).await {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
@@ -482,6 +487,86 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "issue.links.remove" => match issue::links_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.create" => match pull::create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.get" => match pull::get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.list" => match pull::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.update" => match pull::update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.close" => match pull::close(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reopen" => match pull::reopen(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.files" => match pull::files(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.commits" => match pull::commits(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.list" => match pull::comments_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.create" => match pull::comments_create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.resolve" => match pull::comments_resolve(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.list" => match pull::reviews_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.submit" => match pull::reviews_submit(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.dismiss" => match pull::reviews_dismiss(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.list" => match pull::review_requests_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.add" => match pull::review_requests_add(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.remove" => match pull::review_requests_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.merge" => match pull::merge(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mergeSettings.get" => match pull::merge_settings_get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mergeSettings.update" => match pull::merge_settings_update(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

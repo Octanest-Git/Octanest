@@ -23,6 +23,7 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   const branchesHref = `${base}/branches`;
   const tagsHref = `${base}/tags`;
   const issuesHref = `${base}/issues`;
+  const pullsHref = `${base}/pulls`;
   const releasesHref = `${base}/releases`;
   const packagesHref = `${base}/packages`;
   const settingsHref = `${base}/settings`;
@@ -88,6 +89,13 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         aria-current={active === "issues" ? "page" : undefined}
       >
         Issues
+      </a>
+      <a
+        href={pullsHref as string}
+        className={navClass(active === "pulls") as string}
+        aria-current={active === "pulls" ? "page" : undefined}
+      >
+        Pulls
       </a>
       <a
         href={releasesHref as string}

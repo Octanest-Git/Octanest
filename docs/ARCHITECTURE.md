@@ -100,10 +100,22 @@ Phase 11 ships issues + labels (ISS-01…04) on migration `0011_issues`:
 | **Tables** | `issues`, `issue_counters`, `issue_comments`, `issue_revisions`, `comment_revisions`, `labels`, `repo_hidden_labels`, `issue_labels`, `issue_assignees`, `issue_reactions`, `comment_reactions`, `issue_links`. FK `ON DELETE CASCADE` from repositories / issues / orgs. |
 | **Numbering** | Per-repo monotonic `#N` (`issue_counters.max_number`); hard-delete never reclaims. |
 | **ACL** | Same Capability model as forge browse: Read+ view; Write+ mutate; Admin for label defs / hard-delete. Private soft not-found. |
-| **UI** | Repo **Issues** tab (`/$owner/$repo/issues`); Write\|Preview markdown with `#N` autolink; Linked PRs panel for `pr_stub` rows. |
-| **Deferred** | Closing keywords wait for Phase 12 PR merge (D-ISS-15). |
+| **UI** | Repo **Issues** tab (`/$owner/$repo/issues`); Write\|Preview markdown with `#N` autolink; Linked PRs panel prefers real `pr` links to `/pull/{n}` (legacy `pr_stub` kept). |
+| **Deferred** | Closing keywords implemented on `pull.merge` into default branch (Phase 12 / D-PR-22). |
+
+### Pull requests
+
+Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
+
+| Concern | Contract |
+| --- | --- |
+| **Tables** | `pull_requests`, `pull_comments`, `pull_reviews`, `pull_review_requests`, `pull_labels`, `pull_assignees`; repo columns `allow_merge_*` + `forked_from_repo_id`. Shared `#N` via `issue_counters`. CASCADE from repositories. |
+| **Git** | `GitBackend` merge_commit / squash_merge / rebase_merge / fetch_ref_from / clone_bare (fork). |
+| **RPC** | `pull.*`, `repo.fork`, `repo.mergeSettings.*` — see [API.md](API.md). |
+| **UI** | Repo **Pulls** tab; `/pulls`, `/pulls/new`, `/pull/{n}` with Conversation / Commits / Files; merge panel; settings strategy toggles. |
 
 RPC: `issue.*` / `label.*` — see [API.md](API.md#issues-issue--labels-label).
+RPC: `pull.*` — see [API.md](API.md).
 
 ### Git Smart HTTP & PATs
 

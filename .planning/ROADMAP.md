@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Orgs & Permissions** - Organizations, roles, visibility, access enforcement (completed 2026-09-14)
 - [x] **Phase 11: Issues** - Create, comment, labels, assignees, issue↔PR links *(stubs documented: `pr_stub`, closing keywords → Phase 12)*
 - [x] **Phase 11.1: Quality Hardening** (INSERTED) - Tests, coverage gates, repo HI/chrome, forge e2e, GSD honesty ([issue #3](https://github.com/Octanest-Git/Octanest/issues/3)) (plans 9/9; G-11.1-15 gap-closure 07–09 done)
-- [ ] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
+- [x] **Phase 12: Pull Requests** - Open, review, comment, merge strategies, close/reopen
 - [ ] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
@@ -535,7 +535,19 @@ Plans:
   3. User with permission can merge choosing merge commit, squash, or rebase; can close or reopen a PR
   4. Repo settings can enable/disable each merge strategy independently
 
-**Plans**: TBD
+**Plans:** 8/8 executed
+
+Plans:
+
+- [x] `12-00-PLAN.md` — Wave 0: API/DB Nyquist stubs (pull_*, dialect_pulls)
+- [x] `12-01-PLAN.md` — Wave 0: Vitest Pulls UI stubs
+- [x] `12-02-PLAN.md` — Schema 0016 + pull_types + GitBackend merge ops
+- [x] `12-03-PLAN.md` — Tracer: pull lifecycle RPC + Pulls chrome/list/new/detail
+- [x] `12-04-PLAN.md` — Diff/commits + comments (Conversation|Files|Commits)
+- [x] `12-05-PLAN.md` — Reviews approve/changes/comment/dismiss
+- [x] `12-06-PLAN.md` — Merge strategies + settings + closing keywords
+- [x] `12-07-PLAN.md` — Fork heads + pr links + filters + docs/VALIDATION
+
 **UI hint**: yes
 
 ### Phase 13: Branch Protection
@@ -740,7 +752,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 9. Git SSH | 10/10 | Complete    | 2026-09-14 |
 | 10. Orgs & Permissions | 14/14 | Complete    | 2026-09-14 |
 | 11. Issues | 13/13 | Complete    | 2026-09-14 |
-| 12. Pull Requests | 0/TBD | Not started | - |
+| 12. Pull Requests | 8/8 | Complete | cursor/phase-12-pull-requests-c82f |
 | 13. Branch Protection | 0/TBD | Not started | - |
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
