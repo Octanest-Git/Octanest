@@ -398,7 +398,7 @@ impl Database {
             default_branch,
         )
         .await?;
-        // D-SOC-14: roots get fork_network_id = id (column from 0017_social).
+        // D-SOC-14: roots get fork_network_id = id (column from 0020_social).
         let _ = stars::set_fork_network_id(self.require_pool()?, &row.id, &row.id).await;
         Ok(row)
     }

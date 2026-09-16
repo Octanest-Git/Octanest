@@ -1,5 +1,5 @@
 //! Phase 21 social migration parity (stars + fork network).
-//! Migration id resolved at execute: 0017_social (0016 is pull_requests).
+//! Migration id resolved at execute: 0020_social (0016 is pull_requests).
 
 use octanest_core::Role;
 use octanest_db::Database;
@@ -8,12 +8,12 @@ use octanest_db::Database;
 async fn dialect_social_schema_presence() {
     let migration_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/migrations/sqlite/0017_social.sql"
+        "/migrations/sqlite/0020_social.sql"
     );
     let sql = std::fs::read_to_string(migration_path).unwrap_or_default();
     assert!(
         !sql.is_empty(),
-        "0017_social.sql must exist (stars + fork_network)"
+        "0020_social.sql must exist (stars + fork_network)"
     );
     assert!(
         sql.contains("repository_stars"),

@@ -116,7 +116,7 @@ Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
 
 ### Social & Explore
 
-Phase 21 adds stars, public profiles, explore, and fork-network metadata (SOC-01…04) on migration `0017_social` (extends Phase 12 `forked_from_repo_id`):
+Phase 21 adds stars, public profiles, explore, and fork-network metadata (SOC-01…04) on migration `0020_social` (extends Phase 12 `forked_from_repo_id`):
 
 | Concern | Contract |
 | --- | --- |

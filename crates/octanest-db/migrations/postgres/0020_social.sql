@@ -1,4 +1,4 @@
--- logical: 0017_social — stars + fork_network_id (Phase 21; forked_from_repo_id from 0016)
+-- logical: 0020_social — stars + fork_network_id (Phase 21; forked_from_repo_id from 0016)
 -- D-SOC-02, D-SOC-14. Dialect SQL only.
 
 CREATE TABLE IF NOT EXISTS repository_stars (
