@@ -706,19 +706,19 @@ Plans:
   3. Operator can register and run the official Octanest runner image; docs cover Compose sidecar or standalone bring-up
   4. Forge exposes an Actions-compatible registration/job-dispatch protocol (custom `runs-on` labels); jobs only run on registered runners — no managed Octanest Cloud minutes in v1
 
-**Plans:** 12 plans
+**Plans:** 9/12 plans executed
 
 Plans:
 
-- [ ] 19-00-PLAN.md — Wave 0 Rust stubs (parse/triggers/RPC/protocol/policy/statuses/dialect)
-- [ ] 19-01-PLAN.md — Wave 0 Vitest Actions stubs + smoke-actions
-- [ ] 19-02-PLAN.md — Schema, ACTIONS_LOG_DIR, factory reset wipe
-- [ ] 19-03-PLAN.md — Workflow discover + YAML subset parse (ACT-01)
-- [ ] 19-04-PLAN.md — Tracer: push → enqueue → FetchTask → logs
-- [ ] 19-05-PLAN.md — Full runner protocol + labels + registration tokens
-- [ ] 19-06-PLAN.md — pull_request triggers + Phase 12 hook
-- [ ] 19-07-PLAN.md — Commit statuses for Phase 13 required checks
-- [ ] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
+- [x] 19-00-PLAN.md — Wave 0 Rust stubs (parse/triggers/RPC/protocol/policy/statuses/dialect)
+- [x] 19-01-PLAN.md — Wave 0 Vitest Actions stubs + smoke-actions
+- [x] 19-02-PLAN.md — Schema, ACTIONS_LOG_DIR, factory reset wipe
+- [x] 19-03-PLAN.md — Workflow discover + YAML subset parse (ACT-01)
+- [x] 19-04-PLAN.md — Tracer: push → enqueue → FetchTask → logs
+- [x] 19-05-PLAN.md — Full runner protocol + labels + registration tokens
+- [x] 19-06-PLAN.md — pull_request triggers + Phase 12 hook
+- [x] 19-07-PLAN.md — Commit statuses for Phase 13 required checks
+- [x] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
 - [ ] 19-09-PLAN.md — Actions UI list/detail/logs + RepoChrome tab
 - [ ] 19-10-PLAN.md — Admin tokens, repo secrets/enable, no managed minutes
 - [ ] 19-11-PLAN.md — Docs + smoke + phase gate
@@ -830,7 +830,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 5/5 | Complete | 2026-09-16 |
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
-| 19. Actions & Runners | 0/TBD | Not started | - |
+| 19. Actions & Runners | 9/12 | In Progress|  |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
