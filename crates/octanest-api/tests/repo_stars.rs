@@ -205,7 +205,6 @@ async fn repo_stars_private_without_read_not_found() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-02"]
 async fn repo_stars_list_starred_pagination() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");

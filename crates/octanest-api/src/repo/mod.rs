@@ -78,7 +78,7 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
     v.as_str()
 }
 
-fn to_public(repo: &AccessibleRepo) -> RepoPublic {
+pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
     let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
     let owner_type = OwnerType::parse(&repo.row.owner_type).unwrap_or(OwnerType::User);
     RepoPublic {

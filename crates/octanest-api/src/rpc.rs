@@ -219,6 +219,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
+        "user.listStarred" => match user::list_starred(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "admin.auth.get_settings" => match admin::get_settings(ctx).await {
             Ok(settings) => RpcResponse::ok(settings),
             Err(e) => RpcResponse::err(e),
