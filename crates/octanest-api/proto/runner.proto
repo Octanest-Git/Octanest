@@ -1,0 +1,59 @@
+// Octanest Actions runner protocol (Gitea Actions–compatible surface subset).
+// Pinned for Phase 19; wire shape stable for act_runner-class clients (D-ACT-07).
+syntax = "proto3";
+package octanest.actions.v1;
+
+message RegisterRequest {
+  string name = 1;
+  repeated string labels = 2;
+  string token = 3;
+}
+
+message RegisterResponse {
+  string runner_id = 1;
+  string runner_token = 2;
+}
+
+message DeclareRequest {
+  repeated string labels = 1;
+}
+
+message DeclareResponse {
+  bool ok = 1;
+}
+
+message FetchTaskRequest {}
+
+message FetchTaskResponse {
+  string job_id = 1;
+  string run_id = 2;
+  string job_key = 3;
+  repeated string runs_on = 4;
+}
+
+message UpdateTaskRequest {
+  string job_id = 1;
+  string state = 2; // in_progress | success | failure | cancelled
+}
+
+message UpdateTaskResponse {
+  bool ok = 1;
+}
+
+message UpdateLogRequest {
+  string run_id = 1;
+  string job_id = 2;
+  bytes chunk = 3;
+}
+
+message UpdateLogResponse {
+  bool ok = 1;
+}
+
+service RunnerService {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Declare(DeclareRequest) returns (DeclareResponse);
+  rpc FetchTask(FetchTaskRequest) returns (FetchTaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc UpdateLog(UpdateLogRequest) returns (UpdateLogResponse);
+}

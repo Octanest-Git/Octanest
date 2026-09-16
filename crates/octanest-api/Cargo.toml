@@ -54,6 +54,7 @@ tempfile = "3"
 ssh-key = { version = "=0.7.0-rc.11", features = ["std", "alloc"] }
 russh = { version = "0.63", features = ["aws-lc-rs"] }
 serde_yaml = "0.9"
+prost = "0.13"
 
 [dev-dependencies]
 http-body-util = "0.1"
@@ -61,3 +62,6 @@ tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.26"
 tempfile = "3"
 wiremock = "0.6.5"
+
+[build-dependencies]
+prost-build = "0.13"
