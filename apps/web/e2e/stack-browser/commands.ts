@@ -970,6 +970,33 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
  */
 export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
+
+  // Unhappy first (same order as chrome menus): anonymous cannot open settings.
+  // Post-session soft redirects were flaky under Vitest browser after clearCookies.
+  await context.clearCookies();
+  const anon = await context.newPage();
+  try {
+    await anon.goto(`${webOrigin()}/settings/general`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    for (let i = 0; i < 40; i++) {
+      const url = anon.url();
+      if (url.includes("/login")) {
+        assertNoOctaneOverlay(await anon.content(), "anonymous settings → login");
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 250));
+      if (i === 39) {
+        throw new Error(
+          `anonymous /settings/general did not redirect to login. url=${anon.url()} body=${(await anon.content()).slice(0, 800)}`,
+        );
+      }
+    }
+  } finally {
+    await anon.close();
+  }
+
   await context.clearCookies();
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
@@ -1085,28 +1112,8 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       timeout: 10_000,
     });
     assertNoOctaneOverlay(await page.content(), "settings profile avatar controls");
+    return true;
   } finally {
     await page.close();
-  }
-
-  // Unhappy: anonymous cannot open settings general.
-  await context.clearCookies();
-  const anon = await context.newPage();
-  try {
-    await anon.goto(`${webOrigin()}/settings/general`, {
-      waitUntil: "domcontentloaded",
-      timeout: 60_000,
-    });
-    for (let i = 0; i < 40; i++) {
-      const url = anon.url();
-      if (url.includes("/login")) {
-        assertNoOctaneOverlay(await anon.content(), "anonymous settings → login");
-        return true;
-      }
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    throw new Error(`anonymous /settings/general did not redirect to login. url=${anon.url()}`);
-  } finally {
-    await anon.close();
   }
 };

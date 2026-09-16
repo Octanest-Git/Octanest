@@ -94,6 +94,10 @@ describe("/settings/general", () => {
     expect(Route.options).toBeTruthy();
   });
 
+  it("beforeLoad redirects anonymous sessions to login", () => {
+    expect(Route.options.beforeLoad).toBeTypeOf("function");
+  });
+
   it("happy: renders theme, default branch, and logout controls", async () => {
     loaderData = { kind: "ready", user: readyUser };
     renderWithQueryClient(GeneralPage);

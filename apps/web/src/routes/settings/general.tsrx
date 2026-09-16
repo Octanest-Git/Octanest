@@ -1,4 +1,4 @@
-import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
+import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { clearSessionQueries, setAuthMeCache } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
-import { fetchUserGetProfile } from "@/lib/ssr-auth";
+import { fetchSessionMe, fetchUserGetProfile } from "@/lib/ssr-auth";
 import { toastError, toastSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -22,10 +22,22 @@ export type GeneralLoaderData =
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const BIO_MAX = 160;
+const LOGIN_RETURN = "/login?returnTo=/settings/general";
 
 export const Route = createFileRoute("/settings/general")({
   component: GeneralPage,
   head: () => ({ meta: [{ title: "General · Octanest" }] }),
+  beforeLoad: async () => {
+    try {
+      const me = await fetchSessionMe();
+      if (!me.ok) {
+        throw redirect({ href: LOGIN_RETURN });
+      }
+    } catch (e) {
+      if (e && typeof e === "object" && "href" in e) throw e;
+      throw redirect({ href: LOGIN_RETURN });
+    }
+  },
   loader: async (): Promise<GeneralLoaderData> => {
     try {
       const res = await fetchUserGetProfile();
@@ -44,7 +56,6 @@ export const Route = createFileRoute("/settings/general")({
     }
   },
 });
-
 type Phase =
   | { kind: "loading" }
   | { kind: "ready"; user: UserPublic }
@@ -57,7 +68,7 @@ export function GeneralPage() @{
 
   useEffect(() => {
     if (loaderData?.kind === "unauthenticated") {
-      window.location.assign("/login?returnTo=/settings/general");
+      window.location.assign(LOGIN_RETURN);
     }
   }, [loaderData]);
 
@@ -130,7 +141,7 @@ export function GeneralPage() @{
         const res = await apiClient.user.getProfile();
         if (cancelled) return;
         if (!res.ok) {
-          window.location.assign("/login?returnTo=/settings/general");
+          window.location.assign(LOGIN_RETURN);
           return;
         }
         const user = res.data;
