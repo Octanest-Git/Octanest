@@ -30,9 +30,9 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: **19** — Actions & Runners (**in progress** off-branch) · integrate holds 12–18 + 21–22
-Current Plan: 05–11 remaining (00–04 SUMMARY'd on phase branch)
+Current Plan: 10
 Total Plans in Phase: 12
-Status: Docs honesty synced (Phase 17 + HOOK complete). Next: finish Phase 19 then umbrella #16
+Status: 19-10 complete (secrets + Admin/Settings Actions + ACT-07 policy). Next: 19-11
 Last activity: 2026-09-16 — Honesty pass + header Explore→searchbar
 
 See also: `.planning/phases/19-actions-runners/` · integrate `cursor/gsd-remaining-integrate-c82f`
