@@ -5,7 +5,7 @@ mod support;
 use std::sync::Arc;
 
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::Request;
 use http_body_util::BodyExt;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::{build_cors, router_with_state, AppState};
