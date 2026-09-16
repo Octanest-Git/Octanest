@@ -21,6 +21,7 @@ pub mod repo;
 pub mod routes;
 pub mod rpc;
 pub mod user;
+pub mod webhook;
 
 pub use app::{router, router_with_state, AppState};
 pub use cors::build_cors;

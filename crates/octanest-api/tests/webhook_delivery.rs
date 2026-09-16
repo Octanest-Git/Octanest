@@ -1,56 +1,344 @@
-//! Phase 18 Wave 0: HOOK-02/03 delivery + HMAC stubs (D-HOOK-12, D-HOOK-13).
-//! Greened in 18-01 / 18-02 / 18-03.
+//! Phase 18: HOOK-02/03 delivery + HMAC for issues path (D-HOOK-08 / D-HOOK-12 / D-HOOK-13).
+
+mod support;
+
+use std::sync::Arc;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use http_body_util::BodyExt;
+use octanest_api::email::{EmailSender, LogSink};
+use octanest_api::webhook::deliver::hmac_sha256_hex;
+use octanest_api::{build_cors, router_with_state, AppState};
+use octanest_db::Database;
+use octanest_git::CliGitBackend;
+use tower::ServiceExt;
+use wiremock::matchers::{method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
+
+async fn test_app(db: Database, repos_dir: std::path::PathBuf) -> axum::Router {
+    let state = AppState::new(db, Arc::new(LogSink) as Arc<dyn EmailSender>, "development")
+        .with_repos_dir(repos_dir)
+        .with_git(Arc::new(CliGitBackend::new()));
+    let cors = build_cors("development", None).expect("cors");
+    router_with_state(state, cors)
+}
+
+fn rpc_req(body: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> {
+    Request::builder()
+        .method("POST")
+        .uri("/api/rpc")
+        .header("content-type", "application/json")
+        .header("Octanest-RPC-Version", "1")
+        .header("cookie", cookie)
+        .body(Body::from(body.to_owned()))
+        .unwrap()
+}
+
+fn session_cookie_from_response(res: &axum::http::Response<Body>) -> String {
+    let set_cookie = res.headers().get("set-cookie").expect("Set-Cookie").to_str().unwrap();
+    set_cookie.split(';').next().unwrap().trim().to_string()
+}
+
+async fn signup_and_login(app: &axum::Router, email: &str, username: &str) -> (String, serde_json::Value) {
+    let signup_body = format!(
+        r#"{{"procedure":"auth.signup","input":{{"email":"{email}","username":"{username}","password":"password1"}}}}"#
+    );
+    let signup = app.clone().oneshot(rpc_req(&signup_body)).await.unwrap();
+    assert_eq!(signup.status(), StatusCode::OK);
+    let _ = signup.into_body().collect().await;
+    let login_body = format!(
+        r#"{{"procedure":"auth.login","input":{{"identifier":"{email}","password":"password1","remember_me":false}}}}"#
+    );
+    let login = app.clone().oneshot(rpc_req(&login_body)).await.unwrap();
+    assert_eq!(login.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&login);
+    let bytes = login.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    (cookie, v)
+}
+
+async fn rpc_json(app: &axum::Router, body: &str, cookie: &str) -> serde_json::Value {
+    let res = app.clone().oneshot(rpc_req_with_cookie(body, cookie)).await.unwrap();
+    let bytes = res.into_body().collect().await.unwrap().to_bytes();
+    serde_json::from_slice(&bytes).expect("rpc json body")
+}
+
+async fn verified_owner(app: &axum::Router, db: &Database, email: &str, username: &str) -> String {
+    let (cookie, login_v) = signup_and_login(app, email, username).await;
+    let user_id = login_v["data"]["id"].as_str().unwrap().to_string();
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(&user_id, &now).await.expect("verify");
+    cookie
+}
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with issues opened delivery (HOOK-02)"]
 async fn webhook_issues_deliver_opened() {
-    assert!(false, "Wave 0: issue.create delivers signed issues opened POST");
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/hook"))
+        .respond_with(ResponseTemplate::new(200).set_body_string("ok"))
+        .expect(1..)
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("deliv_open.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "del@ex.com", "delown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+
+    let hook_url = format!("{}/hook", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"delown","name":"demo","url":"{hook_url}","secret":"hooksecret","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+
+    let issue = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"delown","name":"demo","title":"Opened via hook","body":"body"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(issue["ok"], true, "{issue}");
+
+    // Wait for async delivery
+    let mut attempt_status = None;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 10).await.expect("list");
+        if let Some(d) = deliveries.first() {
+            if d.status == "success" || d.attempt_count > 0 {
+                let latest = db
+                    .latest_webhook_delivery_attempt(&d.id)
+                    .await
+                    .expect("attempt");
+                attempt_status = latest.and_then(|a| a.http_status);
+                if attempt_status == Some(200) {
+                    break;
+                }
+            }
+        }
+    }
+    assert_eq!(attempt_status, Some(200), "expected successful delivery attempt");
+
+    let requests = sink.received_requests().await.expect("received requests");
+    assert!(!requests.is_empty());
+    let req = &requests[0];
+    assert_eq!(
+        req.headers.get("x-github-event").map(|v| v.to_str().unwrap()),
+        Some("issues")
+    );
+    assert!(req.headers.get("x-hub-signature-256").is_some());
+    assert!(req.headers.get("x-github-delivery").is_some());
+    let body = String::from_utf8_lossy(&req.body);
+    assert!(body.contains("\"action\":\"opened\""));
+    assert!(body.contains("Opened via hook"));
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with issues lifecycle actions (D-HOOK-08)"]
-async fn webhook_issues_edited_closed_reopened() {
-    assert!(false, "Wave 0: issue.update maps to edited/closed/reopened");
-}
-
-#[tokio::test]
-#[ignore = "Wave 0 stub — greened with HMAC X-Hub-Signature-256 (D-HOOK-12)"]
 async fn webhook_hmac_signature() {
-    assert!(false, "Wave 0: X-Hub-Signature-256 matches HMAC-SHA256 of raw body");
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/sig"))
+        .respond_with(ResponseTemplate::new(204))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("hmac.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "hmac@ex.com", "hmacown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/sig", sink.uri());
+    let secret = "signmeplease";
+    let _ = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"hmacown","name":"demo","url":"{hook_url}","secret":"{secret}","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"hmacown","name":"demo","title":"Sig","body":""}}"#,
+        &cookie,
+    )
+    .await;
+
+    let mut got = None;
+    for _ in 0..40 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let requests = sink.received_requests().await.unwrap_or_default();
+        if let Some(req) = requests.first() {
+            got = Some(req.clone());
+            break;
+        }
+    }
+    let req = got.expect("delivery POST");
+    let header = req
+        .headers
+        .get("x-hub-signature-256")
+        .expect("sig header")
+        .to_str()
+        .unwrap()
+        .to_string();
+    assert!(header.starts_with("sha256="));
+    let expected = format!("sha256={}", hmac_sha256_hex(secret.as_bytes(), &req.body));
+    assert_eq!(header, expected);
+    // No SHA-1 header
+    assert!(req.headers.get("x-hub-signature").is_none());
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with SSRF rejection (D-HOOK-18)"]
+async fn webhook_issues_edited_closed_reopened() {
+    let sink = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/life"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&sink)
+        .await;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("life.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+    let cookie = verified_owner(&app, &db, "life@ex.com", "lifeown").await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"demo","visibility":"public","description":""}}"#,
+        &cookie,
+    )
+    .await;
+    let hook_url = format!("{}/life", sink.uri());
+    let created = rpc_json(
+        &app,
+        &format!(
+            r#"{{"procedure":"webhook.create","input":{{"owner":"lifeown","name":"demo","url":"{hook_url}","secret":"s","events":["issues"]}}}}"#
+        ),
+        &cookie,
+    )
+    .await;
+    let hook_id = created["data"]["id"].as_str().unwrap().to_string();
+
+    let issue = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"lifeown","name":"demo","title":"T1","body":"b"}}"#,
+        &cookie,
+    )
+    .await;
+    assert_eq!(issue["ok"], true);
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.update","input":{"owner":"lifeown","name":"demo","number":1,"title":"T2"}}"#,
+        &cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.close","input":{"owner":"lifeown","name":"demo","number":1}}"#,
+        &cookie,
+    )
+    .await;
+    let _ = rpc_json(
+        &app,
+        r#"{"procedure":"issue.reopen","input":{"owner":"lifeown","name":"demo","number":1}}"#,
+        &cookie,
+    )
+    .await;
+
+    let mut actions = std::collections::HashSet::new();
+    for _ in 0..50 {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let deliveries = db.list_webhook_deliveries(&hook_id, 50).await.expect("list");
+        for d in deliveries {
+            actions.insert(d.action);
+        }
+        if actions.contains("opened")
+            && actions.contains("edited")
+            && actions.contains("closed")
+            && actions.contains("reopened")
+        {
+            break;
+        }
+    }
+    assert!(actions.contains("opened"), "{actions:?}");
+    assert!(actions.contains("edited"), "{actions:?}");
+    assert!(actions.contains("closed"), "{actions:?}");
+    assert!(actions.contains("reopened"), "{actions:?}");
+}
+
+// Remaining Wave 0 stubs greened in later plans — keep discoverable ignored names.
+#[tokio::test]
+#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_ssrf_rejects_unsafe_url() {
-    assert!(false, "Wave 0: SSRF-unsafe URLs rejected on create/delivery");
+    assert!(false);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with delivery timeout handling (D-HOOK-18)"]
+#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_timeout_records_error() {
-    assert!(false, "Wave 0: timeout/connection errors recorded without panic");
+    assert!(false);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with retry backoff (D-HOOK-14)"]
+#[ignore = "Wave 0 stub — greened in 18-02"]
 async fn webhook_retry_transient() {
-    assert!(false, "Wave 0: transient 5xx/timeout retries with attempt rows");
+    assert!(false);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with push HTTPS emit (D-HOOK-10)"]
+#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_push_https_receive() {
-    assert!(false, "Wave 0: successful HTTPS receive-pack emits push webhook");
+    assert!(false);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with push SSH emit (D-HOOK-22)"]
+#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_push_ssh_receive() {
-    assert!(false, "Wave 0: successful SSH receive emits push webhook");
+    assert!(false);
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened with pull_request emitters (D-HOOK-09)"]
+#[ignore = "Wave 0 stub — greened in 18-03"]
 async fn webhook_pull_request_lifecycle() {
-    assert!(false, "Wave 0: PR open/edit/close/reopen/sync/merge emit pull_request");
+    assert!(false);
 }

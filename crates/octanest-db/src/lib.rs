@@ -20,6 +20,7 @@ pub mod probe;
 pub mod pulls;
 pub mod redirects;
 pub mod releases;
+pub mod webhooks;
 pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
@@ -49,6 +50,7 @@ pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
+pub use webhooks::{WebhookDeliveryAttemptRow, WebhookDeliveryRow, WebhookRow};
 use dialect::resolve_dialect_from_env as resolve_from_env;
 use pool::DbPool as Pool;
 
@@ -2142,5 +2144,156 @@ impl Database {
             }
         }
         Ok(())
+    }
+
+    // --- webhooks (Phase 18) ---
+
+    pub async fn insert_webhook(
+        &self,
+        id: &str,
+        repository_id: &str,
+        url: &str,
+        secret: &str,
+        active: bool,
+        events_json: &str,
+        name: &str,
+        created_by: &str,
+    ) -> Result<WebhookRow, String> {
+        webhooks::insert_webhook(
+            self.require_pool()?,
+            id,
+            repository_id,
+            url,
+            secret,
+            active,
+            events_json,
+            name,
+            created_by,
+        )
+        .await
+    }
+
+    pub async fn get_webhook(&self, id: &str) -> Result<WebhookRow, String> {
+        webhooks::get_webhook(self.require_pool()?, id).await
+    }
+
+    pub async fn list_webhooks_for_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<WebhookRow>, String> {
+        webhooks::list_webhooks_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_active_webhooks_for_event(
+        &self,
+        repository_id: &str,
+        event: &str,
+    ) -> Result<Vec<WebhookRow>, String> {
+        webhooks::list_active_webhooks_for_event(self.require_pool()?, repository_id, event).await
+    }
+
+    pub async fn update_webhook(
+        &self,
+        id: &str,
+        url: Option<&str>,
+        secret: Option<&str>,
+        active: Option<bool>,
+        events_json: Option<&str>,
+        name: Option<&str>,
+    ) -> Result<WebhookRow, String> {
+        webhooks::update_webhook(
+            self.require_pool()?,
+            id,
+            url,
+            secret,
+            active,
+            events_json,
+            name,
+        )
+        .await
+    }
+
+    pub async fn delete_webhook(&self, id: &str) -> Result<(), String> {
+        webhooks::delete_webhook(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_webhook_delivery(
+        &self,
+        id: &str,
+        webhook_id: &str,
+        delivery_guid: &str,
+        event: &str,
+        action: &str,
+        payload_json: &str,
+    ) -> Result<WebhookDeliveryRow, String> {
+        webhooks::insert_delivery(
+            self.require_pool()?,
+            id,
+            webhook_id,
+            delivery_guid,
+            event,
+            action,
+            payload_json,
+        )
+        .await
+    }
+
+    pub async fn get_webhook_delivery(&self, id: &str) -> Result<WebhookDeliveryRow, String> {
+        webhooks::get_delivery(self.require_pool()?, id).await
+    }
+
+    pub async fn list_webhook_deliveries(
+        &self,
+        webhook_id: &str,
+        limit: i64,
+    ) -> Result<Vec<WebhookDeliveryRow>, String> {
+        webhooks::list_deliveries_for_webhook(self.require_pool()?, webhook_id, limit).await
+    }
+
+    pub async fn insert_webhook_delivery_attempt(
+        &self,
+        id: &str,
+        delivery_id: &str,
+        attempt_number: i64,
+        http_status: Option<i32>,
+        error_message: Option<&str>,
+        duration_ms: Option<i64>,
+        response_snippet: Option<&str>,
+    ) -> Result<WebhookDeliveryAttemptRow, String> {
+        webhooks::insert_delivery_attempt(
+            self.require_pool()?,
+            id,
+            delivery_id,
+            attempt_number,
+            http_status,
+            error_message,
+            duration_ms,
+            response_snippet,
+        )
+        .await
+    }
+
+    pub async fn latest_webhook_delivery_attempt(
+        &self,
+        delivery_id: &str,
+    ) -> Result<Option<WebhookDeliveryAttemptRow>, String> {
+        webhooks::latest_attempt_for_delivery(self.require_pool()?, delivery_id).await
+    }
+
+    pub async fn mark_webhook_delivery_result(
+        &self,
+        delivery_id: &str,
+        status: &str,
+        attempt_count: i64,
+        next_attempt_at: Option<&str>,
+    ) -> Result<(), String> {
+        webhooks::mark_delivery_result(
+            self.require_pool()?,
+            delivery_id,
+            status,
+            attempt_count,
+            next_attempt_at,
+        )
+        .await
     }
 }

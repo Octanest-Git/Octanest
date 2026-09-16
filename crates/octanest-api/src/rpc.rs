@@ -27,6 +27,7 @@ use crate::ssh_keys;
 use crate::repo;
 use crate::user;
 use crate::user::rate_limit::LookupLimiter;
+use crate::webhook;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
 
@@ -645,6 +646,26 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "release.deleteAsset" => match release::delete_asset(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.create" => match webhook::create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.list" => match webhook::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.get" => match webhook::get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.update" => match webhook::update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.delete" => match webhook::delete(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
