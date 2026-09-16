@@ -14,16 +14,20 @@ pub use reviews::{
     reviews_list, reviews_submit,
 };
 
+use std::path::Path;
+
 use octanest_core::{
     AppError, CreatePullRequest, MergeMethod, PullListRequest, PullListResponse, PullPublic,
     PullRefRequest, PullState, UpdatePullRequest,
 };
-use octanest_db::PullRow;
+use octanest_db::{Database, PullRow};
+use octanest_git::{CliGitBackend, GitBackend};
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
 use crate::git::bare_repo_path;
 use crate::notify;
+use crate::protection;
 use crate::rpc::RpcCtx;
 use crate::webhook::dispatch;
 use crate::webhook::payloads;
@@ -52,23 +56,46 @@ pub(crate) async fn emit_pull_event(
     sender_id: &str,
     merged: bool,
 ) {
+    emit_pull_event_db(
+        &ctx.db,
+        &accessible.owner_username,
+        &accessible.row.name,
+        &accessible.row.id,
+        row,
+        action,
+        sender_login,
+        sender_id,
+        merged,
+        &ctx.env_name,
+    )
+    .await;
+}
+
+/// Emit a `pull_request` webhook from git push paths (no [`RpcCtx`]).
+pub(crate) async fn emit_pull_event_db(
+    db: &Database,
+    base_owner: &str,
+    base_name: &str,
+    base_repo_id: &str,
+    row: &PullRow,
+    action: &str,
+    sender_login: &str,
+    sender_id: &str,
+    merged: bool,
+    env_name: &str,
+) {
     let (head_owner, head_name) = if row.head_repo_id == row.repo_id {
-        (
-            accessible.owner_username.clone(),
-            accessible.row.name.clone(),
-        )
-    } else if let Ok(Some(head_repo)) = ctx.db.find_repository_by_id(&row.head_repo_id).await {
+        (base_owner.to_string(), base_name.to_string())
+    } else if let Ok(Some(head_repo)) = db.find_repository_by_id(&row.head_repo_id).await {
         let owner = match head_repo.owner_type.as_str() {
-            "org" => ctx
-                .db
+            "org" => db
                 .find_organization_by_id(&head_repo.owner_id)
                 .await
                 .ok()
                 .flatten()
                 .map(|o| o.slug)
                 .unwrap_or_default(),
-            _ => ctx
-                .db
+            _ => db
                 .find_user_by_id(&head_repo.owner_id)
                 .await
                 .ok()
@@ -78,10 +105,7 @@ pub(crate) async fn emit_pull_event(
         };
         (owner, head_repo.name)
     } else {
-        (
-            accessible.owner_username.clone(),
-            accessible.row.name.clone(),
-        )
+        (base_owner.to_string(), base_name.to_string())
     };
     let state = if merged { "closed" } else { row.state.as_str() };
     let payload = payloads::pull_request_payload(
@@ -97,21 +121,200 @@ pub(crate) async fn emit_pull_event(
         &row.head_sha,
         &head_owner,
         &head_name,
-        &accessible.owner_username,
-        &accessible.row.name,
-        &accessible.row.id,
+        base_owner,
+        base_name,
+        base_repo_id,
         sender_login,
         sender_id,
     );
-    dispatch::emit(
-        &ctx.db,
-        &accessible.row.id,
-        "pull_request",
-        action,
-        payload,
-        &ctx.env_name,
-    )
-    .await;
+    dispatch::emit(db, base_repo_id, "pull_request", action, payload, env_name).await;
+}
+
+async fn resolve_ref_sha_at(
+    git: &dyn GitBackend,
+    repos_dir: &Path,
+    owner: &str,
+    repo_name: &str,
+    refname: &str,
+) -> Option<String> {
+    let path = bare_repo_path(repos_dir, owner, repo_name).ok()?;
+    let refs = git.list_refs(&path).await.ok()?;
+    let want = if refname.starts_with("refs/") {
+        refname.to_string()
+    } else {
+        format!("refs/heads/{refname}")
+    };
+    refs.iter()
+        .find(|r| r.name == want || r.name.ends_with(&format!("/{refname}")) || r.oid == refname)
+        .map(|r| r.oid.clone())
+}
+
+/// After a successful push: update open same-repo PR heads, dismiss stale approvals, emit synchronize.
+pub async fn synchronize_after_push(
+    db: &Database,
+    repos_dir: &Path,
+    repository_id: &str,
+    owner: &str,
+    repo_name: &str,
+    pusher_login: &str,
+    pusher_id: &str,
+    updates: &[(String, String, String)],
+    env_name: &str,
+) {
+    let git = CliGitBackend::new();
+    let mut branch_after: Vec<(String, String)> = updates
+        .iter()
+        .filter_map(|(_before, after, refname)| {
+            let branch = protection::branch_from_ref(refname)?;
+            if after.chars().all(|c| c == '0') {
+                return None;
+            }
+            Some((branch.to_string(), after.clone()))
+        })
+        .collect();
+
+    // SSH notify_push often has no pkt-line updates — refresh open same-repo heads from live refs.
+    if branch_after.is_empty() {
+        let (open, _) = match db
+            .list_pulls_for_repo(repository_id, Some("open"), 0, 500)
+            .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::warn!(error = %e, "synchronize_after_push: list open pulls failed");
+                return;
+            }
+        };
+        for pull in open
+            .into_iter()
+            .filter(|p| p.head_repo_id == repository_id)
+        {
+            if let Some(sha) =
+                resolve_ref_sha_at(&git, repos_dir, owner, repo_name, &pull.head_ref).await
+            {
+                if sha != pull.head_sha {
+                    branch_after.push((pull.head_ref.clone(), sha));
+                }
+            }
+        }
+        // Dedupe by branch name (last wins).
+        let mut seen = std::collections::BTreeMap::<String, String>::new();
+        for (b, s) in branch_after.drain(..) {
+            seen.insert(b, s);
+        }
+        branch_after = seen.into_iter().collect();
+    }
+
+    for (branch, after_sha) in branch_after {
+        if let Err(e) = sync_open_pulls_for_branch(
+            db,
+            repos_dir,
+            &git,
+            repository_id,
+            owner,
+            repo_name,
+            &branch,
+            &after_sha,
+            pusher_login,
+            pusher_id,
+            env_name,
+        )
+        .await
+        {
+            tracing::warn!(
+                error = %e,
+                %branch,
+                "synchronize_after_push: branch sync failed (soft-fail)"
+            );
+        }
+    }
+}
+
+async fn sync_open_pulls_for_branch(
+    db: &Database,
+    repos_dir: &Path,
+    git: &dyn GitBackend,
+    repository_id: &str,
+    owner: &str,
+    repo_name: &str,
+    branch: &str,
+    after_sha: &str,
+    pusher_login: &str,
+    pusher_id: &str,
+    env_name: &str,
+) -> Result<(), String> {
+    let (open, _) = db
+        .list_pulls_for_repo(repository_id, Some("open"), 0, 500)
+        .await?;
+    let matching: Vec<PullRow> = open
+        .into_iter()
+        .filter(|p| p.head_repo_id == repository_id && p.head_ref == branch)
+        .collect();
+    if matching.is_empty() {
+        return Ok(());
+    }
+
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    for pull in matching {
+        if pull.head_sha == after_sha {
+            continue;
+        }
+        let base_sha = resolve_ref_sha_at(git, repos_dir, owner, repo_name, &pull.base_ref)
+            .await
+            .unwrap_or_else(|| pull.base_sha.clone());
+        let base_changed = base_sha != pull.base_sha;
+        if base_changed {
+            db.update_pull_fields(
+                &pull.id,
+                &pull.title,
+                &pull.body,
+                pull.draft,
+                &pull.base_ref,
+                &base_sha,
+            )
+            .await?;
+        }
+        db.update_pull_head_sha(&pull.id, after_sha).await?;
+        let _ = db.mark_pull_line_comments_outdated(&pull.id).await;
+
+        let eff = protection::effective_for_branch(db, repository_id, &pull.base_ref)
+            .await
+            .map_err(|e| e.message)?;
+        if eff.dismiss_stale_reviews {
+            if let Ok(reviews) = db.list_pull_reviews(&pull.id).await {
+                for r in reviews {
+                    if r.state == "approved" && r.commit_sha.as_deref() != Some(after_sha) {
+                        let _ = db
+                            .dismiss_pull_review(
+                                &r.id,
+                                Some("New commits pushed to the head branch"),
+                                &now,
+                            )
+                            .await;
+                    }
+                }
+            }
+        }
+
+        let updated = db
+            .find_pull_by_repo_number(repository_id, pull.number)
+            .await?
+            .ok_or_else(|| "pull missing after synchronize".to_string())?;
+        emit_pull_event_db(
+            db,
+            owner,
+            repo_name,
+            repository_id,
+            &updated,
+            "synchronize",
+            pusher_login,
+            pusher_id,
+            false,
+            env_name,
+        )
+        .await;
+    }
+    Ok(())
 }
 
 fn pull_not_found() -> AppError {
@@ -434,27 +637,126 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
             ))
         }
     };
-    // For "closed" UX (GitHub), include merged — expand filter client-side later.
     let offset = req.offset.unwrap_or(0);
     let limit = req.limit.unwrap_or(25);
 
-    let (rows, total) = if state == "closed" {
-        // Union closed+merged by listing all and filtering — keep simple for tracer:
+    let author_id = resolve_username_filter(ctx, req.author.as_deref()).await?;
+    if req
+        .author
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|s| !s.is_empty())
+        && author_id.is_none()
+    {
+        return Ok(PullListResponse {
+            pulls: vec![],
+            total: 0,
+            offset,
+            limit,
+        });
+    }
+    let assignee_id = resolve_username_filter(ctx, req.assignee.as_deref()).await?;
+    if req
+        .assignee
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|s| !s.is_empty())
+        && assignee_id.is_none()
+    {
+        return Ok(PullListResponse {
+            pulls: vec![],
+            total: 0,
+            offset,
+            limit,
+        });
+    }
+    let label_filter = req
+        .label
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let review_state = req
+        .review_state
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+    let needs_post_filter = label_filter.is_some()
+        || assignee_id.is_some()
+        || review_state.is_some()
+        || state == "closed"
+        || (state == "merged" && author_id.is_some());
+
+    let (rows, total) = if needs_post_filter || author_id.is_some() {
+        // Author via DB when possible; closed/label/assignee/review post-filtered (D-PR-26).
+        let fetch_limit = if needs_post_filter { 500 } else { limit };
+        let fetch_offset = if needs_post_filter { 0 } else { offset };
+        let search_state = if state == "closed" || state == "merged" {
+            "all"
+        } else if state == "all" {
+            "all"
+        } else {
+            state
+        };
         let (all, _) = ctx
             .db
-            .list_pulls_for_repo(&accessible.row.id, None, 0, 500)
+            .search_pulls_for_repo(
+                &accessible.row.id,
+                octanest_db::PullSearchFilters {
+                    state: search_state,
+                    author_id: author_id.as_deref(),
+                    q: None,
+                    offset: fetch_offset,
+                    limit: fetch_limit,
+                },
+            )
             .await
             .map_err(db_err)?;
-        let filtered: Vec<_> = all
-            .into_iter()
-            .filter(|r| r.state == "closed" || r.state == "merged")
-            .collect();
+        let mut filtered = all;
+        if state == "closed" {
+            filtered.retain(|r| r.state == "closed" || r.state == "merged");
+        }
+        if state == "merged" {
+            filtered.retain(|r| r.state == "merged");
+        }
+        if let Some(ref lid) = label_filter {
+            let mut keep = Vec::new();
+            for row in filtered {
+                if pull_matches_label(ctx, &row.id, lid).await? {
+                    keep.push(row);
+                }
+            }
+            filtered = keep;
+        }
+        if let Some(ref aid) = assignee_id {
+            let mut keep = Vec::new();
+            for row in filtered {
+                if pull_matches_assignee(ctx, &row.id, aid).await? {
+                    keep.push(row);
+                }
+            }
+            filtered = keep;
+        }
+        if let Some(ref rs) = review_state {
+            let mut keep = Vec::new();
+            for row in filtered {
+                if pull_matches_review_state(ctx, &row.id, rs).await? {
+                    keep.push(row);
+                }
+            }
+            filtered = keep;
+        }
         let total = filtered.len() as i64;
-        let page: Vec<_> = filtered
-            .into_iter()
-            .skip(offset as usize)
-            .take(limit as usize)
-            .collect();
+        let page: Vec<_> = if needs_post_filter {
+            filtered
+                .into_iter()
+                .skip(offset as usize)
+                .take(limit as usize)
+                .collect()
+        } else {
+            filtered
+        };
         (page, total)
     } else {
         ctx.db
@@ -473,6 +775,68 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
         offset,
         limit,
     })
+}
+
+async fn resolve_username_filter(
+    ctx: &RpcCtx,
+    raw: Option<&str>,
+) -> Result<Option<String>, AppError> {
+    let Some(raw) = raw.map(str::trim).filter(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let username = raw.strip_prefix('@').unwrap_or(raw);
+    let user = ctx
+        .db
+        .find_user_by_username(username)
+        .await
+        .map_err(db_err)?;
+    Ok(user.map(|u| u.id))
+}
+
+async fn pull_matches_label(ctx: &RpcCtx, pull_id: &str, label: &str) -> Result<bool, AppError> {
+    ctx.db
+        .pull_has_label(pull_id, label)
+        .await
+        .map_err(db_err)
+}
+
+async fn pull_matches_assignee(
+    ctx: &RpcCtx,
+    pull_id: &str,
+    user_id: &str,
+) -> Result<bool, AppError> {
+    ctx.db
+        .pull_has_assignee(pull_id, user_id)
+        .await
+        .map_err(db_err)
+}
+
+async fn pull_matches_review_state(
+    ctx: &RpcCtx,
+    pull_id: &str,
+    want: &str,
+) -> Result<bool, AppError> {
+    let reviews = ctx.db.list_pull_reviews(pull_id).await.map_err(db_err)?;
+    let mut latest: std::collections::BTreeMap<String, &octanest_db::PullReviewRow> =
+        std::collections::BTreeMap::new();
+    for r in &reviews {
+        match latest.get(&r.author_id) {
+            Some(prev) if prev.submitted_at >= r.submitted_at => {}
+            _ => {
+                latest.insert(r.author_id.clone(), r);
+            }
+        }
+    }
+    let has_changes = latest.values().any(|r| r.state == "changes_requested");
+    let has_approved = latest.values().any(|r| r.state == "approved");
+    let actual = if has_changes {
+        "changes_requested"
+    } else if has_approved {
+        "approved"
+    } else {
+        "review_required"
+    };
+    Ok(actual == want)
 }
 
 /// `pull.close` — Write+; open → closed (PR-06).

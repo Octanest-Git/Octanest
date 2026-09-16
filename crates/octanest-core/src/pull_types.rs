@@ -160,8 +160,8 @@ pub struct PullListRequest {
     #[serde(default)]
     pub assignee: Option<String>,
     /// `approved` | `changes_requested` | `review_required` | …
-    #[serde(default)]
-    pub review: Option<String>,
+    #[serde(default, alias = "review")]
+    pub review_state: Option<String>,
     #[serde(default)]
     pub offset: Option<u32>,
     #[serde(default)]

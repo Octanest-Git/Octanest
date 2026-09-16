@@ -1662,3 +1662,88 @@ pub async fn list_review_request_user_ids(
         }
     }
 }
+
+/// Whether a pull has a label matching `label` by id or name (case-insensitive name).
+pub async fn pull_has_label(pool: &DbPool, pull_id: &str, label: &str) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*)::bigint FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id = $1 AND (pl.label_id = $2 OR lower(l.name) = lower($2))"#,
+            )
+            .bind(pull_id)
+            .bind(label)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_label: {e}"))?;
+            Ok(n > 0)
+        }
+        DbPool::MySql(p) => {
+            let n: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id = ? AND (pl.label_id = ? OR LOWER(l.name) = LOWER(?))"#,
+            )
+            .bind(pull_id)
+            .bind(label)
+            .bind(label)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_label: {e}"))?;
+            Ok(n > 0)
+        }
+        DbPool::Sqlite(p) => {
+            let n: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id = ?1 AND (pl.label_id = ?2 OR lower(l.name) = lower(?2))"#,
+            )
+            .bind(pull_id)
+            .bind(label)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_label: {e}"))?;
+            Ok(n > 0)
+        }
+    }
+}
+
+/// Whether `user_id` is assigned to the pull.
+pub async fn pull_has_assignee(pool: &DbPool, pull_id: &str, user_id: &str) -> Result<bool, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*)::bigint FROM pull_assignees WHERE pull_id = $1 AND user_id = $2",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_assignee: {e}"))?;
+            Ok(n > 0)
+        }
+        DbPool::MySql(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM pull_assignees WHERE pull_id = ? AND user_id = ?",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_assignee: {e}"))?;
+            Ok(n > 0)
+        }
+        DbPool::Sqlite(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM pull_assignees WHERE pull_id = ?1 AND user_id = ?2",
+            )
+            .bind(pull_id)
+            .bind(user_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("pull_has_assignee: {e}"))?;
+            Ok(n > 0)
+        }
+    }
+}

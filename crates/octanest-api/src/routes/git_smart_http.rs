@@ -522,6 +522,7 @@ async fn authorize_and_cgi(
                     // Only emit when the client sent at least one ref update command.
                     if !updates.is_empty() {
                         let db = state.db.clone();
+                        let repos_dir = state.repos_dir.clone();
                         let repo_id = resolved.row.id.clone();
                         let owner_slug = resolved.disk_owner.clone();
                         let repo_name = resolved.disk_name.clone();
@@ -531,6 +532,18 @@ async fn authorize_and_cgi(
                         tokio::spawn(async move {
                             crate::webhook::dispatch::notify_push(
                                 &db,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &login,
+                                &uid,
+                                &updates,
+                                &env_name,
+                            )
+                            .await;
+                            crate::pull::synchronize_after_push(
+                                &db,
+                                &repos_dir,
                                 &repo_id,
                                 &owner_slug,
                                 &repo_name,

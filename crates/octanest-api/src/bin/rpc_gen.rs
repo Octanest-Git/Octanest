@@ -1069,7 +1069,7 @@ export type PullListRequest = {
   author?: string | null;
   label?: string | null;
   assignee?: string | null;
-  review?: string | null;
+  review_state?: string | null;
   offset?: number | null;
   limit?: number | null;
 };

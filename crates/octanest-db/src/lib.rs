@@ -728,6 +728,14 @@ impl Database {
         pulls::update_pull_head_sha(self.require_pool()?, id, head_sha).await
     }
 
+    pub async fn pull_has_label(&self, pull_id: &str, label: &str) -> Result<bool, String> {
+        pulls::pull_has_label(self.require_pool()?, pull_id, label).await
+    }
+
+    pub async fn pull_has_assignee(&self, pull_id: &str, user_id: &str) -> Result<bool, String> {
+        pulls::pull_has_assignee(self.require_pool()?, pull_id, user_id).await
+    }
+
     pub async fn insert_pull_review(
         &self,
         id: &str,

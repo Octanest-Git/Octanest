@@ -542,6 +542,60 @@ async fn notification_issue_assign_notifies_assignee() {
 }
 
 #[tokio::test]
+async fn notification_issue_opened_notifies_owner() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("notif_opened.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "nowner@ex.com", "nowner").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &owner_cookie, "opened").await;
+
+    let (writer_cookie, writer_v) = signup_and_login(&app, "nwriter@ex.com", "nwriter").await;
+    verify_user(&db, writer_v["data"]["id"].as_str().unwrap()).await;
+    let add = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"nowner","name":"opened","username":"nwriter","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(add["ok"], true, "{add}");
+
+    let created = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"issue.create","input":{"owner":"nowner","name":"opened","title":"From writer","body":"please review"}}"#,
+    )
+    .await;
+    assert_eq!(created["ok"], true, "{created}");
+
+    let listed = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"notification.list","input":{"filter":"unread"}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    let rows = listed["data"]["notifications"].as_array().unwrap();
+    assert!(
+        rows.iter().any(|r| r["reason"] == "issue_opened"),
+        "expected issue_opened — {listed}"
+    );
+
+    let self_count = rpc_json(
+        &app,
+        &writer_cookie,
+        r#"{"procedure":"notification.unreadCount","input":{}}"#,
+    )
+    .await;
+    assert_eq!(self_count["data"]["count"], 0);
+}
+
+#[tokio::test]
 async fn notification_issue_mention_notifies_user() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");

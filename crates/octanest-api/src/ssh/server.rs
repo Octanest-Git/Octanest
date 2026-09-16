@@ -186,6 +186,7 @@ impl Handler for SshHandler {
                 };
                 let handle = session.handle();
                 let db = self.state.db.clone();
+                let repos_dir = self.state.repos_dir.clone();
                 let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
                 let user_id = user_id.clone();
                 tokio::spawn(async move {
@@ -198,6 +199,7 @@ impl Handler for SshHandler {
                             .unwrap_or(1);
                     if code == 0 && is_push {
                         if let Ok(Some(user)) = db.find_user_by_id(&user_id).await {
+                            let updates: &[(String, String, String)] = &[];
                             crate::webhook::dispatch::notify_push(
                                 &db,
                                 &repo_id,
@@ -205,7 +207,19 @@ impl Handler for SshHandler {
                                 &repo_name,
                                 &user.username,
                                 &user.id,
-                                &[],
+                                updates,
+                                &env_name,
+                            )
+                            .await;
+                            crate::pull::synchronize_after_push(
+                                &db,
+                                &repos_dir,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &user.username,
+                                &user.id,
+                                updates,
                                 &env_name,
                             )
                             .await;
