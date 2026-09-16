@@ -2,6 +2,9 @@
 //!
 //! Context format locked for Phase 13 required checks: `{workflow_name} / {job_id}`
 //! where `job_id` is the workflow job key (YAML `jobs.<id>`), not the DB row UUID.
+//!
+//! Phase 13 / branch protection queries statuses via existing session RPC
+//! `repo.commitStatus.list` (Read ACL) — no separate Actions status procedure.
 
 use octanest_db::Database;
 use uuid::Uuid;
