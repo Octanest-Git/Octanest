@@ -11,5 +11,7 @@ describe("fork confirm route (SOC-04)", () => {
     expect(src).toMatch(/export function ForkConfirmPage/);
     expect(src).toMatch(/createFileRoute\("\/\$owner\/\$repo\/fork"\)/);
     expect(src).toMatch(/apiClient\.repo\.fork/);
+    expect(src).toMatch(/fetchRepoGet/);
+    expect(src).not.toMatch(/loader:[\s\S]*apiClient\.repo\.get/);
   });
 });

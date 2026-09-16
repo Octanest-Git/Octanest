@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { fetchSessionMe } from "@/lib/ssr-auth";
+import { fetchRepoGet } from "@/lib/ssr-repo";
 
 export type ForkLoaderData = {
   user: UserPublic;
@@ -43,8 +44,12 @@ export const Route = createFileRoute("/$owner/$repo/fork")({
         href: `/login?returnTo=${encodeURIComponent(`/${owner}/${repoName}/fork`)}`,
       });
     }
-    const got = await apiClient.repo.get({ owner, name: repoName });
+    // Cookie-forward SSR — never browser apiClient (same NETWORK_ERROR trap as PRs).
+    const got = await fetchRepoGet({ data: { owner, name: repoName } });
     if (!got.ok || !got.data) {
+      throw redirect({ href: `/${owner}/${repoName}` });
+    }
+    if (got.data.visibility === "private") {
       throw redirect({ href: `/${owner}/${repoName}` });
     }
     return { user: me.data, source: got.data };
@@ -81,6 +86,8 @@ export function ForkConfirmPage() @{
         const code = (res.error as { code?: string } | undefined)?.code;
         if (code === "repo.name_taken") {
           setError("A repository with this name already exists. Choose a different name.");
+        } else if (code === "repo.fork_exists") {
+          setError("You already have a fork of this repository.");
         } else {
           setError((res.error as { message?: string } | undefined)?.message || "Fork failed.");
         }

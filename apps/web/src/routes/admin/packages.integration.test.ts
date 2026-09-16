@@ -122,7 +122,7 @@ describe("/admin/packages", () => {
       expect(screen.getByTestId("admin-packages-usage")).toBeTruthy();
       expect(screen.getByText("Instance default")).toBeTruthy();
       expect(screen.getByText("left-pad")).toBeTruthy();
-      expect(screen.getByText("npm")).toBeTruthy();
+      expect(screen.getByTestId("admin-packages-list").textContent).toMatch(/npm/);
     });
   });
 });

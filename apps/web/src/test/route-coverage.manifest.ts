@@ -102,6 +102,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
 
   // --- user settings ---
   {
+    route: "settings/general.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/settings/general.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "settings/profile.tsrx",
     coverage: [
       {
@@ -122,6 +131,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "settings/tokens.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "settings/tokens.index.tsrx",
     coverage: [
       {
         kind: "happy-dom",
@@ -131,6 +145,11 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "settings/tokens.new.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "settings/tokens.new.index.tsrx",
     coverage: [
       {
         kind: "happy-dom",
@@ -496,16 +515,28 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   },
   {
     route: "$owner.settings.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.settings.index.tsrx",
     coverage: [
       {
-        kind: "skip",
-        rationale: "Org settings hub deferred; members child has stack-browser",
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.settings.integration.test.ts",
       },
+      { kind: "stack-browser", test: FORGE_SSH_ORGS },
     ],
   },
   {
     route: "$owner.settings.members.tsrx",
-    coverage: [{ kind: "stack-browser", test: FORGE_SSH_ORGS }],
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.settings.integration.test.ts",
+      },
+      { kind: "stack-browser", test: FORGE_SSH_ORGS },
+    ],
   },
   {
     route: "$owner.settings.labels.tsrx",
@@ -517,7 +548,16 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     ],
   },
 
-  // --- explore / notifications (Phases 17 / 21) ---
+  // --- explore / notifications / global search (Phases 17 / 21) ---
+  {
+    route: "search.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/search.integration.test.ts",
+      },
+    ],
+  },
   {
     route: "explore.tsrx",
     coverage: [
