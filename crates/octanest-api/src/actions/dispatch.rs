@@ -15,6 +15,16 @@ pub fn instance_actions_enabled(flag: bool) -> bool {
     flag
 }
 
+/// Parse `OCTANEST_ACTIONS_ENABLED` (default true). Used when `AppState` is unavailable (SSH/RPC).
+pub fn env_actions_enabled() -> bool {
+    std::env::var("OCTANEST_ACTIONS_ENABLED")
+        .map(|v| {
+            let t = v.trim().to_ascii_lowercase();
+            !(t.is_empty() || t == "0" || t == "false" || t == "no" || t == "off")
+        })
+        .unwrap_or(true)
+}
+
 /// Dispatch Actions evaluation after a successful receive-pack.
 ///
 /// Errors are logged only — callers must not fail the push (D-ACT-05 / T-19-09).

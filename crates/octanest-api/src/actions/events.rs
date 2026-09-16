@@ -39,6 +39,24 @@ pub struct PullRequestEvent {
     pub actions_enabled_instance: bool,
 }
 
+/// Soft-fail wrapper for PR lifecycle → Actions (mirrors [`crate::actions::notify_push_actions`]).
+///
+/// Errors are logged only — callers must not fail the PR mutation (D-ACT-05).
+pub async fn notify_pull_request_actions(
+    db: &Database,
+    git: &dyn GitBackend,
+    event: &PullRequestEvent,
+) {
+    if let Err(e) = dispatch_pull_request_inner(db, git, event).await {
+        tracing::warn!(
+            error = %e,
+            repository_id = %event.repository_id,
+            action = ?event.action,
+            "actions pull_request dispatch failed (PR mutation already succeeded)"
+        );
+    }
+}
+
 /// Evaluate `on.pull_request` workflows for a PR lifecycle event.
 ///
 /// Returns the number of runs enqueued. Never exposes an unauthenticated trigger.

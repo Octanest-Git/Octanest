@@ -12,9 +12,12 @@ pub mod statuses;
 pub mod tokens;
 pub mod workflow;
 
-pub use dispatch::{dispatch_push_for_sha, enqueue_run, notify_push_actions};
+pub use dispatch::{
+    dispatch_push_for_sha, enqueue_run, env_actions_enabled, notify_push_actions,
+};
 pub use events::{
-    dispatch_pull_request, dispatch_pull_request_for_sha, PullRequestAction, PullRequestEvent,
+    dispatch_pull_request, dispatch_pull_request_for_sha, notify_pull_request_actions,
+    PullRequestAction, PullRequestEvent,
 };
 pub use logs::{append_job_log, read_job_log};
 pub use parse::{

@@ -7,13 +7,16 @@ use aes_gcm::{Aes256Gcm, Nonce};
 use octanest_db::Database;
 use sha2::{Digest, Sha256};
 
-fn secrets_key_bytes() -> [u8; 32] {
+fn secrets_key_bytes() -> Result<[u8; 32], String> {
     let raw = std::env::var("OCTANEST_ACTIONS_SECRETS_KEY")
         .or_else(|_| std::env::var("OCTANEST_SESSION_SECRET"))
-        .unwrap_or_else(|_| "dev-only-actions-secrets-key".into());
+        .map_err(|_| {
+            "OCTANEST_ACTIONS_SECRETS_KEY (or OCTANEST_SESSION_SECRET) is required to encrypt Actions secrets"
+                .to_string()
+        })?;
     let mut h = Sha256::new();
     h.update(raw.as_bytes());
-    h.finalize().into()
+    Ok(h.finalize().into())
 }
 
 /// Validate Actions secret name (alphanumeric + `_`).
@@ -35,7 +38,7 @@ pub fn validate_secret_name(name: &str) -> Result<(), String> {
 }
 
 pub fn encrypt_secret(plaintext: &str) -> Result<String, String> {
-    let key = Aes256Gcm::new_from_slice(&secrets_key_bytes()).map_err(|e| e.to_string())?;
+    let key = Aes256Gcm::new_from_slice(&secrets_key_bytes()?).map_err(|e| e.to_string())?;
     let mut nonce_bytes = [0u8; 12];
     getrandom::getrandom(&mut nonce_bytes).map_err(|e| e.to_string())?;
     let nonce = Nonce::from_slice(&nonce_bytes);
@@ -54,7 +57,7 @@ pub fn decrypt_secret(blob: &str) -> Result<String, String> {
         return Err("ciphertext too short".into());
     }
     let (nonce_bytes, ct) = raw.split_at(12);
-    let key = Aes256Gcm::new_from_slice(&secrets_key_bytes()).map_err(|e| e.to_string())?;
+    let key = Aes256Gcm::new_from_slice(&secrets_key_bytes()?).map_err(|e| e.to_string())?;
     let nonce = Nonce::from_slice(nonce_bytes);
     let pt = key.decrypt(nonce, ct).map_err(|e| e.to_string())?;
     String::from_utf8(pt).map_err(|e| e.to_string())
@@ -97,6 +100,14 @@ mod tests {
         let ct = encrypt_secret("super-secret").unwrap();
         assert!(!ct.contains("super-secret"));
         assert_eq!(decrypt_secret(&ct).unwrap(), "super-secret");
+    }
+
+    #[test]
+    fn encrypt_fails_closed_without_key() {
+        std::env::remove_var("OCTANEST_ACTIONS_SECRETS_KEY");
+        std::env::remove_var("OCTANEST_SESSION_SECRET");
+        let err = encrypt_secret("x").unwrap_err();
+        assert!(err.contains("OCTANEST_ACTIONS_SECRETS_KEY"), "{err}");
     }
 
     #[test]

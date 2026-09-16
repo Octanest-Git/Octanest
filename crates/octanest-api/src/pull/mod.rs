@@ -47,6 +47,34 @@ fn db_err(e: String) -> AppError {
     }
 }
 
+/// Soft-fail PR → Actions enqueue (CR-02 / D-ACT-05). Never fails the PR mutation.
+async fn notify_actions_for_pull(
+    db: &Database,
+    git: &dyn GitBackend,
+    repos_dir: &Path,
+    base_repo_id: &str,
+    head_owner: &str,
+    head_name: &str,
+    head_sha: &str,
+    head_ref: &str,
+    actor_id: Option<&str>,
+    action: crate::actions::PullRequestAction,
+) {
+    let Ok(bare) = bare_repo_path(repos_dir, head_owner, head_name) else {
+        return;
+    };
+    let event = crate::actions::PullRequestEvent {
+        action,
+        repository_id: base_repo_id.to_string(),
+        bare_repo: bare,
+        head_sha: head_sha.to_string(),
+        head_ref: head_ref.to_string(),
+        actor_id: actor_id.map(str::to_string),
+        actions_enabled_instance: crate::actions::env_actions_enabled(),
+    };
+    crate::actions::notify_pull_request_actions(db, git, &event).await;
+}
+
 pub(crate) async fn emit_pull_event(
     ctx: &RpcCtx,
     accessible: &crate::repo::AccessibleRepo,
@@ -311,6 +339,20 @@ async fn sync_open_pulls_for_branch(
             pusher_id,
             false,
             env_name,
+        )
+        .await;
+        // Same-repo synchronize only (head_repo_id == repository_id filter above).
+        notify_actions_for_pull(
+            db,
+            git,
+            repos_dir,
+            repository_id,
+            owner,
+            repo_name,
+            after_sha,
+            &updated.head_ref,
+            Some(pusher_id),
+            crate::actions::PullRequestAction::Synchronize,
         )
         .await;
     }
@@ -603,6 +645,19 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         &user.username,
         &user.id,
         false,
+    )
+    .await;
+    notify_actions_for_pull(
+        &ctx.db,
+        ctx.git.as_ref(),
+        &ctx.repos_dir,
+        &accessible.row.id,
+        &head_owner_slug,
+        &head_repo_name,
+        &row.head_sha,
+        &row.head_ref,
+        Some(&user.id),
+        crate::actions::PullRequestAction::Opened,
     )
     .await;
     to_public(ctx, &row).await
@@ -905,6 +960,50 @@ pub async fn reopen(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullPublic
         &user.username,
         &user.id,
         false,
+    )
+    .await;
+    let (head_owner, head_name) = if updated.head_repo_id == updated.repo_id {
+        (
+            accessible.owner_username.clone(),
+            accessible.row.name.clone(),
+        )
+    } else if let Ok(Some(head_repo)) = ctx.db.find_repository_by_id(&updated.head_repo_id).await {
+        let owner = match head_repo.owner_type.as_str() {
+            "org" => ctx
+                .db
+                .find_organization_by_id(&head_repo.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|o| o.slug)
+                .unwrap_or_default(),
+            _ => ctx
+                .db
+                .find_user_by_id(&head_repo.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|u| u.username)
+                .unwrap_or_default(),
+        };
+        (owner, head_repo.name)
+    } else {
+        (
+            accessible.owner_username.clone(),
+            accessible.row.name.clone(),
+        )
+    };
+    notify_actions_for_pull(
+        &ctx.db,
+        ctx.git.as_ref(),
+        &ctx.repos_dir,
+        &accessible.row.id,
+        &head_owner,
+        &head_name,
+        &updated.head_sha,
+        &updated.head_ref,
+        Some(&user.id),
+        crate::actions::PullRequestAction::Reopened,
     )
     .await;
     to_public(ctx, &updated).await

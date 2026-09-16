@@ -1,6 +1,6 @@
 //! GitHub Actions–compatible YAML subset parser (D-ACT-02 / ACT-01).
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 /// Structured parse failure suitable for a failed-run log message.
@@ -41,7 +41,7 @@ pub struct JobSpec {
     pub env: Option<JsonValue>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct StepSpec {
     pub name: Option<String>,
     pub uses: Option<String>,
@@ -51,6 +51,7 @@ pub struct StepSpec {
     /// Opaque `with` / `env` / `if` — retained for runner; not interpreted in-process.
     pub with: Option<JsonValue>,
     pub env: Option<JsonValue>,
+    #[serde(rename = "if", skip_serializing_if = "Option::is_none")]
     pub if_expr: Option<String>,
 }
 

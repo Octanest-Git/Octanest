@@ -48,6 +48,19 @@ status: issues_found
 **Files Reviewed:** 29
 **Status:** issues_found
 
+## Remediation (2026-09-16)
+
+Criticals addressed on integrate branch (pending CI + manual verify before ship):
+
+| ID | Status | Change |
+|----|--------|--------|
+| CR-01 | Fixed | SSH `list_refs` before/after → `ref_updates_from_lists`; `env_actions_enabled()` helper |
+| CR-02 | Fixed | `notify_actions_for_pull` from `pull::create` / `synchronize_after_push` / `reopen` |
+| CR-03 | Fixed | Re-read workflow YAML at claim; FetchTask JSON + proto `steps_json` / `secrets_json` |
+| CR-04 | Fixed | Fail closed without `OCTANEST_ACTIONS_SECRETS_KEY` / `OCTANEST_SESSION_SECRET` |
+
+Warnings (WR-01…07) and info items remain open; not ship-blocking for D-ACT-05/07/17.
+
 ## Summary
 
 Phase 19 delivers a substantial Actions control plane (schema, YAML discovery/parse, HTTPS push enqueue, runner register/claim, secrets RPC, UI). Adversarial review found **4 critical** defects that break core success criteria or weaken secret confidentiality: SSH pushes never enqueue, PR lifecycle is unwired despite Phase 12 existing, FetchTask omits executable job payload, and Actions secret encryption falls back to a hardcoded key. Several warnings cover status URL contracts, log binding, DoS surface, and fail-open gates.

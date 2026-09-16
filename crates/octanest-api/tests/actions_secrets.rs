@@ -16,6 +16,7 @@ use octanest_db::Database;
 use tower::ServiceExt;
 
 async fn test_app(db: Database) -> axum::Router {
+    std::env::set_var("OCTANEST_ACTIONS_SECRETS_KEY", "integration-test-key");
     let state = AppState::new(
         db,
         Arc::new(LogSink) as Arc<dyn EmailSender>,
@@ -95,6 +96,7 @@ async fn signup_login_verify(
 
 #[test]
 fn actions_secrets_encrypt_never_stores_plaintext_blob() {
+    std::env::set_var("OCTANEST_ACTIONS_SECRETS_KEY", "integration-test-key");
     let ct = encrypt_secret("hunter2-token").unwrap();
     assert!(!ct.contains("hunter2"));
     assert_eq!(decrypt_secret(&ct).unwrap(), "hunter2-token");
@@ -228,6 +230,7 @@ async fn actions_secrets_enable_toggle_persists() {
 
 #[tokio::test]
 async fn actions_secrets_injected_into_fetch_task() {
+    std::env::set_var("OCTANEST_ACTIONS_SECRETS_KEY", "integration-test-key");
     let dir = tempfile::tempdir().unwrap();
     let db = Database::connect(&format!(
         "sqlite:{}",

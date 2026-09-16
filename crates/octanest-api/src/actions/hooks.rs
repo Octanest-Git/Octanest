@@ -1,17 +1,19 @@
 //! Phase 12 integration hooks for Actions (D-ACT-05).
 //!
-//! Call sites required once Phase 12 PR lifecycle lands (or is wired on this branch):
+//! Wired from `pull` lifecycle (create → Opened, synchronize_after_push → Synchronize,
+//! reopen → Reopened) via [`notify_pull_request_actions`] (soft-fail).
 //!
-//! | PR lifecycle | `PullRequestAction` | Call |
-//! |--------------|---------------------|------|
-//! | PR opened | `Opened` | `actions::dispatch_pull_request` |
-//! | PR head updated | `Synchronize` | same |
-//! | PR reopened | `Reopened` | same |
+//! | PR lifecycle | `PullRequestAction` | Call site |
+//! |--------------|---------------------|-----------|
+//! | PR opened | `Opened` | `pull::create` |
+//! | PR head updated | `Synchronize` | `pull::synchronize_after_push` |
+//! | PR reopened | `Reopened` | `pull::reopen` |
 //!
 //! Do **not** expose a public HTTP endpoint for these events (T-19-13).
 
 pub use crate::actions::events::{
-    dispatch_pull_request, dispatch_pull_request_for_sha, PullRequestAction, PullRequestEvent,
+    dispatch_pull_request, dispatch_pull_request_for_sha, notify_pull_request_actions,
+    PullRequestAction, PullRequestEvent,
 };
 
 #[cfg(test)]

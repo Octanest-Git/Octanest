@@ -137,6 +137,12 @@ struct FetchTaskResponse {
     run_id: Option<String>,
     job_key: Option<String>,
     runs_on: Option<Vec<String>>,
+    workflow_path: Option<String>,
+    workflow_name: Option<String>,
+    head_sha: Option<String>,
+    head_ref: Option<String>,
+    /// Step objects for the claimed job (re-read from workflow YAML at head_sha).
+    steps: Option<serde_json::Value>,
     secrets: Option<std::collections::HashMap<String, String>>,
 }
 
@@ -159,19 +165,40 @@ async fn fetch_task(
                 .db
                 .find_action_run_by_id(&j.run_id)
                 .await
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-            let secrets = if let Some(run) = run {
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+            let secrets =
                 crate::actions::secrets::decrypted_secrets_for_repo(&state.db, &run.repository_id)
                     .await
-                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-            } else {
-                std::collections::HashMap::new()
+                    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+            let (steps, workflow_name) =
+                job_steps_at_head(&state, &run, &j.job_key).await.unwrap_or((
+                    serde_json::Value::Array(vec![]),
+                    run.workflow_name.clone(),
+                ));
+            // Keep prost types linked when regenerating.
+            let _ = pb::FetchTaskResponse {
+                job_id: j.id.clone(),
+                run_id: j.run_id.clone(),
+                job_key: j.job_key.clone(),
+                runs_on: runs_on.clone(),
+                workflow_path: run.workflow_path.clone(),
+                workflow_name: workflow_name.clone(),
+                head_sha: run.head_sha.clone(),
+                head_ref: run.head_ref.clone(),
+                steps_json: steps.to_string(),
+                secrets_json: serde_json::to_string(&secrets).unwrap_or_else(|_| "{}".into()),
             };
             FetchTaskResponse {
                 job_id: Some(j.id),
                 run_id: Some(j.run_id),
                 job_key: Some(j.job_key),
                 runs_on: Some(runs_on),
+                workflow_path: Some(run.workflow_path),
+                workflow_name: Some(workflow_name),
+                head_sha: Some(run.head_sha),
+                head_ref: Some(run.head_ref),
+                steps: Some(steps),
                 secrets: Some(secrets),
             }
         }
@@ -180,9 +207,51 @@ async fn fetch_task(
             run_id: None,
             job_key: None,
             runs_on: None,
+            workflow_path: None,
+            workflow_name: None,
+            head_sha: None,
+            head_ref: None,
+            steps: None,
             secrets: None,
         },
     }))
+}
+
+/// Re-read workflow YAML at the run's head and extract steps for `job_key`.
+async fn job_steps_at_head(
+    state: &AppState,
+    run: &octanest_db::ActionRunRow,
+    job_key: &str,
+) -> Result<(serde_json::Value, String), StatusCode> {
+    let repo = state
+        .db
+        .find_repository_by_id(&run.repository_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let owner_ref = crate::repo::owner_ref_for_repo(&state.db, &repo)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let bare = state
+        .repos_dir
+        .join(owner_ref.slug())
+        .join(format!("{}.git", repo.name));
+    let discovered = crate::actions::discover_workflows(state.git.as_ref(), &bare, &run.head_sha)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let wf = discovered
+        .into_iter()
+        .find(|w| w.path == run.workflow_path)
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let job = wf
+        .document
+        .jobs
+        .iter()
+        .find(|j| j.id == job_key)
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+    let steps = serde_json::to_value(&job.steps).unwrap_or_else(|_| serde_json::json!([]));
+    Ok((steps, wf.document.name))
 }
 
 #[derive(Debug, Deserialize)]

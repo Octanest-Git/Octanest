@@ -29,6 +29,14 @@ message FetchTaskResponse {
   string run_id = 2;
   string job_key = 3;
   repeated string runs_on = 4;
+  string workflow_path = 5;
+  string workflow_name = 6;
+  string head_sha = 7;
+  string head_ref = 8;
+  // JSON array of step objects (name/uses/run/shell/…) for act_runner-class clients.
+  string steps_json = 9;
+  // JSON object of decrypted secret name → value (never logged).
+  string secrets_json = 10;
 }
 
 message UpdateTaskRequest {
