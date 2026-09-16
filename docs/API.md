@@ -110,7 +110,14 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `issue.comments.*` | Comment CRUD + history; author or Write+ moderate-delete | Session (+ capability) |
 | `issue.labels.set` / `assignees.set` / `assigneeCandidates` | Assign labels / assignees (Write+; assignees must have Read+) | Session (+ capability) |
 | `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
-| `issue.links.list` / `add` / `remove` | Linked PR stubs + manual links (`pr_stub`) | Session (+ capability) |
+| `issue.links.list` / `add` / `remove` | Linked issues/PRs (`pr` preferred; legacy `pr_stub` kept) | Session (+ capability) |
+| `pull.create` / `get` / `list` / `update` / `close` / `reopen` | Pull requests; shared `#N` with issues | Session (+ capability) |
+| `pull.files` / `pull.commits` | Diff + commit list for a PR | Session (+ Read+) |
+| `pull.comments.list` / `create` / `resolve` | General + line comments; resolve threads | Session (+ capability) |
+| `pull.reviews.list` / `submit` / `dismiss` | Approve / request changes / comment; dismiss | Session (+ Write+) |
+| `pull.reviewRequests.list` / `add` / `remove` | Optional requested reviewers (UX only) | Session (+ capability) |
+| `pull.merge` | Merge / squash / rebase; optional delete head; closing keywords on default branch | Session (+ Write+) |
+| `repo.mergeSettings.get` / `update` | Per-repo allow merge/squash/rebase (Admin for update) | Session (+ Admin for update) |
 | `label.listForRepo` / `listForOrg` / `create` / `update` / `delete` | Org/repo label definitions (Admin for defs) | Session (+ capability) |
 | `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response. Classic scopes include optional `package:read` / `package:write` (repo scope does **not** imply packages) | Session + verified email |
 | `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); optional Packages Read/Write | Session + verified email |
@@ -332,10 +339,21 @@ Phase 11 ships per-repository issues (ISS-01…04) on migration `0011_issues`:
 | **Numbering** | Each repo allocates monotonic `#N` via `issue_counters`. Hard-delete does **not** reclaim numbers. |
 | **ACL** | Capability gates: Read+ to view; Write+ to create/comment/assign/react/link; author or Write+ to edit own issue/comment; Admin (or typed confirm) for hard-delete. Private unauthorized access returns soft `repo.not_found` / `issue.not_found` (no enumeration). |
 | **Markdown** | Web Write\|Preview uses `renderGfm` with `#N` / `owner/repo#N` autolink and sanitize-last. `@mention` / commit SHA autolink are off. |
-| **Linked PRs** | `issue.links.*` stores stub rows (`pr_stub`) until Phase 12 PR objects exist. Manual add/remove only. |
-| **Deferred** | Closing keywords (`fixes` / `closes` `#N`) are **not** enforced (D-ISS-15 → Phase 12). |
+| **Linked PRs** | `issue.links.*` supports `pr` (real PR `#N`) and legacy `pr_stub`. Prefer `pr` when linking to an open/merged pull. |
+| **Closing keywords** | On `pull.merge` into the **default branch**, `fixes` / `closes` / `resolves` `#N` in the PR body (and merge commit message) close matching open issues. Keywords do **not** fire on close-without-merge or non-default bases. |
 
-Client surface: `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
+### Pull requests (`pull.*`)
+
+Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
+
+| Concern | Contract |
+| --- | --- |
+| **Numbering** | Shared per-repo `#N` with issues (`issue_counters`). |
+| **ACL** | Read+ list/get/diff/comments; Write+ open/comment/review/merge/close/reopen; Admin merge-strategy settings. Author cannot Approve / Request changes on own PR. |
+| **Merge** | Methods `merge` \| `squash` \| `rebase` gated by `repo.mergeSettings.*` (defaults all enabled). Conflict → `pull.merge_conflict`. Optional `delete_branch`. |
+| **Diff UX** | `pull.files` unified patch; web supports unified/split. Line comments carry path/side/line; outdated after head/base change. |
+
+Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
 
 ### Git Smart HTTP
 

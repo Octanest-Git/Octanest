@@ -79,10 +79,17 @@ describe("Phase 12 Pulls UI", () => {
   it("merge method picker + close/reopen", () => {
     expect(pullDetail).toMatch(/Close pull request/);
     expect(pullDetail).toMatch(/Reopen pull request/);
+    expect(pullDetail).toMatch(/PullMergePanel/);
   });
 
-  it.fails("Admin merge strategy settings", () => {
-    expect(true).toBe(false);
+  it("Admin merge strategy settings", () => {
+    const settings = readFileSync(
+      join(process.cwd(), "src/components/repo/merge-settings-panel.tsrx"),
+      "utf8",
+    );
+    expect(settings).toMatch(/Allow merge commits/);
+    expect(settings).toMatch(/Allow squash merging/);
+    expect(settings).toMatch(/Allow rebase merging/);
   });
 
   it("Write|Preview on PR comments", () => {

@@ -4,6 +4,7 @@ import { useState } from "octane";
 import { PullCommits } from "@/components/repo/pull-commits";
 import { PullConversation } from "@/components/repo/pull-conversation";
 import { PullFiles } from "@/components/repo/pull-files";
+import { PullMergePanel } from "@/components/repo/pull-merge-panel";
 import { PullReviews } from "@/components/repo/pull-reviews";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
@@ -162,6 +163,13 @@ export function PullDetailPage() @{
           @if (error) {
             <p className="text-sm text-destructive">{error as string}</p>;
           }
+          <PullMergePanel
+            owner={owner}
+            repoName={repoName}
+            number={number}
+            canWrite={canWrite}
+            pullState={(pull.state as string) ?? "open"}
+          />
           <div className="flex gap-3 border-b border-border" role="tablist">
             <button
               type="button"
