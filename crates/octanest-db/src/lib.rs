@@ -9,6 +9,7 @@ pub mod issue_labels;
 pub mod issues;
 pub mod lfs;
 pub mod migrate;
+pub mod notifications;
 pub mod org_invites;
 pub mod org_members;
 pub mod organizations;
@@ -32,6 +33,7 @@ pub use issues::{
     CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
 };
 pub use lfs::LfsObjectRow;
+pub use notifications::NotificationRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -962,6 +964,76 @@ impl Database {
         body: &str,
     ) -> Result<IssueCommentRow, String> {
         issues::insert_issue_comment(self.require_pool()?, id, issue_id, author_id, body).await
+    }
+
+    pub async fn insert_notification(
+        &self,
+        id: &str,
+        recipient_id: &str,
+        actor_id: &str,
+        reason: &str,
+        subject_kind: &str,
+        subject_repo_id: &str,
+        subject_number: i64,
+        subject_title: &str,
+    ) -> Result<NotificationRow, String> {
+        notifications::insert_notification(
+            self.require_pool()?,
+            id,
+            recipient_id,
+            actor_id,
+            reason,
+            subject_kind,
+            subject_repo_id,
+            subject_number,
+            subject_title,
+        )
+        .await
+    }
+
+    pub async fn find_notification_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<NotificationRow>, String> {
+        notifications::find_notification_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_notifications(
+        &self,
+        recipient_id: &str,
+        unread_only: bool,
+        offset: i64,
+        limit: i64,
+    ) -> Result<(Vec<NotificationRow>, i64), String> {
+        notifications::list_notifications(
+            self.require_pool()?,
+            recipient_id,
+            unread_only,
+            offset,
+            limit,
+        )
+        .await
+    }
+
+    pub async fn notification_unread_count(&self, recipient_id: &str) -> Result<i64, String> {
+        notifications::unread_count(self.require_pool()?, recipient_id).await
+    }
+
+    pub async fn mark_notifications_read(
+        &self,
+        recipient_id: &str,
+        ids: &[String],
+        read_at: &str,
+    ) -> Result<i64, String> {
+        notifications::mark_read(self.require_pool()?, recipient_id, ids, read_at).await
+    }
+
+    pub async fn mark_all_notifications_read(
+        &self,
+        recipient_id: &str,
+        read_at: &str,
+    ) -> Result<i64, String> {
+        notifications::mark_all_read(self.require_pool()?, recipient_id, read_at).await
     }
 
     pub async fn find_issue_comment_by_id(

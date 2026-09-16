@@ -102,8 +102,6 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `repo.transfer` | Transfer ownership (type-confirm `confirmName`); moves bare dir; redirect | Repo Admin |
 | `repo.softDelete` | Soft-delete with type-confirm | Repo Admin |
 | `repo.collaborators.list` / `add` / `update` / `remove` | Per-repo collaborator grants | Repo Admin |
-| `repo.branchProtection.list` / `create` / `update` / `delete` | Classic branch protection rules (patterns, reviews, checks, locks) | Repo Admin |
-| `repo.commitStatus.create` / `list` | Per-commit status contexts (CI / Actions consumers) | Session (+ Write create; Read list) |
 | `release.list` / `get` / `create` / `update` / `delete` / `deleteAsset` | Tag-based releases + notes; assets via HTTP | Session (+ capability) |
 | `admin.auth.get_settings` | Auth/email settings including `allow_signup` (no secrets) | Admin session |
 | `admin.auth.update_settings` | Update provider/email/`allow_signup`; rebuild email sender | Admin session |
@@ -113,6 +111,10 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `issue.labels.set` / `assignees.set` / `assigneeCandidates` | Assign labels / assignees (Write+; assignees must have Read+) | Session (+ capability) |
 | `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
 | `issue.links.list` / `add` / `remove` | Linked issues/PRs (`pr` preferred; legacy `pr_stub` kept) | Session (+ capability) |
+| `notification.list` | Own notifications; filter `unread` (default) \| `all`; offset pagination | Session |
+| `notification.unreadCount` | Unread badge count for session user | Session |
+| `notification.markRead` | Mark own notification ids read (foreign ids no-op) | Session |
+| `notification.markAllRead` | Mark all own unread notifications read | Session |
 | `pull.create` / `get` / `list` / `update` / `close` / `reopen` | Pull requests; shared `#N` with issues | Session (+ capability) |
 | `pull.files` / `pull.commits` | Diff + commit list for a PR | Session (+ Read+) |
 | `pull.comments.list` / `create` / `resolve` | General + line comments; resolve threads | Session (+ capability) |
@@ -352,25 +354,23 @@ Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
 | --- | --- |
 | **Numbering** | Shared per-repo `#N` with issues (`issue_counters`). |
 | **ACL** | Read+ list/get/diff/comments; Write+ open/comment/review/merge/close/reopen; Admin merge-strategy settings. Author cannot Approve / Request changes on own PR. |
-| **Merge** | Methods `merge` \| `squash` \| `rebase` gated by `repo.mergeSettings.*` (defaults all enabled). Conflict → `pull.merge_conflict`. Unmet branch protection → `pull.merge_blocked` with `error.data.reasons` (see Branch protection). Optional `delete_branch`. |
+| **Merge** | Methods `merge` \| `squash` \| `rebase` gated by `repo.mergeSettings.*` (defaults all enabled). Conflict → `pull.merge_conflict`. Optional `delete_branch`. |
 | **Diff UX** | `pull.files` unified patch; web supports unified/split. Line comments carry path/side/line; outdated after head/base change. |
 
 Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
 
-### Branch protection (`repo.branchProtection.*`) & commit status (`repo.commitStatus.*`)
+### Notifications (`notification.*`)
 
-Phase 13 ships classic GitHub-style branch protection (ORG-05/06, PR-08) on migration `0017_branch_protection`:
+Phase 17 ships in-app activity notifications (NOTF-01 / NOTF-02) on migration `0018_notifications`:
 
 | Concern | Contract |
 | --- | --- |
-| **Rules** | `repo.branchProtection.list` / `create` / `update` / `delete` — **Admin** only. Patterns use `*` / `?` (segment-safe; `*` does not cross `/`). Multiple matching rules **union** (any matching rule’s restrictions apply). |
-| **Flags** | Required reviews (count 1–6), dismiss stale, conversation resolution, last-push approval, required status contexts + strict (up-to-date), allow force pushes / deletions, enforce admins, linear history, lock branch. |
-| **Statuses** | `repo.commitStatus.create` (Write+) / `list` (Read+). Contexts are opaque strings; Phase 19 Actions will write here. |
-| **Merge gate** | Shared `protection::evaluate` runs on `pull.merge`. Failure → `pull.merge_blocked` with `error.data.reasons: string[]` (e.g. `reviews`, `checks`, `conversations`, `up_to_date`, `locked`, `draft`, `linear_history`, `last_push_approval`). UI displays the same codes. |
-| **Push gate (ORG-06)** | Bare-repo `hooks/update` + `octanest-protection-hook` enforce protection on Smart HTTP and SSH pushes (CGI env carries actor capability). Soft-protect (default-branch tip) **coexists** — both may deny. |
-| **Errors** | Missing rule → `repo.branch_protection_not_found`. Push denials surface as git hook rejection (`repo.branch_protection` in RPC-shaped helpers). |
+| **Ownership** | Every list/mark/unread query is forced to `recipient_id = session.user_id`. Clients cannot address another user's inbox. |
+| **Read model** | `read_at` null = unread. `notification.list` filter `unread` (default) or `all`; newest-first offset pagination. |
+| **Payload** | Rows include `reason`, `subject_kind` (`issue` \| `pull_request`), `owner` / `repo` slugs, `subject_number`, `subject_title`, `actor_username` for deep links `/{owner}/{repo}/issues\|pull/{n}`. |
+| **Fan-out** | Domain writes (e.g. `issue.comments.create`) insert best-effort rows; actors are never notified. Activity email is out of scope. |
 
-Client surface: `client.repo.branchProtection.*` / `client.repo.commitStatus.*` (regenerate with `make rpc-gen`).
+Client surface: `client.notification.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
 
 ### Git Smart HTTP
 
@@ -506,9 +506,6 @@ Common `error.code` values:
 | `org.invite_*` | Invite expired / revoked / invalid |
 | `repo.not_found` | Missing or unauthorized private (web/RPC soft 404) |
 | `repo.create_forbidden` | Org Member cannot create under that org |
-| `repo.branch_protection` / `repo.branch_protection_not_found` | Protection push/deny helpers / missing rule id |
-| `pull.merge_blocked` | Merge blocked by branch protection; see `error.data.reasons` |
-| `pull.merge_conflict` | Git merge/squash/rebase conflict |
 | `issue.not_found` / `issue.comment_not_found` / `issue.link_not_found` | Missing issue/comment/link (private soft-404 where applicable) |
 | `issue.confirm_mismatch` | Admin hard-delete confirmation number mismatch |
 | `label.not_found` | Missing label definition |

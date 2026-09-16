@@ -8,6 +8,7 @@ use octanest_db::PullCommentRow;
 use uuid::Uuid;
 
 use crate::auth::gate::require_verified;
+use crate::notify;
 use crate::pull::acl;
 use crate::rpc::RpcCtx;
 
@@ -149,6 +150,16 @@ pub async fn comments_create(
         )
         .await
         .map_err(db_err)?;
+    let subject = notify::subject_for_pull(&pull);
+    let participants = notify::pull_participant_ids(ctx, &pull.id, &pull.author_id).await;
+    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
+    notify::fanout(ctx, &user.id, participants.clone(), "pr_comment", &subject).await;
+    let participant_set: std::collections::HashSet<_> = participants.into_iter().collect();
+    let mention_only: Vec<_> = mentions
+        .into_iter()
+        .filter(|m| !participant_set.contains(m))
+        .collect();
+    notify::fanout(ctx, &user.id, mention_only, "pr_mention", &subject).await;
     comment_to_public(ctx, &row).await
 }
 

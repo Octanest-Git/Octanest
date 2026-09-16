@@ -88,8 +88,8 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Notifications & webhooks
 
-- [ ] **NOTF-01**: Signed-in user receives in-app notifications for relevant issue and PR activity
-- [ ] **NOTF-02**: User can list and mark notifications as read
+- [x] **NOTF-01**: Signed-in user receives in-app notifications for relevant issue and PR activity
+- [x] **NOTF-02**: User can list and mark notifications as read
 - [ ] **HOOK-01**: Repo admin can create, edit, and delete outbound webhooks for repo events
 - [ ] **HOOK-02**: Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
 - [ ] **HOOK-03**: Repo admin can view recent webhook delivery attempts and response status
@@ -227,8 +227,8 @@ Deferred; not in the current roadmap until promoted.
 | ISS-02 | Phase 11 | Complete |
 | ISS-03 | Phase 11 | Complete |
 | ISS-04 | Phase 11 | Complete |
-| NOTF-01 | Phase 17 | Pending |
-| NOTF-02 | Phase 17 | Pending |
+| NOTF-01 | Phase 17 | Complete |
+| NOTF-02 | Phase 17 | Complete |
 | HOOK-01 | Phase 18 | Pending |
 | HOOK-02 | Phase 18 | Pending |
 | HOOK-03 | Phase 18 | Pending |

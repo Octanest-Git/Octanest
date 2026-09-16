@@ -1199,6 +1199,48 @@ export type PullReviewRequestsListResponse = {
   usernames: string[];
 };
 
+export type NotificationPublic = {
+  id: string;
+  reason: string;
+  subject_kind: string;
+  subject_repo_id: string;
+  owner: string;
+  repo: string;
+  subject_number: number;
+  subject_title: string;
+  actor_id: string;
+  actor_username: string;
+  created_at: string;
+  read_at?: string | null;
+};
+
+export type NotificationListRequest = {
+  filter?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type NotificationListResponse = {
+  notifications: NotificationPublic[];
+  total: number;
+};
+
+export type NotificationUnreadCountResponse = {
+  count: number;
+};
+
+export type NotificationMarkReadRequest = {
+  ids: string[];
+};
+
+export type NotificationMarkReadResponse = {
+  marked: number;
+};
+
+export type NotificationMarkAllReadResponse = {
+  marked: number;
+};
+
 export type RemoveIssueLinkResponse = {
   ok: boolean;
 };
@@ -1802,6 +1844,28 @@ export function createClient(opts: CreateClientOptions) {
             input,
           ),
       },
+    },
+    notification: {
+      list: (input: NotificationListRequest = {}) =>
+        rpcCall<NotificationListResponse>(opts, "notification.list", input),
+      unreadCount: (input: Record<string, never> = {}) =>
+        rpcCall<NotificationUnreadCountResponse>(
+          opts,
+          "notification.unreadCount",
+          input,
+        ),
+      markRead: (input: NotificationMarkReadRequest) =>
+        rpcCall<NotificationMarkReadResponse>(
+          opts,
+          "notification.markRead",
+          input,
+        ),
+      markAllRead: (input: Record<string, never> = {}) =>
+        rpcCall<NotificationMarkAllReadResponse>(
+          opts,
+          "notification.markAllRead",
+          input,
+        ),
     },
     mergeSettings: {
       get: (input: RepoGetRequest) =>
