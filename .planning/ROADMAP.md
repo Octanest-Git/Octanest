@@ -681,10 +681,11 @@ Plans:
   2. Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
   3. Repo admin can view recent webhook delivery attempts and response status
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
-- [ ] 18-00-PLAN.md — Wave 0 Nyquist stubs (webhook RPC, delivery, dialect, settings UI)
+
+- [x] 18-00-PLAN.md — Wave 0 Nyquist stubs (webhook RPC, delivery, dialect, settings UI)
 - [ ] 18-01-PLAN.md — Tracer: schema + Admin CRUD + issues→signed delivery
 - [ ] 18-02-PLAN.md — Delivery hardening: SSRF, HMAC, retries, deliveries/ping RPC
 - [ ] 18-03-PLAN.md — push + pull_request emitters (Phase 12-aligned payloads)
@@ -793,7 +794,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 0/TBD | Not started | - |
-| 18. Webhooks | 0/TBD | Not started | - |
+| 18. Webhooks | 1/5 | In Progress|  |
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 0/TBD | Not started | - |
