@@ -58,11 +58,30 @@ echo "==> docker compose up --build -d --wait"
 # shellcheck disable=SC2086
 docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up --build -d --wait
 
-echo "==> curl web /"
-curl -fsS -o /dev/null -w "web %{http_code}\n" "$BASE_URL/"
+# Traefik docker-provider discovery can lag container healthchecks (--wait).
+# Retry until routers are live so we don't flake with an immediate 404.
+wait_http() {
+  local url="$1"
+  local label="$2"
+  local deadline=$((SECONDS + 60))
+  local code=""
+  while (( SECONDS < deadline )); do
+    code="$(curl -sS -o /dev/null -w '%{http_code}' "$url" || true)"
+    if [[ "$code" =~ ^(200|301|302|303|307|308)$ ]]; then
+      echo "$label $code"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "$label failed (last HTTP $code) after waiting for Traefik route: $url" >&2
+  return 1
+}
+
+echo "==> curl web / (wait for Traefik)"
+wait_http "$BASE_URL/" "web"
 
 echo "==> curl /health via Traefik"
-curl -fsS -o /dev/null -w "health %{http_code}\n" "$BASE_URL/health"
+wait_http "$BASE_URL/health" "health"
 
 echo "==> RPC system.health"
 curl -fsS \
