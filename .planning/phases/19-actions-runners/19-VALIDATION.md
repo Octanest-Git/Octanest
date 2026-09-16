@@ -1,8 +1,8 @@
 ---
 phase: "19"
 slug: "actions-runners"
-status: complete
-nyquist_compliant: true
+status: executed
+nyquist_compliant: false
 wave_0_complete: true
 created: "2026-09-16"
 updated: "2026-09-16"
@@ -11,6 +11,7 @@ updated: "2026-09-16"
 # Phase 19 — Validation Strategy
 
 > Per-phase validation contract. Seeded from `19-RESEARCH.md` Validation Architecture.
+> Updated by plan **19-11** after docs + smoke + phase gate execution.
 
 ---
 
@@ -20,7 +21,7 @@ updated: "2026-09-16"
 |----------|-------|
 | **Framework** | Rust: cargo-nextest; Web: Vitest via Bun |
 | **Config file** | `.config/nextest.toml`; `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)'` |
+| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'` |
 | **Full suite command** | `make test` (+ `make rpc-sync-check`; `make smoke-actions` skip-ok without Docker) |
 | **Estimated runtime** | ~90–300 seconds (quick); longer with smoke |
 
@@ -63,6 +64,7 @@ updated: "2026-09-16"
 - [x] `crates/octanest-api/tests/actions_rpc.rs` — ACT-03
 - [x] `crates/octanest-api/tests/actions_runner_protocol.rs` — ACT-06
 - [x] `crates/octanest-api/tests/actions_dispatch_policy.rs` — ACT-07
+- [x] `crates/octanest-api/tests/actions_secrets.rs` — ACT-06 secrets
 - [x] `crates/octanest-api/tests/commit_statuses.rs` — Phase 13 surface / D-ACT-15
 - [x] `crates/octanest-db/tests/dialect_actions.rs` — migration parity
 - [x] `apps/web/src/routes/$owner.$repo.actions.integration.test.ts` — ACT-03 UI
@@ -81,13 +83,25 @@ updated: "2026-09-16"
 
 ---
 
+## Phase gate (19-11)
+
+Documented in [docs/TESTING.md](../../../docs/TESTING.md#actions-phase-gate-phase-19):
+
+```bash
+make smoke-actions
+cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
+make rpc-sync-check
+```
+
+---
+
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 300s
-- [x] `nyquist_compliant: true` — owned by `/gsd-validate-phase`
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 300s
+- [ ] `nyquist_compliant: true` — owned by `/gsd-validate-phase`
 
-**Approval:** pending execute + validate-phase
+**Approval:** pending validate-phase (executor completed docs + smoke + targeted nextest gate)
