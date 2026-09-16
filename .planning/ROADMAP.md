@@ -830,12 +830,12 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 5/5 | Complete | 2026-09-16 |
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
-| 19. Actions & Runners | 11/12 | In Progress|  |
+| 19. Actions & Runners | 12/12 | Complete    | 2026-09-16 |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
 
 ---
 *Roadmap created: 2026-09-09*
-*Last updated: 2026-09-16 — integrate campaign: 12–18, 21–22 on integrate; Phase 19 in progress*
+*Last updated: 2026-09-16 — Phase 19 Actions & Runners complete (12/12 plans on cursor/phase-19-actions-runners-c82f)*
 *Granularity: fine — 22 phases, 85/85 v1 requirements mapped*
