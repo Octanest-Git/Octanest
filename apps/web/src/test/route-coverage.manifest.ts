@@ -236,6 +236,29 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     coverage: [{ kind: "stack-browser", test: FORGE_REPO }],
   },
   {
+    route: "$owner.$repo.actions.tsrx",
+    layoutOnly: true,
+    coverage: [],
+  },
+  {
+    route: "$owner.$repo.actions.index.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.actions.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.actions.$run.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.actions.$run.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "$owner.$repo.tree.$.tsrx",
     coverage: [
       {
