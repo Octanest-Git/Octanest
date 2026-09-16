@@ -329,4 +329,15 @@ pub trait GitBackend: Send + Sync {
         pathspec: Option<&str>,
         max_matches: u32,
     ) -> Result<GrepResult, GitError>;
+
+    /// Search commits via `git log --grep` / `--author` (D-SRCH-07). Empty → `Ok(vec![])`.
+    async fn log_search(
+        &self,
+        repo: &Path,
+        refname: &str,
+        grep: Option<&str>,
+        author: Option<&str>,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError>;
 }

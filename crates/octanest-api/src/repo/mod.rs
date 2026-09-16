@@ -6,6 +6,7 @@ mod commit_status;
 mod collaborators;
 mod rename_transfer;
 mod search;
+mod search_query;
 mod templates;
 
 pub use acl::{

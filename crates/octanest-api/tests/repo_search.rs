@@ -166,34 +166,238 @@ async fn repo_search_code() {
     assert_eq!(empty["data"]["hits"].as_array().unwrap().len(), 0);
 }
 
-/// D-SRCH-07 / D-SRCH-12: type=commits — Wave 0 until 16-02.
+/// D-SRCH-07 / D-SRCH-12: type=commits matches message grep and author:login.
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 16-02 (repo.search type=commits)"]
 async fn repo_search_commits() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("repo_search_commits.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, v) = signup_and_login(&app, "cmt@ex.com", "cmtsrch").await;
+    let owner_id = v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"hist","visibility":"public","description":""}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+    let bare = repos.join("cmtsrch").join("hist.git");
+    let git = CliGitBackend::new();
+    git.seed_commit(
+        &bare,
+        "main",
+        "UNIQUE_COMMIT_SRCH_MSG",
+        &[("a.txt".into(), b"one\n".to_vec())],
+    )
+    .await
+    .expect("seed");
+
+    let by_msg = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"cmtsrch","name":"hist","type":"commits","q":"UNIQUE_COMMIT_SRCH_MSG"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(by_msg["ok"], true, "{by_msg}");
+    let hits = by_msg["data"]["hits"].as_array().expect("hits");
+    assert!(!hits.is_empty(), "{by_msg}");
+    assert_eq!(hits[0]["kind"], "commit");
     assert!(
-        false,
-        "Wave 0: repo.search type=commits finds commits by message and author: (D-SRCH-07)"
+        hits[0]["subject"]
+            .as_str()
+            .unwrap_or("")
+            .contains("UNIQUE_COMMIT_SRCH_MSG"),
+        "{by_msg}"
+    );
+
+    let by_author = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"cmtsrch","name":"hist","type":"commits","q":"author:Octanest"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(by_author["ok"], true, "{by_author}");
+    assert!(
+        !by_author["data"]["hits"].as_array().unwrap().is_empty(),
+        "author: qualifier should find seeded commit — {by_author}"
     );
 }
 
-/// D-SRCH-09 / D-SRCH-12: type=issues — Wave 0 until 16-02.
+/// D-SRCH-09 / D-SRCH-12: type=issues matches title/body with is:open/is:closed.
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 16-02 (repo.search type=issues)"]
 async fn repo_search_issues() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("repo_search_issues.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, v) = signup_and_login(&app, "iss@ex.com", "isssrch").await;
+    let owner_id = v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"bugs","visibility":"public","description":"","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+
+    let issue = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"isssrch","name":"bugs","title":"UNIQUE_ISSUE_SRCH_TITLE","body":"details here"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(issue["ok"], true, "{issue}");
+
+    let found = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"isssrch","name":"bugs","type":"issues","q":"UNIQUE_ISSUE_SRCH_TITLE is:open"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(found["ok"], true, "{found}");
+    let hits = found["data"]["hits"].as_array().expect("hits");
+    assert!(!hits.is_empty(), "{found}");
+    assert_eq!(hits[0]["kind"], "issue");
     assert!(
-        false,
-        "Wave 0: repo.search type=issues finds issues by title/body (D-SRCH-09)"
+        hits[0]["title"]
+            .as_str()
+            .unwrap_or("")
+            .contains("UNIQUE_ISSUE_SRCH_TITLE"),
+        "{found}"
     );
+
+    // Issues tab must not return pull rows (create a PR and ensure type=issues ignores it).
+    let branch = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"isssrch","name":"bugs","branch":"feature","start":"main"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(branch["ok"], true, "{branch}");
+    let pr = rpc_json(
+        &app,
+        r#"{"procedure":"pull.create","input":{"owner":"isssrch","name":"bugs","title":"UNIQUE_ISSUE_SRCH_TITLE pr twin","body":"","base_ref":"main","head_ref":"feature"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(pr["ok"], true, "{pr}");
+
+    let issues_only = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"isssrch","name":"bugs","type":"issues","q":"UNIQUE_ISSUE_SRCH_TITLE"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(issues_only["ok"], true, "{issues_only}");
+    for hit in issues_only["data"]["hits"].as_array().unwrap() {
+        assert_eq!(hit["kind"], "issue", "issues tab must not mix PRs — {issues_only}");
+    }
 }
 
-/// D-SRCH-10 / D-SRCH-11: type=pulls — Wave 0 until 16-02.
+/// D-SRCH-10 / D-SRCH-11: type=pulls finds PRs separately from issues.
 #[tokio::test]
-#[ignore = "Wave 0 stub — greened in 16-02 (repo.search type=pulls)"]
 async fn repo_search_pulls() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("repo_search_pulls.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let (cookie, v) = signup_and_login(&app, "pr@ex.com", "prsrch").await;
+    let owner_id = v["data"]["id"].as_str().expect("id");
+    let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    db.set_email_verified_at(owner_id, &now)
+        .await
+        .expect("verify");
+
+    let create = rpc_json(
+        &app,
+        r#"{"procedure":"repo.create","input":{"name":"app","visibility":"public","description":"","stack_id":"rust","license_id":"MIT","gitignore_id":"Rust"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+
+    let _issue = rpc_json(
+        &app,
+        r#"{"procedure":"issue.create","input":{"owner":"prsrch","name":"app","title":"UNIQUE_PULL_SRCH_TITLE issue twin","body":""}}"#,
+        Some(&cookie),
+    )
+    .await;
+
+    let branch = rpc_json(
+        &app,
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"prsrch","name":"app","branch":"feature","start":"main"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(branch["ok"], true, "{branch}");
+
+    let pr = rpc_json(
+        &app,
+        r#"{"procedure":"pull.create","input":{"owner":"prsrch","name":"app","title":"UNIQUE_PULL_SRCH_TITLE","body":"pr body","base_ref":"main","head_ref":"feature"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(pr["ok"], true, "{pr}");
+
+    let found = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"prsrch","name":"app","type":"pulls","q":"UNIQUE_PULL_SRCH_TITLE is:open"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(found["ok"], true, "{found}");
+    let hits = found["data"]["hits"].as_array().expect("hits");
+    assert!(!hits.is_empty(), "{found}");
+    assert_eq!(hits[0]["kind"], "pull");
     assert!(
-        false,
-        "Wave 0: repo.search type=pulls finds PRs without mixing issues (D-SRCH-10)"
+        hits[0]["title"]
+            .as_str()
+            .unwrap_or("")
+            .contains("UNIQUE_PULL_SRCH_TITLE"),
+        "{found}"
     );
+    for hit in hits {
+        assert_eq!(hit["kind"], "pull", "pulls tab must not mix issues — {found}");
+    }
+
+    let issues_tab = rpc_json(
+        &app,
+        r#"{"procedure":"repo.search","input":{"owner":"prsrch","name":"app","type":"issues","q":"UNIQUE_PULL_SRCH_TITLE"}}"#,
+        Some(&cookie),
+    )
+    .await;
+    assert_eq!(issues_tab["ok"], true, "{issues_tab}");
+    for hit in issues_tab["data"]["hits"].as_array().unwrap() {
+        assert_eq!(hit["kind"], "issue", "{issues_tab}");
+        assert_ne!(
+            hit["title"].as_str().unwrap_or(""),
+            "UNIQUE_PULL_SRCH_TITLE",
+            "exact PR title must not appear in issues tab"
+        );
+    }
 }
 
 /// D-SRCH-04: private unauthorized actor gets soft repo.not_found.

@@ -1159,6 +1159,81 @@ impl GitBackend for CliGitBackend {
         }
         Ok(GrepResult { hits, truncated })
     }
+
+    async fn log_search(
+        &self,
+        repo: &Path,
+        refname: &str,
+        grep: Option<&str>,
+        author: Option<&str>,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let limit = limit.clamp(1, 100);
+        let skip_s = skip.to_string();
+        let limit_s = limit.to_string();
+
+        let grep = grep.map(str::trim).filter(|s| !s.is_empty());
+        let author = author.map(str::trim).filter(|s| !s.is_empty());
+        if grep.is_none() && author.is_none() {
+            return Ok(Vec::new());
+        }
+        if grep.is_some_and(|s| s.contains('\0')) || author.is_some_and(|s| s.contains('\0')) {
+            return Err(GitError::InvalidArg("log_search filter contains NUL".into()));
+        }
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let mut args: Vec<String> = vec![
+            "-C".into(),
+            repo_s.to_string(),
+            "log".into(),
+            format!("--skip={skip_s}"),
+            format!("--max-count={limit_s}"),
+            "--regexp-ignore-case".into(),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI".into(),
+        ];
+        if let Some(g) = grep {
+            args.push(format!("--grep={g}"));
+        }
+        if let Some(a) = author {
+            args.push(format!("--author={a}"));
+        }
+        args.push(refname.to_string());
+        let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+
+        let stdout = run_git_stdout(&arg_refs).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for record in text.split('\n') {
+            let record = record.trim_end_matches('\r');
+            if record.is_empty() {
+                continue;
+            }
+            if let Some(summary) = parse_commit_summary_record(record) {
+                out.push(summary);
+            }
+        }
+        Ok(out)
+    }
 }
 
 fn parse_grep_line(line: &str, treeish: &str) -> Option<GrepHit> {
@@ -1514,6 +1589,47 @@ mod tests {
             capped.hits.iter().all(|h| h.path != "bin.dat"),
             "binary file should be skipped with -I"
         );
+    }
+
+    #[tokio::test]
+    async fn log_search_matches_message_and_author() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("log_search.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "UNIQUE_COMMIT_MSG_TOKEN",
+            &[("a.txt".into(), b"one\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let by_msg = git
+            .log_search(
+                &bare,
+                "main",
+                Some("UNIQUE_COMMIT_MSG_TOKEN"),
+                None,
+                0,
+                10,
+            )
+            .await
+            .expect("log_search msg");
+        assert_eq!(by_msg.len(), 1);
+        assert!(by_msg[0].subject.contains("UNIQUE_COMMIT_MSG_TOKEN"));
+
+        let by_author = git
+            .log_search(&bare, "main", None, Some("Octanest"), 0, 10)
+            .await
+            .expect("log_search author");
+        assert!(!by_author.is_empty());
+
+        let miss = git
+            .log_search(&bare, "main", Some("zzz_no_msg"), None, 0, 10)
+            .await
+            .expect("log_search miss");
+        assert!(miss.is_empty());
     }
 
     #[tokio::test]
