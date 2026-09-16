@@ -388,6 +388,172 @@ pub async fn list_by_repo(
     }
 }
 
+/// Search filters for pull_requests title/body (D-SRCH-10 / D-SRCH-12).
+#[derive(Debug, Clone, Default)]
+pub struct PullSearchFilters<'a> {
+    /// `open` | `closed` | `all` (empty → all for search).
+    pub state: &'a str,
+    pub author_id: Option<&'a str>,
+    pub q: Option<&'a str>,
+    pub offset: u32,
+    pub limit: u32,
+}
+
+fn pull_like_pattern(q: &str) -> String {
+    format!("%{q}%")
+}
+
+fn normalize_pull_search_state(state: &str) -> Option<&'static str> {
+    match state.trim() {
+        "open" => Some("open"),
+        "closed" => Some("closed"),
+        "" | "all" => None,
+        _ => None,
+    }
+}
+
+/// Title/body substring search over `pull_requests` only (never issues — D-SRCH-11).
+pub async fn search_by_repo(
+    pool: &DbPool,
+    repo_id: &str,
+    filters: PullSearchFilters<'_>,
+) -> Result<(Vec<PullRow>, i64), String> {
+    let limit = filters.limit.clamp(1, 100);
+    let offset = filters.offset;
+    let state = normalize_pull_search_state(filters.state);
+    let author_id = filters.author_id.filter(|s| !s.is_empty());
+    let q = filters
+        .q
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(pull_like_pattern);
+
+    match pool {
+        DbPool::Sqlite(p) => {
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM pull_requests
+WHERE repo_id = ?1
+  AND (?2 IS NULL OR state = ?2)
+  AND (?3 IS NULL OR author_id = ?3)
+  AND (?4 IS NULL OR title LIKE ?4 COLLATE NOCASE OR body LIKE ?4 COLLATE NOCASE)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count pull search failed: {e}"))?;
+            let rows = sqlx::query(&format!(
+                r#"SELECT {PULL_COLS} FROM pull_requests
+WHERE repo_id = ?1
+  AND (?2 IS NULL OR state = ?2)
+  AND (?3 IS NULL OR author_id = ?3)
+  AND (?4 IS NULL OR title LIKE ?4 COLLATE NOCASE OR body LIKE ?4 COLLATE NOCASE)
+ORDER BY updated_at DESC LIMIT ?5 OFFSET ?6"#
+            ))
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("search pulls failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull!(&r));
+            }
+            Ok((out, total))
+        }
+        DbPool::Postgres(p) => {
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*)::bigint FROM pull_requests
+WHERE repo_id = $1
+  AND ($2::text IS NULL OR state = $2)
+  AND ($3::text IS NULL OR author_id = $3)
+  AND ($4::text IS NULL OR title ILIKE $4 OR body ILIKE $4)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count pull search failed: {e}"))?;
+            let rows = sqlx::query(&format!(
+                r#"SELECT {PULL_COLS} FROM pull_requests
+WHERE repo_id = $1
+  AND ($2::text IS NULL OR state = $2)
+  AND ($3::text IS NULL OR author_id = $3)
+  AND ($4::text IS NULL OR title ILIKE $4 OR body ILIKE $4)
+ORDER BY updated_at DESC LIMIT $5 OFFSET $6"#
+            ))
+            .bind(repo_id)
+            .bind(state)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("search pulls failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull!(&r));
+            }
+            Ok((out, total))
+        }
+        DbPool::MySql(p) => {
+            let total: i64 = sqlx::query_scalar(
+                r#"SELECT COUNT(*) FROM pull_requests
+WHERE repo_id = ?
+  AND (? IS NULL OR state = ?)
+  AND (? IS NULL OR author_id = ?)
+  AND (? IS NULL OR title LIKE ? OR body LIKE ?)"#,
+            )
+            .bind(repo_id)
+            .bind(state)
+            .bind(state)
+            .bind(author_id)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count pull search failed: {e}"))?;
+            let rows = sqlx::query(&format!(
+                r#"SELECT {PULL_COLS} FROM pull_requests
+WHERE repo_id = ?
+  AND (? IS NULL OR state = ?)
+  AND (? IS NULL OR author_id = ?)
+  AND (? IS NULL OR title LIKE ? OR body LIKE ?)
+ORDER BY updated_at DESC LIMIT ? OFFSET ?"#
+            ))
+            .bind(repo_id)
+            .bind(state)
+            .bind(state)
+            .bind(author_id)
+            .bind(author_id)
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .bind(q.as_deref())
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("search pulls failed: {e}"))?;
+            let mut out = Vec::with_capacity(rows.len());
+            for r in rows {
+                out.push(map_pull!(&r));
+            }
+            Ok((out, total))
+        }
+    }
+}
+
 pub async fn set_state(
     pool: &DbPool,
     id: &str,
