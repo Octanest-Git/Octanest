@@ -58,6 +58,11 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         updated_at: repo.row.updated_at.clone(),
         can_admin: meets(repo.capability, Capability::Admin),
         can_write: meets(repo.capability, Capability::Write),
+        star_count: 0,
+        viewer_has_starred: false,
+        is_fork: false,
+        fork_network_id: None,
+        forked_from: None,
     }
 }
 

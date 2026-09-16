@@ -4,6 +4,7 @@ mod acl;
 mod branch_protection;
 mod commit_status;
 mod collaborators;
+mod fork_network;
 mod rename_transfer;
 mod search;
 mod search_query;
@@ -24,6 +25,7 @@ pub use collaborators::{
     add as collaborators_add, list as collaborators_list, remove as collaborators_remove,
     resolve_repo_for_admin, update as collaborators_update,
 };
+pub use fork_network::head_valid_for_base;
 pub use rename_transfer::{
     redirect_retention_days, rename, resolve_repo_or_redirect, supersede_redirect_on_create,
     transfer, DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
@@ -78,7 +80,7 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
     v.as_str()
 }
 
-fn to_public(repo: &AccessibleRepo) -> RepoPublic {
+pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
     let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
     let owner_type = OwnerType::parse(&repo.row.owner_type).unwrap_or(OwnerType::User);
     RepoPublic {
@@ -93,7 +95,105 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         updated_at: repo.row.updated_at.clone(),
         can_admin: meets(repo.capability, Capability::Admin),
         can_write: meets(repo.capability, Capability::Write),
+        star_count: 0,
+        viewer_has_starred: false,
+        is_fork: false,
+        fork_network_id: None,
+        forked_from: None,
     }
+}
+
+/// Fill star/fork fields on a `RepoPublic` (D-SOC-03, D-SOC-16).
+pub async fn enrich_social(
+    ctx: &RpcCtx,
+    mut public: RepoPublic,
+    viewer_user_id: Option<&str>,
+) -> Result<RepoPublic, AppError> {
+    public.star_count = ctx
+        .db
+        .get_repo_star_count(&public.id)
+        .await
+        .map_err(db_err)?;
+    if let Some(uid) = viewer_user_id {
+        public.viewer_has_starred = ctx
+            .db
+            .has_starred_repo(uid, &public.id)
+            .await
+            .map_err(db_err)?;
+    }
+    public.fork_network_id = ctx
+        .db
+        .get_repo_fork_network_id(&public.id)
+        .await
+        .map_err(db_err)?;
+    let parent_id = ctx
+        .db
+        .get_repo_forked_from(&public.id)
+        .await
+        .map_err(db_err)?;
+    if let Some(pid) = parent_id {
+        public.is_fork = true;
+        if let Some(parent) = ctx
+            .db
+            .find_repository_by_id(&pid)
+            .await
+            .map_err(db_err)?
+        {
+            let parent_slug = if parent.owner_type == "org" {
+                ctx.db
+                    .find_organization_by_id(&parent.owner_id)
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|o| o.slug)
+            } else {
+                ctx.db
+                    .find_user_by_id(&parent.owner_id)
+                    .await
+                    .ok()
+                    .flatten()
+                    .map(|u| u.username)
+            };
+            if let Some(slug) = parent_slug {
+                public.forked_from = Some(octanest_core::ForkParentSummary {
+                    id: parent.id,
+                    owner: slug,
+                    name: parent.name,
+                });
+            }
+        }
+    }
+    Ok(public)
+}
+
+/// `repo.star` — idempotent star (D-SOC-01…03, D-SOC-19).
+pub async fn star(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::RepoStarRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.star input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let _count = ctx
+        .db
+        .star_repository(&user.id, &accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
+}
+
+/// `repo.unstar` — idempotent unstar.
+pub async fn unstar(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::RepoStarRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.unstar input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let _count = ctx
+        .db
+        .unstar_repository(&user.id, &accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
 }
 
 async fn resolve_visibility(
@@ -225,6 +325,11 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 updated_at: row.updated_at,
                 can_admin: true,
                 can_write: true,
+                star_count: 0,
+                viewer_has_starred: false,
+                is_fork: false,
+                fork_network_id: None,
+                forked_from: None,
             }
         })
         .collect();
@@ -305,7 +410,8 @@ pub async fn get(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, A
         AppError::new("rpc.bad_input", format!("invalid repo.get input: {e}"))
     })?;
     let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
-    Ok(to_public(&accessible))
+    let viewer = ctx.session.as_ref().map(|s| s.user_id.as_str());
+    enrich_social(ctx, to_public(&accessible), viewer).await
 }
 
 /// `repo.tree` — `ls_tree` behind ACL; empty repo → `{ empty: true, entries: [] }`.
@@ -1184,16 +1290,26 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         updated_at: row.updated_at,
         can_admin: true,
         can_write: true,
+                star_count: 0,
+                viewer_has_starred: false,
+                is_fork: false,
+                fork_network_id: None,
+                forked_from: None,
     })
 }
 
-/// `repo.fork` — Read+ on source; creates a user-owned fork (minimal Phase 12; D-PR-01).
+/// `repo.fork` — Read+ on **public** source; bare copy + fork network (D-SOC-12…18, extends Phase 12).
 pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
     let user = require_verified(ctx).await?;
     let req: octanest_core::ForkRepoRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid repo.fork input: {e}"))
     })?;
     let source = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    // SOC-04: public sources only (private → same not_found anti-enumeration when no Read;
+    // with Read on private still deny for this phase).
+    if is_private_visibility(&source.row.visibility) {
+        return Err(not_found());
+    }
     let into_owner = req
         .into_owner
         .as_deref()
@@ -1201,9 +1317,10 @@ pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, 
         .filter(|s| !s.is_empty())
         .unwrap_or(user.username.as_str());
     if into_owner != user.username.as_str() {
+        // Phase 21 still lands under self for now; org owner picker lands in UI later.
         return Err(AppError::new(
             "repo.fork_owner",
-            "Phase 12 forks must land under the signed-in user",
+            "Forks must land under the signed-in user",
         ));
     }
     let into_name = req
@@ -1228,6 +1345,26 @@ pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, 
         ));
     }
 
+    let network_id = ctx
+        .db
+        .get_repo_fork_network_id(&source.row.id)
+        .await
+        .map_err(db_err)?
+        .unwrap_or_else(|| source.row.id.clone());
+
+    if ctx
+        .db
+        .find_active_fork_in_network(&user.id, &network_id)
+        .await
+        .map_err(db_err)?
+        .is_some()
+    {
+        return Err(AppError::new(
+            "repo.fork_exists",
+            "You already have a fork in this network",
+        ));
+    }
+
     let id = Uuid::new_v4().to_string();
     let row = ctx
         .db
@@ -1236,10 +1373,15 @@ pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, 
             &user.id,
             "user",
             &into_name,
-            source.row.visibility.as_str(),
+            "public",
             &source.row.description,
             &source.row.default_branch,
         )
+        .await
+        .map_err(db_err)?;
+    // insert_repository sets fork_network_id = own id; overwrite with source network root.
+    ctx.db
+        .set_repo_fork_network_id(&row.id, &network_id)
         .await
         .map_err(db_err)?;
     ctx.db
@@ -1262,20 +1404,65 @@ pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, 
         ));
     }
 
-    Ok(RepoPublic {
-        id: row.id,
-        owner_id: row.owner_id,
-        owner_type: octanest_core::OwnerType::User,
+    let accessible = AccessibleRepo {
+        row,
         owner_username: user.username.clone(),
-        name: row.name,
-        description: row.description,
-        visibility: match row.visibility.as_str() {
-            "private" => octanest_core::RepoVisibility::Private,
-            _ => octanest_core::RepoVisibility::Public,
-        },
-        default_branch: row.default_branch,
-        updated_at: row.updated_at,
-        can_admin: true,
-        can_write: true,
-    })
+        capability: Some(Capability::Admin),
+    };
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
+}
+
+/// `repo.explore` — public discovery listing (D-SOC-09…11). Anonymous OK.
+pub async fn explore(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoListMineResponse, AppError> {
+    let req: octanest_core::RepoExploreRequest =
+        serde_json::from_value(input).unwrap_or(octanest_core::RepoExploreRequest {
+            q: None,
+            offset: None,
+            limit: None,
+        });
+    let offset = req.offset.unwrap_or(0).max(0);
+    let limit = req.limit.unwrap_or(30).clamp(1, 50);
+    let q = req
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.chars().take(100).collect::<String>());
+
+    let rows = ctx
+        .db
+        .list_explore_repositories(q.as_deref(), offset, limit)
+        .await
+        .map_err(db_err)?;
+
+    let viewer = ctx.session.as_ref().map(|s| s.user_id.as_str());
+    let mut repos = Vec::with_capacity(rows.len());
+    for row in rows {
+        let owner_username = if row.owner_type == "org" {
+            ctx.db
+                .find_organization_by_id(&row.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|o| o.slug)
+        } else {
+            ctx.db
+                .find_user_by_id(&row.owner_id)
+                .await
+                .ok()
+                .flatten()
+                .map(|u| u.username)
+        };
+        let Some(owner_username) = owner_username else {
+            continue;
+        };
+        let accessible = AccessibleRepo {
+            row,
+            owner_username,
+            capability: Some(Capability::Read),
+        };
+        let enriched = enrich_social(ctx, to_public(&accessible), viewer).await?;
+        repos.push(enriched);
+    }
+    Ok(RepoListMineResponse { repos })
 }

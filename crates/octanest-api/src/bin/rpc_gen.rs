@@ -227,8 +227,46 @@ export type RepoPublic = {
   visibility: RepoVisibility;
   default_branch: string;
   updated_at: string;
-  can_admin: boolean;
-  can_write: boolean;
+  can_admin?: boolean;
+  can_write?: boolean;
+  star_count?: number;
+  viewer_has_starred?: boolean;
+  is_fork?: boolean;
+  fork_network_id?: string | null;
+  forked_from?: ForkParentSummary | null;
+};
+
+export type ForkParentSummary = {
+  id: string;
+  owner: string;
+  name: string;
+};
+
+export type RepoStarRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ListStarredRequest = {
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoExploreRequest = {
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type GetPublicProfileRequest = {
+  username: string;
+};
+
+export type PublicUserProfile = {
+  username: string;
+  display_name: string;
+  bio: string;
+  avatar_url?: string | null;
 };
 
 export type RepoListMineResponse = {
@@ -1732,6 +1770,10 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<UserPublic>(opts, "user.update_profile", input),
       lookup: (input: UserLookupRequest) =>
         rpcCall<UserLookupResponse>(opts, "user.lookup", input),
+      listStarred: (input: ListStarredRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "user.listStarred", input),
+      getPublicProfile: (input: GetPublicProfileRequest) =>
+        rpcCall<PublicUserProfile>(opts, "user.getPublicProfile", input),
     },
     repo: {
       listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
@@ -1741,6 +1783,10 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
       fork: (input: ForkRepoRequest) => rpcCall<RepoPublic>(opts, "repo.fork", input),
+      star: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.star", input),
+      unstar: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.unstar", input),
+      explore: (input: RepoExploreRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "repo.explore", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
       tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
       blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),

@@ -114,21 +114,22 @@ Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
 | **RPC** | `pull.*`, `repo.fork`, `repo.mergeSettings.*` — see [API.md](API.md). |
 | **UI** | Repo **Pulls** tab; `/pulls`, `/pulls/new`, `/pull/{n}` with Conversation / Commits / Files; merge panel; settings strategy toggles. |
 
-### Branch protection
+### Social & Explore
 
-Phase 13 adds classic branch protection beside PR merge (ORG-05/06, PR-08) on migration `0017_branch_protection`:
+Phase 21 adds stars, public profiles, explore, and fork-network metadata (SOC-01…04) on migration `0020_social` (extends Phase 12 `forked_from_repo_id`):
 
 | Concern | Contract |
 | --- | --- |
-| **Tables** | `branch_protection_rules`, `commit_statuses` (per-repo / per-sha context). CASCADE from repositories. |
-| **Evaluate** | Shared `protection::evaluate` for push (`hooks/update` / `octanest-protection-hook`) and `pull.merge`. Pattern match + multi-rule union; Admin bypass unless `enforce_admins`. Soft-protect (default tip) remains independent and coexists. |
-| **RPC** | `repo.branchProtection.*` (Admin CRUD), `repo.commitStatus.*` (Write create / Read list). Merge failures use `pull.merge_blocked` + structured `reasons`. |
-| **Git wire** | HTTPS Smart HTTP and SSH share bare-repo hooks (ORG-06). CGI injects actor capability for Admin bypass. |
-| **UI** | Repo Settings → Branch protection panel; PR merge panel lists blocker reasons. |
-| **Deferred** | Phase 19 Actions consume the commit-status store; Phase 17 notifications for blocked merges. |
+| **Tables** | `repository_stars`; repo columns `star_count`, `fork_network_id` (roots: `fork_network_id = id`). |
+| **Stars** | `repo.star` / `repo.unstar` idempotent; `RepoPublic.star_count` + `viewer_has_starred`; `user.listStarred`. |
+| **Profiles** | `user.getPublicProfile` (no email); `/{username}` vs org overview on `$owner.index`. |
+| **Explore** | `repo.explore` + `/explore` (public only; sort stars then updated). |
+| **Forks** | Extends `repo.fork` + `clone_bare`; `fork_network_id` for PR heads. Helper `repo::head_valid_for_base` (same repo **or** `head.fork_network_id == base.id`) — Phase 12 D-PR-01…03. |
+| **UI** | Star/Fork on `RepoChrome`; `/explore`; `/$owner/$repo/fork` confirm. |
 
 RPC: `issue.*` / `label.*` — see [API.md](API.md#issues-issue--labels-label).
-RPC: `pull.*` / `repo.branchProtection.*` / `repo.commitStatus.*` — see [API.md](API.md).
+RPC: `pull.*` — see [API.md](API.md).
+RPC: social — see [API.md](API.md) procedure table (`repo.star`, `repo.explore`, `user.getPublicProfile`, `repo.fork`).
 
 ### Git Smart HTTP & PATs
 
@@ -136,7 +137,7 @@ Phase 8 adds HTTPS git clone/fetch/push beside the forge browse surface; Phase 1
 
 | Concern | Contract |
 | --- | --- |
-| **Wire protocol** | Axum mounts `info/refs`, `git-upload-pack`, `git-receive-pack` under `/{owner}/{repo}.git` and spawns **`git-http-backend`** CGI (`GIT_PROJECT_ROOT` = `OCTANEST_REPOS_DIR`). Receive-pack installs/reconciles bare `hooks/update` for branch protection (shared with SSH). |
+| **Wire protocol** | Axum mounts `info/refs`, `git-upload-pack`, `git-receive-pack` under `/{owner}/{repo}.git` and spawns **`git-http-backend`** CGI (`GIT_PROJECT_ROOT` = `OCTANEST_REPOS_DIR`). |
 | **Auth split (D-01 / D-12)** | **Session cookies never authenticate git.** Smart HTTP uses HTTP Basic with password = PAT. Typed RPC (`/api/rpc`) stays on `octanest_session` only — do **not** send `Authorization: Bearer <pat>`. |
 | **Hash-at-rest** | PAT plaintext is shown **once** at mint; DB stores SHA-256 of the secret (same pattern as sessions). Revoke soft-deletes; list never returns secrets. |
 | **Prefixes** | Classic `octanest_pat_…`, fine-grained `octanest_fg_…` (CSPRNG hex after the prefix). Redacted docs examples only (`octanest_pat_REDACTED`). |
