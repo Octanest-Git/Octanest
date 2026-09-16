@@ -5,8 +5,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Include cursor/* so phase/integrate branches get hosted runners when
+    # pull_request jobs fail to acquire runners (empty steps / runner_id 0).
+    branches: [main, 'cursor/**']
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
