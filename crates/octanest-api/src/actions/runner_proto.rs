@@ -201,6 +201,17 @@ async fn update_task(
         .update_action_job_status(&job.id, status)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let origin = std::env::var("OCTANEST_PUBLIC_ORIGIN").ok();
+    if let Err(e) = crate::actions::statuses::publish_from_job_update(
+        &state.db,
+        &job.id,
+        status,
+        origin.as_deref(),
+    )
+    .await
+    {
+        tracing::warn!(error = %e, job_id = %job.id, "failed to publish job commit status");
+    }
     Ok(Json(OkResponse { ok: true }))
 }
 

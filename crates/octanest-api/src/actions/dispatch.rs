@@ -148,6 +148,7 @@ pub async fn enqueue_run(
     )
     .await?;
     let mut job_ids = Vec::new();
+    let mut job_keys = Vec::new();
     for job in &doc.jobs {
         let job_id = Uuid::new_v4().to_string();
         let runs_on = serde_json::to_string(&job.runs_on).unwrap_or_else(|_| "[]".into());
@@ -155,6 +156,23 @@ pub async fn enqueue_run(
         db.insert_action_job(&job_id, &run_id, &job.id, &name, &runs_on)
             .await?;
         job_ids.push(job_id);
+        job_keys.push(job.id.clone());
+    }
+    if let Err(e) = crate::actions::statuses::publish_queued_for_run(
+        db,
+        repository_id,
+        head_sha,
+        &doc.name,
+        &run_id,
+        &job_keys,
+        std::env::var("OCTANEST_PUBLIC_ORIGIN").ok().as_deref(),
+        None,
+        None,
+        triggered_by,
+    )
+    .await
+    {
+        tracing::warn!(error = %e, run_id = %run_id, "failed to publish queued commit statuses");
     }
     Ok((run_id, job_ids))
 }

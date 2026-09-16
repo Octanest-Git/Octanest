@@ -6,6 +6,7 @@ pub mod hooks;
 pub mod logs;
 pub mod parse;
 pub mod runner_proto;
+pub mod statuses;
 pub mod tokens;
 pub mod workflow;
 
@@ -17,5 +18,6 @@ pub use logs::{append_job_log, read_job_log};
 pub use parse::{
     parse_workflow_yaml, JobSpec, ParseError, StepSpec, WorkflowDocument, WorkflowTriggers,
 };
+pub use statuses::{job_status_to_commit_state, publish_from_job_update, status_context};
 pub use tokens::mint_registration_token;
 pub use workflow::{discover_workflows, DiscoverError, DiscoveredWorkflow, MAX_WORKFLOW_BYTES};
