@@ -54,6 +54,10 @@ pub struct AppState {
     /// `user.lookup` per-session counters (T-10-03) — per process.
     pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
     pub env_name: String,
+    /// In-repo search soft caps (D-SRCH-08 / Phase 16).
+    pub search_timeout_ms: u64,
+    pub search_max_matches: u32,
+    pub search_max_files: u32,
 }
 
 impl AppState {
@@ -113,6 +117,18 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(packages_dir)
         };
+        let search_timeout_ms = std::env::var("OCTANEST_SEARCH_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(8000u64);
+        let search_max_matches = std::env::var("OCTANEST_SEARCH_MAX_MATCHES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(100u32);
+        let search_max_files = std::env::var("OCTANEST_SEARCH_MAX_FILES")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(50u32);
         Self {
             db,
             email: Arc::new(RwLock::new(email)),
@@ -129,6 +145,9 @@ impl AppState {
             git_auth_limiter: Arc::new(Mutex::new(FailedAuthLimiter::new())),
             lookup_limiter: Arc::new(Mutex::new(LookupLimiter::new())),
             env_name,
+            search_timeout_ms,
+            search_max_matches,
+            search_max_files,
         }
     }
 
@@ -302,6 +321,9 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         session,
         set_cookie: None,
         lookup_limiter: state.lookup_limiter.clone(),
+        search_timeout_ms: state.search_timeout_ms,
+        search_max_matches: state.search_max_matches,
+        search_max_files: state.search_max_files,
     }
 }
 

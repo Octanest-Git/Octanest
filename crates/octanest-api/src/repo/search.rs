@@ -11,9 +11,6 @@ use crate::rpc::RpcCtx;
 use super::search_query::parse_search_query;
 use super::{map_git_err, resolve_repo_for_read, AccessibleRepo};
 
-/// Default soft max matches for code search when limit is large (D-SRCH-08).
-pub const DEFAULT_SEARCH_MAX_MATCHES: u32 = 100;
-
 /// `repo.search` — permission-aware in-repo search.
 pub async fn search(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoSearchResponse, AppError> {
     let req: RepoSearchRequest = serde_json::from_value(input).map_err(|e| {
@@ -67,21 +64,45 @@ async fn search_code(
         Some(r) if !r.trim().is_empty() => r.trim().to_string(),
         _ => accessible.row.default_branch.clone(),
     };
-    let soft_cap = DEFAULT_SEARCH_MAX_MATCHES;
+    let soft_cap = ctx.search_max_matches.max(1).min(10_000);
+    let max_files = ctx.search_max_files.max(1).min(10_000);
     let fetch = offset
         .saturating_add(limit)
         .saturating_add(1)
         .min(soft_cap.saturating_add(1));
     let pathspec = parsed.path.as_deref();
-    let result = ctx
-        .git
-        .grep(&path, &ref_name, pattern, pathspec, fetch)
-        .await
-        .map_err(map_git_err)?;
+    let timeout = std::time::Duration::from_millis(ctx.search_timeout_ms.max(1));
+    let grep_fut = ctx.git.grep(&path, &ref_name, pattern, pathspec, fetch);
+    let result = match tokio::time::timeout(timeout, grep_fut).await {
+        Ok(Ok(r)) => r,
+        Ok(Err(e)) => return Err(map_git_err(e)),
+        Err(_) => {
+            return Err(AppError::new(
+                "search.timeout",
+                "code search timed out; narrow the query or raise OCTANEST_SEARCH_TIMEOUT_MS",
+            ));
+        }
+    };
 
-    let truncated = result.truncated || result.hits.len() as u32 > offset.saturating_add(limit);
-    let page: Vec<RepoSearchHit> = result
-        .hits
+    // Soft-cap distinct files (D-SRCH-08).
+    let mut seen_files = std::collections::HashSet::new();
+    let mut filtered = Vec::new();
+    let mut file_truncated = false;
+    for h in result.hits {
+        if !seen_files.contains(&h.path) {
+            if seen_files.len() as u32 >= max_files {
+                file_truncated = true;
+                continue;
+            }
+            seen_files.insert(h.path.clone());
+        }
+        filtered.push(h);
+    }
+
+    let truncated = result.truncated
+        || file_truncated
+        || filtered.len() as u32 > offset.saturating_add(limit);
+    let page: Vec<RepoSearchHit> = filtered
         .into_iter()
         .skip(offset as usize)
         .take(limit as usize)
@@ -116,23 +137,30 @@ async fn search_commits(
         Some(r) if !r.trim().is_empty() => r.trim().to_string(),
         _ => accessible.row.default_branch.clone(),
     };
-    let soft_cap = DEFAULT_SEARCH_MAX_MATCHES;
+    let soft_cap = ctx.search_max_matches.max(1).min(10_000);
     let fetch = offset
         .saturating_add(limit)
         .saturating_add(1)
         .min(soft_cap.saturating_add(1));
-    let rows = ctx
-        .git
-        .log_search(
-            &path,
-            &ref_name,
-            if grep.is_empty() { None } else { Some(grep) },
-            author,
-            0,
-            fetch,
-        )
-        .await
-        .map_err(map_git_err)?;
+    let timeout = std::time::Duration::from_millis(ctx.search_timeout_ms.max(1));
+    let log_fut = ctx.git.log_search(
+        &path,
+        &ref_name,
+        if grep.is_empty() { None } else { Some(grep) },
+        author,
+        0,
+        fetch,
+    );
+    let rows = match tokio::time::timeout(timeout, log_fut).await {
+        Ok(Ok(r)) => r,
+        Ok(Err(e)) => return Err(map_git_err(e)),
+        Err(_) => {
+            return Err(AppError::new(
+                "search.timeout",
+                "commit search timed out; narrow the query or raise OCTANEST_SEARCH_TIMEOUT_MS",
+            ));
+        }
+    };
     let truncated = rows.len() as u32 > offset.saturating_add(limit);
     let page: Vec<RepoSearchHit> = rows
         .into_iter()

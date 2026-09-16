@@ -53,6 +53,9 @@ pub struct RpcCtx {
     pub set_cookie: Option<CookieChange>,
     /// Per-session `user.lookup` rate limiter (T-10-03).
     pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
+    pub search_timeout_ms: u64,
+    pub search_max_matches: u32,
+    pub search_max_files: u32,
 }
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
