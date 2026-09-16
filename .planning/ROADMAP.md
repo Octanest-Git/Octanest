@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [x] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [x] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
-- [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
+- [x] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol (completed 2026-09-16)
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [x] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
@@ -706,7 +706,7 @@ Plans:
   3. Operator can register and run the official Octanest runner image; docs cover Compose sidecar or standalone bring-up
   4. Forge exposes an Actions-compatible registration/job-dispatch protocol (custom `runs-on` labels); jobs only run on registered runners — no managed Octanest Cloud minutes in v1
 
-**Plans:** 11/12 plans executed
+**Plans:** 12/12 plans complete
 
 Plans:
 
@@ -721,7 +721,7 @@ Plans:
 - [x] 19-08-PLAN.md — Official runner image + Compose sidecar/docs
 - [x] 19-09-PLAN.md — Actions UI list/detail/logs + RepoChrome tab
 - [x] 19-10-PLAN.md — Admin tokens, repo secrets/enable, no managed minutes
-- [ ] 19-11-PLAN.md — Docs + smoke + phase gate
+- [x] 19-11-PLAN.md — Docs + smoke + phase gate
 
 **UI hint**: yes
 
@@ -830,7 +830,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 5/5 | Complete | 2026-09-16 |
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
-| 19. Actions & Runners | 12/12 | Complete    | 2026-09-16 |
+| 19. Actions & Runners | 12/12 | Complete   | 2026-09-16 |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |

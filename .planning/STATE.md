@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase_name: Actions & Runners
-current_plan: 11
-status: executing
-stopped_at: Completed 19-09-PLAN.md
-last_updated: "2026-09-16T20:21:55.211Z"
+current_plan: 12
+status: complete
+stopped_at: Completed Phase 19 (19-00…19-11)
+last_updated: "2026-09-16T20:30:00.000Z"
 last_activity: 2026-09-16
-last_activity_desc: Honesty pass — Phase 17 + HOOK marked complete on integrate; Phase 19 remaining
-state_head: 23fe25e1ca1798a0ddd6bdd5479ad28ee3c3cbbb
+last_activity_desc: Phase 19 Actions & Runners complete (12/12 plans) on cursor/phase-19-actions-runners-c82f
+state_head: 8fb5cfe669142d09ff6484c51426c47e0b83d1fc
 progress:
   total_phases: 23
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 210
-  completed_plans: 209
+  completed_plans: 210
 milestone_name: milestone
 current_phase: 19
 ---
@@ -25,17 +25,17 @@ current_phase: 19
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/gsd-remaining-integrate-c82f` — phases **12–18, 21–22** on integrate; **Phase 19** Actions finishing on `cursor/phase-19-actions-runners-c82f`
+**Current focus:** Phase **19** Actions & Runners **complete** on `cursor/phase-19-actions-runners-c82f` (ready to integrate); other remaining work on `cursor/gsd-remaining-integrate-c82f`
 
 ## Current Position
 
-Phase: **19** — Actions & Runners (**in progress** off-branch) · integrate holds 12–18 + 21–22
-Current Plan: 11
+Phase: **19** — Actions & Runners (**complete** — 12/12 plans)
+Current Plan: 12 / 12
 Total Plans in Phase: 12
-Status: 19-10 complete (secrets + Admin/Settings Actions + ACT-07 policy). Next: 19-11
-Last activity: 2026-09-16 — Honesty pass + header Explore→searchbar
+Status: Phase 19 complete (ACT-01…07). Branch tip ready for integrate merge.
+Last activity: 2026-09-16 — Phase 19 docs/smoke gate + STATE/ROADMAP close-out
 
-See also: `.planning/phases/19-actions-runners/` · integrate `cursor/gsd-remaining-integrate-c82f`
+See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-actions-runners-c82f`
 
 ## Performance Metrics
 
@@ -171,6 +171,7 @@ See also: `.planning/phases/19-actions-runners/` · integrate `cursor/gsd-remain
 | Phase 19 P08 | 15min | 2 tasks | 7 files |
 | Phase 19 P09 | 35min | 3 tasks | 15 files |
 | Phase 19 P10 | 90 | 3 tasks | - files |
+| Phase 19 P11 | 20min | 2 tasks | 6 files |
 
 # Project State
 
@@ -586,8 +587,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T19:09:58.526Z
-Stopped at: Completed 19-09-PLAN.md
+Last session: 2026-09-16T20:29:31.437Z
+Stopped at: Completed Phase 19 (19-00…19-11)
 Resume file: None
 
 ## Accumulated Context

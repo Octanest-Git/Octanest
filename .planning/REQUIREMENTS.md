@@ -96,13 +96,13 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Actions (CI for hosted repos)
 
-- [ ] **ACT-01**: Repo can define workflows in a GitHub Actions–compatible YAML layout
-- [ ] **ACT-02**: Push and pull_request events can trigger workflow runs
-- [ ] **ACT-03**: User can view workflow run status and logs in the UI
-- [ ] **ACT-04**: Operator can register and run an official Octanest runner image against an instance
-- [ ] **ACT-05**: Docs cover bringing up the official runner (Compose sidecar or standalone)
-- [ ] **ACT-06**: Forge exposes an Actions-compatible runner registration and job-dispatch protocol so third-party runner providers (Blacksmith-class) can integrate; custom `runs-on` labels are supported
-- [ ] **ACT-07**: Workflow jobs only run on registered runners; Octanest Cloud does not sell managed runner minutes in v1
+- [x] **ACT-01**: Repo can define workflows in a GitHub Actions–compatible YAML layout
+- [x] **ACT-02**: Push and pull_request events can trigger workflow runs
+- [x] **ACT-03**: User can view workflow run status and logs in the UI
+- [x] **ACT-04**: Operator can register and run an official Octanest runner image against an instance
+- [x] **ACT-05**: Docs cover bringing up the official runner (Compose sidecar or standalone)
+- [x] **ACT-06**: Forge exposes an Actions-compatible runner registration and job-dispatch protocol so third-party runner providers (Blacksmith-class) can integrate; custom `runs-on` labels are supported
+- [x] **ACT-07**: Workflow jobs only run on registered runners; Octanest Cloud does not sell managed runner minutes in v1
 
 ### Packages & registry
 
@@ -232,13 +232,13 @@ Deferred; not in the current roadmap until promoted.
 | HOOK-01 | Phase 18 | Complete |
 | HOOK-02 | Phase 18 | Complete |
 | HOOK-03 | Phase 18 | Complete |
-| ACT-01 | Phase 19 | Pending |
-| ACT-02 | Phase 19 | Pending |
-| ACT-03 | Phase 19 | Pending |
-| ACT-04 | Phase 19 | Pending |
-| ACT-05 | Phase 19 | Pending |
-| ACT-06 | Phase 19 | Pending |
-| ACT-07 | Phase 19 | Pending |
+| ACT-01 | Phase 19 | Complete |
+| ACT-02 | Phase 19 | Complete |
+| ACT-03 | Phase 19 | Complete |
+| ACT-04 | Phase 19 | Complete |
+| ACT-05 | Phase 19 | Complete |
+| ACT-06 | Phase 19 | Complete |
+| ACT-07 | Phase 19 | Complete |
 | PKG-01 | Phase 20 | Complete |
 | PKG-02 | Phase 20 | Complete |
 | PKG-03 | Phase 20 | Complete |
