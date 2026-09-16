@@ -3,7 +3,7 @@ phase: "17"
 slug: notifications
 status: draft
 nyquist_compliant: false
-wave_0_complete: false
+wave_0_complete: true
 created: "2026-09-16"
 ---
 
@@ -38,15 +38,15 @@ created: "2026-09-16"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 17-00-T1 | 00 | 0 | NOTF-01/02 | T-17-01 | stubs discoverable | nextest list | see 17-00-PLAN | ❌ W0 | ⬜ pending |
-| 17-00-T2 | 00 | 0 | NOTF-02 | — | web stubs discoverable | file + vitest list | see 17-00-PLAN | ❌ W0 | ⬜ pending |
-| 17-01-T1 | 01 | 1 | NOTF-01/02 | T-17-01 | own-rows RPC | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ❌ W0 | ⬜ pending |
-| 17-01-T2 | 01 | 1 | NOTF-01 | T-17-02 | comment→notify author | nextest | same filter | ❌ W0 | ⬜ pending |
-| 17-02-T1 | 02 | 2 | NOTF-01 | T-17-02 | issue event fan-out | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ❌ W0 | ⬜ pending |
-| 17-02-T2 | 02 | 2 | NOTF-01 | — | @mention recipients | nextest | same | ❌ W0 | ⬜ pending |
-| 17-03-T1 | 03 | 3 | NOTF-01 | T-17-02 | PR event fan-out | nextest | PR+notification filter | ❌ W0 | ⬜ pending |
-| 17-04-T1 | 04 | 4 | NOTF-02 | T-17-03 | bell + badge | vitest | chrome notification filter | ❌ W0 | ⬜ pending |
-| 17-04-T2 | 04 | 4 | NOTF-02 | T-17-01 | list + mark read UI | vitest | notifications route filter | ❌ W0 | ⬜ pending |
+| 17-00-T1 | 00 | 0 | NOTF-01/02 | T-17-01 | stubs discoverable | nextest list | see 17-00-PLAN | ✅ | ✅ present |
+| 17-00-T2 | 00 | 0 | NOTF-02 | — | web stubs discoverable | file + vitest list | see 17-00-PLAN | ✅ | ✅ present |
+| 17-01-T1 | 01 | 1 | NOTF-01/02 | T-17-01 | own-rows RPC | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ✅ | ⬜ pending |
+| 17-01-T2 | 01 | 1 | NOTF-01 | T-17-02 | comment→notify author | nextest | same filter | ✅ | ⬜ pending |
+| 17-02-T1 | 02 | 2 | NOTF-01 | T-17-02 | issue event fan-out | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ✅ | ⬜ pending |
+| 17-02-T2 | 02 | 2 | NOTF-01 | — | @mention recipients | nextest | same | ✅ | ⬜ pending |
+| 17-03-T1 | 03 | 3 | NOTF-01 | T-17-02 | PR event fan-out | nextest | PR+notification filter | ✅ | ⬜ pending |
+| 17-04-T1 | 04 | 4 | NOTF-02 | T-17-03 | bell + badge | vitest | chrome notification filter | ✅ | ⬜ pending |
+| 17-04-T2 | 04 | 4 | NOTF-02 | T-17-01 | list + mark read UI | vitest | notifications route filter | ✅ | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,10 +54,10 @@ created: "2026-09-16"
 
 ## Wave 0 Requirements
 
-- [ ] `crates/octanest-api/tests/notification_rpc.rs` — stubs for NOTF-01/02 RPC behaviors
-- [ ] `crates/octanest-db/tests/dialect_notifications.rs` — migration parity stub
-- [ ] `apps/web/src/components/chrome.notifications.integration.test.ts` — bell stub
-- [ ] `apps/web/src/routes/notifications.integration.test.ts` — list page stub
+- [x] `crates/octanest-api/tests/notification_rpc.rs` — stubs for NOTF-01/02 RPC behaviors
+- [x] `crates/octanest-db/tests/dialect_notifications.rs` — migration parity stub
+- [x] `apps/web/src/components/chrome.notifications.integration.test.ts` — bell stub
+- [x] `apps/web/src/routes/notifications.integration.test.ts` — list page stub
 
 ---
 
