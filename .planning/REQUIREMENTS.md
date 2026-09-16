@@ -114,10 +114,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Social & explore
 
-- [ ] **SOC-01**: User can star and unstar repositories
-- [ ] **SOC-02**: User can view another user’s public profile and public repositories
-- [ ] **SOC-03**: Anonymous or signed-in user can browse an explore/discover page of public repositories
-- [ ] **SOC-04**: User can fork a public repository they can read
+- [x] **SOC-01**: User can star and unstar repositories
+- [x] **SOC-02**: User can view another user’s public profile and public repositories
+- [x] **SOC-03**: Anonymous or signed-in user can browse an explore/discover page of public repositories
+- [x] **SOC-04**: User can fork a public repository they can read
 
 ### Brand & experience
 
@@ -244,10 +244,10 @@ Deferred; not in the current roadmap until promoted.
 | PKG-03 | Phase 20 | Complete |
 | PKG-04 | Phase 20 | Complete |
 | PKG-05 | Phase 20 | Complete |
-| SOC-01 | Phase 21 | Pending |
-| SOC-02 | Phase 21 | Pending |
-| SOC-03 | Phase 21 | Pending |
-| SOC-04 | Phase 21 | Pending |
+| SOC-01 | Phase 21 | Complete |
+| SOC-02 | Phase 21 | Complete |
+| SOC-03 | Phase 21 | Complete |
+| SOC-04 | Phase 21 | Complete |
 | BRAND-01 | Phase 3 | Complete |
 | BRAND-02 | Phase 3 | Complete |
 | BRAND-03 | Phase 3 | Complete |

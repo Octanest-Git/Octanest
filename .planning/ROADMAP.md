@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
-- [ ] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
+- [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [ ] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
 
 ## Phase Details
@@ -752,17 +752,18 @@ Plans:
   3. Anonymous or signed-in user can browse an explore/discover page of public repositories
   4. User can fork a public repository they can read
 
-**Plans**: 8 plans
+**Plans**: 8/8 plans executed
 
 Plans:
-- [ ] 21-00-PLAN.md — Wave 0 Nyquist stubs (stars/fork/explore/profile/dialect/web)
-- [ ] 21-01-PLAN.md — Tracer: star/unstar RPC + social migration
-- [ ] 21-02-PLAN.md — Stars UI (RepoChrome) + listStarred
-- [ ] 21-03-PLAN.md — Public user profiles at /{username}
-- [ ] 21-04-PLAN.md — Explore page + repo.explore + nav link
-- [ ] 21-05-PLAN.md — Fork RPC + bare copy + fork_network helper (D-PR)
-- [ ] 21-06-PLAN.md — Fork UI (chrome + confirm route)
-- [ ] 21-07-PLAN.md — Docs + phase gate
+
+- [x] 21-00-PLAN.md — Wave 0 Nyquist stubs (stars/fork/explore/profile/dialect/web)
+- [x] 21-01-PLAN.md — Tracer: star/unstar RPC + social migration
+- [x] 21-02-PLAN.md — Stars UI (RepoChrome) + listStarred
+- [x] 21-03-PLAN.md — Public user profiles at /{username}
+- [x] 21-04-PLAN.md — Explore page + repo.explore + nav link
+- [x] 21-05-PLAN.md — Fork RPC + bare copy + fork_network helper (D-PR)
+- [x] 21-06-PLAN.md — Fork UI (chrome + confirm route)
+- [x] 21-07-PLAN.md — Docs + phase gate
 
 **UI hint**: yes
 
@@ -808,7 +809,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 18. Webhooks | 5/5 | Complete | 2026-09-16 |
 | 19. Actions & Runners | 0/TBD | Not started | - |
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
-| 21. Social & Explore | 0/8 | Planned | - |
+| 21. Social & Explore | 8/8 | In Progress|  |
 | 22. Compose CI & Cloud Deploy | 0/TBD | Not started | - |
 
 ---
