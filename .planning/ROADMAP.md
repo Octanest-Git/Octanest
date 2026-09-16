@@ -638,7 +638,15 @@ Plans:
   1. User can search code and commits within a repository they can read
   2. User can search issues and PRs within a repository they can read
 
-**Plans**: TBD
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] 16-00-PLAN.md — Wave 0 RED stubs for repo.search + Vitest
+- [ ] 16-01-PLAN.md — Tracer: git grep + repo.search code + thin UI
+- [ ] 16-02-PLAN.md — Commits/issues/pulls backends + qualifiers
+- [ ] 16-03-PLAN.md — Full search UI, ENV caps, phase gate
+
 **UI hint**: yes
 
 ### Phase 17: Notifications
@@ -767,7 +775,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 13. Branch Protection | 9/9 | Complete | cursor/phase-13-branch-protection-c82f |
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
-| 16. In-Repo Search | 0/TBD | Not started | - |
+| 16. In-Repo Search | 0/4 | Planned | 2026-09-16 |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |

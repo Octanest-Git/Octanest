@@ -11,3 +11,7 @@
 - Phase **12** runs discuss(skipped — CONTEXT locked) → plan → execute on this campaign.
 - Phases **13, 16, 17, 18, 19, 21, 22** run discuss → plan on their branches first; execute in dependency waves after Phase 12 (and 13 for 19; 19+21 for 22).
 - Do not merge dependent-phase implementation ahead of Phase 12 without rebasing onto it.
+
+## Planning status
+
+- **2026-09-16:** Discuss (auto) + research + 4 plans written on this branch. Execute after Phase 12 lands.
