@@ -1014,7 +1014,7 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       .waitFor({ state: "visible", timeout: 10_000 });
     await page.locator("#default-branch").waitFor({ state: "visible", timeout: 10_000 });
     await page
-      .getByRole("button", { name: "Log out" })
+      .getByRole("button", { name: "Log out", exact: true })
       .waitFor({ state: "visible", timeout: 10_000 });
     assertNoOctaneOverlay(await page.content(), "settings general");
 
