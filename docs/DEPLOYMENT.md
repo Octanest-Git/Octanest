@@ -74,6 +74,21 @@ make down-sqlite
 make logs          # follow default compose logs
 ```
 
+### Actions runner (optional)
+
+Octanest does **not** run CI jobs inside the API. Operators attach compute via the official runner image (`docker/octanest-runner`, act_runner lineage).
+
+```bash
+# Instance / Admin registration token — never commit real values
+export OCTANEST_RUNNER_REGISTRATION_TOKEN=...
+# Prefer a hostname job containers can reach (not 127.0.0.1 from nested Docker)
+export OCTANEST_COMPOSE_PUBLIC_ORIGIN=http://localhost
+
+docker compose --profile actions up -d --build runner
+```
+
+Standalone `docker run` instructions: [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md). Smoke: `bash scripts/smoke-actions.sh`.
+
 Network name: `octanest_octanest`. Avatar uploads bind `./var/uploads` → `/var/uploads` on `api`.
 
 ### Forge volumes & ports

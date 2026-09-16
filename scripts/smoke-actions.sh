@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 # Compose Actions / Runners smoke (ACT-04 / ACT-05 / D-ACT-11 / D-ACT-14).
-# Placeholder until 19-08/19-11 greens: runner profile, actions health, protocol path.
-#
-# Prerequisites (when fully greened):
-#   - Docker Compose stack up (`make up`) with Traefik on :80
-#   - Optional Compose profile `actions` / official runner sidecar
 #
 # Env knobs:
 #   OCTANEST_SMOKE_URL   default http://localhost
 #
 # Operator hosts without Docker/stack: exits 0 with a skip message.
-# CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
+# CI=true or SMOKE_REQUIRE_STACK=1 fails closed.
 # Never prints registration tokens or other secrets.
 set -euo pipefail
 
@@ -23,10 +18,38 @@ SMOKE_NAME="smoke-actions"
 
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
 
+echo "==> check official runner Dockerfile"
+if [[ ! -f docker/octanest-runner/Dockerfile ]]; then
+  echo "missing docker/octanest-runner/Dockerfile" >&2
+  exit 1
+fi
+if ! grep -q 'act_runner' docker/octanest-runner/Dockerfile; then
+  echo "Dockerfile must reference act_runner base" >&2
+  exit 1
+fi
+if ! grep -qE 'register|ORIGIN|token|label' docker/octanest-runner/README.md; then
+  echo "runner README missing register docs" >&2
+  exit 1
+fi
+if ! grep -qE 'octanest-runner|profiles:.*actions' docker-compose.yml; then
+  echo "docker-compose.yml missing actions runner service" >&2
+  exit 1
+fi
+echo "OK: runner image + compose profile present"
+
 smoke_require_docker
-# Fast skip when Compose API isn't up (avoid long health wait).
+
+if docker info >/dev/null 2>&1; then
+  echo "==> docker build octanest-runner (best-effort)"
+  if ! docker build -q -t octanest-runner:smoke -f docker/octanest-runner/Dockerfile docker/octanest-runner; then
+    smoke_require_or_skip "docker build octanest-runner failed; skipping further Actions smoke"
+  fi
+else
+  smoke_require_or_skip "Docker daemon not available; runner Dockerfile checks already passed"
+fi
+
 if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|octanest-api'; then
-  smoke_require_or_skip "Compose API not running; skipping smoke-actions (run make up to exercise Actions)"
+  smoke_require_or_skip "Compose API not running; skipping live Actions health (run make up to exercise)"
 fi
 
 echo "==> wait for ${BASE_URL}/health"
@@ -43,7 +66,5 @@ if [[ "$ok" -ne 1 ]]; then
   exit 1
 fi
 
-# Wave 0 placeholder — 19-08/19-11 will assert runner profile / protocol paths.
-echo "==> Actions smoke placeholder (Wave 0) — stack healthy at ${BASE_URL}"
-echo "SKIP: full runner registration + job dispatch checks land in 19-08/19-11"
+echo "==> Actions smoke OK (runner artifacts + stack healthy at ${BASE_URL})"
 exit 0

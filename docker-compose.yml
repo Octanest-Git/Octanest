@@ -118,6 +118,29 @@ services:
     networks:
       - octanest
 
+  # Official Actions runner sidecar (ACT-04 / ACT-05 / D-ACT-14).
+  # Opt-in: docker compose --profile actions up -d runner
+  # Requires OCTANEST_RUNNER_REGISTRATION_TOKEN; never commit real tokens.
+  runner:
+    profiles: ["actions"]
+    build:
+      context: ./docker/octanest-runner
+      dockerfile: Dockerfile
+    environment:
+      # Must be reachable from job containers — prefer published hostname, not 127.0.0.1.
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-}
+      OCTANEST_RUNNER_NAME: ${OCTANEST_RUNNER_NAME:-compose-runner}
+      OCTANEST_RUNNER_LABELS: ${OCTANEST_RUNNER_LABELS:-ubuntu-latest:docker://node:20-bookworm,self-hosted}
+    volumes:
+      - runner_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - octanest
+
   web:
     build:
       context: .
@@ -164,3 +187,4 @@ networks:
 volumes:
   postgres_data:
   ssh_host_keys:
+  runner_data:
