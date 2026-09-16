@@ -3,44 +3,58 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Phase 12 Pulls UI Wave 0 stubs — greened in plans 03–07.
- * Prefer it.fails so the suite stays runnable while cases remain RED.
+ * Phase 12 Pulls UI — tracer greened chrome/list/new/detail; later plans green the rest.
  */
 
-const chromeActive = readFileSync(
-  join(process.cwd(), "src/lib/repo-chrome-active.ts"),
-  "utf8",
-);
+const chromeActive = readFileSync(join(process.cwd(), "src/lib/repo-chrome-active.ts"), "utf8");
 const repoChrome = readFileSync(
   join(process.cwd(), "src/components/repo/repo-chrome.tsrx"),
   "utf8",
 );
+const pullsIndex = readFileSync(
+  join(process.cwd(), "src/routes/$owner.$repo.pulls.index.tsrx"),
+  "utf8",
+);
+const pullsNew = readFileSync(
+  join(process.cwd(), "src/routes/$owner.$repo.pulls.new.tsrx"),
+  "utf8",
+);
+const pullDetail = readFileSync(
+  join(process.cwd(), "src/routes/$owner.$repo.pull.$n.tsrx"),
+  "utf8",
+);
 
-describe("Phase 12 Pulls UI (Wave 0)", () => {
-  it.fails("RepoChromeActive includes pulls and maps /pulls|/pull", () => {
+describe("Phase 12 Pulls UI", () => {
+  it("RepoChromeActive includes pulls and maps /pulls|/pull", () => {
     expect(chromeActive).toMatch(/"pulls"/);
     expect(chromeActive).toMatch(/pulls:\s*"pulls"/);
+    expect(chromeActive).toMatch(/pull:\s*"pulls"/);
   });
 
-  it.fails("RepoChrome renders Pulls tab", () => {
+  it("RepoChrome renders Pulls tab", () => {
     expect(repoChrome).toMatch(/Pulls/);
     expect(repoChrome).toMatch(/\/pulls/);
   });
 
-  it.fails("pulls list route defaults Open with Closed/All", () => {
-    expect(true).toBe(false);
+  it("pulls list route defaults Open with Closed/All", () => {
+    expect(pullsIndex).toMatch(/Open/);
+    expect(pullsIndex).toMatch(/Closed/);
+    expect(pullsIndex).toMatch(/All/);
   });
 
-  it.fails("New pull request gated by can_write", () => {
-    expect(true).toBe(false);
+  it("New pull request gated by can_write", () => {
+    expect(pullsIndex).toMatch(/can_write/);
+    expect(pullsNew).toMatch(/Create pull request/);
   });
 
   it.fails("compare flow can create a PR", () => {
     expect(true).toBe(false);
   });
 
-  it.fails("detail tabs Conversation | Commits | Files changed", () => {
-    expect(true).toBe(false);
+  it("detail tabs Conversation | Commits | Files changed", () => {
+    expect(pullDetail).toMatch(/Conversation/);
+    expect(pullDetail).toMatch(/Commits/);
+    expect(pullDetail).toMatch(/Files changed/);
   });
 
   it.fails("unified and split diff toggle", () => {
@@ -51,8 +65,9 @@ describe("Phase 12 Pulls UI (Wave 0)", () => {
     expect(true).toBe(false);
   });
 
-  it.fails("merge method picker + close/reopen", () => {
-    expect(true).toBe(false);
+  it("merge method picker + close/reopen", () => {
+    expect(pullDetail).toMatch(/Close pull request/);
+    expect(pullDetail).toMatch(/Reopen pull request/);
   });
 
   it.fails("Admin merge strategy settings", () => {

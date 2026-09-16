@@ -548,6 +548,27 @@ impl Database {
         pulls::get_forked_from(self.require_pool()?, repo_id).await
     }
 
+    pub async fn update_pull_fields(
+        &self,
+        id: &str,
+        title: &str,
+        body: &str,
+        draft: bool,
+        base_ref: &str,
+        base_sha: &str,
+    ) -> Result<(), String> {
+        pulls::update_fields(
+            self.require_pool()?,
+            id,
+            title,
+            body,
+            draft,
+            base_ref,
+            base_sha,
+        )
+        .await
+    }
+
     // --- issues ---
 
     pub async fn allocate_next_issue_number(&self, repo_id: &str) -> Result<i64, String> {

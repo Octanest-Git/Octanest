@@ -611,3 +611,63 @@ pub async fn get_forked_from(pool: &DbPool, repo_id: &str) -> Result<Option<Stri
         }
     }
 }
+
+pub async fn update_fields(
+    pool: &DbPool,
+    id: &str,
+    title: &str,
+    body: &str,
+    draft: bool,
+    base_ref: &str,
+    base_sha: &str,
+) -> Result<(), String> {
+    let draft_i: i64 = if draft { 1 } else { 0 };
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET title = ?1, body = ?2, draft = ?3, base_ref = ?4,
+                 base_sha = ?5, updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?6",
+            )
+            .bind(title)
+            .bind(body)
+            .bind(draft_i)
+            .bind(base_ref)
+            .bind(base_sha)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update pull failed: {e}"))?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET title = $1, body = $2, draft = $3, base_ref = $4,
+                 base_sha = $5, updated_at = now() WHERE id = $6",
+            )
+            .bind(title)
+            .bind(body)
+            .bind(draft)
+            .bind(base_ref)
+            .bind(base_sha)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update pull failed: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE pull_requests SET title = ?, body = ?, draft = ?, base_ref = ?,
+                 base_sha = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(title)
+            .bind(body)
+            .bind(draft_i)
+            .bind(base_ref)
+            .bind(base_sha)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update pull failed: {e}"))?;
+        }
+    }
+    Ok(())
+}

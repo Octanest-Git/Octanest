@@ -804,7 +804,7 @@ export type IssueState = "open" | "closed";
 
 export type LabelScope = "org" | "repo";
 
-export type IssueLinkKind = "issue" | "pr_stub";
+export type IssueLinkKind = "issue" | "pr_stub" | "pr";
 
 export type IssueLinkPublic = {
   id: string;
@@ -839,6 +839,82 @@ export type IssueLinksListResponse = {
 
 export type RemoveIssueLinkResponse = {
   ok: boolean;
+};
+
+export type PullState = "open" | "closed" | "merged";
+
+export type PullPublic = {
+  id: string;
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: PullState;
+  draft: boolean;
+  author_id: string;
+  author_username: string;
+  base_ref: string;
+  base_sha: string;
+  head_repo_id: string;
+  head_owner: string;
+  head_name: string;
+  head_ref: string;
+  head_sha: string;
+  merged_at?: string | null;
+  merged_by?: string | null;
+  merge_commit_sha?: string | null;
+  merge_method?: "merge" | "squash" | "rebase" | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullRequest = {
+  owner: string;
+  name: string;
+  title: string;
+  body?: string | null;
+  base_ref: string;
+  head_ref: string;
+  head_owner?: string | null;
+  head_name?: string | null;
+  draft?: boolean | null;
+};
+
+export type PullRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+};
+
+export type PullListRequest = {
+  owner: string;
+  name: string;
+  state?: string | null;
+  author?: string | null;
+  label?: string | null;
+  assignee?: string | null;
+  review?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type PullListResponse = {
+  pulls: PullPublic[];
+  total: number;
+  offset: number;
+  limit: number;
+};
+
+export type UpdatePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  title?: string | null;
+  body?: string | null;
+  base_ref?: string | null;
+  draft?: boolean | null;
 };
 
 export type IssueAssigneePublic = {
@@ -1366,6 +1442,19 @@ export function createClient(opts: CreateClientOptions) {
         remove: (input: RemoveIssueLinkRequest) =>
           rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
       },
+    },
+    pull: {
+      create: (input: CreatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.create", input),
+      get: (input: PullRefRequest) => rpcCall<PullPublic>(opts, "pull.get", input),
+      list: (input: PullListRequest) =>
+        rpcCall<PullListResponse>(opts, "pull.list", input),
+      update: (input: UpdatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.update", input),
+      close: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.close", input),
+      reopen: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.reopen", input),
     },
     release: {
       create: (input: CreateReleaseRequest) =>

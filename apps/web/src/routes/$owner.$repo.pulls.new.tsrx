@@ -1,0 +1,153 @@
+import { createFileRoute, useNavigate, useParams } from "@octanejs/tanstack-router";
+import { useState } from "octane";
+import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { apiClient } from "@/lib/api-client";
+import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
+
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+
+export const Route = createFileRoute("/$owner/$repo/pulls/new")({
+  component: NewPullPage,
+  head: ({ params }) => ({
+    meta: [
+      {
+        title: `New pull request · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+      },
+    ],
+  }),
+  loader: async ({ params }) => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    const got = await fetchRepoGet({ data: { owner, name: repoName } });
+    if (!got.ok) {
+      if (got.error.code === "repo.not_found") return { kind: "not_found" as const };
+      return { kind: "error" as const, message: got.error.message || NETWORK_ERROR };
+    }
+    const refs = await fetchRepoRefs({ data: { owner, name: repoName } });
+    return {
+      kind: "ready" as const,
+      repo: got.data,
+      refs: refs.ok ? refs.data.refs : [],
+    };
+  },
+});
+
+export function NewPullPage() @{
+  const params = useParams({ strict: false }) as {
+    owner?: string;
+    repo?: string;
+  };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const navigate = useNavigate();
+  const loader = Route.useLoaderData() as
+    | { kind: "not_found" }
+    | { kind: "error"; message: string }
+    | {
+        kind: "ready";
+        repo: { default_branch: string; can_write?: boolean };
+        refs: { name: string }[];
+      };
+
+  const defaultBranch = loader.kind === "ready" ? loader.repo.default_branch || "main" : "main";
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [baseRef, setBaseRef] = useState(defaultBranch);
+  const [headRef, setHeadRef] = useState(defaultBranch);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const branches =
+    loader.kind === "ready"
+      ? loader.refs
+          .filter((r) => r.name.startsWith("refs/heads/"))
+          .map((r) => r.name.replace(/^refs\/heads\//, ""))
+      : [];
+
+  async function onSubmit() {
+    setBusy(true);
+    setError(null);
+    const res = await apiClient.pull.create({
+      owner,
+      name: repoName,
+      title,
+      body,
+      base_ref: baseRef,
+      head_ref: headRef,
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error.message || "Could not create pull request.");
+      return;
+    }
+    void navigate({
+      to: "/$owner/$repo/pull/$n",
+      params: { owner, repo: repoName, n: String(res.data.number) },
+    });
+  }
+
+  @if (loader.kind === "not_found") {
+    <RepoNotFound />;
+  } @else {
+    @if (loader.kind === "error") {
+      <p className="text-destructive">{loader.message as string}</p>;
+    } @else {
+      <div className="mx-auto max-w-2xl space-y-4">
+        <h2 className="text-xl font-semibold">Open a pull request</h2>
+        <div className="flex flex-wrap gap-3">
+          <label className="flex flex-col gap-1 text-sm">
+            Base
+            <select
+              className="rounded-md border border-border bg-background px-2 py-1.5"
+              value={baseRef as string}
+              onChange={(e: Event) => setBaseRef((e.target as HTMLSelectElement).value)}
+            >
+              @for (const b of branches; key b) {
+                <option value={b as string}>{b as string}</option>;
+              }
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Compare
+            <select
+              className="rounded-md border border-border bg-background px-2 py-1.5"
+              value={headRef as string}
+              onChange={(e: Event) => setHeadRef((e.target as HTMLSelectElement).value)}
+            >
+              @for (const b of branches; key b) {
+                <option value={b as string}>{b as string}</option>;
+              }
+            </select>
+          </label>
+        </div>
+        <label className="flex flex-col gap-1 text-sm">
+          Title
+          <input
+            className="rounded-md border border-border bg-background px-3 py-2"
+            value={title as string}
+            onInput={(e: Event) => setTitle((e.target as HTMLInputElement).value)}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Body
+          <textarea
+            className="min-h-32 rounded-md border border-border bg-background px-3 py-2"
+            value={body as string}
+            onInput={(e: Event) => setBody((e.target as HTMLTextAreaElement).value)}
+          />
+        </label>
+        @if (error) {
+          <p className="text-sm text-destructive">{error as string}</p>;
+        }
+        <button
+          type="button"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          disabled={busy || !title.trim()}
+          onClick={() => void onSubmit()}
+        >
+          Create pull request
+        </button>
+      </div>;
+    }
+  }
+}
