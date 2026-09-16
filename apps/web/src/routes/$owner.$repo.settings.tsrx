@@ -7,6 +7,7 @@ import { LfsBrowser } from "@/components/repo/lfs-browser";
 import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
 import { MergeSettingsPanel } from "@/components/repo/merge-settings-panel";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { WebhooksPanel } from "@/components/repo/webhooks-panel";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -239,6 +240,8 @@ export function RepoSettingsPage() @{
         <LfsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <MergeSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
+
+        <WebhooksPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <LfsBrowser owner={owner} name={repoName} />
 
