@@ -233,6 +233,8 @@ Default `web-octane` stays fast (no Docker auth stubs). True auth/email path cov
 | `make smoke-mysql` | MySQL overlay bring-up + dialect assert | Profile `mysql` |
 | `make smoke-compose-ci` | Fail-closed CI entry (`DIALECT=…`) | Same as `./scripts/ci-compose-smoke.sh` |
 
+Octanest Cloud (Railway IaC + Caddy gateway) is **not** exercised in PR CI — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`.planning/phases/22-compose-ci-deploy/22-VALIDATION.md`](../.planning/phases/22-compose-ci-deploy/22-VALIDATION.md). Local preview: `make cloud-plan` (requires linked Railway CLI).
+
 ### Protocol smokes (local + CI)
 
 | Target | Proves | Notes |
