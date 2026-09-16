@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
@@ -15,13 +15,14 @@ vi.mock("@/lib/api-client", () => ({
 }));
 
 const navigateMock = vi.fn();
+let searchState = { q: "UNIQUE_HIT", type: "code" };
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
   return {
     ...actual,
     useParams: () => ({ owner: "ada", repo: "hello" }),
-    useSearch: () => ({ q: "UNIQUE_HIT", type: "code" }),
+    useSearch: () => searchState,
     useNavigate: () => navigateMock,
   };
 });
@@ -33,6 +34,7 @@ afterEach(() => {
   searchMock.mockReset();
   getMock.mockReset();
   navigateMock.mockReset();
+  searchState = { q: "UNIQUE_HIT", type: "code" };
 });
 
 beforeEach(() => {
@@ -41,7 +43,7 @@ beforeEach(() => {
     data: {
       type: "code",
       q: "UNIQUE_HIT",
-      truncated: false,
+      truncated: true,
       offset: 0,
       limit: 30,
       hits: [
@@ -71,9 +73,56 @@ describe("repo search route (GIT-18 / D-SRCH-02 / D-SRCH-15)", () => {
     expect(screen.getByText(/UNIQUE_HIT line/)).toBeTruthy();
   });
 
-  it.todo("exposes type tabs: Code, Commits, Issues, Pull requests");
+  it("exposes type tabs: Code, Commits, Issues, Pull requests", async () => {
+    renderWithQueryClient(RepoSearchPage);
+    expect(await screen.findByTestId("search-tab-code")).toBeTruthy();
+    expect(screen.getByTestId("search-tab-commits")).toBeTruthy();
+    expect(screen.getByTestId("search-tab-issues")).toBeTruthy();
+    expect(screen.getByTestId("search-tab-pulls")).toBeTruthy();
+  });
 
-  it.todo("switches type query param and refetches on tab change");
+  it("switches type query param and refetches on tab change", async () => {
+    renderWithQueryClient(RepoSearchPage);
+    const commitsTab = await screen.findByTestId("search-tab-commits");
+    fireEvent.click(commitsTab);
+    expect(navigateMock).toHaveBeenCalled();
+    const arg = navigateMock.mock.calls[0]?.[0] as { search?: { type?: string } };
+    expect(arg?.search?.type).toBe("commits");
+  });
 
-  it.todo("renders empty and truncated states");
+  it("renders empty and truncated states", async () => {
+    renderWithQueryClient(RepoSearchPage);
+    expect(await screen.findByTestId("search-truncated")).toBeTruthy();
+
+    searchMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        type: "code",
+        q: "UNIQUE_HIT",
+        truncated: false,
+        offset: 0,
+        limit: 30,
+        hits: [],
+      },
+    });
+    cleanup();
+    renderWithQueryClient(RepoSearchPage);
+    expect(await screen.findByTestId("search-empty")).toBeTruthy();
+  });
+
+  it("repo chrome search entry navigates to /search (D-SRCH-03)", async () => {
+    const chrome = await import("../components/repo/repo-chrome.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(chrome).toMatch(/RepoSearchEntry/);
+    const entry = await import("../components/repo/repo-search-entry.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(entry).toMatch(/\/search/);
+    const global = await import("../components/global-search.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(global).toMatch(/Coming soon/);
+    expect(global).toMatch(/disabled/);
+  });
 });

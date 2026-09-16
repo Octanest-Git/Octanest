@@ -11,6 +11,13 @@ type SearchSearch = {
   type?: string;
 };
 
+const TYPE_TABS: { id: RepoSearchType; label: string }[] = [
+  { id: "code", label: "Code" },
+  { id: "commits", label: "Commits" },
+  { id: "issues", label: "Issues" },
+  { id: "pulls", label: "Pull requests" },
+];
+
 function parseType(raw: string | undefined): RepoSearchType {
   switch ((raw ?? "code").toLowerCase()) {
     case "commits":
@@ -21,6 +28,19 @@ function parseType(raw: string | undefined): RepoSearchType {
       return "pulls";
     default:
       return "code";
+  }
+}
+
+function hitKey(hit: RepoSearchHit): string {
+  switch (hit.kind) {
+    case "code":
+      return `code-${hit.path}-${hit.line}`;
+    case "commit":
+      return `commit-${hit.sha}`;
+    case "issue":
+      return `issue-${hit.number}`;
+    case "pull":
+      return `pull-${hit.number}`;
   }
 }
 
@@ -39,7 +59,7 @@ export const Route = createFileRoute("/$owner/$repo/search")({
   }),
 });
 
-/** Thin tracer search page — code hits via repo.search (D-SRCH-01, D-SRCH-15). */
+/** In-repo search results — type tabs + hit lists (D-SRCH-02, D-SRCH-15). */
 export function RepoSearchPage() @{
   const params = useParams({ strict: false }) as { owner?: string; repo?: string };
   const owner = params.owner ?? "";
@@ -68,12 +88,25 @@ export function RepoSearchPage() @{
   const hits: RepoSearchHit[] = searchQ.data?.hits ?? [];
   const truncated = searchQ.data?.truncated ?? false;
 
-  function submitSearch() {
+  function go(next: { q?: string; type?: RepoSearchType }) {
     void navigate({
       to: "/$owner/$repo/search",
       params: { owner, repo: repoName },
-      search: { q: draft, type: typeParam },
+      search: {
+        q: next.q ?? qParam,
+        type: next.type ?? typeParam,
+      },
     });
+  }
+
+  function submitSearch() {
+    go({ q: draft, type: typeParam });
+  }
+
+  function tabClass(id: RepoSearchType): string {
+    return id === typeParam
+      ? "border-b-2 border-primary pb-2 text-[14px] font-semibold text-foreground"
+      : "pb-2 text-[14px] text-muted-foreground hover:text-foreground";
   }
 
   @{
@@ -108,6 +141,20 @@ export function RepoSearchPage() @{
         </button>
       </form>
 
+      <nav className="flex flex-wrap gap-4 border-b border-border" aria-label="Search type">
+        @for (const tab of TYPE_TABS; key tab.id) {
+          <button
+            type="button"
+            className={tabClass(tab.id) as string}
+            aria-current={tab.id === typeParam ? "page" : undefined}
+            data-testid={`search-tab-${tab.id}`}
+            onClick={() => go({ type: tab.id })}
+          >
+            {tab.label as string}
+          </button>;
+        }
+      </nav>
+
       @if (searchQ.isError) {
         <p role="alert" className="text-[16px] text-destructive">
           {(searchQ.error?.message || NETWORK_ERROR) as string}
@@ -115,16 +162,25 @@ export function RepoSearchPage() @{
       } @else if (searchQ.isPending && qParam) {
         <p className="text-[16px] text-muted-foreground">Searching…</p>;
       } @else if (!qParam) {
-        <p className="text-[16px] text-muted-foreground">Enter a query to search code.</p>;
+        <p className="text-[16px] text-muted-foreground">
+          Enter a query to search this repository.
+        </p>;
       } @else if (hits.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No code results for that query.</p>;
+        <p className="text-[16px] text-muted-foreground" data-testid="search-empty">
+          No results for that query.
+        </p>;
       } @else {
         <>
           @if (truncated) {
-            <p className="text-[13px] text-muted-foreground">Results truncated.</p>;
+            <p
+              className="text-[13px] text-muted-foreground"
+              data-testid="search-truncated"
+            >
+              Results truncated.
+            </p>;
           }
           <ul className="divide-y divide-border rounded-md border border-border">
-            @for (const hit of hits; key `${hit.kind}-${"path" in hit ? hit.path : ""}-${"line" in hit ? hit.line : ""}`) {
+            @for (const hit of hits; key hitKey(hit)) {
               @if (hit.kind === "code") {
                 <li className="px-3 py-2 text-[14px]">
                   <a
@@ -138,6 +194,49 @@ export function RepoSearchPage() @{
                     {hit.content as string}
                   </pre>
                 </li>;
+              } @else {
+                @if (hit.kind === "commit") {
+                  <li className="px-3 py-2 text-[14px]">
+                    <a
+                      className="font-medium text-primary underline"
+                      href={`/${owner}/${repoName}/commit/${hit.sha}` as string}
+                    >
+                      {hit.short_sha as string}
+                    </a>
+                    <span className="ml-2 text-foreground">
+                      {hit.subject as string}
+                    </span>
+                    <p className="text-[12px] text-muted-foreground">
+                      {(hit.author_name + " · " + hit.authored_at) as string}
+                    </p>
+                  </li>;
+                } @else {
+                  @if (hit.kind === "issue") {
+                    <li className="px-3 py-2 text-[14px]">
+                      <a
+                        className="font-medium text-primary underline"
+                        href={`/${owner}/${repoName}/issues/${hit.number}` as string}
+                      >
+                        {"#" + String(hit.number) + " " + hit.title}
+                      </a>
+                      <span className="ml-2 text-[12px] text-muted-foreground">
+                        {hit.state as string}
+                      </span>
+                    </li>;
+                  } @else {
+                    <li className="px-3 py-2 text-[14px]">
+                      <a
+                        className="font-medium text-primary underline"
+                        href={`/${owner}/${repoName}/pull/${hit.number}` as string}
+                      >
+                        {"#" + String(hit.number) + " " + hit.title}
+                      </a>
+                      <span className="ml-2 text-[12px] text-muted-foreground">
+                        {hit.state as string}
+                      </span>
+                    </li>;
+                  }
+                }
               }
             }
           </ul>
