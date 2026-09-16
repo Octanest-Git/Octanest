@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Pull Requests
-current_plan: 8
+current_phase_name: Branch Protection
+current_plan: 9
 status: phase_complete
-stopped_at: Completed 12-07-PLAN.md
-last_updated: "2026-09-16T13:25:00.000Z"
+stopped_at: Completed 13-08-PLAN.md
+last_updated: "2026-09-16T14:16:25.839Z"
 last_activity: 2026-09-16
-last_activity_desc: Phase 12 plans 00–07 executed (PRs schema/RPC/merge/UI/fork); SUMMARYs + VALIDATION updated
-state_head: d17d2854650cb1d13d1a66ab9e324b57a0309bff
+last_activity_desc: Phase 13 plans 00–08 executed (protection evaluate/hooks/CRUD/statuses/UI/docs); SUMMARYs written
+state_head: 58bbeb71d2a3e90311b3a96520a326f390e09067
 progress:
   total_phases: 23
-  completed_phases: 0
-  total_plans: 156
-  completed_plans: 155
+  completed_phases: 16
+  total_plans: 173
+  completed_plans: 173
 milestone_name: milestone
-current_phase: 12
+current_phase: 13
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 12
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/phase-12-pull-requests-c82f` — **Phase 12** Pull Requests executed (8/8 plans); ready for verify/ship
+**Current focus:** `cursor/phase-13-branch-protection-c82f` — **Phase 13** Branch Protection executed (9/9 plans); ready for verify/ship to integrate
 
 ## Current Position
 
-Phase: **12** — Pull Requests **complete** (PR-01…PR-07)
-Current Plan: 8/8
-Total Plans in Phase: 8
-Status: All Phase 12 plans SUMMARY'd. Next: `/gsd-verify-work` / ship PR #12; Phase 13 branch protection (PR-08)
-Last activity: 2026-09-16 — Executed 12-00…12-07 on cursor/phase-12-pull-requests-c82f
+Phase: **13** — Branch Protection **complete** (ORG-05, ORG-06, PR-08)
+Current Plan: 9/9
+Total Plans in Phase: 9
+Status: All Phase 13 plans SUMMARY'd. Next: `/gsd-verify-work` / ship PR #13 onto integrate
+Last activity: 2026-09-16 — Executed 13-00…13-08 on cursor/phase-13-branch-protection-c82f
 
-See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
+See also: `.planning/phases/13-branch-protection/13-CONTEXT.md` · `.planning/phases/12-pull-requests/`
 
 ## Performance Metrics
 
@@ -164,6 +164,7 @@ See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases
 | Phase 11.1 P05 | 9min | 2 tasks | 16 files |
 | Phase 11.1 P07 | 5min | 3 tasks | 9 files |
 | Phase 11.1 P08 | 6min | 2 tasks | 6 files |
+| Phase 13 P08 | 20min | 2 tasks | 4 files |
 
 # Project State
 
@@ -554,6 +555,7 @@ Recent decisions affecting current work:
 - [Phase 11.1]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
 - [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
 - [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
+- [Phase 12]: Branch protection: Settings panel CRUD + merge blockers + shared evaluate/hooks
 
 ### Pending Todos
 
@@ -575,8 +577,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T18:01:52.187Z
-Stopped at: Completed 11.1-08-PLAN.md
+Last session: 2026-09-16T14:16:25.715Z
+Stopped at: Completed 13-08-PLAN.md
 Resume file: None
 
 ## Accumulated Context
