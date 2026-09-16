@@ -54,9 +54,15 @@ echo "==> docker compose config"
 # shellcheck disable=SC2086
 docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES config >/dev/null
 
-echo "==> docker compose up --build -d --wait"
-# shellcheck disable=SC2086
-docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up --build -d --wait
+if [[ "${OCTANEST_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
+  echo "==> docker compose up -d --wait (OCTANEST_COMPOSE_SKIP_BUILD=1; using preloaded images)"
+  # shellcheck disable=SC2086
+  docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up -d --wait
+else
+  echo "==> docker compose up --build -d --wait"
+  # shellcheck disable=SC2086
+  docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up --build -d --wait
+fi
 
 # Traefik docker-provider discovery can lag container healthchecks (--wait).
 # Retry until routers are live so we don't flake with an immediate 404.
