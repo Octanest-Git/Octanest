@@ -258,3 +258,20 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 | HTTP stubs | `http://127.0.0.1:9092` | Resend `POST /emails` + WorkOS AuthKit |
 
 `e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI, WorkOS CTA, and the D-QH-03 forge matrix (repo/packages, issues/releases, SSH keys, org members) against the live web/API in Chromium.
+
+
+## Actions phase gate (Phase 19)
+
+```bash
+# Docs/image/Compose presence + optional Docker build (skip-ok without Docker/stack)
+make smoke-actions
+# or: bash scripts/smoke-actions.sh
+
+# Targeted API coverage
+cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
+
+make rpc-sync-check
+make web-lint && make web-format-check   # after apps/web Actions UI changes
+```
+
+`smoke-actions` fails closed under `CI=true` / `SMOKE_REQUIRE_STACK=1` when Docker/stack is required; otherwise prints a skip signal and exits 0 after static Dockerfile/Compose checks.

@@ -166,6 +166,7 @@ Full variable table and defaults: [CONFIGURATION.md](CONFIGURATION.md). Cloud se
 | `make smoke` | Default Compose; `EXPECT_DIALECT=postgres` |
 | `make smoke-mysql` | MySQL overlay + profile; dialect `mysql` |
 | `make smoke-sqlite` | SQLite overlay; dialect `sqlite` |
+| `make smoke-actions` | Actions runner image/Compose checks (skip-ok without Docker) |
 
 Checks performed:
 

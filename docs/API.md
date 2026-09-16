@@ -525,6 +525,56 @@ Smart HTTP failed-authentication attempts are rate-limited in-process: **20 fail
 
 `user.lookup` is rate-limited per session (**60** requests / **60s**). Other RPC routes do not apply in-process limiters; rely on reverse-proxy / edge controls for deployment-wide limits.
 
+## Actions (Phase 19)
+
+Octanest Actions is a **control plane**: workflows are discovered under `.github/workflows/*.yml`, runs/jobs are queued, and **registered runners** execute them. There is **no managed CI minutes** product and no in-process job executor (ACT-07 / D-ACT-10).
+
+### Workflow layout & triggers (ACT-01 / ACT-02)
+
+- Workflow files live at `.github/workflows/*.yml` (or `.yaml`) on the evaluated ref.
+- **push** — evaluated after Smart HTTP / SSH receive (and related notify hooks).
+- **pull_request** — evaluated on PR open/sync/reopen-style events (Phase 12 hook).
+- Instance gate: `OCTANEST_ACTIONS_ENABLED`. Per-repo Admin toggle: `repo.actions.setEnabled` / Settings → Actions.
+
+### Runner protocol HTTP (`/api/actions`) (ACT-06)
+
+Mounted under `/api/actions` (placeholders only — never commit real tokens):
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env) | Register runner; returns `runner_token` once |
+| POST | `/api/actions/declare` | Bearer runner token | Update labels |
+| POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job; may include decrypted `secrets` map |
+| POST | `/api/actions/update_task` | Bearer runner token | Job state updates |
+| POST | `/api/actions/update_log` | Bearer runner token | Append job log chunks |
+
+Session RPC (Read+/Admin as noted):
+
+| Procedure | ACL | Notes |
+|-----------|-----|-------|
+| `repo.actions.listRuns` / `getRun` / `getJobLog` | Read+ | UI list/detail |
+| `repo.actions.secrets.list` / `put` / `delete` | Admin | Names only on list; values never echoed |
+| `repo.actions.getEnabled` / `setEnabled` | Read+ / Admin | Per-repo enable |
+| `admin.actions.createRegistrationToken` | SysAdmin | One-time plaintext token (`reg_…`) |
+| `admin.actions.listRunners` | SysAdmin | Registered runners (no token hashes) |
+
+### Commit statuses for Phase 13 (D-ACT-15 / D-ACT-16)
+
+Job updates publish commit statuses via `repo.commitStatus.*` with context (D-ACT-15):
+
+```text
+{workflow_name} / {job_key}
+```
+
+Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Target URL points at `/{owner}/{repo}/actions/runs/{run_id}` when public origin is configured. Phase 13 required checks should match these contexts (`repo.commitStatus.list`).
+
+### UI routes (ACT-03)
+
+- `/{owner}/{repo}/actions` — run list
+- `/{owner}/{repo}/actions/{runId}` — jobs + logs
+- `/{owner}/{repo}/settings` — Actions enable + secrets
+- `/admin/runners` — registration tokens + runner list
+
 ## Regenerating the TypeScript client
 
 Procedure names and DTOs in Rust (`rpc.rs`, `octanest-core`) are authoritative. Regenerate `@octanest/api-client`:
