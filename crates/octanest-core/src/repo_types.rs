@@ -75,6 +75,14 @@ pub struct RepoTemplateOption {
     pub default_gitignore: Option<String>,
 }
 
+/// Parent summary when this repo is a fork (D-SOC-16).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForkParentSummary {
+    pub id: String,
+    pub owner: String,
+    pub name: String,
+}
+
 /// Public repository metadata returned over RPC.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoPublic {
@@ -95,6 +103,63 @@ pub struct RepoPublic {
     /// Caller has Write capability (D-ORG-05).
     #[serde(default)]
     pub can_write: bool,
+    /// Denormalized star counter (D-SOC-02 / D-SOC-03).
+    #[serde(default)]
+    pub star_count: i64,
+    /// Whether the authenticated viewer has starred this repo.
+    #[serde(default)]
+    pub viewer_has_starred: bool,
+    /// True when this repository is a fork of another.
+    #[serde(default)]
+    pub is_fork: bool,
+    /// Fork network root id (own id for roots) — D-SOC-14 / D-PR-01.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fork_network_id: Option<String>,
+    /// Immediate parent when `is_fork` (D-SOC-16).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forked_from: Option<ForkParentSummary>,
+}
+
+/// `repo.star` / `repo.unstar` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoStarRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+/// `user.listStarred` — caller's starred repos (D-SOC-03).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListStarredRequest {
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `repo.explore` — public discovery listing (D-SOC-09…11).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoExploreRequest {
+    #[serde(default)]
+    pub q: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `user.getPublicProfile` — public profile by username (D-SOC-06 / D-SOC-08).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetPublicProfileRequest {
+    pub username: String,
+}
+
+/// Public profile DTO — never includes email (D-SOC-06).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PublicUserProfile {
+    pub username: String,
+    pub display_name: String,
+    pub bio: String,
+    pub avatar_url: Option<String>,
 }
 
 /// `repo.listMine` — caller's non-deleted repos, recently updated first (GIT-01 / D-13).

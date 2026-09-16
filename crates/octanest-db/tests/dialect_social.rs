@@ -5,7 +5,6 @@ use octanest_core::Role;
 use octanest_db::Database;
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-01"]
 async fn dialect_social_schema_presence() {
     let migration_path = concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -66,5 +65,9 @@ async fn dialect_social_schema_presence() {
         .await
         .expect("insert repo");
     assert_eq!(repo.id, "r-social-1");
-    // 21-01 extends with get_repo_fork_network_id assertion once column + helper exist.
+    let network = db
+        .get_repo_fork_network_id(&repo.id)
+        .await
+        .expect("fork_network");
+    assert_eq!(network.as_deref(), Some(repo.id.as_str()));
 }

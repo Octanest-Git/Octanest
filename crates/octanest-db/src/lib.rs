@@ -25,6 +25,7 @@ pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
+pub mod stars;
 pub mod users;
 
 pub use branch_protection::{BranchProtectionRuleRow, CommitStatusRow};
@@ -386,7 +387,7 @@ impl Database {
         description: &str,
         default_branch: &str,
     ) -> Result<RepositoryRow, String> {
-        repositories::insert_repository(
+        let row = repositories::insert_repository(
             self.require_pool()?,
             id,
             owner_id,
@@ -396,7 +397,75 @@ impl Database {
             description,
             default_branch,
         )
-        .await
+        .await?;
+        // D-SOC-14: roots get fork_network_id = id (column from 0017_social).
+        let _ = stars::set_fork_network_id(self.require_pool()?, &row.id, &row.id).await;
+        Ok(row)
+    }
+
+    pub async fn star_repository(&self, user_id: &str, repository_id: &str) -> Result<i64, String> {
+        stars::star_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn unstar_repository(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<i64, String> {
+        stars::unstar_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn get_repo_star_count(&self, repository_id: &str) -> Result<i64, String> {
+        stars::get_star_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn has_starred_repo(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<bool, String> {
+        stars::has_starred(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn get_repo_fork_network_id(
+        &self,
+        repository_id: &str,
+    ) -> Result<Option<String>, String> {
+        stars::get_fork_network_id(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn set_repo_fork_network_id(
+        &self,
+        repository_id: &str,
+        network_id: &str,
+    ) -> Result<(), String> {
+        stars::set_fork_network_id(self.require_pool()?, repository_id, network_id).await
+    }
+
+    pub async fn find_active_fork_in_network(
+        &self,
+        owner_id: &str,
+        fork_network_id: &str,
+    ) -> Result<Option<RepositoryRow>, String> {
+        stars::find_active_fork_in_network(self.require_pool()?, owner_id, fork_network_id).await
+    }
+
+    pub async fn list_starred_repo_ids(
+        &self,
+        user_id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<String>, String> {
+        stars::list_starred_repo_ids(self.require_pool()?, user_id, offset, limit).await
+    }
+
+    pub async fn list_explore_repositories(
+        &self,
+        q: Option<&str>,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<RepositoryRow>, String> {
+        stars::list_explore(self.require_pool()?, q, offset, limit).await
     }
 
     pub async fn find_repository_by_owner_name(

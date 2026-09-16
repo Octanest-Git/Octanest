@@ -107,7 +107,6 @@ async fn rpc_json(app: &axum::Router, cookie: Option<&str>, body: &str) -> serde
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-01"]
 async fn repo_stars_star_unstar_idempotent() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -152,7 +151,6 @@ async fn repo_stars_star_unstar_idempotent() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-01"]
 async fn repo_stars_anonymous_rejected() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
@@ -176,7 +174,6 @@ async fn repo_stars_anonymous_rejected() {
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 — turns green in 21-01"]
 async fn repo_stars_private_without_read_not_found() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
