@@ -66,5 +66,21 @@ if [[ "$ok" -ne 1 ]]; then
   exit 1
 fi
 
+echo "==> probe Actions protocol paths (no auth — expect 4xx, not 404/502)"
+for path in register declare fetch_task; do
+  code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+    -H 'content-type: application/json' \
+    -d '{}' \
+    "${BASE_URL}/api/actions/${path}" || true)
+  case "$code" in
+    400|401|403|422|415) echo "OK: /api/actions/${path} → ${code}" ;;
+    404|502|503|000)
+      echo "unexpected ${code} for /api/actions/${path}" >&2
+      exit 1
+      ;;
+    *) echo "OK: /api/actions/${path} → ${code} (reachable)" ;;
+  esac
+done
+
 echo "==> Actions smoke OK (runner artifacts + stack healthy at ${BASE_URL})"
 exit 0
