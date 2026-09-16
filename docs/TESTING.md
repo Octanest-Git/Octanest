@@ -217,11 +217,23 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
-| `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` |
+| `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` (config-only; does not build/bring-up) |
+| `compose-smoke` | Matrix `postgres` / `sqlite` / `mysql`: `./scripts/ci-compose-smoke.sh` → `make smoke` / `smoke-sqlite` / `smoke-mysql` (**D-CI-01…04**); fail-closed under `CI` / `SMOKE_REQUIRE_STACK`; image proof via `compose up --build` (**D-CI-06**); uploads `/tmp/octanest-smoke*.json` on failure. Complements config-only `compose` and stays separate from `smoke-protocol` (**D-CI-05**) |
 | `smoke-protocol` | Compose up → `make smoke-git-https` + `smoke-git-ssh` + `smoke-git-lfs` + `smoke-packages` via `make smoke-protocol-ci` (**D-QH-04**); fail-closed when Docker/stack absent (`CI` / `SMOKE_REQUIRE_STACK`); default `SMOKE_SKIP_LS_REMOTE=1` / `SMOKE_SKIP_LFS_CLIENT=1` (routing + SSH TCP; no seeded-repo client) |
-| `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` |
+| `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` (dialect probe only — not a substitute for Compose bring-up) |
 
-Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright. Forge protocol edges (Smart HTTP / SSH TCP / LFS batch / packages PathPrefix) are the `smoke-protocol` job — not happy-dom only.
+Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright. Compose dialect health (Traefik `/` + `/health` + `system.db_probe`) is the `compose-smoke` matrix — not folded into `smoke-protocol`. Forge protocol edges (Smart HTTP / SSH TCP / LFS batch / packages PathPrefix) are the `smoke-protocol` job — not happy-dom only.
+
+### Compose dialect smokes (local + CI)
+
+| Target | Proves | Notes |
+|--------|--------|-------|
+| `make smoke` | Postgres Compose bring-up + `db_probe` | Same as CI `compose-smoke` / postgres |
+| `make smoke-sqlite` | SQLite overlay bring-up + dialect assert | Host dir via `scripts/sqlite-host-dir.sh` (`./var` on Linux) |
+| `make smoke-mysql` | MySQL overlay bring-up + dialect assert | Profile `mysql` |
+| `make smoke-compose-ci` | Fail-closed CI entry (`DIALECT=…`) | Same as `./scripts/ci-compose-smoke.sh` |
+
+Octanest Cloud (Railway IaC + Caddy gateway) is **not** exercised in PR CI — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`.planning/phases/22-compose-ci-deploy/22-VALIDATION.md`](../.planning/phases/22-compose-ci-deploy/22-VALIDATION.md). Local preview: `make cloud-plan` (requires linked Railway CLI).
 
 ### Protocol smokes (local + CI)
 

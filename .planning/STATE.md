@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Branch Protection
-current_plan: 9
+current_phase_name: Compose CI & Cloud Deploy
+current_plan: 3
 status: phase_complete
-stopped_at: Completed 13-08-PLAN.md
-last_updated: "2026-09-16T14:16:25.839Z"
+stopped_at: Completed 22-03-PLAN.md — Phase 22 complete
+last_updated: "2026-09-16T18:28:41.104Z"
 last_activity: 2026-09-16
 last_activity_desc: Phase 13 plans 00–08 executed (protection evaluate/hooks/CRUD/statuses/UI/docs); SUMMARYs written
-state_head: 58bbeb71d2a3e90311b3a96520a326f390e09067
+state_head: c2bb9984649de7333248ed9b7ce1d234ba005aa2
 progress:
   total_phases: 23
-  completed_phases: 16
-  total_plans: 173
-  completed_plans: 173
+  completed_phases: 0
+  total_plans: 198
+  completed_plans: 198
 milestone_name: milestone
-current_phase: 13
+current_phase: 22
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 13
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `cursor/phase-13-branch-protection-c82f` — **Phase 13** Branch Protection executed (9/9 plans); ready for verify/ship to integrate
+**Current focus:** `cursor/phase-22-compose-ci-deploy-c82f` — **Phase 22** Compose CI & Cloud Deploy **complete** (3/3 plans)
 
 ## Current Position
 
-Phase: **13** — Branch Protection **complete** (ORG-05, ORG-06, PR-08)
-Current Plan: 9/9
-Total Plans in Phase: 9
-Status: All Phase 13 plans SUMMARY'd. Next: `/gsd-verify-work` / ship PR #13 onto integrate
-Last activity: 2026-09-16 — Executed 13-00…13-08 on cursor/phase-13-branch-protection-c82f
+Phase: **22** — Compose CI & Cloud Deploy **complete** (PLAT-02, PLAT-03, PLAT-09)
+Current Plan: 3 of 3
+Total Plans in Phase: 3
+Status: All Phase 22 plans SUMMARY'd. Next: verify/ship PR onto integrate (do not merge yet from executor)
+Last activity: 2026-09-16 — Completed 22-01…22-03 on cursor/phase-22-compose-ci-deploy-c82f
 
-See also: `.planning/phases/13-branch-protection/13-CONTEXT.md` · `.planning/phases/12-pull-requests/`
+See also: `.planning/phases/22-compose-ci-deploy/22-CONTEXT.md` · `22-VALIDATION.md`
 
 ## Performance Metrics
 
@@ -165,6 +165,9 @@ See also: `.planning/phases/13-branch-protection/13-CONTEXT.md` · `.planning/ph
 | Phase 11.1 P07 | 5min | 3 tasks | 9 files |
 | Phase 11.1 P08 | 6min | 2 tasks | 6 files |
 | Phase 13 P08 | 20min | 2 tasks | 4 files |
+| Phase 22 P01 | 2min | 3 tasks | 4 files |
+| Phase 22 P02 | 12min | 3 tasks | 11 files |
+| Phase 22 P03 | 5min | 2 tasks | 3 files |
 
 # Project State
 
@@ -556,6 +559,9 @@ Recent decisions affecting current work:
 - [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
 - [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
 - [Phase 12]: Branch protection: Settings panel CRUD + merge blockers + shared evaluate/hooks
+- [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
+- [Phase 22]: Cloud gateway is Caddy file-config; forge-data volume at /var; human-only railway apply
+- [Phase 22]: Phase 22 VALIDATION marks live Railway apply as human-verify only
 
 ### Pending Todos
 
@@ -577,8 +583,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T14:16:25.715Z
-Stopped at: Completed 13-08-PLAN.md
+Last session: 2026-09-16T18:28:40.976Z
+Stopped at: Completed 22-03-PLAN.md — Phase 22 complete
 Resume file: None
 
 ## Accumulated Context

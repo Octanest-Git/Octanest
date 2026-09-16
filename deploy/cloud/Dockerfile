@@ -1,0 +1,6 @@
+# Octanest Cloud HTTP gateway (D-CLOUD-03).
+# Pins the Docker Official Image approved for Phase 22.
+FROM caddy:2.11.4-alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+EXPOSE 8080
+# Railway injects PORT; Caddyfile defaults to 8080 when unset.
