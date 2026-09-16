@@ -10,6 +10,7 @@ pub mod lfs;
 pub mod org;
 pub mod packages;
 pub mod pat;
+pub mod protection;
 pub mod pull;
 pub mod release;
 pub mod ssh;

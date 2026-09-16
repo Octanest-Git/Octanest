@@ -1,5 +1,4 @@
 //! Branch protection + commit_statuses migration parity (ORG-05/06, D-01, D-11).
-//! Wave 0 stub — greened when 0017 (or next-free) migrations land in 13-02/13-04.
 
 use std::path::PathBuf;
 
@@ -33,13 +32,20 @@ fn assert_protection_sql(dialect: &str, sql: &str) {
         "{dialect}: must define branch_protection_rules"
     );
     assert!(
-        sql.contains("pattern") || sql.contains("branch_pattern"),
+        sql.contains("pattern"),
         "{dialect}: rule must include branch pattern column"
+    );
+    assert!(
+        sql.contains("commit_statuses"),
+        "{dialect}: must define commit_statuses"
+    );
+    assert!(
+        sql.contains("require_reviews") || sql.contains("required_approving_review_count"),
+        "{dialect}: review columns required"
     );
 }
 
 #[tokio::test]
-#[ignore = "Wave 0 RED — migrations land in 13-02/13-04"]
 async fn dialect_branch_protection_migrate_schema_presence() {
     let (path, sql) =
         find_protection_migration("sqlite").expect("sqlite branch_protection migration");
@@ -50,17 +56,19 @@ async fn dialect_branch_protection_migrate_schema_presence() {
         let (_p, dsql) = find_protection_migration(dialect)
             .unwrap_or_else(|| panic!("missing {dialect} branch_protection migration"));
         assert_protection_sql(dialect, &dsql);
-        assert!(
-            dsql.contains("commit_statuses")
-                || find_protection_migration(dialect)
-                    .map(|(_, s)| s.contains("commit_statuses"))
-                    .unwrap_or(false),
-            "{dialect}: commit_statuses expected in protection or follow-on migration"
-        );
     }
 
-    assert!(
-        false,
-        "TODO 13-02: green dialect_branch_protection after tri-dialect migrations exist"
-    );
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("bp.db").display());
+    let db = octanest_db::Database::connect(&url)
+        .await
+        .expect("connect");
+    db.migrate()
+        .await
+        .expect("migrate must apply branch protection schema");
+    let rules = db
+        .list_branch_protection_rules("missing")
+        .await
+        .expect("list rules on empty");
+    assert!(rules.is_empty());
 }

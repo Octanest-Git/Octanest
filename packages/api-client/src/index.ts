@@ -560,6 +560,95 @@ export type RepoCollaboratorsRemoveRequest = {
   user_id: string;
 };
 
+/** Classic branch protection rule (Phase 13 / ORG-05). */
+export type BranchProtectionRulePublic = {
+  id: string;
+  repo_id: string;
+  pattern: string;
+  require_reviews: boolean;
+  required_approving_review_count: number;
+  dismiss_stale_reviews: boolean;
+  require_conversation_resolution: boolean;
+  require_last_push_approval: boolean;
+  required_status_contexts: string[];
+  strict_status_checks: boolean;
+  allow_force_pushes: boolean;
+  allow_deletions: boolean;
+  enforce_admins: boolean;
+  required_linear_history: boolean;
+  lock_branch: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BranchProtectionListResponse = {
+  rules: BranchProtectionRulePublic[];
+};
+
+export type BranchProtectionRuleInput = {
+  owner: string;
+  name: string;
+  pattern: string;
+  require_reviews?: boolean;
+  required_approving_review_count?: number;
+  dismiss_stale_reviews?: boolean;
+  require_conversation_resolution?: boolean;
+  require_last_push_approval?: boolean;
+  required_status_contexts?: string[];
+  strict_status_checks?: boolean;
+  allow_force_pushes?: boolean;
+  allow_deletions?: boolean;
+  enforce_admins?: boolean;
+  required_linear_history?: boolean;
+  lock_branch?: boolean;
+};
+
+export type BranchProtectionUpdateRequest = BranchProtectionRuleInput & {
+  id: string;
+};
+
+export type BranchProtectionDeleteRequest = {
+  owner: string;
+  name: string;
+  id: string;
+};
+
+export type CommitStatusState = "pending" | "success" | "failure" | "error";
+
+export type CommitStatusPublic = {
+  id: string;
+  repo_id: string;
+  sha: string;
+  context: string;
+  state: CommitStatusState;
+  description: string;
+  target_url?: string | null;
+  creator_id?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CommitStatusCreateRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+  context: string;
+  state: CommitStatusState;
+  description?: string;
+  target_url?: string | null;
+};
+
+export type CommitStatusListRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+};
+
+export type CommitStatusListResponse = {
+  statuses: CommitStatusPublic[];
+};
+
+
 export type MemberBasePermission = "none" | "read" | "write";
 
 export type OrgRole = "owner" | "admin" | "member";
@@ -1517,6 +1606,22 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.update", input),
         remove: (input: RepoCollaboratorsRemoveRequest) =>
           rpcCall<{ ok: boolean }>(opts, "repo.collaborators.remove", input),
+      },
+      branchProtection: {
+        list: (input: RepoGetRequest) =>
+          rpcCall<BranchProtectionListResponse>(opts, "repo.branchProtection.list", input),
+        create: (input: BranchProtectionRuleInput) =>
+          rpcCall<BranchProtectionRulePublic>(opts, "repo.branchProtection.create", input),
+        update: (input: BranchProtectionUpdateRequest) =>
+          rpcCall<BranchProtectionRulePublic>(opts, "repo.branchProtection.update", input),
+        delete: (input: BranchProtectionDeleteRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "repo.branchProtection.delete", input),
+      },
+      commitStatus: {
+        create: (input: CommitStatusCreateRequest) =>
+          rpcCall<CommitStatusPublic>(opts, "repo.commitStatus.create", input),
+        list: (input: CommitStatusListRequest) =>
+          rpcCall<CommitStatusListResponse>(opts, "repo.commitStatus.list", input),
       },
     },
     org: {

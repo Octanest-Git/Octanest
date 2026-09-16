@@ -430,6 +430,7 @@ async fn authorize_and_cgi(
         return unauthorized_basic();
     }
 
+    let mut actor_capability_label = "read";
     if let Some(ref auth) = authed {
         let caller_id = auth.owner.id.as_str();
         let capability = match effective_capability(
@@ -445,6 +446,11 @@ async fn authorize_and_cgi(
                 tracing::error!(error = %e, "effective_capability");
                 return StatusCode::INTERNAL_SERVER_ERROR.into_response();
             }
+        };
+        actor_capability_label = match capability {
+            Some(Capability::Admin) => "admin",
+            Some(Capability::Write) => "write",
+            Some(Capability::Read) | None => "read",
         };
         // Private + no Read → 401 (D-21 / T-10-01), not web not_found.
         if is_private && !meets(capability, Capability::Read) {
@@ -482,6 +488,20 @@ async fn authorize_and_cgi(
 
     let remote_user = authed.as_ref().map(|a| a.owner.username.as_str());
 
+    let db_url = std::env::var("OCTANEST_DATABASE_URL")
+        .or_else(|_| std::env::var("DATABASE_URL"))
+        .unwrap_or_default();
+    let helper = std::env::var("OCTANEST_PROTECTION_HELPER").ok();
+    let protection = if receive && !db_url.is_empty() {
+        Some(http_backend::ProtectionCgiEnv {
+            database_url: &db_url,
+            actor_capability: actor_capability_label,
+            helper_path: helper.as_deref(),
+        })
+    } else {
+        None
+    };
+
     match http_backend::run_git_http_backend(CgiRequest {
         repos_dir: &state.repos_dir,
         path_info: &path_info,
@@ -491,6 +511,7 @@ async fn authorize_and_cgi(
         body,
         remote_user,
         git_protocol: git_protocol.as_deref(),
+        protection_env: protection.as_ref(),
     })
     .await
     {
