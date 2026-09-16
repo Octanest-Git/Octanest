@@ -263,4 +263,40 @@ pub trait GitBackend: Send + Sync {
 
     /// Run `git gc` on a bare (or worktree) repository (D-37).
     async fn gc(&self, repo: &Path) -> Result<(), GitError>;
+
+    /// Create a merge commit of `head_sha` into `base_ref` on a bare repo.
+    /// Returns the resulting tip SHA on `base_ref`. Conflicts → [`GitError::Process`].
+    async fn merge_commit(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError>;
+
+    /// Squash `head_sha` onto `base_ref` as a single commit.
+    async fn squash_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError>;
+
+    /// Rebase commits reachable from `head_sha` (not in `base_ref`) onto `base_ref`,
+    /// then fast-forward `base_ref` to the rebased tip.
+    async fn rebase_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+    ) -> Result<String, GitError>;
+
+    /// Fetch objects for `refname` from another bare repo into `dest` (fork heads).
+    async fn fetch_ref_from(
+        &self,
+        dest: &Path,
+        source: &Path,
+        refname: &str,
+    ) -> Result<String, GitError>;
 }

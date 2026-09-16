@@ -948,6 +948,179 @@ impl GitBackend for CliGitBackend {
         run_git(&["-C", repo_s, "gc", "--auto"]).await?;
         Ok(())
     }
+
+    async fn merge_commit(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, message, MergeMode::MergeCommit).await
+    }
+
+    async fn squash_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, message, MergeMode::Squash).await
+    }
+
+    async fn rebase_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, "rebase", MergeMode::Rebase).await
+    }
+
+    async fn fetch_ref_from(
+        &self,
+        dest: &Path,
+        source: &Path,
+        refname: &str,
+    ) -> Result<String, GitError> {
+        let dest_abs = absolute_path(dest)?;
+        let source_abs = absolute_path(source)?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        let source_s = source_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 source: {}", source_abs.display()))
+        })?;
+        let refname = validate_treeish(refname)?;
+        // Fetch into a temporary ref then resolve SHA.
+        let tmp_ref = format!("refs/octanest/fetch-tmp/{}", uuid_like());
+        let refspec = format!("+{refname}:{tmp_ref}");
+        run_git(&["-C", dest_s, "fetch", source_s, &refspec]).await?;
+        let sha = run_git_stdout(&["-C", dest_s, "rev-parse", &tmp_ref]).await?;
+        let sha = String::from_utf8_lossy(&sha).trim().to_string();
+        let _ = run_git(&["-C", dest_s, "update-ref", "-d", &tmp_ref]).await;
+        Ok(sha)
+    }
+}
+
+#[derive(Clone, Copy)]
+enum MergeMode {
+    MergeCommit,
+    Squash,
+    Rebase,
+}
+
+fn uuid_like() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let n = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("{n:x}")
+}
+
+async fn merge_via_worktree(
+    bare: &Path,
+    base_ref: &str,
+    head_sha: &str,
+    message: &str,
+    mode: MergeMode,
+) -> Result<String, GitError> {
+    let base_ref = validate_treeish(base_ref)?;
+    let head_sha = validate_treeish(head_sha)?;
+    if message.contains('\0') {
+        return Err(GitError::InvalidArg("commit message contains NUL".into()));
+    }
+    let bare_abs = absolute_path(bare)?;
+    let bare_s = bare_abs.to_str().ok_or_else(|| {
+        GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
+    })?;
+
+    let tmp = tempfile::tempdir().map_err(GitError::Io)?;
+    let work = tmp.path();
+    let work_s = work
+        .to_str()
+        .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree".into()))?;
+
+    run_git(&["clone", bare_s, work_s]).await?;
+    run_git(&["-C", work_s, "config", "user.email", "noreply@octanest.local"]).await?;
+    run_git(&["-C", work_s, "config", "user.name", "Octanest"]).await?;
+    if run_git(&[
+        "-C",
+        work_s,
+        "checkout",
+        "-B",
+        base_ref,
+        &format!("origin/{base_ref}"),
+    ])
+    .await
+    .is_err()
+    {
+        run_git(&["-C", work_s, "checkout", "-B", base_ref, base_ref]).await?;
+    }
+
+    // Ensure head object is present (same-repo SHA already is).
+    let _ = run_git(&["-C", work_s, "fetch", "origin", head_sha]).await;
+
+    match mode {
+        MergeMode::MergeCommit => {
+            if let Err(e) = run_git(&[
+                "-C",
+                work_s,
+                "merge",
+                "--no-ff",
+                "-m",
+                message,
+                head_sha,
+            ])
+            .await
+            {
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+        }
+        MergeMode::Squash => {
+            if let Err(e) = run_git(&["-C", work_s, "merge", "--squash", head_sha]).await {
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+            run_git(&["-C", work_s, "commit", "-m", message]).await?;
+        }
+        MergeMode::Rebase => {
+            run_git(&["-C", work_s, "checkout", "-B", "octanest-rebase-head", head_sha])
+                .await?;
+            if let Err(e) = run_git(&["-C", work_s, "rebase", base_ref]).await {
+                let _ = run_git(&["-C", work_s, "rebase", "--abort"]).await;
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+            run_git(&["-C", work_s, "checkout", base_ref]).await?;
+            run_git(&[
+                "-C",
+                work_s,
+                "merge",
+                "--ff-only",
+                "octanest-rebase-head",
+            ])
+            .await?;
+        }
+    }
+
+    let sha_bytes = run_git_stdout(&["-C", work_s, "rev-parse", "HEAD"]).await?;
+    let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
+    let refspec = format!("HEAD:refs/heads/{base_ref}");
+    run_git(&["-C", work_s, "push", "origin", &refspec]).await?;
+    Ok(sha)
 }
 
 /// Resolve `path` against the process cwd when relative (seed push remote safety).
@@ -1321,5 +1494,196 @@ mod tests {
         .await
         .unwrap();
         git.gc(&bare).await.expect("gc");
+    }
+
+    async fn push_branch_with_file(
+        bare: &Path,
+        branch: &str,
+        from: &str,
+        file: &str,
+        content: &[u8],
+        message: &str,
+    ) {
+        let wt = tempfile::tempdir().unwrap();
+        let wt_s = wt.path().to_str().unwrap();
+        let bare_s = bare.to_str().unwrap();
+        run_git(&["clone", bare_s, wt_s]).await.unwrap();
+        run_git(&["-C", wt_s, "checkout", "-B", branch, from])
+            .await
+            .unwrap();
+        tokio::fs::write(wt.path().join(file), content)
+            .await
+            .unwrap();
+        run_git(&["-C", wt_s, "add", file]).await.unwrap();
+        run_git(&["-C", wt_s, "commit", "-m", message])
+            .await
+            .unwrap();
+        let refspec = format!("HEAD:refs/heads/{branch}");
+        run_git(&["-C", wt_s, "push", "origin", &refspec])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn merge_commit_creates_merge_on_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("merge.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "b.txt", b"feat\n", "feat")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .merge_commit(&bare, "main", &head, "Merge feature")
+            .await
+            .expect("merge_commit");
+        assert_eq!(sha.len(), 40);
+        let tip = String::from_utf8_lossy(
+            &run_git_stdout(&["-C", bare.to_str().unwrap(), "rev-parse", "refs/heads/main"])
+                .await
+                .unwrap(),
+        )
+        .trim()
+        .to_string();
+        assert_eq!(tip, sha);
+    }
+
+    #[tokio::test]
+    async fn squash_merge_single_commit_on_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("squash.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "c.txt", b"sq\n", "sq")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .squash_merge(&bare, "main", &head, "Squash feature")
+            .await
+            .expect("squash_merge");
+        assert_eq!(sha.len(), 40);
+    }
+
+    #[tokio::test]
+    async fn rebase_merge_fast_forwards_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("rebase.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "d.txt", b"rb\n", "rb")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .rebase_merge(&bare, "main", &head)
+            .await
+            .expect("rebase_merge");
+        assert_eq!(sha.len(), 40);
+    }
+
+    #[tokio::test]
+    async fn merge_commit_conflict_errors() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("conflict.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("clash.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Divergent edits on same file.
+        push_branch_with_file(
+            &bare,
+            "feature",
+            "main",
+            "clash.txt",
+            b"feature\n",
+            "feat clash",
+        )
+        .await;
+        // Advance main with conflicting content.
+        push_branch_with_file(&bare, "main", "main", "clash.txt", b"mainline\n", "main clash")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let err = git
+            .merge_commit(&bare, "main", &head, "Merge conflict")
+            .await
+            .expect_err("expected conflict");
+        let msg = err.to_string().to_lowercase();
+        assert!(
+            msg.contains("conflict") || msg.contains("failed"),
+            "unexpected err: {msg}"
+        );
     }
 }

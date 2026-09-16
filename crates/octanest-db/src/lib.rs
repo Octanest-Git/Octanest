@@ -15,6 +15,7 @@ pub mod packages;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod pulls;
 pub mod redirects;
 pub mod releases;
 pub mod repo_collaborators;
@@ -36,6 +37,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
+pub use pulls::{PullRow, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -445,6 +447,105 @@ impl Database {
 
     pub async fn hard_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::hard_delete(self.require_pool()?, id).await
+    }
+
+    // --- pulls ---
+
+    pub async fn insert_pull(
+        &self,
+        id: &str,
+        repo_id: &str,
+        number: i64,
+        title: &str,
+        body: &str,
+        author_id: &str,
+        base_ref: &str,
+        base_sha: &str,
+        head_repo_id: &str,
+        head_ref: &str,
+        head_sha: &str,
+        draft: bool,
+    ) -> Result<PullRow, String> {
+        pulls::insert_pull(
+            self.require_pool()?,
+            id,
+            repo_id,
+            number,
+            title,
+            body,
+            author_id,
+            base_ref,
+            base_sha,
+            head_repo_id,
+            head_ref,
+            head_sha,
+            draft,
+        )
+        .await
+    }
+
+    pub async fn find_pull_by_repo_number(
+        &self,
+        repo_id: &str,
+        number: i64,
+    ) -> Result<Option<PullRow>, String> {
+        pulls::find_by_repo_and_number(self.require_pool()?, repo_id, number).await
+    }
+
+    pub async fn list_pulls_for_repo(
+        &self,
+        repo_id: &str,
+        state: Option<&str>,
+        offset: u32,
+        limit: u32,
+    ) -> Result<(Vec<PullRow>, i64), String> {
+        pulls::list_by_repo(self.require_pool()?, repo_id, state, offset, limit).await
+    }
+
+    pub async fn set_pull_state(
+        &self,
+        id: &str,
+        state: &str,
+        closed_at: Option<&str>,
+        closed_by: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_state(self.require_pool()?, id, state, closed_at, closed_by).await
+    }
+
+    pub async fn get_repo_merge_settings(
+        &self,
+        repo_id: &str,
+    ) -> Result<RepoMergeSettingsRow, String> {
+        pulls::get_merge_settings(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_merge_settings(
+        &self,
+        repo_id: &str,
+        allow_merge_commit: bool,
+        allow_squash_merge: bool,
+        allow_rebase_merge: bool,
+    ) -> Result<(), String> {
+        pulls::set_merge_settings(
+            self.require_pool()?,
+            repo_id,
+            allow_merge_commit,
+            allow_squash_merge,
+            allow_rebase_merge,
+        )
+        .await
+    }
+
+    pub async fn set_repo_forked_from(
+        &self,
+        repo_id: &str,
+        forked_from: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_forked_from(self.require_pool()?, repo_id, forked_from).await
+    }
+
+    pub async fn get_repo_forked_from(&self, repo_id: &str) -> Result<Option<String>, String> {
+        pulls::get_forked_from(self.require_pool()?, repo_id).await
     }
 
     // --- issues ---
