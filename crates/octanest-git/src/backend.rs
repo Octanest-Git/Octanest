@@ -299,4 +299,7 @@ pub trait GitBackend: Send + Sync {
         source: &Path,
         refname: &str,
     ) -> Result<String, GitError>;
+
+    /// Clone `source` bare repo into a new bare `dest` (minimal fork).
+    async fn clone_bare(&self, source: &Path, dest: &Path) -> Result<(), GitError>;
 }

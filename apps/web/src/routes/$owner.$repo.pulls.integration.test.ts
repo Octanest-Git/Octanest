@@ -47,8 +47,13 @@ describe("Phase 12 Pulls UI", () => {
     expect(pullsNew).toMatch(/Create pull request/);
   });
 
-  it.fails("compare flow can create a PR", () => {
-    expect(true).toBe(false);
+  it("compare flow can create a PR", () => {
+    const compare = readFileSync(
+      join(process.cwd(), "src/routes/$owner.$repo.compare.$.tsrx"),
+      "utf8",
+    );
+    expect(compare).toMatch(/Create pull request/);
+    expect(compare).toMatch(/pulls\/new/);
   });
 
   it("detail tabs Conversation | Commits | Files changed", () => {

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useParams } from "@octanejs/tanstack-router";
+import { createFileRoute, useNavigate, useParams, useSearch } from "@octanejs/tanstack-router";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
@@ -8,6 +8,10 @@ const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again
 
 export const Route = createFileRoute("/$owner/$repo/pulls/new")({
   component: NewPullPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    base: typeof search.base === "string" ? search.base : undefined,
+    head: typeof search.head === "string" ? search.head : undefined,
+  }),
   head: ({ params }) => ({
     meta: [
       {
@@ -37,6 +41,7 @@ export function NewPullPage() @{
     owner?: string;
     repo?: string;
   };
+  const search = useSearch({ strict: false }) as { base?: string; head?: string };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
   const navigate = useNavigate();
@@ -52,8 +57,8 @@ export function NewPullPage() @{
   const defaultBranch = loader.kind === "ready" ? loader.repo.default_branch || "main" : "main";
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [baseRef, setBaseRef] = useState(defaultBranch);
-  const [headRef, setHeadRef] = useState(defaultBranch);
+  const [baseRef, setBaseRef] = useState(search.base || defaultBranch);
+  const [headRef, setHeadRef] = useState(search.head || defaultBranch);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 

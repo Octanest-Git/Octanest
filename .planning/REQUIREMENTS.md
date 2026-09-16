@@ -70,13 +70,13 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Pull requests & review
 
-- [ ] **PR-01**: User can open a pull request from a branch (same repo or fork)
-- [ ] **PR-02**: User can view PR diff, commits, and conversation
-- [ ] **PR-03**: User can comment on a PR (general and line comments)
-- [ ] **PR-04**: User can request changes / approve a PR
-- [ ] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
-- [ ] **PR-06**: User can close or reopen a PR
-- [ ] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
+- [x] **PR-01**: User can open a pull request from a branch (same repo or fork)
+- [x] **PR-02**: User can view PR diff, commits, and conversation
+- [x] **PR-03**: User can comment on a PR (general and line comments)
+- [x] **PR-04**: User can request changes / approve a PR
+- [x] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
+- [x] **PR-06**: User can close or reopen a PR
+- [x] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
 - [ ] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
 
 ### Issues
@@ -215,13 +215,13 @@ Deferred; not in the current roadmap until promoted.
 | ORG-04 | Phase 10 | Complete |
 | ORG-05 | Phase 13 | Pending |
 | ORG-06 | Phase 13 | Pending |
-| PR-01 | Phase 12 | Pending |
-| PR-02 | Phase 12 | Pending |
-| PR-03 | Phase 12 | Pending |
-| PR-04 | Phase 12 | Pending |
-| PR-05 | Phase 12 | Pending |
-| PR-06 | Phase 12 | Pending |
-| PR-07 | Phase 12 | Pending |
+| PR-01 | Phase 12 | Complete |
+| PR-02 | Phase 12 | Complete |
+| PR-03 | Phase 12 | Complete |
+| PR-04 | Phase 12 | Complete |
+| PR-05 | Phase 12 | Complete |
+| PR-06 | Phase 12 | Complete |
+| PR-07 | Phase 12 | Complete |
 | PR-08 | Phase 13 | Pending |
 | ISS-01 | Phase 11 | Complete |
 | ISS-02 | Phase 11 | Complete |

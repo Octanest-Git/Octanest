@@ -1002,6 +1002,28 @@ impl GitBackend for CliGitBackend {
         let _ = run_git(&["-C", dest_s, "update-ref", "-d", &tmp_ref]).await;
         Ok(sha)
     }
+
+    async fn clone_bare(&self, source: &Path, dest: &Path) -> Result<(), GitError> {
+        let source_abs = absolute_path(source)?;
+        let dest_abs = absolute_path(dest)?;
+        let source_s = source_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 source: {}", source_abs.display()))
+        })?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        if dest_abs.exists() {
+            return Err(GitError::InvalidArg(format!(
+                "dest already exists: {}",
+                dest_abs.display()
+            )));
+        }
+        if let Some(parent) = dest_abs.parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
+        run_git(&["clone", "--bare", source_s, dest_s]).await?;
+        Ok(())
+    }
 }
 
 #[derive(Clone, Copy)]

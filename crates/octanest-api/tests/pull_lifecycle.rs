@@ -218,3 +218,51 @@ async fn pull_lifecycle_rejects_identical_refs() {
     .await;
     assert_eq!(create["ok"], false, "{create}");
 }
+
+#[tokio::test]
+async fn pull_lifecycle_fork_head_pr() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("pull_fork.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (owner_cookie, owner_v) = signup_and_login(&app, "src@ex.com", "srcown").await;
+    verify_user(&db, owner_v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &owner_cookie, "upstream", "public").await;
+    create_branch(&app, &owner_cookie, "srcown", "upstream", "feature").await;
+
+    let (fork_cookie, fork_v) = signup_and_login(&app, "fork@ex.com", "forkown").await;
+    verify_user(&db, fork_v["data"]["id"].as_str().unwrap()).await;
+
+    let forked = rpc_json(
+        &app,
+        &fork_cookie,
+        r#"{"procedure":"repo.fork","input":{"owner":"srcown","name":"upstream"}}"#,
+    )
+    .await;
+    assert_eq!(forked["ok"], true, "{forked}");
+    assert_eq!(forked["data"]["owner_username"], "forkown");
+    assert_eq!(forked["data"]["name"], "upstream");
+
+    // Collaborator write on upstream so forker can open PR... actually Write+ on base required.
+    // Grant write to forker on upstream.
+    let collab = rpc_json(
+        &app,
+        &owner_cookie,
+        r#"{"procedure":"repo.collaborators.add","input":{"owner":"srcown","name":"upstream","username":"forkown","permission":"write"}}"#,
+    )
+    .await;
+    assert_eq!(collab["ok"], true, "{collab}");
+
+    let pr = rpc_json(
+        &app,
+        &fork_cookie,
+        r#"{"procedure":"pull.create","input":{"owner":"srcown","name":"upstream","title":"From fork","base_ref":"main","head_ref":"feature","head_owner":"forkown","head_name":"upstream"}}"#,
+    )
+    .await;
+    assert_eq!(pr["ok"], true, "{pr}");
+    assert_eq!(pr["data"]["head_owner"], "forkown");
+}

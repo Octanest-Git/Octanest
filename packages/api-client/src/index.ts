@@ -186,6 +186,13 @@ export type CreateRepoRequest = {
   owner?: string | null;
 };
 
+export type ForkRepoRequest = {
+  owner: string;
+  name: string;
+  into_owner?: string | null;
+  into_name?: string | null;
+};
+
 export type RepoTemplateOption = {
   id: string;
   label: string;
@@ -1461,6 +1468,7 @@ export function createClient(opts: CreateClientOptions) {
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
+      fork: (input: ForkRepoRequest) => rpcCall<RepoPublic>(opts, "repo.fork", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
       tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
       blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
