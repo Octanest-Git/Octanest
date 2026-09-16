@@ -1,0 +1,41 @@
+{
+  "phase": "18-webhooks",
+  "gathered": "2026-09-16",
+  "mode": "auto",
+  "status": "locked",
+  "gray_areas_selected": [
+    "Scope & ACL",
+    "Event catalog & payloads",
+    "Delivery & signing",
+    "Secrets & config",
+    "UI & delivery history",
+    "Retries / reliability"
+  ],
+  "auto_decisions": [
+    {
+      "area": "A",
+      "choice": "Repo Admin only; repo-scoped hooks"
+    },
+    {
+      "area": "B",
+      "choice": "push + pull_request + issues + ping; Phase 12 PR identity"
+    },
+    {
+      "area": "C",
+      "choice": "HMAC-SHA256 only; application/json"
+    },
+    {
+      "area": "D",
+      "choice": "Required secret; masked list; one-time reveal"
+    },
+    {
+      "area": "E",
+      "choice": "Repo Settings → Webhooks"
+    },
+    {
+      "area": "F",
+      "choice": "Bounded retries with attempt history"
+    }
+  ],
+  "context_path": ".planning/phases/18-webhooks/18-CONTEXT.md"
+}
