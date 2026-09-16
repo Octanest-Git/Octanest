@@ -165,3 +165,18 @@ async fn actions_dispatch_policy_no_in_process_execution() {
     assert!(!src.contains("std::process::Command"));
     assert!(!src.contains("tokio::process"));
 }
+
+
+#[test]
+fn actions_dispatch_policy_no_managed_executor_symbols() {
+    // ACT-07 / D-ACT-10: control plane must not ship in-process or hosted-minutes executors.
+    let dispatch = include_str!("../src/actions/dispatch.rs");
+    let runner = include_str!("../src/actions/runner_proto.rs");
+    for src in [dispatch, runner] {
+        assert!(!src.contains("managed_minutes"));
+        assert!(!src.contains("ManagedMinutes"));
+        assert!(!src.contains("cloud_executor"));
+        assert!(!src.contains("std::process::Command"));
+        assert!(!src.contains("tokio::process"));
+    }
+}

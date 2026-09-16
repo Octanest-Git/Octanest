@@ -55,6 +55,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Optional | — | Bootstrap registration token for official runners (Compose profile `actions`). Prefer secret/env injection; rotate on compromise (D-ACT-08). **Never commit real tokens.** |
 | `OCTANEST_RUNNER_NAME` | Optional | `compose-runner` | Display name passed to runner register. |
 | `OCTANEST_RUNNER_LABELS` | Optional | `ubuntu-latest:docker://node:20-bookworm,self-hosted` | Comma-separated runner labels (`label[:schema[:args]]`). |
+| `OCTANEST_ACTIONS_SECRETS_KEY` | Optional | derived from `OCTANEST_SESSION_SECRET` | AES-256-GCM key material for repo Actions secrets at rest (D-ACT-17). Prefer a dedicated secret; never commit real keys. |
 | `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
@@ -287,3 +288,8 @@ Host-local Postgres (API outside Compose): point `DATABASE_URL` at `localhost:54
 <!-- VERIFY: Production WorkOS cloud API hostname when OCTANEST_WORKOS_BASE_URL is unset (SDK default; tests mention api.workos.com) -->
 <!-- VERIFY: Deployed public origin / SSO redirect URIs for non-local environments -->
 <!-- VERIFY: Production SMTP / Resend / WorkOS / OIDC secret values (ENV-only; not in repo) -->
+
+
+## Actions runners (ACT-07)
+
+Octanest Cloud and self-hosted deployments require **registered runners** (official `octanest-runner` image or compatible clients). There is **no managed-minutes product switch** and no in-process job executor — operators bring their own compute (D-ACT-10 / D-ACT-08). Registration tokens are created by instance admins (`admin.actions.createRegistrationToken`) or bootstrapped via `OCTANEST_RUNNER_REGISTRATION_TOKEN`. Repo Actions secrets are encrypted with `OCTANEST_ACTIONS_SECRETS_KEY` (D-ACT-17) and never returned after create.
