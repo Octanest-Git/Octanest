@@ -39,6 +39,7 @@ import { Route as OwnerRepoIssuesRouteImport } from './routes/$owner.$repo.issue
 import { Route as OwnerRepoPackagesRouteImport } from './routes/$owner.$repo.packages'
 import { Route as OwnerRepoPullsRouteImport } from './routes/$owner.$repo.pulls'
 import { Route as OwnerRepoReleasesRouteImport } from './routes/$owner.$repo.releases'
+import { Route as OwnerRepoSearchRouteImport } from './routes/$owner.$repo.search'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
 import { Route as OwnerSettingsLabelsRouteImport } from './routes/$owner.settings.labels'
@@ -212,6 +213,11 @@ const OwnerRepoReleasesRoute = OwnerRepoReleasesRouteImport.update({
   path: '/releases',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoSearchRoute = OwnerRepoSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoSettingsRoute = OwnerRepoSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
   '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
+  '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
+  '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
@@ -457,6 +465,7 @@ export interface FileRoutesById {
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
   '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
+  '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
@@ -513,6 +522,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/packages'
     | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
+    | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/labels'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/setup'
     | '/$owner/$repo/branches'
     | '/$owner/$repo/packages'
+    | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/labels'
@@ -615,6 +626,7 @@ export interface FileRouteTypes {
     | '/$owner/$repo/packages'
     | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
+    | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
     | '/$owner/$repo/tags'
     | '/$owner/settings/labels'
@@ -873,6 +885,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoReleasesRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/search': {
+      id: '/$owner/$repo/search'
+      path: '/search'
+      fullPath: '/$owner/$repo/search'
+      preLoaderRoute: typeof OwnerRepoSearchRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/settings': {
       id: '/$owner/$repo/settings'
       path: '/settings'
@@ -1083,6 +1102,7 @@ interface OwnerRepoRouteChildren {
   OwnerRepoPackagesRoute: typeof OwnerRepoPackagesRoute
   OwnerRepoPullsRoute: typeof OwnerRepoPullsRouteWithChildren
   OwnerRepoReleasesRoute: typeof OwnerRepoReleasesRouteWithChildren
+  OwnerRepoSearchRoute: typeof OwnerRepoSearchRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRoute
   OwnerRepoTagsRoute: typeof OwnerRepoTagsRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
@@ -1101,6 +1121,7 @@ const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoPackagesRoute: OwnerRepoPackagesRoute,
   OwnerRepoPullsRoute: OwnerRepoPullsRouteWithChildren,
   OwnerRepoReleasesRoute: OwnerRepoReleasesRouteWithChildren,
+  OwnerRepoSearchRoute: OwnerRepoSearchRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRoute,
   OwnerRepoTagsRoute: OwnerRepoTagsRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,

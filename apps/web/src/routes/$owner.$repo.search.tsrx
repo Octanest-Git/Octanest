@@ -1,0 +1,148 @@
+import { createFileRoute, useNavigate, useParams, useSearch } from "@octanejs/tanstack-router";
+import { useQuery } from "@octanejs/tanstack-query";
+import { useState } from "octane";
+import type { RepoSearchHit, RepoSearchType } from "@octanest/api-client";
+import { apiClient } from "@/lib/api-client";
+
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+
+type SearchSearch = {
+  q?: string;
+  type?: string;
+};
+
+function parseType(raw: string | undefined): RepoSearchType {
+  switch ((raw ?? "code").toLowerCase()) {
+    case "commits":
+      return "commits";
+    case "issues":
+      return "issues";
+    case "pulls":
+      return "pulls";
+    default:
+      return "code";
+  }
+}
+
+export const Route = createFileRoute("/$owner/$repo/search")({
+  validateSearch: (search: Record<string, unknown>): SearchSearch => ({
+    q: typeof search.q === "string" ? search.q : undefined,
+    type: typeof search.type === "string" ? search.type : undefined,
+  }),
+  component: RepoSearchPage,
+  head: ({ params }) => ({
+    meta: [
+      {
+        title: `Search · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+      },
+    ],
+  }),
+});
+
+/** Thin tracer search page — code hits via repo.search (D-SRCH-01, D-SRCH-15). */
+export function RepoSearchPage() @{
+  const params = useParams({ strict: false }) as { owner?: string; repo?: string };
+  const owner = params.owner ?? "";
+  const repoName = params.repo ?? "";
+  const search = useSearch({ strict: false }) as SearchSearch;
+  const navigate = useNavigate();
+  const qParam = search.q ?? "";
+  const typeParam = parseType(search.type);
+  const [draft, setDraft] = useState(qParam);
+
+  const searchQ = useQuery({
+    queryKey: ["repo", "search", owner, repoName, typeParam, qParam] as const,
+    queryFn: async () => {
+      const res = await apiClient.repo.search({
+        owner,
+        name: repoName,
+        type: typeParam,
+        q: qParam,
+      });
+      if (!res.ok) throw new Error(res.error.message || NETWORK_ERROR);
+      return res.data;
+    },
+    enabled: !!owner && !!repoName,
+  });
+
+  const hits: RepoSearchHit[] = searchQ.data?.hits ?? [];
+  const truncated = searchQ.data?.truncated ?? false;
+
+  function submitSearch() {
+    void navigate({
+      to: "/$owner/$repo/search",
+      params: { owner, repo: repoName },
+      search: { q: draft, type: typeParam },
+    });
+  }
+
+  @{
+    <div className="space-y-4" data-testid="repo-search-page">
+      <h2 className="text-[18px] font-semibold text-foreground">Search</h2>
+      <form
+        method="post"
+        action="#"
+        className="flex flex-wrap gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submitSearch();
+        }}
+      >
+        <label className="sr-only" for="repo-search-q">
+          Search query
+        </label>
+        <input
+          id="repo-search-q"
+          name="q"
+          type="search"
+          className="min-w-[16rem] flex-1 rounded-md border border-border bg-background px-3 py-2 text-[14px] text-foreground"
+          value={draft as string}
+          placeholder="Search this repository"
+          onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
+        />
+        <button
+          type="submit"
+          className="rounded-md bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground"
+        >
+          Search
+        </button>
+      </form>
+
+      @if (searchQ.isError) {
+        <p role="alert" className="text-[16px] text-destructive">
+          {(searchQ.error?.message || NETWORK_ERROR) as string}
+        </p>;
+      } @else if (searchQ.isPending && qParam) {
+        <p className="text-[16px] text-muted-foreground">Searching…</p>;
+      } @else if (!qParam) {
+        <p className="text-[16px] text-muted-foreground">Enter a query to search code.</p>;
+      } @else if (hits.length === 0) {
+        <p className="text-[16px] text-muted-foreground">No code results for that query.</p>;
+      } @else {
+        <>
+          @if (truncated) {
+            <p className="text-[13px] text-muted-foreground">Results truncated.</p>;
+          }
+          <ul className="divide-y divide-border rounded-md border border-border">
+            @for (const hit of hits; key `${hit.kind}-${"path" in hit ? hit.path : ""}-${"line" in hit ? hit.line : ""}`) {
+              @if (hit.kind === "code") {
+                <li className="px-3 py-2 text-[14px]">
+                  <a
+                    className="font-medium text-primary underline"
+                    href={`/${owner}/${repoName}/blob/${hit.path}` as string}
+                  >
+                    {hit.path as string}
+                  </a>
+                  <span className="text-muted-foreground">:{String(hit.line)}</span>
+                  <pre className="mt-1 overflow-x-auto text-[13px] text-foreground">
+                    {hit.content as string}
+                  </pre>
+                </li>;
+              }
+            }
+          </ul>
+        </>;
+      }
+    </div>;
+    };
+}
