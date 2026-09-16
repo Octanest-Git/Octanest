@@ -8,7 +8,8 @@ export type RepoChromeActive =
   | "pulls"
   | "releases"
   | "packages"
-  | "settings";
+  | "settings"
+  | "search";
 
 const SEGMENT_TO_ACTIVE: Record<string, RepoChromeActive> = {
   issues: "issues",
@@ -20,6 +21,7 @@ const SEGMENT_TO_ACTIVE: Record<string, RepoChromeActive> = {
   commits: "commits",
   branches: "branches",
   tags: "tags",
+  search: "search",
 };
 
 /**

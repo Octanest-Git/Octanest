@@ -39,7 +39,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
-pub use pulls::{PullCommentRow, PullReviewRow, PullRow, RepoMergeSettingsRow};
+pub use pulls::{PullCommentRow, PullReviewRow, PullRow, PullSearchFilters, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -502,6 +502,14 @@ impl Database {
         limit: u32,
     ) -> Result<(Vec<PullRow>, i64), String> {
         pulls::list_by_repo(self.require_pool()?, repo_id, state, offset, limit).await
+    }
+
+    pub async fn search_pulls_for_repo(
+        &self,
+        repo_id: &str,
+        filters: pulls::PullSearchFilters<'_>,
+    ) -> Result<(Vec<PullRow>, i64), String> {
+        pulls::search_by_repo(self.require_pool()?, repo_id, filters).await
     }
 
     pub async fn set_pull_state(

@@ -7,8 +7,8 @@ use tokio::process::Command;
 
 use crate::backend::{
     ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
-    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES,
-    DIFF_SOFT_MAX_BYTES,
+    GitBackend, GitError, GitRef, GrepHit, GrepResult, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
+    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -1063,6 +1063,194 @@ impl GitBackend for CliGitBackend {
         run_git(&["clone", "--bare", source_s, dest_s]).await?;
         Ok(())
     }
+
+    async fn grep(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        pattern: &str,
+        pathspec: Option<&str>,
+        max_matches: u32,
+    ) -> Result<GrepResult, GitError> {
+        let pattern = pattern.trim();
+        if pattern.is_empty() {
+            return Ok(GrepResult {
+                hits: Vec::new(),
+                truncated: false,
+            });
+        }
+        if pattern.contains('\0') {
+            return Err(GitError::InvalidArg("grep pattern contains NUL".into()));
+        }
+        let treeish = validate_treeish(treeish)?;
+        let repo_s = repo_str(repo)?;
+        let max_matches = max_matches.clamp(1, 10_000);
+        let path_owned = match pathspec {
+            Some(p) if !p.trim().is_empty() => Some(validate_repo_rel_path(p)?),
+            _ => None,
+        };
+
+        // Empty / unborn → empty hits.
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{treeish}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(GrepResult {
+                hits: Vec::new(),
+                truncated: false,
+            });
+        }
+
+        // -n line numbers, -I skip binary (D-SRCH-08), -e pattern as arg (no shell).
+        // Tree-ish must NOT follow `--` or git treats it as a pathspec (work-tree error on bare).
+        let mut cmd = Command::new("git");
+        cmd.args(["-C", repo_s, "grep", "-n", "-I", "-e", pattern, treeish]);
+        if let Some(ref p) = path_owned {
+            cmd.args(["--", p]);
+        }
+        let output = cmd
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git grep: {e}")))?;
+
+        match output.status.code() {
+            Some(0) | Some(1) => {}
+            _ => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(GitError::Process(format!(
+                    "git grep failed (status {:?}): {}",
+                    output.status.code(),
+                    stderr.trim()
+                )));
+            }
+        }
+
+        // git grep prefixes matches with `treeish:` when searching a revision.
+        // Format: `<treeish>:<path>:<line>:<content>`
+        let text = String::from_utf8_lossy(&output.stdout);
+        let mut hits = Vec::new();
+        let mut truncated = false;
+        for raw in text.split('\n') {
+            let raw = raw.trim_end_matches('\r');
+            if raw.is_empty() {
+                continue;
+            }
+            if let Some(hit) = parse_grep_line(raw, treeish) {
+                if hits.len() as u32 >= max_matches {
+                    truncated = true;
+                    break;
+                }
+                hits.push(hit);
+            }
+        }
+        Ok(GrepResult { hits, truncated })
+    }
+
+    async fn log_search(
+        &self,
+        repo: &Path,
+        refname: &str,
+        grep: Option<&str>,
+        author: Option<&str>,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let limit = limit.clamp(1, 100);
+        let skip_s = skip.to_string();
+        let limit_s = limit.to_string();
+
+        let grep = grep.map(str::trim).filter(|s| !s.is_empty());
+        let author = author.map(str::trim).filter(|s| !s.is_empty());
+        if grep.is_none() && author.is_none() {
+            return Ok(Vec::new());
+        }
+        if grep.is_some_and(|s| s.contains('\0')) || author.is_some_and(|s| s.contains('\0')) {
+            return Err(GitError::InvalidArg("log_search filter contains NUL".into()));
+        }
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let mut args: Vec<String> = vec![
+            "-C".into(),
+            repo_s.to_string(),
+            "log".into(),
+            format!("--skip={skip_s}"),
+            format!("--max-count={limit_s}"),
+            "--regexp-ignore-case".into(),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI".into(),
+        ];
+        if let Some(g) = grep {
+            args.push(format!("--grep={g}"));
+        }
+        if let Some(a) = author {
+            args.push(format!("--author={a}"));
+        }
+        args.push(refname.to_string());
+        let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+
+        let stdout = run_git_stdout(&arg_refs).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for record in text.split('\n') {
+            let record = record.trim_end_matches('\r');
+            if record.is_empty() {
+                continue;
+            }
+            if let Some(summary) = parse_commit_summary_record(record) {
+                out.push(summary);
+            }
+        }
+        Ok(out)
+    }
+}
+
+fn parse_grep_line(line: &str, treeish: &str) -> Option<GrepHit> {
+    let rest = line
+        .strip_prefix(&format!("{treeish}:"))
+        .unwrap_or(line);
+    let (path, after_path) = rest.split_once(':')?;
+    let (line_s, content) = after_path.split_once(':')?;
+    let line_no: u32 = line_s.parse().ok()?;
+    if path.is_empty() {
+        return None;
+    }
+    Some(GrepHit {
+        path: path.to_string(),
+        line: line_no,
+        content: content.to_string(),
+    })
 }
 
 #[derive(Clone, Copy)]
@@ -1333,6 +1521,115 @@ mod tests {
         .unwrap();
         let bytes = git.cat_blob(&bare, "main", "a.txt").await.unwrap();
         assert_eq!(bytes, b"hello-blob\n");
+    }
+
+    #[tokio::test]
+    async fn grep_finds_seeded_line_and_empty_on_miss() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("grep.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "c",
+            &[("src/a.txt".into(), b"alpha\nUNIQUE_GREP_TOKEN\nbeta\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let hit = git
+            .grep(&bare, "main", "UNIQUE_GREP_TOKEN", None, 50)
+            .await
+            .expect("grep");
+        assert_eq!(hit.hits.len(), 1);
+        assert_eq!(hit.hits[0].path, "src/a.txt");
+        assert_eq!(hit.hits[0].line, 2);
+        assert!(hit.hits[0].content.contains("UNIQUE_GREP_TOKEN"));
+        assert!(!hit.truncated);
+
+        let miss = git
+            .grep(&bare, "main", "no_such_token_zzz", None, 50)
+            .await
+            .expect("grep miss");
+        assert!(miss.hits.is_empty());
+        assert!(!miss.truncated);
+    }
+
+    #[tokio::test]
+    async fn grep_skips_binary_with_i_and_truncates() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("grep_cap.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        let mut text = String::new();
+        for i in 0..20 {
+            text.push_str(&format!("CAP_TOKEN line {i}\n"));
+        }
+        // Binary-ish file with NUL — git grep -I should skip.
+        let mut bin = b"CAP_TOKEN\0binary".to_vec();
+        bin.extend_from_slice(&[0u8; 8]);
+        git.seed_commit(
+            &bare,
+            "main",
+            "c",
+            &[
+                ("text.txt".into(), text.into_bytes()),
+                ("bin.dat".into(), bin),
+            ],
+        )
+        .await
+        .unwrap();
+        let capped = git
+            .grep(&bare, "main", "CAP_TOKEN", None, 5)
+            .await
+            .expect("grep cap");
+        assert_eq!(capped.hits.len(), 5);
+        assert!(capped.truncated);
+        assert!(
+            capped.hits.iter().all(|h| h.path != "bin.dat"),
+            "binary file should be skipped with -I"
+        );
+    }
+
+    #[tokio::test]
+    async fn log_search_matches_message_and_author() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("log_search.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "UNIQUE_COMMIT_MSG_TOKEN",
+            &[("a.txt".into(), b"one\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let by_msg = git
+            .log_search(
+                &bare,
+                "main",
+                Some("UNIQUE_COMMIT_MSG_TOKEN"),
+                None,
+                0,
+                10,
+            )
+            .await
+            .expect("log_search msg");
+        assert_eq!(by_msg.len(), 1);
+        assert!(by_msg[0].subject.contains("UNIQUE_COMMIT_MSG_TOKEN"));
+
+        let by_author = git
+            .log_search(&bare, "main", None, Some("Octanest"), 0, 10)
+            .await
+            .expect("log_search author");
+        assert!(!by_author.is_empty());
+
+        let miss = git
+            .log_search(&bare, "main", Some("zzz_no_msg"), None, 0, 10)
+            .await
+            .expect("log_search miss");
+        assert!(miss.is_empty());
     }
 
     #[tokio::test]

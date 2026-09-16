@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 13: Branch Protection** - Protection rules enforced on push and merge
 - [x] **Phase 14: Git LFS** - LFS push/fetch with volume-backed storage
 - [x] **Phase 15: Releases & Transfer** - Releases/assets, rename, and transfer repos *(thin browser e2e; gaps in VERIFICATION)*
-- [ ] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
+- [x] **Phase 16: In-Repo Search** - Search code, commits, issues, and PRs in a repo
 - [ ] **Phase 17: Notifications** - In-app notifications for issue and PR activity
 - [ ] **Phase 18: Webhooks** - Outbound webhooks, delivery, and attempt history
 - [ ] **Phase 19: Actions & Runners** - Actions-compatible CI, official runner, open protocol
@@ -638,7 +638,15 @@ Plans:
   1. User can search code and commits within a repository they can read
   2. User can search issues and PRs within a repository they can read
 
-**Plans**: TBD
+**Plans:** 4/4 plans executed
+
+Plans:
+
+- [x] 16-00-PLAN.md — Wave 0 RED stubs for repo.search + Vitest
+- [x] 16-01-PLAN.md — Tracer: git grep + repo.search code + thin UI
+- [x] 16-02-PLAN.md — Commits/issues/pulls backends + qualifiers
+- [x] 16-03-PLAN.md — Full search UI, ENV caps, phase gate
+
 **UI hint**: yes
 
 ### Phase 17: Notifications
@@ -767,7 +775,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 13. Branch Protection | 9/9 | Complete | cursor/phase-13-branch-protection-c82f |
 | 14. Git LFS | 13/13 | Complete    | 2026-09-14 |
 | 15. Releases & Transfer | 7/7 | Complete    | 2026-09-14 |
-| 16. In-Repo Search | 0/TBD | Not started | - |
+| 16. In-Repo Search | 4/4 | Complete |  |
 | 17. Notifications | 0/TBD | Not started | - |
 | 18. Webhooks | 0/TBD | Not started | - |
 | 19. Actions & Runners | 0/TBD | Not started | - |

@@ -168,6 +168,9 @@ async fn build_ctx(state: &AppState, headers: &HeaderMap) -> RpcCtx {
         session,
         set_cookie: None,
         lookup_limiter: state.lookup_limiter.clone(),
+        search_timeout_ms: state.search_timeout_ms,
+        search_max_matches: state.search_max_matches,
+        search_max_files: state.search_max_files,
     }
 }
 

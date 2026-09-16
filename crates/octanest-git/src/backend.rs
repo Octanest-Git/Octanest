@@ -115,6 +115,21 @@ pub struct DiffResult {
     pub truncated: bool,
 }
 
+/// One `git grep -n` hit (Phase 16 / GIT-18 / D-SRCH-06).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GrepHit {
+    pub path: String,
+    pub line: u32,
+    pub content: String,
+}
+
+/// Aggregated grep results with soft truncation flag (D-SRCH-08).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GrepResult {
+    pub hits: Vec<GrepHit>,
+    pub truncated: bool,
+}
+
 /// One blame line (text files).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BlameLine {
@@ -302,4 +317,27 @@ pub trait GitBackend: Send + Sync {
 
     /// Clone `source` bare repo into a new bare `dest` (minimal fork).
     async fn clone_bare(&self, source: &Path, dest: &Path) -> Result<(), GitError>;
+
+    /// Search file contents with `git grep -n -I` on `treeish` (D-SRCH-06 / D-SRCH-08).
+    /// Empty pattern or no matches → empty `hits` (not an error). Exit code 1 from git
+    /// grep (no match) is mapped to empty. Soft-caps at `max_matches` and sets `truncated`.
+    async fn grep(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        pattern: &str,
+        pathspec: Option<&str>,
+        max_matches: u32,
+    ) -> Result<GrepResult, GitError>;
+
+    /// Search commits via `git log --grep` / `--author` (D-SRCH-07). Empty → `Ok(vec![])`.
+    async fn log_search(
+        &self,
+        repo: &Path,
+        refname: &str,
+        grep: Option<&str>,
+        author: Option<&str>,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError>;
 }

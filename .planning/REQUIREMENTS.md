@@ -57,7 +57,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **GIT-15**: User can download release assets from the web UI
 - [x] **GIT-16**: User with permission can rename a repository
 - [x] **GIT-17**: User with permission can transfer a repository to another user or organization
-- [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
+- [x] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
 ### Organizations & permissions
 
@@ -208,7 +208,7 @@ Deferred; not in the current roadmap until promoted.
 | GIT-15 | Phase 15 | Complete |
 | GIT-16 | Phase 15 | Complete |
 | GIT-17 | Phase 15 | Complete |
-| GIT-18 | Phase 16 | Pending |
+| GIT-18 | Phase 16 | Complete |
 | ORG-01 | Phase 10 | Complete |
 | ORG-02 | Phase 10 | Complete |
 | ORG-03 | Phase 10 | Complete |

@@ -5,6 +5,8 @@ mod branch_protection;
 mod commit_status;
 mod collaborators;
 mod rename_transfer;
+mod search;
+mod search_query;
 mod templates;
 
 pub use acl::{
@@ -26,6 +28,7 @@ pub use rename_transfer::{
     redirect_retention_days, rename, resolve_repo_or_redirect, supersede_redirect_on_create,
     transfer, DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
 };
+pub use search::search;
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
 /// 1 MiB matches GitHub-like soft preview limits.

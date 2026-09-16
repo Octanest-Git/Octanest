@@ -53,6 +53,9 @@ pub struct RpcCtx {
     pub set_cookie: Option<CookieChange>,
     /// Per-session `user.lookup` rate limiter (T-10-03).
     pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
+    pub search_timeout_ms: u64,
+    pub search_max_matches: u32,
+    pub search_max_files: u32,
 }
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
@@ -340,6 +343,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "repo.blame" => match repo::blame(ctx, req.input).await {
             Ok(blame) => RpcResponse::ok(blame),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.search" => match repo::search(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
         "repo.branchCreate" => match repo::branch_create(ctx, req.input).await {

@@ -1,6 +1,7 @@
 import { Lock } from "@octanejs/lucide";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
+import { RepoSearchEntry } from "@/components/repo/repo-search-entry";
 import type { RepoChromeActive } from "@/lib/repo-chrome-active";
 
 type RepoChromeProps = {
@@ -49,6 +50,9 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         }
         {(repo.visibility === "private" ? "Private" : "Public") as string}
       </Badge>
+      <div className="ml-auto">
+        <RepoSearchEntry owner={owner as string} repo={name as string} />
+      </div>
     </div>
     @if (repo.description.trim()) {
       <p className="mt-2 text-[16px] text-muted-foreground">{repo.description as string}</p>;
