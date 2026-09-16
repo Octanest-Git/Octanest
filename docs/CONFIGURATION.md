@@ -50,6 +50,8 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_PACKAGES_OWNER_QUOTA_BYTES` | Optional | `10737418240` (10 GiB) | Default per-owner storage quota; Admin may override per owner (D-PKG-09). |
 | `OCTANEST_PACKAGES_GC_INTERVAL_SECS` | Optional | `86400` | Package blob GC interval; `0` disables. |
 | `OCTANEST_PACKAGES_GC_GRACE_SECS` | Optional | `604800` (7d) | Grace before deleting refcount-0 blobs. |
+| `OCTANEST_ACTIONS_LOG_DIR` | Optional | `var/actions-logs` | Root for Actions job logs (`{run_id}/{job_id}.log`). Compose binds `./var/actions-logs:/var/actions-logs` and sets `/var/actions-logs`. **Must not** share repos/LFS/packages/release-asset paths (D-ACT-13). |
+| `OCTANEST_ACTIONS_ENABLED` | Optional | `true` | Instance-wide Actions gate. When `false`/`0`/`off`, no workflows are evaluated (D-ACT-06). Per-repo Admin toggle still applies when instance gate is on. |
 | `OCTANEST_SSH_ENABLED` | Optional | unset / false | When `true`/`1`/`yes`, start the in-process Git-over-SSH listener (`russh`). Compose defaults to `true`. Host `make dev` omits the listener unless set. |
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
