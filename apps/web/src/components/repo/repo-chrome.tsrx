@@ -2,6 +2,7 @@ import { Lock, Star } from "@octanejs/lucide";
 import { useState } from "octane";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
+import { RepoSearchEntry } from "@/components/repo/repo-search-entry";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import type { RepoChromeActive } from "@/lib/repo-chrome-active";
@@ -76,6 +77,7 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         {(repo.visibility === "private" ? "Private" : "Public") as string}
       </Badge>
       <div className="ml-auto flex flex-wrap items-center gap-2">
+        <RepoSearchEntry owner={owner as string} repo={name as string} />
         @if (signedIn) {
           <Button
             type="button"
