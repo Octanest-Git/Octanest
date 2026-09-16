@@ -7,8 +7,8 @@ use tokio::process::Command;
 
 use crate::backend::{
     ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
-    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES,
-    DIFF_SOFT_MAX_BYTES,
+    GitBackend, GitError, GitRef, GrepHit, GrepResult, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
+    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -19,6 +19,43 @@ impl CliGitBackend {
     pub fn new() -> Self {
         Self
     }
+}
+
+/// Install bare-repo `hooks/update` for branch protection (Phase 13 / D-19).
+/// Idempotent — overwrites with the known-good script.
+pub async fn install_protection_hooks(bare: &Path) -> Result<(), GitError> {
+    let hooks = bare.join("hooks");
+    tokio::fs::create_dir_all(&hooks).await?;
+    let update = hooks.join("update");
+    let script = r#"#!/bin/sh
+# Octanest branch protection update hook (Phase 13 / D-19)
+refname="$1"
+oldrev="$2"
+newrev="$3"
+helper="${OCTANEST_PROTECTION_HELPER:-}"
+if [ -z "$helper" ] || [ ! -x "$helper" ]; then
+  exit 0
+fi
+exec "$helper" update "$refname" "$oldrev" "$newrev"
+"#;
+    tokio::fs::write(&update, script).await?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = tokio::fs::metadata(&update).await?.permissions();
+        perms.set_mode(0o755);
+        tokio::fs::set_permissions(&update, perms).await?;
+    }
+    Ok(())
+}
+
+/// Ensure protection hooks exist (lazy reconcile).
+pub async fn reconcile_protection_hooks(bare: &Path) -> Result<(), GitError> {
+    let update = bare.join("hooks").join("update");
+    if tokio::fs::metadata(&update).await.is_ok() {
+        return Ok(());
+    }
+    install_protection_hooks(bare).await
 }
 
 async fn run_git(args: &[&str]) -> Result<(), GitError> {
@@ -356,6 +393,8 @@ impl GitBackend for CliGitBackend {
         run_git(&["init", "--bare", path_str]).await?;
         let head_ref = format!("refs/heads/{branch}");
         run_git(&["-C", path_str, "symbolic-ref", "HEAD", &head_ref]).await?;
+        // Phase 13 / D-19: install branch-protection update hook (reconcile-safe).
+        install_protection_hooks(path).await?;
         Ok(())
     }
 
@@ -948,6 +987,389 @@ impl GitBackend for CliGitBackend {
         run_git(&["-C", repo_s, "gc", "--auto"]).await?;
         Ok(())
     }
+
+    async fn merge_commit(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, message, MergeMode::MergeCommit).await
+    }
+
+    async fn squash_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+        message: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, message, MergeMode::Squash).await
+    }
+
+    async fn rebase_merge(
+        &self,
+        repo: &Path,
+        base_ref: &str,
+        head_sha: &str,
+    ) -> Result<String, GitError> {
+        merge_via_worktree(repo, base_ref, head_sha, "rebase", MergeMode::Rebase).await
+    }
+
+    async fn fetch_ref_from(
+        &self,
+        dest: &Path,
+        source: &Path,
+        refname: &str,
+    ) -> Result<String, GitError> {
+        let dest_abs = absolute_path(dest)?;
+        let source_abs = absolute_path(source)?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        let source_s = source_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 source: {}", source_abs.display()))
+        })?;
+        let refname = validate_treeish(refname)?;
+        // Fetch into a temporary ref then resolve SHA.
+        let tmp_ref = format!("refs/octanest/fetch-tmp/{}", uuid_like());
+        let refspec = format!("+{refname}:{tmp_ref}");
+        run_git(&["-C", dest_s, "fetch", source_s, &refspec]).await?;
+        let sha = run_git_stdout(&["-C", dest_s, "rev-parse", &tmp_ref]).await?;
+        let sha = String::from_utf8_lossy(&sha).trim().to_string();
+        let _ = run_git(&["-C", dest_s, "update-ref", "-d", &tmp_ref]).await;
+        Ok(sha)
+    }
+
+    async fn clone_bare(&self, source: &Path, dest: &Path) -> Result<(), GitError> {
+        let source_abs = absolute_path(source)?;
+        let dest_abs = absolute_path(dest)?;
+        let source_s = source_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 source: {}", source_abs.display()))
+        })?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        if dest_abs.exists() {
+            return Err(GitError::InvalidArg(format!(
+                "dest already exists: {}",
+                dest_abs.display()
+            )));
+        }
+        if let Some(parent) = dest_abs.parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
+        run_git(&["clone", "--bare", source_s, dest_s]).await?;
+        Ok(())
+    }
+
+    async fn grep(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        pattern: &str,
+        pathspec: Option<&str>,
+        max_matches: u32,
+    ) -> Result<GrepResult, GitError> {
+        let pattern = pattern.trim();
+        if pattern.is_empty() {
+            return Ok(GrepResult {
+                hits: Vec::new(),
+                truncated: false,
+            });
+        }
+        if pattern.contains('\0') {
+            return Err(GitError::InvalidArg("grep pattern contains NUL".into()));
+        }
+        let treeish = validate_treeish(treeish)?;
+        let repo_s = repo_str(repo)?;
+        let max_matches = max_matches.clamp(1, 10_000);
+        let path_owned = match pathspec {
+            Some(p) if !p.trim().is_empty() => Some(validate_repo_rel_path(p)?),
+            _ => None,
+        };
+
+        // Empty / unborn → empty hits.
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{treeish}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(GrepResult {
+                hits: Vec::new(),
+                truncated: false,
+            });
+        }
+
+        // -n line numbers, -I skip binary (D-SRCH-08), -e pattern as arg (no shell).
+        // Tree-ish must NOT follow `--` or git treats it as a pathspec (work-tree error on bare).
+        let mut cmd = Command::new("git");
+        cmd.args(["-C", repo_s, "grep", "-n", "-I", "-e", pattern, treeish]);
+        if let Some(ref p) = path_owned {
+            cmd.args(["--", p]);
+        }
+        let output = cmd
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git grep: {e}")))?;
+
+        match output.status.code() {
+            Some(0) | Some(1) => {}
+            _ => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                return Err(GitError::Process(format!(
+                    "git grep failed (status {:?}): {}",
+                    output.status.code(),
+                    stderr.trim()
+                )));
+            }
+        }
+
+        // git grep prefixes matches with `treeish:` when searching a revision.
+        // Format: `<treeish>:<path>:<line>:<content>`
+        let text = String::from_utf8_lossy(&output.stdout);
+        let mut hits = Vec::new();
+        let mut truncated = false;
+        for raw in text.split('\n') {
+            let raw = raw.trim_end_matches('\r');
+            if raw.is_empty() {
+                continue;
+            }
+            if let Some(hit) = parse_grep_line(raw, treeish) {
+                if hits.len() as u32 >= max_matches {
+                    truncated = true;
+                    break;
+                }
+                hits.push(hit);
+            }
+        }
+        Ok(GrepResult { hits, truncated })
+    }
+
+    async fn log_search(
+        &self,
+        repo: &Path,
+        refname: &str,
+        grep: Option<&str>,
+        author: Option<&str>,
+        skip: u32,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let limit = limit.clamp(1, 100);
+        let skip_s = skip.to_string();
+        let limit_s = limit.to_string();
+
+        let grep = grep.map(str::trim).filter(|s| !s.is_empty());
+        let author = author.map(str::trim).filter(|s| !s.is_empty());
+        if grep.is_none() && author.is_none() {
+            return Ok(Vec::new());
+        }
+        if grep.is_some_and(|s| s.contains('\0')) || author.is_some_and(|s| s.contains('\0')) {
+            return Err(GitError::InvalidArg("log_search filter contains NUL".into()));
+        }
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let mut args: Vec<String> = vec![
+            "-C".into(),
+            repo_s.to_string(),
+            "log".into(),
+            format!("--skip={skip_s}"),
+            format!("--max-count={limit_s}"),
+            "--regexp-ignore-case".into(),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI".into(),
+        ];
+        if let Some(g) = grep {
+            args.push(format!("--grep={g}"));
+        }
+        if let Some(a) = author {
+            args.push(format!("--author={a}"));
+        }
+        args.push(refname.to_string());
+        let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+
+        let stdout = run_git_stdout(&arg_refs).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for record in text.split('\n') {
+            let record = record.trim_end_matches('\r');
+            if record.is_empty() {
+                continue;
+            }
+            if let Some(summary) = parse_commit_summary_record(record) {
+                out.push(summary);
+            }
+        }
+        Ok(out)
+    }
+}
+
+fn parse_grep_line(line: &str, treeish: &str) -> Option<GrepHit> {
+    let rest = line
+        .strip_prefix(&format!("{treeish}:"))
+        .unwrap_or(line);
+    let (path, after_path) = rest.split_once(':')?;
+    let (line_s, content) = after_path.split_once(':')?;
+    let line_no: u32 = line_s.parse().ok()?;
+    if path.is_empty() {
+        return None;
+    }
+    Some(GrepHit {
+        path: path.to_string(),
+        line: line_no,
+        content: content.to_string(),
+    })
+}
+
+#[derive(Clone, Copy)]
+enum MergeMode {
+    MergeCommit,
+    Squash,
+    Rebase,
+}
+
+fn uuid_like() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let n = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("{n:x}")
+}
+
+async fn merge_via_worktree(
+    bare: &Path,
+    base_ref: &str,
+    head_sha: &str,
+    message: &str,
+    mode: MergeMode,
+) -> Result<String, GitError> {
+    let base_ref = validate_treeish(base_ref)?;
+    let head_sha = validate_treeish(head_sha)?;
+    if message.contains('\0') {
+        return Err(GitError::InvalidArg("commit message contains NUL".into()));
+    }
+    let bare_abs = absolute_path(bare)?;
+    let bare_s = bare_abs.to_str().ok_or_else(|| {
+        GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
+    })?;
+
+    let tmp = tempfile::tempdir().map_err(GitError::Io)?;
+    let work = tmp.path();
+    let work_s = work
+        .to_str()
+        .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree".into()))?;
+
+    run_git(&["clone", bare_s, work_s]).await?;
+    run_git(&["-C", work_s, "config", "user.email", "noreply@octanest.local"]).await?;
+    run_git(&["-C", work_s, "config", "user.name", "Octanest"]).await?;
+    if run_git(&[
+        "-C",
+        work_s,
+        "checkout",
+        "-B",
+        base_ref,
+        &format!("origin/{base_ref}"),
+    ])
+    .await
+    .is_err()
+    {
+        run_git(&["-C", work_s, "checkout", "-B", base_ref, base_ref]).await?;
+    }
+
+    // Ensure head object is present (same-repo SHA already is).
+    let _ = run_git(&["-C", work_s, "fetch", "origin", head_sha]).await;
+
+    match mode {
+        MergeMode::MergeCommit => {
+            if let Err(e) = run_git(&[
+                "-C",
+                work_s,
+                "merge",
+                "--no-ff",
+                "-m",
+                message,
+                head_sha,
+            ])
+            .await
+            {
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+        }
+        MergeMode::Squash => {
+            if let Err(e) = run_git(&["-C", work_s, "merge", "--squash", head_sha]).await {
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+            run_git(&["-C", work_s, "commit", "-m", message]).await?;
+        }
+        MergeMode::Rebase => {
+            run_git(&["-C", work_s, "checkout", "-B", "octanest-rebase-head", head_sha])
+                .await?;
+            if let Err(e) = run_git(&["-C", work_s, "rebase", base_ref]).await {
+                let _ = run_git(&["-C", work_s, "rebase", "--abort"]).await;
+                let msg = e.to_string();
+                if msg.to_lowercase().contains("conflict") {
+                    return Err(GitError::Process(format!("merge conflict: {msg}")));
+                }
+                return Err(e);
+            }
+            run_git(&["-C", work_s, "checkout", base_ref]).await?;
+            run_git(&[
+                "-C",
+                work_s,
+                "merge",
+                "--ff-only",
+                "octanest-rebase-head",
+            ])
+            .await?;
+        }
+    }
+
+    let sha_bytes = run_git_stdout(&["-C", work_s, "rev-parse", "HEAD"]).await?;
+    let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
+    let refspec = format!("HEAD:refs/heads/{base_ref}");
+    run_git(&["-C", work_s, "push", "origin", &refspec]).await?;
+    Ok(sha)
 }
 
 /// Resolve `path` against the process cwd when relative (seed push remote safety).
@@ -1099,6 +1521,115 @@ mod tests {
         .unwrap();
         let bytes = git.cat_blob(&bare, "main", "a.txt").await.unwrap();
         assert_eq!(bytes, b"hello-blob\n");
+    }
+
+    #[tokio::test]
+    async fn grep_finds_seeded_line_and_empty_on_miss() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("grep.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "c",
+            &[("src/a.txt".into(), b"alpha\nUNIQUE_GREP_TOKEN\nbeta\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let hit = git
+            .grep(&bare, "main", "UNIQUE_GREP_TOKEN", None, 50)
+            .await
+            .expect("grep");
+        assert_eq!(hit.hits.len(), 1);
+        assert_eq!(hit.hits[0].path, "src/a.txt");
+        assert_eq!(hit.hits[0].line, 2);
+        assert!(hit.hits[0].content.contains("UNIQUE_GREP_TOKEN"));
+        assert!(!hit.truncated);
+
+        let miss = git
+            .grep(&bare, "main", "no_such_token_zzz", None, 50)
+            .await
+            .expect("grep miss");
+        assert!(miss.hits.is_empty());
+        assert!(!miss.truncated);
+    }
+
+    #[tokio::test]
+    async fn grep_skips_binary_with_i_and_truncates() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("grep_cap.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        let mut text = String::new();
+        for i in 0..20 {
+            text.push_str(&format!("CAP_TOKEN line {i}\n"));
+        }
+        // Binary-ish file with NUL — git grep -I should skip.
+        let mut bin = b"CAP_TOKEN\0binary".to_vec();
+        bin.extend_from_slice(&[0u8; 8]);
+        git.seed_commit(
+            &bare,
+            "main",
+            "c",
+            &[
+                ("text.txt".into(), text.into_bytes()),
+                ("bin.dat".into(), bin),
+            ],
+        )
+        .await
+        .unwrap();
+        let capped = git
+            .grep(&bare, "main", "CAP_TOKEN", None, 5)
+            .await
+            .expect("grep cap");
+        assert_eq!(capped.hits.len(), 5);
+        assert!(capped.truncated);
+        assert!(
+            capped.hits.iter().all(|h| h.path != "bin.dat"),
+            "binary file should be skipped with -I"
+        );
+    }
+
+    #[tokio::test]
+    async fn log_search_matches_message_and_author() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("log_search.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "UNIQUE_COMMIT_MSG_TOKEN",
+            &[("a.txt".into(), b"one\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let by_msg = git
+            .log_search(
+                &bare,
+                "main",
+                Some("UNIQUE_COMMIT_MSG_TOKEN"),
+                None,
+                0,
+                10,
+            )
+            .await
+            .expect("log_search msg");
+        assert_eq!(by_msg.len(), 1);
+        assert!(by_msg[0].subject.contains("UNIQUE_COMMIT_MSG_TOKEN"));
+
+        let by_author = git
+            .log_search(&bare, "main", None, Some("Octanest"), 0, 10)
+            .await
+            .expect("log_search author");
+        assert!(!by_author.is_empty());
+
+        let miss = git
+            .log_search(&bare, "main", Some("zzz_no_msg"), None, 0, 10)
+            .await
+            .expect("log_search miss");
+        assert!(miss.is_empty());
     }
 
     #[tokio::test]
@@ -1321,5 +1852,196 @@ mod tests {
         .await
         .unwrap();
         git.gc(&bare).await.expect("gc");
+    }
+
+    async fn push_branch_with_file(
+        bare: &Path,
+        branch: &str,
+        from: &str,
+        file: &str,
+        content: &[u8],
+        message: &str,
+    ) {
+        let wt = tempfile::tempdir().unwrap();
+        let wt_s = wt.path().to_str().unwrap();
+        let bare_s = bare.to_str().unwrap();
+        run_git(&["clone", bare_s, wt_s]).await.unwrap();
+        run_git(&["-C", wt_s, "checkout", "-B", branch, from])
+            .await
+            .unwrap();
+        tokio::fs::write(wt.path().join(file), content)
+            .await
+            .unwrap();
+        run_git(&["-C", wt_s, "add", file]).await.unwrap();
+        run_git(&["-C", wt_s, "commit", "-m", message])
+            .await
+            .unwrap();
+        let refspec = format!("HEAD:refs/heads/{branch}");
+        run_git(&["-C", wt_s, "push", "origin", &refspec])
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn merge_commit_creates_merge_on_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("merge.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "b.txt", b"feat\n", "feat")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .merge_commit(&bare, "main", &head, "Merge feature")
+            .await
+            .expect("merge_commit");
+        assert_eq!(sha.len(), 40);
+        let tip = String::from_utf8_lossy(
+            &run_git_stdout(&["-C", bare.to_str().unwrap(), "rev-parse", "refs/heads/main"])
+                .await
+                .unwrap(),
+        )
+        .trim()
+        .to_string();
+        assert_eq!(tip, sha);
+    }
+
+    #[tokio::test]
+    async fn squash_merge_single_commit_on_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("squash.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "c.txt", b"sq\n", "sq")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .squash_merge(&bare, "main", &head, "Squash feature")
+            .await
+            .expect("squash_merge");
+        assert_eq!(sha.len(), 40);
+    }
+
+    #[tokio::test]
+    async fn rebase_merge_fast_forwards_base() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("rebase.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        push_branch_with_file(&bare, "feature", "main", "d.txt", b"rb\n", "rb")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let sha = git
+            .rebase_merge(&bare, "main", &head)
+            .await
+            .expect("rebase_merge");
+        assert_eq!(sha.len(), 40);
+    }
+
+    #[tokio::test]
+    async fn merge_commit_conflict_errors() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("conflict.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "seed",
+            &[("clash.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Divergent edits on same file.
+        push_branch_with_file(
+            &bare,
+            "feature",
+            "main",
+            "clash.txt",
+            b"feature\n",
+            "feat clash",
+        )
+        .await;
+        // Advance main with conflicting content.
+        push_branch_with_file(&bare, "main", "main", "clash.txt", b"mainline\n", "main clash")
+            .await;
+        let head = String::from_utf8_lossy(
+            &run_git_stdout(&[
+                "-C",
+                bare.to_str().unwrap(),
+                "rev-parse",
+                "refs/heads/feature",
+            ])
+            .await
+            .unwrap(),
+        )
+        .trim()
+        .to_string();
+        let err = git
+            .merge_commit(&bare, "main", &head, "Merge conflict")
+            .await
+            .expect_err("expected conflict");
+        let msg = err.to_string().to_lowercase();
+        assert!(
+            msg.contains("conflict") || msg.contains("failed"),
+            "unexpected err: {msg}"
+        );
     }
 }

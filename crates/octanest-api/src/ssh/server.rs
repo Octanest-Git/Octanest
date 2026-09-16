@@ -168,7 +168,13 @@ impl Handler for SshHandler {
                 });
                 Ok(())
             }
-            AuthzDecision::Allow { bare } => {
+            AuthzDecision::Allow {
+                bare,
+                repo_id,
+                owner_slug,
+                repo_name,
+                is_push,
+            } => {
                 let program = match &cmd {
                     PackCommand::UploadPack { .. } => "upload-pack",
                     PackCommand::ReceivePack { .. } => "receive-pack",
@@ -179,7 +185,20 @@ impl Handler for SshHandler {
                     return Ok(());
                 };
                 let handle = session.handle();
+                let db = self.state.db.clone();
+                let repos_dir = self.state.repos_dir.clone();
+                let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
+                let user_id = user_id.clone();
                 tokio::spawn(async move {
+                    let git: std::sync::Arc<dyn octanest_git::GitBackend> =
+                        std::sync::Arc::new(octanest_git::CliGitBackend::new());
+                    // Capture refs before receive-pack so we can synthesize update
+                    // triples for webhooks / PR sync / Actions (SSH has no pkt-line body).
+                    let before_refs = if is_push {
+                        git.list_refs(&bare).await.unwrap_or_default()
+                    } else {
+                        Vec::new()
+                    };
                     let writer = ch.make_writer();
                     let stderr_writer = ch.make_writer_ext(Some(1));
                     let reader = ch.make_reader();
@@ -187,6 +206,48 @@ impl Handler for SshHandler {
                         pack::run_pack_command(program, &bare, reader, writer, stderr_writer)
                             .await
                             .unwrap_or(1);
+                    if code == 0 && is_push {
+                        if let Ok(Some(user)) = db.find_user_by_id(&user_id).await {
+                            let after_refs = git.list_refs(&bare).await.unwrap_or_default();
+                            let updates = ref_updates_from_lists(&before_refs, &after_refs);
+                            crate::webhook::dispatch::notify_push(
+                                &db,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &user.username,
+                                &user.id,
+                                &updates,
+                                &env_name,
+                            )
+                            .await;
+                            crate::pull::synchronize_after_push(
+                                &db,
+                                &repos_dir,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                &user.username,
+                                &user.id,
+                                &updates,
+                                &env_name,
+                            )
+                            .await;
+                            let actions_enabled = crate::actions::env_actions_enabled();
+                            crate::actions::notify_push_actions(
+                                &db,
+                                git,
+                                &repos_dir,
+                                &repo_id,
+                                &owner_slug,
+                                &repo_name,
+                                Some(&user.id),
+                                &updates,
+                                actions_enabled,
+                            )
+                            .await;
+                        }
+                    }
                     let _ = handle.exit_status_request(channel, code as u32).await;
                     let _ = handle.eof(channel).await;
                     let _ = handle.close(channel).await;
@@ -229,6 +290,34 @@ impl Handler for SshHandler {
         session.channel_failure(channel)?;
         Ok(())
     }
+}
+
+/// Diff `list_refs` snapshots into `(before, after, refname)` triples for notify hooks.
+fn ref_updates_from_lists(
+    before: &[octanest_git::GitRef],
+    after: &[octanest_git::GitRef],
+) -> Vec<(String, String, String)> {
+    use std::collections::HashMap;
+    let before_map: HashMap<&str, &str> = before
+        .iter()
+        .map(|r| (r.name.as_str(), r.oid.as_str()))
+        .collect();
+    let mut out = Vec::new();
+    for r in after {
+        let prev = before_map.get(r.name.as_str()).copied().unwrap_or("0");
+        if prev != r.oid {
+            out.push((prev.to_string(), r.oid.clone(), r.name.clone()));
+        }
+    }
+    // Deleted refs: present before, missing after.
+    let after_names: std::collections::HashSet<&str> =
+        after.iter().map(|r| r.name.as_str()).collect();
+    for r in before {
+        if !after_names.contains(r.name.as_str()) {
+            out.push((r.oid.clone(), "0".repeat(40), r.name.clone()));
+        }
+    }
+    out
 }
 
 /// True when `OCTANEST_SSH_ENABLED` is `1`/`true`/`yes` (case-insensitive).

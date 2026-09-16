@@ -1,13 +1,16 @@
 //! Uniform database adapter boundary — the only place dialect branching is allowed (D-08).
 
+pub mod actions;
 pub mod auth_identities;
 pub mod auth_settings;
+pub mod branch_protection;
 pub mod dialect;
 pub mod email_tokens;
 pub mod issue_labels;
 pub mod issues;
 pub mod lfs;
 pub mod migrate;
+pub mod notifications;
 pub mod org_invites;
 pub mod org_members;
 pub mod organizations;
@@ -15,20 +18,28 @@ pub mod packages;
 pub mod pats;
 pub mod pool;
 pub mod probe;
+pub mod pulls;
 pub mod redirects;
 pub mod releases;
+pub mod webhooks;
 pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
+pub mod stars;
 pub mod users;
 
+pub use actions::{
+    ActionJobRow, ActionRunRow, ActionRunnerRow, ActionSecretCipherRow, ActionSecretMetaRow,
+};
+pub use branch_protection::{BranchProtectionRuleRow, CommitStatusRow};
 pub use dialect::{redact_url, resolve_dialect, resolve_dialect_from_env, Dialect};
 pub use issue_labels::{IssueAssigneeRow, LabelRow};
 pub use issues::{
     CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
 };
 pub use lfs::LfsObjectRow;
+pub use notifications::NotificationRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
 pub use org_invites::OrgInviteRow;
@@ -36,6 +47,7 @@ pub use org_members::{OrgMemberListRow, OrgMemberRow, OrgMineRow};
 pub use organizations::OrganizationRow;
 pub use packages::{PackageRow, PackageVersionRow, PackageUsageBreakdownRow};
 pub use pats::PatRow;
+pub use pulls::{PullCommentRow, PullReviewRow, PullRow, PullSearchFilters, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
@@ -43,6 +55,7 @@ pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
+pub use webhooks::{WebhookDeliveryAttemptRow, WebhookDeliveryRow, WebhookRow};
 use dialect::resolve_dialect_from_env as resolve_from_env;
 use pool::DbPool as Pool;
 
@@ -378,7 +391,7 @@ impl Database {
         description: &str,
         default_branch: &str,
     ) -> Result<RepositoryRow, String> {
-        repositories::insert_repository(
+        let row = repositories::insert_repository(
             self.require_pool()?,
             id,
             owner_id,
@@ -388,7 +401,75 @@ impl Database {
             description,
             default_branch,
         )
-        .await
+        .await?;
+        // D-SOC-14: roots get fork_network_id = id (column from 0020_social).
+        let _ = stars::set_fork_network_id(self.require_pool()?, &row.id, &row.id).await;
+        Ok(row)
+    }
+
+    pub async fn star_repository(&self, user_id: &str, repository_id: &str) -> Result<i64, String> {
+        stars::star_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn unstar_repository(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<i64, String> {
+        stars::unstar_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn get_repo_star_count(&self, repository_id: &str) -> Result<i64, String> {
+        stars::get_star_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn has_starred_repo(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<bool, String> {
+        stars::has_starred(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn get_repo_fork_network_id(
+        &self,
+        repository_id: &str,
+    ) -> Result<Option<String>, String> {
+        stars::get_fork_network_id(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn set_repo_fork_network_id(
+        &self,
+        repository_id: &str,
+        network_id: &str,
+    ) -> Result<(), String> {
+        stars::set_fork_network_id(self.require_pool()?, repository_id, network_id).await
+    }
+
+    pub async fn find_active_fork_in_network(
+        &self,
+        owner_id: &str,
+        fork_network_id: &str,
+    ) -> Result<Option<RepositoryRow>, String> {
+        stars::find_active_fork_in_network(self.require_pool()?, owner_id, fork_network_id).await
+    }
+
+    pub async fn list_starred_repo_ids(
+        &self,
+        user_id: &str,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<String>, String> {
+        stars::list_starred_repo_ids(self.require_pool()?, user_id, offset, limit).await
+    }
+
+    pub async fn list_explore_repositories(
+        &self,
+        q: Option<&str>,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<RepositoryRow>, String> {
+        stars::list_explore(self.require_pool()?, q, offset, limit).await
     }
 
     pub async fn find_repository_by_owner_name(
@@ -445,6 +526,422 @@ impl Database {
 
     pub async fn hard_delete_repository(&self, id: &str) -> Result<(), String> {
         repositories::hard_delete(self.require_pool()?, id).await
+    }
+
+    // --- pulls ---
+
+    pub async fn insert_pull(
+        &self,
+        id: &str,
+        repo_id: &str,
+        number: i64,
+        title: &str,
+        body: &str,
+        author_id: &str,
+        base_ref: &str,
+        base_sha: &str,
+        head_repo_id: &str,
+        head_ref: &str,
+        head_sha: &str,
+        draft: bool,
+    ) -> Result<PullRow, String> {
+        pulls::insert_pull(
+            self.require_pool()?,
+            id,
+            repo_id,
+            number,
+            title,
+            body,
+            author_id,
+            base_ref,
+            base_sha,
+            head_repo_id,
+            head_ref,
+            head_sha,
+            draft,
+        )
+        .await
+    }
+
+    pub async fn find_pull_by_repo_number(
+        &self,
+        repo_id: &str,
+        number: i64,
+    ) -> Result<Option<PullRow>, String> {
+        pulls::find_by_repo_and_number(self.require_pool()?, repo_id, number).await
+    }
+
+    pub async fn list_pulls_for_repo(
+        &self,
+        repo_id: &str,
+        state: Option<&str>,
+        offset: u32,
+        limit: u32,
+    ) -> Result<(Vec<PullRow>, i64), String> {
+        pulls::list_by_repo(self.require_pool()?, repo_id, state, offset, limit).await
+    }
+
+    pub async fn search_pulls_for_repo(
+        &self,
+        repo_id: &str,
+        filters: pulls::PullSearchFilters<'_>,
+    ) -> Result<(Vec<PullRow>, i64), String> {
+        pulls::search_by_repo(self.require_pool()?, repo_id, filters).await
+    }
+
+    pub async fn set_pull_state(
+        &self,
+        id: &str,
+        state: &str,
+        closed_at: Option<&str>,
+        closed_by: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_state(self.require_pool()?, id, state, closed_at, closed_by).await
+    }
+
+    pub async fn get_repo_merge_settings(
+        &self,
+        repo_id: &str,
+    ) -> Result<RepoMergeSettingsRow, String> {
+        pulls::get_merge_settings(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_merge_settings(
+        &self,
+        repo_id: &str,
+        allow_merge_commit: bool,
+        allow_squash_merge: bool,
+        allow_rebase_merge: bool,
+    ) -> Result<(), String> {
+        pulls::set_merge_settings(
+            self.require_pool()?,
+            repo_id,
+            allow_merge_commit,
+            allow_squash_merge,
+            allow_rebase_merge,
+        )
+        .await
+    }
+
+    pub async fn set_repo_forked_from(
+        &self,
+        repo_id: &str,
+        forked_from: Option<&str>,
+    ) -> Result<(), String> {
+        pulls::set_forked_from(self.require_pool()?, repo_id, forked_from).await
+    }
+
+    pub async fn get_repo_forked_from(&self, repo_id: &str) -> Result<Option<String>, String> {
+        pulls::get_forked_from(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn update_pull_fields(
+        &self,
+        id: &str,
+        title: &str,
+        body: &str,
+        draft: bool,
+        base_ref: &str,
+        base_sha: &str,
+    ) -> Result<(), String> {
+        pulls::update_fields(
+            self.require_pool()?,
+            id,
+            title,
+            body,
+            draft,
+            base_ref,
+            base_sha,
+        )
+        .await
+    }
+
+    pub async fn mark_pull_merged(
+        &self,
+        id: &str,
+        merged_by: &str,
+        merge_commit_sha: &str,
+        merge_method: &str,
+        merged_at: &str,
+    ) -> Result<(), String> {
+        pulls::mark_merged(
+            self.require_pool()?,
+            id,
+            merged_by,
+            merge_commit_sha,
+            merge_method,
+            merged_at,
+        )
+        .await
+    }
+
+    pub async fn insert_pull_comment(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        body: &str,
+        path: Option<&str>,
+        side: Option<&str>,
+        line: Option<i64>,
+        start_line: Option<i64>,
+        commit_sha: Option<&str>,
+    ) -> Result<PullCommentRow, String> {
+        pulls::insert_pull_comment(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            body,
+            path,
+            side,
+            line,
+            start_line,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_comment_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullCommentRow>, String> {
+        pulls::find_pull_comment_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_comments(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<PullCommentRow>, String> {
+        pulls::list_pull_comments(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn set_pull_comment_resolved(
+        &self,
+        id: &str,
+        resolved: bool,
+    ) -> Result<PullCommentRow, String> {
+        pulls::set_pull_comment_resolved(self.require_pool()?, id, resolved).await
+    }
+
+    pub async fn mark_pull_line_comments_outdated(&self, pull_id: &str) -> Result<(), String> {
+        pulls::mark_pull_line_comments_outdated(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn update_pull_head_sha(&self, id: &str, head_sha: &str) -> Result<(), String> {
+        pulls::update_pull_head_sha(self.require_pool()?, id, head_sha).await
+    }
+
+    pub async fn pull_has_label(&self, pull_id: &str, label: &str) -> Result<bool, String> {
+        pulls::pull_has_label(self.require_pool()?, pull_id, label).await
+    }
+
+    pub async fn pull_has_assignee(&self, pull_id: &str, user_id: &str) -> Result<bool, String> {
+        pulls::pull_has_assignee(self.require_pool()?, pull_id, user_id).await
+    }
+
+    pub async fn insert_pull_review(
+        &self,
+        id: &str,
+        pull_id: &str,
+        author_id: &str,
+        state: &str,
+        body: &str,
+        commit_sha: Option<&str>,
+    ) -> Result<PullReviewRow, String> {
+        pulls::insert_pull_review(
+            self.require_pool()?,
+            id,
+            pull_id,
+            author_id,
+            state,
+            body,
+            commit_sha,
+        )
+        .await
+    }
+
+    pub async fn find_pull_review_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<PullReviewRow>, String> {
+        pulls::find_pull_review_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_pull_reviews(&self, pull_id: &str) -> Result<Vec<PullReviewRow>, String> {
+        pulls::list_pull_reviews(self.require_pool()?, pull_id).await
+    }
+
+    pub async fn dismiss_pull_review(
+        &self,
+        id: &str,
+        reason: Option<&str>,
+        dismissed_at: &str,
+    ) -> Result<PullReviewRow, String> {
+        pulls::dismiss_pull_review(self.require_pool()?, id, reason, dismissed_at).await
+    }
+
+    pub async fn upsert_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+        requested_by: &str,
+    ) -> Result<(), String> {
+        pulls::upsert_review_request(self.require_pool()?, pull_id, user_id, requested_by).await
+    }
+
+    pub async fn delete_pull_review_request(
+        &self,
+        pull_id: &str,
+        user_id: &str,
+    ) -> Result<(), String> {
+        pulls::delete_review_request(self.require_pool()?, pull_id, user_id).await
+    }
+
+    pub async fn list_pull_review_request_user_ids(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<String>, String> {
+        pulls::list_review_request_user_ids(self.require_pool()?, pull_id).await
+    }
+
+    // --- branch protection + commit statuses (Phase 13) ---
+
+    pub async fn list_branch_protection_rules(
+        &self,
+        repo_id: &str,
+    ) -> Result<Vec<BranchProtectionRuleRow>, String> {
+        branch_protection::list_rules(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn find_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+    ) -> Result<Option<BranchProtectionRuleRow>, String> {
+        branch_protection::find_rule(self.require_pool()?, repo_id, rule_id).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_branch_protection_rule(
+        &self,
+        id: &str,
+        repo_id: &str,
+        pattern: &str,
+        require_reviews: bool,
+        required_approving_review_count: i32,
+        dismiss_stale_reviews: bool,
+        require_conversation_resolution: bool,
+        require_last_push_approval: bool,
+        required_status_contexts: &str,
+        strict_status_checks: bool,
+        allow_force_pushes: bool,
+        allow_deletions: bool,
+        enforce_admins: bool,
+        required_linear_history: bool,
+        lock_branch: bool,
+    ) -> Result<BranchProtectionRuleRow, String> {
+        branch_protection::insert_rule(
+            self.require_pool()?,
+            id,
+            repo_id,
+            pattern,
+            require_reviews,
+            required_approving_review_count,
+            dismiss_stale_reviews,
+            require_conversation_resolution,
+            require_last_push_approval,
+            required_status_contexts,
+            strict_status_checks,
+            allow_force_pushes,
+            allow_deletions,
+            enforce_admins,
+            required_linear_history,
+            lock_branch,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn update_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+        pattern: &str,
+        require_reviews: bool,
+        required_approving_review_count: i32,
+        dismiss_stale_reviews: bool,
+        require_conversation_resolution: bool,
+        require_last_push_approval: bool,
+        required_status_contexts: &str,
+        strict_status_checks: bool,
+        allow_force_pushes: bool,
+        allow_deletions: bool,
+        enforce_admins: bool,
+        required_linear_history: bool,
+        lock_branch: bool,
+    ) -> Result<BranchProtectionRuleRow, String> {
+        branch_protection::update_rule(
+            self.require_pool()?,
+            repo_id,
+            rule_id,
+            pattern,
+            require_reviews,
+            required_approving_review_count,
+            dismiss_stale_reviews,
+            require_conversation_resolution,
+            require_last_push_approval,
+            required_status_contexts,
+            strict_status_checks,
+            allow_force_pushes,
+            allow_deletions,
+            enforce_admins,
+            required_linear_history,
+            lock_branch,
+        )
+        .await
+    }
+
+    pub async fn delete_branch_protection_rule(
+        &self,
+        repo_id: &str,
+        rule_id: &str,
+    ) -> Result<(), String> {
+        branch_protection::delete_rule(self.require_pool()?, repo_id, rule_id).await
+    }
+
+    pub async fn list_commit_statuses(
+        &self,
+        repo_id: &str,
+        sha: &str,
+    ) -> Result<Vec<CommitStatusRow>, String> {
+        branch_protection::list_statuses_for_sha(self.require_pool()?, repo_id, sha).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn upsert_commit_status(
+        &self,
+        id: &str,
+        repo_id: &str,
+        sha: &str,
+        context: &str,
+        state: &str,
+        description: &str,
+        target_url: Option<&str>,
+        creator_id: Option<&str>,
+    ) -> Result<CommitStatusRow, String> {
+        branch_protection::upsert_status(
+            self.require_pool()?,
+            id,
+            repo_id,
+            sha,
+            context,
+            state,
+            description,
+            target_url,
+            creator_id,
+        )
+        .await
     }
 
     // --- issues ---
@@ -550,6 +1047,76 @@ impl Database {
         body: &str,
     ) -> Result<IssueCommentRow, String> {
         issues::insert_issue_comment(self.require_pool()?, id, issue_id, author_id, body).await
+    }
+
+    pub async fn insert_notification(
+        &self,
+        id: &str,
+        recipient_id: &str,
+        actor_id: &str,
+        reason: &str,
+        subject_kind: &str,
+        subject_repo_id: &str,
+        subject_number: i64,
+        subject_title: &str,
+    ) -> Result<NotificationRow, String> {
+        notifications::insert_notification(
+            self.require_pool()?,
+            id,
+            recipient_id,
+            actor_id,
+            reason,
+            subject_kind,
+            subject_repo_id,
+            subject_number,
+            subject_title,
+        )
+        .await
+    }
+
+    pub async fn find_notification_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<NotificationRow>, String> {
+        notifications::find_notification_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_notifications(
+        &self,
+        recipient_id: &str,
+        unread_only: bool,
+        offset: i64,
+        limit: i64,
+    ) -> Result<(Vec<NotificationRow>, i64), String> {
+        notifications::list_notifications(
+            self.require_pool()?,
+            recipient_id,
+            unread_only,
+            offset,
+            limit,
+        )
+        .await
+    }
+
+    pub async fn notification_unread_count(&self, recipient_id: &str) -> Result<i64, String> {
+        notifications::unread_count(self.require_pool()?, recipient_id).await
+    }
+
+    pub async fn mark_notifications_read(
+        &self,
+        recipient_id: &str,
+        ids: &[String],
+        read_at: &str,
+    ) -> Result<i64, String> {
+        notifications::mark_read(self.require_pool()?, recipient_id, ids, read_at).await
+    }
+
+    pub async fn mark_all_notifications_read(
+        &self,
+        recipient_id: &str,
+        read_at: &str,
+    ) -> Result<i64, String> {
+        notifications::mark_all_read(self.require_pool()?, recipient_id, read_at).await
     }
 
     pub async fn find_issue_comment_by_id(
@@ -1207,6 +1774,211 @@ impl Database {
         packages::delete_package_blob(self.require_pool()?, digest).await
     }
 
+    // --- actions (Phase 19) ---
+
+    pub async fn insert_action_runner(
+        &self,
+        id: &str,
+        name: &str,
+        token_hash: &str,
+        labels_json: &str,
+        repository_id: Option<&str>,
+        ephemeral: bool,
+    ) -> Result<actions::ActionRunnerRow, String> {
+        actions::insert_runner(
+            self.require_pool()?,
+            id,
+            name,
+            token_hash,
+            labels_json,
+            repository_id,
+            ephemeral,
+        )
+        .await
+    }
+
+    pub async fn find_action_runner_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionRunnerRow>, String> {
+        actions::find_runner_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_run(
+        &self,
+        id: &str,
+        repository_id: &str,
+        workflow_path: &str,
+        workflow_name: &str,
+        event: &str,
+        head_sha: &str,
+        head_ref: &str,
+        title: &str,
+        triggered_by: Option<&str>,
+    ) -> Result<actions::ActionRunRow, String> {
+        actions::insert_run(
+            self.require_pool()?,
+            id,
+            repository_id,
+            workflow_path,
+            workflow_name,
+            event,
+            head_sha,
+            head_ref,
+            title,
+            triggered_by,
+        )
+        .await
+    }
+
+    pub async fn find_action_run_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionRunRow>, String> {
+        actions::find_run_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_job(
+        &self,
+        id: &str,
+        run_id: &str,
+        job_key: &str,
+        name: &str,
+        runs_on_json: &str,
+    ) -> Result<actions::ActionJobRow, String> {
+        actions::insert_job(
+            self.require_pool()?,
+            id,
+            run_id,
+            job_key,
+            name,
+            runs_on_json,
+        )
+        .await
+    }
+
+    pub async fn find_action_job_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<actions::ActionJobRow>, String> {
+        actions::find_job_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_action_secret(
+        &self,
+        id: &str,
+        repository_id: &str,
+        name: &str,
+        ciphertext: &str,
+    ) -> Result<(), String> {
+        actions::insert_secret(self.require_pool()?, id, repository_id, name, ciphertext).await
+    }
+
+    pub async fn list_action_secret_names(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionSecretMetaRow>, String> {
+        actions::list_secret_names(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_secret_ciphertexts(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionSecretCipherRow>, String> {
+        actions::list_secret_ciphertexts(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn delete_action_secret_by_name(
+        &self,
+        repository_id: &str,
+        name: &str,
+    ) -> Result<bool, String> {
+        actions::delete_secret_by_name(self.require_pool()?, repository_id, name).await
+    }
+
+    pub async fn list_action_runners(&self) -> Result<Vec<actions::ActionRunnerRow>, String> {
+        actions::list_runners(self.require_pool()?).await
+    }
+
+    pub async fn insert_action_runner_token(
+        &self,
+        id: &str,
+        token_hash: &str,
+        scope_type: &str,
+        scope_id: Option<&str>,
+        active: bool,
+    ) -> Result<(), String> {
+        actions::insert_runner_token(
+            self.require_pool()?,
+            id,
+            token_hash,
+            scope_type,
+            scope_id,
+            active,
+        )
+        .await
+    }
+
+    pub async fn get_repo_actions_enabled(&self, repo_id: &str) -> Result<bool, String> {
+        actions::get_actions_enabled(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_actions_enabled(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        actions::set_actions_enabled(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn consume_action_runner_registration_token(
+        &self,
+        token_hash: &str,
+    ) -> Result<bool, String> {
+        actions::consume_registration_token(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn find_action_runner_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<actions::ActionRunnerRow>, String> {
+        actions::find_runner_by_token_hash(self.require_pool()?, token_hash).await
+    }
+
+    pub async fn claim_queued_action_job_for_labels(
+        &self,
+        runner_id: &str,
+        labels: &[String],
+    ) -> Result<Option<actions::ActionJobRow>, String> {
+        actions::claim_queued_job_for_labels(self.require_pool()?, runner_id, labels).await
+    }
+
+    pub async fn list_action_runs_for_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<actions::ActionRunRow>, String> {
+        actions::list_runs_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_action_jobs_for_run(
+        &self,
+        run_id: &str,
+    ) -> Result<Vec<actions::ActionJobRow>, String> {
+        actions::list_jobs_for_run(self.require_pool()?, run_id).await
+    }
+
+    pub async fn update_action_job_status(&self, job_id: &str, status: &str) -> Result<(), String> {
+        actions::update_job_status(self.require_pool()?, job_id, status).await
+    }
+
+    pub async fn update_action_runner_labels(
+        &self,
+        runner_id: &str,
+        labels_json: &str,
+    ) -> Result<(), String> {
+        actions::update_runner_labels(self.require_pool()?, runner_id, labels_json).await
+    }
+
+    pub async fn wipe_actions_domain(&self) -> Result<(), String> {
+        actions::wipe_actions_domain(self.require_pool()?).await
+    }
+
     pub async fn find_package_by_id(&self, id: &str) -> Result<Option<packages::PackageRow>, String> {
         packages::find_package_by_id(self.require_pool()?, id).await
     }
@@ -1526,6 +2298,8 @@ impl Database {
 
     pub async fn factory_reset_instance(&self) -> Result<(), String> {
         let pool = self.require_pool()?;
+        // D-ACT-19: wipe Actions domain before cascading repo deletes (instance runners/tokens).
+        actions::wipe_actions_domain(pool).await?;
         match pool {
             Pool::Postgres(p) => {
                 // Polymorphic repos no longer cascade from users — wipe explicitly (T-10-15).
@@ -1658,5 +2432,163 @@ impl Database {
             }
         }
         Ok(())
+    }
+
+    // --- webhooks (Phase 18) ---
+
+    pub async fn insert_webhook(
+        &self,
+        id: &str,
+        repository_id: &str,
+        url: &str,
+        secret: &str,
+        active: bool,
+        events_json: &str,
+        name: &str,
+        created_by: &str,
+    ) -> Result<WebhookRow, String> {
+        webhooks::insert_webhook(
+            self.require_pool()?,
+            id,
+            repository_id,
+            url,
+            secret,
+            active,
+            events_json,
+            name,
+            created_by,
+        )
+        .await
+    }
+
+    pub async fn get_webhook(&self, id: &str) -> Result<WebhookRow, String> {
+        webhooks::get_webhook(self.require_pool()?, id).await
+    }
+
+    pub async fn list_webhooks_for_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Vec<WebhookRow>, String> {
+        webhooks::list_webhooks_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn list_active_webhooks_for_event(
+        &self,
+        repository_id: &str,
+        event: &str,
+    ) -> Result<Vec<WebhookRow>, String> {
+        webhooks::list_active_webhooks_for_event(self.require_pool()?, repository_id, event).await
+    }
+
+    pub async fn update_webhook(
+        &self,
+        id: &str,
+        url: Option<&str>,
+        secret: Option<&str>,
+        active: Option<bool>,
+        events_json: Option<&str>,
+        name: Option<&str>,
+    ) -> Result<WebhookRow, String> {
+        webhooks::update_webhook(
+            self.require_pool()?,
+            id,
+            url,
+            secret,
+            active,
+            events_json,
+            name,
+        )
+        .await
+    }
+
+    pub async fn delete_webhook(&self, id: &str) -> Result<(), String> {
+        webhooks::delete_webhook(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_webhook_delivery(
+        &self,
+        id: &str,
+        webhook_id: &str,
+        delivery_guid: &str,
+        event: &str,
+        action: &str,
+        payload_json: &str,
+    ) -> Result<WebhookDeliveryRow, String> {
+        webhooks::insert_delivery(
+            self.require_pool()?,
+            id,
+            webhook_id,
+            delivery_guid,
+            event,
+            action,
+            payload_json,
+        )
+        .await
+    }
+
+    pub async fn get_webhook_delivery(&self, id: &str) -> Result<WebhookDeliveryRow, String> {
+        webhooks::get_delivery(self.require_pool()?, id).await
+    }
+
+    pub async fn list_webhook_deliveries(
+        &self,
+        webhook_id: &str,
+        limit: i64,
+    ) -> Result<Vec<WebhookDeliveryRow>, String> {
+        webhooks::list_deliveries_for_webhook(self.require_pool()?, webhook_id, limit).await
+    }
+
+    pub async fn insert_webhook_delivery_attempt(
+        &self,
+        id: &str,
+        delivery_id: &str,
+        attempt_number: i64,
+        http_status: Option<i32>,
+        error_message: Option<&str>,
+        duration_ms: Option<i64>,
+        response_snippet: Option<&str>,
+    ) -> Result<WebhookDeliveryAttemptRow, String> {
+        webhooks::insert_delivery_attempt(
+            self.require_pool()?,
+            id,
+            delivery_id,
+            attempt_number,
+            http_status,
+            error_message,
+            duration_ms,
+            response_snippet,
+        )
+        .await
+    }
+
+    pub async fn latest_webhook_delivery_attempt(
+        &self,
+        delivery_id: &str,
+    ) -> Result<Option<WebhookDeliveryAttemptRow>, String> {
+        webhooks::latest_attempt_for_delivery(self.require_pool()?, delivery_id).await
+    }
+
+    pub async fn mark_webhook_delivery_result(
+        &self,
+        delivery_id: &str,
+        status: &str,
+        attempt_count: i64,
+        next_attempt_at: Option<&str>,
+    ) -> Result<(), String> {
+        webhooks::mark_delivery_result(
+            self.require_pool()?,
+            delivery_id,
+            status,
+            attempt_count,
+            next_attempt_at,
+        )
+        .await
+    }
+
+    pub async fn list_pending_webhook_deliveries(
+        &self,
+        limit: i64,
+    ) -> Result<Vec<WebhookDeliveryRow>, String> {
+        webhooks::list_pending_deliveries(self.require_pool()?, limit).await
     }
 }

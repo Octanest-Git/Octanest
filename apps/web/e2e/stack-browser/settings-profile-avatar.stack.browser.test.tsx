@@ -13,8 +13,8 @@ describe("stack browser e2e: settings SSR + profile avatar crop/remove", () => {
     requireStack();
   });
 
-  it("loads settings pages SSR-first and covers avatar reject/crop/save/remove", async () => {
+  it("covers home dashboard, general/theme, tokens nesting, profile, and anon redirect", async () => {
     const ok = await commands.expectSettingsProfileAvatarFlow();
     expect(ok).toBe(true);
-  }, 240_000);
+  }, 300_000);
 });

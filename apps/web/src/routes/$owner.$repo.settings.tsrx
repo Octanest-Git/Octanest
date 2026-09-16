@@ -2,18 +2,15 @@ import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanej
 import type { OwnerType, RepoVisibility } from "@octanest/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
-import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
+import { BranchProtectionPanel } from "@/components/repo/branch-protection-panel";
 import { LfsBrowser } from "@/components/repo/lfs-browser";
+import { ActionsSettingsPanel } from "@/components/repo/actions-settings-panel";
+import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
+import { MergeSettingsPanel } from "@/components/repo/merge-settings-panel";
+import { OwnerLookup } from "@/components/repo/owner-lookup";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { WebhooksPanel } from "@/components/repo/webhooks-panel";
+import { TypeToConfirmDialog } from "@/components/repo/type-to-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -147,9 +144,12 @@ export function RepoSettingsPage() @{
         setTransferPending(false);
         return;
       }
-      setRepo(res.data.repo);
+      const nextOwner = res.data.repo.owner_username;
+      const nextName = res.data.repo.name;
+      setTransferPending(false);
+      setTransferOpen(false);
       toastSuccess("Repository transferred.");
-      window.location.assign(`/${res.data.repo.owner_username}/${res.data.repo.name}/settings`);
+      window.location.assign(`/${nextOwner}/${nextName}/settings`);
     } catch {
       setTransferError(NETWORK_ERROR);
       setTransferPending(false);
@@ -171,6 +171,8 @@ export function RepoSettingsPage() @{
         setDeletePending(false);
         return;
       }
+      setDeletePending(false);
+      setDeleteOpen(false);
       window.location.assign("/");
     } catch {
       setDeleteError(NETWORK_ERROR);
@@ -232,7 +234,14 @@ export function RepoSettingsPage() @{
 
         <CollaboratorsPanel owner={owner} name={repoName} />
 
+        <BranchProtectionPanel owner={owner} name={repoName} can_admin={canAdmin} />
+
         <LfsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
+        <ActionsSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
+
+        <MergeSettingsPanel owner={owner} name={repoName} can_admin={canAdmin} />
+
+        <WebhooksPanel owner={owner} name={repoName} can_admin={canAdmin} />
 
         <LfsBrowser owner={owner} name={repoName} />
 
@@ -284,24 +293,16 @@ export function RepoSettingsPage() @{
               Move this repository to another user or organization. You must type the repository
               name to confirm.
             </p>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="repo-transfer-dest">Destination owner</Label>
-              <Input
-                id="repo-transfer-dest"
-                value={destOwner}
-                onInput={(e) => setDestOwner((e.currentTarget as HTMLInputElement).value)}
-                autoComplete="off"
-                disabled={transferPending}
-                placeholder="username or org slug"
-              />
-            </div>
             <div className="flex flex-wrap gap-2" role="group" aria-label="Destination type">
               <Button
                 type="button"
                 variant={destOwnerType === "user" ? "default" : "secondary"}
                 aria-pressed={destOwnerType === "user"}
                 disabled={transferPending}
-                onClick={() => setDestOwnerType("user")}
+                onClick={() => {
+                  setDestOwnerType("user");
+                  setDestOwner("");
+                }}
               >
                 User
               </Button>
@@ -310,11 +311,22 @@ export function RepoSettingsPage() @{
                 variant={destOwnerType === "org" ? "default" : "secondary"}
                 aria-pressed={destOwnerType === "org"}
                 disabled={transferPending}
-                onClick={() => setDestOwnerType("org")}
+                onClick={() => {
+                  setDestOwnerType("org");
+                  setDestOwner("");
+                }}
               >
                 Organization
               </Button>
             </div>
+            <OwnerLookup
+              id="repo-transfer-dest"
+              label="Destination owner"
+              ownerType={destOwnerType}
+              value={destOwner}
+              onValueChange={setDestOwner}
+              disabled={transferPending}
+            />
             <Button
               type="button"
               variant="destructive"
@@ -350,8 +362,20 @@ export function RepoSettingsPage() @{
         </section>
       </div>
 
-      <AlertDialog
+      <TypeToConfirmDialog
         open={transferOpen}
+        title="Transfer repository?"
+        description={TRANSFER_BODY}
+        confirmLabel="Repository name"
+        confirmValue={transferConfirm}
+        expectedName={repo.name}
+        onConfirmValueChange={setTransferConfirm}
+        pending={transferPending}
+        error={transferError}
+        confirmButtonLabel="Transfer repository"
+        pendingButtonLabel="Transferring…"
+        inputId="transfer-confirm"
+        testId="repo-transfer-confirm"
         onOpenChange={(open) => {
           if (transferPending) return;
           setTransferOpen(open);
@@ -360,44 +384,23 @@ export function RepoSettingsPage() @{
             setTransferError("");
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Transfer repository?</AlertDialogTitle>
-            <AlertDialogDescription>{TRANSFER_BODY as string}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="transfer-confirm">Repository name</Label>
-            <Input
-              id="transfer-confirm"
-              value={transferConfirm}
-              onInput={(e) => setTransferConfirm((e.currentTarget as HTMLInputElement).value)}
-              autoComplete="off"
-              disabled={transferPending}
-              placeholder={repoName as string}
-            />
-          </div>
-          @if (transferError) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {transferError as string}
-            </p>;
-          }
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={transferPending}>Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={transferPending || transferConfirm.trim() !== repo.name}
-              onClick={() => void submitTransfer()}
-            >
-              {(transferPending ? "Transferring…" : "Transfer repository") as string}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={() => void submitTransfer()}
+      />
 
-      <AlertDialog
+      <TypeToConfirmDialog
         open={deleteOpen}
+        title="Delete repository?"
+        description={SOFT_DELETE_BODY}
+        confirmLabel="Repository name"
+        confirmValue={confirmName}
+        expectedName={repo.name}
+        onConfirmValueChange={setConfirmName}
+        pending={deletePending}
+        error={deleteError}
+        confirmButtonLabel="Delete repository"
+        pendingButtonLabel="Deleting…"
+        inputId="soft-delete-confirm"
+        testId="repo-delete-confirm"
         onOpenChange={(open) => {
           if (deletePending) return;
           setDeleteOpen(open);
@@ -406,41 +409,8 @@ export function RepoSettingsPage() @{
             setDeleteError("");
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete repository?</AlertDialogTitle>
-            <AlertDialogDescription>{SOFT_DELETE_BODY as string}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="soft-delete-confirm">Repository name</Label>
-            <Input
-              id="soft-delete-confirm"
-              value={confirmName}
-              onInput={(e) => setConfirmName((e.currentTarget as HTMLInputElement).value)}
-              autoComplete="off"
-              disabled={deletePending}
-              placeholder={repoName as string}
-            />
-          </div>
-          @if (deleteError) {
-            <p role="alert" className="text-[14px] text-destructive">
-              {deleteError as string}
-            </p>;
-          }
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletePending}>Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={deletePending || confirmName.trim() !== repo.name}
-              onClick={() => void submitDelete()}
-            >
-              {(deletePending ? "Deleting…" : "Delete repository") as string}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={() => void submitDelete()}
+      />
     </>;
   }
 }

@@ -38,6 +38,8 @@ services:
       - octanest
 
   api:
+    # Stable tag for CI same-run image reuse (docker save/load); local up --build retags too.
+    image: octanest-api:ci
     build:
       context: .
       dockerfile: crates/octanest-api/Dockerfile
@@ -61,6 +63,12 @@ services:
       OCTANEST_PACKAGES_DIR: /var/packages
       OCTANEST_PACKAGES_MAX_BLOB_BYTES: ${OCTANEST_PACKAGES_MAX_BLOB_BYTES:-2147483648}
       OCTANEST_PACKAGES_OWNER_QUOTA_BYTES: ${OCTANEST_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
+      # Actions job logs (D-ACT-13) — distinct from repos / LFS / packages / release-assets.
+      OCTANEST_ACTIONS_LOG_DIR: /var/actions-logs
+      OCTANEST_ACTIONS_ENABLED: ${OCTANEST_ACTIONS_ENABLED:-true}
+      # Local-only default so repo Actions secrets work out of the box (D-ACT-17).
+      # Production must set a unique OCTANEST_ACTIONS_SECRETS_KEY — never reuse this value.
+      OCTANEST_ACTIONS_SECRETS_KEY: ${OCTANEST_ACTIONS_SECRETS_KEY:-compose-dev-actions-secrets-key-not-for-production}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
@@ -82,6 +90,8 @@ services:
       - ./var/release-assets:/var/release-assets
       # Package blobs (D-PKG-07) — content-addressed; not LFS or release-assets
       - ./var/packages:/var/packages
+      # Actions job logs (D-ACT-13) — {run_id}/{job_id}.log
+      - ./var/actions-logs:/var/actions-logs
       # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)
       - ssh_host_keys:/var/ssh
     depends_on:
@@ -113,7 +123,31 @@ services:
     networks:
       - octanest
 
+  # Official Actions runner sidecar (ACT-04 / ACT-05 / D-ACT-14).
+  # Opt-in: docker compose --profile actions up -d runner
+  # Requires OCTANEST_RUNNER_REGISTRATION_TOKEN; never commit real tokens.
+  runner:
+    profiles: ["actions"]
+    build:
+      context: ./docker/octanest-runner
+      dockerfile: Dockerfile
+    environment:
+      # Must be reachable from job containers — prefer published hostname, not 127.0.0.1.
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-}
+      OCTANEST_RUNNER_NAME: ${OCTANEST_RUNNER_NAME:-compose-runner}
+      OCTANEST_RUNNER_LABELS: ${OCTANEST_RUNNER_LABELS:-ubuntu-latest:docker://node:20-bookworm,self-hosted}
+    volumes:
+      - runner_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - octanest
+
   web:
+    image: octanest-web:ci
     build:
       context: .
       dockerfile: apps/web/Dockerfile
@@ -127,11 +161,21 @@ services:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/"]
-      interval: 10s
+      # Same shape as api /health — dedicated probe, not SSR `/` (avoids "Started" forever).
+      # Requires Octanest-Health-Probe (public /health without header → 404).
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "-H",
+          "Octanest-Health-Probe: 1",
+          "http://127.0.0.1:3000/health",
+        ]
+      interval: 5s
       timeout: 5s
       retries: 12
-      start_period: 20s
+      start_period: 10s
     labels:
       - traefik.enable=true
       - traefik.docker.network=octanest_octanest
@@ -149,3 +193,4 @@ networks:
 volumes:
   postgres_data:
   ssh_host_keys:
+  runner_data:

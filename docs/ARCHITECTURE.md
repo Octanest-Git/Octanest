@@ -3,7 +3,7 @@
 
 ## System overview
 
-Octanest is a self-hostable GitHub-style social coding platform delivered as one product for cloud and on-prem. The system is a **layered monorepo**: a TanStack Start (Octane) web app talks to a Rust Axum API over a versioned JSON RPC (HTTP and WebSocket), which persists through a multi-dialect database adapter (`postgres` / `mysql` / `sqlite`). Docker Compose fronts the stack with Traefik so the browser hits a single origin (`Host(localhost)`), with path-based routing to web and API.
+Octanest is a self-hostable GitHub-style social coding platform delivered as one product for cloud and on-prem. The system is a **layered monorepo**: a TanStack Start (Octane) web app talks to a Rust Axum API over a versioned JSON RPC (HTTP and WebSocket), which persists through a multi-dialect database adapter (`postgres` / `mysql` / `sqlite`). **Local Compose** fronts the stack with Traefik (Docker provider) so the browser hits a single origin (`Host(localhost)`), with path-based routing to web and API. **Octanest Cloud** uses the same api/web images behind a **file-configured Caddy** gateway (`deploy/cloud/`) — no Docker socket on the host (D-CLOUD-03).
 
 ## Component diagram
 
@@ -40,7 +40,7 @@ Typical authenticated request path:
 
 1. **Entry** — Browser loads UI from Traefik → `web`, or Vite in local `make dev`. Session cookie `octanest_session` is same-origin.
 2. **RPC call** — `@octanest/api-client` `createClient` POSTs to `/api/rpc` with `Octanest-RPC-Version: 1`, `credentials: "include"`, and body `{ procedure, input }`. WebSocket upgrades use `/api/rpc/ws` for the same procedure dispatch.
-3. **Edge** — Traefik (priority **110+**) routes `/v2`, `/npm`, `/generic` PathPrefix and `/{owner}/{repo}.git` PathRegexp to `api`; priority **100** routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`.
+3. **Edge** — Traefik (priority **110+**) routes `/v2`, `/npm`, `/generic` PathPrefix and `/{owner}/{repo}.git` PathRegexp to `api`; priority **100** routes `/api`, `/uploads`, and `/health` to `api`; everything else under `Host(localhost)` goes to `web`. On Octanest Cloud the same path priorities are expressed in `deploy/cloud/Caddyfile` (public Host catch-all; TLS at the platform edge).
 4. **Axum** — For RPC, `octanest-api` builds `RpcCtx`: resolves the opaque cookie via `SessionService` (SHA-256 of token looked up in DB), attaches the current `EmailSender`, then `rpc::dispatch` matches the procedure name. Smart HTTP uses a separate route stack (Basic + PAT) — see [Git Smart HTTP & PATs](#git-smart-http--pats). Package registry mounts (`/v2`, `/npm`, `/generic`) use PAT∩ACL (cookies ignored) and content-addressed blobs under `OCTANEST_PACKAGES_DIR`.
 5. **Domain + storage** — Handlers in `auth/`, `repo/`, `pat/`, `packages/`, `routes/`, etc. call `octanest_db::Database` (users, sessions, repositories, PATs, packages, auth settings). Dialect branching stays inside `octanest-db` only. Forge browse/create ops go through `octanest_git::GitBackend`; Smart HTTP wire protocol goes through `git-http-backend` CGI.
 6. **Response** — `RpcResponse` JSON (`ok` + `data` or `error`). Auth mutations may attach `Set-Cookie` (set or clear). Avatar uploads use multipart `POST /api/user/avatar`; files are served from `/uploads/avatars/{file}`. Raw blobs and source archives use dedicated HTTP GETs under `/api/repos/...` (see [Git forge](#git-forge-gitbackend)). Git clients speak Smart HTTP under `/{owner}/{repo}.git/...`. Registry clients speak OCI/npm/generic under their path prefixes.
@@ -100,10 +100,36 @@ Phase 11 ships issues + labels (ISS-01…04) on migration `0011_issues`:
 | **Tables** | `issues`, `issue_counters`, `issue_comments`, `issue_revisions`, `comment_revisions`, `labels`, `repo_hidden_labels`, `issue_labels`, `issue_assignees`, `issue_reactions`, `comment_reactions`, `issue_links`. FK `ON DELETE CASCADE` from repositories / issues / orgs. |
 | **Numbering** | Per-repo monotonic `#N` (`issue_counters.max_number`); hard-delete never reclaims. |
 | **ACL** | Same Capability model as forge browse: Read+ view; Write+ mutate; Admin for label defs / hard-delete. Private soft not-found. |
-| **UI** | Repo **Issues** tab (`/$owner/$repo/issues`); Write\|Preview markdown with `#N` autolink; Linked PRs panel for `pr_stub` rows. |
-| **Deferred** | Closing keywords wait for Phase 12 PR merge (D-ISS-15). |
+| **UI** | Repo **Issues** tab (`/$owner/$repo/issues`); Write\|Preview markdown with `#N` autolink; Linked PRs panel prefers real `pr` links to `/pull/{n}` (legacy `pr_stub` kept). |
+| **Deferred** | Closing keywords implemented on `pull.merge` into default branch (Phase 12 / D-PR-22). |
+
+### Pull requests
+
+Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
+
+| Concern | Contract |
+| --- | --- |
+| **Tables** | `pull_requests`, `pull_comments`, `pull_reviews`, `pull_review_requests`, `pull_labels`, `pull_assignees`; repo columns `allow_merge_*` + `forked_from_repo_id`. Shared `#N` via `issue_counters`. CASCADE from repositories. |
+| **Git** | `GitBackend` merge_commit / squash_merge / rebase_merge / fetch_ref_from / clone_bare (fork). |
+| **RPC** | `pull.*`, `repo.fork`, `repo.mergeSettings.*` — see [API.md](API.md). |
+| **UI** | Repo **Pulls** tab; `/pulls`, `/pulls/new`, `/pull/{n}` with Conversation / Commits / Files; merge panel; settings strategy toggles. |
+
+### Social & Explore
+
+Phase 21 adds stars, public profiles, explore, and fork-network metadata (SOC-01…04) on migration `0020_social` (extends Phase 12 `forked_from_repo_id`):
+
+| Concern | Contract |
+| --- | --- |
+| **Tables** | `repository_stars`; repo columns `star_count`, `fork_network_id` (roots: `fork_network_id = id`). |
+| **Stars** | `repo.star` / `repo.unstar` idempotent; `RepoPublic.star_count` + `viewer_has_starred`; `user.listStarred`. |
+| **Profiles** | `user.getPublicProfile` (no email); `/{username}` vs org overview on `$owner.index`. |
+| **Explore** | `repo.explore` + `/explore` (public only; sort stars then updated). |
+| **Forks** | Extends `repo.fork` + `clone_bare`; `fork_network_id` for PR heads. Helper `repo::head_valid_for_base` (same repo **or** `head.fork_network_id == base.id`) — Phase 12 D-PR-01…03. |
+| **UI** | Star/Fork on `RepoChrome`; `/explore`; `/$owner/$repo/fork` confirm. |
 
 RPC: `issue.*` / `label.*` — see [API.md](API.md#issues-issue--labels-label).
+RPC: `pull.*` — see [API.md](API.md).
+RPC: social — see [API.md](API.md) procedure table (`repo.star`, `repo.explore`, `user.getPublicProfile`, `repo.fork`).
 
 ### Git Smart HTTP & PATs
 
@@ -190,14 +216,17 @@ octanest/
 │   ├── octanest-core/     # Shared domain / RPC types (no I/O)
 │   ├── octanest-db/       # Multi-dialect sqlx adapter + migrations/
 │   └── octanest-git/      # GitBackend trait + CliGitBackend (system git)
-├── deploy/traefik/        # Optional Traefik static extras (Compose uses labels)
+├── deploy/
+│   ├── traefik/           # Optional Traefik static extras (Compose uses labels)
+│   └── cloud/             # Caddy file gateway for Railway-class cloud (no Docker socket)
+├── .railway/              # TypeScript IaC (`railway.ts`) for Octanest Cloud — plan/apply operator-only
 ├── docs/                  # Operator docs (database, local auth stubs, architecture)
 ├── brand/                 # Product mark and brand assets
 ├── scripts/               # Smoke / tooling helpers used by Makefile
 ├── var/                   # Runtime state (uploads, SQLite file; gitignored)
 ├── docker-compose.yml     # Default: Traefik + web + api + postgres
 ├── docker-compose.*.yml   # MySQL / SQLite / dev-auth overlays
-├── Makefile               # dev, rpc-gen, compose, migrate, smoke, e2e
+├── Makefile               # dev, rpc-gen, compose, migrate, smoke, cloud-plan, e2e
 ├── Cargo.toml             # Rust workspace
 └── package.json           # Bun workspaces: apps/*, packages/* + Turborepo
 ```
@@ -205,7 +234,26 @@ octanest/
 - **Split JS/Rust workspaces** — UI and generated client stay in Bun/Turbo; API and persistence stay in Cargo so dialect and auth logic remain typed and testable in Rust.
 - **`octanest-db` as the only dialect boundary** — Callers use `Database` methods; migrations live under `migrations/{postgres,mysql,sqlite}/`.
 - **`octanest-git` as the only git process boundary** — Callers use `GitBackend`; CLI argv construction and future gitoxide live in this crate only.
-- **Same-origin Traefik** — Avoids cross-origin cookie issues in Compose; local Vite proxies mirror that path layout.
-- **`deploy/`** — Holds operator Traefik notes; primary routing is Compose labels on `web` and `api` (see root `docker-compose.yml`).
+- **Same-origin Traefik (Compose)** — Avoids cross-origin cookie issues locally; Docker provider requires a socket — **Compose-only**.
+- **Cloud gateway (`deploy/cloud`)** — File-configured Caddy mirrors Compose path priorities for Railway-class hosts; IaC in `.railway/railway.ts` (see [DEPLOYMENT.md](DEPLOYMENT.md)).
+- **`deploy/`** — Traefik notes for Compose; cloud ingress under `deploy/cloud/`.
 - **Stack presets** — Day-one `/new` templates are in-repo packs under `crates/octanest-api/assets/stack-presets/` (community PRs; no marketplace UI yet). See [guides/stack-presets.md](guides/stack-presets.md).
-- **Repos volume** — Compose binds `./var/repos` for bare git objects and `./var/lfs` for Git LFS OIDs; knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, `OCTANEST_LFS_DIR`, orphan/gc/LFS intervals).
+- **Repos volume** — Compose binds `./var/repos` for bare git objects and `./var/lfs` for Git LFS OIDs; cloud mounts `forge-data` at `/var`. Knobs in [CONFIGURATION.md](CONFIGURATION.md) (`OCTANEST_REPOS_DIR`, `OCTANEST_LFS_DIR`, orphan/gc/LFS intervals).
+
+
+## Actions control plane (Phase 19)
+
+Actions lives in `crates/octanest-api/src/actions/`:
+
+| Module | Role |
+|--------|------|
+| `parse` / `workflow` | YAML workflow discovery under `.github/workflows` |
+| `dispatch` / `events` | push + pull_request enqueue (queued jobs only) |
+| `runner_proto` | `/api/actions/*` runner HTTP |
+| `tokens` / `secrets` | Registration tokens; AES-GCM repo secrets |
+| `statuses` | Commit status publish for Phase 13 |
+| `rpc` / UI | Session RPC + Octane routes under `/$owner/$repo/actions` |
+
+**Registered runners only:** jobs stay `queued` until a compatible runner `fetch_task`s them. Custom `runs-on` labels match declared runner labels (`label[:schema[:args]]`, D-ACT-09). Official image: `docker/octanest-runner` (act_runner lineage). Compose profile `actions` — see [DEPLOYMENT.md](DEPLOYMENT.md). Operators bring compute; Octanest does not sell managed minutes (ACT-07 / D-ACT-10).
+
+Commit status contexts for Phase 13 required checks: `{workflow_name} / {job_key}` (YAML job id), published on job state transitions and queryable via `repo.commitStatus.list` (D-ACT-15 / D-ACT-16).

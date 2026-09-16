@@ -1,4 +1,5 @@
 import { useEffect, useState } from "octane";
+import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { Textarea } from "@/components/ui/textarea";
 import { renderGfm } from "@/lib/markdown";
 
@@ -74,9 +75,10 @@ export function MarkdownWritePreview(props: MarkdownWritePreviewProps) @{
         onInput={(e) => props.onValueChange((e.target as HTMLTextAreaElement).value)}
       />;
     } @else {
-      <div
-        className="prose prose-sm min-h-40 max-w-none rounded-md border border-border px-4 py-3"
-        dangerouslySetInnerHTML={{ __html: previewHtml }}
+      <MarkdownHtml
+        html={previewHtml as string}
+        className="min-h-40 rounded-md border border-border px-4 py-3"
+        data-testid="markdown-preview"
       />;
     }
   </div>;

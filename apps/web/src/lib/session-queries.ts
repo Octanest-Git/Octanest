@@ -116,6 +116,7 @@ export function clearSessionQueries(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: ["auth"] });
   void qc.invalidateQueries({ queryKey: ["admin"] });
   void qc.invalidateQueries({ queryKey: ["org"] });
+  void qc.invalidateQueries({ queryKey: ["notification"] });
 }
 
 /** Keep chrome in sync after profile/avatar updates without a full reload. */

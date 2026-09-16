@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Pull Requests
-current_plan: 0
-status: planning
-stopped_at: Completed 11.1-08-PLAN.md
-last_updated: "2026-09-15T18:01:52.315Z"
-last_activity: 2026-09-15
-last_activity_desc: 11.1-05 complete (smoke-protocol CI + GSD residual); all 11.1 SUMMARYs present; Phase 12 GitHub-parity CONTEXT locked
-state_head: d17d2854650cb1d13d1a66ab9e324b57a0309bff
+current_phase_name: Actions & Runners
+current_plan: 12
+status: complete
+stopped_at: Completed Phase 19 (19-00…19-11)
+last_updated: "2026-09-16T20:30:00.000Z"
+last_activity: 2026-09-16
+last_activity_desc: Phase 19 Actions & Runners complete (12/12 plans) on cursor/phase-19-actions-runners-c82f
+state_head: 8fb5cfe669142d09ff6484c51426c47e0b83d1fc
 progress:
   total_phases: 23
-  completed_phases: 0
-  total_plans: 156
-  completed_plans: 155
+  completed_phases: 1
+  total_plans: 210
+  completed_plans: 210
 milestone_name: milestone
-current_phase: 12
+current_phase: 19
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 12
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** `feat/phase-12-and-quality` — **Phase 11.1** executed (verify optional) · **Phase 12** ready to plan (`12-CONTEXT.md`)
+**Current focus:** Phase **19** Actions & Runners **complete** merged into `cursor/gsd-remaining-integrate-c82f` (umbrella #16 → main pending CI)
 
 ## Current Position
 
-Phase: **12** — Pull Requests (CONTEXT locked, GitHub parity) · **11.1** plans complete
-Current Plan: —
-Total Plans in Phase: TBD
-Status: All six 11.1 plans SUMMARY'd (chrome, coverage, forge e2e, smoke-protocol CI, GSD honesty). Next: `/gsd-plan-phase 12` or `/gsd-verify-work 11.1`
-Last activity: 2026-09-15 — Completed 11.1-05; Phase 12 discuss closed to GitHub parity
+Phase: **19** — Actions & Runners (**complete** — 12/12 plans)
+Current Plan: 12 / 12
+Total Plans in Phase: 12
+Status: Phase 19 complete (ACT-01…07) and merged to integrate.
+Last activity: 2026-09-16 — protoc CI/Docker + route-coverage for Actions settings/admin runners
 
-See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases/11.1-quality-hardening/`
+See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-actions-runners-c82f`
 
 ## Performance Metrics
 
@@ -164,6 +164,14 @@ See also: `.planning/phases/12-pull-requests/12-CONTEXT.md` · `.planning/phases
 | Phase 11.1 P05 | 9min | 2 tasks | 16 files |
 | Phase 11.1 P07 | 5min | 3 tasks | 9 files |
 | Phase 11.1 P08 | 6min | 2 tasks | 6 files |
+| Phase 13 P08 | 20min | 2 tasks | 4 files |
+| Phase 22 P01 | 2min | 3 tasks | 4 files |
+| Phase 22 P02 | 12min | 3 tasks | 11 files |
+| Phase 22 P03 | 5min | 2 tasks | 3 files |
+| Phase 19 P08 | 15min | 2 tasks | 7 files |
+| Phase 19 P09 | 35min | 3 tasks | 15 files |
+| Phase 19 P10 | 90 | 3 tasks | - files |
+| Phase 19 P11 | 20min | 2 tasks | 6 files |
 
 # Project State
 
@@ -178,7 +186,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 Phase: 12 — Pull Requests (discuss)
 Current Plan: —
-Total Plans in Phase: TBD
+Total Plans in Phase: 8
 Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
 Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
 
@@ -554,6 +562,10 @@ Recent decisions affecting current work:
 - [Phase 11.1]: Admin LFS: forge-admin stack-browser + happy-dom mount; raw-source Wave 0 insufficient (G-11.1-15)
 - [Phase 12]: Route coverage: declarative manifest + bun checker; layoutOnly excludes Outlet shells
 - [Phase 12]: Included forge-admin stack-browser evidence for admin/lfs and admin/packages (11.1-07)
+- [Phase 12]: Branch protection: Settings panel CRUD + merge blockers + shared evaluate/hooks
+- [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
+- [Phase 22]: Cloud gateway is Caddy file-config; forge-data volume at /var; human-only railway apply
+- [Phase 22]: Phase 22 VALIDATION marks live Railway apply as human-verify only
 
 ### Pending Todos
 
@@ -575,8 +587,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-15T18:01:52.187Z
-Stopped at: Completed 11.1-08-PLAN.md
+Last session: 2026-09-16T20:29:31.437Z
+Stopped at: Completed Phase 19 (19-00…19-11)
 Resume file: None
 
 ## Accumulated Context

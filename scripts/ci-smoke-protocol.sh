@@ -32,8 +32,13 @@ trap cleanup EXIT
 echo "==> docker compose config"
 docker compose -f "$COMPOSE_FILE" config >/dev/null
 
-echo "==> docker compose up --build -d --wait"
-docker compose -f "$COMPOSE_FILE" up --build -d --wait
+if [[ "${OCTANEST_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
+  echo "==> docker compose up -d --wait (OCTANEST_COMPOSE_SKIP_BUILD=1; using preloaded images)"
+  docker compose -f "$COMPOSE_FILE" up -d --wait
+else
+  echo "==> docker compose up --build -d --wait"
+  docker compose -f "$COMPOSE_FILE" up --build -d --wait
+fi
 
 echo "==> wait for ${BASE_URL}/health"
 ok=0

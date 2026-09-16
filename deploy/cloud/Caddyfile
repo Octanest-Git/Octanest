@@ -1,0 +1,40 @@
+# Octanest Cloud gateway — Caddyfile
+#
+# File-configured reverse proxy (D-CLOUD-03). Mirrors Compose Traefik path
+# priorities without a Docker socket. Public Host is catch-all (Railway TLS /
+# custom domain); do not require Host(localhost).
+#
+# Upstream hosts come from Railway private networking (set via env on the
+# gateway service). Defaults match service names on the private network.
+
+{
+	# Railway terminates TLS at the edge; listen on the assigned PORT.
+	auto_https off
+}
+
+:{$PORT:8080} {
+	encode gzip
+
+	# Priority ≈ Traefik 110 — Smart HTTP git
+	@git path_regexp git ^/[^/]+/[^/]+\.git
+	handle @git {
+		reverse_proxy {$API_HOST:api.railway.internal}:{$API_PORT:8080}
+	}
+
+	# Priority ≈ Traefik 110 — package registries
+	@packages path /v2/* /npm/* /generic/* /v2 /npm /generic
+	handle @packages {
+		reverse_proxy {$API_HOST:api.railway.internal}:{$API_PORT:8080}
+	}
+
+	# Priority ≈ Traefik 100 — API surface
+	@api path /api/* /uploads/* /health /api /uploads
+	handle @api {
+		reverse_proxy {$API_HOST:api.railway.internal}:{$API_PORT:8080}
+	}
+
+	# Priority ≈ Traefik 1 — SPA / web
+	handle {
+		reverse_proxy {$WEB_HOST:web.railway.internal}:{$WEB_PORT:3000}
+	}
+}

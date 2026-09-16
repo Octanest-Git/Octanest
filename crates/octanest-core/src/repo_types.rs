@@ -75,6 +75,14 @@ pub struct RepoTemplateOption {
     pub default_gitignore: Option<String>,
 }
 
+/// Parent summary when this repo is a fork (D-SOC-16).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForkParentSummary {
+    pub id: String,
+    pub owner: String,
+    pub name: String,
+}
+
 /// Public repository metadata returned over RPC.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoPublic {
@@ -95,6 +103,63 @@ pub struct RepoPublic {
     /// Caller has Write capability (D-ORG-05).
     #[serde(default)]
     pub can_write: bool,
+    /// Denormalized star counter (D-SOC-02 / D-SOC-03).
+    #[serde(default)]
+    pub star_count: i64,
+    /// Whether the authenticated viewer has starred this repo.
+    #[serde(default)]
+    pub viewer_has_starred: bool,
+    /// True when this repository is a fork of another.
+    #[serde(default)]
+    pub is_fork: bool,
+    /// Fork network root id (own id for roots) — D-SOC-14 / D-PR-01.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fork_network_id: Option<String>,
+    /// Immediate parent when `is_fork` (D-SOC-16).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub forked_from: Option<ForkParentSummary>,
+}
+
+/// `repo.star` / `repo.unstar` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoStarRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+/// `user.listStarred` — caller's starred repos (D-SOC-03).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListStarredRequest {
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `repo.explore` — public discovery listing (D-SOC-09…11).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoExploreRequest {
+    #[serde(default)]
+    pub q: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+/// `user.getPublicProfile` — public profile by username (D-SOC-06 / D-SOC-08).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetPublicProfileRequest {
+    pub username: String,
+}
+
+/// Public profile DTO — never includes email (D-SOC-06).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PublicUserProfile {
+    pub username: String,
+    pub display_name: String,
+    pub bio: String,
+    pub avatar_url: Option<String>,
 }
 
 /// `repo.listMine` — caller's non-deleted repos, recently updated first (GIT-01 / D-13).
@@ -200,6 +265,91 @@ pub struct RepoCommitsRequest {
 
 fn default_commits_limit() -> u32 {
     30
+}
+
+/// `repo.search` type discriminator (D-SRCH-14).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum RepoSearchType {
+    Code,
+    Commits,
+    Issues,
+    Pulls,
+}
+
+impl RepoSearchType {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Code => "code",
+            Self::Commits => "commits",
+            Self::Issues => "issues",
+            Self::Pulls => "pulls",
+        }
+    }
+}
+
+fn default_search_limit() -> u32 {
+    30
+}
+
+/// `repo.search` input (GIT-18 / D-SRCH-14).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSearchRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "type")]
+    pub search_type: RepoSearchType,
+    #[serde(default)]
+    pub q: String,
+    /// Optional tree-ish; omit / empty → default branch (D-SRCH-06).
+    #[serde(default, rename = "ref")]
+    pub ref_name: Option<String>,
+    #[serde(default)]
+    pub offset: u32,
+    #[serde(default = "default_search_limit")]
+    pub limit: u32,
+}
+
+/// One hit in `repo.search` results (tagged by `kind`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum RepoSearchHit {
+    Code {
+        path: String,
+        line: u32,
+        content: String,
+    },
+    Commit {
+        sha: String,
+        short_sha: String,
+        subject: String,
+        author_name: String,
+        authored_at: String,
+    },
+    Issue {
+        number: i64,
+        title: String,
+        state: String,
+    },
+    Pull {
+        number: i64,
+        title: String,
+        state: String,
+    },
+}
+
+/// `repo.search` response.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoSearchResponse {
+    #[serde(rename = "type")]
+    pub search_type: RepoSearchType,
+    pub q: String,
+    pub hits: Vec<RepoSearchHit>,
+    /// Soft cap / timeout truncated (D-SRCH-08).
+    #[serde(default)]
+    pub truncated: bool,
+    pub offset: u32,
+    pub limit: u32,
 }
 
 /// One commit row for history list.

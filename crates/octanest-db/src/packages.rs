@@ -1024,7 +1024,7 @@ pub async fn sum_package_blob_bytes_for_owner(
         }
         DbPool::Postgres(p) => {
             let v: Option<i64> = sqlx::query_scalar(
-                r#"SELECT COALESCE(SUM(DISTINCT b.size_bytes), 0)
+                r#"SELECT COALESCE(SUM(DISTINCT b.size_bytes), 0)::bigint
                    FROM package_blobs b
                    JOIN package_blob_refs r ON r.blob_digest = b.digest
                    JOIN package_versions v ON v.id = r.package_version_id
@@ -1101,7 +1101,7 @@ pub async fn list_package_usage_for_owner(
         DbPool::Postgres(p) => {
             let rows = sqlx::query(
                 r#"SELECT p.id AS package_id, p.name, p.format,
-                          COALESCE(SUM(DISTINCT b.size_bytes), 0) AS bytes
+                          COALESCE(SUM(DISTINCT b.size_bytes), 0)::bigint AS bytes
                    FROM packages p
                    LEFT JOIN package_versions v ON v.package_id = p.id
                    LEFT JOIN package_blob_refs r ON r.package_version_id = v.id

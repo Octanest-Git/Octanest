@@ -16,6 +16,10 @@ path = "src/main.rs"
 name = "rpc-gen"
 path = "src/bin/rpc_gen.rs"
 
+[[bin]]
+name = "octanest-protection-hook"
+path = "src/bin/protection_hook.rs"
+
 [dependencies]
 octanest-core = { path = "../octanest-core" }
 octanest-db = { path = "../octanest-db" }
@@ -37,6 +41,8 @@ reqwest = { version = "0.13.5", features = ["rustls", "json"] }
 argon2 = "0.6"
 password-hash = { version = "0.6", features = ["alloc", "phc", "getrandom"] }
 sha2 = "0.11.0"
+aes-gcm = "0.10"
+getrandom = "0.2"
 rand = "0.10.2"
 uuid = { version = "1.26.0", features = ["v4"] }
 chrono = "0.4.45"
@@ -49,6 +55,8 @@ include_dir = "0.7.4"
 tempfile = "3"
 ssh-key = { version = "=0.7.0-rc.11", features = ["std", "alloc"] }
 russh = { version = "0.63", features = ["aws-lc-rs"] }
+serde_yaml = "0.9"
+prost = "0.13"
 
 [dev-dependencies]
 http-body-util = "0.1"
@@ -56,3 +64,6 @@ tower = { version = "0.5", features = ["util"] }
 tokio-tungstenite = "0.26"
 tempfile = "3"
 wiremock = "0.6.5"
+
+[build-dependencies]
+prost-build = "0.13"

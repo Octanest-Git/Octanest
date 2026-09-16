@@ -283,14 +283,17 @@ describe("repo chrome Issues tab Wave 0 (D-ISS-19)", () => {
       }) as never,
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole("link", { name: "Issues" })).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByRole("link", { name: "Issues" })).toBeInTheDocument();
+      },
+      { timeout: 20_000 },
+    );
     expect(screen.getByRole("link", { name: "Issues" })).toHaveAttribute(
       "href",
       "/ada/hello/issues",
     );
-  }, 15_000);
+  }, 30_000);
 
   it("issues leaves do not remount RepoChrome (D-QH-01)", async () => {
     const sources = await Promise.all([

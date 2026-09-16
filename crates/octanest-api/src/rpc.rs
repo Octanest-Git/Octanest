@@ -18,13 +18,16 @@ use crate::auth::verify_reset;
 use crate::email::EmailSender;
 use crate::issue;
 use crate::label;
+use crate::notification;
 use crate::org;
 use crate::pat;
+use crate::pull;
 use crate::release;
 use crate::ssh_keys;
 use crate::repo;
 use crate::user;
 use crate::user::rate_limit::LookupLimiter;
+use crate::webhook;
 
 pub const VERSION_HEADER: &str = "Octanest-RPC-Version";
 
@@ -46,12 +49,16 @@ pub struct RpcCtx {
     pub repos_dir: PathBuf,
     pub lfs_dir: PathBuf,
     pub release_assets_dir: PathBuf,
+    pub actions_log_dir: PathBuf,
     pub git: Arc<dyn GitBackend>,
     pub env_name: String,
     pub session: Option<ResolvedSession>,
     pub set_cookie: Option<CookieChange>,
     /// Per-session `user.lookup` rate limiter (T-10-03).
     pub lookup_limiter: Arc<Mutex<LookupLimiter>>,
+    pub search_timeout_ms: u64,
+    pub search_max_matches: u32,
+    pub search_max_files: u32,
 }
 
 pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
@@ -69,13 +76,18 @@ pub fn check_version_header(value: Option<&str>) -> Result<(), AppError> {
 }
 
 pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
-    // D-11 / T-06-06: empty-instance lock — only bootstrap_* + health until setup completes.
-    // confirm_admin_credentials stays off the list (ENV path already has users).
+    // D-11 / T-06-06: empty-instance lock — bootstrap_* + health/db_probe diagnostics
+    // until setup completes. confirm_admin_credentials stays off the list (ENV path
+    // already has users). db_probe is allowlisted so compose dialect smokes work
+    // before bootstrap (read-only probe_count / dialect).
     match bootstrap::needs_setup(&ctx.db).await {
         Ok(true) => {
             let allowed = matches!(
                 req.procedure.as_str(),
-                "auth.bootstrap_status" | "auth.bootstrap_setup" | "system.health"
+                "auth.bootstrap_status"
+                    | "auth.bootstrap_setup"
+                    | "system.health"
+                    | "system.db_probe"
             );
             if !allowed {
                 return RpcResponse::err(AppError::new(
@@ -205,11 +217,19 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
+        "user.getPublicProfile" => match profile::get_public_profile(ctx, req.input).await {
+            Ok(profile) => RpcResponse::ok(profile),
+            Err(e) => RpcResponse::err(e),
+        },
         "user.update_profile" => match profile::update_profile(ctx, req.input).await {
             Ok(user) => RpcResponse::ok(user),
             Err(e) => RpcResponse::err(e),
         },
         "user.lookup" => match user::lookup(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
+        "user.listStarred" => match user::list_starred(ctx, req.input).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
         },
@@ -305,6 +325,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.fork" => match repo::fork(ctx, req.input).await {
+            Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.star" => match repo::star(ctx, req.input).await {
+            Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.unstar" => match repo::unstar(ctx, req.input).await {
+            Ok(repo) => RpcResponse::ok(repo),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.explore" => match repo::explore(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.get" => match repo::get(ctx, req.input).await {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
@@ -335,6 +371,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
         },
         "repo.blame" => match repo::blame(ctx, req.input).await {
             Ok(blame) => RpcResponse::ok(blame),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.search" => match repo::search(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
         "repo.branchCreate" => match repo::branch_create(ctx, req.input).await {
@@ -405,6 +445,84 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.branchProtection.list" => match repo::branch_protection_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.branchProtection.create" => {
+            match repo::branch_protection_create(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.branchProtection.update" => {
+            match repo::branch_protection_update(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.branchProtection.delete" => {
+            match repo::branch_protection_delete(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.commitStatus.create" => match repo::commit_status_create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.commitStatus.list" => match repo::commit_status_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.listRuns" => match crate::actions::rpc::list_runs(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.getRun" => match crate::actions::rpc::get_run(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.getJobLog" => match crate::actions::rpc::get_job_log(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.secrets.list" => {
+            match crate::actions::rpc::list_secrets(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.secrets.put" => match crate::actions::rpc::put_secret(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.secrets.delete" => {
+            match crate::actions::rpc::delete_secret(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.getEnabled" => match crate::actions::rpc::get_enabled(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.setEnabled" => match crate::actions::rpc::set_enabled(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.actions.createRegistrationToken" => {
+            match crate::actions::rpc::admin_create_registration_token(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "admin.actions.listRunners" => {
+            match crate::actions::rpc::admin_list_runners(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
         "issue.create" => match issue::create(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
@@ -442,6 +560,22 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "issue.comments.create" => match issue::comments_create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.list" => match notification::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.unreadCount" => match notification::unread_count(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.markRead" => match notification::mark_read(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "notification.markAllRead" => match notification::mark_all_read(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
@@ -485,6 +619,86 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "pull.create" => match pull::create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.get" => match pull::get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.list" => match pull::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.update" => match pull::update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.close" => match pull::close(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reopen" => match pull::reopen(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.files" => match pull::files(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.commits" => match pull::commits(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.list" => match pull::comments_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.create" => match pull::comments_create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.comments.resolve" => match pull::comments_resolve(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.list" => match pull::reviews_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.submit" => match pull::reviews_submit(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviews.dismiss" => match pull::reviews_dismiss(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.list" => match pull::review_requests_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.add" => match pull::review_requests_add(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.reviewRequests.remove" => match pull::review_requests_remove(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "pull.merge" => match pull::merge(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mergeSettings.get" => match pull::merge_settings_get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mergeSettings.update" => match pull::merge_settings_update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "release.create" => match release::create(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
@@ -506,6 +720,42 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "release.deleteAsset" => match release::delete_asset(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.create" => match webhook::create(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.list" => match webhook::list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.get" => match webhook::get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.update" => match webhook::update(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.delete" => match webhook::delete(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.deliveries.list" => match webhook::deliveries_list(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.deliveries.get" => match webhook::deliveries_get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.ping" => match webhook::ping(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "webhook.redeliver" => match webhook::redeliver(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

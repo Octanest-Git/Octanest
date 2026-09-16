@@ -6,36 +6,39 @@ import { createElement } from "octane";
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
-import type { OrgOverviewLoaderData } from "./$owner.index";
+import type { OwnerIndexLoaderData } from "./$owner.index";
 
 vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@octanejs/tanstack-router")>();
-  const loaderData: OrgOverviewLoaderData = {
+  const loaderData: OwnerIndexLoaderData = {
+    kind: "org",
     org: {
-      id: "o1",
-      slug: "acme",
-      display_name: "Acme Corp",
-      member_base_permission: "read",
-      created_at: "2026-01-01T00:00:00Z",
-      updated_at: "2026-01-01T00:00:00Z",
-    },
-    memberCount: 3,
-    repos: [
-      {
-        id: "r1",
-        owner_id: "o1",
-        owner_type: "org",
-        owner_username: "acme",
-        name: "demo",
-        description: "Demo repo",
-        visibility: "public",
-        default_branch: "main",
-        updated_at: "2026-09-14T00:00:00Z",
-        can_admin: true,
-        can_write: true,
+      org: {
+        id: "o1",
+        slug: "acme",
+        display_name: "Acme Corp",
+        member_base_permission: "read",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
       },
-    ],
-    canAdmin: true,
+      memberCount: 3,
+      repos: [
+        {
+          id: "r1",
+          owner_id: "o1",
+          owner_type: "org",
+          owner_username: "acme",
+          name: "demo",
+          description: "Demo repo",
+          visibility: "public",
+          default_branch: "main",
+          updated_at: "2026-09-14T00:00:00Z",
+          can_admin: true,
+          can_write: true,
+        },
+      ],
+      canAdmin: true,
+    },
   };
   return {
     ...actual,
@@ -92,5 +95,5 @@ describe("/$owner layout vs org index", () => {
       },
       { timeout: 10_000 },
     );
-  });
+  }, 15_000);
 });

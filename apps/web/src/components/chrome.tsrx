@@ -1,4 +1,4 @@
-import { Menu, Plus, X } from "@octanejs/lucide";
+import { Bell, Menu, Plus, X } from "@octanejs/lucide";
 import { Link, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { apiClient } from "@/lib/api-client";
+import { notificationUnreadCountQueryOptions } from "@/lib/notification-queries";
 import { clearSessionQueries, orgListMineQueryOptions } from "@/lib/session-queries";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
@@ -165,10 +166,17 @@ function AccountMenu({
       <span className="hidden text-muted-foreground md:inline">{"@" + user.username}</span>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" className="min-w-56">
-      <div className="px-2 py-2" role="presentation">
-        <p className="truncate text-[14px] font-medium text-foreground">{displayName}</p>
-        <p className="truncate text-[13px] text-muted-foreground">{"@" + user.username}</p>
-      </div>
+      <DropdownMenuItem
+        className="h-auto cursor-pointer flex-col items-start gap-0.5 py-2"
+        aria-label={`View @${user.username}'s profile`}
+        onClick={() => {
+          onNavigated?.();
+          window.location.assign(`/${user.username}`);
+        }}
+      >
+        <span className="truncate text-[14px] font-medium text-foreground">{displayName}</span>
+        <span className="truncate text-[13px] text-muted-foreground">{"@" + user.username}</span>
+      </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem
         onClick={() => {
@@ -181,7 +189,7 @@ function AccountMenu({
       <DropdownMenuItem
         onClick={() => {
           onNavigated?.();
-          window.location.assign("/settings/profile");
+          window.location.assign("/settings/general");
         }}
       >
         Settings
@@ -221,6 +229,38 @@ function AccountMenu({
       <DropdownMenuItem onClick={() => void logout()}>Sign out</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>;
+}
+
+function NotificationsBell({ onNavigated }: { onNavigated?: () => void }) @{
+  const unreadQ = useQuery(notificationUnreadCountQueryOptions());
+  const countNum = Number(unreadQ.data ?? 0);
+  const count = Number.isFinite(countNum) ? countNum : 0;
+  const label =
+    count > 0
+      ? (("Notifications (" + String(count) + " unread)") as string)
+      : ("Notifications" as string);
+  const badgeText = (count > 99 ? "99+" : String(count)) as string;
+
+  <Link
+    to="/notifications"
+    preload="intent"
+    aria-label={label}
+    className={cn(
+      "relative inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+      "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
+    )}
+    onClick={onNavigated}
+  >
+    <Bell aria-hidden size={18} />
+    @if (count > 0) {
+      <span
+        aria-hidden
+        className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground"
+      >
+        {badgeText}
+      </span>;
+    }
+  </Link>;
 }
 
 function AccountActions({
@@ -265,6 +305,7 @@ function AccountActions({
         className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
       >
         <CreateMenu onNavigated={onNavigated} />
+        <NotificationsBell onNavigated={onNavigated} />
         <AccountMenu user={user} onNavigated={onNavigated} />
       </div>
     );
@@ -333,7 +374,9 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
     )}
   >
     <div className="mx-auto flex max-w-6xl flex-col gap-3 px-3 py-3 sm:px-4">
-      <ThemeSelect layout="panel" />
+      @if (needsSetup) {
+        <ThemeSelect layout="panel" />;
+      }
 
       @if (pending || user === undefined || needsSetup === null) {
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Account">
@@ -351,7 +394,12 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
       } @else {
         @if (user) {
           <div className="flex flex-col">
-            <div className="mb-1 flex items-center gap-3 rounded-md px-3 py-2">
+            <a
+              href={`/${user.username}`}
+              className="mb-1 flex items-center gap-3 rounded-md px-3 py-2 no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`View @${user.username}'s profile`}
+              onClick={onClose}
+            >
               <AccountAvatar user={user} size="md" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-medium text-foreground">
@@ -361,7 +409,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
                   {"@" + user.username}
                 </p>
               </div>
-            </div>
+            </a>
             <div className="flex flex-col gap-0.5" role="list">
               <button
                 type="button"
@@ -403,10 +451,13 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
               <p className="px-3 pt-2 pb-1 text-[12px] font-medium text-muted-foreground">
                 Account
               </p>
+              <a href="/notifications" className={mobileNavItemClass} onClick={onClose}>
+                Notifications
+              </a>
               <a href="/" className={mobileNavItemClass} onClick={onClose}>
                 Your repositories
               </a>
-              <a href="/settings/profile" className={mobileNavItemClass} onClick={onClose}>
+              <a href="/settings/general" className={mobileNavItemClass} onClick={onClose}>
                 Settings
               </a>
               @if (user.role === "sys-admin") {
@@ -511,6 +562,7 @@ function MobileNavSheet({ onClose }: { onClose: () => void }) @{
 
 export function SiteHeader() @{
   const [menuOpen, setMenuOpen] = useState(false);
+  const { needsSetup } = useChromeAccountState();
 
   const closeMenu = useEffectEvent(() => setMenuOpen(false));
 
@@ -549,16 +601,19 @@ export function SiteHeader() @{
 
   // Fixed overlay stays inside <header> so we don't insert siblings next to
   // view-transition-named <main> (that caused insertBefore DOM errors).
-  <header data-site-header className="sticky top-0 z-50 border-b border-border bg-card">
-    <div className="mx-auto grid h-14 max-w-6xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 px-3 sm:gap-x-3 sm:px-4 md:h-16 md:gap-x-4">
+  <header
+    data-site-header
+    className="sticky top-0 z-50 border-b border-border bg-header/95 backdrop-blur-md supports-backdrop-filter:bg-header/85"
+  >
+    <div className="mx-auto grid h-14 max-w-6xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 px-3 sm:gap-x-3 sm:px-4 md:h-[3.75rem] md:gap-x-4">
       <Link
         to="/"
         preload="intent"
-        className="col-start-1 row-start-1 flex shrink-0 items-center gap-2 no-underline"
+        className="col-start-1 row-start-1 flex shrink-0 items-center gap-2.5 no-underline"
         onClick={closeMenu}
       >
         <OctanestMark size={32} />
-        <span className="hidden font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground md:inline">
+        <span className="hidden font-[family-name:var(--font-display)] text-[22px] font-semibold tracking-tight text-foreground md:inline">
           Octanest
         </span>
       </Link>
@@ -566,13 +621,15 @@ export function SiteHeader() @{
       <GlobalSearch className="col-start-2 row-start-1" />
 
       <div className="col-start-3 row-start-1 hidden items-center justify-end gap-2 md:flex">
-        <ThemeSelect />
+        @if (needsSetup) {
+          <ThemeSelect />;
+        }
         <AccountActions />
       </div>
 
       <button
         type="button"
-        className="col-start-3 row-start-1 inline-flex h-11 w-11 shrink-0 items-center justify-center justify-self-end rounded-md border border-border bg-card text-foreground outline-none transition-colors hover:border-foreground/30 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:hidden"
+        className="col-start-3 row-start-1 inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-md border border-border bg-card text-foreground outline-none transition-colors hover:border-foreground/25 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:hidden"
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
         aria-controls="mobile-nav"
@@ -601,9 +658,11 @@ export function SiteHeader() @{
 }
 
 export function SiteFooter() @{
-  <footer className="border-t border-border bg-card/60 py-8 text-[14px] text-muted-foreground">
-    <div className="mx-auto flex max-w-6xl items-center justify-between px-4">
-      <span>© Octanest</span>
+  <footer className="border-t border-border bg-header py-10 text-[14px] text-muted-foreground">
+    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4">
+      <span className="font-[family-name:var(--font-display)] text-[13px] font-medium tracking-tight text-foreground/80">
+        © Octanest
+      </span>
       <Link
         to="/status"
         preload="intent"

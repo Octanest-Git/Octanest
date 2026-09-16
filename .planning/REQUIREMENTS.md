@@ -10,14 +10,14 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 ### Platform & delivery
 
 - [ ] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
-- [ ] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
-- [ ] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
+- [x] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
+- [x] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
 - [ ] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
 - [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
 - [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
 - [ ] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
 - [ ] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
-- [ ] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
+- [x] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
 - [ ] **PLAT-10**: UI components are built with ShadCN + Base UI
 - [ ] **PLAT-11**: Styles use Tailwind CSS v4 with CSS-based configuration (CSS is the Tailwind config source of truth)
 
@@ -57,7 +57,7 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **GIT-15**: User can download release assets from the web UI
 - [x] **GIT-16**: User with permission can rename a repository
 - [x] **GIT-17**: User with permission can transfer a repository to another user or organization
-- [ ] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
+- [x] **GIT-18**: User can search code, commits, issues, and PRs within a repository they can read
 
 ### Organizations & permissions
 
@@ -65,19 +65,19 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 - [x] **ORG-02**: Org owner can assign member roles that control repo access
 - [x] **ORG-03**: Repo owner can set visibility (public/private) and collaborator permissions
 - [x] **ORG-04**: Unauthorized users cannot read private repos or push without permission
-- [ ] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
-- [ ] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
+- [x] **ORG-05**: Repo admin can configure branch protection rules (e.g. require reviews and/or status checks before merge)
+- [x] **ORG-06**: Protected branch rules are enforced on direct pushes and on PR merges
 
 ### Pull requests & review
 
-- [ ] **PR-01**: User can open a pull request from a branch (same repo or fork)
-- [ ] **PR-02**: User can view PR diff, commits, and conversation
-- [ ] **PR-03**: User can comment on a PR (general and line comments)
-- [ ] **PR-04**: User can request changes / approve a PR
-- [ ] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
-- [ ] **PR-06**: User can close or reopen a PR
-- [ ] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
-- [ ] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
+- [x] **PR-01**: User can open a pull request from a branch (same repo or fork)
+- [x] **PR-02**: User can view PR diff, commits, and conversation
+- [x] **PR-03**: User can comment on a PR (general and line comments)
+- [x] **PR-04**: User can request changes / approve a PR
+- [x] **PR-05**: User with permission can merge a PR choosing merge commit, squash, or rebase
+- [x] **PR-06**: User can close or reopen a PR
+- [x] **PR-07**: Repo settings can enable/disable each merge strategy (merge commit, squash, rebase)
+- [x] **PR-08**: PR merge is blocked when applicable branch protection rules are not satisfied
 
 ### Issues
 
@@ -88,21 +88,21 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Notifications & webhooks
 
-- [ ] **NOTF-01**: Signed-in user receives in-app notifications for relevant issue and PR activity
-- [ ] **NOTF-02**: User can list and mark notifications as read
-- [ ] **HOOK-01**: Repo admin can create, edit, and delete outbound webhooks for repo events
-- [ ] **HOOK-02**: Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
-- [ ] **HOOK-03**: Repo admin can view recent webhook delivery attempts and response status
+- [x] **NOTF-01**: Signed-in user receives in-app notifications for relevant issue and PR activity
+- [x] **NOTF-02**: User can list and mark notifications as read
+- [x] **HOOK-01**: Repo admin can create, edit, and delete outbound webhooks for repo events
+- [x] **HOOK-02**: Instance delivers webhook payloads for subscribed events (at least push, PR, and issue events)
+- [x] **HOOK-03**: Repo admin can view recent webhook delivery attempts and response status
 
 ### Actions (CI for hosted repos)
 
-- [ ] **ACT-01**: Repo can define workflows in a GitHub Actions–compatible YAML layout
-- [ ] **ACT-02**: Push and pull_request events can trigger workflow runs
-- [ ] **ACT-03**: User can view workflow run status and logs in the UI
-- [ ] **ACT-04**: Operator can register and run an official Octanest runner image against an instance
-- [ ] **ACT-05**: Docs cover bringing up the official runner (Compose sidecar or standalone)
-- [ ] **ACT-06**: Forge exposes an Actions-compatible runner registration and job-dispatch protocol so third-party runner providers (Blacksmith-class) can integrate; custom `runs-on` labels are supported
-- [ ] **ACT-07**: Workflow jobs only run on registered runners; Octanest Cloud does not sell managed runner minutes in v1
+- [x] **ACT-01**: Repo can define workflows in a GitHub Actions–compatible YAML layout
+- [x] **ACT-02**: Push and pull_request events can trigger workflow runs
+- [x] **ACT-03**: User can view workflow run status and logs in the UI
+- [x] **ACT-04**: Operator can register and run an official Octanest runner image against an instance
+- [x] **ACT-05**: Docs cover bringing up the official runner (Compose sidecar or standalone)
+- [x] **ACT-06**: Forge exposes an Actions-compatible runner registration and job-dispatch protocol so third-party runner providers (Blacksmith-class) can integrate; custom `runs-on` labels are supported
+- [x] **ACT-07**: Workflow jobs only run on registered runners; Octanest Cloud does not sell managed runner minutes in v1
 
 ### Packages & registry
 
@@ -114,10 +114,10 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Social & explore
 
-- [ ] **SOC-01**: User can star and unstar repositories
-- [ ] **SOC-02**: User can view another user’s public profile and public repositories
-- [ ] **SOC-03**: Anonymous or signed-in user can browse an explore/discover page of public repositories
-- [ ] **SOC-04**: User can fork a public repository they can read
+- [x] **SOC-01**: User can star and unstar repositories
+- [x] **SOC-02**: User can view another user’s public profile and public repositories
+- [x] **SOC-03**: Anonymous or signed-in user can browse an explore/discover page of public repositories
+- [x] **SOC-04**: User can fork a public repository they can read
 
 ### Brand & experience
 
@@ -167,14 +167,14 @@ Deferred; not in the current roadmap until promoted.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PLAT-01 | Phase 1 | Pending |
-| PLAT-02 | Phase 22 | Pending |
-| PLAT-03 | Phase 22 | Pending |
+| PLAT-02 | Phase 22 | Complete |
+| PLAT-03 | Phase 22 | Complete |
 | PLAT-04 | Phase 1 | Pending |
 | PLAT-05 | Phase 1 | Pending |
 | PLAT-06 | Phase 1 | Pending |
 | PLAT-07 | Phase 2 | Pending |
 | PLAT-08 | Phase 2 | Pending |
-| PLAT-09 | Phase 22 | Pending |
+| PLAT-09 | Phase 22 | Complete |
 | PLAT-10 | Phase 1 | Pending |
 | PLAT-11 | Phase 1 | Pending |
 | AUTH-01 | Phase 4 | Complete |
@@ -208,46 +208,46 @@ Deferred; not in the current roadmap until promoted.
 | GIT-15 | Phase 15 | Complete |
 | GIT-16 | Phase 15 | Complete |
 | GIT-17 | Phase 15 | Complete |
-| GIT-18 | Phase 16 | Pending |
+| GIT-18 | Phase 16 | Complete |
 | ORG-01 | Phase 10 | Complete |
 | ORG-02 | Phase 10 | Complete |
 | ORG-03 | Phase 10 | Complete |
 | ORG-04 | Phase 10 | Complete |
-| ORG-05 | Phase 13 | Pending |
-| ORG-06 | Phase 13 | Pending |
-| PR-01 | Phase 12 | Pending |
-| PR-02 | Phase 12 | Pending |
-| PR-03 | Phase 12 | Pending |
-| PR-04 | Phase 12 | Pending |
-| PR-05 | Phase 12 | Pending |
-| PR-06 | Phase 12 | Pending |
-| PR-07 | Phase 12 | Pending |
-| PR-08 | Phase 13 | Pending |
+| ORG-05 | Phase 13 | Complete |
+| ORG-06 | Phase 13 | Complete |
+| PR-01 | Phase 12 | Complete |
+| PR-02 | Phase 12 | Complete |
+| PR-03 | Phase 12 | Complete |
+| PR-04 | Phase 12 | Complete |
+| PR-05 | Phase 12 | Complete |
+| PR-06 | Phase 12 | Complete |
+| PR-07 | Phase 12 | Complete |
+| PR-08 | Phase 13 | Complete |
 | ISS-01 | Phase 11 | Complete |
 | ISS-02 | Phase 11 | Complete |
 | ISS-03 | Phase 11 | Complete |
 | ISS-04 | Phase 11 | Complete |
-| NOTF-01 | Phase 17 | Pending |
-| NOTF-02 | Phase 17 | Pending |
-| HOOK-01 | Phase 18 | Pending |
-| HOOK-02 | Phase 18 | Pending |
-| HOOK-03 | Phase 18 | Pending |
-| ACT-01 | Phase 19 | Pending |
-| ACT-02 | Phase 19 | Pending |
-| ACT-03 | Phase 19 | Pending |
-| ACT-04 | Phase 19 | Pending |
-| ACT-05 | Phase 19 | Pending |
-| ACT-06 | Phase 19 | Pending |
-| ACT-07 | Phase 19 | Pending |
+| NOTF-01 | Phase 17 | Complete |
+| NOTF-02 | Phase 17 | Complete |
+| HOOK-01 | Phase 18 | Complete |
+| HOOK-02 | Phase 18 | Complete |
+| HOOK-03 | Phase 18 | Complete |
+| ACT-01 | Phase 19 | Complete |
+| ACT-02 | Phase 19 | Complete |
+| ACT-03 | Phase 19 | Complete |
+| ACT-04 | Phase 19 | Complete |
+| ACT-05 | Phase 19 | Complete |
+| ACT-06 | Phase 19 | Complete |
+| ACT-07 | Phase 19 | Complete |
 | PKG-01 | Phase 20 | Complete |
 | PKG-02 | Phase 20 | Complete |
 | PKG-03 | Phase 20 | Complete |
 | PKG-04 | Phase 20 | Complete |
 | PKG-05 | Phase 20 | Complete |
-| SOC-01 | Phase 21 | Pending |
-| SOC-02 | Phase 21 | Pending |
-| SOC-03 | Phase 21 | Pending |
-| SOC-04 | Phase 21 | Pending |
+| SOC-01 | Phase 21 | Complete |
+| SOC-02 | Phase 21 | Complete |
+| SOC-03 | Phase 21 | Complete |
+| SOC-04 | Phase 21 | Complete |
 | BRAND-01 | Phase 3 | Complete |
 | BRAND-02 | Phase 3 | Complete |
 | BRAND-03 | Phase 3 | Complete |

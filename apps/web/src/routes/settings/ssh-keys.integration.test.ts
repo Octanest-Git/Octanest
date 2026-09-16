@@ -159,7 +159,7 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     });
   }, 15_000);
 
-  it("settings secondary nav Profile | Personal access tokens | SSH keys", async () => {
+  it("settings secondary nav General | Profile | Personal access tokens | SSH keys", async () => {
     const mod = await loadSshKeysModule();
     const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(SshKeysPage);
@@ -169,9 +169,11 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     });
 
     const nav = container.querySelector('nav[aria-label="Account settings"]')!;
+    const general = nav.querySelector('a[href="/settings/general"]');
     const profile = nav.querySelector('a[href="/settings/profile"]');
     const tokens = nav.querySelector('a[href="/settings/tokens"]');
     const sshKeys = nav.querySelector('a[href="/settings/ssh-keys"]');
+    expect(general?.textContent).toBe("General");
     expect(profile?.textContent).toBe("Profile");
     expect(tokens?.textContent).toBe("Personal access tokens");
     expect(sshKeys?.textContent).toBe("SSH keys");

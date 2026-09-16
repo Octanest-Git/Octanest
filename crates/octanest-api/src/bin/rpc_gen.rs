@@ -196,6 +196,13 @@ export type CreateRepoRequest = {
   owner?: string | null;
 };
 
+export type ForkRepoRequest = {
+  owner: string;
+  name: string;
+  into_owner?: string | null;
+  into_name?: string | null;
+};
+
 export type RepoTemplateOption = {
   id: string;
   label: string;
@@ -220,8 +227,46 @@ export type RepoPublic = {
   visibility: RepoVisibility;
   default_branch: string;
   updated_at: string;
-  can_admin: boolean;
-  can_write: boolean;
+  can_admin?: boolean;
+  can_write?: boolean;
+  star_count?: number;
+  viewer_has_starred?: boolean;
+  is_fork?: boolean;
+  fork_network_id?: string | null;
+  forked_from?: ForkParentSummary | null;
+};
+
+export type ForkParentSummary = {
+  id: string;
+  owner: string;
+  name: string;
+};
+
+export type RepoStarRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ListStarredRequest = {
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoExploreRequest = {
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type GetPublicProfileRequest = {
+  username: string;
+};
+
+export type PublicUserProfile = {
+  username: string;
+  display_name: string;
+  bio: string;
+  avatar_url?: string | null;
 };
 
 export type RepoListMineResponse = {
@@ -369,6 +414,40 @@ export type RepoBlameResponse = {
   ref: string;
   lines: RepoBlameLine[];
   truncated: boolean;
+};
+
+export type RepoSearchType = "code" | "commits" | "issues" | "pulls";
+
+export type RepoSearchRequest = {
+  owner: string;
+  name: string;
+  type: RepoSearchType;
+  q?: string;
+  ref?: string | null;
+  offset?: number;
+  limit?: number;
+};
+
+export type RepoSearchHit =
+  | { kind: "code"; path: string; line: number; content: string }
+  | {
+      kind: "commit";
+      sha: string;
+      short_sha: string;
+      subject: string;
+      author_name: string;
+      authored_at: string;
+    }
+  | { kind: "issue"; number: number; title: string; state: string }
+  | { kind: "pull"; number: number; title: string; state: string };
+
+export type RepoSearchResponse = {
+  type: RepoSearchType;
+  q: string;
+  hits: RepoSearchHit[];
+  truncated: boolean;
+  offset: number;
+  limit: number;
 };
 
 export type RepoBranchCreateRequest = {
@@ -562,6 +641,202 @@ export type RepoCollaboratorsRemoveRequest = {
   name: string;
   user_id: string;
 };
+
+/** Classic branch protection rule (Phase 13 / ORG-05). */
+export type BranchProtectionRulePublic = {
+  id: string;
+  repo_id: string;
+  pattern: string;
+  require_reviews: boolean;
+  required_approving_review_count: number;
+  dismiss_stale_reviews: boolean;
+  require_conversation_resolution: boolean;
+  require_last_push_approval: boolean;
+  required_status_contexts: string[];
+  strict_status_checks: boolean;
+  allow_force_pushes: boolean;
+  allow_deletions: boolean;
+  enforce_admins: boolean;
+  required_linear_history: boolean;
+  lock_branch: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type BranchProtectionListResponse = {
+  rules: BranchProtectionRulePublic[];
+};
+
+export type BranchProtectionRuleInput = {
+  owner: string;
+  name: string;
+  pattern: string;
+  require_reviews?: boolean;
+  required_approving_review_count?: number;
+  dismiss_stale_reviews?: boolean;
+  require_conversation_resolution?: boolean;
+  require_last_push_approval?: boolean;
+  required_status_contexts?: string[];
+  strict_status_checks?: boolean;
+  allow_force_pushes?: boolean;
+  allow_deletions?: boolean;
+  enforce_admins?: boolean;
+  required_linear_history?: boolean;
+  lock_branch?: boolean;
+};
+
+export type BranchProtectionUpdateRequest = BranchProtectionRuleInput & {
+  id: string;
+};
+
+export type BranchProtectionDeleteRequest = {
+  owner: string;
+  name: string;
+  id: string;
+};
+
+export type CommitStatusState = "pending" | "success" | "failure" | "error";
+
+export type CommitStatusPublic = {
+  id: string;
+  repo_id: string;
+  sha: string;
+  context: string;
+  state: CommitStatusState;
+  description: string;
+  target_url?: string | null;
+  creator_id?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CommitStatusCreateRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+  context: string;
+  state: CommitStatusState;
+  description?: string;
+  target_url?: string | null;
+};
+
+export type CommitStatusListRequest = {
+  owner: string;
+  name: string;
+  sha: string;
+};
+
+export type CommitStatusListResponse = {
+  statuses: CommitStatusPublic[];
+};
+
+export type ActionRunPublic = {
+  id: string;
+  repository_id: string;
+  workflow_path: string;
+  workflow_name: string;
+  event: string;
+  head_sha: string;
+  head_ref: string;
+  status: string;
+  title: string;
+};
+
+export type ActionJobPublic = {
+  id: string;
+  run_id: string;
+  job_key: string;
+  name: string;
+  status: string;
+  runs_on: string[];
+};
+
+export type ActionRunsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionRunsListResponse = {
+  runs: ActionRunPublic[];
+};
+
+export type ActionRunGetRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+};
+
+export type ActionRunGetResponse = {
+  run: ActionRunPublic;
+  jobs: ActionJobPublic[];
+};
+
+export type ActionJobLogRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+  job_id: string;
+};
+
+export type ActionJobLogResponse = {
+  content: string;
+};
+
+export type ActionSecretMetaPublic = {
+  name: string;
+  updated_at: string;
+};
+
+export type ActionSecretsListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionSecretsListResponse = {
+  secrets: ActionSecretMetaPublic[];
+};
+
+export type ActionSecretPutRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+  value: string;
+};
+
+export type ActionSecretDeleteRequest = {
+  owner: string;
+  name: string;
+  secret_name: string;
+};
+
+export type ActionEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type ActionEnabledResponse = {
+  enabled: boolean;
+};
+
+export type ActionSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type ActionRunnerPublic = {
+  id: string;
+  name: string;
+  labels: string[];
+  ephemeral: boolean;
+  last_online?: string | null;
+  created_at: string;
+};
+
+export type ActionListRunnersResponse = {
+  runners: ActionRunnerPublic[];
+};
+
 
 export type MemberBasePermission = "none" | "read" | "write";
 
@@ -814,7 +1089,7 @@ export type IssueState = "open" | "closed";
 
 export type LabelScope = "org" | "repo";
 
-export type IssueLinkKind = "issue" | "pr_stub";
+export type IssueLinkKind = "issue" | "pr_stub" | "pr";
 
 export type IssueLinkPublic = {
   id: string;
@@ -845,6 +1120,270 @@ export type RemoveIssueLinkRequest = {
 
 export type IssueLinksListResponse = {
   links: IssueLinkPublic[];
+};
+
+export type PullState = "open" | "closed" | "merged";
+
+export type PullPublic = {
+  id: string;
+  repo_id: string;
+  number: number;
+  title: string;
+  body: string;
+  state: PullState;
+  draft: boolean;
+  author_id: string;
+  author_username: string;
+  base_ref: string;
+  base_sha: string;
+  head_repo_id: string;
+  head_owner: string;
+  head_name: string;
+  head_ref: string;
+  head_sha: string;
+  merged_at?: string | null;
+  merged_by?: string | null;
+  merge_commit_sha?: string | null;
+  merge_method?: "merge" | "squash" | "rebase" | null;
+  closed_at?: string | null;
+  closed_by?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullRequest = {
+  owner: string;
+  name: string;
+  title: string;
+  body?: string | null;
+  base_ref: string;
+  head_ref: string;
+  head_owner?: string | null;
+  head_name?: string | null;
+  draft?: boolean | null;
+};
+
+export type PullRefRequest = {
+  owner: string;
+  name: string;
+  number: number;
+};
+
+export type PullListRequest = {
+  owner: string;
+  name: string;
+  state?: string | null;
+  author?: string | null;
+  label?: string | null;
+  assignee?: string | null;
+  review_state?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type PullListResponse = {
+  pulls: PullPublic[];
+  total: number;
+  offset: number;
+  limit: number;
+};
+
+export type UpdatePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  title?: string | null;
+  body?: string | null;
+  base_ref?: string | null;
+  draft?: boolean | null;
+};
+
+export type MergeMethod = "merge" | "squash" | "rebase";
+
+export type MergePullRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  method: MergeMethod;
+  commit_title?: string | null;
+  commit_message?: string | null;
+  delete_branch?: boolean | null;
+};
+
+export type MergePullResponse = {
+  pull: PullPublic;
+  merge_commit_sha: string;
+};
+
+export type RepoMergeSettings = {
+  allow_merge_commit: boolean;
+  allow_squash_merge: boolean;
+  allow_rebase_merge: boolean;
+};
+
+export type UpdateRepoMergeSettingsRequest = {
+  owner: string;
+  name: string;
+  allow_merge_commit?: boolean | null;
+  allow_squash_merge?: boolean | null;
+  allow_rebase_merge?: boolean | null;
+};
+
+export type PullCommentPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+  outdated: boolean;
+  resolved: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CreatePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  body: string;
+  path?: string | null;
+  side?: string | null;
+  line?: number | null;
+  start_line?: number | null;
+  commit_sha?: string | null;
+};
+
+export type PullCommentsListResponse = {
+  comments: PullCommentPublic[];
+};
+
+export type ResolvePullCommentRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  comment_id: string;
+  resolved: boolean;
+};
+
+export type PullDiffFile = {
+  path: string;
+  status: string;
+  patch: string;
+};
+
+export type PullFilesResponse = {
+  files: PullDiffFile[];
+  empty: boolean;
+};
+
+export type PullCommitSummary = {
+  sha: string;
+  short_sha: string;
+  subject: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+};
+
+export type PullCommitsResponse = {
+  commits: PullCommitSummary[];
+};
+
+export type PullReviewState =
+  | "approved"
+  | "changes_requested"
+  | "commented"
+  | "dismissed";
+
+export type PullReviewPublic = {
+  id: string;
+  pull_id: string;
+  author_id: string;
+  author_username: string;
+  state: PullReviewState;
+  body: string;
+  commit_sha?: string | null;
+  submitted_at: string;
+  dismissed_at?: string | null;
+  dismiss_reason?: string | null;
+};
+
+export type SubmitPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  state: string;
+  body?: string | null;
+};
+
+export type DismissPullReviewRequest = {
+  owner: string;
+  name: string;
+  number: number;
+  review_id: string;
+  reason?: string | null;
+};
+
+export type PullReviewsListResponse = {
+  reviews: PullReviewPublic[];
+};
+
+export type PullReviewRequestMutate = {
+  owner: string;
+  name: string;
+  number: number;
+  username: string;
+};
+
+export type PullReviewRequestsListResponse = {
+  usernames: string[];
+};
+
+export type NotificationPublic = {
+  id: string;
+  reason: string;
+  subject_kind: string;
+  subject_repo_id: string;
+  owner: string;
+  repo: string;
+  subject_number: number;
+  subject_title: string;
+  actor_id: string;
+  actor_username: string;
+  created_at: string;
+  read_at?: string | null;
+};
+
+export type NotificationListRequest = {
+  filter?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type NotificationListResponse = {
+  notifications: NotificationPublic[];
+  total: number;
+};
+
+export type NotificationUnreadCountResponse = {
+  count: number;
+};
+
+export type NotificationMarkReadRequest = {
+  ids: string[];
+};
+
+export type NotificationMarkReadResponse = {
+  marked: number;
+};
+
+export type NotificationMarkAllReadResponse = {
+  marked: number;
 };
 
 export type RemoveIssueLinkResponse = {
@@ -1107,6 +1646,103 @@ export type DeleteReleaseAssetResponse = {
   ok: boolean;
 };
 
+export type WebhookPublic = {
+  id: string;
+  repo_id: string;
+  url: string;
+  secret_masked: string;
+  active: boolean;
+  events: string[];
+  name: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  secret?: string | null;
+};
+
+export type CreateWebhookRequest = {
+  owner: string;
+  name: string;
+  url: string;
+  secret: string;
+  events: string[];
+  active?: boolean | null;
+  description?: string | null;
+};
+
+export type UpdateWebhookRequest = {
+  owner: string;
+  name: string;
+  id: string;
+  url?: string | null;
+  secret?: string | null;
+  events?: string[] | null;
+  active?: boolean | null;
+  description?: string | null;
+};
+
+export type WebhookIdRequest = {
+  owner: string;
+  name: string;
+  id: string;
+};
+
+export type WebhookListRequest = {
+  owner: string;
+  name: string;
+};
+
+export type WebhookListResponse = {
+  webhooks: WebhookPublic[];
+};
+
+export type DeleteWebhookResponse = {
+  ok: boolean;
+};
+
+export type WebhookDeliveryPublic = {
+  id: string;
+  webhook_id: string;
+  delivery_guid: string;
+  event: string;
+  action: string;
+  status: string;
+  created_at: string;
+  http_status?: number | null;
+  error_message?: string | null;
+  attempt_count?: number;
+};
+
+export type WebhookDeliveriesListRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  limit?: number | null;
+};
+
+export type WebhookDeliveriesListResponse = {
+  deliveries: WebhookDeliveryPublic[];
+};
+
+export type WebhookDeliveryGetRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  delivery_id: string;
+};
+
+export type WebhookRedeliverRequest = {
+  owner: string;
+  name: string;
+  webhook_id: string;
+  delivery_id: string;
+};
+
+export type WebhookPingResponse = {
+  delivery_id: string;
+  delivery_guid: string;
+};
+
 export type IssueRevisionPublic = {
   id: string;
   issue_id: string;
@@ -1241,6 +1877,10 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<UserPublic>(opts, "user.update_profile", input),
       lookup: (input: UserLookupRequest) =>
         rpcCall<UserLookupResponse>(opts, "user.lookup", input),
+      listStarred: (input: ListStarredRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "user.listStarred", input),
+      getPublicProfile: (input: GetPublicProfileRequest) =>
+        rpcCall<PublicUserProfile>(opts, "user.getPublicProfile", input),
     },
     repo: {
       listMine: () => rpcCall<RepoListMineResponse>(opts, "repo.listMine", {}),
@@ -1249,6 +1889,11 @@ export function createClient(opts: CreateClientOptions) {
       createDefaults: () =>
         rpcCall<RepoCreateDefaults>(opts, "repo.createDefaults", {}),
       create: (input: CreateRepoRequest) => rpcCall<RepoPublic>(opts, "repo.create", input),
+      fork: (input: ForkRepoRequest) => rpcCall<RepoPublic>(opts, "repo.fork", input),
+      star: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.star", input),
+      unstar: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.unstar", input),
+      explore: (input: RepoExploreRequest) =>
+        rpcCall<RepoListMineResponse>(opts, "repo.explore", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
       tree: (input: RepoTreeRequest) => rpcCall<RepoTreeResponse>(opts, "repo.tree", input),
       blob: (input: RepoBlobRequest) => rpcCall<RepoBlobResponse>(opts, "repo.blob", input),
@@ -1260,6 +1905,8 @@ export function createClient(opts: CreateClientOptions) {
       compare: (input: RepoCompareRequest) =>
         rpcCall<RepoCompareResponse>(opts, "repo.compare", input),
       blame: (input: RepoBlameRequest) => rpcCall<RepoBlameResponse>(opts, "repo.blame", input),
+      search: (input: RepoSearchRequest) =>
+        rpcCall<RepoSearchResponse>(opts, "repo.search", input),
       branchCreate: (input: RepoBranchCreateRequest) =>
         rpcCall<RepoBranchMutationResponse>(opts, "repo.branchCreate", input),
       branchRename: (input: RepoBranchRenameRequest) =>
@@ -1297,6 +1944,42 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<RepoCollaboratorPublic>(opts, "repo.collaborators.update", input),
         remove: (input: RepoCollaboratorsRemoveRequest) =>
           rpcCall<{ ok: boolean }>(opts, "repo.collaborators.remove", input),
+      },
+      branchProtection: {
+        list: (input: RepoGetRequest) =>
+          rpcCall<BranchProtectionListResponse>(opts, "repo.branchProtection.list", input),
+        create: (input: BranchProtectionRuleInput) =>
+          rpcCall<BranchProtectionRulePublic>(opts, "repo.branchProtection.create", input),
+        update: (input: BranchProtectionUpdateRequest) =>
+          rpcCall<BranchProtectionRulePublic>(opts, "repo.branchProtection.update", input),
+        delete: (input: BranchProtectionDeleteRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "repo.branchProtection.delete", input),
+      },
+      commitStatus: {
+        create: (input: CommitStatusCreateRequest) =>
+          rpcCall<CommitStatusPublic>(opts, "repo.commitStatus.create", input),
+        list: (input: CommitStatusListRequest) =>
+          rpcCall<CommitStatusListResponse>(opts, "repo.commitStatus.list", input),
+      },
+      actions: {
+        listRuns: (input: ActionRunsListRequest) =>
+          rpcCall<ActionRunsListResponse>(opts, "repo.actions.listRuns", input),
+        getRun: (input: ActionRunGetRequest) =>
+          rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
+        getJobLog: (input: ActionJobLogRequest) =>
+          rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+        secrets: {
+          list: (input: ActionSecretsListRequest) =>
+            rpcCall<ActionSecretsListResponse>(opts, "repo.actions.secrets.list", input),
+          put: (input: ActionSecretPutRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.put", input),
+          delete: (input: ActionSecretDeleteRequest) =>
+            rpcCall<{ ok: boolean }>(opts, "repo.actions.secrets.delete", input),
+        },
+        getEnabled: (input: ActionEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.getEnabled", input),
+        setEnabled: (input: ActionSetEnabledRequest) =>
+          rpcCall<ActionEnabledResponse>(opts, "repo.actions.setEnabled", input),
       },
     },
     org: {
@@ -1377,6 +2060,89 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<RemoveIssueLinkResponse>(opts, "issue.links.remove", input),
       },
     },
+    pull: {
+      create: (input: CreatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.create", input),
+      get: (input: PullRefRequest) => rpcCall<PullPublic>(opts, "pull.get", input),
+      list: (input: PullListRequest) =>
+        rpcCall<PullListResponse>(opts, "pull.list", input),
+      update: (input: UpdatePullRequest) =>
+        rpcCall<PullPublic>(opts, "pull.update", input),
+      close: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.close", input),
+      reopen: (input: PullRefRequest) =>
+        rpcCall<PullPublic>(opts, "pull.reopen", input),
+      files: (input: PullRefRequest) =>
+        rpcCall<PullFilesResponse>(opts, "pull.files", input),
+      commits: (input: PullRefRequest) =>
+        rpcCall<PullCommitsResponse>(opts, "pull.commits", input),
+      merge: (input: MergePullRequest) =>
+        rpcCall<MergePullResponse>(opts, "pull.merge", input),
+      comments: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullCommentsListResponse>(opts, "pull.comments.list", input),
+        create: (input: CreatePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.create", input),
+        resolve: (input: ResolvePullCommentRequest) =>
+          rpcCall<PullCommentPublic>(opts, "pull.comments.resolve", input),
+      },
+      reviews: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewsListResponse>(opts, "pull.reviews.list", input),
+        submit: (input: SubmitPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.submit", input),
+        dismiss: (input: DismissPullReviewRequest) =>
+          rpcCall<PullReviewPublic>(opts, "pull.reviews.dismiss", input),
+      },
+      reviewRequests: {
+        list: (input: PullRefRequest) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.list",
+            input,
+          ),
+        add: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.add",
+            input,
+          ),
+        remove: (input: PullReviewRequestMutate) =>
+          rpcCall<PullReviewRequestsListResponse>(
+            opts,
+            "pull.reviewRequests.remove",
+            input,
+          ),
+      },
+    },
+    notification: {
+      list: (input: NotificationListRequest = {}) =>
+        rpcCall<NotificationListResponse>(opts, "notification.list", input),
+      unreadCount: (input: Record<string, never> = {}) =>
+        rpcCall<NotificationUnreadCountResponse>(
+          opts,
+          "notification.unreadCount",
+          input,
+        ),
+      markRead: (input: NotificationMarkReadRequest) =>
+        rpcCall<NotificationMarkReadResponse>(
+          opts,
+          "notification.markRead",
+          input,
+        ),
+      markAllRead: (input: Record<string, never> = {}) =>
+        rpcCall<NotificationMarkAllReadResponse>(
+          opts,
+          "notification.markAllRead",
+          input,
+        ),
+    },
+    mergeSettings: {
+      get: (input: RepoGetRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.get", input),
+      update: (input: UpdateRepoMergeSettingsRequest) =>
+        rpcCall<RepoMergeSettings>(opts, "repo.mergeSettings.update", input),
+    },
     release: {
       create: (input: CreateReleaseRequest) =>
         rpcCall<ReleasePublic>(opts, "release.create", input),
@@ -1390,6 +2156,28 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<DeleteReleaseResponse>(opts, "release.delete", input),
       deleteAsset: (input: DeleteReleaseAssetRequest) =>
         rpcCall<DeleteReleaseAssetResponse>(opts, "release.deleteAsset", input),
+    },
+    webhook: {
+      create: (input: CreateWebhookRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.create", input),
+      list: (input: WebhookListRequest) =>
+        rpcCall<WebhookListResponse>(opts, "webhook.list", input),
+      get: (input: WebhookIdRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.get", input),
+      update: (input: UpdateWebhookRequest) =>
+        rpcCall<WebhookPublic>(opts, "webhook.update", input),
+      delete: (input: WebhookIdRequest) =>
+        rpcCall<DeleteWebhookResponse>(opts, "webhook.delete", input),
+      ping: (input: WebhookIdRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.ping", input),
+      redeliver: (input: WebhookRedeliverRequest) =>
+        rpcCall<WebhookPingResponse>(opts, "webhook.redeliver", input),
+      deliveries: {
+        list: (input: WebhookDeliveriesListRequest) =>
+          rpcCall<WebhookDeliveriesListResponse>(opts, "webhook.deliveries.list", input),
+        get: (input: WebhookDeliveryGetRequest) =>
+          rpcCall<WebhookDeliveryPublic>(opts, "webhook.deliveries.get", input),
+      },
     },
     label: {
       listForRepo: (input: ListLabelsForRepoRequest) =>
@@ -1448,6 +2236,16 @@ export function createClient(opts: CreateClientOptions) {
         updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
           rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
         getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
+      },
+      actions: {
+        createRegistrationToken: () =>
+          rpcCall<ActionRegistrationTokenResponse>(
+            opts,
+            "admin.actions.createRegistrationToken",
+            {},
+          ),
+        listRunners: () =>
+          rpcCall<ActionListRunnersResponse>(opts, "admin.actions.listRunners", {}),
       },
     },
   };
@@ -1775,6 +2573,30 @@ export function repoBlameQueryOptions(
   };
 }
 
+export function repoSearchQueryOptions(
+  client: OctanestClient,
+  input: RepoSearchRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "search",
+      input.owner,
+      input.name,
+      input.type,
+      input.q ?? "",
+      input.ref ?? "",
+      input.offset ?? 0,
+      input.limit ?? 30,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.search(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function packagesListQueryOptions(
   client: OctanestClient,
   input: PackagesListRequest,
@@ -1783,6 +2605,56 @@ export function packagesListQueryOptions(
     queryKey: ["packages", "list", input] as const,
     queryFn: async () => {
       const res = await client.packages.list(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsListRunsQueryOptions(
+  client: OctanestClient,
+  input: ActionRunsListRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "listRuns", input.owner, input.name] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.listRuns(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetRunQueryOptions(
+  client: OctanestClient,
+  input: ActionRunGetRequest,
+) {
+  return {
+    queryKey: ["repo", "actions", "getRun", input.owner, input.name, input.run_id] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getRun(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsGetJobLogQueryOptions(
+  client: OctanestClient,
+  input: ActionJobLogRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "actions",
+      "getJobLog",
+      input.owner,
+      input.name,
+      input.run_id,
+      input.job_id,
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.getJobLog(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },
@@ -2277,6 +3149,7 @@ export const queryOptions = {
   repoCommit: repoCommitQueryOptions,
   repoCompare: repoCompareQueryOptions,
   repoBlame: repoBlameQueryOptions,
+  repoSearch: repoSearchQueryOptions,
   patList: patListQueryOptions,
   sshKeyList: sshKeyListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,

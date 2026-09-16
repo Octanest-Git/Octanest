@@ -6,6 +6,11 @@ describe("repoChromeActiveFromPath", () => {
     expect(repoChromeActiveFromPath("/ada/hello/packages")).toBe("packages");
   });
 
+  it("maps /owner/repo/actions → actions", () => {
+    expect(repoChromeActiveFromPath("/ada/hello/actions")).toBe("actions");
+    expect(repoChromeActiveFromPath("/ada/hello/actions/abc")).toBe("actions");
+  });
+
   it("maps /owner/repo/issues (and nested) → issues", () => {
     expect(repoChromeActiveFromPath("/ada/hello/issues")).toBe("issues");
     expect(repoChromeActiveFromPath("/ada/hello/issues/12")).toBe("issues");

@@ -86,12 +86,13 @@ pub enum LabelScope {
     Repo,
 }
 
-/// Linked issue / PR stub kind (D-ISS-13).
+/// Linked issue / PR stub / real PR kind (D-ISS-13 / D-PR-24).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum IssueLinkKind {
     Issue,
     PrStub,
+    Pr,
 }
 
 impl IssueLinkKind {
@@ -99,6 +100,7 @@ impl IssueLinkKind {
         match self {
             Self::Issue => "issue",
             Self::PrStub => "pr_stub",
+            Self::Pr => "pr",
         }
     }
 
@@ -106,6 +108,7 @@ impl IssueLinkKind {
         match s.trim() {
             "issue" => Ok(Self::Issue),
             "pr_stub" => Ok(Self::PrStub),
+            "pr" => Ok(Self::Pr),
             other => Err(format!("invalid issue link kind: {other}")),
         }
     }

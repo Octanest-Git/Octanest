@@ -6,6 +6,7 @@ license.workspace = true
 
 [dependencies]
 octanest-core = { path = "../octanest-core" }
+serde_json.workspace = true
 sqlx = { version = "0.8", default-features = false, features = [
   "runtime-tokio",
   "tls-rustls",

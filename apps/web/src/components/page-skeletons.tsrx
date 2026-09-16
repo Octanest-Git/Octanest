@@ -1,19 +1,32 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { SETTINGS_SHELL_MAX } from "@/components/settings/settings-shell";
 
-/** Signed-in home at `/` — mirrors {@link SignedInHome} geometry. */
+/** Signed-in home at `/` — mirrors {@link SignedInHome} three-column geometry. */
 export function SignedInHomeSkeleton() @{
-  <div className="mx-auto max-w-3xl px-4 py-16" role="status" aria-busy="true" aria-label="Loading">
-    <Skeleton className="h-8 w-64 max-w-full" />
-    <Skeleton className="mt-3 h-5 w-full max-w-md" />
-    <Skeleton className="mt-2 h-5 w-72 max-w-full" />
-    <div className="mt-8 flex flex-wrap items-start gap-3">
-      <div className="flex w-full max-w-xs flex-col gap-2">
-        <Skeleton className="h-11 w-full" />
-        <Skeleton className="h-4 w-48" />
+  <div
+    className="mx-auto max-w-7xl px-4 py-8 sm:px-6"
+    role="status"
+    aria-busy="true"
+    aria-label="Loading"
+  >
+    <div className="grid gap-8 lg:grid-cols-[16rem_minmax(0,1fr)_14rem] lg:gap-10">
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between gap-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-8 w-14" />
+        </div>
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-3/4" />
       </div>
-      <Skeleton className="h-11 w-24" />
-      <Skeleton className="h-11 w-20" />
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+      <div>
+        <Skeleton className="h-32 w-full" />
+      </div>
     </div>
   </div>;
 }

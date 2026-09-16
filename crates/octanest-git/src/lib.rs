@@ -12,10 +12,10 @@ pub mod version;
 
 pub use backend::{
     ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
-    GitBackend, GitError, GitRef, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES,
-    DIFF_SOFT_MAX_BYTES,
+    GitBackend, GitError, GitRef, GrepHit, GrepResult, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
+    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
-pub use cli::CliGitBackend;
+pub use cli::{install_protection_hooks, reconcile_protection_hooks, CliGitBackend};
 pub use version::{assert_git_version, parse_git_version};
 
 pub fn crate_name() -> &'static str {

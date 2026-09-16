@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type AdminSettingsNavActive = "auth" | "lfs" | "packages";
+export type AdminSettingsNavActive = "auth" | "lfs" | "packages" | "runners";
 
 type AdminSettingsNavProps = {
   active: AdminSettingsNavActive;
@@ -14,6 +14,7 @@ const LINKS: {
   { id: "auth", href: "/admin/auth", label: "Auth" },
   { id: "lfs", href: "/admin/lfs", label: "LFS quotas" },
   { id: "packages", href: "/admin/packages", label: "Package storage" },
+  { id: "runners", href: "/admin/runners", label: "Actions runners" },
 ];
 
 function linkClass(isActive: boolean): string {
@@ -25,7 +26,7 @@ function linkClass(isActive: boolean): string {
   );
 }
 
-/** Instance admin settings sidebar: Auth | LFS quotas | Package storage. */
+/** Instance admin settings sidebar: Auth | LFS | Packages | Actions runners. */
 export function AdminSettingsNav({ active }: AdminSettingsNavProps) @{
   <nav className="flex flex-col gap-1" aria-label="Admin settings">
     <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">

@@ -1,0 +1,195 @@
+//! Pull conversation + line comments (PR-03 / D-PR-13..16).
+
+use octanest_core::{
+    AppError, CreatePullCommentRequest, PullCommentPublic, PullCommentsListResponse,
+    PullRefRequest, ResolvePullCommentRequest,
+};
+use octanest_db::PullCommentRow;
+use uuid::Uuid;
+
+use crate::auth::gate::require_verified;
+use crate::notify;
+use crate::pull::acl;
+use crate::rpc::RpcCtx;
+
+use super::{db_err, load_pull_in_repo, validate_body};
+
+fn comment_not_found() -> AppError {
+    AppError::new("pull.comment_not_found", "Comment not found")
+}
+
+async fn comment_to_public(
+    ctx: &RpcCtx,
+    row: &PullCommentRow,
+) -> Result<PullCommentPublic, AppError> {
+    let author_username = ctx
+        .db
+        .find_user_by_id(&row.author_id)
+        .await
+        .map_err(db_err)?
+        .map(|u| u.username)
+        .unwrap_or_else(|| "unknown".into());
+    Ok(PullCommentPublic {
+        id: row.id.clone(),
+        pull_id: row.pull_id.clone(),
+        author_id: row.author_id.clone(),
+        author_username,
+        body: row.body.clone(),
+        path: row.path.clone(),
+        side: row.side.clone(),
+        line: row.line,
+        start_line: row.start_line,
+        commit_sha: row.commit_sha.clone(),
+        outdated: row.outdated,
+        resolved: row.resolved,
+        created_at: row.created_at.clone(),
+        updated_at: row.updated_at.clone(),
+    })
+}
+
+/// `pull.comments.list` — Read+.
+pub async fn comments_list(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<PullCommentsListResponse, AppError> {
+    let req: PullRefRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid pull.comments.list input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
+    let pull = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let rows = ctx
+        .db
+        .list_pull_comments(&pull.id)
+        .await
+        .map_err(db_err)?;
+    let mut comments = Vec::with_capacity(rows.len());
+    for row in &rows {
+        comments.push(comment_to_public(ctx, row).await?);
+    }
+    Ok(PullCommentsListResponse { comments })
+}
+
+/// `pull.comments.create` — Write+ general or line-anchored.
+pub async fn comments_create(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<PullCommentPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: CreatePullCommentRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid pull.comments.create input: {e}"),
+        )
+    })?;
+    let body = validate_body(Some(req.body.as_str()))?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let pull = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+
+    let path = req
+        .path
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    let side = req
+        .side
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_ascii_uppercase());
+    if let Some(ref s) = side {
+        if s != "LEFT" && s != "RIGHT" {
+            return Err(AppError::new(
+                "rpc.bad_input",
+                "side must be LEFT or RIGHT",
+            ));
+        }
+    }
+    if path.is_some() && (side.is_none() || req.line.is_none()) {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "line comments require path, side, and line",
+        ));
+    }
+    if path.is_none() && (side.is_some() || req.line.is_some() || req.start_line.is_some()) {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "general comments cannot include line anchors",
+        ));
+    }
+
+    let commit_sha = req
+        .commit_sha
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            if path.is_some() {
+                Some(pull.head_sha.clone())
+            } else {
+                None
+            }
+        });
+
+    let id = Uuid::new_v4().to_string();
+    let row = ctx
+        .db
+        .insert_pull_comment(
+            &id,
+            &pull.id,
+            &user.id,
+            &body,
+            path,
+            side.as_deref(),
+            req.line,
+            req.start_line,
+            commit_sha.as_deref(),
+        )
+        .await
+        .map_err(db_err)?;
+    let subject = notify::subject_for_pull(&pull);
+    let participants = notify::pull_participant_ids(ctx, &pull.id, &pull.author_id).await;
+    let mentions = notify::resolve_mention_user_ids(ctx, &body).await;
+    notify::fanout(ctx, &user.id, participants.clone(), "pr_comment", &subject).await;
+    let participant_set: std::collections::HashSet<_> = participants.into_iter().collect();
+    let mention_only: Vec<_> = mentions
+        .into_iter()
+        .filter(|m| !participant_set.contains(m))
+        .collect();
+    notify::fanout(ctx, &user.id, mention_only, "pr_mention", &subject).await;
+    comment_to_public(ctx, &row).await
+}
+
+/// `pull.comments.resolve` — Write+ resolve/unresolve thread.
+pub async fn comments_resolve(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<PullCommentPublic, AppError> {
+    let _user = require_verified(ctx).await?;
+    let req: ResolvePullCommentRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid pull.comments.resolve input: {e}"),
+        )
+    })?;
+    let accessible = acl::resolve_for_write(ctx, &req.owner, &req.name).await?;
+    let pull = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
+    let existing = ctx
+        .db
+        .find_pull_comment_by_id(&req.comment_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(comment_not_found)?;
+    if existing.pull_id != pull.id {
+        return Err(comment_not_found());
+    }
+    let row = ctx
+        .db
+        .set_pull_comment_resolved(&req.comment_id, req.resolved)
+        .await
+        .map_err(db_err)?;
+    comment_to_public(ctx, &row).await
+}
