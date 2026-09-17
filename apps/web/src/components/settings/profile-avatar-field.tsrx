@@ -124,7 +124,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
       </div>
 
       <div className="min-w-0 flex-1">
-        <Label htmlFor="profile-avatar">Profile picture</Label>
+        <Label>Profile picture</Label>
         <p className="mt-1 text-[14px] leading-[1.4] text-muted-foreground">
           Click or drop an image to crop. JPEG, PNG, or WebP · max 2 MB.
         </p>
