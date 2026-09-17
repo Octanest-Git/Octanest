@@ -60,7 +60,7 @@ export function TemplateRepoSettingsPanel(props: {
 
   const enabled = enabledQ.data ?? false;
 
-  <section className="flex flex-col gap-4" aria-labelledby="template-repo-heading">
+  <section className="mt-12 flex flex-col gap-4" aria-labelledby="template-repo-heading">
     <div>
       <h2
         id="template-repo-heading"
