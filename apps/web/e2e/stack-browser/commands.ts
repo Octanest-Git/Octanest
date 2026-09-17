@@ -985,40 +985,39 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
       state: "visible",
       timeout: 30_000,
     });
+    // Hydration / Query defaults settle before opening the modal.
+    await page.getByRole("button", { name: "Stack / template" }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
     assertNoOctaneOverlay(await page.content(), "/new initial");
 
-    await page.getByLabel("Stack / template").click();
-    await page.getByRole("heading", { name: "Choose Stack / template" }).waitFor({
+    await page.getByRole("button", { name: "Stack / template" }).click();
+    await page.getByTestId("repo-stack-overlay").waitFor({
       state: "visible",
       timeout: 15_000,
     });
+    await page.getByRole("heading", { name: /Choose Stack \/ template/i }).waitFor({
+      state: "visible",
+      timeout: 10_000,
+    });
 
     // Prefer a Frontend pack so we leave the first Systems group (stresses @for).
-    const nextCard = page.getByRole("button", { name: /^Next\.js/ });
+    const dialog = page.getByRole("dialog");
+    const nextCard = dialog.getByRole("button", { name: /^Next\.js/ });
     try {
       await nextCard.waitFor({ state: "visible", timeout: 5_000 });
       await nextCard.click();
     } catch {
       // Catalog may change; fall back to Rust.
-      await page.getByRole("button", { name: /^Rust/ }).click();
+      await dialog.getByRole("button", { name: /^Rust/ }).click();
     }
 
-    // Modal closes on rAF after select — wait until dialog is gone.
-    for (let i = 0; i < 40; i++) {
-      const open = await page
-        .getByRole("heading", { name: "Choose Stack / template" })
-        .waitFor({
-          state: "visible",
-          timeout: 50,
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!open) break;
-      await new Promise((r) => setTimeout(r, 50));
-      if (i === 39) {
-        throw new Error("/new template dialog did not close after pick");
-      }
-    }
+    // Modal closes on rAF after select — wait until overlay is gone.
+    await page.getByTestId("repo-stack-overlay").waitFor({
+      state: "hidden",
+      timeout: 15_000,
+    });
     await new Promise((r) => setTimeout(r, 300));
     assertNoOctaneOverlay(await page.content(), "/new after template pick");
 
