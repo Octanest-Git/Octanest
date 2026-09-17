@@ -961,6 +961,83 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
 };
 
 /**
+ * /new template picker: open stack modal, pick a non-first-group starter, assert
+ * gitignore autofill and no pageerror (insertBefore / Octane hierarchy races).
+ */
+export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const { cookie } = await ensureForgeAdminSession();
+  await injectSessionCookie(context, cookie);
+  const page = await context.newPage();
+  const pageErrors: string[] = [];
+  try {
+    page.on("pageerror", ((err: Error) => {
+      pageErrors.push(err?.message ?? String(err));
+    }) as (...args: never[]) => void);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${webOrigin()}/new`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByRole("heading", { name: "Create a new repository" }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "/new initial");
+
+    await page.getByLabel("Stack / template").click();
+    await page.getByRole("heading", { name: "Choose Stack / template" }).waitFor({
+      state: "visible",
+      timeout: 15_000,
+    });
+
+    // Prefer a Frontend pack so we leave the first Systems group (stresses @for).
+    const nextCard = page.getByRole("button", { name: /^Next\.js/ });
+    try {
+      await nextCard.waitFor({ state: "visible", timeout: 5_000 });
+      await nextCard.click();
+    } catch {
+      // Catalog may change; fall back to Rust.
+      await page.getByRole("button", { name: /^Rust/ }).click();
+    }
+
+    // Modal closes on rAF after select — wait until dialog is gone.
+    for (let i = 0; i < 40; i++) {
+      const open = await page
+        .getByRole("heading", { name: "Choose Stack / template" })
+        .waitFor({
+          state: "visible",
+          timeout: 50,
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!open) break;
+      await new Promise((r) => setTimeout(r, 50));
+      if (i === 39) {
+        throw new Error("/new template dialog did not close after pick");
+      }
+    }
+    await new Promise((r) => setTimeout(r, 300));
+    assertNoOctaneOverlay(await page.content(), "/new after template pick");
+
+    const races = pageErrors.filter((m) =>
+      /insertBefore|HierarchyRequestError|NotFoundError|The node before which/i.test(m),
+    );
+    if (races.length > 0) {
+      throw new Error(`/new template pick pageerror: ${races.join(" | ")}`);
+    }
+    if (pageErrors.length > 0) {
+      throw new Error(`/new template pick unexpected pageerror: ${pageErrors.join(" | ")}`);
+    }
+    return true;
+  } finally {
+    await page.close();
+  }
+};
+
+/**
  * Account settings SSR pages render shell + content without skeleton flash / overlay.
  * Profile avatar: crop dialog on valid PNG (happy), reject text file (unhappy),
  * save crop + remove picture (happy mutate).
