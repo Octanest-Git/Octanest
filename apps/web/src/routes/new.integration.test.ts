@@ -160,19 +160,19 @@ describe("/new create form (D-02, D-04, D-12)", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "Create repository" })).toBeInTheDocument();
     });
-    expect(screen.getByLabelText("Stack template")).toBeInTheDocument();
+    expect(screen.getByLabelText("Stack / template")).toBeInTheDocument();
     expect(screen.getByLabelText("License")).toBeInTheDocument();
     expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("Stack template"));
+    fireEvent.click(screen.getByLabelText("Stack / template"));
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Choose Stack template" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Choose Stack / template" })).toBeInTheDocument();
     });
     expect(screen.getByText("Cargo binary crate with src/main.rs.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Rust/i }));
     await waitFor(() => {
       expect(
-        screen.queryByRole("heading", { name: "Choose Stack template" }),
+        screen.queryByRole("heading", { name: "Choose Stack / template" }),
       ).not.toBeInTheDocument();
     });
     // Stack pick auto-fills the matching .gitignore

@@ -142,11 +142,20 @@ pub async fn admin_delete(ctx: &RpcCtx, input: serde_json::Value) -> Result<serd
         .await
         .map_err(db_err)?
         .ok_or_else(|| AppError::new("admin.template_not_found", "Template pack not found."))?;
-    let _ = store::delete_pack(&ctx.template_packs_dir, &row.content_digest);
+    let digest = row.content_digest.clone();
     ctx.db
         .delete_instance_template_pack(&req.id)
         .await
         .map_err(db_err)?;
+    // Content-addressed store: only unlink the zip when no other pack shares the digest.
+    let remaining = ctx
+        .db
+        .count_instance_template_packs_by_digest(&digest)
+        .await
+        .map_err(db_err)?;
+    if remaining == 0 {
+        let _ = store::delete_pack(&ctx.template_packs_dir, &digest);
+    }
     Ok(serde_json::json!({ "ok": true }))
 }
 

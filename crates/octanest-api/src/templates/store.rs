@@ -216,6 +216,20 @@ mod tests {
     }
 
     #[test]
+    fn put_pack_dedupes_identical_bytes() {
+        let dir = tempfile::tempdir().unwrap();
+        let bytes = sample_zip();
+        let (d1, _) = put_pack(dir.path(), &bytes, DEFAULT_MAX_PACK_BYTES).unwrap();
+        let (d2, _) = put_pack(dir.path(), &bytes, DEFAULT_MAX_PACK_BYTES).unwrap();
+        assert_eq!(d1, d2);
+        let path = pack_path(dir.path(), &d1).unwrap();
+        assert!(path.is_file());
+        // Deleting once removes the shared blob — callers must refcount via DB.
+        delete_pack(dir.path(), &d1).unwrap();
+        assert!(!path.exists());
+    }
+
+    #[test]
     fn rejects_path_traversal() {
         let mut buf = Cursor::new(Vec::new());
         {

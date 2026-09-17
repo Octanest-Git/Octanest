@@ -177,10 +177,11 @@ async fn resolve_create_seed_files(
                 format!("Invalid instance template pack: {e}"),
             )
         })?;
-        let gi = if none_like_opt(gitignore_id) {
-            pack.default_gitignore.clone()
-        } else {
-            gitignore_id.clone()
+        // Match built-in stacks: explicit `"none"` / empty skips the pack default;
+        // omitted (`None`) falls back to the pack's default_gitignore.
+        let gi = match gitignore_id {
+            Some(_) => gitignore_id.clone(),
+            None => pack.default_gitignore.clone(),
         };
         let overlay = templates::assemble_seed_files(&None, license_id, &gi)?;
         for (p, b) in overlay {
@@ -592,8 +593,9 @@ pub async fn create_defaults(ctx: &RpcCtx) -> Result<RepoCreateDefaults, AppErro
         .await
         .map_err(db_err)?;
     for tr in template_repos {
-        // Filter private org templates the user cannot read (owner-user already in SQL).
-        if tr.visibility != "public" && tr.owner_type == "org" {
+        // Defense in depth: SQL candidate list may over-include; only expose
+        // templates the viewer can actually read (matches settings copy).
+        if tr.visibility != "public" {
             match resolve_repo_for_read(ctx, &tr.owner_slug, &tr.name).await {
                 Ok(_) => {}
                 Err(_) => continue,

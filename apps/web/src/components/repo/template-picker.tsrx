@@ -136,7 +136,7 @@ function TemplateCard({
         ? option.source_label
           ? `Template · ${option.source_label}`
           : "Template"
-        : option
+        : option?.provenance === "builtin"
           ? "Official"
           : null;
   const body = option

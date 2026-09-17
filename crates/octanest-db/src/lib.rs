@@ -2678,6 +2678,13 @@ impl Database {
         templates::delete_instance_template_pack(self.require_pool()?, id).await
     }
 
+    pub async fn count_instance_template_packs_by_digest(
+        &self,
+        digest: &str,
+    ) -> Result<i64, String> {
+        templates::count_instance_template_packs_by_digest(self.require_pool()?, digest).await
+    }
+
     pub async fn get_repo_is_template(&self, repo_id: &str) -> Result<bool, String> {
         templates::get_repo_is_template(self.require_pool()?, repo_id).await
     }

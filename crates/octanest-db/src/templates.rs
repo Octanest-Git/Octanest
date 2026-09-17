@@ -522,27 +522,91 @@ pub async fn set_created_from_template_repo(
     Ok(())
 }
 
+/// Template repos the viewer may reasonably see on `/new`.
+///
+/// Includes public templates plus private ones the viewer owns, collaborates on,
+/// or can read via org role / member base permission. Callers that enforce full
+/// ACL (e.g. `repo.createDefaults`) should still gate non-public rows with
+/// `resolve_repo_for_read`.
+macro_rules! map_template_repo {
+    ($row:expr) => {{
+        let r = $row;
+        TemplateRepoListRow {
+            id: r.get("id"),
+            owner_id: r.get("owner_id"),
+            owner_type: r.get("owner_type"),
+            owner_slug: r.get("owner_slug"),
+            name: r.get("name"),
+            description: r.get("description"),
+            visibility: r.get("visibility"),
+        }
+    }};
+}
+
 pub async fn list_template_repositories(
     pool: &DbPool,
     viewer_user_id: Option<&str>,
 ) -> Result<Vec<TemplateRepoListRow>, String> {
+    // Shared visibility predicate for a logged-in viewer (bound once as `uid`).
+    // Mirrors D-ORG-05 coalesce sources that can grant Read on private templates.
+    const VIEWER_CAN_SEE: &str = r#"
+                       (r.visibility = 'public'
+                        OR (r.owner_type = 'user' AND r.owner_id = ?)
+                        OR EXISTS (
+                              SELECT 1 FROM repository_collaborators c
+                              WHERE c.repo_id = r.id AND c.user_id = ?
+                            )
+                        OR (
+                              r.owner_type = 'org'
+                              AND EXISTS (
+                                SELECT 1 FROM organization_members m
+                                INNER JOIN organizations og ON og.id = m.org_id
+                                WHERE m.org_id = r.owner_id AND m.user_id = ?
+                                  AND (
+                                    m.role IN ('owner', 'admin')
+                                    OR og.member_base_permission IN ('read', 'write')
+                                  )
+                              )
+                            ))"#;
+    const VIEWER_CAN_SEE_PG: &str = r#"
+                       (r.visibility = 'public'
+                        OR (r.owner_type = 'user' AND r.owner_id = $1)
+                        OR EXISTS (
+                              SELECT 1 FROM repository_collaborators c
+                              WHERE c.repo_id = r.id AND c.user_id = $1
+                            )
+                        OR (
+                              r.owner_type = 'org'
+                              AND EXISTS (
+                                SELECT 1 FROM organization_members m
+                                INNER JOIN organizations og ON og.id = m.org_id
+                                WHERE m.org_id = r.owner_id AND m.user_id = $1
+                                  AND (
+                                    m.role IN ('owner', 'admin')
+                                    OR og.member_base_permission IN ('read', 'write')
+                                  )
+                              )
+                            ))"#;
+
     match pool {
         DbPool::Sqlite(p) => {
             let rows = if let Some(uid) = viewer_user_id {
-                sqlx::query(
+                let sql = format!(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
                        COALESCE(u.username, o.slug, '') AS owner_slug
                        FROM repositories r
                        LEFT JOIN users u ON r.owner_type = 'user' AND r.owner_id = u.id
                        LEFT JOIN organizations o ON r.owner_type = 'org' AND r.owner_id = o.id
                        WHERE r.is_template = 1 AND r.deleted_at IS NULL
-                         AND (r.visibility = 'public'
-                              OR (r.owner_type = 'user' AND r.owner_id = ?))
-                       ORDER BY owner_slug, r.name"#,
-                )
-                .bind(uid)
-                .fetch_all(p)
-                .await
+                         AND {VIEWER_CAN_SEE}
+                       ORDER BY owner_slug, r.name"#
+                );
+                sqlx::query(&sql)
+                    .bind(uid)
+                    .bind(uid)
+                    .bind(uid)
+                    .fetch_all(p)
+                    .await
             } else {
                 sqlx::query(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
@@ -558,35 +622,21 @@ pub async fn list_template_repositories(
                 .await
             }
             .map_err(|e| format!("list_template_repositories: {e}"))?;
-            Ok(rows
-                .iter()
-                .map(|r| TemplateRepoListRow {
-                    id: r.get("id"),
-                    owner_id: r.get("owner_id"),
-                    owner_type: r.get("owner_type"),
-                    owner_slug: r.get("owner_slug"),
-                    name: r.get("name"),
-                    description: r.get("description"),
-                    visibility: r.get("visibility"),
-                })
-                .collect())
+            Ok(rows.iter().map(|r| map_template_repo!(r)).collect())
         }
         DbPool::Postgres(p) => {
             let rows = if let Some(uid) = viewer_user_id {
-                sqlx::query(
+                let sql = format!(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
                        COALESCE(u.username, o.slug, '') AS owner_slug
                        FROM repositories r
                        LEFT JOIN users u ON r.owner_type = 'user' AND r.owner_id = u.id
                        LEFT JOIN organizations o ON r.owner_type = 'org' AND r.owner_id = o.id
                        WHERE r.is_template = true AND r.deleted_at IS NULL
-                         AND (r.visibility = 'public'
-                              OR (r.owner_type = 'user' AND r.owner_id = $1))
-                       ORDER BY owner_slug, r.name"#,
-                )
-                .bind(uid)
-                .fetch_all(p)
-                .await
+                         AND {VIEWER_CAN_SEE_PG}
+                       ORDER BY owner_slug, r.name"#
+                );
+                sqlx::query(&sql).bind(uid).fetch_all(p).await
             } else {
                 sqlx::query(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
@@ -602,35 +652,26 @@ pub async fn list_template_repositories(
                 .await
             }
             .map_err(|e| format!("list_template_repositories: {e}"))?;
-            Ok(rows
-                .iter()
-                .map(|r| TemplateRepoListRow {
-                    id: r.get("id"),
-                    owner_id: r.get("owner_id"),
-                    owner_type: r.get("owner_type"),
-                    owner_slug: r.get("owner_slug"),
-                    name: r.get("name"),
-                    description: r.get("description"),
-                    visibility: r.get("visibility"),
-                })
-                .collect())
+            Ok(rows.iter().map(|r| map_template_repo!(r)).collect())
         }
         DbPool::MySql(p) => {
             let rows = if let Some(uid) = viewer_user_id {
-                sqlx::query(
+                let sql = format!(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
                        COALESCE(u.username, o.slug, '') AS owner_slug
                        FROM repositories r
                        LEFT JOIN users u ON r.owner_type = 'user' AND r.owner_id = u.id
                        LEFT JOIN organizations o ON r.owner_type = 'org' AND r.owner_id = o.id
                        WHERE r.is_template = 1 AND r.deleted_at IS NULL
-                         AND (r.visibility = 'public'
-                              OR (r.owner_type = 'user' AND r.owner_id = ?))
-                       ORDER BY owner_slug, r.name"#,
-                )
-                .bind(uid)
-                .fetch_all(p)
-                .await
+                         AND {VIEWER_CAN_SEE}
+                       ORDER BY owner_slug, r.name"#
+                );
+                sqlx::query(&sql)
+                    .bind(uid)
+                    .bind(uid)
+                    .bind(uid)
+                    .fetch_all(p)
+                    .await
             } else {
                 sqlx::query(
                     r#"SELECT r.id, r.owner_id, r.owner_type, r.name, r.description, r.visibility,
@@ -646,18 +687,46 @@ pub async fn list_template_repositories(
                 .await
             }
             .map_err(|e| format!("list_template_repositories: {e}"))?;
-            Ok(rows
-                .iter()
-                .map(|r| TemplateRepoListRow {
-                    id: r.get("id"),
-                    owner_id: r.get("owner_id"),
-                    owner_type: r.get("owner_type"),
-                    owner_slug: r.get("owner_slug"),
-                    name: r.get("name"),
-                    description: r.get("description"),
-                    visibility: r.get("visibility"),
-                })
-                .collect())
+            Ok(rows.iter().map(|r| map_template_repo!(r)).collect())
+        }
+    }
+}
+
+/// How many instance packs still reference this content-addressed digest.
+pub async fn count_instance_template_packs_by_digest(
+    pool: &DbPool,
+    digest: &str,
+) -> Result<i64, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM instance_template_packs WHERE content_digest = ?",
+            )
+            .bind(digest)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count_instance_template_packs_by_digest: {e}"))?;
+            Ok(n)
+        }
+        DbPool::Postgres(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM instance_template_packs WHERE content_digest = $1",
+            )
+            .bind(digest)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count_instance_template_packs_by_digest: {e}"))?;
+            Ok(n)
+        }
+        DbPool::MySql(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM instance_template_packs WHERE content_digest = ?",
+            )
+            .bind(digest)
+            .fetch_one(p)
+            .await
+            .map_err(|e| format!("count_instance_template_packs_by_digest: {e}"))?;
+            Ok(n)
         }
     }
 }

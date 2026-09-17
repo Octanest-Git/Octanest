@@ -237,6 +237,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       },
     ],
   },
+  {
+    route: "admin/templates.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/admin/templates.integration.test.ts",
+      },
+    ],
+  },
 
   // --- forge repo chrome + code browse (11.1-04) ---
   {
