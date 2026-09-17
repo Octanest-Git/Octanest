@@ -435,8 +435,8 @@ export interface FileRoutesByFullPath {
   '/admin/auth': typeof AdminAuthRoute
   '/admin/lfs': typeof AdminLfsRoute
   '/admin/packages': typeof AdminPackagesRoute
-  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/runners': typeof AdminRunnersRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -500,8 +500,8 @@ export interface FileRoutesByTo {
   '/admin/auth': typeof AdminAuthRoute
   '/admin/lfs': typeof AdminLfsRoute
   '/admin/packages': typeof AdminPackagesRoute
-  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/runners': typeof AdminRunnersRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -564,8 +564,8 @@ export interface FileRoutesById {
   '/admin/auth': typeof AdminAuthRoute
   '/admin/lfs': typeof AdminLfsRoute
   '/admin/packages': typeof AdminPackagesRoute
-  '/admin/templates': typeof AdminTemplatesRoute
   '/admin/runners': typeof AdminRunnersRoute
+  '/admin/templates': typeof AdminTemplatesRoute
   '/invites/$token': typeof InvitesTokenRoute
   '/orgs/new': typeof OrgsNewRoute
   '/settings/general': typeof SettingsGeneralRoute
@@ -635,8 +635,8 @@ export interface FileRouteTypes {
     | '/admin/auth'
     | '/admin/lfs'
     | '/admin/packages'
-    | '/admin/templates'
     | '/admin/runners'
+    | '/admin/templates'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/general'
@@ -700,8 +700,8 @@ export interface FileRouteTypes {
     | '/admin/auth'
     | '/admin/lfs'
     | '/admin/packages'
-    | '/admin/templates'
     | '/admin/runners'
+    | '/admin/templates'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/general'
@@ -763,8 +763,8 @@ export interface FileRouteTypes {
     | '/admin/auth'
     | '/admin/lfs'
     | '/admin/packages'
-    | '/admin/templates'
     | '/admin/runners'
+    | '/admin/templates'
     | '/invites/$token'
     | '/orgs/new'
     | '/settings/general'
@@ -830,8 +830,8 @@ export interface RootRouteChildren {
   AdminAuthRoute: typeof AdminAuthRoute
   AdminLfsRoute: typeof AdminLfsRoute
   AdminPackagesRoute: typeof AdminPackagesRoute
-  AdminTemplatesRoute: typeof AdminTemplatesRoute
   AdminRunnersRoute: typeof AdminRunnersRoute
+  AdminTemplatesRoute: typeof AdminTemplatesRoute
   InvitesTokenRoute: typeof InvitesTokenRoute
   OrgsNewRoute: typeof OrgsNewRoute
   SettingsGeneralRoute: typeof SettingsGeneralRoute
@@ -982,18 +982,18 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof AdminPackagesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/templates': {
-      id: '/admin/templates'
-      path: '/admin/templates'
-      fullPath: '/admin/templates'
-      preLoaderRoute: typeof AdminTemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/runners': {
       id: '/admin/runners'
       path: '/admin/runners'
       fullPath: '/admin/runners'
       preLoaderRoute: typeof AdminRunnersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/templates': {
+      id: '/admin/templates'
+      path: '/admin/templates'
+      fullPath: '/admin/templates'
+      preLoaderRoute: typeof AdminTemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/invites/$token': {

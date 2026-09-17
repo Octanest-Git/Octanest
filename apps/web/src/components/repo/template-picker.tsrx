@@ -140,6 +140,7 @@ function TemplateCard({
 
   <button
     type="button"
+    data-template-id={option ? option.id : "none"}
     className={cn(
       "flex w-full items-start gap-3 rounded-lg border px-3 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
       active ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50",
@@ -168,12 +169,18 @@ function TemplateCard({
   </button>;
 }
 
+function closeDetails(root: HTMLElement | null) {
+  const details = root?.closest("details") as HTMLDetailsElement | null;
+  if (details) details.open = false;
+}
+
 /**
  * Field trigger + searchable card modal for stack / gitignore / license catalogs.
  *
- * In-tree fixed overlay (no Dialog portal). Portals remounting against Octane DOM
- * updates caused insertBefore crashes when selecting a card also updated sibling
- * form fields (e.g. stack → default .gitignore) while the portal tore down.
+ * Uses native `<details>`/`<summary>` so the overlay opens without Octane
+ * hydration (Playwright e2e). No Dialog portal — portals remounting against
+ * Octane DOM updates caused insertBefore crashes when selecting a card also
+ * updated sibling form fields (e.g. stack → default .gitignore).
  */
 export function TemplatePicker({
   id,
@@ -187,7 +194,6 @@ export function TemplatePicker({
   searchPlaceholder = "Search templates…",
   onChange,
 }: TemplatePickerProps) @{
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const selected = value === "none" ? null : (options.find((o) => o.id === value) ?? null);
@@ -217,17 +223,12 @@ export function TemplatePicker({
     options: filtered.filter((o) => o.group === group),
   }));
 
-  function close() {
-    setOpen(false);
-    setQuery("");
-  }
-
-  function choose(next: string) {
-    // Apply selection first so the trigger reflects the pick, then close the
-    // overlay on the next frame so Octane isn't tearing down the modal tree in
-    // the same tick as sibling field updates (stack → gitignore autofill).
+  function choose(next: string, fromEl: HTMLElement | null) {
+    // Apply selection then close. Native <details> teardown does not hit the
+    // portal insertBefore race that required a rAF delay with Dialog.
     onChange(next);
-    requestAnimationFrame(() => close());
+    setQuery("");
+    closeDetails(fromEl);
   }
 
   const triggerIconGroup = selected?.group ?? "General";
@@ -240,36 +241,38 @@ export function TemplatePicker({
 
   <div className="flex flex-col gap-2">
     <Label htmlFor={id}>{label as string}</Label>
-    <button
-      id={id}
-      type="button"
-      aria-label={label}
-      aria-haspopup="dialog"
-      aria-expanded={open}
-      className="flex w-full items-start gap-3 rounded-md border border-border bg-card px-3 py-3 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring"
-      onClick={() => setOpen(true)}
+    <details
+      className="group/picker"
+      onToggle={(ev) => {
+        const el = ev.currentTarget as HTMLDetailsElement;
+        if (!el.open) setQuery("");
+      }}
     >
-      <span
-        className={cn(
-          "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md",
-          triggerAccent as string,
-        )}
+      <summary
+        id={id}
+        aria-label={label}
+        data-selected={value}
+        className="flex w-full cursor-pointer list-none items-start gap-3 rounded-md border border-border bg-card px-3 py-3 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden"
       >
-        <TriggerIcon aria-hidden size={20} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[14px] font-semibold text-foreground">
-          {triggerTitle as string}
+        <span
+          className={cn(
+            "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md",
+            triggerAccent as string,
+          )}
+        >
+          <TriggerIcon aria-hidden size={20} />
         </span>
-        <span className="mt-0.5 block text-[13px] text-muted-foreground">
-          {triggerBody as string}
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-semibold text-foreground">
+            {triggerTitle as string}
+          </span>
+          <span className="mt-0.5 block text-[13px] text-muted-foreground">
+            {triggerBody as string}
+          </span>
         </span>
-      </span>
-      <span className="shrink-0 self-center text-[13px] font-semibold text-primary">Choose…</span>
-    </button>
-    <p className="text-[13px] text-muted-foreground">{description as string}</p>
+        <span className="shrink-0 self-center text-[13px] font-semibold text-primary">Choose…</span>
+      </summary>
 
-    @if (open) {
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
         role="presentation"
@@ -279,7 +282,7 @@ export function TemplatePicker({
           type="button"
           aria-label="Dismiss"
           className="absolute inset-0 bg-black/40 supports-backdrop-filter:backdrop-blur-[2px]"
-          onClick={() => close()}
+          onClick={(ev) => closeDetails(ev.currentTarget as HTMLElement)}
         />
         <div
           role="dialog"
@@ -322,7 +325,7 @@ export function TemplatePicker({
               size="icon"
               className="absolute top-2 right-2"
               aria-label="Close"
-              onClick={() => close()}
+              onClick={(ev) => closeDetails(ev.currentTarget as HTMLElement)}
             >
               <X aria-hidden size={16} />
             </Button>
@@ -335,7 +338,7 @@ export function TemplatePicker({
                 noneLabel={noneLabel}
                 noneDescription={noneDescription}
                 active={value === "none"}
-                onSelect={() => choose("none")}
+                onSelect={() => choose("none", document.getElementById(id))}
               />
             </div>
 
@@ -360,7 +363,9 @@ export function TemplatePicker({
                           noneLabel={noneLabel}
                           noneDescription={noneDescription}
                           active={value === opt.id}
-                          onSelect={() => choose(opt.id)}
+                          onSelect={() =>
+                            choose(opt.id, document.getElementById(id))
+                          }
                         />;
                       }
                     </div>
@@ -371,12 +376,17 @@ export function TemplatePicker({
           </div>
 
           <div className="flex justify-end border-t border-border bg-muted/30 px-5 py-3">
-            <Button type="button" variant="secondary" onClick={() => close()}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={(ev) => closeDetails(ev.currentTarget as HTMLElement)}
+            >
               Close
             </Button>
           </div>
         </div>
-      </div>;
-    }
+      </div>
+    </details>
+    <p className="text-[13px] text-muted-foreground">{description as string}</p>
   </div>;
 }

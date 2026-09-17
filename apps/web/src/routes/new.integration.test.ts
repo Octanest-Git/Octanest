@@ -196,26 +196,34 @@ describe("/new create form (D-02, D-04, D-12)", () => {
       expect(screen.getByLabelText("License")).toBeInTheDocument();
       expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
 
-      fireEvent.click(screen.getByLabelText("Stack / template"));
+      const stackDetails = screen.getByLabelText("Stack / template").closest("details");
+      if (!stackDetails) throw new Error("expected stack <details>");
+      stackDetails.open = true;
+      fireEvent(stackDetails, new Event("toggle", { bubbles: true }));
       await waitFor(() => {
+        expect(screen.getByTestId("repo-stack-overlay")).toBeVisible();
         expect(
-          screen.getByRole("heading", { name: "Choose Stack / template" }),
+          screen.getByRole("heading", { name: "Choose Stack / template", hidden: true }),
         ).toBeInTheDocument();
       });
       expect(screen.getByText(/Cargo binary crate with src\/main\.rs\./)).toBeInTheDocument();
       // Non-first group + sibling gitignore autofill — regression for insertBefore races.
-      fireEvent.click(screen.getByRole("button", { name: /^Next\.js/ }));
+      fireEvent.click(screen.getByRole("button", { name: /^Next\.js/, hidden: true }));
       await waitFor(() => {
-        expect(
-          screen.queryByRole("heading", { name: "Choose Stack / template" }),
-        ).not.toBeInTheDocument();
+        expect(stackDetails.open).toBe(false);
       });
       expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Node/);
       expect(tracker.domRaceErrors()).toEqual([]);
 
-      fireEvent.click(screen.getByLabelText("License"));
+      const licenseDetails = screen.getByLabelText("License").closest("details");
+      if (!licenseDetails) throw new Error("expected license <details>");
+      licenseDetails.open = true;
+      fireEvent(licenseDetails, new Event("toggle", { bubbles: true }));
       await waitFor(() => {
-        expect(screen.getByRole("heading", { name: "Choose License" })).toBeInTheDocument();
+        expect(screen.getByTestId("repo-license-overlay")).toBeVisible();
+        expect(
+          screen.getByRole("heading", { name: "Choose License", hidden: true }),
+        ).toBeInTheDocument();
       });
       expect(screen.getByText("Permissive — keep the copyright notice.")).toBeInTheDocument();
       expect(tracker.domRaceErrors()).toEqual([]);

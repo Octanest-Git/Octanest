@@ -8,7 +8,7 @@ import type {
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { ByteQuotaField } from "@/components/admin/byte-quota-field";
-import { LfsUsageBarChart } from "@/components/admin/lfs-usage-charts";
+import { LfsUsageBarChartGate } from "@/components/admin/lfs-usage-charts-gate";
 import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
@@ -462,13 +462,13 @@ export function AdminLfsPage() @{
                       }
                     </p>
                     <div className="grid gap-8 lg:grid-cols-2">
-                      <LfsUsageBarChart
+                      <LfsUsageBarChartGate
                         title="By repository"
                         testId="lfs-usage-chart-repo"
                         data={byRepoChart}
                         emptyMessage="No linked LFS objects."
                       />
-                      <LfsUsageBarChart
+                      <LfsUsageBarChartGate
                         title="By owner"
                         testId="lfs-usage-chart-owner"
                         data={byOwnerChart}

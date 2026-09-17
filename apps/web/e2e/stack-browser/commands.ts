@@ -23,8 +23,18 @@ type PlaywrightPage = {
     opts?: object,
   ) => {
     waitFor: (opts?: object) => Promise<unknown>;
-    click: () => Promise<unknown>;
+    click: (opts?: object) => Promise<unknown>;
     fill?: (v: string) => Promise<unknown>;
+    isVisible?: () => Promise<boolean>;
+    innerText?: () => Promise<string>;
+    getByRole?: (
+      role: string,
+      opts?: object,
+    ) => {
+      waitFor: (opts?: object) => Promise<unknown>;
+      click: (opts?: object) => Promise<unknown>;
+      isVisible?: () => Promise<boolean>;
+    };
   };
   getByLabel: (
     label: string | RegExp,
@@ -42,12 +52,35 @@ type PlaywrightPage = {
   };
   getByTestId: (id: string) => {
     waitFor: (opts?: object) => Promise<unknown>;
+    locator: (sel: string) => {
+      waitFor: (opts?: object) => Promise<unknown>;
+      click: (opts?: object) => Promise<unknown>;
+      count?: () => Promise<number>;
+      first?: () => {
+        click: (opts?: object) => Promise<unknown>;
+      };
+    };
+    getByRole: (
+      role: string,
+      opts?: object,
+    ) => {
+      waitFor: (opts?: object) => Promise<unknown>;
+      click: (opts?: object) => Promise<unknown>;
+      isVisible?: () => Promise<boolean>;
+    };
   };
   locator: (sel: string) => {
     waitFor: (opts?: object) => Promise<unknown>;
     fill: (v: string) => Promise<unknown>;
-    click: () => Promise<unknown>;
+    click: (opts?: object) => Promise<unknown>;
     press: (key: string) => Promise<unknown>;
+    innerText?: () => Promise<string>;
+    isVisible?: () => Promise<boolean>;
+    getAttribute?: (name: string) => Promise<string | null>;
+    count?: () => Promise<number>;
+    first?: () => {
+      click: (opts?: object) => Promise<unknown>;
+    };
     check?: () => Promise<unknown>;
     setInputFiles?: (
       files:
@@ -984,59 +1017,71 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
       state: "visible",
       timeout: 30_000,
     });
-    const stackTrigger = page.getByRole("button", { name: "Stack / template" });
+    // Native <details>/<summary id="repo-stack"> — opens without Octane hydration.
+    // Prefer #id: getByLabel("Stack / template") also matches dialog title / search.
+    const stackTrigger = page.locator("#repo-stack");
     await stackTrigger.waitFor({ state: "visible", timeout: 30_000 });
     assertNoOctaneOverlay(await page.content(), "/new initial");
 
-    // Octane button onClick is a no-op until hydration (same class of flake as
-    // signupThroughUi / issues CRUD). Settle, then retry open until overlay mounts.
-    await new Promise((r) => setTimeout(r, 2500));
     const overlay = page.getByTestId("repo-stack-overlay");
-    let opened = false;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      await stackTrigger.click();
-      try {
-        await overlay.waitFor({ state: "visible", timeout: 2_000 });
-        opened = true;
-        break;
-      } catch {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
-    if (!opened) {
-      throw new Error(
-        `/new stack picker never opened after hydration retries. body=${(await page.content()).slice(0, 1200)}`,
-      );
-    }
+    await stackTrigger.click();
+    await overlay.waitFor({ state: "visible", timeout: 15_000 });
     await page.getByRole("heading", { name: /Choose Stack \/ template/i }).waitFor({
       state: "visible",
       timeout: 10_000,
     });
 
-    // Prefer a Frontend pack so we leave the first Systems group (stresses @for).
-    // Scope picks to the open overlay (page-level getByRole is enough once open).
-    const nextCard = page.getByRole("button", { name: /^Next\.js/ });
-    try {
-      await nextCard.waitFor({ state: "visible", timeout: 5_000 });
-      await nextCard.click();
-    } catch {
-      // Catalog may change; fall back to Rust.
-      await page.getByRole("button", { name: /^Rust/ }).click();
-    }
+    // Card onClick needs client hydration (native details only fixed open).
+    await new Promise((r) => setTimeout(r, 1500));
 
-    // Modal closes on rAF after select — wait until overlay is gone.
-    await overlay.waitFor({
-      state: "hidden",
-      timeout: 15_000,
-    });
+    // Prefer Frontend pack (non-first group). Use data-template-id — role names
+    // are noisy with icons/provenance text.
+    const pickNext = overlay.locator('[data-template-id="nextjs"]');
+    const pickRust = overlay.locator('[data-template-id="rust"]');
+    let closed = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const target =
+        (await pickNext.count().catch(() => 0)) > 0 ? pickNext.first() : pickRust.first();
+      await target.click({ force: true });
+      try {
+        await overlay.waitFor({ state: "hidden", timeout: 2_000 });
+        closed = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+    if (!closed) {
+      throw new Error(
+        `/new stack pick did not close overlay (onChange/hydration?). pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
     await new Promise((r) => setTimeout(r, 300));
     assertNoOctaneOverlay(await page.content(), "/new after template pick");
 
-    // Trigger should now show the selected pack name (proves onChange + close).
-    await stackTrigger.waitFor({ state: "visible", timeout: 5_000 });
-    const triggerHtml = await page.content();
-    if (!/Next\.js|Rust/i.test(triggerHtml)) {
-      throw new Error("/new stack trigger did not reflect selected pack after pick");
+    // Prove form onChange applied (value attr + sibling gitignore autofill).
+    const selected = async () =>
+      (await stackTrigger.getAttribute("data-selected").catch(() => null)) ?? "";
+    let value = "";
+    for (let i = 0; i < 20; i++) {
+      value = await selected();
+      if (value && value !== "none") break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    if (!value || value === "none") {
+      throw new Error(
+        `/new stack data-selected still none after pick (got ${JSON.stringify(value)}); pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    const gitignoreSelected =
+      (await page
+        .locator("#repo-gitignore")
+        .getAttribute("data-selected")
+        .catch(() => null)) ?? "";
+    if (value === "nextjs" && gitignoreSelected !== "Node") {
+      throw new Error(
+        `/new expected gitignore autofill Node after nextjs, got ${JSON.stringify(gitignoreSelected)}`,
+      );
     }
 
     const races = pageErrors.filter((m) =>

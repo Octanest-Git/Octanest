@@ -177,10 +177,15 @@ describe("admin LFS quotas (D-LFS-12 / D-LFS-13 / D-LFS-19)", () => {
     expect(maxAmount.value).toBe("2");
     expect(screen.getByText("Override active")).toBeTruthy();
     expect(screen.getAllByText(/acme\/assets/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("img", { name: "By repository" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "By owner" })).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(screen.getByRole("img", { name: "By repository" })).toBeTruthy();
+        expect(screen.getByRole("img", { name: "By owner" })).toBeTruthy();
+      },
+      { timeout: 10_000 },
+    );
     expect(screen.queryByText("Loading…")).toBeNull();
-  }, 15_000);
+  }, 20_000);
 
   it("submits quotas converted from display units into bytes", async () => {
     renderWithQueryClient(AdminLfsPage);

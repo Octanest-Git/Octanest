@@ -11,14 +11,21 @@ import { renderWithQueryClient } from "@/test/render-with-query";
 afterEach(cleanup);
 
 function openStackPicker() {
-  fireEvent.click(screen.getByLabelText("Stack / template"));
+  const trigger = screen.getByLabelText("Stack / template");
+  const details = trigger.closest("details");
+  if (!details) throw new Error("expected stack picker <details>");
+  // happy-dom does not always toggle <details> from summary click alone.
+  details.open = true;
+  fireEvent(details, new Event("toggle", { bubbles: true }));
 }
 
 async function chooseFromOpenDialog(name: RegExp | string) {
-  const dialog = await waitFor(() => screen.getByRole("dialog"));
-  fireEvent.click(within(dialog).getByRole("button", { name }));
+  const overlay = await waitFor(() => screen.getByTestId("repo-stack-overlay"));
+  const dialog = within(overlay).getByRole("dialog", { hidden: true });
+  fireEvent.click(within(dialog).getByRole("button", { name, hidden: true }));
   await waitFor(() => {
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    const details = screen.getByLabelText("Stack / template").closest("details");
+    expect(details?.open).toBe(false);
   });
 }
 
