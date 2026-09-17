@@ -38,6 +38,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
+      // Published attr-accept "module" build is fake ESM (`exports` in browser →
+      // hydration abort). Bun also nests it so optimizeDeps.include cannot resolve.
+      "attr-accept": path.resolve(rootDir, "./src/shims/attr-accept.ts"),
     },
   },
   server: {
@@ -48,6 +51,7 @@ export default defineConfig({
       "/api/auth": { target: apiProxyTarget, changeOrigin: true },
       "/api/user": { target: apiProxyTarget, changeOrigin: true },
       "/api/repos": { target: apiProxyTarget, changeOrigin: true },
+      "/api/admin": { target: apiProxyTarget, changeOrigin: true },
       "/api/releases": { target: apiProxyTarget, changeOrigin: true },
       "/uploads": { target: apiProxyTarget, changeOrigin: true },
       // `/health` is owned by webHealthPlugin (header-gated). Public API /health

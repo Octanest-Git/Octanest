@@ -49,9 +49,9 @@ use octanest_core::{
     RepoLfsGetEnabledRequest, RepoLfsListObjectsRequest, RepoLfsListObjectsResponse,
     RepoLfsObjectEntry, RepoLfsSetEnabledRequest, RepoLfsStatusResponse, RepoLfsUsageResponse,
     RepoListByOwnerRequest, RepoListMineResponse, RepoPublic, RepoRefEntry, RepoRefsResponse,
-    RepoSoftDeleteRequest,
-    RepoSoftDeleteResponse, RepoTreeEntry, RepoTreeRequest, RepoTreeResponse,
-    RepoUpdateVisibilityRequest, RepoVisibility,
+    RepoSoftDeleteRequest, RepoSoftDeleteResponse, RepoTemplateOption, RepoTreeEntry,
+    RepoTreeRequest, RepoTreeResponse, RepoUpdateVisibilityRequest, RepoVisibility,
+    TemplateProvenance,
 };
 use uuid::Uuid;
 
@@ -80,6 +80,171 @@ fn map_visibility(v: RepoVisibility) -> &'static str {
     v.as_str()
 }
 
+fn none_like_opt(v: &Option<String>) -> bool {
+    match v {
+        None => true,
+        Some(s) => {
+            let t = s.trim();
+            t.is_empty() || t.eq_ignore_ascii_case("none")
+        }
+    }
+}
+
+const TEMPLATE_SEED_MAX_FILES: usize = 5_000;
+const TEMPLATE_SEED_MAX_BYTES: u64 = 25 * 1024 * 1024;
+
+async fn resolve_create_seed_files(
+    ctx: &RpcCtx,
+    stack_id: &Option<String>,
+    instance_pack_id: &Option<String>,
+    template_repo_id: &Option<String>,
+    license_id: &Option<String>,
+    gitignore_id: &Option<String>,
+) -> Result<(Vec<(String, Vec<u8>)>, Option<String>), AppError> {
+    if !none_like_opt(template_repo_id) {
+        let tid = template_repo_id.as_ref().unwrap().trim();
+        let source = ctx
+            .db
+            .find_repository_by_id(tid)
+            .await
+            .map_err(db_err)?
+            .ok_or_else(|| {
+                AppError::new("repo.invalid_template", "Template repository not found.")
+            })?;
+        let is_template = ctx
+            .db
+            .get_repo_is_template(&source.id)
+            .await
+            .map_err(db_err)?;
+        if !is_template {
+            return Err(AppError::new(
+                "repo.invalid_template",
+                "Repository is not marked as a template.",
+            ));
+        }
+        let owner_slug = if source.owner_type == "org" {
+            ctx.db
+                .find_organization_by_id(&source.owner_id)
+                .await
+                .map_err(db_err)?
+                .map(|o| o.slug)
+        } else {
+            ctx.db
+                .find_user_by_id(&source.owner_id)
+                .await
+                .map_err(db_err)?
+                .map(|u| u.username)
+        }
+        .ok_or_else(|| AppError::new("repo.invalid_template", "Template owner not found."))?;
+        // ACL: must be able to read the template repo.
+        let _accessible = resolve_repo_for_read(ctx, &owner_slug, &source.name).await?;
+        let bare = bare_repo_path(&ctx.repos_dir, &owner_slug, &source.name)?;
+        let files = collect_template_tree(ctx, &bare, &source.default_branch).await?;
+        let mut map: std::collections::BTreeMap<String, Vec<u8>> = files.into_iter().collect();
+        // License / gitignore overlays still apply.
+        let overlay =
+            templates::assemble_seed_files(&None, license_id, gitignore_id)?;
+        for (p, b) in overlay {
+            map.insert(p, b);
+        }
+        return Ok((map.into_iter().collect(), Some(source.id)));
+    }
+
+    if !none_like_opt(instance_pack_id) {
+        let pid = instance_pack_id.as_ref().unwrap().trim();
+        let pack = ctx
+            .db
+            .get_instance_template_pack(pid)
+            .await
+            .map_err(db_err)?
+            .ok_or_else(|| AppError::new("repo.invalid_template", "Instance template not found."))?;
+        if !pack.enabled {
+            return Err(AppError::new(
+                "repo.invalid_template",
+                "Instance template is disabled.",
+            ));
+        }
+        let bytes = crate::templates::store::read_pack(&ctx.template_packs_dir, &pack.content_digest)
+            .map_err(|e| {
+                AppError::new(
+                    "repo.invalid_template",
+                    format!("Could not read instance template: {e}"),
+                )
+            })?;
+        let mut map = crate::templates::store::unzip_to_map(&bytes).map_err(|e| {
+            AppError::new(
+                "repo.invalid_template",
+                format!("Invalid instance template pack: {e}"),
+            )
+        })?;
+        // Match built-in stacks: explicit `"none"` / empty skips the pack default;
+        // omitted (`None`) falls back to the pack's default_gitignore.
+        let gi = match gitignore_id {
+            Some(_) => gitignore_id.clone(),
+            None => pack.default_gitignore.clone(),
+        };
+        let overlay = templates::assemble_seed_files(&None, license_id, &gi)?;
+        for (p, b) in overlay {
+            map.insert(p, b);
+        }
+        return Ok((map.into_iter().collect(), None));
+    }
+
+    let files = templates::assemble_seed_files(stack_id, license_id, gitignore_id)?;
+    Ok((files, None))
+}
+
+async fn collect_template_tree(
+    ctx: &RpcCtx,
+    bare: &std::path::Path,
+    default_branch: &str,
+) -> Result<Vec<(String, Vec<u8>)>, AppError> {
+    use octanest_git::TreeEntryKind;
+    let mut out = Vec::new();
+    let mut total_bytes: u64 = 0;
+    let mut stack = vec![String::new()];
+    while let Some(prefix) = stack.pop() {
+        let entries = ctx
+            .git
+            .ls_tree(bare, default_branch, &prefix)
+            .await
+            .map_err(map_git_err)?;
+        for e in entries {
+            let path = if prefix.is_empty() {
+                e.name.clone()
+            } else {
+                format!("{prefix}/{}", e.name)
+            };
+            match e.kind {
+                TreeEntryKind::Tree => stack.push(path),
+                TreeEntryKind::Blob => {
+                    if out.len() >= TEMPLATE_SEED_MAX_FILES {
+                        return Err(AppError::new(
+                            "repo.invalid_template",
+                            "Template repository has too many files.",
+                        ));
+                    }
+                    let bytes = ctx
+                        .git
+                        .cat_blob(bare, default_branch, &path)
+                        .await
+                        .map_err(map_git_err)?;
+                    total_bytes += bytes.len() as u64;
+                    if total_bytes > TEMPLATE_SEED_MAX_BYTES {
+                        return Err(AppError::new(
+                            "repo.invalid_template",
+                            "Template repository exceeds size limit.",
+                        ));
+                    }
+                    out.push((path, bytes));
+                }
+                TreeEntryKind::Commit => {}
+            }
+        }
+    }
+    Ok(out)
+}
+
 pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
     let visibility = RepoVisibility::parse(&repo.row.visibility).unwrap_or(RepoVisibility::Public);
     let owner_type = OwnerType::parse(&repo.row.owner_type).unwrap_or(OwnerType::User);
@@ -98,6 +263,7 @@ pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         star_count: 0,
         viewer_has_starred: false,
         is_fork: false,
+        is_template: false,
         fork_network_id: None,
         forked_from: None,
     }
@@ -163,6 +329,11 @@ pub async fn enrich_social(
             }
         }
     }
+    public.is_template = ctx
+        .db
+        .get_repo_is_template(&public.id)
+        .await
+        .map_err(db_err)?;
     Ok(public)
 }
 
@@ -328,6 +499,7 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 star_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
+                is_template: false,
                 fork_network_id: None,
                 forked_from: None,
             }
@@ -394,11 +566,59 @@ pub async fn list_by_owner(
 
 /// `repo.createDefaults` — visibility default + stack/gitignore catalogs for `/new`.
 pub async fn create_defaults(ctx: &RpcCtx) -> Result<RepoCreateDefaults, AppError> {
-    let _ = require_verified(ctx).await?;
+    let user = require_verified(ctx).await?;
     let default_visibility = resolve_visibility(ctx, None).await?;
+    let mut stacks = templates::list_stacks()?;
+
+    let instance_packs = ctx
+        .db
+        .list_instance_template_packs(true)
+        .await
+        .map_err(db_err)?;
+    for pack in instance_packs {
+        stacks.push(RepoTemplateOption {
+            id: format!("instance:{}", pack.id),
+            label: pack.label,
+            group: pack.group,
+            description: pack.description,
+            default_gitignore: pack.default_gitignore,
+            provenance: TemplateProvenance::Instance,
+            source_label: Some(pack.slug),
+        });
+    }
+
+    let template_repos = ctx
+        .db
+        .list_template_repositories(Some(&user.id))
+        .await
+        .map_err(db_err)?;
+    for tr in template_repos {
+        // Defense in depth: SQL candidate list may over-include; only expose
+        // templates the viewer can actually read (matches settings copy).
+        if tr.visibility != "public" {
+            match resolve_repo_for_read(ctx, &tr.owner_slug, &tr.name).await {
+                Ok(_) => {}
+                Err(_) => continue,
+            }
+        }
+        stacks.push(RepoTemplateOption {
+            id: format!("repo:{}", tr.id),
+            label: tr.name.clone(),
+            group: "From template".into(),
+            description: if tr.description.trim().is_empty() {
+                format!("Template repository from @{}/{}", tr.owner_slug, tr.name)
+            } else {
+                tr.description.clone()
+            },
+            default_gitignore: None,
+            provenance: TemplateProvenance::User,
+            source_label: Some(format!("{}/{}", tr.owner_slug, tr.name)),
+        });
+    }
+
     Ok(RepoCreateDefaults {
         default_visibility,
-        stacks: templates::list_stacks()?,
+        stacks,
         gitignores: templates::list_gitignores()?,
     })
 }
@@ -1202,8 +1422,45 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
     )
     .await?;
 
-    let seed_files =
-        templates::assemble_seed_files(&req.stack_id, &req.license_id, &req.gitignore_id)?;
+    let source_count = [
+        none_like_opt(&req.stack_id),
+        none_like_opt(&req.instance_pack_id),
+        none_like_opt(&req.template_repo_id),
+    ]
+    .iter()
+    .filter(|&&is_none| !is_none)
+    .count();
+    if source_count > 1 {
+        return Err(AppError::new(
+            "repo.invalid_template",
+            "Choose only one of stack_id, instance_pack_id, or template_repo_id.",
+        ));
+    }
+
+    // Normalize picker ids: UI may send `instance:<uuid>` / `repo:<uuid>` via stack_id.
+    let mut stack_id = req.stack_id.clone();
+    let mut instance_pack_id = req.instance_pack_id.clone();
+    let mut template_repo_id = req.template_repo_id.clone();
+    if let Some(raw) = stack_id.clone() {
+        let t = raw.trim();
+        if let Some(rest) = t.strip_prefix("instance:") {
+            instance_pack_id = Some(rest.to_string());
+            stack_id = None;
+        } else if let Some(rest) = t.strip_prefix("repo:") {
+            template_repo_id = Some(rest.to_string());
+            stack_id = None;
+        }
+    }
+
+    let (seed_files, from_template_repo_id) = resolve_create_seed_files(
+        ctx,
+        &stack_id,
+        &instance_pack_id,
+        &template_repo_id,
+        &req.license_id,
+        &req.gitignore_id,
+    )
+    .await?;
 
     if ctx
         .db
@@ -1232,6 +1489,13 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         )
         .await
         .map_err(db_err)?;
+
+    if let Some(tid) = &from_template_repo_id {
+        let _ = ctx
+            .db
+            .set_created_from_template_repo(&row.id, Some(tid))
+            .await;
+    }
 
     let path = bare_repo_path(&ctx.repos_dir, &owner_slug, &name)?;
     if let Err(e) = ctx.git.init_bare(&path, &default_branch).await {
@@ -1293,6 +1557,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
                 star_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
+                is_template: false,
                 fork_network_id: None,
                 forked_from: None,
     })

@@ -27,6 +27,7 @@ pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
 pub mod stars;
+pub mod templates;
 pub mod users;
 
 pub use actions::{
@@ -53,6 +54,7 @@ pub use releases::{ReleaseAssetRow, ReleaseRow};
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
+pub use templates::{InstanceTemplatePackRow, TemplateRepoListRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
 pub use webhooks::{WebhookDeliveryAttemptRow, WebhookDeliveryRow, WebhookRow};
@@ -2590,5 +2592,120 @@ impl Database {
         limit: i64,
     ) -> Result<Vec<WebhookDeliveryRow>, String> {
         webhooks::list_pending_deliveries(self.require_pool()?, limit).await
+    }
+
+    // --- templates (issue #18) ---
+
+    pub async fn list_instance_template_packs(
+        &self,
+        enabled_only: bool,
+    ) -> Result<Vec<InstanceTemplatePackRow>, String> {
+        templates::list_instance_template_packs(self.require_pool()?, enabled_only).await
+    }
+
+    pub async fn get_instance_template_pack(
+        &self,
+        id: &str,
+    ) -> Result<Option<InstanceTemplatePackRow>, String> {
+        templates::get_instance_template_pack(self.require_pool()?, id).await
+    }
+
+    pub async fn get_instance_template_pack_by_slug(
+        &self,
+        slug: &str,
+    ) -> Result<Option<InstanceTemplatePackRow>, String> {
+        templates::get_instance_template_pack_by_slug(self.require_pool()?, slug).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn insert_instance_template_pack(
+        &self,
+        id: &str,
+        slug: &str,
+        label: &str,
+        group: &str,
+        description: &str,
+        default_gitignore: Option<&str>,
+        enabled: bool,
+        byte_size: i64,
+        content_digest: &str,
+        uploaded_by_user_id: &str,
+    ) -> Result<InstanceTemplatePackRow, String> {
+        templates::insert_instance_template_pack(
+            self.require_pool()?,
+            id,
+            slug,
+            label,
+            group,
+            description,
+            default_gitignore,
+            enabled,
+            byte_size,
+            content_digest,
+            uploaded_by_user_id,
+        )
+        .await
+    }
+
+    pub async fn update_instance_template_pack(
+        &self,
+        id: &str,
+        label: Option<&str>,
+        group: Option<&str>,
+        description: Option<&str>,
+        default_gitignore: Option<Option<&str>>,
+    ) -> Result<(), String> {
+        templates::update_instance_template_pack(
+            self.require_pool()?,
+            id,
+            label,
+            group,
+            description,
+            default_gitignore,
+        )
+        .await
+    }
+
+    pub async fn set_instance_template_pack_enabled(
+        &self,
+        id: &str,
+        enabled: bool,
+    ) -> Result<(), String> {
+        templates::set_instance_template_pack_enabled(self.require_pool()?, id, enabled).await
+    }
+
+    pub async fn delete_instance_template_pack(&self, id: &str) -> Result<(), String> {
+        templates::delete_instance_template_pack(self.require_pool()?, id).await
+    }
+
+    pub async fn count_instance_template_packs_by_digest(
+        &self,
+        digest: &str,
+    ) -> Result<i64, String> {
+        templates::count_instance_template_packs_by_digest(self.require_pool()?, digest).await
+    }
+
+    pub async fn get_repo_is_template(&self, repo_id: &str) -> Result<bool, String> {
+        templates::get_repo_is_template(self.require_pool()?, repo_id).await
+    }
+
+    pub async fn set_repo_is_template(&self, repo_id: &str, enabled: bool) -> Result<(), String> {
+        templates::set_repo_is_template(self.require_pool()?, repo_id, enabled).await
+    }
+
+    pub async fn set_created_from_template_repo(
+        &self,
+        repo_id: &str,
+        template_repo_id: Option<&str>,
+    ) -> Result<(), String> {
+        templates::set_created_from_template_repo(self.require_pool()?, repo_id, template_repo_id)
+            .await
+    }
+
+    pub async fn list_template_repositories(
+        &self,
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<TemplateRepoListRow>, String> {
+        templates::list_template_repositories(self.require_pool()?, viewer_user_id).await
     }
 }

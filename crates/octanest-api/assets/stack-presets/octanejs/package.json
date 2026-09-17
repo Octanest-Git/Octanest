@@ -1,6 +1,7 @@
 {
-  "name": "app",
+  "name": "octanejs-app",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +13,7 @@
   },
   "devDependencies": {
     "@octanejs/vite-plugin": "^0.1.54",
-    "vite": "^6.0.0"
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
   }
 }
