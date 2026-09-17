@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "webrick"
+require_relative "../lib/greeter"
+
+port = Integer(ENV.fetch("PORT", "4567"))
+server = WEBrick::HTTPServer.new(Port: port)
+
+server.mount_proc "/" do |req, res|
+  name = req.query["name"] || "world"
+  res["Content-Type"] = "text/plain; charset=utf-8"
+  res.body = Greeter.greet(name) + "\n"
+end
+
+trap("INT") { server.shutdown }
+puts "Listening on http://localhost:#{port}"
+server.start

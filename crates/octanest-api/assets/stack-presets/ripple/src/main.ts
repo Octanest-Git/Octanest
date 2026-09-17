@@ -1,10 +1,10 @@
 import { mount } from "ripple";
 import { App } from "./App.tsrx";
+import "./style.css";
 
-const target = document.getElementById("root");
-if (target) {
-  mount(App, {
-    props: { title: "Hello Ripple" },
-    target,
-  });
+const root = document.getElementById("app");
+if (!root) {
+  throw new Error("#app not found");
 }
+
+mount(App, { target: root, props: { title: "Ripple" } });

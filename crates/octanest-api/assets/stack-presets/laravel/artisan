@@ -1,0 +1,7 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+echo "Lean starter — use `composer serve` or `php -S localhost:8000 -t public`.\n";
+echo "For a full Laravel app, run `composer create-project laravel/laravel`.\n";

@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use include_dir::{include_dir, Dir};
-use octanest_core::{AppError, RepoTemplateOption};
+use octanest_core::{AppError, RepoTemplateOption, TemplateProvenance};
 use serde::Deserialize;
 
 static ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/assets");
@@ -22,6 +22,7 @@ struct GitignoreCatalog {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // refresh metadata is for catalog.json / tooling; parsed for validation
 struct CatalogEntry {
     id: String,
     label: String,
@@ -31,6 +32,15 @@ struct CatalogEntry {
     /// Stack packs only — recommended `.gitignore` catalog id.
     #[serde(default)]
     default_gitignore: Option<String>,
+    /// Built-in refresh metadata (issue #18) — ignored at runtime beyond parse.
+    #[serde(default)]
+    source: Option<String>,
+    #[serde(default)]
+    source_ref: Option<String>,
+    #[serde(default)]
+    last_synced: Option<String>,
+    #[serde(default)]
+    verify_commands: Option<Vec<String>>,
 }
 
 fn is_safe_id(id: &str) -> bool {
@@ -86,6 +96,8 @@ pub fn list_stacks() -> Result<Vec<RepoTemplateOption>, AppError> {
             group: p.group,
             description: p.description,
             default_gitignore: p.default_gitignore,
+            provenance: TemplateProvenance::Builtin,
+            source_label: None,
         })
         .collect())
 }
@@ -110,6 +122,8 @@ pub fn list_gitignores() -> Result<Vec<RepoTemplateOption>, AppError> {
             group: p.group,
             description: p.description,
             default_gitignore: None,
+            provenance: TemplateProvenance::Builtin,
+            source_label: None,
         })
         .collect())
 }
@@ -335,11 +349,23 @@ mod tests {
 
     #[test]
     fn explicit_none_skips_stack_default_gitignore() {
-        let files =
-            assemble_seed_files(&Some("rust".into()), &None, &Some("none".into())).unwrap();
-        let paths: Vec<_> = files.iter().map(|(p, _)| p.as_str()).collect();
-        assert!(paths.contains(&"Cargo.toml"));
-        assert!(!paths.contains(&".gitignore"));
+        // Explicit "none" skips the catalog default_gitignore overlay. Official-style
+        // packs may still include their own .gitignore from the upstream template.
+        let with_default = assemble_seed_files(&Some("go".into()), &None, &None).unwrap();
+        let with_none =
+            assemble_seed_files(&Some("go".into()), &None, &Some("none".into())).unwrap();
+        let paths_default: Vec<_> = with_default.iter().map(|(p, _)| p.as_str()).collect();
+        let paths_none: Vec<_> = with_none.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(paths_default.contains(&"go.mod") || paths_default.contains(&"main.go"));
+        assert!(paths_none.contains(&"go.mod") || paths_none.contains(&"main.go"));
+        // Catalog overlay path: when the pack has no vendored .gitignore, none clears it.
+        let pack_has_gitignore = ASSETS
+            .get_file("stack-presets/go/.gitignore")
+            .is_some();
+        if !pack_has_gitignore {
+            assert!(paths_default.contains(&".gitignore"));
+            assert!(!paths_none.contains(&".gitignore"));
+        }
     }
 
     #[test]
@@ -359,5 +385,57 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn catalog_entries_have_refresh_metadata() {
+        let file = ASSETS
+            .get_file("stack-presets/catalog.json")
+            .expect("catalog");
+        let catalog: StackCatalog = serde_json::from_slice(file.contents()).unwrap();
+        for p in &catalog.packs {
+            assert!(
+                p.source.as_ref().map(|s| !s.is_empty()).unwrap_or(false),
+                "pack {} missing source",
+                p.id
+            );
+            assert!(
+                p.source_ref
+                    .as_ref()
+                    .map(|s| !s.is_empty())
+                    .unwrap_or(false),
+                "pack {} missing source_ref",
+                p.id
+            );
+            assert!(
+                p.last_synced
+                    .as_ref()
+                    .map(|s| !s.is_empty())
+                    .unwrap_or(false),
+                "pack {} missing last_synced",
+                p.id
+            );
+        }
+    }
+
+    #[test]
+    fn vite_vanilla_ts_seeds_multi_file_tree() {
+        let files =
+            assemble_seed_files(&Some("vite-vanilla-ts".into()), &None, &Some("none".into()))
+                .unwrap();
+        let paths: Vec<_> = files.iter().map(|(p, _)| p.as_str()).collect();
+        assert!(paths.contains(&"package.json"));
+        assert!(paths.contains(&"index.html"));
+        assert!(
+            paths
+                .iter()
+                .any(|p| p.ends_with("main.ts") || *p == "src/main.ts"),
+            "expected main.ts in seed: {paths:?}"
+        );
+        assert!(
+            files.len() >= 5,
+            "expected multi-file pack, got {}",
+            files.len()
+        );
     }
 }

@@ -23,7 +23,7 @@ use crate::auth::session::{
 };
 use crate::email::{self, EmailSender};
 use crate::pat::rate_limit::FailedAuthLimiter;
-use crate::routes::{auth_callbacks, avatar, git_lfs, git_smart_http, release_assets, repo_raw};
+use crate::routes::{auth_callbacks, avatar, git_lfs, git_smart_http, release_assets, repo_raw, template_packs};
 use crate::rpc::{self, CookieChange, RpcCtx, VERSION_HEADER};
 use crate::user::rate_limit::LookupLimiter;
 
@@ -39,6 +39,8 @@ pub struct AppState {
     pub lfs_dir: PathBuf,
     /// Release asset binaries (`OCTANEST_RELEASE_ASSETS_DIR`, default `var/release-assets`) — D-REL-04.
     pub release_assets_dir: PathBuf,
+    /// Instance template pack zips (`OCTANEST_TEMPLATE_PACKS_DIR`, default `var/template-packs`).
+    pub template_packs_dir: PathBuf,
     /// Max upload bytes for a single release asset (default 512 MiB) — D-REL-05.
     pub release_asset_max_bytes: usize,
     /// Days to retain repository redirects after rename/transfer (default 90) — D-REL-08.
@@ -103,6 +105,16 @@ impl AppState {
                 .unwrap_or_else(|_| PathBuf::from("/"))
                 .join(release_assets_dir)
         };
+        let template_packs_dir = std::env::var("OCTANEST_TEMPLATE_PACKS_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("var/template-packs"));
+        let template_packs_dir = if template_packs_dir.is_absolute() {
+            template_packs_dir
+        } else {
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("/"))
+                .join(template_packs_dir)
+        };
         let release_asset_max_bytes = std::env::var("OCTANEST_RELEASE_ASSET_MAX_BYTES")
             .ok()
             .and_then(|s| s.parse().ok())
@@ -156,6 +168,7 @@ impl AppState {
             repos_dir,
             lfs_dir,
             release_assets_dir,
+            template_packs_dir,
             release_asset_max_bytes,
             repo_redirect_retention_days,
             packages_dir,
@@ -266,6 +279,12 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             get(release_assets::download_asset),
         )
         .route(
+            "/api/admin/templates",
+            post(template_packs::upload_pack).layer(DefaultBodyLimit::max(
+                crate::templates::store::DEFAULT_MAX_PACK_BYTES as usize,
+            )),
+        )
+        .route(
             "/api/repos/{owner}/{repo}/raw/{ref}/{*path}",
             get(repo_raw::serve_raw),
         )
@@ -349,6 +368,7 @@ async fn build_rpc_ctx(state: &AppState, raw_token: Option<&str>) -> RpcCtx {
         repos_dir: state.repos_dir.clone(),
         lfs_dir: state.lfs_dir.clone(),
         release_assets_dir: state.release_assets_dir.clone(),
+        template_packs_dir: state.template_packs_dir.clone(),
         actions_log_dir: state.actions_log_dir.clone(),
         git: state.git.clone(),
         env_name: state.env_name.clone(),

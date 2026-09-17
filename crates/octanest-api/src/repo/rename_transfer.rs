@@ -61,6 +61,7 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         star_count: 0,
         viewer_has_starred: false,
         is_fork: false,
+        is_template: false,
         fork_network_id: None,
         forked_from: None,
     }

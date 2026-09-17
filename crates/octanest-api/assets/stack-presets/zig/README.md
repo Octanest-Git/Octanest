@@ -1,3 +1,11 @@
 # Zig
 
-Seeded by the Octanest `zig` stack preset.
+`zig init` style binary + build graph.
+
+## Getting started
+
+```bash
+zig build
+zig build run
+zig test src/main.zig
+```

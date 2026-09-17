@@ -67,6 +67,8 @@ function iconForGroup(group: string) {
       return Smartphone;
     case "Infra":
       return Cloud;
+    case "From template":
+      return LayoutTemplate;
     case "Languages":
       return Code2;
     case "Tools":
@@ -127,7 +129,19 @@ function TemplateCard({
   const group = option?.group ?? "General";
   const Icon = option ? iconForGroup(group) : Container;
   const title = option ? option.label : noneLabel;
-  const body = option ? option.description || option.group : noneDescription;
+  const provenance =
+    option?.provenance === "instance"
+      ? "Instance"
+      : option?.provenance === "user"
+        ? option.source_label
+          ? `Template · ${option.source_label}`
+          : "Template"
+        : option
+          ? "Official"
+          : null;
+  const body = option
+    ? [provenance, option.description || option.group].filter(Boolean).join(" — ")
+    : noneDescription;
   const accent = option ? accentForGroup(group) : "bg-muted text-muted-foreground";
 
   <button

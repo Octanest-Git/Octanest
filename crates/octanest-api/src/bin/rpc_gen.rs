@@ -186,11 +186,15 @@ export type UpdateAuthSettingsRequest = {
   default_visibility?: RepoVisibility;
 };
 
+export type TemplateProvenance = "builtin" | "instance" | "user";
+
 export type CreateRepoRequest = {
   name: string;
   description?: string | null;
   visibility?: RepoVisibility | null;
   stack_id?: string | null;
+  instance_pack_id?: string | null;
+  template_repo_id?: string | null;
   license_id?: string | null;
   gitignore_id?: string | null;
   owner?: string | null;
@@ -209,6 +213,8 @@ export type RepoTemplateOption = {
   group: string;
   description: string;
   default_gitignore?: string | null;
+  provenance?: TemplateProvenance;
+  source_label?: string | null;
 };
 
 export type RepoCreateDefaults = {
@@ -232,6 +238,7 @@ export type RepoPublic = {
   star_count?: number;
   viewer_has_starred?: boolean;
   is_fork?: boolean;
+  is_template?: boolean;
   fork_network_id?: string | null;
   forked_from?: ForkParentSummary | null;
 };
@@ -547,6 +554,57 @@ export type RepoLfsDownloadResponse = {
   size: number;
   encoding: string;
   content: string;
+};
+
+export type InstanceTemplatePackPublic = {
+  id: string;
+  slug: string;
+  label: string;
+  group: string;
+  description: string;
+  default_gitignore?: string | null;
+  enabled: boolean;
+  byte_size: number;
+  content_digest: string;
+  uploaded_by_user_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminTemplatesListResponse = {
+  packs: InstanceTemplatePackPublic[];
+};
+
+export type AdminTemplateUpdateRequest = {
+  id: string;
+  label?: string | null;
+  group?: string | null;
+  description?: string | null;
+  default_gitignore?: string | null;
+};
+
+export type AdminTemplateSetEnabledRequest = {
+  id: string;
+  enabled: boolean;
+};
+
+export type AdminTemplateDeleteRequest = {
+  id: string;
+};
+
+export type RepoTemplateSetEnabledRequest = {
+  owner: string;
+  name: string;
+  enabled: boolean;
+};
+
+export type RepoTemplateGetEnabledRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoTemplateEnabledResponse = {
+  enabled: boolean;
 };
 
 export type AdminLfsSettingsPublic = {
@@ -1931,6 +1989,12 @@ export function createClient(opts: CreateClientOptions) {
         download: (input: RepoLfsDownloadRequest) =>
           rpcCall<RepoLfsDownloadResponse>(opts, "repo.lfs.download", input),
       },
+      templates: {
+        getEnabled: (input: RepoTemplateGetEnabledRequest) =>
+          rpcCall<RepoTemplateEnabledResponse>(opts, "repo.templates.getEnabled", input),
+        setEnabled: (input: RepoTemplateSetEnabledRequest) =>
+          rpcCall<RepoTemplateEnabledResponse>(opts, "repo.templates.setEnabled", input),
+      },
       rename: (input: RepoRenameRequest) =>
         rpcCall<RepoRenameResponse>(opts, "repo.rename", input),
       transfer: (input: RepoTransferRequest) =>
@@ -2236,6 +2300,15 @@ export function createClient(opts: CreateClientOptions) {
         updateSettings: (input: AdminLfsUpdateSettingsRequest) =>
           rpcCall<AdminLfsSettingsPublic>(opts, "admin.lfs.updateSettings", input),
         getUsage: () => rpcCall<AdminLfsUsageResponse>(opts, "admin.lfs.getUsage", {}),
+      },
+      templates: {
+        list: () => rpcCall<AdminTemplatesListResponse>(opts, "admin.templates.list", {}),
+        update: (input: AdminTemplateUpdateRequest) =>
+          rpcCall<InstanceTemplatePackPublic>(opts, "admin.templates.update", input),
+        setEnabled: (input: AdminTemplateSetEnabledRequest) =>
+          rpcCall<InstanceTemplatePackPublic>(opts, "admin.templates.setEnabled", input),
+        delete: (input: AdminTemplateDeleteRequest) =>
+          rpcCall<{ ok: boolean }>(opts, "admin.templates.delete", input),
       },
       actions: {
         createRegistrationToken: () =>

@@ -30,7 +30,27 @@ impl RepoVisibility {
     }
 }
 
-/// Create-repository input (RPC wired in 07-12; templates in 07-03).
+/// Provenance for `/new` template picker cards (issue #18).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum TemplateProvenance {
+    #[default]
+    Builtin,
+    Instance,
+    User,
+}
+
+impl TemplateProvenance {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Builtin => "builtin",
+            Self::Instance => "instance",
+            Self::User => "user",
+        }
+    }
+}
+
+/// Create-repository input (RPC wired in 07-12; templates in 07-03 / issue #18).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateRepoRequest {
     pub name: String,
@@ -40,8 +60,17 @@ pub struct CreateRepoRequest {
     #[serde(default)]
     pub visibility: Option<RepoVisibility>,
     /// Stack preset pack id under `assets/stack-presets/` (omit / null = none).
+    /// Mutually exclusive with `instance_pack_id` / `template_repo_id`.
     #[serde(default)]
     pub stack_id: Option<String>,
+    /// Instance-admin template pack id (omit / null = none). Mutually exclusive
+    /// with `stack_id` / `template_repo_id`.
+    #[serde(default)]
+    pub instance_pack_id: Option<String>,
+    /// Source template repository id (omit / null = none). Mutually exclusive
+    /// with `stack_id` / `instance_pack_id`.
+    #[serde(default)]
+    pub template_repo_id: Option<String>,
     /// SPDX license id or omit / null / `"none"` for no LICENSE file.
     #[serde(default)]
     pub license_id: Option<String>,
@@ -53,7 +82,7 @@ pub struct CreateRepoRequest {
     pub owner: Option<String>,
 }
 
-/// Public create-form defaults + catalog metadata (D-02–D-04, D-08).
+/// Public create-form defaults + catalog metadata (D-02–D-04, D-08, issue #18).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoCreateDefaults {
     pub default_visibility: RepoVisibility,
@@ -61,7 +90,7 @@ pub struct RepoCreateDefaults {
     pub gitignores: Vec<RepoTemplateOption>,
 }
 
-/// Catalog option for stack / gitignore pickers (modal cards on `/new`).
+/// Catalog option for stack / gitignore / template pickers (modal cards on `/new`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoTemplateOption {
     pub id: String,
@@ -73,6 +102,12 @@ pub struct RepoTemplateOption {
     /// seeds it unless the client sends an explicit gitignore (including `"none"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub default_gitignore: Option<String>,
+    /// Built-in pack vs instance admin pack vs user/org template repo.
+    #[serde(default)]
+    pub provenance: TemplateProvenance,
+    /// For user templates: `@owner/name` display. For instance: slug.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_label: Option<String>,
 }
 
 /// Parent summary when this repo is a fork (D-SOC-16).
@@ -112,6 +147,9 @@ pub struct RepoPublic {
     /// True when this repository is a fork of another.
     #[serde(default)]
     pub is_fork: bool,
+    /// True when owners expose this repo as a create-from template (issue #18).
+    #[serde(default)]
+    pub is_template: bool,
     /// Fork network root id (own id for roots) — D-SOC-14 / D-PR-01.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fork_network_id: Option<String>,
@@ -573,6 +611,72 @@ pub struct RepoLfsDownloadResponse {
     pub size: i64,
     pub encoding: String,
     pub content: String,
+}
+
+/// Instance-admin template pack metadata (issue #18).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstanceTemplatePackPublic {
+    pub id: String,
+    pub slug: String,
+    pub label: String,
+    pub group: String,
+    pub description: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub default_gitignore: Option<String>,
+    pub enabled: bool,
+    pub byte_size: i64,
+    pub content_digest: String,
+    pub uploaded_by_user_id: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminTemplatesListResponse {
+    pub packs: Vec<InstanceTemplatePackPublic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminTemplateUpdateRequest {
+    pub id: String,
+    #[serde(default)]
+    pub label: Option<String>,
+    #[serde(default)]
+    pub group: Option<String>,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub default_gitignore: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminTemplateSetEnabledRequest {
+    pub id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminTemplateDeleteRequest {
+    pub id: String,
+}
+
+/// `repo.templates.setEnabled` — mark repository as a create-from template.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTemplateSetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTemplateGetEnabledRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTemplateEnabledResponse {
+    pub enabled: bool,
 }
 
 /// Per-repo row in admin instance usage breakdown.
