@@ -976,7 +976,6 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
       pageErrors.push(err?.message ?? String(err));
     }) as (...args: never[]) => void);
 
-    await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${webOrigin()}/new`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -985,41 +984,60 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
       state: "visible",
       timeout: 30_000,
     });
-    // Hydration / Query defaults settle before opening the modal.
-    await page.getByRole("button", { name: "Stack / template" }).waitFor({
-      state: "visible",
-      timeout: 30_000,
-    });
+    const stackTrigger = page.getByRole("button", { name: "Stack / template" });
+    await stackTrigger.waitFor({ state: "visible", timeout: 30_000 });
     assertNoOctaneOverlay(await page.content(), "/new initial");
 
-    await page.getByRole("button", { name: "Stack / template" }).click();
-    await page.getByTestId("repo-stack-overlay").waitFor({
-      state: "visible",
-      timeout: 15_000,
-    });
+    // Octane button onClick is a no-op until hydration (same class of flake as
+    // signupThroughUi / issues CRUD). Settle, then retry open until overlay mounts.
+    await new Promise((r) => setTimeout(r, 2500));
+    const overlay = page.getByTestId("repo-stack-overlay");
+    let opened = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      await stackTrigger.click();
+      try {
+        await overlay.waitFor({ state: "visible", timeout: 2_000 });
+        opened = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+    if (!opened) {
+      throw new Error(
+        `/new stack picker never opened after hydration retries. body=${(await page.content()).slice(0, 1200)}`,
+      );
+    }
     await page.getByRole("heading", { name: /Choose Stack \/ template/i }).waitFor({
       state: "visible",
       timeout: 10_000,
     });
 
     // Prefer a Frontend pack so we leave the first Systems group (stresses @for).
-    const dialog = page.getByRole("dialog");
-    const nextCard = dialog.getByRole("button", { name: /^Next\.js/ });
+    // Scope picks to the open overlay (page-level getByRole is enough once open).
+    const nextCard = page.getByRole("button", { name: /^Next\.js/ });
     try {
       await nextCard.waitFor({ state: "visible", timeout: 5_000 });
       await nextCard.click();
     } catch {
       // Catalog may change; fall back to Rust.
-      await dialog.getByRole("button", { name: /^Rust/ }).click();
+      await page.getByRole("button", { name: /^Rust/ }).click();
     }
 
     // Modal closes on rAF after select — wait until overlay is gone.
-    await page.getByTestId("repo-stack-overlay").waitFor({
+    await overlay.waitFor({
       state: "hidden",
       timeout: 15_000,
     });
     await new Promise((r) => setTimeout(r, 300));
     assertNoOctaneOverlay(await page.content(), "/new after template pick");
+
+    // Trigger should now show the selected pack name (proves onChange + close).
+    await stackTrigger.waitFor({ state: "visible", timeout: 5_000 });
+    const triggerHtml = await page.content();
+    if (!/Next\.js|Rust/i.test(triggerHtml)) {
+      throw new Error("/new stack trigger did not reflect selected pack after pick");
+    }
 
     const races = pageErrors.filter((m) =>
       /insertBefore|HierarchyRequestError|NotFoundError|The node before which/i.test(m),
