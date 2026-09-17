@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 fn main() {
-    println!("tauri stub");
+    tauri_app_lib::run();
 }

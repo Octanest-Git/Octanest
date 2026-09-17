@@ -1,7 +1,8 @@
 ---
-const title = "Hello Astro";
+import Welcome from "../components/Welcome.astro";
+import Layout from "../layouts/Layout.astro";
 ---
-<html lang="en">
-  <head><title>{title}</title></head>
-  <body><h1>{title}</h1></body>
-</html>
+
+<Layout>
+  <Welcome />
+</Layout>

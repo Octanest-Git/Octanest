@@ -3,8 +3,9 @@ type AppProps = {
 };
 
 export function App(props: AppProps) @{
-  <main>
+  <main class="app">
     <h1>{props.title as string}</h1>
-    <p>Edit src/App.tsrx and save to reload.</p>
+    <p>Ripple UI with TypeScript + Vite.</p>
+    <p class="hint">Edit <code>src/App.tsrx</code> and save to reload.</p>
   </main>
 }

@@ -1,3 +1,5 @@
-# Project
+# Empty project
 
-Seeded by the Octanest `empty` stack preset.
+Minimal Octanest starter — README only, no framework scaffolding.
+
+Add your own source files, or create another repository with a different stack preset.

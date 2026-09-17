@@ -1,1 +1,2 @@
-# Add project dependencies here
+# Runtime deps (empty for this starter). Dev:
+pytest>=8.0

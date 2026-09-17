@@ -49,6 +49,7 @@ pub struct RpcCtx {
     pub repos_dir: PathBuf,
     pub lfs_dir: PathBuf,
     pub release_assets_dir: PathBuf,
+    pub template_packs_dir: PathBuf,
     pub actions_log_dir: PathBuf,
     pub git: Arc<dyn GitBackend>,
     pub env_name: String,
@@ -253,6 +254,28 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(s) => RpcResponse::ok(s),
             Err(e) => RpcResponse::err(e),
         },
+        "admin.templates.list" => match crate::templates::handlers::admin_list(ctx).await {
+            Ok(s) => RpcResponse::ok(s),
+            Err(e) => RpcResponse::err(e),
+        },
+        "admin.templates.update" => {
+            match crate::templates::handlers::admin_update(ctx, req.input).await {
+                Ok(s) => RpcResponse::ok(s),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "admin.templates.setEnabled" => {
+            match crate::templates::handlers::admin_set_enabled(ctx, req.input).await {
+                Ok(s) => RpcResponse::ok(s),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "admin.templates.delete" => {
+            match crate::templates::handlers::admin_delete(ctx, req.input).await {
+                Ok(s) => RpcResponse::ok(s),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
         "admin.instance.factory_reset" => match admin::factory_reset(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
@@ -401,6 +424,18 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.templates.getEnabled" => {
+            match crate::templates::handlers::repo_get_enabled(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.templates.setEnabled" => {
+            match crate::templates::handlers::repo_set_enabled(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
         "repo.lfs.getStatus" => match repo::lfs_get_status(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),

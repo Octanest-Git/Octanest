@@ -1,3 +1,5 @@
+use app::greet;
+
 fn main() {
-    println!("Hello, world!");
+    println!("{}", greet("world"));
 }

@@ -1,5 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
 
-func main() { fmt.Println("Hello") }
+	"example.com/app/internal/greet"
+)
+
+func main() {
+	fmt.Println(greet.Hello("world"))
+}

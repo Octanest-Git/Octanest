@@ -18,6 +18,7 @@ pub mod pull;
 pub mod release;
 pub mod ssh;
 pub mod ssh_keys;
+pub mod templates;
 pub mod repo;
 pub mod routes;
 pub mod rpc;

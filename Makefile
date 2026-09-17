@@ -1,5 +1,6 @@
 .PHONY: help \
-	dev rpc-gen rpc-sync-check up down logs test smoke smoke-git-https smoke-git-ssh \
+	dev rpc-gen rpc-sync-check check-stack-presets sync-stack-presets \
+	up down logs test smoke smoke-git-https smoke-git-ssh \
 	smoke-git-lfs \
 	smoke-packages \
 	smoke-actions \
@@ -20,6 +21,8 @@ help:
 	@echo "  make dev            - local API + web (Vite proxy; D-10)"
 	@echo "  make rpc-gen        - regenerate packages/api-client from Rust"
 	@echo "  make rpc-sync-check - fail if generated client is out of sync"
+	@echo "  make check-stack-presets - validate stack-presets catalog + size budget"
+	@echo "  make sync-stack-presets - stamp/refresh stack-presets metadata"
 	@echo "  make up             - docker compose up (Traefik on :80)"
 	@echo "  make up-mysql       - compose up with the MySQL profile (D-07)"
 	@echo "  make up-sqlite      - compose up with SQLite file in ./var (D-19)"
@@ -73,6 +76,12 @@ rpc-gen:
 
 rpc-sync-check:
 	@./scripts/check-rpc-sync.sh
+
+check-stack-presets:
+	@./scripts/check-stack-presets.sh
+
+sync-stack-presets:
+	@bun scripts/sync-stack-presets.mjs --stamp
 
 up:
 	$(COMPOSE) -f $(COMPOSE_FILE) up --build -d

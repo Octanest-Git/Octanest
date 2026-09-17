@@ -8,8 +8,6 @@ import { toastSuccess } from "@/lib/toast";
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
-const DOCS_HREF = "/docs/CONFIGURATION.md#git-lfs";
-
 function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return "0 B";
   if (n < 1024) return `${n} B`;
@@ -89,10 +87,7 @@ export function LfsSettingsPanel(props: {
       Enable Git LFS for this repository. Track large files with{" "}
       <code className="text-[13px]">git lfs track</code> and commit{" "}
       <code className="text-[13px]">.gitattributes</code> yourself — Octanest does not auto-commit
-      attributes.{" "}
-      <a href={DOCS_HREF as string} className="text-primary underline-offset-2 hover:underline">
-        LFS setup docs
-      </a>
+      attributes.
     </p>
 
     @if (usageQ.isPending) {

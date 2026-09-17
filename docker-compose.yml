@@ -63,6 +63,8 @@ services:
       OCTANEST_PACKAGES_DIR: /var/packages
       OCTANEST_PACKAGES_MAX_BLOB_BYTES: ${OCTANEST_PACKAGES_MAX_BLOB_BYTES:-2147483648}
       OCTANEST_PACKAGES_OWNER_QUOTA_BYTES: ${OCTANEST_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
+      # Instance template pack zips (issue #18) — content-addressed; distinct from packages.
+      OCTANEST_TEMPLATE_PACKS_DIR: /var/template-packs
       # Actions job logs (D-ACT-13) — distinct from repos / LFS / packages / release-assets.
       OCTANEST_ACTIONS_LOG_DIR: /var/actions-logs
       OCTANEST_ACTIONS_ENABLED: ${OCTANEST_ACTIONS_ENABLED:-true}
@@ -90,6 +92,8 @@ services:
       - ./var/release-assets:/var/release-assets
       # Package blobs (D-PKG-07) — content-addressed; not LFS or release-assets
       - ./var/packages:/var/packages
+      # Instance template packs (issue #18) — content-addressed zip store
+      - ./var/template-packs:/var/template-packs
       # Actions job logs (D-ACT-13) — {run_id}/{job_id}.log
       - ./var/actions-logs:/var/actions-logs
       # Persist SSH host keys across restarts (TOFU; D-SSH-07 / RESEARCH pitfall 5)

@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { trackDomErrors } from "@/test/dom-errors";
 
 /**
  * /new create flow (D-01, D-02, D-04, D-11, D-12 / UI-SPEC).
@@ -119,70 +120,116 @@ describe("/new Wave 0 (D-11 verify wall)", () => {
 
 describe("/new create form (D-02, D-04, D-12)", () => {
   it("verified form shows stack, license, gitignore pickers", async () => {
-    loaderData = {
-      user: {
-        id: "u1",
-        email: "ada@example.com",
-        username: "ada",
-        display_name: "Ada",
-        bio: "",
-        avatar_url: null,
-        role: "user",
-        profile_incomplete: false,
-        email_verified: true,
-      },
-      defaults: {
-        default_visibility: "public",
-        stacks: [
-          {
-            id: "rust",
-            label: "Rust",
-            group: "Systems",
-            description: "Cargo binary crate with src/main.rs.",
-            default_gitignore: "Rust",
-          },
-        ],
-        gitignores: [
-          {
-            id: "Rust",
-            label: "Rust",
-            group: "Languages",
-            description: "target/ and Cargo build noise.",
-          },
-        ],
-      },
-      ownerOrgs: [],
-    };
+    const tracker = trackDomErrors();
+    try {
+      loaderData = {
+        user: {
+          id: "u1",
+          email: "ada@example.com",
+          username: "ada",
+          display_name: "Ada",
+          bio: "",
+          avatar_url: null,
+          role: "user",
+          profile_incomplete: false,
+          email_verified: true,
+        },
+        defaults: {
+          default_visibility: "public",
+          stacks: [
+            {
+              id: "rust",
+              label: "Rust",
+              group: "Systems",
+              description: "Cargo binary crate with src/main.rs.",
+              default_gitignore: "Rust",
+              provenance: "builtin",
+            },
+            {
+              id: "go",
+              label: "Go",
+              group: "Backend",
+              description: "Go module.",
+              default_gitignore: "Go",
+              provenance: "builtin",
+            },
+            {
+              id: "nextjs",
+              label: "Next.js",
+              group: "Frontend",
+              description: "Next app router.",
+              default_gitignore: "Node",
+              provenance: "builtin",
+            },
+          ],
+          gitignores: [
+            {
+              id: "Rust",
+              label: "Rust",
+              group: "Languages",
+              description: "target/ and Cargo build noise.",
+            },
+            {
+              id: "Go",
+              label: "Go",
+              group: "Languages",
+              description: "bin/",
+            },
+            {
+              id: "Node",
+              label: "Node",
+              group: "Languages",
+              description: "node_modules/",
+            },
+          ],
+        },
+        ownerOrgs: [],
+      };
 
-    const { NewPage } = await import("./new");
-    render(NewPage as never);
+      const { NewPage } = await import("./new");
+      render(NewPage as never);
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Create repository" })).toBeInTheDocument();
-    });
-    expect(screen.getByLabelText("Stack template")).toBeInTheDocument();
-    expect(screen.getByLabelText("License")).toBeInTheDocument();
-    expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: "Create repository" })).toBeInTheDocument();
+      });
+      expect(screen.getByLabelText("Stack / template")).toBeInTheDocument();
+      expect(screen.getByLabelText("License")).toBeInTheDocument();
+      expect(screen.getByLabelText(".gitignore")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("Stack template"));
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Choose Stack template" })).toBeInTheDocument();
-    });
-    expect(screen.getByText("Cargo binary crate with src/main.rs.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Rust/i }));
-    await waitFor(() => {
-      expect(
-        screen.queryByRole("heading", { name: "Choose Stack template" }),
-      ).not.toBeInTheDocument();
-    });
-    // Stack pick auto-fills the matching .gitignore
-    expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Rust/);
+      const stackDetails = screen.getByLabelText("Stack / template").closest("details");
+      if (!stackDetails) throw new Error("expected stack <details>");
+      stackDetails.open = true;
+      fireEvent(stackDetails, new Event("toggle", { bubbles: true }));
+      await waitFor(() => {
+        expect(screen.getByTestId("repo-stack-overlay")).toBeVisible();
+        expect(
+          screen.getByRole("heading", { name: "Choose Stack / template", hidden: true }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Cargo binary crate with src\/main\.rs\./)).toBeInTheDocument();
+      // Non-first group + sibling gitignore autofill — regression for insertBefore races.
+      fireEvent.click(screen.getByRole("button", { name: /^Next\.js/, hidden: true }));
+      await waitFor(() => {
+        expect(stackDetails.open).toBe(false);
+      });
+      expect(screen.getByLabelText(".gitignore")).toHaveTextContent(/Node/);
+      expect(tracker.domRaceErrors()).toEqual([]);
 
-    fireEvent.click(screen.getByLabelText("License"));
-    await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Choose License" })).toBeInTheDocument();
-    });
-    expect(screen.getByText("Permissive — keep the copyright notice.")).toBeInTheDocument();
+      const licenseDetails = screen.getByLabelText("License").closest("details");
+      if (!licenseDetails) throw new Error("expected license <details>");
+      licenseDetails.open = true;
+      fireEvent(licenseDetails, new Event("toggle", { bubbles: true }));
+      await waitFor(() => {
+        expect(screen.getByTestId("repo-license-overlay")).toBeVisible();
+        expect(
+          screen.getByRole("heading", { name: "Choose License", hidden: true }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText("Permissive — keep the copyright notice.")).toBeInTheDocument();
+      expect(tracker.domRaceErrors()).toEqual([]);
+    } finally {
+      tracker.dispose();
+    }
   }, 20000);
 
   it("duplicate name maps to exact inline field copy", async () => {

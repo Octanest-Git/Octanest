@@ -316,18 +316,18 @@ export function NewPage() @{
                 <div>
                   <p className="text-[14px] font-semibold text-foreground">Templates (optional)</p>
                   <p className="mt-1 text-[13px] text-muted-foreground">
-                    Seed an initial commit with a stack, license, and ignore rules — or leave them
-                    as None for an empty Quick setup repo.
+                    Seed an initial commit from an official-style stack starter, an instance pack,
+                    or a user template repository — or leave as None for an empty Quick setup repo.
                   </p>
                 </div>
                 <TemplatePicker
                   id="repo-stack"
-                  label="Stack template"
-                  description="Project skeleton files committed on create. Picking a stack also selects a matching .gitignore (changeable below)."
+                  label="Stack / template"
+                  description="Official starters, instance packs, and published template repos. Provenance is shown on each card."
                   value={values.stackId}
                   options={stacks}
                   noneLabel="None"
-                  noneDescription="No stack files — empty repo with Quick setup."
+                  noneDescription="No template files — empty repo with Quick setup."
                   onChange={(id) => {
                     form.setFieldValue("stackId", id);
                     if (id === "none") {

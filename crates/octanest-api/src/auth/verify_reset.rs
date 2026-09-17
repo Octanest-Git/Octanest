@@ -658,6 +658,7 @@ mod tests {
             repos_dir: PathBuf::from("/tmp/octanest-test-repos"),
             lfs_dir: PathBuf::from("/tmp/octanest-test-lfs"),
             release_assets_dir: PathBuf::from("/tmp/octanest-test-release-assets"),
+            template_packs_dir: PathBuf::from("/tmp/octanest-test-template-packs"),
             actions_log_dir: PathBuf::from("/tmp/octanest-test-actions-logs"),
             git: Arc::new(octanest_git::CliGitBackend::new()),
             env_name: "development".into(),

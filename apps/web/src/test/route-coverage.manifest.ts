@@ -171,7 +171,13 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
   // --- create flows ---
   {
     route: "new.tsrx",
-    coverage: [{ kind: "happy-dom", test: "apps/web/src/routes/new.integration.test.ts" }],
+    coverage: [
+      { kind: "happy-dom", test: "apps/web/src/routes/new.integration.test.ts" },
+      {
+        kind: "stack-browser",
+        test: "apps/web/e2e/stack-browser/new-repo-template.stack.browser.test.tsx",
+      },
+    ],
   },
   {
     route: "orgs.new.tsrx",
@@ -234,6 +240,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
         kind: "skip",
         rationale:
           "Phase 19 admin registration-token UI; happy-dom deferred — covered by actions_secrets/dispatch_policy nextest + manual Admin runners smoke",
+      },
+    ],
+  },
+  {
+    route: "admin/templates.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/admin/templates.integration.test.ts",
       },
     ],
   },
