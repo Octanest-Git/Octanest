@@ -92,4 +92,33 @@ describe("ProfileAvatarField", () => {
     screen.getByRole("button", { name: /Remove picture/i }).click();
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
+
+  it("does not open the file picker when the Profile picture label is clicked (#5)", async () => {
+    const clickSpy = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => {});
+
+    renderWithQueryClient(ProfileAvatarField, {
+      props: {
+        user,
+        src: null,
+        onCroppedFile: vi.fn(),
+        onRemove: vi.fn(),
+        onReject: vi.fn(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Profile picture")).toBeInTheDocument();
+    });
+
+    const label = screen.getByText("Profile picture");
+    expect(label).not.toHaveAttribute("for");
+
+    label.click();
+    expect(clickSpy).not.toHaveBeenCalled();
+
+    screen.getByRole("button", { name: /Upload new picture/i }).click();
+    expect(clickSpy).toHaveBeenCalled();
+
+    clickSpy.mockRestore();
+  });
 });
