@@ -2,9 +2,13 @@ import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { Cpu } from "@octanejs/lucide";
 import { ActionsRunnersDocs } from "@/components/admin/actions-runners-docs";
 import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
 import { apiClient } from "@/lib/api-client";
 import { authSessionQueryOptions, setAuthMeCache } from "@/lib/session-queries";
 import { fetchSessionMe } from "@/lib/ssr-auth";
@@ -129,12 +133,11 @@ export function AdminRunnersPage() @{
         </SettingsShell>;
       } @else {
         <AdminSettingsLayout active="runners" data-testid="admin-runners">
-          <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold text-foreground">
-            Actions runners
-          </h1>
-          <p className="mt-2 text-[15px] text-muted-foreground">
-            Register self-hosted runners that execute workflow jobs for this instance.
-          </p>
+          <PageHeader
+            icon={<Cpu aria-hidden size={22} />}
+            title="Actions runners"
+            description="Register self-hosted runners that execute workflow jobs for this instance."
+          />
 
           <div className="mt-6">
             <ActionsRunnersDocs />
@@ -183,22 +186,32 @@ export function AdminRunnersPage() @{
               <p className="mt-4 text-[14px] text-destructive" role="alert">
                 {(runnersQ.error as Error)?.message || "Could not load runners."}
               </p>;
+            } @else if (runners.length === 0) {
+              <EmptyState
+                className="mt-4"
+                compact
+                icon={<Cpu aria-hidden size={20} />}
+                title="No runners registered yet"
+                description="Create a token and start the runner image to see entries here."
+              />;
             } @else {
-              <ul className="mt-4 space-y-2">
+              <List className="mt-4">
                 @for (const r of runners; key r.id) {
-                  <li className="rounded-md border border-border bg-card px-3 py-2 text-[14px] text-foreground">
-                    <span className="font-medium">{r.name as string}</span>
+                  <ListRow className="gap-2 text-[14px]">
+                    <Cpu
+                      aria-hidden
+                      size={16}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="font-medium text-foreground">
+                      {r.name as string}
+                    </span>
                     <span className="text-muted-foreground">
                       {" — " + (r.labels.join(", ") as string)}
                     </span>
-                  </li>;
-                } @empty {
-                  <li className="text-[14px] text-muted-foreground">
-                    No runners registered yet. Create a token and start the runner image
-                    to see entries here.
-                  </li>;
+                  </ListRow>;
                 }
-              </ul>;
+              </List>;
             }
           </section>
         </AdminSettingsLayout>;
