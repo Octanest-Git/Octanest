@@ -128,7 +128,7 @@ describe("/$owner/$repo/releases/ render mount (G-11.1-15)", () => {
     await waitFor(
       () => {
         expect(screen.getByRole("heading", { name: "Releases" })).toBeTruthy();
-        expect(screen.getByText(/There aren’t any releases yet/i)).toBeTruthy();
+        expect(screen.getByText(/No releases yet/i)).toBeTruthy();
         expect(screen.getByRole("button", { name: "Draft a new release" })).toBeTruthy();
       },
       { timeout: 10_000 },

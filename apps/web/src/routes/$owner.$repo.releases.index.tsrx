@@ -1,8 +1,13 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
+import { Rocket, Tag } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
@@ -110,61 +115,80 @@ export function RepoReleasesPage() @{
   @if (notFound || (!repoQ.isPending && !repo)) {
     <RepoNotFound />;
   } @else if (!repo) {
-    <p className="text-[16px] text-muted-foreground">Loading releases…</p>;
+    <>
+      <PageHeader icon={<Rocket aria-hidden size={22} />} title="Releases" />
+      <List className="mt-6">
+        @for (const i of [0, 1, 2]; key i) {
+          <ListRow className="items-start gap-3">
+            <Skeleton className="mt-0.5 size-4 rounded" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-56" />
+              <Skeleton className="h-3 w-32" />
+            </div>
+          </ListRow>;
+        }
+      </List>
+    </>;
   } @else {
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-semibold text-foreground">Releases</h2>
-        @if (repo.can_write) {
-          <a href={newHref as string} className="no-underline">
-            <Button type="button">Draft a new release</Button>
-          </a>;
+      <PageHeader
+        icon={<Rocket aria-hidden size={22} />}
+        title="Releases"
+        actions={
+          repo.can_write ? (
+            <a href={newHref as string} className="no-underline">
+              <Button type="button">Draft a new release</Button>
+            </a>
+          ) : undefined
         }
-      </div>
+      />
       @if (listQ.isError) {
-        <p role="alert" className="text-[16px] text-destructive">
+        <p role="alert" className="mt-6 text-[16px] text-destructive">
           {(listQ.error?.message || NETWORK_ERROR) as string}
         </p>;
       } @else if (releases.length === 0) {
-        <p className="text-[16px] text-muted-foreground">
-          There aren’t any releases yet.
-          @if (repo.can_write) {
-            <>
-              {" "}
-              <a href={newHref as string} className="text-primary underline">
-                Create one
-              </a>{" "}
-              from an existing tag.
-            </>;
-          }
-        </p>;
+        <EmptyState
+          className="mt-6"
+          icon={<Rocket aria-hidden size={22} />}
+          title="No releases yet"
+          description="Package a point in your history as a downloadable release with notes."
+        />;
       } @else {
-        <ul className="flex flex-col gap-4">
+        <List className="mt-6">
           @for (const rel of releases; key rel.id) {
-            <li className="border-b border-border pb-4">
-              <a
-                href={
-                  `/${owner}/${repoName}/releases/${encodeURIComponent(rel.tag_name)}` as string
-                }
-                className="text-[16px] font-semibold text-primary no-underline hover:underline"
-              >
-                {(rel.title.trim() || rel.tag_name) as string}
-              </a>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-[14px] text-muted-foreground">
-                <span>{rel.tag_name as string}</span>
-                @if (rel.draft) {
-                  <Badge variant="outline">Draft</Badge>;
-                }
-                @if (rel.prerelease) {
-                  <Badge variant="outline">Pre-release</Badge>;
-                }
-                <span>
-                  {(rel.author_username ? `by ${rel.author_username}` : "") as string}
-                </span>
+            <ListRow className="items-start gap-3 py-4">
+              <Tag
+                aria-hidden
+                size={16}
+                className="mt-1 shrink-0 text-muted-foreground"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={
+                      `/${owner}/${repoName}/releases/${encodeURIComponent(rel.tag_name)}` as string
+                    }
+                    className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                  >
+                    {(rel.title.trim() || rel.tag_name) as string}
+                  </a>
+                  @if (rel.draft) {
+                    <Badge variant="draft">Draft</Badge>;
+                  }
+                  @if (rel.prerelease) {
+                    <Badge variant="secondary">Pre-release</Badge>;
+                  }
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+                  <span className="font-mono">{rel.tag_name as string}</span>
+                  @if (rel.author_username) {
+                    <span>{("· by " + rel.author_username) as string}</span>;
+                  }
+                </div>
               </div>
-            </li>;
+            </ListRow>;
           }
-        </ul>;
+        </List>;
       }
     </>;
   }
