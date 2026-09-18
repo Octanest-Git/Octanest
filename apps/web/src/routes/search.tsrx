@@ -8,9 +8,13 @@ import {
   type RepoPublic,
   type UserLookupHit,
 } from "@octanest/api-client";
+import { Building2, BookMarked, Search, Users } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
 import type { SearchEntityType } from "@/lib/global-search-suggest";
 import { cn } from "@/lib/utils";
 
@@ -172,35 +176,40 @@ export function SearchPage() @{
   const scopedLabel = type === "code" ? "code" : type === "issues" ? "issues" : "pull requests";
 
   <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6" data-testid="search-page">
-    <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-foreground">
-      Search
-    </h1>
-    <p className="mt-2 text-[15px] text-muted-foreground">
-      Find repositories you can access (including private), users, and organizations.
-    </p>
+    <PageHeader
+      icon={<Search aria-hidden size={22} />}
+      title="Search"
+      description="Find repositories you can access (including private), users, and organizations."
+      divider={false}
+    />
 
     <form
       method="get"
       action="/search"
-      className="mt-6 flex max-w-xl flex-wrap gap-2"
+      className="mt-6 flex max-w-xl gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         window.location.assign(tabHref(q, type));
       }}
     >
-      <Input
-        name="q"
-        value={q as string}
-        onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
-        placeholder="Search Octanest…"
-        className="h-11 flex-1"
-        aria-label="Search query"
-        data-testid="search-page-input"
-      />
+      <div className="relative flex-1">
+        <Search
+          aria-hidden
+          size={16}
+          className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted-foreground"
+        />
+        <Input
+          name="q"
+          value={q as string}
+          onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
+          placeholder="Search Octanest…"
+          className="pl-8"
+          aria-label="Search query"
+          data-testid="search-page-input"
+        />
+      </div>
       <input type="hidden" name="type" value={type as string} />
-      <Button type="submit" className="h-11">
-        Search
-      </Button>
+      <Button type="submit">Search</Button>
     </form>
 
     <nav
@@ -244,52 +253,76 @@ export function SearchPage() @{
                 : "Enter a query to list repositories to search in."}
             </p>;
           } @else {
-            <ul className="mt-4 divide-y divide-border border-y border-border">
+            <List className="mt-4">
               @for (const repo of repos; key repo.id) {
-                <li className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <ListRow className="justify-between gap-2">
                   <a
                     href={"/" + repo.owner_username + "/" + repo.name}
-                    className="font-medium text-primary no-underline hover:underline"
+                    className="flex min-w-0 items-center gap-2 font-medium text-primary no-underline hover:underline"
                   >
-                    {(repo.owner_username + "/" + repo.name) as string}
+                    <BookMarked
+                      aria-hidden
+                      size={16}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="truncate">
+                      {(repo.owner_username + "/" + repo.name) as string}
+                    </span>
                   </a>
                   <a
                     href={"/" + repo.owner_username + "/" + repo.name + "/search"}
-                    className="text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline"
+                    className="shrink-0 text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline"
                   >
                     Search in repository
                   </a>
-                </li>;
+                </ListRow>;
               }
-            </ul>;
+            </List>;
           }
         </div>;
       } @else if (type === "repositories") {
         @if (repos.length === 0) {
-          <p className="text-[15px] text-muted-foreground">No repositories found.</p>;
+          <EmptyState
+            icon={<BookMarked aria-hidden size={22} />}
+            title="No repositories found"
+            description={
+              q0.trim()
+                ? "No repositories match your search. Try different keywords."
+                : "Search for repositories by name or description."
+            }
+          />;
         } @else {
-          <ul className="divide-y divide-border border-y border-border">
+          <List>
             @for (const repo of repos; key repo.id) {
-              <li className="py-4">
-                <a
-                  href={"/" + repo.owner_username + "/" + repo.name}
-                  className="text-[16px] font-semibold text-primary no-underline hover:underline"
-                >
-                  {(repo.owner_username + "/" + repo.name) as string}
-                </a>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">
-                    {(repo.visibility === "private" ? "Private" : "Public") as string}
-                  </Badge>
+              <ListRow className="items-start gap-3 py-4">
+                <BookMarked
+                  aria-hidden
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={"/" + repo.owner_username + "/" + repo.name}
+                      className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                    >
+                      {(repo.owner_username + "/" + repo.name) as string}
+                    </a>
+                    <Badge
+                      variant={repo.visibility === "private" ? "outline" : "success"}
+                    >
+                      {(repo.visibility === "private" ? "Private" : "Public") as string}
+                    </Badge>
+                  </div>
                   @if (repo.description?.trim()) {
-                    <span className="text-[14px] text-muted-foreground">
+                    <p className="mt-1 text-[14px] text-muted-foreground">
                       {repo.description as string}
-                    </span>;
+                    </p>;
                   }
                 </div>
-              </li>;
+              </ListRow>;
             }
-          </ul>;
+          </List>;
         }
       } @else if (type === "users") {
         @if (!signedIn) {
@@ -304,25 +337,34 @@ export function SearchPage() @{
             Type at least 2 characters to search users.
           </p>;
         } @else if (users.length === 0) {
-          <p className="text-[15px] text-muted-foreground">No users found.</p>;
+          <EmptyState
+            icon={<Users aria-hidden size={22} />}
+            title="No users found"
+            description="No users match your search. Try a different username."
+          />;
         } @else {
-          <ul className="divide-y divide-border border-y border-border">
+          <List>
             @for (const u of users; key u.username) {
-              <li className="py-3">
+              <ListRow className="gap-2">
+                <Users
+                  aria-hidden
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                />
                 <a
                   href={"/" + u.username}
-                  className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                  className="text-[15px] font-semibold text-primary no-underline hover:underline"
                 >
                   {"@" + (u.username as string)}
                 </a>
                 @if (u.display_name) {
-                  <span className="ml-2 text-[14px] text-muted-foreground">
+                  <span className="text-[14px] text-muted-foreground">
                     {u.display_name as string}
                   </span>;
                 }
-              </li>;
+              </ListRow>;
             }
-          </ul>;
+          </List>;
         }
       } @else {
         @if (!signedIn) {
@@ -333,27 +375,36 @@ export function SearchPage() @{
             to search organizations you belong to.
           </p>;
         } @else if (orgs.length === 0) {
-          <p className="text-[15px] text-muted-foreground">No organizations found.</p>;
+          <EmptyState
+            icon={<Building2 aria-hidden size={22} />}
+            title="No organizations found"
+            description="You don't belong to any matching organizations."
+          />;
         } @else {
-          <ul className="divide-y divide-border border-y border-border">
+          <List>
             @for (const o of orgs; key o.slug) {
-              <li className="py-3">
+              <ListRow className="gap-2">
+                <Building2
+                  aria-hidden
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                />
                 <Link
                   to="/$owner"
                   params={{ owner: o.slug }}
                   preload="intent"
-                  className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                  className="text-[15px] font-semibold text-primary no-underline hover:underline"
                 >
                   {o.slug as string}
                 </Link>
                 @if (o.display_name) {
-                  <span className="ml-2 text-[14px] text-muted-foreground">
+                  <span className="text-[14px] text-muted-foreground">
                     {o.display_name as string}
                   </span>;
                 }
-              </li>;
+              </ListRow>;
             }
-          </ul>;
+          </List>;
         }
       }
     </div>
