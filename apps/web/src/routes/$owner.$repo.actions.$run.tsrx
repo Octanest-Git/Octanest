@@ -1,7 +1,23 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useState } from "octane";
+import { ArrowLeft, Workflow } from "@octanejs/lucide";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { actionsJobLogQuery, actionsRunDetailQuery } from "@/lib/actions-queries";
+
+/** Map a workflow run/job status to a status Badge variant. */
+function runStatusVariant(status: string): "success" | "destructive" | "primary" | "default" {
+  const s = status.toLowerCase();
+  if (s === "success" || s === "completed" || s === "passed") return "success";
+  if (s === "failure" || s === "failed" || s === "error" || s === "cancelled") return "destructive";
+  if (s === "in_progress" || s === "running" || s === "queued" || s === "pending") return "primary";
+  return "default";
+}
 
 export const Route = createFileRoute("/$owner/$repo/actions/$run")({
   component: RepoActionsRunPage,
@@ -38,48 +54,73 @@ export function RepoActionsRunPage() @{
     enabled: !!jobId,
   });
   const logText = logQ.data?.content || (logQ.isPending ? "Loading log…" : "(empty log)");
-  const statusLine = run ? `${run.status} · ${run.event} · ${run.head_sha.slice(0, 7)}` : "";
+  const runDescription = run ? `${run.event} · ${run.head_sha.slice(0, 7)}` : "";
 
   @{
     <div data-testid="repo-actions-run">
       <p className="mb-4">
         <a
           href={`/${owner}/${repoName}/actions` as string}
-          className="text-muted-foreground underline-offset-2 hover:underline"
+          className="inline-flex items-center gap-1 text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline"
         >
-          ← Actions
+          <ArrowLeft aria-hidden size={14} />
+          Actions
         </a>
       </p>
       @if (detailQ.isPending) {
-        <p className="text-muted-foreground">Loading run…</p>;
+        <>
+          <div className="flex flex-col gap-2 border-b border-border pb-4">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <Skeleton className="mt-8 h-64 w-full" />
+        </>;
       } @else {
         @if (!run) {
-          <p className="text-muted-foreground">Run not found.</p>;
+          <EmptyState
+            icon={<Workflow aria-hidden size={22} />}
+            title="Run not found"
+            description="This workflow run doesn't exist or is no longer available."
+          />;
         } @else {
           <>
-            <h2 className="font-[family-name:var(--font-display)] text-[20px] font-semibold text-foreground">
-              {run.title as string}
-            </h2>
-            <p className="mt-1 text-muted-foreground">{statusLine as string}</p>
-            <div className="mt-8 grid gap-6 md:grid-cols-[14rem_1fr]">
-              <ul data-testid="repo-actions-jobs" className="space-y-2">
+            <PageHeader
+              icon={<Workflow aria-hidden size={22} />}
+              title={run.title}
+              description={runDescription}
+              actions={
+                <Badge variant={runStatusVariant(run.status)}>{run.status as string}</Badge>
+              }
+            />
+            <div className="mt-8 grid gap-6 md:grid-cols-[16rem_1fr]">
+              <List data-testid="repo-actions-jobs" className="self-start">
                 @for (const job of jobs; key job.id) {
-                  <li>
+                  <ListRow className="p-0">
                     <button
                       type="button"
-                      className="w-full text-left text-[14px] text-foreground hover:underline"
+                      className={cn(
+                        "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[14px] outline-none transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+                        job.id === jobId
+                          ? "bg-muted/60 font-medium text-foreground"
+                          : "text-foreground",
+                      )}
                       onClick={() => setSelectedJobId(job.id)}
                     >
-                      {(job.name + " (" + job.status + ")") as string}
+                      <span className="min-w-0 truncate">{job.name as string}</span>
+                      <Badge variant={runStatusVariant(job.status)}>
+                        {job.status as string}
+                      </Badge>
                     </button>
-                  </li>;
+                  </ListRow>;
                 } @empty {
-                  <li className="text-muted-foreground">No jobs.</li>;
+                  <ListRow>
+                    <span className="text-[14px] text-muted-foreground">No jobs.</span>
+                  </ListRow>;
                 }
-              </ul>
+              </List>
               <pre
                 data-testid="repo-actions-job-log"
-                className="max-h-[28rem] overflow-auto rounded-md bg-muted/40 p-4 font-mono text-[12px] text-foreground"
+                className="max-h-[28rem] overflow-auto rounded-md border border-border bg-muted/40 p-4 font-mono text-[12px] text-foreground"
               >
                 {logText as string}
               </pre>

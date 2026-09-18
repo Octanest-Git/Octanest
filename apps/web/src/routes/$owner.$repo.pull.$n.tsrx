@@ -8,6 +8,8 @@ import { PullFiles } from "@/components/repo/pull-files";
 import { PullMergePanel } from "@/components/repo/pull-merge-panel";
 import { PullReviews } from "@/components/repo/pull-reviews";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { fetchPullGet, fetchRepoGet } from "@/lib/ssr-repo";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
@@ -130,38 +132,52 @@ export function PullDetailPage() @{
         <p className="text-muted-foreground">Loading…</p>;
       } @else {
         <div className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-2xl font-semibold">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-4">
+            <div className="min-w-0">
+              <h2 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-tight">
                 {pull.title as string}{" "}
-                <span className="text-muted-foreground">#{pull.number as number}</span>
+                <span className="font-normal text-muted-foreground">#{pull.number as number}</span>
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {pull.state as string} · {pull.author_username as string} wants to merge{" "}
-                {pull.head_ref as string} into {pull.base_ref as string}
-              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                @if (pull.state === "merged") {
+                  <Badge variant="merged">Merged</Badge>;
+                } @else if (pull.state === "closed") {
+                  <Badge variant="destructive">Closed</Badge>;
+                } @else {
+                  <Badge variant="success">Open</Badge>;
+                }
+                <span>
+                  <span className="font-medium text-foreground">
+                    {pull.author_username as string}
+                  </span>{" "}
+                  wants to merge <span className="font-mono">{pull.head_ref as string}</span> into{" "}
+                  <span className="font-mono">{pull.base_ref as string}</span>
+                </span>
+              </div>
             </div>
             @if (canWrite) {
-              <div className="flex gap-2">
+              <div className="flex shrink-0 gap-2">
                 @if (pull.state === "open") {
-                  <button
+                  <Button
                     type="button"
-                    className="rounded-md border border-border px-3 py-1.5 text-sm"
+                    variant="outline"
+                    size="sm"
                     disabled={busy}
                     onClick={() => void closePull()}
                   >
                     Close pull request
-                  </button>;
+                  </Button>;
                 }
                 @if (pull.state === "closed") {
-                  <button
+                  <Button
                     type="button"
-                    className="rounded-md border border-border px-3 py-1.5 text-sm"
+                    variant="outline"
+                    size="sm"
                     disabled={busy}
                     onClick={() => void reopenPull()}
                   >
                     Reopen pull request
-                  </button>;
+                  </Button>;
                 }
               </div>;
             }
