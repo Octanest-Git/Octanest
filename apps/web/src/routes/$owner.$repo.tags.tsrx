@@ -1,8 +1,13 @@
 import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { FileArchive, Tag } from "@octanejs/lucide";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   archiveTarGzUrl,
   archiveZipUrl,
@@ -112,27 +117,44 @@ export function RepoTagsPage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading tags…</p>;
+    <>
+      <PageHeader icon={<Tag aria-hidden size={22} />} title="Tags" />
+      <List className="mt-6">
+        @for (const i of [0, 1, 2]; key i) {
+          <ListRow>
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </ListRow>;
+        }
+      </List>
+    </>;
   } @else if (phase.kind === "error") {
     <div className="flex flex-col gap-4">
       <p role="alert" className="text-[16px] text-destructive">
         {phase.message as string}
       </p>
-      <Button type="button" variant="secondary" onClick={() => void router.invalidate()}>
+      <Button type="button" variant="outline" onClick={() => void router.invalidate()}>
         Try again
       </Button>
     </div>;
   } @else {
     <>
-      <h2 className="mb-4 text-[18px] font-semibold text-foreground">Tags</h2>
+      <PageHeader icon={<Tag aria-hidden size={22} />} title="Tags" />
       @if (phase.tags.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No tags yet.</p>;
+        <EmptyState
+          className="mt-6"
+          icon={<Tag aria-hidden size={22} />}
+          title="No tags yet"
+          description="Tags mark release points in history. Push a tag to see it listed here."
+        />;
       } @else {
-        <ul className="divide-y divide-border border-y border-border">
+        <List className="mt-6">
           @for (const t of phase.tags; key t.name) {
             <TagRow owner={owner} repo={repoName} tag={t} />;
           }
-        </ul>;
+        </List>;
       }
     </>;
   }
@@ -153,38 +175,43 @@ function TagRow({
   const zipHref = archiveZipUrl(owner, repo, name);
   const tarHref = archiveTarGzUrl(owner, repo, name);
 
-  <li className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+  <ListRow className="flex-wrap gap-x-4 gap-y-2">
+    <Tag aria-hidden size={16} className="shrink-0 text-muted-foreground" />
     <div className="min-w-0 flex-1">
       <a
         href={href as string}
-        className="block truncate text-[16px] font-semibold text-primary no-underline hover:underline"
+        className="block truncate text-[15px] font-semibold text-primary no-underline hover:underline"
         title={name as string}
       >
         {name as string}
       </a>
-      <p className="mt-0.5 font-mono text-[13px] text-muted-foreground" title={tag.oid as string}>
+      <p className="mt-0.5 font-mono text-[12px] text-muted-foreground" title={tag.oid as string}>
         {tip as string}
       </p>
     </div>
     <div className="flex flex-wrap gap-2">
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
+        size="sm"
         onClick={() => {
           window.location.assign(zipHref);
         }}
       >
-        Download ZIP
+        <FileArchive aria-hidden size={14} />
+        ZIP
       </Button>
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
+        size="sm"
         onClick={() => {
           window.location.assign(tarHref);
         }}
       >
-        Download tar.gz
+        <FileArchive aria-hidden size={14} />
+        tar.gz
       </Button>
     </div>
-  </li>;
+  </ListRow>;
 }
