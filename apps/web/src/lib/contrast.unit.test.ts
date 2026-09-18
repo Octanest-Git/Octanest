@@ -30,8 +30,8 @@ describe("contrast helpers", () => {
     expect(meetsWcagAaUi(...dark.primaryOnBackground)).toBe(true);
     expect(meetsWcagAa(...dark.primaryFgOnPrimary)).toBe(true);
     expect(meetsWcagAa(...dark.cardFgOnCard)).toBe(true);
-    // Dark canvas is deeper than classic #0d1117
-    expect(relativeLuminance("#010409")).toBeLessThan(relativeLuminance("#0d1117"));
+    // True OLED-black canvas is deeper than classic #0d1117
+    expect(relativeLuminance("#000000")).toBeLessThan(relativeLuminance("#0d1117"));
   });
 
   it("reports known weak pairs as failing AA", () => {
@@ -39,13 +39,13 @@ describe("contrast helpers", () => {
     expect(meetsWcagAa("#888888", "#777777")).toBe(false);
   });
 
-  it("keeps styles.css dark canvas deeper than #0d1117 and muted text AA", async () => {
+  it("keeps styles.css dark canvas OLED-black and muted text AA", async () => {
     const fs = await import("node:fs");
     const path = await import("node:path");
     const url = await import("node:url");
     const cssPath = path.join(path.dirname(url.fileURLToPath(import.meta.url)), "../styles.css");
     const css = fs.readFileSync(cssPath, "utf8");
-    expect(css).toMatch(/\.dark\s*\{[^}]*--background:\s*#010409/s);
+    expect(css).toMatch(/\.dark\s*\{[^}]*--background:\s*#000000/s);
     expect(css).toMatch(/\.dark\s*\{[^}]*--muted-foreground:\s*#9da7b3/s);
     expect(css).not.toMatch(/feTurbulence/);
     expect(css).toMatch(/:focus-visible/);
