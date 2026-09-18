@@ -36,19 +36,42 @@ Base URL comes from `WATERMARKS_SERVICE_URL`, default `http://127.0.0.1:8765`:
 WM="${WATERMARKS_SERVICE_URL:-http://127.0.0.1:8765}"
 ```
 
-The service is started either by the operator (`docker compose up -d`, or a
-published GHCR image) or locally (`make serve`). **Always check it first**, and
-stop with a clear message if it is unreachable — never fall back to local
-cleaning:
+### Octanest lifecycle (required)
+
+In this repo the agent **starts the HTTP service for the run and stops it
+afterward** — do not ask the user to run `make serve` first.
+
+Helper (preferred):
 
 ```bash
-curl -sf "$WM/health"
-# {"ok": true, "version": "..."}
+HELPER=".agents/skills/remove-ai-marks/scripts/octanest-watermarks-service.sh"
+# from Octanest repo root:
+"$HELPER" ensure      # prints STARTED or REUSED; clones tmp/watermarks-remover if needed
+# … inspect / clean / audit via curl or service scripts …
+"$HELPER" teardown    # STOPPED only if this run started it; else LEFT_RUNNING
 ```
+
+Wrap a one-shot command:
+
+```bash
+"$HELPER" run -- curl -sf "${WM}/health"
+```
+
+Rules:
+
+1. Call `ensure` (or `run`) **before** any `/health`, `/inspect`, `/clean`,
+   `/detect`, or directory audit that depends on the service.
+2. Call `teardown` in a `finally`-style step after the run — even on failure.
+3. **Never** kill a listener you did not start (`REUSED` / `LEFT_RUNNING`).
+4. Checkout lives at `tmp/watermarks-remover` (gitignored). The helper clones
+   pin `v0.7.0` if missing. Do **not** fall back to inventing local cleaners
+   outside this checkout / HTTP API.
+5. Directory audits may use
+   `python3 tmp/watermarks-remover/service/scripts/audit_dir.py …` after
+   `ensure` (same lifecycle).
 
 If `WATERMARKS_SERVER_API_KEY` is set on the service, every request needs
 `-H "Authorization: Bearer $WATERMARKS_SERVICE_API_KEY"`.
-
 ### Capabilities
 
 ```bash
@@ -344,6 +367,8 @@ Always state:
 
 ## Service not reachable?
 
-If `$WM/health` fails: tell the user the service is down and how to start it
-(`docker compose up -d`, `make serve`, or the published GHCR image). Do **not**
-attempt to clean locally — this skill contains no cleaning code.
+If `ensure` fails (clone error, port conflict, timeout): report the helper
+log at `tmp/watermarks-service.agent.log` and stop. Do **not** invent local
+cleaners. Optional operator fallbacks: `docker compose up -d` or GHCR image
+from upstream watermarks-remover — still prefer the Octanest helper for
+agent-driven runs.
