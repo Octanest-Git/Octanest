@@ -109,6 +109,11 @@ export function commitsHref(owner: string, repo: string, ref: string): string {
   return `/${owner}/${repo}/commits/${encodeURIComponent(ref)}`;
 }
 
+/** GitHub-shaped repository activity feed (`/:owner/:repo/activity`). */
+export function activityHref(owner: string, repo: string): string {
+  return `/${owner}/${repo}/activity`;
+}
+
 export function commitHref(owner: string, repo: string, sha: string): string {
   return `/${owner}/${repo}/commit/${encodeURIComponent(sha)}`;
 }
@@ -182,6 +187,112 @@ export function findReadmeName(entries: RepoTreeEntry[]): string | null {
     if (names.includes(p)) return p;
   }
   return names.find((n) => /^readme(\.|$)/i.test(n)) ?? null;
+}
+
+/** Root LICENSE / COPYING blob name when present (About sidebar). */
+export function findLicenseName(entries: RepoTreeEntry[]): string | null {
+  const names = entries.filter((e) => e.kind === "blob").map((e) => e.name);
+  const preferred = [
+    "LICENSE",
+    "LICENSE.md",
+    "LICENSE.txt",
+    "LICENCE",
+    "LICENCE.md",
+    "LICENCE.txt",
+    "COPYING",
+    "COPYING.md",
+  ];
+  const byLower = new Map(names.map((n) => [n.toLowerCase(), n]));
+  for (const p of preferred) {
+    const hit = byLower.get(p.toLowerCase());
+    if (hit) return hit;
+  }
+  return names.find((n) => /^(license|licence|copying)(\.|$|-)/i.test(n)) ?? null;
+}
+
+/** Root CONTRIBUTING blob name when present (About sidebar). */
+export function findContributingName(entries: RepoTreeEntry[]): string | null {
+  const names = entries.filter((e) => e.kind === "blob").map((e) => e.name);
+  const preferred = ["CONTRIBUTING.md", "CONTRIBUTING", "CONTRIBUTING.txt"];
+  const byLower = new Map(names.map((n) => [n.toLowerCase(), n]));
+  for (const p of preferred) {
+    const hit = byLower.get(p.toLowerCase());
+    if (hit) return hit;
+  }
+  return names.find((n) => /^contributing(\.|$)/i.test(n)) ?? null;
+}
+
+/** GitHub-shaped About label, e.g. "MIT license", from SPDX stub / first line / filename. */
+export function licenseSidebarLabel(fileName: string, content?: string | null): string {
+  const fromContent = content ? licenseIdFromContent(content) : null;
+  if (fromContent) return formatLicenseSidebarLabel(fromContent);
+  const fromName = licenseIdFromFileName(fileName);
+  if (fromName) return formatLicenseSidebarLabel(fromName);
+  return "License";
+}
+
+/** Detect root LICENSE / CONTRIBUTING for the About sidebar; optionally read LICENSE text for SPDX label. */
+export async function resolveAboutRootFiles(
+  entries: RepoTreeEntry[],
+  fetchText: (path: string) => Promise<string | null>,
+): Promise<{
+  licenseFile: string | null;
+  licenseLabel: string | null;
+  contributingFile: string | null;
+}> {
+  const licenseFile = findLicenseName(entries);
+  const contributingFile = findContributingName(entries);
+  if (!licenseFile) {
+    return { licenseFile: null, licenseLabel: null, contributingFile };
+  }
+  const content = await fetchText(licenseFile);
+  return {
+    licenseFile,
+    licenseLabel: licenseSidebarLabel(licenseFile, content),
+    contributingFile,
+  };
+}
+
+function formatLicenseSidebarLabel(id: string): string {
+  return `${id} license`;
+}
+
+function licenseIdFromContent(content: string): string | null {
+  const spdx = content.match(/^\s*SPDX-License-Identifier:\s*([A-Za-z0-9.+-]+)/m);
+  if (spdx?.[1]) return spdx[1];
+  const first =
+    content
+      .split(/\r?\n/)
+      .find((l) => l.trim())
+      ?.trim() ?? "";
+  if (!first || first.length > 80) return null;
+  const mit = first.match(/^MIT(?:\s+License)?$/i);
+  if (mit) return "MIT";
+  const apache = first.match(/^Apache(?:\s+License)?(?:\s*,?\s*Version\s*([\d.]+))?$/i);
+  if (apache) return apache[1] ? `Apache-${apache[1]}` : "Apache-2.0";
+  const bsd3 = first.match(/^BSD\s+3-Clause(?:\s+License)?$/i);
+  if (bsd3) return "BSD-3-Clause";
+  const bsd2 = first.match(/^BSD\s+2-Clause(?:\s+License)?$/i);
+  if (bsd2) return "BSD-2-Clause";
+  const isc = first.match(/^ISC(?:\s+License)?$/i);
+  if (isc) return "ISC";
+  const mpl = first.match(/^Mozilla\s+Public\s+License\s+Version\s*([\d.]+)/i);
+  if (mpl?.[1]) return `MPL-${mpl[1]}`;
+  if (/^Unlicense$/i.test(first)) return "Unlicense";
+  // Generic "Foo License" / "Foo licence" first line → keep token before License.
+  const generic = first.match(/^(.+?)\s+[Ll]icen[cs]e$/);
+  if (generic?.[1] && !/\s/.test(generic[1].trim()) && generic[1].length <= 32) {
+    return generic[1].trim();
+  }
+  return null;
+}
+
+function licenseIdFromFileName(fileName: string): string | null {
+  const base = fileName.replace(/^.*\//, "");
+  const m = base.match(
+    /(?:^|[._-])(MIT|Apache-2\.0|BSD-3-Clause|BSD-2-Clause|ISC|MPL-2\.0|GPL-3\.0(?:-only)?|LGPL-3\.0(?:-only)?|AGPL-3\.0(?:-only)?|0BSD|Unlicense|CC0-1\.0)(?:[._-]|$)/i,
+  );
+  return m?.[1] ?? null;
 }
 
 /** Short tip SHA for branch/tag lists (first 7 hex chars). */

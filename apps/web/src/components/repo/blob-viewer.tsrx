@@ -4,6 +4,7 @@ import type { RepoBlobResponse } from "@octanest/api-client";
 import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { buttonVariants } from "@/components/ui/button";
 import {
+  clientHighlightTheme,
   countCodeLines,
   highlightCode,
   languageIdForPath,
@@ -21,7 +22,6 @@ import {
 } from "@/lib/repo-browse";
 import { parseLfsPointer } from "@/lib/lfs-pointer";
 import { apiClient } from "@/lib/api-client";
-import { resolveTheme, readThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
 type BlobViewerProps = {
@@ -55,10 +55,6 @@ function escapeHtml(s: string): string {
 
 function plainCodeHtml(text: string): string {
   return `<pre><code>${escapeHtml(stripTrailingNewline(text))}</code></pre>`;
-}
-
-function clientHighlightTheme(): HighlightTheme {
-  return resolveTheme(readThemePreference()) === "dark" ? "github-dark" : "github-light";
 }
 
 /** Syntax-highlighted blob with forge-style header, line numbers, #L permalinks (D-19, D-20). */
@@ -100,35 +96,37 @@ export function BlobViewer({
   }, []);
 
   useEffect(() => {
-    if (highlightedHtml) {
-      setHl(highlightedHtml);
-    }
-  }, [highlightedHtml]);
-
-  useEffect(() => {
     if (blob.is_binary || blob.truncated || blob.encoding !== "utf-8" || !blob.content) {
       setHl(null);
       return;
     }
 
     let cancelled = false;
+    let appliedTheme: HighlightTheme | null =
+      highlightedHtml && highlightTheme && clientHighlightTheme() === highlightTheme
+        ? highlightTheme
+        : null;
 
-    async function run(force: boolean) {
+    if (appliedTheme && highlightedHtml) {
+      setHl((prev) => (prev === highlightedHtml ? prev : highlightedHtml));
+    }
+
+    async function run() {
       const theme = clientHighlightTheme();
-      if (!force && highlightedHtml && highlightTheme && theme === highlightTheme) {
-        return;
-      }
+      if (appliedTheme === theme) return;
       const out = await highlightCode(blob.content ?? "", {
         lang: languageIdForPath(blob.path),
         theme,
       });
-      if (!cancelled) setHl(out);
+      if (cancelled) return;
+      appliedTheme = theme;
+      setHl((prev) => (prev === out ? prev : out));
     }
 
-    void run(false);
+    void run();
 
     const mo = new MutationObserver(() => {
-      void run(true);
+      void run();
     });
     mo.observe(document.documentElement, {
       attributes: true,

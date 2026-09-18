@@ -1,4 +1,4 @@
-import { Lock, Star } from "@octanejs/lucide";
+import { Eye, Lock, Star } from "@octanejs/lucide";
 import { useState } from "octane";
 import type { RepoPublic } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import type { RepoChromeActive } from "@/lib/repo-chrome-active";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
+import { useRepoStore } from "@/lib/repo-store";
 
 type RepoChromeProps = {
   repo: RepoPublic;
@@ -20,15 +21,24 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   // Gate Settings on API can_admin — not personal username equality (D-REL-07 / D-REL-09).
   const settingsVisible = showSettings || !!repo.can_admin;
   const account = useChromeAccountState();
-  const [starCount, setStarCount] = useState(repo.star_count ?? 0);
-  const [starred, setStarred] = useState(!!repo.viewer_has_starred);
+  const storeRepo = useRepoStore((s) => s.repo);
+  const setRepo = useRepoStore((s) => s.setRepo);
+  // Store is source of truth so About rail + chrome stay in sync (GitHub-like).
+  const live = storeRepo && storeRepo.id === repo.id ? storeRepo : repo;
   const [starBusy, setStarBusy] = useState(false);
+  const [watchBusy, setWatchBusy] = useState(false);
 
-  const owner = repo.owner_username;
-  const name = repo.name;
+  const starCount = live.star_count ?? 0;
+  const starred = !!live.viewer_has_starred;
+  const watchCount = live.watch_count ?? 0;
+  const watching = !!live.viewer_is_watching;
+  const forkCount = live.fork_count ?? 0;
+
+  const owner = live.owner_username;
+  const name = live.name;
   const base = `/${owner}/${name}`;
   const codeHref = base;
-  const commitsHref = `${base}/commits/${encodeURIComponent(repo.default_branch)}`;
+  const commitsHref = `${base}/commits/${encodeURIComponent(live.default_branch)}`;
   const branchesHref = `${base}/branches`;
   const tagsHref = `${base}/tags`;
   const issuesHref = `${base}/issues`;
@@ -43,16 +53,53 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   async function toggleStar() {
     if (!signedIn || starBusy) return;
     setStarBusy(true);
+    const prev = live;
+    const nextStarred = !starred;
+    // Optimistic — mirrors GitHub header ↔ About live update.
+    setRepo({
+      ...prev,
+      viewer_has_starred: nextStarred,
+      star_count: Math.max(0, (prev.star_count ?? 0) + (nextStarred ? 1 : -1)),
+    });
     try {
-      const res = starred
-        ? await apiClient.repo.unstar({ owner, name })
-        : await apiClient.repo.star({ owner, name });
+      const res = nextStarred
+        ? await apiClient.repo.star({ owner, name })
+        : await apiClient.repo.unstar({ owner, name });
       if (res.ok && res.data) {
-        setStarCount(res.data.star_count ?? 0);
-        setStarred(!!res.data.viewer_has_starred);
+        setRepo(res.data);
+      } else {
+        setRepo(prev);
       }
+    } catch {
+      setRepo(prev);
     } finally {
       setStarBusy(false);
+    }
+  }
+
+  async function toggleWatch() {
+    if (!signedIn || watchBusy) return;
+    setWatchBusy(true);
+    const prev = live;
+    const nextWatching = !watching;
+    setRepo({
+      ...prev,
+      viewer_is_watching: nextWatching,
+      watch_count: Math.max(0, (prev.watch_count ?? 0) + (nextWatching ? 1 : -1)),
+    });
+    try {
+      const res = nextWatching
+        ? await apiClient.repo.watch({ owner, name })
+        : await apiClient.repo.unwatch({ owner, name });
+      if (res.ok && res.data) {
+        setRepo(res.data);
+      } else {
+        setRepo(prev);
+      }
+    } catch {
+      setRepo(prev);
+    } finally {
+      setWatchBusy(false);
     }
   }
 
@@ -72,10 +119,10 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         <span>{name as string}</span>
       </h1>
       <Badge variant="outline">
-        @if (repo.visibility === "private") {
+        @if (live.visibility === "private") {
           <Lock aria-hidden size={12} />;
         }
-        {(repo.visibility === "private" ? "Private" : "Public") as string}
+        {(live.visibility === "private" ? "Private" : "Public") as string}
       </Badge>
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <RepoSearchEntry owner={owner as string} repo={name as string} />
@@ -84,47 +131,81 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
             type="button"
             variant="secondary"
             className="h-8 gap-1.5 px-2.5 text-[13px]"
+            disabled={watchBusy}
+            aria-pressed={watching}
+            onClick={() => void toggleWatch()}
+          >
+            <Eye aria-hidden size={14} className={watching ? "text-secondary" : undefined} />
+            <span>{(watching ? "Watching" : "Watch") as string}</span>
+            <span className="text-muted-foreground">{String(watchCount)}</span>
+          </Button>;
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-8 gap-1.5 px-2.5 text-[13px]"
             disabled={starBusy}
             aria-pressed={starred}
             onClick={() => void toggleStar()}
           >
-            <Star aria-hidden size={14} className={starred ? "fill-current" : undefined} />
+            <Star
+              aria-hidden
+              size={14}
+              className={starred ? "fill-current text-secondary" : undefined}
+            />
             <span>{(starred ? "Starred" : "Star") as string}</span>
             <span className="text-muted-foreground">{String(starCount)}</span>
           </Button>;
         } @else {
-          <a
-            href={("/login?next=" + encodeURIComponent(base)) as string}
-            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[13px] text-foreground no-underline hover:bg-muted"
-          >
-            <Star aria-hidden size={14} />
-            <span>Star</span>
-            <span className="text-muted-foreground">{String(starCount)}</span>
-          </a>;
+          <>
+            <a
+              href={("/login?next=" + encodeURIComponent(base)) as string}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[13px] text-foreground no-underline hover:bg-muted"
+            >
+              <Eye aria-hidden size={14} />
+              <span>Watch</span>
+              <span className="text-muted-foreground">{String(watchCount)}</span>
+            </a>
+            <a
+              href={("/login?next=" + encodeURIComponent(base)) as string}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[13px] text-foreground no-underline hover:bg-muted"
+            >
+              <Star aria-hidden size={14} />
+              <span>Star</span>
+              <span className="text-muted-foreground">{String(starCount)}</span>
+            </a>
+          </>;
         }
-        @if (signedIn && repo.visibility === "public") {
+        @if (signedIn && live.visibility === "public") {
           <a
             href={forkHref as string}
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[13px] text-foreground no-underline hover:bg-muted"
           >
             Fork
+            <span className="text-muted-foreground">{String(forkCount)}</span>
           </a>;
+        } @else {
+          @if (!signedIn) {
+            <a
+              href={("/login?next=" + encodeURIComponent(forkHref)) as string}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-[13px] text-foreground no-underline hover:bg-muted"
+            >
+              Fork
+              <span className="text-muted-foreground">{String(forkCount)}</span>
+            </a>;
+          }
         }
       </div>
     </div>
-    @if (repo.forked_from) {
+    @if (live.forked_from) {
       <p className="mt-2 text-[14px] text-muted-foreground">
         Forked from{" "}
         <a
-          href={("/" + repo.forked_from.owner + "/" + repo.forked_from.name) as string}
+          href={("/" + live.forked_from.owner + "/" + live.forked_from.name) as string}
           className="text-primary no-underline hover:underline"
         >
-          {(repo.forked_from.owner + "/" + repo.forked_from.name) as string}
+          {(live.forked_from.owner + "/" + live.forked_from.name) as string}
         </a>
       </p>;
-    }
-    @if (repo.description.trim()) {
-      <p className="mt-2 text-[16px] text-muted-foreground">{repo.description as string}</p>;
     }
 
     <nav className="mt-6 flex flex-wrap gap-4 border-b border-border pb-0" aria-label="Repository">

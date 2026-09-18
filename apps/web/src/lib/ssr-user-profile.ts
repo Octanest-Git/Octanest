@@ -6,6 +6,7 @@ import {
   type PublicUserProfile,
   type RepoPublic,
 } from "@octanest/api-client";
+import { fetchUserProfileReadme, type ProfileReadme } from "@/lib/profile-readme";
 
 function ssrApiOrigin(): string {
   return (
@@ -36,6 +37,8 @@ export type UserProfilePayload = {
   repos: RepoPublic[];
   starred: RepoPublic[];
   isSelf: boolean;
+  /** Public `username/username` root README, or null. */
+  profileReadme: ProfileReadme | null;
 };
 
 /** SSR: public user profile + ACL-filtered repos (D-SOC-05…08). */
@@ -68,5 +71,7 @@ export const fetchUserProfile = createServerFn({ method: "GET" })
       }
     }
 
-    return { profile: got.data, repos, starred, isSelf };
+    const profileReadme = await fetchUserProfileReadme(client, username);
+
+    return { profile: got.data, repos, starred, isSelf, profileReadme };
   });

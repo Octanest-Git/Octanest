@@ -404,6 +404,33 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     ],
   },
   {
+    route: "$owner.$repo.stargazers.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.social-lists.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.watchers.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.social-lists.integration.test.ts",
+      },
+    ],
+  },
+  {
+    route: "$owner.$repo.forks.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.social-lists.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "$owner.$repo.search.tsrx",
     coverage: [
       {

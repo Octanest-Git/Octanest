@@ -1,13 +1,16 @@
 //! Repository RPC handlers (`repo.create` + browse ACL — GIT-01 / GIT-05 / D-23–D-25).
 
 mod acl;
+mod activity;
 mod branch_protection;
 mod commit_status;
 mod collaborators;
 mod fork_network;
+mod language_stats;
 mod rename_transfer;
 mod search;
 mod search_query;
+mod social_lists;
 mod templates;
 
 pub use acl::{
@@ -30,7 +33,12 @@ pub use rename_transfer::{
     redirect_retention_days, rename, resolve_repo_or_redirect, supersede_redirect_on_create,
     transfer, DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
 };
+pub use activity::{
+    list as activity_list, record_branch_creation, record_branch_deletion, record_pr_merge,
+    record_ref_updates,
+};
 pub use search::search;
+pub use social_lists::{forks_list, stargazers_list, watchers_list};
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
 /// 1 MiB matches GitHub-like soft preview limits.
@@ -264,12 +272,17 @@ pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         viewer_has_starred: false,
         is_fork: false,
         is_template: false,
+        homepage: String::new(),
+        topics: Vec::new(),
+        fork_count: 0,
+        watch_count: 0,
+        viewer_is_watching: false,
         fork_network_id: None,
         forked_from: None,
     }
 }
 
-/// Fill star/fork fields on a `RepoPublic` (D-SOC-03, D-SOC-16).
+/// Fill star/fork/about fields on a `RepoPublic` (D-SOC-03, D-SOC-16, issue #23).
 pub async fn enrich_social(
     ctx: &RpcCtx,
     mut public: RepoPublic,
@@ -286,7 +299,32 @@ pub async fn enrich_social(
             .has_starred_repo(uid, &public.id)
             .await
             .map_err(db_err)?;
+        public.viewer_is_watching = ctx
+            .db
+            .has_watched_repo(uid, &public.id)
+            .await
+            .map_err(db_err)?;
     }
+    public.watch_count = ctx
+        .db
+        .get_repo_watch_count(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.fork_count = ctx
+        .db
+        .get_repo_fork_count(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.homepage = ctx
+        .db
+        .get_repo_homepage(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.topics = ctx
+        .db
+        .list_repo_topics(&public.id)
+        .await
+        .map_err(db_err)?;
     public.fork_network_id = ctx
         .db
         .get_repo_fork_network_id(&public.id)
@@ -364,6 +402,92 @@ pub async fn unstar(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         .unstar_repository(&user.id, &accessible.row.id)
         .await
         .map_err(db_err)?;
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
+}
+
+/// `repo.watch` — idempotent watch (issue #23).
+pub async fn watch(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::RepoWatchRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.watch input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let _count = ctx
+        .db
+        .watch_repository(&user.id, &accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
+}
+
+/// `repo.unwatch` — idempotent unwatch.
+pub async fn unwatch(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::RepoWatchRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new("rpc.bad_input", format!("invalid repo.unwatch input: {e}"))
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let _count = ctx
+        .db
+        .unwatch_repository(&user.id, &accessible.row.id)
+        .await
+        .map_err(db_err)?;
+    enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
+}
+
+/// `repo.updateMetadata` — Admin updates description / homepage / topics (issue #23).
+/// Insufficient capability → soft not_found.
+pub async fn update_metadata(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<RepoPublic, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: octanest_core::RepoUpdateMetadataRequest =
+        serde_json::from_value(input).map_err(|e| {
+            AppError::new(
+                "rpc.bad_input",
+                format!("invalid repo.updateMetadata input: {e}"),
+            )
+        })?;
+    let accessible = resolve_repo_for_admin(ctx, &req.owner, &req.name).await?;
+
+    let description = match &req.description {
+        Some(d) => d.clone(),
+        None => accessible.row.description.clone(),
+    };
+    let homepage = match &req.homepage {
+        Some(h) => h.trim().to_string(),
+        None => ctx
+            .db
+            .get_repo_homepage(&accessible.row.id)
+            .await
+            .map_err(db_err)?,
+    };
+
+    let row = ctx
+        .db
+        .update_repository_metadata(&accessible.row.id, &description, &homepage)
+        .await
+        .map_err(db_err)?;
+
+    if let Some(topics) = &req.topics {
+        ctx.db
+            .set_repo_topics(&accessible.row.id, topics)
+            .await
+            .map_err(|e| {
+                if e.contains("topic") || e.contains("at most") {
+                    AppError::new("repo.invalid_topics", e)
+                } else {
+                    db_err(e)
+                }
+            })?;
+    }
+
+    let accessible = AccessibleRepo {
+        row,
+        owner_username: accessible.owner_username,
+        capability: Some(Capability::Admin),
+    };
     enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
 }
 
@@ -500,6 +624,11 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,
+                homepage: String::new(),
+                topics: Vec::new(),
+                fork_count: 0,
+                watch_count: 0,
+                viewer_is_watching: false,
                 fork_network_id: None,
                 forked_from: None,
             }
@@ -779,6 +908,180 @@ pub async fn commits(
     })
 }
 
+/// `repo.pathLastCommits` — batched last commit per tree entry (issue #23).
+pub async fn path_last_commits(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoPathLastCommitsResponse, AppError> {
+    let req: octanest_core::RepoPathLastCommitsRequest =
+        serde_json::from_value(input).map_err(|e| {
+            AppError::new(
+                "rpc.bad_input",
+                format!("invalid repo.pathLastCommits input: {e}"),
+            )
+        })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let dir_path = req
+        .path
+        .as_deref()
+        .unwrap_or("")
+        .trim()
+        .trim_start_matches('/')
+        .to_string();
+    let entries = ctx
+        .git
+        .ls_tree(&path, &ref_name, &dir_path)
+        .await
+        .map_err(map_git_err)?;
+    let names: Vec<String> = entries.into_iter().map(|e| e.name).collect();
+    let map = ctx
+        .git
+        .path_last_commits(&path, &ref_name, &dir_path, &names)
+        .await
+        .map_err(map_git_err)?;
+    let mut commits = std::collections::BTreeMap::new();
+    for (name, c) in map {
+        commits.insert(
+            name,
+            RepoCommitSummary {
+                sha: c.sha,
+                short_sha: c.short_sha,
+                subject: c.subject,
+                author_name: c.author_name,
+                author_email: c.author_email,
+                authored_at: c.authored_at,
+            },
+        );
+    }
+    Ok(octanest_core::RepoPathLastCommitsResponse {
+        ref_name,
+        path: dir_path,
+        commits,
+    })
+}
+
+/// `repo.commitCount` — rev-list count for Code home header (issue #23).
+pub async fn commit_count(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoCommitCountResponse, AppError> {
+    let req: octanest_core::RepoCommitCountRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.commitCount input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    let ref_name = if req.ref_name.trim().is_empty() {
+        accessible.row.default_branch.clone()
+    } else {
+        req.ref_name.trim().to_string()
+    };
+    let count = ctx
+        .git
+        .rev_list_count(&path, &ref_name)
+        .await
+        .map_err(map_git_err)?;
+    Ok(octanest_core::RepoCommitCountResponse { ref_name, count })
+}
+
+/// `repo.contributors.list` — shortlog authors for About sidebar (issue #23).
+pub async fn contributors_list(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoContributorsListResponse, AppError> {
+    let req: octanest_core::RepoContributorsListRequest =
+        serde_json::from_value(input).map_err(|e| {
+            AppError::new(
+                "rpc.bad_input",
+                format!("invalid repo.contributors.list input: {e}"),
+            )
+        })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    let ref_name = accessible.row.default_branch.clone();
+    let limit = req.limit.unwrap_or(30).clamp(1, 100) as u32;
+    let raw = ctx
+        .git
+        .shortlog(&path, &ref_name, limit)
+        .await
+        .map_err(map_git_err)?;
+    let mut contributors = Vec::with_capacity(raw.len());
+    for c in raw {
+        let mut username = None;
+        let mut avatar_url = None;
+        let mut display_name = c.name.clone();
+        if !c.email.is_empty() {
+            if let Ok(Some(user)) = ctx.db.find_user_by_email(&c.email).await {
+                username = Some(user.username.clone());
+                display_name = if user.display_name.trim().is_empty() {
+                    user.username.clone()
+                } else {
+                    user.display_name.clone()
+                };
+                if user.avatar_path.is_some() {
+                    avatar_url = Some(format!("/uploads/avatars/{}.webp", user.id));
+                }
+            }
+        }
+        contributors.push(octanest_core::RepoContributorPublic {
+            display_name,
+            username,
+            avatar_url,
+            commit_count: c.commit_count,
+        });
+    }
+    Ok(octanest_core::RepoContributorsListResponse { contributors })
+}
+
+/// `repo.languages` — default-branch language byte breakdown for About (linguist-lite).
+pub async fn languages(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoLanguagesResponse, AppError> {
+    let req: octanest_core::RepoLanguagesRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.languages input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    let path = bare_repo_path(
+        &ctx.repos_dir,
+        &accessible.owner_username,
+        &accessible.row.name,
+    )?;
+    let ref_name = accessible.row.default_branch.clone();
+    let blobs = ctx
+        .git
+        .ls_tree_sized_blobs(&path, &ref_name, language_stats::MAX_BLOBS)
+        .await
+        .map_err(map_git_err)?;
+    let languages = language_stats::aggregate_language_stats(
+        blobs.iter().map(|b| (b.path.as_str(), b.size)),
+    );
+    Ok(octanest_core::RepoLanguagesResponse { languages })
+}
+
 /// `repo.commit` — commit detail + unified patches.
 pub async fn commit(
     ctx: &RpcCtx,
@@ -934,6 +1237,11 @@ pub async fn branch_create(
         )
     })?;
     let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let actor_id = ctx
+        .session
+        .as_ref()
+        .map(|s| s.user_id.clone())
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "sign in required"))?;
     let branch = req.branch.trim();
     if branch.is_empty() {
         return Err(AppError::new("repo.invalid_ref", "branch name required"));
@@ -955,6 +1263,26 @@ pub async fn branch_create(
         .branch_create(&path, branch, start)
         .await
         .map_err(map_git_err)?;
+    let after_oid = ctx
+        .git
+        .list_refs(&path)
+        .await
+        .ok()
+        .and_then(|refs| {
+            let want = format!("refs/heads/{branch}");
+            refs.into_iter()
+                .find(|r| r.name == want)
+                .map(|r| r.oid)
+        })
+        .unwrap_or_default();
+    crate::repo::record_branch_creation(
+        &ctx.db,
+        &accessible.row.id,
+        &actor_id,
+        branch,
+        &after_oid,
+    )
+    .await;
     Ok(RepoBranchMutationResponse {
         branch: branch.to_string(),
     })
@@ -1009,6 +1337,11 @@ pub async fn branch_delete(
         )
     })?;
     let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let actor_id = ctx
+        .session
+        .as_ref()
+        .map(|s| s.user_id.clone())
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "sign in required"))?;
     let branch = req.branch.trim();
     if branch.is_empty() {
         return Err(AppError::new("repo.invalid_ref", "branch name required"));
@@ -1037,10 +1370,30 @@ pub async fn branch_delete(
         &accessible.owner_username,
         &accessible.row.name,
     )?;
+    let before_oid = ctx
+        .git
+        .list_refs(&path)
+        .await
+        .ok()
+        .and_then(|refs| {
+            let want = format!("refs/heads/{branch}");
+            refs.into_iter()
+                .find(|r| r.name == want)
+                .map(|r| r.oid)
+        })
+        .unwrap_or_default();
     ctx.git
         .branch_delete(&path, branch)
         .await
         .map_err(map_git_err)?;
+    crate::repo::record_branch_deletion(
+        &ctx.db,
+        &accessible.row.id,
+        &actor_id,
+        branch,
+        &before_oid,
+    )
+    .await;
     Ok(RepoBranchMutationResponse {
         branch: branch.to_string(),
     })
@@ -1558,6 +1911,11 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,
+                homepage: String::new(),
+                topics: Vec::new(),
+                fork_count: 0,
+                watch_count: 0,
+                viewer_is_watching: false,
                 fork_network_id: None,
                 forked_from: None,
     })
@@ -1651,6 +2009,10 @@ pub async fn fork(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic, 
         .map_err(db_err)?;
     ctx.db
         .set_repo_forked_from(&row.id, Some(&source.row.id))
+        .await
+        .map_err(db_err)?;
+    ctx.db
+        .bump_fork_count_for_network(&network_id)
         .await
         .map_err(db_err)?;
 

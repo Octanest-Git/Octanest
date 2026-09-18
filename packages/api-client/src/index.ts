@@ -229,6 +229,11 @@ export type RepoPublic = {
   viewer_has_starred?: boolean;
   is_fork?: boolean;
   is_template?: boolean;
+  homepage?: string;
+  topics?: string[];
+  fork_count?: number;
+  watch_count?: number;
+  viewer_is_watching?: boolean;
   fork_network_id?: string | null;
   forked_from?: ForkParentSummary | null;
 };
@@ -242,6 +247,89 @@ export type ForkParentSummary = {
 export type RepoStarRequest = {
   owner: string;
   name: string;
+};
+
+export type RepoWatchRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoStargazerPublic = {
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+  starred_at: string;
+};
+
+export type RepoStargazersListRequest = {
+  owner: string;
+  name: string;
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoStargazersListResponse = {
+  stargazers: RepoStargazerPublic[];
+  total: number;
+};
+
+export type RepoWatcherPublic = {
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url?: string | null;
+  watched_at: string;
+};
+
+export type RepoWatchersListRequest = {
+  owner: string;
+  name: string;
+  q?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoWatchersListResponse = {
+  watchers: RepoWatcherPublic[];
+  total: number;
+};
+
+export type RepoForksSort = "stars" | "updated" | "created";
+
+export type RepoForkPublic = {
+  id: string;
+  owner_username: string;
+  name: string;
+  description?: string;
+  star_count: number;
+  fork_count: number;
+  created_at: string;
+  updated_at: string;
+  owner_avatar_url?: string | null;
+};
+
+export type RepoForksListRequest = {
+  owner: string;
+  name: string;
+  q?: string | null;
+  sort?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoForksListResponse = {
+  forks: RepoForkPublic[];
+  total: number;
+};
+
+export type RepoUpdateMetadataRequest = {
+  owner: string;
+  name: string;
+  description?: string | null;
+  homepage?: string | null;
+  topics?: string[] | null;
 };
 
 export type ListStarredRequest = {
@@ -348,6 +436,100 @@ export type RepoCommitsResponse = {
   ref: string;
   commits: RepoCommitSummary[];
   skip: number;
+  limit: number;
+};
+
+export type RepoPathLastCommitsRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+  path?: string | null;
+};
+
+export type RepoPathLastCommitsResponse = {
+  ref: string;
+  path: string;
+  commits: Record<string, RepoCommitSummary>;
+};
+
+export type RepoCommitCountRequest = {
+  owner: string;
+  name: string;
+  ref: string;
+};
+
+export type RepoCommitCountResponse = {
+  ref: string;
+  count: number;
+};
+
+export type RepoContributorPublic = {
+  display_name: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  commit_count: number;
+};
+
+export type RepoContributorsListRequest = {
+  owner: string;
+  name: string;
+  limit?: number | null;
+};
+
+export type RepoContributorsListResponse = {
+  contributors: RepoContributorPublic[];
+};
+
+export type RepoLanguageStat = {
+  name: string;
+  bytes: number;
+  color?: string | null;
+};
+
+export type RepoLanguagesRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoLanguagesResponse = {
+  languages: RepoLanguageStat[];
+};
+
+export type RepoActivityActor = {
+  login: string;
+  name: string;
+  avatar_url?: string | null;
+  path: string;
+};
+
+export type RepoActivityItem = {
+  id: string;
+  push_type: string;
+  ref_name: string;
+  ref_short: string;
+  before: string;
+  after: string;
+  pushed_at: string;
+  commits_count: number;
+  commit_message?: string | null;
+  pr_number?: number | null;
+  pusher: RepoActivityActor;
+};
+
+export type RepoActivityListRequest = {
+  owner: string;
+  name: string;
+  push_type?: string | null;
+  since?: string | null;
+  period?: string | null;
+  offset?: number | null;
+  limit?: number | null;
+};
+
+export type RepoActivityListResponse = {
+  items: RepoActivityItem[];
+  total: number;
+  offset: number;
   limit: number;
 };
 
@@ -1942,6 +2124,16 @@ export function createClient(opts: CreateClientOptions) {
       fork: (input: ForkRepoRequest) => rpcCall<RepoPublic>(opts, "repo.fork", input),
       star: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.star", input),
       unstar: (input: RepoStarRequest) => rpcCall<RepoPublic>(opts, "repo.unstar", input),
+      watch: (input: RepoWatchRequest) => rpcCall<RepoPublic>(opts, "repo.watch", input),
+      unwatch: (input: RepoWatchRequest) => rpcCall<RepoPublic>(opts, "repo.unwatch", input),
+      stargazersList: (input: RepoStargazersListRequest) =>
+        rpcCall<RepoStargazersListResponse>(opts, "repo.stargazers.list", input),
+      watchersList: (input: RepoWatchersListRequest) =>
+        rpcCall<RepoWatchersListResponse>(opts, "repo.watchers.list", input),
+      forksList: (input: RepoForksListRequest) =>
+        rpcCall<RepoForksListResponse>(opts, "repo.forks.list", input),
+      updateMetadata: (input: RepoUpdateMetadataRequest) =>
+        rpcCall<RepoPublic>(opts, "repo.updateMetadata", input),
       explore: (input: RepoExploreRequest) =>
         rpcCall<RepoListMineResponse>(opts, "repo.explore", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
@@ -1950,6 +2142,16 @@ export function createClient(opts: CreateClientOptions) {
       refs: (input: RepoGetRequest) => rpcCall<RepoRefsResponse>(opts, "repo.refs", input),
       commits: (input: RepoCommitsRequest) =>
         rpcCall<RepoCommitsResponse>(opts, "repo.commits", input),
+      pathLastCommits: (input: RepoPathLastCommitsRequest) =>
+        rpcCall<RepoPathLastCommitsResponse>(opts, "repo.pathLastCommits", input),
+      commitCount: (input: RepoCommitCountRequest) =>
+        rpcCall<RepoCommitCountResponse>(opts, "repo.commitCount", input),
+      contributorsList: (input: RepoContributorsListRequest) =>
+        rpcCall<RepoContributorsListResponse>(opts, "repo.contributors.list", input),
+      languages: (input: RepoLanguagesRequest) =>
+        rpcCall<RepoLanguagesResponse>(opts, "repo.languages", input),
+      activityList: (input: RepoActivityListRequest) =>
+        rpcCall<RepoActivityListResponse>(opts, "repo.activity.list", input),
       commit: (input: RepoCommitRequest) =>
         rpcCall<RepoCommitResponse>(opts, "repo.commit", input),
       compare: (input: RepoCompareRequest) =>

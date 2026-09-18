@@ -9,8 +9,8 @@ export function RepoPageShell({
   <div
     className={
       (className
-        ? `mx-auto w-full max-w-6xl px-4 py-10 ${className}`
-        : "mx-auto w-full max-w-6xl px-4 py-10") as string
+        ? `mx-auto w-full max-w-7xl px-4 py-10 ${className}`
+        : "mx-auto w-full max-w-7xl px-4 py-10") as string
     }
   >
     {children}

@@ -608,3 +608,621 @@ pub async fn list_explore(
         }
     }
 }
+
+/// Stargazer row for `repo.stargazers.list` (no email).
+#[derive(Debug, Clone)]
+pub struct RepoStargazerListRow {
+    pub user_id: String,
+    pub username: String,
+    pub display_name: String,
+    pub avatar_path: Option<String>,
+    pub starred_at: String,
+}
+
+/// Fork list row for `repo.forks.list`.
+#[derive(Debug, Clone)]
+pub struct RepoForkListRow {
+    pub id: String,
+    pub owner_username: String,
+    pub name: String,
+    pub description: String,
+    pub star_count: i64,
+    pub fork_count: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    /// Set when owner is a user and has an avatar.
+    pub owner_user_id: Option<String>,
+    pub has_owner_avatar: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ForkListSort {
+    Stars,
+    Updated,
+    Created,
+}
+
+fn social_like_pat(q: &str) -> String {
+    let escaped = q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+    format!("%{escaped}%")
+}
+
+macro_rules! map_stargazer {
+    ($row:expr) => {{
+        let row = $row;
+        RepoStargazerListRow {
+            user_id: row.try_get("user_id").map_err(|e| format!("stargazer row: {e}"))?,
+            username: row.try_get("username").map_err(|e| format!("stargazer row: {e}"))?,
+            display_name: row
+                .try_get("display_name")
+                .map_err(|e| format!("stargazer row: {e}"))?,
+            avatar_path: row
+                .try_get("avatar_path")
+                .map_err(|e| format!("stargazer row: {e}"))?,
+            starred_at: row
+                .try_get("starred_at")
+                .map_err(|e| format!("stargazer row: {e}"))?,
+        }
+    }};
+}
+
+macro_rules! map_fork_list {
+    ($row:expr) => {{
+        let row = $row;
+        let owner_avatar_path: Option<String> = row
+            .try_get("owner_avatar_path")
+            .map_err(|e| format!("fork row: {e}"))?;
+        let owner_user_id: Option<String> = row
+            .try_get("owner_user_id")
+            .map_err(|e| format!("fork row: {e}"))?;
+        RepoForkListRow {
+            id: row.try_get("id").map_err(|e| format!("fork row: {e}"))?,
+            owner_username: row
+                .try_get("owner_username")
+                .map_err(|e| format!("fork row: {e}"))?,
+            name: row.try_get("name").map_err(|e| format!("fork row: {e}"))?,
+            description: row
+                .try_get("description")
+                .map_err(|e| format!("fork row: {e}"))?,
+            star_count: row
+                .try_get("star_count")
+                .map_err(|e| format!("fork row: {e}"))?,
+            fork_count: row
+                .try_get("fork_count")
+                .map_err(|e| format!("fork row: {e}"))?,
+            created_at: row
+                .try_get("created_at")
+                .map_err(|e| format!("fork row: {e}"))?,
+            updated_at: row
+                .try_get("updated_at")
+                .map_err(|e| format!("fork row: {e}"))?,
+            has_owner_avatar: owner_avatar_path.is_some(),
+            owner_user_id,
+        }
+    }};
+}
+
+/// Paginated stargazers, newest first. Optional `q` filters username/display_name.
+pub async fn list_repo_stargazers(
+    pool: &DbPool,
+    repository_id: &str,
+    q: Option<&str>,
+    offset: i64,
+    limit: i64,
+) -> Result<Vec<RepoStargazerListRow>, String> {
+    let pat = q.filter(|s| !s.trim().is_empty()).map(|s| social_like_pat(s.trim()));
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            to_char(s.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = $1
+                       AND (u.username ILIKE $2 ESCAPE '\\' OR COALESCE(u.display_name, '') ILIKE $2 ESCAPE '\\')
+                     ORDER BY s.created_at DESC
+                     LIMIT $3 OFFSET $4",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            } else {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            to_char(s.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = $1
+                     ORDER BY s.created_at DESC
+                     LIMIT $2 OFFSET $3",
+                )
+                .bind(repository_id)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            }
+            .map_err(|e| format!("list stargazers: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_stargazer!(&r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ') AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?
+                       AND (u.username LIKE ? ESCAPE '\\\\' OR COALESCE(u.display_name, '') LIKE ? ESCAPE '\\\\')
+                     ORDER BY s.created_at DESC
+                     LIMIT ? OFFSET ?",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .bind(pat)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            } else {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            DATE_FORMAT(s.created_at, '%Y-%m-%dT%H:%i:%sZ') AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?
+                     ORDER BY s.created_at DESC
+                     LIMIT ? OFFSET ?",
+                )
+                .bind(repository_id)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            }
+            .map_err(|e| format!("list stargazers: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_stargazer!(&r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', s.created_at) AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?1
+                       AND (u.username LIKE ?2 ESCAPE '\\' OR COALESCE(u.display_name, '') LIKE ?2 ESCAPE '\\')
+                     ORDER BY s.created_at DESC
+                     LIMIT ?3 OFFSET ?4",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            } else {
+                sqlx::query(
+                    "SELECT s.user_id, u.username, u.display_name, u.avatar_path,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', s.created_at) AS starred_at
+                     FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?1
+                     ORDER BY s.created_at DESC
+                     LIMIT ?2 OFFSET ?3",
+                )
+                .bind(repository_id)
+                .bind(limit)
+                .bind(offset)
+                .fetch_all(p)
+                .await
+            }
+            .map_err(|e| format!("list stargazers: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_stargazer!(&r))).collect()
+        }
+    }
+}
+
+pub async fn count_repo_stargazers(
+    pool: &DbPool,
+    repository_id: &str,
+    q: Option<&str>,
+) -> Result<i64, String> {
+    let pat = q.filter(|s| !s.trim().is_empty()).map(|s| social_like_pat(s.trim()));
+    match pool {
+        DbPool::Postgres(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = $1
+                       AND (u.username ILIKE $2 ESCAPE '\\' OR COALESCE(u.display_name, '') ILIKE $2 ESCAPE '\\')",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars WHERE repository_id = $1",
+                )
+                .bind(repository_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count stargazers: {e}"))
+        }
+        DbPool::MySql(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?
+                       AND (u.username LIKE ? ESCAPE '\\\\' OR COALESCE(u.display_name, '') LIKE ? ESCAPE '\\\\')",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars WHERE repository_id = ?",
+                )
+                .bind(repository_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count stargazers: {e}"))
+        }
+        DbPool::Sqlite(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars s
+                     JOIN users u ON u.id = s.user_id
+                     WHERE s.repository_id = ?1
+                       AND (u.username LIKE ?2 ESCAPE '\\' OR COALESCE(u.display_name, '') LIKE ?2 ESCAPE '\\')",
+                )
+                .bind(repository_id)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repository_stars WHERE repository_id = ?1",
+                )
+                .bind(repository_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count stargazers: {e}"))
+        }
+    }
+}
+
+fn fork_order_sql(sort: ForkListSort) -> &'static str {
+    match sort {
+        ForkListSort::Stars => "COALESCE(r.star_count, 0) DESC, r.updated_at DESC",
+        ForkListSort::Updated => "r.updated_at DESC",
+        ForkListSort::Created => "r.created_at DESC",
+    }
+}
+
+/// Active forks in a network (excludes the root when it has no forked_from).
+pub async fn list_network_forks(
+    pool: &DbPool,
+    fork_network_id: &str,
+    q: Option<&str>,
+    sort: ForkListSort,
+    offset: i64,
+    limit: i64,
+) -> Result<Vec<RepoForkListRow>, String> {
+    let pat = q.filter(|s| !s.trim().is_empty()).map(|s| social_like_pat(s.trim()));
+    let order = fork_order_sql(sort);
+    match pool {
+        DbPool::Postgres(p) => {
+            let sql = if pat.is_some() {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+                            to_char(r.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = $1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END ILIKE $2 ESCAPE '\\'
+                         OR r.name ILIKE $2 ESCAPE '\\'
+                       )
+                     ORDER BY {order}
+                     LIMIT $3 OFFSET $4"
+                )
+            } else {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            to_char(r.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+                            to_char(r.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = $1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                     ORDER BY {order}
+                     LIMIT $2 OFFSET $3"
+                )
+            };
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(pat)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            } else {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            }
+            .map_err(|e| format!("list forks: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_fork_list!(&r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let sql = if pat.is_some() {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            DATE_FORMAT(r.created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+                            DATE_FORMAT(r.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ? ESCAPE '\\\\'
+                         OR r.name LIKE ? ESCAPE '\\\\'
+                       )
+                     ORDER BY {order}
+                     LIMIT ? OFFSET ?"
+                )
+            } else {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            DATE_FORMAT(r.created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+                            DATE_FORMAT(r.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                     ORDER BY {order}
+                     LIMIT ? OFFSET ?"
+                )
+            };
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(pat)
+                    .bind(pat)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            } else {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            }
+            .map_err(|e| format!("list forks: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_fork_list!(&r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let sql = if pat.is_some() {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', r.created_at) AS created_at,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', r.updated_at) AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ?2 ESCAPE '\\'
+                         OR r.name LIKE ?2 ESCAPE '\\'
+                       )
+                     ORDER BY {order}
+                     LIMIT ?3 OFFSET ?4"
+                )
+            } else {
+                format!(
+                    "SELECT r.id,
+                            CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END AS owner_username,
+                            r.name, r.description,
+                            COALESCE(r.star_count, 0) AS star_count,
+                            COALESCE(r.fork_count, 0) AS fork_count,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', r.created_at) AS created_at,
+                            strftime('%Y-%m-%dT%H:%M:%SZ', r.updated_at) AS updated_at,
+                            CASE WHEN r.owner_type = 'user' THEN u.id ELSE NULL END AS owner_user_id,
+                            CASE WHEN r.owner_type = 'user' THEN u.avatar_path ELSE NULL END AS owner_avatar_path
+                     FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                     ORDER BY {order}
+                     LIMIT ?2 OFFSET ?3"
+                )
+            };
+            let rows = if let Some(ref pat) = pat {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(pat)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            } else {
+                sqlx::query(&sql)
+                    .bind(fork_network_id)
+                    .bind(limit)
+                    .bind(offset)
+                    .fetch_all(p)
+                    .await
+            }
+            .map_err(|e| format!("list forks: {e}"))?;
+            rows.into_iter().map(|r| Ok(map_fork_list!(&r))).collect()
+        }
+    }
+}
+
+pub async fn count_network_forks(
+    pool: &DbPool,
+    fork_network_id: &str,
+    q: Option<&str>,
+) -> Result<i64, String> {
+    let pat = q.filter(|s| !s.trim().is_empty()).map(|s| social_like_pat(s.trim()));
+    match pool {
+        DbPool::Postgres(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = $1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END ILIKE $2 ESCAPE '\\'
+                         OR r.name ILIKE $2 ESCAPE '\\'
+                       )",
+                )
+                .bind(fork_network_id)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories
+                     WHERE fork_network_id = $1
+                       AND forked_from_repo_id IS NOT NULL
+                       AND deleted_at IS NULL",
+                )
+                .bind(fork_network_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count forks: {e}"))
+        }
+        DbPool::MySql(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ? ESCAPE '\\\\'
+                         OR r.name LIKE ? ESCAPE '\\\\'
+                       )",
+                )
+                .bind(fork_network_id)
+                .bind(pat)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories
+                     WHERE fork_network_id = ?
+                       AND forked_from_repo_id IS NOT NULL
+                       AND deleted_at IS NULL",
+                )
+                .bind(fork_network_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count forks: {e}"))
+        }
+        DbPool::Sqlite(p) => {
+            if let Some(ref pat) = pat {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories r
+                     LEFT JOIN users u ON r.owner_type = 'user' AND u.id = r.owner_id
+                     LEFT JOIN organizations o ON r.owner_type = 'org' AND o.id = r.owner_id
+                     WHERE r.fork_network_id = ?1
+                       AND r.forked_from_repo_id IS NOT NULL
+                       AND r.deleted_at IS NULL
+                       AND (
+                         CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ?2 ESCAPE '\\'
+                         OR r.name LIKE ?2 ESCAPE '\\'
+                       )",
+                )
+                .bind(fork_network_id)
+                .bind(pat)
+                .fetch_one(p)
+                .await
+            } else {
+                sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM repositories
+                     WHERE fork_network_id = ?1
+                       AND forked_from_repo_id IS NOT NULL
+                       AND deleted_at IS NULL",
+                )
+                .bind(fork_network_id)
+                .fetch_one(p)
+                .await
+            }
+            .map_err(|e| format!("count forks: {e}"))
+        }
+    }
+}

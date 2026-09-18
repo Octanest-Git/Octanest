@@ -43,13 +43,17 @@ import { Route as OwnerRepoIndexRouteImport } from './routes/$owner.$repo.index'
 import { Route as OwnerRepoActionsRouteImport } from './routes/$owner.$repo.actions'
 import { Route as OwnerRepoBranchesRouteImport } from './routes/$owner.$repo.branches'
 import { Route as OwnerRepoForkRouteImport } from './routes/$owner.$repo.fork'
+import { Route as OwnerRepoForksRouteImport } from './routes/$owner.$repo.forks'
 import { Route as OwnerRepoIssuesRouteImport } from './routes/$owner.$repo.issues'
 import { Route as OwnerRepoPackagesRouteImport } from './routes/$owner.$repo.packages'
 import { Route as OwnerRepoPullsRouteImport } from './routes/$owner.$repo.pulls'
 import { Route as OwnerRepoReleasesRouteImport } from './routes/$owner.$repo.releases'
 import { Route as OwnerRepoSearchRouteImport } from './routes/$owner.$repo.search'
 import { Route as OwnerRepoSettingsRouteImport } from './routes/$owner.$repo.settings'
+import { Route as OwnerRepoStargazersRouteImport } from './routes/$owner.$repo.stargazers'
+import { Route as OwnerRepoActivityRouteImport } from './routes/$owner.$repo.activity'
 import { Route as OwnerRepoTagsRouteImport } from './routes/$owner.$repo.tags'
+import { Route as OwnerRepoWatchersRouteImport } from './routes/$owner.$repo.watchers'
 import { Route as OwnerSettingsIndexRouteImport } from './routes/$owner.settings.index'
 import { Route as OwnerSettingsLabelsRouteImport } from './routes/$owner.settings.labels'
 import { Route as OwnerSettingsMembersRouteImport } from './routes/$owner.settings.members'
@@ -247,6 +251,11 @@ const OwnerRepoForkRoute = OwnerRepoForkRouteImport.update({
   path: '/fork',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoForksRoute = OwnerRepoForksRouteImport.update({
+  id: '/forks',
+  path: '/forks',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoIssuesRoute = OwnerRepoIssuesRouteImport.update({
   id: '/issues',
   path: '/issues',
@@ -277,9 +286,24 @@ const OwnerRepoSettingsRoute = OwnerRepoSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
+const OwnerRepoStargazersRoute = OwnerRepoStargazersRouteImport.update({
+  id: '/stargazers',
+  path: '/stargazers',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoActivityRoute = OwnerRepoActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
 const OwnerRepoTagsRoute = OwnerRepoTagsRouteImport.update({
   id: '/tags',
   path: '/tags',
+  getParentRoute: () => OwnerRepoRoute,
+} as any)
+const OwnerRepoWatchersRoute = OwnerRepoWatchersRouteImport.update({
+  id: '/watchers',
+  path: '/watchers',
   getParentRoute: () => OwnerRepoRoute,
 } as any)
 const OwnerSettingsIndexRoute = OwnerSettingsIndexRouteImport.update({
@@ -449,13 +473,17 @@ export interface FileRoutesByFullPath {
   '/$owner/$repo/actions': typeof OwnerRepoActionsRouteWithChildren
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/fork': typeof OwnerRepoForkRoute
+  '/$owner/$repo/forks': typeof OwnerRepoForksRoute
   '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
   '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
   '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRouteWithChildren
+  '/$owner/$repo/stargazers': typeof OwnerRepoStargazersRoute
+  '/$owner/$repo/activity': typeof OwnerRepoActivityRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/$repo/watchers': typeof OwnerRepoWatchersRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
@@ -512,10 +540,14 @@ export interface FileRoutesByTo {
   '/setup': typeof SetupIndexRoute
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/fork': typeof OwnerRepoForkRoute
+  '/$owner/$repo/forks': typeof OwnerRepoForksRoute
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
   '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRouteWithChildren
+  '/$owner/$repo/stargazers': typeof OwnerRepoStargazersRoute
+  '/$owner/$repo/activity': typeof OwnerRepoActivityRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/$repo/watchers': typeof OwnerRepoWatchersRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
@@ -578,13 +610,17 @@ export interface FileRoutesById {
   '/$owner/$repo/actions': typeof OwnerRepoActionsRouteWithChildren
   '/$owner/$repo/branches': typeof OwnerRepoBranchesRoute
   '/$owner/$repo/fork': typeof OwnerRepoForkRoute
+  '/$owner/$repo/forks': typeof OwnerRepoForksRoute
   '/$owner/$repo/issues': typeof OwnerRepoIssuesRouteWithChildren
   '/$owner/$repo/packages': typeof OwnerRepoPackagesRoute
   '/$owner/$repo/pulls': typeof OwnerRepoPullsRouteWithChildren
   '/$owner/$repo/releases': typeof OwnerRepoReleasesRouteWithChildren
   '/$owner/$repo/search': typeof OwnerRepoSearchRoute
   '/$owner/$repo/settings': typeof OwnerRepoSettingsRouteWithChildren
+  '/$owner/$repo/stargazers': typeof OwnerRepoStargazersRoute
+  '/$owner/$repo/activity': typeof OwnerRepoActivityRoute
   '/$owner/$repo/tags': typeof OwnerRepoTagsRoute
+  '/$owner/$repo/watchers': typeof OwnerRepoWatchersRoute
   '/$owner/settings/labels': typeof OwnerSettingsLabelsRoute
   '/$owner/settings/members': typeof OwnerSettingsMembersRoute
   '/settings/tokens/new': typeof SettingsTokensNewRouteWithChildren
@@ -649,13 +685,17 @@ export interface FileRouteTypes {
     | '/$owner/$repo/actions'
     | '/$owner/$repo/branches'
     | '/$owner/$repo/fork'
+    | '/$owner/$repo/forks'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/packages'
     | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
     | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
+    | '/$owner/$repo/stargazers'
+    | '/$owner/$repo/activity'
     | '/$owner/$repo/tags'
+    | '/$owner/$repo/watchers'
     | '/$owner/settings/labels'
     | '/$owner/settings/members'
     | '/settings/tokens/new'
@@ -712,10 +752,14 @@ export interface FileRouteTypes {
     | '/setup'
     | '/$owner/$repo/branches'
     | '/$owner/$repo/fork'
+    | '/$owner/$repo/forks'
     | '/$owner/$repo/packages'
     | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
+    | '/$owner/$repo/stargazers'
+    | '/$owner/$repo/activity'
     | '/$owner/$repo/tags'
+    | '/$owner/$repo/watchers'
     | '/$owner/settings/labels'
     | '/$owner/settings/members'
     | '/$owner/$repo'
@@ -777,13 +821,17 @@ export interface FileRouteTypes {
     | '/$owner/$repo/actions'
     | '/$owner/$repo/branches'
     | '/$owner/$repo/fork'
+    | '/$owner/$repo/forks'
     | '/$owner/$repo/issues'
     | '/$owner/$repo/packages'
     | '/$owner/$repo/pulls'
     | '/$owner/$repo/releases'
     | '/$owner/$repo/search'
     | '/$owner/$repo/settings'
+    | '/$owner/$repo/stargazers'
+    | '/$owner/$repo/activity'
     | '/$owner/$repo/tags'
+    | '/$owner/$repo/watchers'
     | '/$owner/settings/labels'
     | '/$owner/settings/members'
     | '/settings/tokens/new'
@@ -1080,6 +1128,13 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoForkRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/forks': {
+      id: '/$owner/$repo/forks'
+      path: '/forks'
+      fullPath: '/$owner/$repo/forks'
+      preLoaderRoute: typeof OwnerRepoForksRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/issues': {
       id: '/$owner/$repo/issues'
       path: '/issues'
@@ -1122,11 +1177,32 @@ declare module '@octanejs/tanstack-router' {
       preLoaderRoute: typeof OwnerRepoSettingsRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
+    '/$owner/$repo/stargazers': {
+      id: '/$owner/$repo/stargazers'
+      path: '/stargazers'
+      fullPath: '/$owner/$repo/stargazers'
+      preLoaderRoute: typeof OwnerRepoStargazersRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/activity': {
+      id: '/$owner/$repo/activity'
+      path: '/activity'
+      fullPath: '/$owner/$repo/activity'
+      preLoaderRoute: typeof OwnerRepoActivityRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
     '/$owner/$repo/tags': {
       id: '/$owner/$repo/tags'
       path: '/tags'
       fullPath: '/$owner/$repo/tags'
       preLoaderRoute: typeof OwnerRepoTagsRouteImport
+      parentRoute: typeof OwnerRepoRoute
+    }
+    '/$owner/$repo/watchers': {
+      id: '/$owner/$repo/watchers'
+      path: '/watchers'
+      fullPath: '/$owner/$repo/watchers'
+      preLoaderRoute: typeof OwnerRepoWatchersRouteImport
       parentRoute: typeof OwnerRepoRoute
     }
     '/$owner/settings/': {
@@ -1389,13 +1465,17 @@ interface OwnerRepoRouteChildren {
   OwnerRepoActionsRoute: typeof OwnerRepoActionsRouteWithChildren
   OwnerRepoBranchesRoute: typeof OwnerRepoBranchesRoute
   OwnerRepoForkRoute: typeof OwnerRepoForkRoute
+  OwnerRepoForksRoute: typeof OwnerRepoForksRoute
   OwnerRepoIssuesRoute: typeof OwnerRepoIssuesRouteWithChildren
   OwnerRepoPackagesRoute: typeof OwnerRepoPackagesRoute
   OwnerRepoPullsRoute: typeof OwnerRepoPullsRouteWithChildren
   OwnerRepoReleasesRoute: typeof OwnerRepoReleasesRouteWithChildren
   OwnerRepoSearchRoute: typeof OwnerRepoSearchRoute
   OwnerRepoSettingsRoute: typeof OwnerRepoSettingsRouteWithChildren
+  OwnerRepoStargazersRoute: typeof OwnerRepoStargazersRoute
+  OwnerRepoActivityRoute: typeof OwnerRepoActivityRoute
   OwnerRepoTagsRoute: typeof OwnerRepoTagsRoute
+  OwnerRepoWatchersRoute: typeof OwnerRepoWatchersRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
   OwnerRepoBlameSplatRoute: typeof OwnerRepoBlameSplatRoute
   OwnerRepoBlobSplatRoute: typeof OwnerRepoBlobSplatRoute
@@ -1410,13 +1490,17 @@ const OwnerRepoRouteChildren: OwnerRepoRouteChildren = {
   OwnerRepoActionsRoute: OwnerRepoActionsRouteWithChildren,
   OwnerRepoBranchesRoute: OwnerRepoBranchesRoute,
   OwnerRepoForkRoute: OwnerRepoForkRoute,
+  OwnerRepoForksRoute: OwnerRepoForksRoute,
   OwnerRepoIssuesRoute: OwnerRepoIssuesRouteWithChildren,
   OwnerRepoPackagesRoute: OwnerRepoPackagesRoute,
   OwnerRepoPullsRoute: OwnerRepoPullsRouteWithChildren,
   OwnerRepoReleasesRoute: OwnerRepoReleasesRouteWithChildren,
   OwnerRepoSearchRoute: OwnerRepoSearchRoute,
   OwnerRepoSettingsRoute: OwnerRepoSettingsRouteWithChildren,
+  OwnerRepoStargazersRoute: OwnerRepoStargazersRoute,
+  OwnerRepoActivityRoute: OwnerRepoActivityRoute,
   OwnerRepoTagsRoute: OwnerRepoTagsRoute,
+  OwnerRepoWatchersRoute: OwnerRepoWatchersRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
   OwnerRepoBlameSplatRoute: OwnerRepoBlameSplatRoute,
   OwnerRepoBlobSplatRoute: OwnerRepoBlobSplatRoute,

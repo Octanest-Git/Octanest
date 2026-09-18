@@ -307,7 +307,7 @@
     }
   }
 
-  /* Blob viewer: keep Shiki token colors, drop theme chrome so gutter aligns. */
+  /* Blob / diff viewers: keep Shiki token colors, drop theme chrome. */
   .blob-code pre,
   .blob-code code {
     background: transparent !important;
@@ -321,6 +321,9 @@
     width: 100%;
     min-height: 1.25rem;
     line-height: 1.25rem;
+  }
+  .diff-code span[style*="color"] {
+    background: transparent;
   }
 
   /*

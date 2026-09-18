@@ -136,17 +136,25 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 
 ### Repo Code home `/{owner}/{repo}` (D-14…D-22)
 
+> **Amended (issue #23):** Code home / nested tree use a two-column layout on `lg+`
+> (main file browser + About rail). Description lives in About (editable for Admin),
+> not under the title. Languages bar is intentionally omitted.
+
 | Element | Contract |
 |---------|----------|
 | Title row | Heading `owner / repo` (owner link → future profile; Phase 7 owner is username text/link to home). Visibility Badge beside name |
-| Description | Body muted under title when set |
+| Actions | Watch / Star / Fork with counts (Watch/Star require session; Fork public + session) |
+| Description | About rail Body; Admin pencil → inline edit via `repo.updateMetadata` (also Settings → General) |
+| About rail | Homepage link, topic chips, star/watch/fork counts, latest release, packages snippet, contributors — **no languages** |
 | Secondary nav | Link row: **Code** (active), **Commits**, **Branches**, **Tags** — Label 600 active / 400 inactive; underline or primary bottom border for active |
 | Toolbar | Ref Select (branch/tag) + **Clone / Download** Dropdown |
 | Clone box | HTTPS URL + copy control (**Copy HTTPS URL** aria-label / accessible name); SSH row muted placeholder “SSH coming in a later phase”; archive items **Download ZIP**, **Download tar.gz** for current ref |
-| Default Code body | File tree (directories first) + README rendered below when present |
-| Empty repo | First-push guide panel (forge-familiar): Heading **Quick setup** + Body instructions for `git remote add` / push using HTTPS URL; no fake files |
+| Last commit | Strip above tree: tip subject, author, short SHA, relative time, commit count link |
+| Default Code body | File tree (directories first; name + last commit subject + relative time on `md+`) + README rendered below when present |
+| Empty repo | First-push guide panel (forge-familiar): Heading **Quick setup** + Body instructions for `git remote add` / push using HTTPS URL; no fake files; About rail still shown |
 | Anonymous | Public repos readable; private / no-access → **404** page (same as missing) — no “private” leak copy |
 | Loading | Tree + README skeletons |
+| Shell width | `max-w-7xl` content column; `lg:grid-cols-[minmax(0,1fr)_280px]` for Code/tree |
 
 ### Tree / blob / raw / blame
 

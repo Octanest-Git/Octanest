@@ -115,6 +115,182 @@ export const fetchRepoCommits = createServerFn({ method: "GET" })
     });
   });
 
+/** SSR: `repo.pathLastCommits` with Cookie forward (issue #23). */
+export const fetchRepoPathLastCommits = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { ref: string; path?: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+    path: String(data?.path ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.pathLastCommits({
+      owner: data.owner,
+      name: data.name,
+      ref: data.ref,
+      path: data.path || undefined,
+    });
+  });
+
+/** SSR: `repo.commitCount` with Cookie forward (issue #23). */
+export const fetchRepoCommitCount = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { ref: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    ref: String(data?.ref ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.commitCount({
+      owner: data.owner,
+      name: data.name,
+      ref: data.ref,
+    });
+  });
+
+/** SSR: `repo.contributors.list` with Cookie forward (issue #23). */
+export const fetchRepoContributors = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { limit?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    limit: typeof data?.limit === "number" ? data.limit : 30,
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.contributorsList({
+      owner: data.owner,
+      name: data.name,
+      limit: data.limit,
+    });
+  });
+
+/** SSR: `repo.languages` — About sidebar language bar (linguist-lite). */
+export const fetchRepoLanguages = createServerFn({ method: "GET" })
+  .validator((data: OwnerName) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.languages({
+      owner: data.owner,
+      name: data.name,
+    });
+  });
+
+/** SSR: `repo.activity.list` — GitHub-shaped push activity feed. */
+export const fetchRepoActivity = createServerFn({ method: "GET" })
+  .validator(
+    (
+      data: OwnerName & {
+        push_type?: string;
+        period?: string;
+        offset?: number;
+        limit?: number;
+      },
+    ) => ({
+      owner: String(data?.owner ?? ""),
+      name: String(data?.name ?? ""),
+      push_type: data?.push_type ? String(data.push_type) : "",
+      period: data?.period ? String(data.period) : "all",
+      offset: Number(data?.offset ?? 0),
+      limit: Number(data?.limit ?? 30),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.activityList({
+      owner: data.owner,
+      name: data.name,
+      push_type: data.push_type.trim() || null,
+      period: data.period.trim() || "all",
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
+/** SSR: `packages.list` filtered by repository_id (issue #23 About). */
+export const fetchPackagesForRepo = createServerFn({ method: "GET" })
+  .validator((data: { repository_id: string }) => ({
+    repository_id: String(data?.repository_id ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.packages.list({ repository_id: data.repository_id });
+  });
+
+/** SSR: `repo.stargazers.list` (Write+ gated). */
+export const fetchRepoStargazers = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { q?: string; offset?: number; limit?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    q: data?.q ? String(data.q) : "",
+    offset: Number(data?.offset ?? 0),
+    limit: Number(data?.limit ?? 30),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.stargazersList({
+      owner: data.owner,
+      name: data.name,
+      q: data.q.trim() || null,
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
+/** SSR: `repo.watchers.list`. */
+export const fetchRepoWatchers = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { q?: string; offset?: number; limit?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    q: data?.q ? String(data.q) : "",
+    offset: Number(data?.offset ?? 0),
+    limit: Number(data?.limit ?? 30),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.watchersList({
+      owner: data.owner,
+      name: data.name,
+      q: data.q.trim() || null,
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
+/** SSR: `repo.forks.list`. */
+export const fetchRepoForks = createServerFn({ method: "GET" })
+  .validator(
+    (
+      data: OwnerName & {
+        q?: string;
+        sort?: string;
+        offset?: number;
+        limit?: number;
+      },
+    ) => ({
+      owner: String(data?.owner ?? ""),
+      name: String(data?.name ?? ""),
+      q: data?.q ? String(data.q) : "",
+      sort: data?.sort ? String(data.sort) : "stars",
+      offset: Number(data?.offset ?? 0),
+      limit: Number(data?.limit ?? 30),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.forksList({
+      owner: data.owner,
+      name: data.name,
+      q: data.q.trim() || null,
+      sort: data.sort,
+      offset: data.offset,
+      limit: data.limit,
+    });
+  });
+
 /** SSR: `repo.blame` with Cookie forward. */
 export const fetchRepoBlame = createServerFn({ method: "GET" })
   .validator((data: OwnerName & { ref: string; path: string }) => ({

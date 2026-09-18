@@ -6,9 +6,9 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::backend::{
-    ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, DiffFile, DiffResult,
-    GitBackend, GitError, GitRef, GrepHit, GrepResult, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
-    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
+    ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, ContributorSummary, DiffFile,
+    DiffResult, GitBackend, GitError, GitRef, GrepHit, GrepResult, SizedBlobEntry, TreeEntry,
+    TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -1234,6 +1234,314 @@ impl GitBackend for CliGitBackend {
         }
         Ok(out)
     }
+
+    async fn log_path(
+        &self,
+        repo: &Path,
+        refname: &str,
+        path: &str,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let path = path.trim().trim_start_matches('/');
+        if path.is_empty() || path.contains('\0') {
+            return Err(GitError::InvalidArg("log_path requires a non-empty path".into()));
+        }
+        if path
+            .split('/')
+            .any(|seg| seg.is_empty() || seg == "." || seg == "..")
+        {
+            return Err(GitError::InvalidArg("log_path path has invalid segments".into()));
+        }
+        let limit = limit.clamp(1, 100);
+        let limit_s = limit.to_string();
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let stdout = match run_git_stdout(&[
+            "-C",
+            repo_s,
+            "log",
+            &format!("--max-count={limit_s}"),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI",
+            refname,
+            "--",
+            path,
+        ])
+        .await
+        {
+            Ok(b) => b,
+            Err(_) => return Ok(Vec::new()),
+        };
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for record in text.split('\n') {
+            let record = record.trim_end_matches('\r');
+            if record.is_empty() {
+                continue;
+            }
+            if let Some(summary) = parse_commit_summary_record(record) {
+                out.push(summary);
+            }
+        }
+        Ok(out)
+    }
+
+    async fn path_last_commits(
+        &self,
+        repo: &Path,
+        refname: &str,
+        dir_path: &str,
+        entry_names: &[String],
+    ) -> Result<std::collections::HashMap<String, CommitSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let dir = dir_path.trim().trim_start_matches('/').trim_end_matches('/');
+        if dir.contains('\0')
+            || dir.split('/').any(|seg| seg == "." || seg == "..")
+        {
+            return Err(GitError::InvalidArg(
+                "path_last_commits dir_path has invalid segments".into(),
+            ));
+        }
+
+        let mut out = std::collections::HashMap::new();
+        if entry_names.is_empty() {
+            return Ok(out);
+        }
+
+        // Concurrency-capped parallel `log -1 -- path` (max 8).
+        let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(8));
+        let mut joins = Vec::with_capacity(entry_names.len());
+        for name in entry_names {
+            let name = name.trim().to_string();
+            if name.is_empty() || name.contains('/') || name.contains('\0') || name == ".." {
+                continue;
+            }
+            let full = if dir.is_empty() {
+                name.clone()
+            } else {
+                format!("{dir}/{name}")
+            };
+            let repo = repo.to_path_buf();
+            let refname = refname.to_string();
+            let sem = sem.clone();
+            let backend = self.clone();
+            joins.push(tokio::spawn(async move {
+                let _permit = sem.acquire().await.ok()?;
+                let commits = backend
+                    .log_path(&repo, &refname, &full, 1)
+                    .await
+                    .ok()?;
+                commits.into_iter().next().map(|c| (name, c))
+            }));
+        }
+        for j in joins {
+            if let Ok(Some((name, commit))) = j.await {
+                out.insert(name, commit);
+            }
+        }
+        Ok(out)
+    }
+
+    async fn rev_list_count(&self, repo: &Path, refname: &str) -> Result<u64, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(0);
+        }
+        let stdout = run_git_stdout(&["-C", repo_s, "rev-list", "--count", refname]).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let n = text.trim().parse::<u64>().unwrap_or(0);
+        Ok(n)
+    }
+
+    async fn shortlog(
+        &self,
+        repo: &Path,
+        refname: &str,
+        limit: u32,
+    ) -> Result<Vec<ContributorSummary>, GitError> {
+        let refname = validate_treeish(refname)?;
+        let repo_s = repo_str(repo)?;
+        let limit = limit.clamp(1, 100);
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{refname}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        let stdout = run_git_stdout(&["-C", repo_s, "shortlog", "-sn", "-e", refname]).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for line in text.split('\n') {
+            if out.len() as u32 >= limit {
+                break;
+            }
+            let line = line.trim_end_matches('\r').trim();
+            if line.is_empty() {
+                continue;
+            }
+            // "    42\tName <email@x>" or spaces then count then name <email>
+            let rest = line.trim_start();
+            let (count_s, after) = rest
+                .split_once(|c: char| c.is_whitespace())
+                .unwrap_or((rest, ""));
+            let count: i64 = count_s.trim().parse().unwrap_or(0);
+            if count <= 0 {
+                continue;
+            }
+            let after = after.trim();
+            let (name, email) = if let Some((n, e)) = after.rsplit_once(" <") {
+                let email = e.trim().trim_end_matches('>').trim().to_string();
+                (n.trim().to_string(), email)
+            } else {
+                (after.to_string(), String::new())
+            };
+            if name.is_empty() {
+                continue;
+            }
+            out.push(ContributorSummary {
+                name,
+                email,
+                commit_count: count,
+            });
+        }
+        Ok(out)
+    }
+
+    async fn ls_tree_sized_blobs(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        max_entries: u32,
+    ) -> Result<Vec<SizedBlobEntry>, GitError> {
+        let treeish = validate_treeish(treeish)?;
+        let repo_s = repo_str(repo)?;
+        let max_entries = max_entries.clamp(1, 200_000);
+
+        let rev = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "rev-parse",
+                "--verify",
+                &format!("{treeish}^{{commit}}"),
+            ])
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        if !rev.status.success() {
+            return Ok(Vec::new());
+        }
+
+        // `-l` adds blob size after the OID; `-r` walks the full tree.
+        let stdout = match run_git_stdout(&[
+            "-C",
+            repo_s,
+            "ls-tree",
+            "-r",
+            "-l",
+            "--full-tree",
+            treeish,
+        ])
+        .await
+        {
+            Ok(b) => b,
+            Err(e) => {
+                let msg = e.to_string();
+                if msg.contains("Not a valid object name")
+                    || msg.contains("does not exist")
+                    || msg.contains("not exist")
+                {
+                    return Ok(Vec::new());
+                }
+                return Err(e);
+            }
+        };
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for line in text.lines() {
+            if out.len() as u32 >= max_entries {
+                break;
+            }
+            if let Some(entry) = parse_ls_tree_sized_blob_line(line) {
+                out.push(entry);
+            }
+        }
+        Ok(out)
+    }
+}
+
+/// Parse `git ls-tree -r -l` lines: `mode type oid size\tpath` (blobs only).
+fn parse_ls_tree_sized_blob_line(line: &str) -> Option<SizedBlobEntry> {
+    let (meta, path) = line.split_once('\t')?;
+    if path.is_empty() || path.contains('\0') {
+        return None;
+    }
+    let mut parts = meta.split_whitespace();
+    let _mode = parts.next()?;
+    let kind = parts.next()?;
+    if kind != "blob" {
+        return None;
+    }
+    let _oid = parts.next()?;
+    let size_s = parts.next()?;
+    // Submodules / missing size show as `-`.
+    if size_s == "-" {
+        return None;
+    }
+    let size: u64 = size_s.parse().ok()?;
+    Some(SizedBlobEntry {
+        path: path.to_string(),
+        size,
+    })
 }
 
 fn parse_grep_line(line: &str, treeish: &str) -> Option<GrepHit> {
