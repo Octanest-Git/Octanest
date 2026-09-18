@@ -1,4 +1,9 @@
-import type { PullListResponse } from "@octanest/api-client";
+import { GitMerge, GitPullRequest, GitPullRequestClosed } from "@octanejs/lucide";
+import type { IssueAssigneePublic, PullListResponse } from "@octanest/api-client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
 
 type PullsListProps = {
   owner: string;
@@ -6,40 +11,82 @@ type PullsListProps = {
   list: PullListResponse;
 };
 
+function assigneeLine(assignees: IssueAssigneePublic[] | undefined): string | null {
+  if (!assignees || assignees.length === 0) return null;
+  return assignees.map((a) => `@${a.username}`).join(", ");
+}
+
 export function PullsList(props: PullsListProps) @{
   const { owner, repo, list } = props;
 
   @if (list.pulls.length === 0) {
-    <div className="rounded-md border border-dashed border-border p-8 text-center">
-      <p className="text-muted-foreground">No pull requests match this filter.</p>
-      <a
-        href={`/${owner}/${repo}/pulls/new` as string}
-        className="mt-3 inline-block text-sm text-primary no-underline hover:underline"
-      >
-        New pull request
-      </a>
-    </div>;
+    <EmptyState
+      icon={<GitPullRequest aria-hidden size={22} />}
+      title="No pull requests"
+      description="No pull requests match this filter. Open one to propose changes."
+      action={
+        <a href={`/${owner}/${repo}/pulls/new` as string} className="no-underline">
+          <Button type="button" size="sm">
+            New pull request
+          </Button>
+        </a>
+      }
+    />;
   } @else {
-    <ul className="divide-y divide-border rounded-md border border-border">
+    <List>
       @for (const pull of list.pulls; key pull.id) {
-        <li className="flex items-start justify-between gap-4 px-4 py-3">
-          <div>
-            <a
-              href={`/${owner}/${repo}/pull/${pull.number}` as string}
-              className="font-medium text-foreground no-underline hover:underline"
-            >
-              {pull.title as string}
-            </a>
-            <p className="mt-1 text-sm text-muted-foreground">
-              #{pull.number as number} opened by {pull.author_username as string} ·{" "}
-              {pull.base_ref as string} ← {pull.head_ref as string}
+        <ListRow className="items-start gap-3 py-3">
+          @if (pull.state === "merged") {
+            <GitMerge
+              aria-hidden
+              size={16}
+              className="mt-0.5 shrink-0 text-[#8250df] dark:text-[#a371f7]"
+            />;
+          } @else if (pull.state === "closed") {
+            <GitPullRequestClosed
+              aria-hidden
+              size={16}
+              className="mt-0.5 shrink-0 text-destructive"
+            />;
+          } @else {
+            <GitPullRequest
+              aria-hidden
+              size={16}
+              className="mt-0.5 shrink-0 text-success"
+            />;
+          }
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={`/${owner}/${repo}/pull/${pull.number}` as string}
+                className="text-[15px] font-semibold text-foreground no-underline hover:text-primary"
+              >
+                {pull.title as string}
+              </a>
+              @if (pull.state === "merged") {
+                <Badge variant="merged">Merged</Badge>;
+              } @else if (pull.state === "closed") {
+                <Badge variant="destructive">Closed</Badge>;
+              } @else {
+                <Badge variant="success">Open</Badge>;
+              }
+            </div>
+            <p className="mt-1 text-[12px] text-muted-foreground">
+              {`#${pull.number} opened by @${pull.author_username}` as string}
+              <span className="mx-1.5">·</span>
+              <span className="font-mono">{pull.base_ref as string}</span>
+              <span className="mx-1"> ← </span>
+              <span className="font-mono">{pull.head_ref as string}</span>
+              @if (assigneeLine(pull.assignees)) {
+                <>
+                  <span className="mx-1.5">·</span>
+                  <span>{`assigned ${assigneeLine(pull.assignees)}` as string}</span>
+                </>;
+              }
             </p>
           </div>
-          <span className="shrink-0 text-xs uppercase text-muted-foreground">
-            {pull.state as string}
-          </span>
-        </li>;
+        </ListRow>;
       }
-    </ul>;
+    </List>;
   }
 }

@@ -1747,3 +1747,104 @@ pub async fn pull_has_assignee(pool: &DbPool, pull_id: &str, user_id: &str) -> R
         }
     }
 }
+
+/// Assignee row joined to users for pull list / detail.
+#[derive(Debug, Clone)]
+pub struct PullAssigneeRow {
+    pub user_id: String,
+    pub username: String,
+    pub display_name: String,
+}
+
+/// List assignees for a pull (username ascending).
+pub async fn list_pull_assignees(
+    pool: &DbPool,
+    pull_id: &str,
+) -> Result<Vec<PullAssigneeRow>, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id = $1
+ORDER BY lower(u.username)",
+            )
+            .bind(pull_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(PullAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::MySql(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id = ?
+ORDER BY LOWER(u.username)",
+            )
+            .bind(pull_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(PullAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+        DbPool::Sqlite(p) => {
+            let rows = sqlx::query(
+                "SELECT a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id = ?1
+ORDER BY lower(u.username)",
+            )
+            .bind(pull_id)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            rows.into_iter()
+                .map(|row| {
+                    Ok(PullAssigneeRow {
+                        user_id: row
+                            .try_get("user_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        username: row
+                            .try_get("username")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        display_name: row
+                            .try_get("display_name")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                    })
+                })
+                .collect()
+        }
+    }
+}

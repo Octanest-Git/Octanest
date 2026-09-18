@@ -2,7 +2,13 @@ import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/
 import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { GitBranch, Plus } from "@octanejs/lucide";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -266,31 +272,52 @@ export function RepoBranchesPage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading branches…</p>;
+    <>
+      <PageHeader icon={<GitBranch aria-hidden size={22} />} title="Branches" />
+      <List className="mt-6">
+        @for (const i of [0, 1, 2]; key i) {
+          <ListRow>
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </ListRow>;
+        }
+      </List>
+    </>;
   } @else if (phase.kind === "error") {
     <div className="flex flex-col gap-4">
       <p role="alert" className="text-[16px] text-destructive">
         {phase.message as string}
       </p>
-      <Button type="button" variant="secondary" onClick={() => void refreshBranches()}>
+      <Button type="button" variant="outline" onClick={() => void refreshBranches()}>
         Try again
       </Button>
     </div>;
   } @else {
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-semibold text-foreground">Branches</h2>
-        @if (isOwner) {
-          <Button type="button" onClick={() => openCreate()}>
-            New branch
-          </Button>;
+      <PageHeader
+        icon={<GitBranch aria-hidden size={22} />}
+        title="Branches"
+        actions={
+          isOwner ? (
+            <Button type="button" onClick={() => openCreate()}>
+              <Plus aria-hidden size={15} />
+              New branch
+            </Button>
+          ) : undefined
         }
-      </div>
+      />
 
       @if (phase.branches.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No branches yet.</p>;
+        <EmptyState
+          className="mt-6"
+          icon={<GitBranch aria-hidden size={22} />}
+          title="No branches yet"
+          description="Push a branch to this repository and it will show up here."
+        />;
       } @else {
-        <ul className="divide-y divide-border border-y border-border">
+        <List className="mt-6">
           @for (const b of phase.branches; key b.name) {
             <BranchRow
               owner={owner}
@@ -302,7 +329,7 @@ export function RepoBranchesPage() @{
               onDelete={(name) => openDelete(name)}
             />;
           }
-        </ul>;
+        </List>;
       }
 
       <Dialog
@@ -450,30 +477,34 @@ function BranchRow({
   const tip = shortOid(branch.oid);
   const href = treeHref(owner, repo, name, "");
 
-  <li className="flex flex-wrap items-center gap-x-4 gap-y-2 py-3">
+  <ListRow className="flex-wrap gap-x-4 gap-y-2">
+    <GitBranch aria-hidden size={16} className="shrink-0 text-muted-foreground" />
     <div className="min-w-0 flex-1">
-      <a
-        href={href as string}
-        className="block truncate text-[16px] font-semibold text-primary no-underline hover:underline"
-        title={name as string}
-      >
-        {name as string}
-      </a>
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={href as string}
+          className="truncate text-[15px] font-semibold text-primary no-underline hover:underline"
+          title={name as string}
+        >
+          {name as string}
+        </a>
+        @if (isDefault) {
+          <Badge variant="primary">default</Badge>;
+        }
+      </div>
       <p
-        className="mt-0.5 font-mono text-[13px] text-muted-foreground"
+        className="mt-0.5 font-mono text-[12px] text-muted-foreground"
         title={branch.oid as string}
       >
         {tip as string}
-        @if (isDefault) {
-          <span className="ml-2 font-sans text-[13px] text-muted-foreground">· default</span>;
-        }
       </p>
     </div>
     @if (isOwner) {
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
+          size="sm"
           disabled={isDefault}
           title={isDefault ? DEFAULT_SOFT_PROTECT_TITLE : undefined}
           onClick={() => {
@@ -485,6 +516,7 @@ function BranchRow({
         <Button
           type="button"
           variant="destructive"
+          size="sm"
           disabled={isDefault}
           title={isDefault ? DEFAULT_SOFT_PROTECT_TITLE : undefined}
           onClick={() => {
@@ -495,5 +527,5 @@ function BranchRow({
         </Button>
       </div>;
     }
-  </li>;
+  </ListRow>;
 }

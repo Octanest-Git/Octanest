@@ -80,7 +80,7 @@ function CreateMenu({ onNavigated }: { onNavigated?: () => void }) @{
   <DropdownMenu>
     <DropdownMenuTrigger
       className={cn(
-        "inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+        "inline-flex size-9 items-center justify-center rounded-md text-foreground outline-none",
         "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
       )}
       aria-label="Create new…"
@@ -157,7 +157,7 @@ function AccountMenu({
   <DropdownMenu>
     <DropdownMenuTrigger
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-md px-2 text-[14px] font-normal text-foreground outline-none",
+        "inline-flex h-9 items-center gap-2 rounded-md px-2 text-[14px] font-normal text-foreground outline-none",
         "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
       )}
       aria-label="Account menu"
@@ -246,7 +246,7 @@ function NotificationsBell({ onNavigated }: { onNavigated?: () => void }) @{
     preload="intent"
     aria-label={label}
     className={cn(
-      "relative inline-flex h-11 w-11 items-center justify-center rounded-md text-foreground outline-none",
+      "relative inline-flex size-9 items-center justify-center rounded-md text-foreground outline-none",
       "hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring",
     )}
     onClick={onNavigated}
@@ -278,10 +278,10 @@ function AccountActions({
         role="group"
         aria-label="Account"
         aria-busy="true"
-        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
+        className={cn("flex h-9 shrink-0 items-center justify-end gap-1", className)}
       >
-        <Skeleton className="h-11 w-11" />
-        <Skeleton className="h-11 w-24" />
+        <Skeleton className="size-9" />
+        <Skeleton className="h-9 w-24" />
       </div>
     );
   }
@@ -292,7 +292,7 @@ function AccountActions({
       <div
         role="group"
         aria-label="Account"
-        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
+        className={cn("flex h-9 shrink-0 items-center justify-end gap-1", className)}
       />
     );
   }
@@ -302,7 +302,7 @@ function AccountActions({
       <div
         role="group"
         aria-label="Account"
-        className={cn("flex h-11 shrink-0 items-center justify-end gap-1", className)}
+        className={cn("flex h-9 shrink-0 items-center justify-end gap-1", className)}
       >
         <CreateMenu onNavigated={onNavigated} />
         <NotificationsBell onNavigated={onNavigated} />
@@ -315,12 +315,12 @@ function AccountActions({
     <div
       role="group"
       aria-label="Account"
-      className={cn("flex h-11 shrink-0 items-center justify-end gap-2", className)}
+      className={cn("flex h-9 shrink-0 items-center justify-end gap-2", className)}
     >
       <Link
         to="/login"
         preload="intent"
-        className={cn(buttonVariants({ variant: "ghost" }), "h-11 px-3")}
+        className={cn(buttonVariants({ variant: "ghost" }), "h-9 px-3")}
         onClick={onNavigated}
       >
         Sign in
@@ -329,7 +329,7 @@ function AccountActions({
         <Link
           to="/signup"
           preload="intent"
-          className={cn(buttonVariants({ variant: "secondary" }), "h-11 px-3")}
+          className={cn(buttonVariants({ variant: "secondary" }), "h-9 px-3")}
           onClick={onNavigated}
         >
           Sign up

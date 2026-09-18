@@ -1,8 +1,11 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import type { RepoCommitResponse, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { FileDiff } from "@octanejs/lucide";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeUpdated } from "@/lib/relative-time";
 import { fetchRepoCommit, fetchRepoGet } from "@/lib/ssr-repo";
 
@@ -110,7 +113,13 @@ export function RepoCommitPage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading commit…</p>;
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2 border-b border-border pb-4">
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <Skeleton className="h-40 w-full" />
+    </div>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
@@ -140,7 +149,11 @@ export function RepoCommitPage() @{
         }
       </header>
       @if (phase.commit.files.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No file changes in this commit.</p>;
+        <EmptyState
+          icon={<FileDiff aria-hidden size={22} />}
+          title="No file changes"
+          description="This commit doesn't touch any files (it may be an empty or merge commit)."
+        />;
       } @else {
         <div className="flex flex-col gap-6">
           @for (const f of phase.commit.files; key f.path) {

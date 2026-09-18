@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
-import type { IssueListResponse, RepoPublic } from "@octanest/api-client";
+import type { IssueListResponse, LabelPublic, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import {
   ISSUE_LIST_PAGE_SIZE,
@@ -11,7 +11,7 @@ import {
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
-import { fetchIssueList, fetchRepoGet } from "@/lib/ssr-repo";
+import { fetchIssueList, fetchLabelListForRepo, fetchRepoGet } from "@/lib/ssr-repo";
 
 export type IssuesLoaderData =
   | { kind: "not_found" }
@@ -20,6 +20,7 @@ export type IssuesLoaderData =
       kind: "ready";
       repo: RepoPublic;
       list: IssueListResponse;
+      labels: LabelPublic[];
       state: IssueListStateFilter;
     };
 
@@ -38,15 +39,20 @@ async function loadIssuesPage(
       message: got.error.message || "Could not load repository.",
     };
   }
-  const listRes = await fetchIssueList({
-    data: {
-      owner,
-      name: repoName,
-      state,
-      offset: 0,
-      limit: ISSUE_LIST_PAGE_SIZE,
-    },
-  });
+
+  const [listRes, labelsRes] = await Promise.all([
+    fetchIssueList({
+      data: {
+        owner,
+        name: repoName,
+        state,
+        offset: 0,
+        limit: ISSUE_LIST_PAGE_SIZE,
+      },
+    }),
+    fetchLabelListForRepo({ data: { owner, name: repoName } }),
+  ]);
+
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
     return {
@@ -54,10 +60,14 @@ async function loadIssuesPage(
       message: listRes.error.message || "Could not load issues.",
     };
   }
+
+  const labels = labelsRes.ok ? labelsRes.data.labels : [];
+
   return {
     kind: "ready",
     repo: got.data,
     list: listRes.data,
+    labels,
     state,
   };
 }
@@ -136,7 +146,17 @@ export function IssuesListPage() @{
       return res.data.labels;
     },
     enabled: !!owner && !!repoName,
+    initialData: routeLoader?.kind === "ready" ? routeLoader.labels : undefined,
   });
+
+  const ssrListMatches =
+    routeLoader?.kind === "ready" &&
+    filters.state === "open" &&
+    !filters.author &&
+    !filters.label &&
+    !filters.assignee &&
+    !filters.q &&
+    filters.offset === 0;
 
   const listQ = useQuery({
     queryKey: [
@@ -168,19 +188,17 @@ export function IssuesListPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName,
-    initialData:
-      routeLoader?.kind === "ready" &&
-      filters.state === "open" &&
-      !filters.author &&
-      !filters.label &&
-      !filters.assignee &&
-      !filters.q &&
-      filters.offset === 0
-        ? routeLoader.list
-        : undefined,
+    initialData: ssrListMatches ? routeLoader.list : undefined,
   });
 
-  const repo = repoQ.data ?? null;
+  const repo =
+    repoQ.data ??
+    (routeLoader?.kind === "ready" ? routeLoader.repo : null) ??
+    (layout?.status === "ok" ? layout.repo : null) ??
+    null;
+  const list = listQ.data ?? (ssrListMatches ? routeLoader.list : undefined);
+  const labels =
+    labelsQ.data ?? (routeLoader?.kind === "ready" ? routeLoader.labels : undefined) ?? [];
   const notFound =
     layout?.status === "not_found" ||
     routeLoader?.kind === "not_found" ||
@@ -215,12 +233,12 @@ export function IssuesListPage() @{
     }));
   };
 
-  @if (notFound || (!repoQ.isPending && !repo)) {
+  @if (notFound || (!repoQ.isPending && !repo && routeLoader?.kind !== "ready")) {
     <RepoNotFound />;
   } @else if (!repo) {
     <p className="text-[16px] text-muted-foreground">Loading issues…</p>;
   } @else {
-    @if (listQ.isError) {
+    @if (listQ.isError && !list) {
       <p role="alert" className="text-[16px] text-destructive">
         {(listQ.error?.message || NETWORK_ERROR) as string}
       </p>;
@@ -229,15 +247,15 @@ export function IssuesListPage() @{
         owner={owner}
         repoName={repoName}
         repo={repo}
-        issues={listQ.data?.issues ?? []}
-        total={listQ.data?.total ?? 0}
+        issues={list?.issues ?? []}
+        total={list?.total ?? 0}
         filters={filters}
-        labels={labelsQ.data ?? []}
+        labels={labels}
         onStateChange={setState}
         onApplyFilters={applyFilters}
         onPrevPage={prevPage}
         onNextPage={nextPage}
-        pending={listQ.isPending}
+        pending={listQ.isPending && !list}
       />;
     }
   }

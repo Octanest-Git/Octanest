@@ -1,8 +1,14 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import type { RepoCompareResponse, RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { GitCompareArrows } from "@octanejs/lucide";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { compareHref, shortRefName } from "@/lib/repo-browse";
 import { fetchRepoCompare, fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
 
@@ -172,19 +178,26 @@ export function RepoComparePage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading compare…</p>;
+    <>
+      <PageHeader icon={<GitCompareArrows aria-hidden size={22} />} title="Compare changes" />
+      <Skeleton className="mt-6 h-40 w-full" />
+    </>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
     </p>;
   } @else {
     <>
-      <h2 className="mb-4 text-[18px] font-semibold text-foreground">Compare changes</h2>
-      <div className="mb-6 flex flex-wrap items-end gap-3">
-        <label className="flex min-w-0 flex-col gap-1 text-[14px] text-muted-foreground">
+      <PageHeader
+        icon={<GitCompareArrows aria-hidden size={22} />}
+        title="Compare changes"
+        description="Choose a base and head ref to see what changed between them."
+      />
+      <div className="mt-6 mb-6 flex flex-wrap items-end gap-3">
+        <label className="flex min-w-0 flex-col gap-1 text-[13px] text-muted-foreground">
           Base
-          <input
-            className="max-w-[14rem] truncate rounded-md border border-input bg-card px-3 py-2 font-mono text-[14px] text-foreground"
+          <Input
+            className="max-w-[14rem] truncate font-mono"
             value={baseDraft as string}
             list="octanest-compare-refs"
             onInput={(e) => {
@@ -193,10 +206,10 @@ export function RepoComparePage() @{
           />
         </label>
         <span className="pb-2 text-muted-foreground">...</span>
-        <label className="flex min-w-0 flex-col gap-1 text-[14px] text-muted-foreground">
+        <label className="flex min-w-0 flex-col gap-1 text-[13px] text-muted-foreground">
           Head
-          <input
-            className="max-w-[14rem] truncate rounded-md border border-input bg-card px-3 py-2 font-mono text-[14px] text-foreground"
+          <Input
+            className="max-w-[14rem] truncate font-mono"
             value={headDraft as string}
             list="octanest-compare-refs"
             onInput={(e) => {
@@ -209,38 +222,38 @@ export function RepoComparePage() @{
             <option value={shortRefName(r.name) as string} />;
           }
         </datalist>
-        <button
-          type="button"
-          className="rounded-md bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground"
-          onClick={() => {
-            goCompare();
-          }}
-        >
+        <Button type="button" onClick={() => goCompare()}>
           Compare
-        </button>
+        </Button>
         @if (
           phase.compare &&
           !phase.compare.empty &&
           phase.repo.can_write
         ) {
           <a
-            className="rounded-md border border-border px-3 py-2 text-[14px] font-medium text-foreground"
+            className="no-underline"
             href={
               `/${owner}/${repoName}/pulls/new?base=${encodeURIComponent(phase.base)}&head=${encodeURIComponent(phase.head)}` as string
             }
           >
-            Create pull request
+            <Button type="button" variant="outline">
+              Create pull request
+            </Button>
           </a>;
         }
       </div>
       @if (!phase.compare) {
-        <p className="text-[16px] text-muted-foreground">
-          Choose base and head refs to compare.
-        </p>;
+        <EmptyState
+          icon={<GitCompareArrows aria-hidden size={22} />}
+          title="Pick refs to compare"
+          description="Enter a base and head ref above, then choose Compare."
+        />;
       } @else if (phase.compare.empty) {
-        <p className="text-[16px] text-muted-foreground">
-          Nothing to compare for these refs.
-        </p>;
+        <EmptyState
+          icon={<GitCompareArrows aria-hidden size={22} />}
+          title="Nothing to compare"
+          description="These refs point at the same content — there are no differences."
+        />;
       } @else {
         <>
           @if (phase.compare.truncated) {

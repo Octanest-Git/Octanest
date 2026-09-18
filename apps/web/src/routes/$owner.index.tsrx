@@ -6,7 +6,11 @@ import {
   useParams,
 } from "@octanejs/tanstack-router";
 import { useState } from "octane";
+import { BookMarked, Star } from "@octanejs/lucide";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
 import { fetchOrgOverview, type OrgOverviewPayload } from "@/lib/ssr-org";
 import { fetchUserProfile, type UserProfilePayload } from "@/lib/ssr-user-profile";
 import { cn } from "@/lib/utils";
@@ -112,32 +116,46 @@ export function OrgOverviewPage() @{
           Repositories
         </h2>
         @if (repos.length === 0) {
-          <p className="mt-4 text-[16px] text-muted-foreground">
-            No public repositories yet.
-          </p>;
+          <EmptyState
+            className="mt-4"
+            icon={<BookMarked aria-hidden size={22} />}
+            title="No public repositories yet"
+            description="Repositories owned by this organization will appear here."
+          />;
         } @else {
-          <ul className="mt-4 divide-y divide-border border-y border-border">
+          <List className="mt-4">
             @for (const repo of repos; key repo.id) {
-              <li className="py-4">
-                <Link
-                  to="/$owner/$repo"
-                  params={{ owner: slug, repo: repo.name }}
-                  preload="intent"
-                  className="text-[16px] font-medium text-foreground no-underline hover:underline"
-                >
-                  {repo.name as string}
-                </Link>
-                @if (repo.description?.trim()) {
-                  <p className="mt-1 text-[14px] text-muted-foreground">
-                    {repo.description as string}
-                  </p>;
-                }
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  {(repo.visibility === "private" ? "Private" : "Public") as string}
-                </p>
-              </li>;
+              <ListRow className="items-start gap-3 py-4">
+                <BookMarked
+                  aria-hidden
+                  size={18}
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      to="/$owner/$repo"
+                      params={{ owner: slug, repo: repo.name }}
+                      preload="intent"
+                      className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                    >
+                      {repo.name as string}
+                    </Link>
+                    <Badge
+                      variant={repo.visibility === "private" ? "outline" : "success"}
+                    >
+                      {(repo.visibility === "private" ? "Private" : "Public") as string}
+                    </Badge>
+                  </div>
+                  @if (repo.description?.trim()) {
+                    <p className="mt-1 text-[14px] text-muted-foreground">
+                      {repo.description as string}
+                    </p>;
+                  }
+                </div>
+              </ListRow>;
             }
-          </ul>;
+          </List>;
         }
       </section>
     </div>;
@@ -214,61 +232,112 @@ export function UserProfilePage() @{
       @if (tab === "stars" && isSelf) {
         <section className="mt-6" aria-label="Starred repositories">
           @if (starred.length === 0) {
-            <p className="text-[16px] text-muted-foreground">
-              No starred repositories yet.
-            </p>;
+            <EmptyState
+              icon={<Star aria-hidden size={22} />}
+              title="No starred repositories yet"
+              description="Repositories you star will be collected here for quick access."
+            />;
           } @else {
-            <ul className="divide-y divide-border border-y border-border">
+            <List>
               @for (const repo of starred; key repo.id) {
-                <li className="py-4">
-                  <a
-                    href={("/" + repo.owner_username + "/" + repo.name) as string}
-                    className="text-[16px] font-medium text-foreground no-underline hover:underline"
-                  >
-                    {(repo.owner_username + "/" + repo.name) as string}
-                  </a>
-                  @if (repo.description?.trim()) {
-                    <p className="mt-1 text-[14px] text-muted-foreground">
-                      {repo.description as string}
-                    </p>;
-                  }
-                </li>;
+                <ListRow className="items-start gap-3 py-4">
+                  <Star
+                    aria-hidden
+                    size={18}
+                    className="mt-0.5 shrink-0 text-muted-foreground"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={
+                        ("/" + repo.owner_username + "/" + repo.name) as string
+                      }
+                      className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                    >
+                      {(repo.owner_username + "/" + repo.name) as string}
+                    </a>
+                    @if (
+                      repo.description?.trim()
+                    ) {
+                      <p className="mt-1 text-[14px] text-muted-foreground">
+                        {repo.description as string}
+                      </p>;
+                    }
+                  </div>
+                </ListRow>;
               }
-            </ul>;
+            </List>;
           }
         </section>;
       } @else {
         <section className="mt-6" aria-label="Repositories">
           @if (repos.length === 0) {
-            <p className="text-[16px] text-muted-foreground">No repositories yet.</p>;
-          } @else {
-            <ul className="divide-y divide-border border-y border-border">
-              @for (const repo of repos; key repo.id) {
-                <li className="py-4">
-                  <Link
-                    to="/$owner/$repo"
-                    params={{ owner: username, repo: repo.name }}
-                    preload="intent"
-                    className="text-[16px] font-medium text-foreground no-underline hover:underline"
-                  >
-                    {repo.name as string}
-                  </Link>
-                  @if (repo.description?.trim()) {
-                    <p className="mt-1 text-[14px] text-muted-foreground">
-                      {repo.description as string}
-                    </p>;
-                  }
-                  <p className="mt-1 text-[13px] text-muted-foreground">
-                    {
-                      ((repo.visibility === "private" ? "Private" : "Public") +
-                        (repo.star_count
-                          ? ` · ${repo.star_count} stars`
-                          : "")) as string
-                    }
-                  </p>
-                </li>;
+            <EmptyState
+              icon={<BookMarked aria-hidden size={22} />}
+              title="No repositories yet"
+              description={
+                isSelf
+                  ? "Create a repository to start hosting your code on Octanest."
+                  : "This user hasn't published any repositories yet."
               }
-            </ul>;
+              action={
+                isSelf ? (
+                  <a
+                    href="/new"
+                    className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+                  >
+                    New repository
+                  </a>
+                ) : undefined
+              }
+            />;
+          } @else {
+            <List>
+              @for (const repo of repos; key repo.id) {
+                <ListRow className="items-start gap-3 py-4">
+                  <BookMarked
+                    aria-hidden
+                    size={18}
+                    className="mt-0.5 shrink-0 text-muted-foreground"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        to="/$owner/$repo"
+                        params={{ owner: username, repo: repo.name }}
+                        preload="intent"
+                        className="text-[16px] font-semibold text-primary no-underline hover:underline"
+                      >
+                        {repo.name as string}
+                      </Link>
+                      <Badge
+                        variant={
+                          repo.visibility === "private" ? "outline" : "success"
+                        }
+                      >
+                        {
+                          (repo.visibility === "private"
+                            ? "Private"
+                            : "Public") as string
+                        }
+                      </Badge>
+                    </div>
+                    @if (
+                      repo.description?.trim()
+                    ) {
+                      <p className="mt-1 text-[14px] text-muted-foreground">
+                        {repo.description as string}
+                      </p>;
+                    }
+                    @if (repo.star_count) {
+                      <div className="mt-2 flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                        <Star aria-hidden size={13} />
+                        <span>{String(repo.star_count)}</span>
+                      </div>;
+                    }
+                  </div>
+                </ListRow>;
+              }
+            </List>;
           }
         </section>;
       }

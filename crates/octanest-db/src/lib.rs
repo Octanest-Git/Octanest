@@ -742,6 +742,13 @@ impl Database {
         pulls::pull_has_assignee(self.require_pool()?, pull_id, user_id).await
     }
 
+    pub async fn list_pull_assignees(
+        &self,
+        pull_id: &str,
+    ) -> Result<Vec<pulls::PullAssigneeRow>, String> {
+        pulls::list_pull_assignees(self.require_pool()?, pull_id).await
+    }
+
     pub async fn insert_pull_review(
         &self,
         id: &str,

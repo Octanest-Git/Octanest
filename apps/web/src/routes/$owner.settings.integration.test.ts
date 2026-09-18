@@ -198,7 +198,7 @@ describe("org settings labels", () => {
     renderWithQueryClient(OrgLabelsPage);
 
     await waitFor(() => {
-      expect(screen.getByText("No org labels yet.")).toBeInTheDocument();
+      expect(screen.getByText("No org labels yet")).toBeInTheDocument();
     });
   });
 });

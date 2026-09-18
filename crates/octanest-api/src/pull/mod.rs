@@ -17,8 +17,8 @@ pub use reviews::{
 use std::path::Path;
 
 use octanest_core::{
-    AppError, CreatePullRequest, MergeMethod, PullListRequest, PullListResponse, PullPublic,
-    PullRefRequest, PullState, UpdatePullRequest,
+    AppError, CreatePullRequest, IssueAssigneePublic, MergeMethod, PullListRequest,
+    PullListResponse, PullPublic, PullRefRequest, PullState, UpdatePullRequest,
 };
 use octanest_db::{Database, PullRow};
 use octanest_git::{CliGitBackend, GitBackend};
@@ -485,6 +485,20 @@ async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> 
         }
     };
 
+    let assignee_rows = ctx
+        .db
+        .list_pull_assignees(&row.id)
+        .await
+        .map_err(db_err)?;
+    let assignees = assignee_rows
+        .into_iter()
+        .map(|a| IssueAssigneePublic {
+            user_id: a.user_id,
+            username: a.username,
+            display_name: a.display_name,
+        })
+        .collect();
+
     Ok(PullPublic {
         id: row.id.clone(),
         repo_id: row.repo_id.clone(),
@@ -510,6 +524,7 @@ async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> 
         closed_by: row.closed_by.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
+        assignees,
     })
 }
 
@@ -737,14 +752,20 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(|s| s.to_string());
+    let q = req
+        .q
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
     let needs_post_filter = label_filter.is_some()
         || assignee_id.is_some()
         || review_state.is_some()
         || state == "closed"
         || (state == "merged" && author_id.is_some());
 
-    let (rows, total) = if needs_post_filter || author_id.is_some() {
-        // Author via DB when possible; closed/label/assignee/review post-filtered (D-PR-26).
+    let (rows, total) = if needs_post_filter || author_id.is_some() || q.is_some() {
+        // Author/q via DB when possible; closed/label/assignee/review post-filtered (D-PR-26).
         let fetch_limit = if needs_post_filter { 500 } else { limit };
         let fetch_offset = if needs_post_filter { 0 } else { offset };
         let search_state = if state == "closed" || state == "merged" {
@@ -761,7 +782,7 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
                 octanest_db::PullSearchFilters {
                     state: search_state,
                     author_id: author_id.as_deref(),
-                    q: None,
+                    q: q.as_deref(),
                     offset: fetch_offset,
                     limit: fetch_limit,
                 },

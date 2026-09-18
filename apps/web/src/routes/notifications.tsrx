@@ -2,7 +2,12 @@ import { createFileRoute, redirect } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { NotificationPublic } from "@octanest/api-client";
 import { useState } from "octane";
+import { BellRing, CheckCheck } from "@octanejs/lucide";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import {
   invalidateNotificationQueries,
@@ -39,7 +44,8 @@ export function NotificationsPage() @{
   const unreadQ = useQuery(notificationUnreadCountQueryOptions());
   const rows: NotificationPublic[] = listQ.data?.notifications ?? [];
   const total = listQ.data?.total ?? 0;
-  const unreadCount = unreadQ.data ?? 0;
+  const unreadCountRaw = Number(unreadQ.data ?? 0);
+  const unreadCount = Number.isFinite(unreadCountRaw) ? unreadCountRaw : 0;
   const limit = 30;
 
   async function markAll() {
@@ -58,16 +64,23 @@ export function NotificationsPage() @{
   }
 
   <div className="mx-auto max-w-3xl px-4 py-10">
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight">
-        Notifications
-      </h1>
-      @if (unreadCount > 0) {
-        <Button type="button" variant="secondary" onClick={() => void markAll()}>
-          Mark all as read
-        </Button>;
+    <PageHeader
+      icon={<BellRing aria-hidden size={22} />}
+      title="Notifications"
+      description={
+        unreadCount > 0
+          ? ((String(unreadCount) + " unread") as string)
+          : ("You're all caught up" as string)
       }
-    </div>
+      actions={
+        unreadCount > 0 ? (
+          <Button type="button" variant="outline" onClick={() => void markAll()}>
+            <CheckCheck aria-hidden size={15} />
+            Mark all as read
+          </Button>
+        ) : undefined
+      }
+    />
 
     <div
       role="tablist"
@@ -108,53 +121,84 @@ export function NotificationsPage() @{
 
     <div className="mt-6">
       @if (listQ.isPending) {
-        <p className="text-[14px] text-muted-foreground">Loading notifications…</p>;
+        <List>
+          @for (const i of [0, 1, 2, 3, 4]; key i) {
+            <ListRow className="items-start gap-3">
+              <Skeleton className="mt-1 size-2 rounded-full" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </ListRow>;
+          }
+        </List>;
       } @else {
         @if (rows.length === 0) {
-          <p className="text-[15px] text-muted-foreground">
-            {filter === "unread"
-              ? ("You're all caught up." as string)
-              : ("No notifications yet." as string)}
-          </p>;
+          <EmptyState
+            icon={<BellRing aria-hidden size={22} />}
+            title={filter === "unread" ? "You're all caught up" : "No notifications yet"}
+            description={
+              filter === "unread"
+                ? "New activity on repositories, issues, and pull requests you follow will show up here."
+                : "When you're mentioned or something you follow changes, it will appear here."
+            }
+          />;
         } @else {
-          <ul className="divide-y divide-border border-y border-border">
+          <List>
             @for (const n of rows; key n.id) {
-              <li>
+              <ListRow className="p-0">
                 <button
                   type="button"
                   className={cn(
-                    "flex w-full flex-col gap-0.5 px-1 py-3 text-left outline-none",
-                    "hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring",
-                    !n.read_at ? "font-medium" : "text-muted-foreground",
+                    "flex w-full items-start gap-3 px-4 py-3 text-left outline-none",
+                    "transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                   )}
                   aria-label={`${n.actor_username} ${reasonLabel(n.reason)} ${n.owner}/${n.repo} #${n.subject_number}`}
                   onClick={() => void activateRow(n)}
                 >
-                  <span className="text-[14px] text-foreground">
-                    <span className="font-semibold">{n.actor_username as string}</span>{" "}
-                    {reasonLabel(n.reason) as string}{" "}
-                    <span className="text-foreground">
-                      {n.owner as string}/{n.repo as string}#
-                      {String(n.subject_number) as string}
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-1.5 size-2 shrink-0 rounded-full",
+                      n.read_at ? "bg-transparent" : "bg-primary",
+                    )}
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span
+                      className={cn(
+                        "text-[14px]",
+                        n.read_at
+                          ? "text-muted-foreground"
+                          : "font-medium text-foreground",
+                      )}
+                    >
+                      <span className="font-semibold text-foreground">
+                        {n.actor_username as string}
+                      </span>{" "}
+                      {reasonLabel(n.reason) as string}{" "}
+                      <span className="text-foreground">
+                        {n.owner as string}/{n.repo as string}#
+                        {String(n.subject_number) as string}
+                      </span>
+                    </span>
+                    <span className="truncate text-[13px] text-muted-foreground">
+                      {n.subject_title as string}
+                      {" · "}
+                      {n.created_at as string}
                     </span>
                   </span>
-                  <span className="text-[13px] text-muted-foreground">
-                    {n.subject_title as string}
-                    {" · "}
-                    {n.created_at as string}
-                  </span>
                 </button>
-              </li>;
+              </ListRow>;
             }
-          </ul>;
+          </List>;
           @if (offset + rows.length < total) {
-            <div className="mt-4">
+            <div className="mt-4 flex justify-center">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 onClick={() => setOffset(offset + limit)}
               >
-                Older
+                Load older
               </Button>
             </div>;
           }

@@ -1,7 +1,13 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import type { RepoCommitSummary, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { GitCommitHorizontal } from "@octanejs/lucide";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { commitHref } from "@/lib/repo-browse";
 import { formatRelativeUpdated } from "@/lib/relative-time";
@@ -173,61 +179,80 @@ export function RepoCommitsPage() @{
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
   } @else if (phase.kind === "loading") {
-    <p className="text-[16px] text-muted-foreground">Loading commits…</p>;
+    <>
+      <PageHeader icon={<GitCommitHorizontal aria-hidden size={22} />} title="Commits" />
+      <List className="mt-6">
+        @for (const i of [0, 1, 2, 3, 4]; key i) {
+          <ListRow className="gap-4">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-4 w-20" />
+          </ListRow>;
+        }
+      </List>
+    </>;
   } @else if (phase.kind === "error") {
     <p role="alert" className="text-[16px] text-destructive">
       {phase.message as string}
     </p>;
   } @else {
     <>
-      <h2 className="mb-4 text-[18px] font-semibold text-foreground">
-        Commits on {phase.refName as string}
-      </h2>
+      <PageHeader
+        icon={<GitCommitHorizontal aria-hidden size={22} />}
+        title="Commits"
+        description={("on " + phase.refName) as string}
+      />
       @if (phase.commits.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No commits yet on this ref.</p>;
+        <EmptyState
+          className="mt-6"
+          icon={<GitCommitHorizontal aria-hidden size={22} />}
+          title="No commits yet"
+          description="This ref has no commit history to show."
+        />;
       } @else {
         <>
-          <ul className="divide-y divide-border border-y border-border">
+          <List className="mt-6">
             @for (const c of phase.commits; key c.sha) {
-              <li className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-3">
+              <ListRow className="flex-wrap items-baseline gap-x-4 gap-y-1">
                 <a
                   href={commitHref(owner, repoName, c.sha) as string}
-                  className="font-mono text-[14px] text-primary no-underline hover:underline"
+                  className="font-mono text-[13px] text-primary no-underline hover:underline"
                   title={c.sha as string}
                 >
                   {c.short_sha as string}
                 </a>
                 <a
                   href={commitHref(owner, repoName, c.sha) as string}
-                  className="min-w-0 flex-1 truncate text-[16px] text-foreground no-underline hover:underline"
+                  className="min-w-0 flex-1 truncate text-[15px] font-medium text-foreground no-underline hover:underline"
                   title={c.subject as string}
                 >
                   {c.subject as string}
                 </a>
-                <span className="text-[14px] text-muted-foreground">
+                <span className="text-[13px] text-muted-foreground">
                   {c.author_name as string}
                 </span>
                 <time
-                  className="text-[14px] text-muted-foreground"
+                  className="text-[13px] text-muted-foreground"
                   dateTime={c.authored_at as string}
                 >
                   {relativeCommitTime(c.authored_at) as string}
                 </time>
-              </li>;
+              </ListRow>;
             }
-          </ul>
+          </List>
           @if (phase.commits.length >= phase.limit) {
-            <div className="mt-4">
-              <button
+            <div className="mt-4 flex justify-center">
+              <Button
                 type="button"
-                className="text-[14px] font-medium text-primary hover:underline"
+                variant="outline"
+                size="sm"
                 disabled={phase.loadingMore}
                 onClick={() => {
                   void loadMore();
                 }}
               >
-                {phase.loadingMore ? "Loading…" : "Load more"}
-              </button>
+                {(phase.loadingMore ? "Loading…" : "Load more") as string}
+              </Button>
             </div>;
           }
         </>;

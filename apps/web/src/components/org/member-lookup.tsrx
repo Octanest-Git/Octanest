@@ -9,11 +9,17 @@ import { cn } from "@/lib/utils";
 
 export type MemberLookupProps = {
   id?: string;
+  name?: string;
   label?: string;
   value: string;
   onValueChange: (username: string) => void;
   onPick?: (hit: UserLookupHit) => void;
   disabled?: boolean;
+  placeholder?: string;
+  /** Tighter gap + filter-row sizing (issues/pulls toolbars). */
+  compact?: boolean;
+  className?: string;
+  inputClassName?: string;
 };
 
 /**
@@ -22,11 +28,16 @@ export type MemberLookupProps = {
  */
 export function MemberLookup({
   id = "member-lookup",
+  name = "username",
   label = "Username",
   value,
   onValueChange,
   onPick,
   disabled,
+  placeholder,
+  compact = false,
+  className,
+  inputClassName,
 }: MemberLookupProps) @{
   const [debounced, setDebounced] = useState(value.trim());
   const [open, setOpen] = useState(false);
@@ -77,11 +88,17 @@ export function MemberLookup({
     }
   }
 
-  <div className="relative flex flex-col gap-2">
-    <Label htmlFor={id}>{label as string}</Label>
+  <div className={cn("relative flex flex-col", compact ? "gap-1" : "gap-2", className)}>
+    @if (compact) {
+      <label htmlFor={id} className="text-sm">
+        {label as string}
+      </label>;
+    } @else {
+      <Label htmlFor={id}>{label as string}</Label>;
+    }
     <Input
       id={id}
-      name="username"
+      name={name as string}
       autoComplete="off"
       role="combobox"
       aria-expanded={open}
@@ -89,6 +106,14 @@ export function MemberLookup({
       aria-autocomplete="list"
       disabled={disabled}
       value={value}
+      placeholder={placeholder as string | undefined}
+      className={
+        cn(
+          compact &&
+            "h-auto min-w-[9rem] w-auto rounded-md border border-border bg-background px-2 py-1.5 text-sm shadow-none focus-visible:ring-1",
+          inputClassName,
+        ) as string
+      }
       onInput={(ev) => {
         onValueChange((ev.currentTarget as HTMLInputElement).value);
       }}

@@ -77,9 +77,10 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Surfaces: GitHub-adjacent neutrals with deeper dark blacks and WCAG-friendlier
-  muted text. Accents stay Octanest brand (primary = cool blue/cyan, secondary =
-  warm orange) per D-14.
+  Surfaces: GitHub-adjacent neutrals on a bright-white (light) / true OLED-black
+  (dark) canvas with WCAG-friendlier muted text. Accents are Octanest brand:
+  primary = teal/emerald, secondary = warm orange. `success` stays a yellow-green
+  kept visually distinct from the blue-green teal primary.
 */
 :root {
   --radius: 0.5rem;
@@ -90,7 +91,8 @@
   --card-foreground: #1f2328;
   --popover: #ffffff;
   --popover-foreground: #1f2328;
-  --primary: #0969da;
+  /* teal-700 — 5.47:1 on white (AA text) */
+  --primary: #0f766e;
   --primary-foreground: #ffffff;
   --secondary: #bf4b0a;
   --secondary-foreground: #fff7f2;
@@ -111,26 +113,34 @@
   --diff-hunk-fg: #334155;
   --border: #d0d7de;
   --input: #d0d7de;
-  --ring: #0969da;
+  --ring: #0f766e;
   --header: #ffffff;
   --success: #1a7f37;
   --success-foreground: #ffffff;
+
+  /* Data-viz ramp: teal → orange → neutral (charts, gradients). */
+  --chart-1: #0f766e;
+  --chart-2: #bf4b0a;
+  --chart-3: #1a7f37;
+  --chart-4: #8250df;
+  --chart-5: #59636e;
 }
 
 .dark {
-  /* Deeper stack than classic GH canvas — less washed, higher ink contrast */
-  --background: #010409;
+  /* True OLED black canvas with elevated near-black surfaces (D-14). */
+  --background: #000000;
   --foreground: #f0f3f6;
   --card: #0d1117;
   --card-foreground: #f0f3f6;
   --popover: #0d1117;
   --popover-foreground: #f0f3f6;
-  --primary: #58a6ff;
-  --primary-foreground: #010409;
+  /* teal-400 — 11.28:1 on #000 */
+  --primary: #2dd4bf;
+  --primary-foreground: #04110e;
   --secondary: #ff7b4a;
   --secondary-foreground: #1a0a04;
   --muted: #161b22;
-  /* ~7:1 on #010409 */
+  /* ~8.6:1 on #000 */
   --muted-foreground: #9da7b3;
   --accent: #161b22;
   --accent-foreground: #f0f3f6;
@@ -142,12 +152,19 @@
   --diff-del-fg: #f0b4b0;
   --diff-hunk-bg: #121a2b;
   --diff-hunk-fg: #9eb6d4;
-  --border: #30363d;
-  --input: #30363d;
-  --ring: #58a6ff;
+  /* GitHub border-default — more visible on OLED black than #30363d */
+  --border: #3d444d;
+  --input: #3d444d;
+  --ring: #2dd4bf;
   --header: #0d1117;
   --success: #3fb950;
-  --success-foreground: #010409;
+  --success-foreground: #04110e;
+
+  --chart-1: #2dd4bf;
+  --chart-2: #ff7b4a;
+  --chart-3: #3fb950;
+  --chart-4: #a371f7;
+  --chart-5: #9da7b3;
 }
 
 @theme inline {
@@ -176,6 +193,11 @@
   --color-header: var(--header);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

@@ -9,10 +9,14 @@ import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { LabelPublic, OrgPublic } from "@octanest/api-client";
 import { useState } from "octane";
+import { Tags } from "@octanejs/lucide";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { List, ListRow } from "@/components/ui/list";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { fetchOrgGet, fetchOrgListMine } from "@/lib/ssr-org";
 import { fetchSessionMe } from "@/lib/ssr-auth";
@@ -243,17 +247,28 @@ export function OrgLabelsPage() @{
     </form>
 
     @if (labelsQ.isPending) {
-      <p className="text-[16px] text-muted-foreground">Loading labels…</p>;
+      <List>
+        @for (const i of [0, 1, 2]; key i) {
+          <ListRow className="justify-between">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+          </ListRow>;
+        }
+      </List>;
     } @else {
       @if (labels.length === 0) {
-        <p className="text-[16px] text-muted-foreground">No org labels yet.</p>;
+        <EmptyState
+          icon={<Tags aria-hidden size={22} />}
+          title="No org labels yet"
+          description="Create shared labels that member repositories can reuse for issues and pull requests."
+        />;
       } @else {
-        <ul className="divide-y divide-border border-y border-border">
+        <List>
           @for (const lab of labels; key lab.id) {
-            <li className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <ListRow className="flex-wrap justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span
-                  className="inline-block size-3 rounded-sm border border-border"
+                  className="inline-block size-3 rounded-full border border-border"
                   style={swatchStyle(lab.color)}
                   aria-hidden
                 />
@@ -274,9 +289,9 @@ export function OrgLabelsPage() @{
               >
                 Delete
               </Button>
-            </li>;
+            </ListRow>;
           }
-        </ul>;
+        </List>;
       }
     }
   </div>;

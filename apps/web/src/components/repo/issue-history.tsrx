@@ -1,5 +1,9 @@
 import { useQuery } from "@octanejs/tanstack-query";
+import { History } from "@octanejs/lucide";
 import type { IssueRevisionPublic } from "@octanest/api-client";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 
 export type IssueHistoryPanelProps = {
@@ -33,7 +37,7 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
       Edit history
     </h2>
     @if (historyQ.isPending) {
-      <p className="text-[14px] text-muted-foreground">Loading history…</p>;
+      <Skeleton className="h-20 w-full" />;
     } @else {
       @if (historyQ.isError) {
         <p role="alert" className="text-[14px] text-destructive">
@@ -41,24 +45,27 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
         </p>;
       } @else {
         @if (showEmpty) {
-          <p className="text-[14px] text-muted-foreground">No prior edits.</p>;
+          <EmptyState
+            compact
+            icon={<History aria-hidden size={20} />}
+            title="No prior edits"
+            description="Edits to the title or body will be tracked here."
+          />;
         }
         @if (showList) {
-          <ul className="flex flex-col gap-3">
+          <List>
             @for (const rev of revisions; key rev.id) {
-              <li className="rounded-md border border-border px-3 py-2 text-[13px]">
+              <ListRow className="flex-col items-start gap-1 text-[13px]">
                 <p className="text-muted-foreground">
                   {`@${rev.editor_username} · ${rev.created_at}` as string}
                 </p>
-                <p className="mt-1 font-medium text-foreground">
-                  {rev.title as string}
-                </p>
-                <pre className="mt-1 whitespace-pre-wrap font-sans text-muted-foreground">
+                <p className="font-medium text-foreground">{rev.title as string}</p>
+                <pre className="whitespace-pre-wrap font-sans text-muted-foreground">
                   {rev.body as string}
                 </pre>
-              </li>;
+              </ListRow>;
             }
-          </ul>;
+          </List>;
         }
       }
     }
