@@ -36,6 +36,25 @@ Before editing UI under `apps/web`:
 - Dialect SQL lives in `crates/octanest-db` only; API must not branch on DB dialect.
 - No production secrets in repo, CI, or docs examples. Use `.env.example` / `docs/dev-auth.env.example`.
 - Prefer extending existing patterns over new frameworks, state libraries, or UI kits.
+- **No AI attribution** on commits or PRs: never add `Co-authored-by` / `Generated with` / `Made-with` (or similar) for Cursor, Claude, Copilot, or any AI/tool unless the user explicitly asks in the current turn. See [`.cursor/rules/no-ai-attribution.mdc`](.cursor/rules/no-ai-attribution.mdc).
+
+## AI watermarks / provenance hygiene
+
+Vendored skills (pin and refresh notes in [`.agents/skills/README-watermarks.md`](.agents/skills/README-watermarks.md)):
+
+- [`.agents/skills/remove-ai-marks/`](.agents/skills/remove-ai-marks/) — strip Unicode / C2PA / container AI metadata via the watermarks-remover HTTP service
+- [`.agents/skills/clean-user-facing-text/`](.agents/skills/clean-user-facing-text/) — self-contained prose hygiene (no service)
+
+Claude Code also loads the same skills from [`.claude/skills/`](.claude/skills/) (symlinks to `.agents/skills/`).
+
+`remove-ai-marks` needs the service reachable at `WATERMARKS_SERVICE_URL` (default `http://127.0.0.1:8765`). From a local [watermarks-remover](https://github.com/guillaumemeyer/watermarks-remover) checkout (or Docker/GHCR per upstream README):
+
+```bash
+make serve
+curl -sf http://127.0.0.1:8765/health
+```
+
+Do not vendor `service/` into this repo. If the service is down, report that and stop — do not invent local cleaners. Use `clean-user-facing-text` for offline prose-only passes.
 
 ## Commands agents should know
 

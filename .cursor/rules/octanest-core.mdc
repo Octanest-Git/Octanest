@@ -14,3 +14,4 @@ alwaysApply: true
 - **Before committing `apps/web` changes:** run `make web-lint` and `make web-format-check` (`@tsrx/oxc` — type-aware oxlint + oxfmt). Fix failures; do not skip. Plain `tsc` is not the web type gate yet (see [AGENTS.md](../../AGENTS.md)).
 - Scratch/temp files go under gitignored [`tmp/`](../../tmp/README.md) (never the repo root).
 - Prefer extending existing patterns (Query session helpers, auth gates, Make targets) over new frameworks.
+- No AI co-author / tooling attribution on commits or PRs — see [no-ai-attribution.mdc](no-ai-attribution.mdc).
