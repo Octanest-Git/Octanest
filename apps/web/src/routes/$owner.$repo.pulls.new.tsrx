@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@octanejs/tanstack-router";
 import { useState } from "octane";
+import { MemberLookup } from "@/components/org/member-lookup";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
@@ -116,15 +117,15 @@ export function NewPullPage() @{
               }
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Head owner
-            <input
-              className="rounded-md border border-border bg-background px-2 py-1.5"
-              value={headOwner as string}
-              placeholder={owner as string}
-              onInput={(e: Event) => setHeadOwner((e.target as HTMLInputElement).value)}
-            />
-          </label>
+          <MemberLookup
+            id="pull-new-head-owner"
+            name="head_owner"
+            label="Head owner"
+            compact
+            placeholder={owner as string}
+            value={headOwner as string}
+            onValueChange={setHeadOwner}
+          />
           <label className="flex flex-col gap-1 text-sm">
             Compare
             <select

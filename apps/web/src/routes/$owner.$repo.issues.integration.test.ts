@@ -30,6 +30,7 @@ const reactionsToggleMock = vi.fn();
 const linksListMock = vi.fn();
 const linksAddMock = vi.fn();
 const linksRemoveMock = vi.fn();
+const userLookupMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -70,6 +71,9 @@ vi.mock("@/lib/api-client", () => ({
     },
     label: {
       listForRepo: (...args: unknown[]) => labelListForRepoMock(...args),
+    },
+    user: {
+      lookup: (...args: unknown[]) => userLookupMock(...args),
     },
   },
 }));
@@ -174,6 +178,7 @@ beforeEach(() => {
   linksListMock.mockReset();
   linksAddMock.mockReset();
   linksRemoveMock.mockReset();
+  userLookupMock.mockReset();
   getMock.mockResolvedValue({ ok: true, data: readableRepo });
   listMock.mockResolvedValue({
     ok: true,
@@ -215,6 +220,12 @@ beforeEach(() => {
     },
   });
   linksRemoveMock.mockResolvedValue({ ok: true, data: { ok: true } });
+  userLookupMock.mockResolvedValue({
+    ok: true,
+    data: {
+      users: [{ username: "ada", display_name: "Ada", avatar_url: null }],
+    },
+  });
 });
 
 afterEach(cleanup);
@@ -364,7 +375,7 @@ describe("/{owner}/{repo}/issues list Wave 0 (D-ISS-16 / D-ISS-19)", () => {
     fireEvent.input(screen.getByPlaceholderText(/Search title or body/i), {
       target: { value: "uniquephrase" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Apply filters/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Apply$/i }));
 
     await waitFor(() => {
       expect(listMock).toHaveBeenCalled();

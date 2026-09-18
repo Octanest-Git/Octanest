@@ -207,6 +207,14 @@ export const fetchIssueList = createServerFn({ method: "GET" })
     });
   });
 
+/** SSR: `label.listForRepo` with Cookie forward. */
+export const fetchLabelListForRepo = createServerFn({ method: "GET" })
+  .validator(ownerNameValidator)
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.label.listForRepo({ owner: data.owner, name: data.name });
+  });
+
 /** SSR: `issue.get` with Cookie forward. */
 export const fetchIssueGet = createServerFn({ method: "GET" })
   .validator((data: OwnerName & { number: number }) => ({

@@ -47,6 +47,32 @@ describe("Phase 12 Pulls UI", () => {
     expect(pullsNew).toMatch(/Create pull request/);
   });
 
+  it("Author filter uses MemberLookup autocomplete", () => {
+    expect(pullsIndex).toMatch(/MemberLookup/);
+    expect(pullsIndex).toMatch(/pull-filter-author/);
+  });
+
+  it("pulls list filters include assignee and search", () => {
+    expect(pullsIndex).toMatch(/pull-filter-assignee/);
+    expect(pullsIndex).toMatch(/Search title or body/);
+    expect(pullsIndex).toMatch(/assignee:/);
+    expect(pullsIndex).toMatch(/\bq:/);
+  });
+
+  it("new PR head owner uses MemberLookup", () => {
+    expect(pullsNew).toMatch(/MemberLookup/);
+    expect(pullsNew).toMatch(/pull-new-head-owner/);
+  });
+
+  it("pulls list rows show assignees when present", () => {
+    const pullsList = readFileSync(
+      join(process.cwd(), "src/components/repo/pulls-list.tsrx"),
+      "utf8",
+    );
+    expect(pullsList).toMatch(/assigned/);
+    expect(pullsList).toMatch(/assignees/);
+  });
+
   it("compare flow can create a PR", () => {
     const compare = readFileSync(
       join(process.cwd(), "src/routes/$owner.$repo.compare.$.tsrx"),

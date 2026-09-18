@@ -1197,6 +1197,7 @@ export type PullPublic = {
   closed_by?: string | null;
   created_at: string;
   updated_at: string;
+  assignees?: IssueAssigneePublic[];
 };
 
 export type CreatePullRequest = {
@@ -1224,6 +1225,7 @@ export type PullListRequest = {
   author?: string | null;
   label?: string | null;
   assignee?: string | null;
+  q?: string | null;
   review_state?: string | null;
   offset?: number | null;
   limit?: number | null;

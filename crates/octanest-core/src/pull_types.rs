@@ -119,6 +119,8 @@ pub struct PullPublic {
     pub closed_by: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(default)]
+    pub assignees: Vec<crate::IssueAssigneePublic>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,6 +161,9 @@ pub struct PullListRequest {
     pub label: Option<String>,
     #[serde(default)]
     pub assignee: Option<String>,
+    /// Title/body substring search (same semantics as issue.list `q`).
+    #[serde(default)]
+    pub q: Option<String>,
     /// `approved` | `changes_requested` | `review_required` | …
     #[serde(default, alias = "review")]
     pub review_state: Option<String>,

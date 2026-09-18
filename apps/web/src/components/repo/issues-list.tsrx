@@ -1,11 +1,21 @@
 import { useForm } from "@octanejs/tanstack-form";
 import { CircleCheck, CircleDot } from "@octanejs/lucide";
 import type { IssuePublic, LabelPublic, RepoPublic } from "@octanest/api-client";
+import { MemberLookup } from "@/components/org/member-lookup";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  repoListApplyClass,
+  repoListFilterFieldClass,
+  repoListFilterFormClass,
+  repoListFilterLabelClass,
+  repoListPrimaryCtaClass,
+  repoListTabClass,
+  repoListTablistClass,
+} from "@/components/repo/repo-list-toolbar";
 
 export type IssueListStateFilter = "open" | "closed" | "all";
 
@@ -42,16 +52,6 @@ type IssuesListProps = {
   onNextPage: () => void;
   pending?: boolean;
 };
-
-function tabClass(active: boolean): string {
-  return active
-    ? "rounded-md bg-muted px-3 py-1.5 text-[14px] font-semibold text-foreground"
-    : "rounded-md px-3 py-1.5 text-[14px] font-normal text-muted-foreground hover:text-foreground";
-}
-
-function fieldClass(): string {
-  return "h-10 rounded-md border border-border bg-background px-3 text-[14px] text-foreground";
-}
 
 /** Open/Closed/All + author/label/assignee/text filters + offset pages (D-ISS-16..19). */
 export function IssuesList({
@@ -99,14 +99,14 @@ export function IssuesList({
     },
   });
 
-  <div className="flex flex-col gap-4">
+  <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div role="tablist" aria-label="Issue state" className="flex flex-wrap gap-1">
+      <div role="tablist" aria-label="Issue state" className={repoListTablistClass() as string}>
         <button
           type="button"
           role="tab"
           aria-selected={filters.state === "open"}
-          className={tabClass(filters.state === "open") as string}
+          className={repoListTabClass(filters.state === "open") as string}
           onClick={() => onStateChange("open")}
         >
           Open
@@ -115,7 +115,7 @@ export function IssuesList({
           type="button"
           role="tab"
           aria-selected={filters.state === "closed"}
-          className={tabClass(filters.state === "closed") as string}
+          className={repoListTabClass(filters.state === "closed") as string}
           onClick={() => onStateChange("closed")}
         >
           Closed
@@ -124,7 +124,7 @@ export function IssuesList({
           type="button"
           role="tab"
           aria-selected={filters.state === "all"}
-          className={tabClass(filters.state === "all") as string}
+          className={repoListTabClass(filters.state === "all") as string}
           onClick={() => onStateChange("all")}
         >
           All
@@ -134,7 +134,7 @@ export function IssuesList({
         @if (canAdmin) {
           <a
             href={`${base}/issues/labels` as string}
-            className="text-[14px] font-medium text-primary no-underline hover:underline"
+            className="text-sm font-medium text-primary no-underline hover:underline"
           >
             Labels
           </a>;
@@ -142,7 +142,7 @@ export function IssuesList({
         @if (canWrite) {
           <a
             href={`${base}/issues/new` as string}
-            className="inline-flex h-11 items-center rounded-md bg-primary px-4 text-[14px] font-semibold text-primary-foreground no-underline hover:brightness-110"
+            className={repoListPrimaryCtaClass() as string}
           >
             New issue
           </a>;
@@ -154,7 +154,7 @@ export function IssuesList({
       method="post"
       action="#"
       aria-label="Issue filters"
-      className="flex flex-wrap items-end gap-3"
+      className={repoListFilterFormClass() as string}
       onSubmit={(e) => {
         e.preventDefault();
         void filterForm.handleSubmit();
@@ -162,30 +162,27 @@ export function IssuesList({
     >
       <filterForm.Field name="author">
         {(field) => (
-          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-            Author
-            <input
-              type="text"
-              name="author"
-              autocomplete="off"
-              placeholder="username"
-              value={field.state.value as string}
-              className={fieldClass() as string}
-              onBlur={field.handleBlur}
-              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
-            />
-          </label>
+          <MemberLookup
+            id="issue-filter-author"
+            name="author"
+            label="Author"
+            compact
+            className="min-w-[9rem]"
+            placeholder="username"
+            value={field.state.value as string}
+            onValueChange={field.handleChange}
+          />
         )}
       </filterForm.Field>
       <filterForm.Field name="label">
         {(field) => (
-          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+          <label className={repoListFilterLabelClass() as string}>
             Label
             <select
               name="label"
               aria-label="Label"
               value={field.state.value as string}
-              className={fieldClass() as string}
+              className={repoListFilterFieldClass() as string}
               onChange={(e) => field.handleChange((e.target as HTMLSelectElement).value)}
             >
               <option value="">Any label</option>
@@ -198,43 +195,37 @@ export function IssuesList({
       </filterForm.Field>
       <filterForm.Field name="assignee">
         {(field) => (
-          <label className="flex flex-col gap-1 text-[13px] text-muted-foreground">
-            Assignee
-            <input
-              type="text"
-              name="assignee"
-              autocomplete="off"
-              placeholder="username"
-              value={field.state.value as string}
-              className={fieldClass() as string}
-              onBlur={field.handleBlur}
-              onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
-            />
-          </label>
+          <MemberLookup
+            id="issue-filter-assignee"
+            name="assignee"
+            label="Assignee"
+            compact
+            className="min-w-[9rem]"
+            placeholder="username"
+            value={field.state.value as string}
+            onValueChange={field.handleChange}
+          />
         )}
       </filterForm.Field>
       <filterForm.Field name="q">
         {(field) => (
-          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-[13px] text-muted-foreground">
+          <label className={`${repoListFilterLabelClass()} min-w-[12rem] flex-1` as string}>
             Search
             <input
               type="search"
               name="q"
-              autocomplete="off"
+              autoComplete="off"
               placeholder="Search title or body"
               value={field.state.value as string}
-              className={fieldClass() as string}
+              className={`${repoListFilterFieldClass()} w-full` as string}
               onBlur={field.handleBlur}
               onInput={(e) => field.handleChange((e.target as HTMLInputElement).value)}
             />
           </label>
         )}
       </filterForm.Field>
-      <button
-        type="submit"
-        className="inline-flex h-10 items-center rounded-md border border-border bg-muted px-4 text-[14px] font-medium text-foreground hover:bg-muted/80"
-      >
-        Apply filters
+      <button type="submit" className={repoListApplyClass() as string}>
+        Apply
       </button>
     </form>
 
@@ -295,6 +286,19 @@ export function IssuesList({
                   </div>
                   <p className="mt-1 text-[12px] text-muted-foreground">
                     {`#${issue.number} · opened by @${issue.author_username}` as string}
+                    @if (
+                      issue.assignees &&
+                      issue.assignees.length > 0
+                    ) {
+                      <>
+                        <span className="mx-1.5">·</span>
+                        <span>
+                          {
+                            `assigned ${issue.assignees.map((a) => `@${a.username}`).join(", ")}` as string
+                          }
+                        </span>
+                      </>;
+                    }
                   </p>
                 </div>
               </ListRow>;

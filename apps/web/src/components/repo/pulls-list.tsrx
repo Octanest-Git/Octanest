@@ -1,5 +1,5 @@
 import { GitMerge, GitPullRequest, GitPullRequestClosed } from "@octanejs/lucide";
-import type { PullListResponse } from "@octanest/api-client";
+import type { IssueAssigneePublic, PullListResponse } from "@octanest/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,6 +10,11 @@ type PullsListProps = {
   repo: string;
   list: PullListResponse;
 };
+
+function assigneeLine(assignees: IssueAssigneePublic[] | undefined): string | null {
+  if (!assignees || assignees.length === 0) return null;
+  return assignees.map((a) => `@${a.username}`).join(", ");
+}
 
 export function PullsList(props: PullsListProps) @{
   const { owner, repo, list } = props;
@@ -72,6 +77,12 @@ export function PullsList(props: PullsListProps) @{
               <span className="font-mono">{pull.base_ref as string}</span>
               <span className="mx-1"> ← </span>
               <span className="font-mono">{pull.head_ref as string}</span>
+              @if (assigneeLine(pull.assignees)) {
+                <>
+                  <span className="mx-1.5">·</span>
+                  <span>{`assigned ${assigneeLine(pull.assignees)}` as string}</span>
+                </>;
+              }
             </p>
           </div>
         </ListRow>;

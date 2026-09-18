@@ -2,9 +2,20 @@ import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-ro
 import { useQuery } from "@octanejs/tanstack-query";
 import type { PullListResponse, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
+import { MemberLookup } from "@/components/org/member-lookup";
 import { PullsList } from "@/components/repo/pulls-list";
+import {
+  repoListApplyClass,
+  repoListFilterFieldClass,
+  repoListFilterFormClass,
+  repoListFilterLabelClass,
+  repoListPrimaryCtaClass,
+  repoListTabClass,
+  repoListTablistClass,
+} from "@/components/repo/repo-list-toolbar";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
+import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { fetchPullList, fetchRepoGet } from "@/lib/ssr-repo";
 
 export type PullsLoaderData =
@@ -25,7 +36,18 @@ async function loadPullsPage(
   repoName: string,
   state: "open" | "closed" | "all",
 ): Promise<PullsLoaderData> {
-  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  const [got, listRes] = await Promise.all([
+    fetchRepoGet({ data: { owner, name: repoName } }),
+    fetchPullList({
+      data: {
+        owner,
+        name: repoName,
+        state,
+        offset: 0,
+        limit: PAGE_SIZE,
+      },
+    }),
+  ]);
   if (!got.ok) {
     if (got.error.code === "repo.not_found") return { kind: "not_found" };
     return {
@@ -33,15 +55,6 @@ async function loadPullsPage(
       message: got.error.message || "Could not load repository.",
     };
   }
-  const listRes = await fetchPullList({
-    data: {
-      owner,
-      name: repoName,
-      state,
-      offset: 0,
-      limit: PAGE_SIZE,
-    },
-  });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
     return {
@@ -84,24 +97,41 @@ export function PullsListPage() @{
   };
   const owner = params.owner ?? "";
   const repoName = params.repo ?? "";
+  const layout = useLoaderData({ from: "/$owner/$repo" }) as RepoLayoutLoaderData | undefined;
   const routeLoader = useLoaderData({ from: "/$owner/$repo/pulls/" }) as
     | PullsLoaderData
     | undefined;
 
   const [state, setState] = useState<"open" | "closed" | "all">("open");
   const [author, setAuthor] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const [q, setQ] = useState("");
   const [reviewState, setReviewState] = useState("");
   const [appliedAuthor, setAppliedAuthor] = useState("");
+  const [appliedAssignee, setAppliedAssignee] = useState("");
+  const [appliedQ, setAppliedQ] = useState("");
   const [appliedReviewState, setAppliedReviewState] = useState("");
 
   const listQ = useQuery({
-    queryKey: ["pull", "list", owner, repoName, state, appliedAuthor, appliedReviewState] as const,
+    queryKey: [
+      "pull",
+      "list",
+      owner,
+      repoName,
+      state,
+      appliedAuthor,
+      appliedAssignee,
+      appliedQ,
+      appliedReviewState,
+    ] as const,
     queryFn: async () => {
       const res = await apiClient.pull.list({
         owner,
         name: repoName,
         state,
         author: appliedAuthor || null,
+        assignee: appliedAssignee || null,
+        q: appliedQ || null,
         review_state: appliedReviewState || null,
         offset: 0,
         limit: PAGE_SIZE,
@@ -111,15 +141,23 @@ export function PullsListPage() @{
     },
     enabled: !!owner && !!repoName,
     initialData:
-      routeLoader?.kind === "ready" && state === "open" && !appliedAuthor && !appliedReviewState
+      routeLoader?.kind === "ready" &&
+      state === "open" &&
+      !appliedAuthor &&
+      !appliedAssignee &&
+      !appliedQ &&
+      !appliedReviewState
         ? routeLoader.list
         : undefined,
   });
 
-  const repo = routeLoader?.kind === "ready" ? routeLoader.repo : null;
-  const list = listQ.data;
+  const repo =
+    (routeLoader?.kind === "ready" ? routeLoader.repo : null) ??
+    (layout?.status === "ok" ? layout.repo : null) ??
+    null;
+  const list = listQ.data ?? (routeLoader?.kind === "ready" ? routeLoader.list : undefined);
 
-  @if (routeLoader?.kind === "not_found") {
+  @if (routeLoader?.kind === "not_found" || layout?.status === "not_found") {
     <RepoNotFound />;
   } @else {
     @if (routeLoader?.kind === "error") {
@@ -127,36 +165,24 @@ export function PullsListPage() @{
     } @else {
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex gap-2" role="tablist" aria-label="Pull state">
+          <div className={repoListTablistClass() as string} role="tablist" aria-label="Pull state">
             <button
               type="button"
-              className={
-                (state === "open"
-                  ? "rounded-md bg-muted px-3 py-1.5 text-sm font-medium"
-                  : "rounded-md px-3 py-1.5 text-sm text-muted-foreground") as string
-              }
+              className={repoListTabClass(state === "open") as string}
               onClick={() => setState("open")}
             >
               Open
             </button>
             <button
               type="button"
-              className={
-                (state === "closed"
-                  ? "rounded-md bg-muted px-3 py-1.5 text-sm font-medium"
-                  : "rounded-md px-3 py-1.5 text-sm text-muted-foreground") as string
-              }
+              className={repoListTabClass(state === "closed") as string}
               onClick={() => setState("closed")}
             >
               Closed
             </button>
             <button
               type="button"
-              className={
-                (state === "all"
-                  ? "rounded-md bg-muted px-3 py-1.5 text-sm font-medium"
-                  : "rounded-md px-3 py-1.5 text-sm text-muted-foreground") as string
-              }
+              className={repoListTabClass(state === "all") as string}
               onClick={() => setState("all")}
             >
               All
@@ -165,7 +191,7 @@ export function PullsListPage() @{
           @if (repo?.can_write) {
             <a
               href={`/${owner}/${repoName}/pulls/new` as string}
-              className="inline-flex items-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground no-underline"
+              className={repoListPrimaryCtaClass() as string}
             >
               New pull request
             </a>;
@@ -174,26 +200,39 @@ export function PullsListPage() @{
         <form
           method="post"
           action="#"
-          className="flex flex-wrap items-end gap-3"
+          className={repoListFilterFormClass() as string}
           onSubmit={(e) => {
             e.preventDefault();
             setAppliedAuthor(author.trim());
+            setAppliedAssignee(assignee.trim());
+            setAppliedQ(q.trim());
             setAppliedReviewState(reviewState);
           }}
         >
-          <label className="flex flex-col gap-1 text-sm">
-            Author
-            <input
-              className="rounded-md border border-border bg-background px-2 py-1.5"
-              value={author as string}
-              placeholder="username"
-              onInput={(e: Event) => setAuthor((e.target as HTMLInputElement).value)}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <MemberLookup
+            id="pull-filter-author"
+            name="author"
+            label="Author"
+            compact
+            className="min-w-[9rem]"
+            placeholder="username"
+            value={author as string}
+            onValueChange={setAuthor}
+          />
+          <MemberLookup
+            id="pull-filter-assignee"
+            name="assignee"
+            label="Assignee"
+            compact
+            className="min-w-[9rem]"
+            placeholder="username"
+            value={assignee as string}
+            onValueChange={setAssignee}
+          />
+          <label className={repoListFilterLabelClass() as string}>
             Review state
             <select
-              className="rounded-md border border-border bg-background px-2 py-1.5"
+              className={repoListFilterFieldClass() as string}
               value={reviewState as string}
               onChange={(e: Event) => setReviewState((e.target as HTMLSelectElement).value)}
             >
@@ -203,10 +242,19 @@ export function PullsListPage() @{
               <option value="review_required">Review required</option>
             </select>
           </label>
-          <button
-            type="submit"
-            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium"
-          >
+          <label className={`${repoListFilterLabelClass()} min-w-[12rem] flex-1` as string}>
+            Search
+            <input
+              type="search"
+              name="q"
+              autoComplete="off"
+              placeholder="Search title or body"
+              className={`${repoListFilterFieldClass()} w-full` as string}
+              value={q as string}
+              onInput={(e: Event) => setQ((e.target as HTMLInputElement).value)}
+            />
+          </label>
+          <button type="submit" className={repoListApplyClass() as string}>
             Apply
           </button>
         </form>

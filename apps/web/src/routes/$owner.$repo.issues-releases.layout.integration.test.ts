@@ -15,6 +15,8 @@ describe("issues/releases layout parents", () => {
     expect(layout).toMatch(/Outlet/);
     expect(layout).not.toMatch(/IssuesListPage/);
     expect(index).toMatch(/IssuesListPage/);
+    expect(index).toMatch(/fetchLabelListForRepo/);
+    expect(index).toMatch(/fetchIssueList/);
   });
 
   it("releases layout Outlets; list is on index + SSR release.list", async () => {
