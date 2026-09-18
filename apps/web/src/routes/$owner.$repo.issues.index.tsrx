@@ -149,6 +149,15 @@ export function IssuesListPage() @{
     initialData: routeLoader?.kind === "ready" ? routeLoader.labels : undefined,
   });
 
+  const ssrListMatches =
+    routeLoader?.kind === "ready" &&
+    filters.state === "open" &&
+    !filters.author &&
+    !filters.label &&
+    !filters.assignee &&
+    !filters.q &&
+    filters.offset === 0;
+
   const listQ = useQuery({
     queryKey: [
       "issue",
@@ -179,16 +188,7 @@ export function IssuesListPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName,
-    initialData:
-      routeLoader?.kind === "ready" &&
-      filters.state === "open" &&
-      !filters.author &&
-      !filters.label &&
-      !filters.assignee &&
-      !filters.q &&
-      filters.offset === 0
-        ? routeLoader.list
-        : undefined,
+    initialData: ssrListMatches ? routeLoader.list : undefined,
   });
 
   const repo =
@@ -196,7 +196,7 @@ export function IssuesListPage() @{
     (routeLoader?.kind === "ready" ? routeLoader.repo : null) ??
     (layout?.status === "ok" ? layout.repo : null) ??
     null;
-  const list = listQ.data ?? (routeLoader?.kind === "ready" ? routeLoader.list : undefined);
+  const list = listQ.data ?? (ssrListMatches ? routeLoader.list : undefined);
   const labels =
     labelsQ.data ?? (routeLoader?.kind === "ready" ? routeLoader.labels : undefined) ?? [];
   const notFound =

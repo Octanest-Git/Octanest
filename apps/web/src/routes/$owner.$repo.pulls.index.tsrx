@@ -112,6 +112,14 @@ export function PullsListPage() @{
   const [appliedQ, setAppliedQ] = useState("");
   const [appliedReviewState, setAppliedReviewState] = useState("");
 
+  const ssrListMatches =
+    routeLoader?.kind === "ready" &&
+    state === "open" &&
+    !appliedAuthor &&
+    !appliedAssignee &&
+    !appliedQ &&
+    !appliedReviewState;
+
   const listQ = useQuery({
     queryKey: [
       "pull",
@@ -140,22 +148,14 @@ export function PullsListPage() @{
       return res.data;
     },
     enabled: !!owner && !!repoName,
-    initialData:
-      routeLoader?.kind === "ready" &&
-      state === "open" &&
-      !appliedAuthor &&
-      !appliedAssignee &&
-      !appliedQ &&
-      !appliedReviewState
-        ? routeLoader.list
-        : undefined,
+    initialData: ssrListMatches ? routeLoader.list : undefined,
   });
 
   const repo =
     (routeLoader?.kind === "ready" ? routeLoader.repo : null) ??
     (layout?.status === "ok" ? layout.repo : null) ??
     null;
-  const list = listQ.data ?? (routeLoader?.kind === "ready" ? routeLoader.list : undefined);
+  const list = listQ.data ?? (ssrListMatches ? routeLoader.list : undefined);
 
   @if (routeLoader?.kind === "not_found" || layout?.status === "not_found") {
     <RepoNotFound />;
