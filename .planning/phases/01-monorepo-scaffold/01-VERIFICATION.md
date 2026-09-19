@@ -102,7 +102,7 @@ overrides_applied: 0
 
 ### Anti-Patterns Found
 
-None that block the phase goal. No `human_needed` status used (D-VER-03).
+None that block the phase goal. Status policy follows D-VER-03 (passed with caveats; no deferred-human status).
 
 ### Gaps Summary
 
