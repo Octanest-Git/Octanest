@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [x] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
-- [ ] **Phase 22.1: v1.0 Milestone Closure** (INSERTED) - ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene
+- [x] **Phase 22.1: v1.0 Milestone Closure** (INSERTED) - ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (completed 2026-09-19)
 
 ## Phase Details
 
@@ -835,7 +835,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
-| 22.1 v1.0 Milestone Closure | 10/10 | In Progress|  |
+| 22.1 v1.0 Milestone Closure | 10/10 | Complete    | 2026-09-19 |
 
 ---
 *Roadmap created: 2026-09-09*
@@ -854,7 +854,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
   3. PLAT-* REQUIREMENTS checkboxes match evidence; WINDOWS open_count reduced (fixed/waived obsolete Wave 0 stubs)
   4. Re-audit (`/gsd-audit-milestone`) no longer reports ORG-06 packaging as a blocker
 
-**Plans:** 10/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
 
