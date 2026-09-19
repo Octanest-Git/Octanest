@@ -3,18 +3,20 @@ phase: "08"
 slug: "git-https-pats"
 # status lifecycle: draft (seeded by plan-phase) → validated (set by validate-phase §6)
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
-status: draft
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-13"
 planned: "2026-09-13"
 verified_at: "2026-09-13"
+updated: "2026-09-19"
+validated_at: "2026-09-19"
 ---
 
 # Phase 08 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
-> Task map refreshed by **08-13-T2** (2026-09-13). `nyquist_compliant` remains false until `/gsd-validate-phase`.
+> Task map refreshed by **08-13-T2** (2026-09-13). Nyquist reconcile via `/gsd-validate-phase` equivalent (22.1-09, 2026-09-19).
 
 ---
 
@@ -105,6 +107,26 @@ verified_at: "2026-09-13"
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [x] Feedback latency < 180s
-- [ ] `nyquist_compliant: true` set in frontmatter — **owned by `/gsd-validate-phase`** (do not flip in 08-13)
+- [x] `nyquist_compliant: true` set in frontmatter — **owned by `/gsd-validate-phase`** (set 2026-09-19 / 22.1-09)
 
-**Approval:** pending validate-phase (execution gates green 2026-09-13; UAT/manual rows above)
+**Approval:** validated (Nyquist compliant) — execution gates green 2026-09-13; re-run 2026-09-19; UAT/manual rows remain backstops
+
+---
+
+## Validation Audit 2026-09-19
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+| Manual-only (UX) | 4 |
+
+| Gate | Result |
+|------|--------|
+| `cargo nextest run -p octanest-api -E 'test(pat_)\|test(git_smart)'` | ✅ 26 passed (run id 82e9814d) |
+| `cargo test -p octanest-db --lib migration_parity` | ✅ ok |
+| Vitest `tokens.integration.test.ts` (+ LFS pointer spot) | ✅ 17 passed (shared spot-check) |
+| Key files (pat_rpc, git_smart_http, smoke-git-https) | ✅ present |
+
+**Verdict:** `status: validated`, `nyquist_compliant: true`. All 18 task-map rows green; Wave 0 closed; no MISSING automated reqs. Residual risk is browser UAT only (PAT reveal/revoke/CloneBox copy).
