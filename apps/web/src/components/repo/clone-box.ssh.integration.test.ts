@@ -74,6 +74,28 @@ describe("CloneBox SSH (GIT-03 / D-SSH-02 / D-SSH-06)", () => {
     expect(screen.getByText(/Host/)).toBeInTheDocument();
   }, 20_000);
 
+  it("hides Port hint when advertised SSH port is 22", async () => {
+    render(CloneBox, {
+      props: {
+        owner: "ada",
+        repo: "hello",
+        refName: "main",
+        empty: false,
+        publicOrigin: "https://octanest.jereko.dev",
+        sshHost: "octanest.jereko.dev",
+        sshPort: 22,
+      },
+    });
+
+    await openCloneMenu();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/SSH clone URL/i)).toBeInTheDocument();
+    });
+    expect(document.body.textContent).not.toMatch(/Port 22/);
+    expect(document.body.textContent).not.toMatch(/~\/\.ssh\/config/);
+  }, 20_000);
+
   it("compact Add an SSH key CTA points to /settings/ssh-keys", async () => {
     render(CloneBox, {
       props: {

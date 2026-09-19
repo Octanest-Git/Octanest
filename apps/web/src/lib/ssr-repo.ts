@@ -1,7 +1,7 @@
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
 import { createClient, type OctanestClient } from "@octanest/api-client";
-import { resolvePublicOriginFromEnv } from "@/lib/public-origin";
+import { resolvePublicOriginFromEnv, resolveSshHost, resolveSshPort } from "@/lib/public-origin";
 
 /** API origin for SSR Cookie-forward RPCs — never the browser origin during SSR. */
 function ssrApiOrigin(): string {
@@ -473,3 +473,20 @@ export const fetchPublicOrigin = createServerFn({ method: "GET" }).handler(async
   const proto = protoRaw === "https" ? "https" : "http";
   return `${proto}://${host}`.replace(/\/$/, "");
 });
+
+/**
+ * SSR: advertised Git SSH host + port for CloneBox.
+ * Must be server-fn’d — browser bundles cannot read OCTANEST_SSH_* at runtime.
+ */
+export const fetchSshAdvertise = createServerFn({ method: "GET" })
+  .validator((data: { publicOrigin?: string }) => ({
+    publicOrigin: typeof data?.publicOrigin === "string" ? data.publicOrigin : "",
+  }))
+  .handler(async ({ data }) => {
+    const publicOrigin =
+      data.publicOrigin.trim() || resolvePublicOriginFromEnv() || "http://localhost";
+    return {
+      sshHost: resolveSshHost(publicOrigin),
+      sshPort: resolveSshPort(),
+    };
+  });

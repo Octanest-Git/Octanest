@@ -45,10 +45,12 @@ export function CloneBox({
   sshPort: sshPortProp,
 }: CloneBoxProps) @{
   const storeOrigin = useRepoStore((s) => s.publicOrigin);
+  const storeSshHost = useRepoStore((s) => s.sshHost);
+  const storeSshPort = useRepoStore((s) => s.sshPort);
   const origin = publicOriginProp || storeOrigin;
   const httpsUrl = httpsCloneUrl(origin, owner, repo);
-  const sshHost = sshHostProp ?? resolveSshHost(origin);
-  const sshPort = sshPortProp ?? resolveSshPort();
+  const sshHost = sshHostProp ?? (storeSshHost || resolveSshHost(origin));
+  const sshPort = sshPortProp ?? (storeSshPort > 0 ? storeSshPort : resolveSshPort());
   const sshUrl = sshCloneUrl(sshHost, sshPort, owner, repo);
   const showPortHint = sshNeedsPortHint(sshPort);
   const zipHref = `/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/archive/${encodeURIComponent(refName)}.zip`;

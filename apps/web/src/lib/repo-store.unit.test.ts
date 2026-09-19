@@ -30,9 +30,13 @@ describe("createRepoStore (@octanejs/zustand)", () => {
         must_change_credentials: false,
       },
       publicOrigin: "http://localhost",
+      sshHost: "localhost",
+      sshPort: 22,
     });
 
     expect(store.getState().publicOrigin).toBe("http://localhost");
+    expect(store.getState().sshHost).toBe("localhost");
+    expect(store.getState().sshPort).toBe(22);
     expect(store.getState().repo?.visibility).toBe("private");
     store.getState().setRepo({
       ...store.getState().repo!,

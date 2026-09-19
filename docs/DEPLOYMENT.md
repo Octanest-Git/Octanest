@@ -29,21 +29,44 @@ Cloud deploys the **same** `crates/octanest-api/Dockerfile` and `apps/web/Docker
 | `web` | SPA (`bun run preview`) — private |
 | `gateway` | Public HTTPS edge (`deploy/cloud/Caddyfile`) |
 
-**Operator steps (D-CLOUD-07 — human apply only):**
+#### Environments
+
+| Environment | Role | Deploy trigger |
+|-------------|------|----------------|
+| `preview` | Base for Railway **PR Environments** (ephemeral per-PR copies) | Autodeploy off |
+| `staging` | Always-on integration | Autodeploy from `main` + Wait for CI |
+| `production` | Live | Autodeploy off; promote from staging |
+
+PR Environments inherit from **`preview`** (Project Settings → Environments). Only authors who are Railway project members with GitHub linked get automatic PR deploys. Invite future collaborators as project **Viewer** (or higher) and have them link GitHub. Keep Bot PR Environments off unless you want Dependabot-style previews.
+
+Focused PR Environments (optional but recommended for this monorepo): enable in project settings, then set watch paths on `api` / `web` / `gateway` (see [`.railway/README.md`](../.railway/README.md)).
+
+#### Operator steps (D-CLOUD-07 — human apply only)
 
 1. Create/link a Railway project: `railway login` → `railway link` (token stays in the operator environment — never commit; never expose to fork PRs).
 2. Install IaC SDK: `cd .railway && npm ci` (isolated from the Bun monorepo).
-3. Preview: `make cloud-plan` (wraps `railway config plan`).
-4. In the Railway dashboard (or via plan), set secrets / shared vars:
-   - `OCTANEST_PUBLIC_ORIGIN=https://<your-cloud-domain>`
-   - `OCTANEST_CORS_ORIGINS=https://<your-cloud-domain>`
+3. For each of `preview`, `staging`, and `production`: link that environment, then `make cloud-plan` (wraps `railway config plan`).
+4. In the Railway dashboard, set per-environment vars:
+   - `OCTANEST_ENV=preview` \| `staging` \| `production`
+   - `OCTANEST_PUBLIC_ORIGIN=https://<gateway-domain-for-that-env>` (production custom domain example: `https://octanest.jereko.dev`)
+   - `OCTANEST_CORS_ORIGINS=https://<gateway-domain-for-that-env>`
+   - **`web`:** `OCTANEST_VITE_ALLOWED_HOSTS` — comma-separated Vite Host allowlist. Cloud example: `.up.railway.app,octanest.jereko.dev` (leading `.` allows all Railway `*.up.railway.app` PR/gateway hosts; add each custom apex/host you terminate on the gateway). Without this, `vite preview` returns “Blocked request. This host is not allowed.” See [CONFIGURATION.md](CONFIGURATION.md).
    - Optional: `OCTANEST_ADMIN_EMAIL` / `OCTANEST_ADMIN_PASSWORD`, email/SSO keys
-5. Attach a custom domain to the **`gateway`** service.
+5. Attach a Railway-provided (or custom) domain to **`gateway`** in each environment (required so PR Environments get automatic preview URLs).
 6. Review the plan, then **only with explicit approval**: `railway config apply`.
-7. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=false`. For first boot, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
-8. Confirm `GET https://<domain>/health` and browser `/`.
+7. **Deploy policy after apply:**
+   - `staging`: GitHub branch `main`, autodeploy on, Wait for CI on
+   - `preview` and `production`: GitHub connected, autodeploy **off**
+8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=false`. For first boot of an environment, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
+9. Confirm `GET https://<domain>/health` and browser `/`.
 
-**Volumes (D-CLOUD-04):** `forge-data` mounts at `/var` on `api` (repos, lfs, packages, release-assets, uploads, ssh host keys as subdirs — same paths as Compose).
+#### Promote staging → production
+
+1. Validate the commit on staging.
+2. On the production canvas: **Sync** from staging, or deploy that known-good commit without enabling autodeploy.
+3. Review staged changes → Deploy; re-check production-only secrets and origins.
+
+**Volumes (D-CLOUD-04):** `forge-data` mounts at `/var` on `api` (repos, lfs, packages, release-assets, uploads, ssh host keys as subdirs — same paths as Compose). Each environment has its own volume and database.
 
 **Git (D-CLOUD-08):** HTTPS Smart HTTP through the gateway is the always-on cloud clone path. Optional TCP publish for `OCTANEST_SSH_PORT` (2222) on `api` when the host supports it — do not route SSH through the HTTP gateway.
 

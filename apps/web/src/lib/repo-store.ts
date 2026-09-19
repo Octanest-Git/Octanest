@@ -13,6 +13,10 @@ export type RepoLayoutLoaderData = {
   message: string;
   /** Browser-facing origin for clone URLs (SSR’d). */
   publicOrigin: string;
+  /** Advertised Git SSH host (SSR’d from OCTANEST_SSH_HOST / origin). */
+  sshHost: string;
+  /** Advertised Git SSH port (SSR’d from OCTANEST_SSH_PORT). */
+  sshPort: number;
 };
 
 export type RepoStoreState = {
@@ -23,6 +27,8 @@ export type RepoStoreState = {
   me: UserPublic | null;
   message: string;
   publicOrigin: string;
+  sshHost: string;
+  sshPort: number;
   setRepo: (repo: RepoPublic) => void;
   setMe: (me: UserPublic | null) => void;
 };
@@ -37,6 +43,8 @@ export function createRepoStore(init: {
   me: UserPublic | null;
   message?: string;
   publicOrigin?: string;
+  sshHost?: string;
+  sshPort?: number;
 }) {
   return createStore<RepoStoreState>((set) => ({
     owner: init.owner,
@@ -46,6 +54,8 @@ export function createRepoStore(init: {
     me: init.me,
     message: init.message ?? "",
     publicOrigin: init.publicOrigin ?? "",
+    sshHost: init.sshHost ?? "",
+    sshPort: init.sshPort ?? 0,
     setRepo: (repo) => set({ repo, status: "ok" }),
     setMe: (me) => set({ me }),
   }));
@@ -61,6 +71,8 @@ const fallbackRepoStore = createRepoStore({
   repo: null,
   me: null,
   publicOrigin: "",
+  sshHost: "",
+  sshPort: 0,
 });
 
 export function useRepoStore<T>(selector: (s: RepoStoreState) => T): T {

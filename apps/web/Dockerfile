@@ -23,7 +23,9 @@ COPY --from=build /app/packages/api-client ./packages/api-client
 WORKDIR /app/apps/web
 ENV PORT=3000
 EXPOSE 3000
-# Header-gated probe (see vite-plugins/web-health.ts). Mirrors API /health cadence.
+# Railway injects PORT at runtime; preview script honors ${PORT:-3000}.
+# Platform healthcheck is GET / (no custom headers). Container HEALTHCHECK
+# still uses the header-gated /health probe for local Compose.
 HEALTHCHECK --interval=5s --timeout=5s --retries=12 --start-period=10s \
-  CMD curl -fsS -H 'Octanest-Health-Probe: 1' http://127.0.0.1:3000/health || exit 1
+  CMD curl -fsS -H 'Octanest-Health-Probe: 1' http://127.0.0.1:${PORT:-3000}/health || exit 1
 CMD ["bun", "run", "preview"]
