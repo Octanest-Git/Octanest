@@ -40,6 +40,8 @@ const layoutData: RepoLayoutLoaderData = {
   me: null,
   message: "",
   publicOrigin: "http://127.0.0.1:8080",
+  sshHost: "127.0.0.1",
+  sshPort: 2222,
 };
 
 const routeLoaderData: ReleasesLoaderData = {

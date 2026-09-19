@@ -10,6 +10,8 @@ type RepoStoreProviderProps = {
   me: UserPublic | null;
   message?: string;
   publicOrigin: string;
+  sshHost: string;
+  sshPort: number;
   children?: unknown;
 };
 
@@ -25,6 +27,8 @@ export function RepoStoreProvider({
   me,
   message,
   publicOrigin,
+  sshHost,
+  sshPort,
   children,
 }: RepoStoreProviderProps) @{
   const [store] = useState(() =>
@@ -36,6 +40,8 @@ export function RepoStoreProvider({
       me,
       message,
       publicOrigin,
+      sshHost,
+      sshPort,
     }),
   );
 

@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { repoChromeActiveFromPath } from "@/lib/repo-chrome-active";
 import { type RepoLayoutLoaderData, useRepoStore } from "@/lib/repo-store";
 import { fetchSessionMe } from "@/lib/ssr-auth";
-import { fetchPublicOrigin, fetchRepoGet } from "@/lib/ssr-repo";
+import { fetchPublicOrigin, fetchRepoGet, fetchSshAdvertise } from "@/lib/ssr-repo";
 
 export type { RepoLayoutLoaderData };
 
@@ -28,6 +28,9 @@ export const Route = createFileRoute("/$owner/$repo")({
     const owner = String((params as { owner?: string }).owner ?? "");
     const repoName = String((params as { repo?: string }).repo ?? "");
     const publicOrigin = await fetchPublicOrigin();
+    const ssh = await fetchSshAdvertise({ data: { publicOrigin } });
+    const sshHost = ssh.sshHost;
+    const sshPort = ssh.sshPort;
 
     let me: UserPublic | null = null;
     try {
@@ -49,6 +52,8 @@ export const Route = createFileRoute("/$owner/$repo")({
             me,
             message: "",
             publicOrigin,
+            sshHost,
+            sshPort,
           };
         }
         return {
@@ -59,6 +64,8 @@ export const Route = createFileRoute("/$owner/$repo")({
           me,
           message: got.error.message || "Could not load repository.",
           publicOrigin,
+          sshHost,
+          sshPort,
         };
       }
       return {
@@ -69,6 +76,8 @@ export const Route = createFileRoute("/$owner/$repo")({
         me,
         message: "",
         publicOrigin,
+        sshHost,
+        sshPort,
       };
     } catch {
       return {
@@ -79,6 +88,8 @@ export const Route = createFileRoute("/$owner/$repo")({
         me,
         message: "Can't reach Octanest. Check your connection and try again.",
         publicOrigin,
+        sshHost,
+        sshPort,
       };
     }
   },
@@ -98,6 +109,8 @@ function RepoLayout() @{
   const me = data?.me ?? null;
   const message = data?.message ?? "";
   const publicOrigin = data?.publicOrigin ?? "";
+  const sshHost = data?.sshHost ?? "";
+  const sshPort = data?.sshPort ?? 0;
 
   @if (!data) {
     <RepoPageShell>
@@ -125,6 +138,8 @@ function RepoLayout() @{
       me={me}
       message={message}
       publicOrigin={publicOrigin}
+      sshHost={sshHost}
+      sshPort={sshPort}
     >
       <RepoPageShell>
         <RepoLayoutChrome />
