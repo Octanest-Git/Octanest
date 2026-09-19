@@ -835,7 +835,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
-| 22.1 v1.0 Milestone Closure | 2/10 | In Progress|  |
+| 22.1 v1.0 Milestone Closure | 3/10 | In Progress|  |
 
 ---
 *Roadmap created: 2026-09-09*
@@ -854,7 +854,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
   3. PLAT-* REQUIREMENTS checkboxes match evidence; WINDOWS open_count reduced (fixed/waived obsolete Wave 0 stubs)
   4. Re-audit (`/gsd-audit-milestone`) no longer reports ORG-06 packaging as a blocker
 
-**Plans:** 2/10 plans executed
+**Plans:** 3/10 plans executed
 
 Plans:
 
@@ -864,7 +864,7 @@ Plans:
 - [ ] 22.1-04-PLAN.md
 - [x] 22.1-05-PLAN.md
 - [x] 22.1-06-PLAN.md
-- [ ] 22.1-07-PLAN.md
+- [x] 22.1-07-PLAN.md
 - [ ] 22.1-08-PLAN.md
 - [ ] 22.1-09-PLAN.md
 - [ ] 22.1-10-PLAN.md
@@ -874,7 +874,7 @@ Plans:
 - [ ] `22.1-01-PLAN.md` — Tracer: package protection helper → Compose HTTPS push denied (ORG-06)
 - [x] `22.1-05-PLAN.md` — Lightweight VERIFICATION for phases 01, 02, 03
 - [x] `22.1-06-PLAN.md` — Lightweight VERIFICATION for phases 11.1, 12, 16
-- [ ] `22.1-07-PLAN.md` — Lightweight VERIFICATION for phases 17, 18, 21
+- [x] `22.1-07-PLAN.md` — Lightweight VERIFICATION for phases 17, 18, 21
 - [ ] `22.1-09-PLAN.md` — Nyquist validate-phase for 8, 14, 15, 20
 
 **Wave 2** *(blocked on Wave 1 / 22.1-01)*

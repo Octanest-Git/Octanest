@@ -5,16 +5,16 @@ current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
 current_plan: 1
 status: executing
-stopped_at: Completed 22.1-06-PLAN.md
-last_updated: "2026-09-19T15:24:19.376Z"
+stopped_at: Completed 22.1-07-PLAN.md
+last_updated: "2026-09-19T15:28:09.787Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 22.1 execution started
-state_head: 1c3e83e8e7265b58cedcb21cccbb8ca9780b7e5c
+state_head: ede272661edc82ae30ef52b715a5541d74d00cc5
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 212
+  completed_plans: 213
 milestone_name: milestone
 ---
 
@@ -174,6 +174,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 19 P11 | 20min | 2 tasks | 6 files |
 | Phase 22.1 P05 | 2min | 3 tasks | 3 files |
 | Phase 22.1 P06 | 2min | 3 tasks | 3 files |
+| Phase 22.1 P07 | 2min | 3 tasks | 3 files |
 
 # Project State
 
@@ -572,6 +573,7 @@ Recent decisions affecting current work:
 - [Phase 22.1]: 22.1-05: PLAT-08 empty/adjacency/ordering documented from Make smoke-* and CI db-matrix separate legs
 - [Phase 22.1]: Mark all three VERIFICATIONs passed with caveats — SUMMARYs/VALIDATION/UAT support phase goals (D-VER-03) — Evidence backfill sufficient; residual WINDOWS coverage floor stays open
 - [Phase 22.1]: Keep WINDOWS coverage-floor residuals open and cited as caveats (do not waive) — Plan forbids waiving WINDOWS in this backfill
+- [Phase 22.1]: 22.1-07: VERIFICATION passed+caveats for phases 17/18/21 (D-VER-03); WINDOWS 55-58 cited not waived; clone_bare hooks deferred to 22.1-02
 
 ### Pending Todos
 
@@ -597,8 +599,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:24:07.449Z
-Stopped at: Completed 22.1-06-PLAN.md
+Last session: 2026-09-19T15:28:09.232Z
+Stopped at: Completed 22.1-07-PLAN.md
 Resume file: None
 
 ## Accumulated Context
