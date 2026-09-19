@@ -70,7 +70,8 @@ Do **not** use Railway Environment Sync to promote: Sync copies service **variab
 2. Repo → **Actions** → **Production deploy** → **Run workflow**:
    - `action=promote` — deploys a commit SHA to production `api`, `web`, and `gateway` (default SHA = `main` HEAD; optional override). Requires a successful **CI** run on that SHA. Does not mutate Railway variables.
    - `action=rollback` — Railway `deploymentRollback` to the previous `canRollback` deployment on each of those services (restores that deployment’s image; Railway may also restore that deployment’s custom variables).
-3. Confirm `GET https://octanest.jereko.dev/health`.
+   - `dry_run=true` — resolves SHA / CI / rollback targets and prints the plan only (no deploys, rollbacks, or health probe).
+3. Confirm `GET https://octanest.jereko.dev/health` (skipped when `dry_run=true`).
 
 **One-time GitHub setup:** On Environment [`Octanest / production`](https://github.com/Octanest-Git/Octanest/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`.
 

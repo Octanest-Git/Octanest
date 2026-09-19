@@ -70,7 +70,8 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
 2. GitHub → **Actions** → **Production deploy** → Run workflow:
    - **promote** — `serviceInstanceDeployV2` with `commitSha` for `api` / `web` / `gateway` (default: `main` HEAD). Gated on CI success for that SHA. Leaves production variables alone.
    - **rollback** — `deploymentRollback` to the prior `canRollback` deployment on each of those services.
-3. Smoke `https://octanest.jereko.dev/health`.
+   - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN` for rollback target lookup).
+3. Smoke `https://octanest.jereko.dev/health` (skipped on dry-run).
 
 Script: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 

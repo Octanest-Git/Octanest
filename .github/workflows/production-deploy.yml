@@ -27,6 +27,11 @@ on:
         required: false
         type: string
         default: ""
+      dry_run:
+        description: Plan only — no Railway deploys, rollbacks, or health probe
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: production-deploy
@@ -38,7 +43,7 @@ permissions:
 
 jobs:
   deploy:
-    name: ${{ inputs.action }} production
+    name: ${{ inputs.action }}${{ inputs.dry_run && ' (dry-run)' || '' }} production
     runs-on: ubuntu-latest
     environment: Octanest / production
     env:
@@ -113,8 +118,27 @@ jobs:
 
       - name: Promote
         if: inputs.action == 'promote'
-        run: bash scripts/railway-production-deploy.sh promote "${{ steps.sha.outputs.sha }}"
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          args=(promote "$SHA")
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+            echo "dry_run=true — no Railway mutations"
+          fi
+          bash scripts/railway-production-deploy.sh "${args[@]}"
 
       - name: Rollback
         if: inputs.action == 'rollback'
-        run: bash scripts/railway-production-deploy.sh rollback
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          args=(rollback)
+          if [[ "$DRY_RUN" == "true" ]]; then
+            args+=(--dry-run)
+            echo "dry_run=true — no Railway mutations"
+          fi
+          bash scripts/railway-production-deploy.sh "${args[@]}"
