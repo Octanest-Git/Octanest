@@ -17,6 +17,8 @@ cd "$ROOT"
 
 # shellcheck source=scripts/smoke-lib.sh
 source "${ROOT}/scripts/smoke-lib.sh"
+# shellcheck source=scripts/docker-wsl-creds.sh
+source "${ROOT}/scripts/docker-wsl-creds.sh"
 SMOKE_NAME="compose-smoke-protection"
 
 BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
