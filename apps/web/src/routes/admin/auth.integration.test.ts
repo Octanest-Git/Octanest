@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from "@octanejs/testing-library";
+import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
@@ -130,4 +130,43 @@ describe("/admin/auth SSR-backed settings", () => {
     });
     expect(getSettingsMock).not.toHaveBeenCalled();
   });
+
+  it("updates Email delivery Select and shows SMTP credentials section", async () => {
+    const src = await import("./auth.tsrx?raw").then((m) =>
+      String((m as { default: string }).default),
+    );
+    expect(src).toMatch(/form\.Subscribe/);
+
+    renderWithQueryClient(AdminAuthPage);
+
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("admin-auth-page")).toBeTruthy();
+        expect(screen.getByLabelText(/^Email delivery$/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
+
+    expect(screen.queryByText(/OCTANEST_SMTP_URL/i)).not.toBeInTheDocument();
+
+    const emailTrigger = screen.getByLabelText(/^Email delivery$/i);
+    expect(emailTrigger).toHaveTextContent(/Log sink/i);
+
+    fireEvent.click(emailTrigger);
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: /^SMTP$/i })).toBeInTheDocument();
+    });
+    const smtpOption = screen.getByRole("option", { name: /^SMTP$/i });
+    // Base UI SelectItem only commits after pointerdown sets allowMouseSelectionRef.
+    fireEvent.pointerDown(smtpOption, { pointerType: "mouse" });
+    fireEvent.click(smtpOption);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^Email delivery$/i)).toHaveTextContent(/SMTP/i);
+      expect(screen.getByText(/SMTP credentials/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/configure OCTANEST_SMTP_URL in the environment/i),
+      ).toBeInTheDocument();
+    });
+  }, 15_000);
 });

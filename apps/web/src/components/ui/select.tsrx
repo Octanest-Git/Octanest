@@ -5,11 +5,21 @@ import { cn } from "@/lib/utils";
 export const SelectRoot = Select.Root;
 export const SelectValue = Select.Value;
 export const SelectPortal = Select.Portal;
-export const SelectPositioner = Select.Positioner;
 export const SelectList = Select.List;
 export const SelectItemText = Select.ItemText;
 export const SelectIcon = Select.Icon;
 export const SelectItemIndicator = Select.ItemIndicator;
+
+export function SelectPositioner({
+  className,
+  ...props
+}: ComponentProps<typeof Select.Positioner>) @{
+  <Select.Positioner
+    data-slot="select-positioner"
+    className={cn("isolate z-50 outline-none", className)}
+    {...props}
+  />;
+}
 
 export function SelectTrigger({
   className,
@@ -32,7 +42,7 @@ export function SelectPopup({
   <Select.Popup
     data-slot="select-popup"
     className={cn(
-      "min-w-[10rem] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
+      "z-50 min-w-[10rem] rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg outline-none",
       className,
     )}
     {...props}

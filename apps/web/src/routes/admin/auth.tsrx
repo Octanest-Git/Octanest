@@ -376,174 +376,186 @@ export function AdminAuthPage() @{
               Instance provider mode and email delivery. Secrets stay in environment variables.
             </p>
 
-            <form
-              method="post"
-              action="#"
-              className="mt-8 flex flex-col gap-6"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void form.handleSubmit();
+            <form.Subscribe selector={(s) => s.values}>
+              {(values) => {
+                return (
+                  <form
+                    method="post"
+                    action="#"
+                    className="mt-8 flex flex-col gap-6"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void form.handleSubmit();
+                    }}
+                  >
+                    <ModeSelect
+                      id="auth-provider"
+                      label="Auth provider"
+                      value={values.provider_mode}
+                      options={PROVIDER_OPTIONS}
+                      onChange={(v) => form.setFieldValue("provider_mode", v)}
+                    />
+
+                    <div className="flex flex-col gap-2">
+                      <div className="flex min-h-11 items-center gap-2">
+                        <Switch
+                          id="admin-allow-signup"
+                          checked={values.allow_signup}
+                          onCheckedChange={(checked) =>
+                            form.setFieldValue("allow_signup", checked === true)
+                          }
+                        />
+                        <Label htmlFor="admin-allow-signup">Allow open signup</Label>
+                      </div>
+                      <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                        When off, new accounts can’t self-register. You can change this later in
+                        Auth settings.
+                      </p>
+                    </div>
+
+                    <ModeSelect
+                      id="default-visibility"
+                      label="Default repository visibility"
+                      value={values.default_visibility}
+                      options={VISIBILITY_OPTIONS}
+                      onChange={(v) => form.setFieldValue("default_visibility", v)}
+                    />
+                    <p className="-mt-4 text-[14px] font-normal leading-[1.4] text-muted-foreground">
+                      Used when creating a repository if the owner doesn’t pick Public or Private
+                      (D-08).
+                    </p>
+
+                    @if (values.provider_mode === "workos") {
+                      <div className="flex flex-col gap-4 rounded-md border border-border p-4">
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="workos-client-id">WorkOS client ID</Label>
+                          <Input
+                            id="workos-client-id"
+                            value={values.workos_client_id}
+                            onInput={(e) =>
+                              form.setFieldValue(
+                                "workos_client_id",
+                                (e.currentTarget as HTMLInputElement).value,
+                              )
+                            }
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label>WorkOS API key</Label>
+                          <EnvBadge show={flags.workos_api_key_configured} />
+                          @if (
+                            !flags.workos_api_key_configured
+                          ) {
+                            <p className="text-[14px] text-muted-foreground">
+                              Not set — configure WORKOS_API_KEY in the environment.
+                            </p>;
+                          }
+                        </div>
+                      </div>;
+                    }
+
+                    @if (values.provider_mode === "oidc") {
+                      <div className="flex flex-col gap-4 rounded-md border border-border p-4">
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="oidc-issuer">OIDC issuer</Label>
+                          <Input
+                            id="oidc-issuer"
+                            value={values.oidc_issuer}
+                            onInput={(e) =>
+                              form.setFieldValue(
+                                "oidc_issuer",
+                                (e.currentTarget as HTMLInputElement).value,
+                              )
+                            }
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label htmlFor="oidc-client-id">OIDC client ID</Label>
+                          <Input
+                            id="oidc-client-id"
+                            value={values.oidc_client_id}
+                            onInput={(e) =>
+                              form.setFieldValue(
+                                "oidc_client_id",
+                                (e.currentTarget as HTMLInputElement).value,
+                              )
+                            }
+                            autoComplete="off"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <Label>OIDC client secret</Label>
+                          <EnvBadge show={flags.oidc_client_secret_configured} />
+                          @if (
+                            !flags.oidc_client_secret_configured
+                          ) {
+                            <p className="text-[14px] text-muted-foreground">
+                              Not set — configure OCTANEST_OIDC_CLIENT_SECRET in the
+                              environment.
+                            </p>;
+                          }
+                        </div>
+                      </div>;
+                    }
+
+                    <ModeSelect
+                      id="email-delivery"
+                      label="Email delivery"
+                      value={values.email_provider}
+                      options={EMAIL_OPTIONS}
+                      onChange={(v) => form.setFieldValue("email_provider", v)}
+                    />
+
+                    <div className="flex flex-col gap-4 rounded-md border border-border p-4">
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="from-address">From address</Label>
+                        <Input
+                          id="from-address"
+                          value={values.from_address}
+                          onInput={(e) =>
+                            form.setFieldValue(
+                              "from_address",
+                              (e.currentTarget as HTMLInputElement).value,
+                            )
+                          }
+                          placeholder="Octanest <noreply@example.com>"
+                          autoComplete="off"
+                        />
+                      </div>
+                      @if (values.email_provider === "smtp") {
+                        <div className="flex flex-col gap-2">
+                          <Label>SMTP credentials</Label>
+                          <EnvBadge show={flags.smtp_configured} />
+                          @if (!flags.smtp_configured) {
+                            <p className="text-[14px] text-muted-foreground">
+                              Not set — configure OCTANEST_SMTP_URL in the environment.
+                            </p>;
+                          }
+                        </div>;
+                      }
+                      @if (values.email_provider === "resend") {
+                        <div className="flex flex-col gap-2">
+                          <Label>Resend API key</Label>
+                          <EnvBadge show={flags.resend_configured} />
+                          @if (!flags.resend_configured) {
+                            <p className="text-[14px] text-muted-foreground">
+                              Not set — configure OCTANEST_RESEND_API_KEY in the
+                              environment.
+                            </p>;
+                          }
+                        </div>;
+                      }
+                    </div>
+
+                    <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+                      {(pending ? "Working…" : "Save auth settings") as string}
+                    </Button>
+                  </form>
+                );
               }}
-            >
-              <ModeSelect
-                id="auth-provider"
-                label="Auth provider"
-                value={form.state.values.provider_mode}
-                options={PROVIDER_OPTIONS}
-                onChange={(v) => form.setFieldValue("provider_mode", v)}
-              />
-
-              <div className="flex flex-col gap-2">
-                <div className="flex min-h-11 items-center gap-2">
-                  <Switch
-                    id="admin-allow-signup"
-                    checked={form.state.values.allow_signup}
-                    onCheckedChange={(checked) =>
-                      form.setFieldValue("allow_signup", checked === true)
-                    }
-                  />
-                  <Label htmlFor="admin-allow-signup">Allow open signup</Label>
-                </div>
-                <p className="text-[14px] font-normal leading-[1.4] text-muted-foreground">
-                  When off, new accounts can’t self-register. You can change this later in Auth
-                  settings.
-                </p>
-              </div>
-
-              <ModeSelect
-                id="default-visibility"
-                label="Default repository visibility"
-                value={form.state.values.default_visibility}
-                options={VISIBILITY_OPTIONS}
-                onChange={(v) => form.setFieldValue("default_visibility", v)}
-              />
-              <p className="-mt-4 text-[14px] font-normal leading-[1.4] text-muted-foreground">
-                Used when creating a repository if the owner doesn’t pick Public or Private (D-08).
-              </p>
-
-              @if (form.state.values.provider_mode === "workos") {
-                <div className="flex flex-col gap-4 rounded-md border border-border p-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="workos-client-id">WorkOS client ID</Label>
-                    <Input
-                      id="workos-client-id"
-                      value={form.state.values.workos_client_id}
-                      onInput={(e) =>
-                        form.setFieldValue(
-                          "workos_client_id",
-                          (e.currentTarget as HTMLInputElement).value,
-                        )
-                      }
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label>WorkOS API key</Label>
-                    <EnvBadge show={flags.workos_api_key_configured} />
-                    @if (!flags.workos_api_key_configured) {
-                      <p className="text-[14px] text-muted-foreground">
-                        Not set — configure WORKOS_API_KEY in the environment.
-                      </p>;
-                    }
-                  </div>
-                </div>;
-              }
-
-              @if (form.state.values.provider_mode === "oidc") {
-                <div className="flex flex-col gap-4 rounded-md border border-border p-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="oidc-issuer">OIDC issuer</Label>
-                    <Input
-                      id="oidc-issuer"
-                      value={form.state.values.oidc_issuer}
-                      onInput={(e) =>
-                        form.setFieldValue(
-                          "oidc_issuer",
-                          (e.currentTarget as HTMLInputElement).value,
-                        )
-                      }
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="oidc-client-id">OIDC client ID</Label>
-                    <Input
-                      id="oidc-client-id"
-                      value={form.state.values.oidc_client_id}
-                      onInput={(e) =>
-                        form.setFieldValue(
-                          "oidc_client_id",
-                          (e.currentTarget as HTMLInputElement).value,
-                        )
-                      }
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label>OIDC client secret</Label>
-                    <EnvBadge show={flags.oidc_client_secret_configured} />
-                    @if (!flags.oidc_client_secret_configured) {
-                      <p className="text-[14px] text-muted-foreground">
-                        Not set — configure OCTANEST_OIDC_CLIENT_SECRET in the
-                        environment.
-                      </p>;
-                    }
-                  </div>
-                </div>;
-              }
-
-              <ModeSelect
-                id="email-delivery"
-                label="Email delivery"
-                value={form.state.values.email_provider}
-                options={EMAIL_OPTIONS}
-                onChange={(v) => form.setFieldValue("email_provider", v)}
-              />
-
-              <div className="flex flex-col gap-4 rounded-md border border-border p-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="from-address">From address</Label>
-                  <Input
-                    id="from-address"
-                    value={form.state.values.from_address}
-                    onInput={(e) =>
-                      form.setFieldValue(
-                        "from_address",
-                        (e.currentTarget as HTMLInputElement).value,
-                      )
-                    }
-                    placeholder="Octanest <noreply@example.com>"
-                    autoComplete="off"
-                  />
-                </div>
-                @if (form.state.values.email_provider === "smtp") {
-                  <div className="flex flex-col gap-2">
-                    <Label>SMTP credentials</Label>
-                    <EnvBadge show={flags.smtp_configured} />
-                    @if (!flags.smtp_configured) {
-                      <p className="text-[14px] text-muted-foreground">
-                        Not set — configure OCTANEST_SMTP_URL in the environment.
-                      </p>;
-                    }
-                  </div>;
-                }
-                @if (form.state.values.email_provider === "resend") {
-                  <div className="flex flex-col gap-2">
-                    <Label>Resend API key</Label>
-                    <EnvBadge show={flags.resend_configured} />
-                    @if (!flags.resend_configured) {
-                      <p className="text-[14px] text-muted-foreground">
-                        Not set — configure OCTANEST_RESEND_API_KEY in the environment.
-                      </p>;
-                    }
-                  </div>;
-                }
-              </div>
-
-              <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-                {(pending ? "Working…" : "Save auth settings") as string}
-              </Button>
-            </form>
+            </form.Subscribe>
 
             <FactoryResetSection />
           </AdminSettingsLayout>;
