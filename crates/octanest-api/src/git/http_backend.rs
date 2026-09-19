@@ -45,6 +45,8 @@ pub struct ProtectionCgiEnv<'a> {
     pub database_url: &'a str,
     pub actor_capability: &'a str,
     pub helper_path: Option<&'a str>,
+    /// Re-injected after `env_clear` so update hooks can see production vs compose (D-PKG-01).
+    pub octanest_env: Option<&'a str>,
 }
 
 /// Run git-http-backend and map CGI stdout to an Axum [`Response`].
@@ -87,6 +89,9 @@ pub async fn run_git_http_backend(req: CgiRequest<'_>) -> Result<Response, Strin
         cmd.env("OCTANEST_ACTOR_CAPABILITY", pe.actor_capability);
         if let Some(helper) = pe.helper_path {
             cmd.env("OCTANEST_PROTECTION_HELPER", helper);
+        }
+        if let Some(env_name) = pe.octanest_env {
+            cmd.env("OCTANEST_ENV", env_name);
         }
     }
 

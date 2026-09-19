@@ -27,14 +27,25 @@ pub async fn install_protection_hooks(bare: &Path) -> Result<(), GitError> {
     let hooks = bare.join("hooks");
     tokio::fs::create_dir_all(&hooks).await?;
     let update = hooks.join("update");
+    // D-PKG-02: fail-closed when helper missing in production|cloud
+    // (mirrors webhook deliver.rs env signal); fail-open for compose/dev.
     let script = r#"#!/bin/sh
-# Octanest branch protection update hook (Phase 13 / D-19)
+# Octanest branch protection update hook (Phase 13 / D-19; D-PKG-02)
 refname="$1"
 oldrev="$2"
 newrev="$3"
 helper="${OCTANEST_PROTECTION_HELPER:-}"
 if [ -z "$helper" ] || [ ! -x "$helper" ]; then
-  exit 0
+  env_name="${OCTANEST_ENV:-development}"
+  case "$env_name" in
+    production|cloud)
+      echo "octanest: protection helper missing or not executable (OCTANEST_ENV=$env_name)" >&2
+      exit 1
+      ;;
+    *)
+      exit 0
+      ;;
+  esac
 fi
 exec "$helper" update "$refname" "$oldrev" "$newrev"
 "#;
@@ -1061,6 +1072,9 @@ impl GitBackend for CliGitBackend {
             tokio::fs::create_dir_all(parent).await?;
         }
         run_git(&["clone", "--bare", source_s, dest_s]).await?;
+        // D-FORK-02: every bare copy gets protection hooks (same as init_bare).
+        // Failure propagates so fork RPC can compensate (D-FORK-04).
+        install_protection_hooks(&dest_abs).await?;
         Ok(())
     }
 
@@ -2350,6 +2364,86 @@ mod tests {
         assert!(
             msg.contains("conflict") || msg.contains("failed"),
             "unexpected err: {msg}"
+        );
+    }
+
+    /// D-FORK-02/03: clone_bare must install hooks/update (same as init_bare).
+    #[tokio::test]
+    async fn clone_bare_installs_protection_hooks() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("src.git");
+        let dest = tmp.path().join("dest.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&source, "main").await.unwrap();
+        git.seed_commit(
+            &source,
+            "main",
+            "seed",
+            &[("README.md".into(), b"hi\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Strip hooks so clone cannot inherit a valid update file from source.
+        let _ = tokio::fs::remove_file(source.join("hooks").join("update")).await;
+
+        git.clone_bare(&source, &dest).await.expect("clone_bare");
+        let update = dest.join("hooks").join("update");
+        let meta = tokio::fs::metadata(&update)
+            .await
+            .expect("hooks/update must exist after clone_bare");
+        assert!(meta.is_file(), "hooks/update must be a file");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                meta.permissions().mode() & 0o111,
+                0o111,
+                "hooks/update must be executable"
+            );
+        }
+        let body = tokio::fs::read_to_string(&update).await.unwrap();
+        assert!(
+            body.contains("OCTANEST_ENV") && body.contains("production|cloud"),
+            "cloned hook script must include D-PKG-02 gate"
+        );
+    }
+
+    /// D-FORK-04: hook install failure after clone propagates as Err.
+    /// Uses a template where `hooks` is a file so create_dir_all fails
+    /// (bare clone installs from GIT_TEMPLATE_DIR, not source hooks).
+    #[tokio::test]
+    async fn clone_bare_fails_when_hook_install_blocked() {
+        let tmp = tempfile::tempdir().unwrap();
+        let template = tmp.path().join("tmpl");
+        std::fs::create_dir_all(&template).unwrap();
+        std::fs::write(template.join("hooks"), b"not-a-directory\n").unwrap();
+
+        let source = tmp.path().join("src.git");
+        let dest = tmp.path().join("dest.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&source, "main").await.unwrap();
+        git.seed_commit(
+            &source,
+            "main",
+            "seed",
+            &[("README.md".into(), b"hi\n".to_vec())],
+        )
+        .await
+        .unwrap();
+
+        let prev = std::env::var_os("GIT_TEMPLATE_DIR");
+        // nextest runs each test in its own process — safe to set for this call.
+        std::env::set_var("GIT_TEMPLATE_DIR", &template);
+        let result = git.clone_bare(&source, &dest).await;
+        match prev {
+            Some(v) => std::env::set_var("GIT_TEMPLATE_DIR", v),
+            None => std::env::remove_var("GIT_TEMPLATE_DIR"),
+        }
+
+        let err = result.expect_err("hook install must fail");
+        assert!(
+            matches!(err, GitError::Io(_)),
+            "unexpected error variant: {err:?}"
         );
     }
 }

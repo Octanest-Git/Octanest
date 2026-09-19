@@ -32,6 +32,8 @@ pub enum AuthzDecision {
         owner_slug: String,
         repo_name: String,
         is_push: bool,
+        /// Forge capability for `OCTANEST_ACTOR_CAPABILITY` on receive-pack (D-PKG-01).
+        capability: Option<Capability>,
     },
     Deny { message: String },
 }
@@ -143,6 +145,7 @@ pub async fn authorize_pack(
                 owner_slug: disk_owner.to_string(),
                 repo_name: disk_name.to_string(),
                 is_push: false,
+                capability,
             }
         }
         PackAction::Push => {
@@ -175,31 +178,43 @@ pub async fn authorize_pack(
                 owner_slug: disk_owner.to_string(),
                 repo_name: disk_name.to_string(),
                 is_push: true,
+                capability,
             }
         }
     }
 }
 
 /// Spawn `git-upload-pack` or `git-receive-pack` with argv only (no shell) and bridge stdio.
+///
+/// When `protection_env` is `Some` (receive-pack), inject helper/DB/repos/capability/ENV
+/// so bare-repo update hooks can evaluate branch protection (D-PKG-01). Upload-pack
+/// callers pass `None`.
 pub async fn run_pack_command<R, W, E>(
     program: &str,
     bare: &Path,
     mut stdin_rx: R,
     mut stdout_tx: W,
     mut stderr_tx: E,
+    protection_env: Option<&[(String, String)]>,
 ) -> Result<i32, String>
 where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
     E: AsyncWrite + Unpin,
 {
-    let mut child = Command::new("git")
-        .arg(program)
+    let mut cmd = Command::new("git");
+    cmd.arg(program)
         .arg(bare)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
+        .kill_on_drop(true);
+    if let Some(pairs) = protection_env {
+        for (k, v) in pairs {
+            cmd.env(k, v);
+        }
+    }
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("spawn git {program}: {e}"))?;
 
@@ -240,4 +255,141 @@ pub async fn write_git_stderr_deny(
         .await;
     let _ = handle.eof(channel).await;
     let _ = handle.close(channel).await;
+}
+
+/// Map forge capability to `OCTANEST_ACTOR_CAPABILITY` (D-PKG-01 / Smart HTTP).
+pub fn capability_env_label(capability: Option<Capability>) -> &'static str {
+    match capability {
+        Some(Capability::Admin) => "admin",
+        Some(Capability::Write) => "write",
+        Some(Capability::Read) | None => "read",
+    }
+}
+
+/// Env pairs injected into `git receive-pack` for protection hooks (D-PKG-01).
+/// Upload-pack must not require these — callers pass `None` into [`run_pack_command`].
+pub fn receive_pack_protection_env(
+    database_url: &str,
+    repos_dir: &Path,
+    actor_capability: &str,
+    helper: Option<&str>,
+    octanest_env: Option<&str>,
+) -> Vec<(String, String)> {
+    let mut out = Vec::with_capacity(5);
+    out.push((
+        "OCTANEST_DATABASE_URL".into(),
+        database_url.to_string(),
+    ));
+    out.push((
+        "OCTANEST_REPOS_DIR".into(),
+        repos_dir.display().to_string(),
+    ));
+    out.push((
+        "OCTANEST_ACTOR_CAPABILITY".into(),
+        actor_capability.to_string(),
+    ));
+    if let Some(h) = helper.filter(|s| !s.is_empty()) {
+        out.push(("OCTANEST_PROTECTION_HELPER".into(), h.to_string()));
+    }
+    if let Some(env_name) = octanest_env.filter(|s| !s.is_empty()) {
+        out.push(("OCTANEST_ENV".into(), env_name.to_string()));
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn capability_env_label_maps_admin_write_read() {
+        assert_eq!(
+            capability_env_label(Some(Capability::Admin)),
+            "admin",
+            "Admin must map to OCTANEST_ACTOR_CAPABILITY=admin (D-PKG-01)"
+        );
+        assert_eq!(capability_env_label(Some(Capability::Write)), "write");
+        assert_eq!(capability_env_label(Some(Capability::Read)), "read");
+        assert_eq!(capability_env_label(None), "read");
+    }
+
+    #[test]
+    fn receive_pack_protection_env_sets_all_five_keys() {
+        let vars = receive_pack_protection_env(
+            "sqlite:/tmp/octanest.db",
+            Path::new("/var/repos"),
+            "admin",
+            Some("/usr/local/bin/octanest-protection-hook"),
+            Some("compose"),
+        );
+        let map: HashMap<&str, &str> = vars
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        assert_eq!(
+            map.get("OCTANEST_PROTECTION_HELPER").copied(),
+            Some("/usr/local/bin/octanest-protection-hook"),
+            "receive-pack must set OCTANEST_PROTECTION_HELPER"
+        );
+        assert_eq!(
+            map.get("OCTANEST_DATABASE_URL").copied(),
+            Some("sqlite:/tmp/octanest.db")
+        );
+        assert_eq!(
+            map.get("OCTANEST_REPOS_DIR").copied(),
+            Some("/var/repos")
+        );
+        assert_eq!(
+            map.get("OCTANEST_ACTOR_CAPABILITY").copied(),
+            Some("admin")
+        );
+        assert_eq!(map.get("OCTANEST_ENV").copied(), Some("compose"));
+    }
+
+    #[test]
+    fn receive_pack_protection_env_omits_helper_when_none() {
+        let vars = receive_pack_protection_env(
+            "postgres://x",
+            Path::new("/repos"),
+            "write",
+            None,
+            Some("production"),
+        );
+        let map: HashMap<&str, &str> = vars
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        assert!(
+            !map.contains_key("OCTANEST_PROTECTION_HELPER"),
+            "helper key omitted when unresolved (mirror Smart HTTP)"
+        );
+        assert_eq!(map.get("OCTANEST_ACTOR_CAPABILITY").copied(), Some("write"));
+        assert_eq!(map.get("OCTANEST_ENV").copied(), Some("production"));
+        assert_eq!(map.get("OCTANEST_DATABASE_URL").copied(), Some("postgres://x"));
+        assert_eq!(map.get("OCTANEST_REPOS_DIR").copied(), Some("/repos"));
+    }
+
+    #[test]
+    fn authz_allow_carries_capability_for_actor_env() {
+        // Structural contract: Allow must expose capability for OCTANEST_ACTOR_CAPABILITY.
+        let allow = AuthzDecision::Allow {
+            bare: PathBuf::from("/tmp/r.git"),
+            repo_id: "rid".into(),
+            owner_slug: "o".into(),
+            repo_name: "n".into(),
+            is_push: true,
+            capability: Some(Capability::Admin),
+        };
+        match allow {
+            AuthzDecision::Allow { capability, .. } => {
+                assert_eq!(
+                    capability_env_label(capability),
+                    "admin",
+                    "Allow.capability must feed actor capability env"
+                );
+            }
+            AuthzDecision::Deny { .. } => panic!("expected Allow"),
+        }
+    }
 }

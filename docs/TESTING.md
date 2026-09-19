@@ -243,6 +243,7 @@ Octanest Cloud (Railway IaC + Caddy gateway) is **not** exercised in PR CI — s
 | `make smoke-git-ssh` | TCP `OCTANEST_SSH_PORT` (2222); optional scp-style ls-remote/push | Needs SSH-enabled Compose API |
 | `make smoke-git-lfs` | `.git/info/lfs` batch routing not SPA; optional git-lfs client | `SMOKE_SKIP_LFS_CLIENT=1` for routing-only |
 | `make smoke-packages` | `/v2` `/npm` `/generic` PathPrefix → API | Needs running Compose API |
+| `make smoke-protection` | API image ships `octanest-protection-hook`; HTTPS push to reviews-required protected branch denied (**ORG-06** / **D-PKG-03**) | Fresh Compose up (wipes volumes); `scripts/compose-smoke-protection.sh` |
 | `make smoke-protocol-ci` | All four fail-closed against a fresh Compose up | Same entrypoint as CI `smoke-protocol` |
 
 Locally without Docker, individual `make smoke-git-*` / `smoke-packages` may skip (exit 0). Under `CI=true` or `SMOKE_REQUIRE_STACK=1`, those skips become failures.

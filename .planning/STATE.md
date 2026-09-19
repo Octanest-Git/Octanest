@@ -1,47 +1,44 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Actions & Runners
-current_plan: 12
-status: complete
-stopped_at: Completed Phase 19 (19-00…19-11)
-last_updated: "2026-09-16T20:30:00.000Z"
-last_activity: 2026-09-16
-last_activity_desc: Phase 19 Actions & Runners complete (12/12 plans) on cursor/phase-19-actions-runners-c82f
-state_head: 8fb5cfe669142d09ff6484c51426c47e0b83d1fc
+milestone_name: MVP
+current_plan: 10
+status: Awaiting next milestone
+stopped_at: Phase 22.1 complete — all phases complete
+last_updated: "2026-09-19T18:17:37.965Z"
+last_activity: 2026-09-19
+last_activity_desc: Milestone v1.0 completed and archived
+state_head: a1b642f044b7bf3da7d1d49b2c97203454eee0a5
 progress:
-  total_phases: 23
-  completed_phases: 1
-  total_plans: 210
-  completed_plans: 210
-milestone_name: milestone
-current_phase: 19
+  total_phases: 24
+  completed_phases: 19
+  total_plans: 220
+  completed_plans: 220
+  percent: 79
+current_phase: "22.1"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-09)
+See: .planning/PROJECT.md (updated 2026-09-19 after v1.0)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase **19** Actions & Runners **complete** merged into `cursor/gsd-remaining-integrate-c82f` (umbrella #16 → main pending CI)
+**Current focus:** Planning next milestone (`/gsd-new-milestone`)
 
 ## Current Position
 
-Phase: **19** — Actions & Runners (**complete** — 12/12 plans)
-Current Plan: 12 / 12
-Total Plans in Phase: 12
-Status: Phase 19 complete (ACT-01…07) and merged to integrate.
-Last activity: 2026-09-16 — protoc CI/Docker + route-coverage for Actions settings/admin runners
-
-See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-actions-runners-c82f`
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-19 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 91
+- Total plans completed: 101
 - Average duration: —
 - Total execution time: —
 
@@ -58,6 +55,7 @@ See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-acti
 | 08 | 14 | - | - |
 | 07 | 22 | - | - |
 | 10 | 14 | - | - |
+| 22.1 | 10 | - | - |
 
 **Recent Trend:**
 
@@ -172,6 +170,16 @@ See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-acti
 | Phase 19 P09 | 35min | 3 tasks | 15 files |
 | Phase 19 P10 | 90 | 3 tasks | - files |
 | Phase 19 P11 | 20min | 2 tasks | 6 files |
+| Phase 22.1 P05 | 2min | 3 tasks | 3 files |
+| Phase 22.1 P06 | 2min | 3 tasks | 3 files |
+| Phase 22.1 P07 | 2min | 3 tasks | 3 files |
+| Phase 22.1 P09 | 5min | 2 tasks | 4 files |
+| Phase 22.1 P01 | 15min | 3 tasks | 11 files |
+| Phase 22.1 P02 | 10min | 2 tasks | 3 files |
+| Phase 22.1 P03 | 12min | 2 tasks | 5 files |
+| Phase 22.1 P04 | 5min | 2 tasks | 4 files |
+| Phase 22.1 P08 | 6 min | 2 tasks | 2 files |
+| Phase 22.1 P10 | 3min | 3 tasks | 4 files |
 
 # Project State
 
@@ -180,19 +188,17 @@ See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-acti
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
+**Current focus:** Phase 22.1 — v1.0 milestone closure (hygiene finishing; integrate track closed)
 
 ## Current Position
 
-Phase: 12 — Pull Requests (discuss)
-Current Plan: —
-Total Plans in Phase: 8
-Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
-Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
+Phase: 22.1 (v1.0 milestone closure) — EXECUTING plan 10
+Current Plan: 10
+Total Plans in Phase: 10
+Status: Remaining-phases integrate (`cursor/gsd-remaining-integrate-c82f`) merged to `main` (PR #16, 2026-09-16). Phase 22.1 hygiene (D-HYG-01…05) completing; WINDOWS open_count 2 (coverage floor + CI llvm-cov skip retained).
+Last activity: 2026-09-19 — Phase 22.1 plan 10 STATE / parallel-tracks refresh
 
-Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
-
-See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
+See also: `.planning/ROADMAP.md` · `.planning/parallel-tracks/README.md` · `.planning/v1.0-MILESTONE-AUDIT.md`
 
 ## Performance Metrics
 
@@ -566,6 +572,25 @@ Recent decisions affecting current work:
 - [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
 - [Phase 22]: Cloud gateway is Caddy file-config; forge-data volume at /var; human-only railway apply
 - [Phase 22]: Phase 22 VALIDATION marks live Railway apply as human-verify only
+- [Phase 22.1]: 22.1-05: Phases 01–03 VERIFICATION marked passed with caveats (D-VER-03); PLAT checkbox flips deferred to 22.1-10
+- [Phase 22.1]: 22.1-05: PLAT-08 empty/adjacency/ordering documented from Make smoke-* and CI db-matrix separate legs
+- [Phase 22.1]: Mark all three VERIFICATIONs passed with caveats — SUMMARYs/VALIDATION/UAT support phase goals (D-VER-03) — Evidence backfill sufficient; residual WINDOWS coverage floor stays open
+- [Phase 22.1]: Keep WINDOWS coverage-floor residuals open and cited as caveats (do not waive) — Plan forbids waiving WINDOWS in this backfill
+- [Phase 22.1]: 22.1-07: VERIFICATION passed+caveats for phases 17/18/21 (D-VER-03); WINDOWS 55-58 cited not waived; clone_bare hooks deferred to 22.1-02
+- [Phase 22.1]: Nyquist compliant only after live nextest/vitest + green task maps (D-VER-02) — Threat T-22.1-04 forbids hand-faked nyquist_compliant
+- [Phase 22.1]: Phase 15 draft Wave 0 VALIDATION map was documentation drift, not missing coverage — Greened release/transfer tests already on disk; map reconciled during validate-phase
+- [Phase 22.1]: Sibling make smoke-protection with enforce_admins for ORG-06 Compose denial proof
+- [Phase 22.1]: Smart HTTP resolve_protection_helper_with(env, default_helper_path) + OCTANEST_ENV CGI re-inject
+- [Phase 22.1]: Reuse repo.fork_failed + compensate for clone_bare hook-install failure
+- [Phase 22.1]: Force hook-install failure in tests via GIT_TEMPLATE_DIR hooks-as-file
+- [Phase 22.1]: SSH receive-pack uses receive_pack_protection_env (helper/DB/repos/capability/ENV); upload-pack unchanged
+- [Phase 22.1]: Compose protection smoke SSH denial when TCP 2222 up; skip via SMOKE_SKIP_LS_REMOTE without failing HTTPS
+- [Phase 22.1]: Boot sweep uses install_hooks overwrite (never reconcile-only) so D-PKG-02 upgrades land on existing bares
+- [Phase 22.1]: Per-repo sweep install failures are logged/counted; API listen continues
+- [Phase 22.1]: 22.1-08: Phase 13/22 thorough VERIFICATION passed after ORG-06 packaging (live smoke + CI/IaC) — D-VER-04 rigor; D-VER-03 forbids human_needed
+- [Phase 22.1]: 22.1-10: Flip PLAT only after VERIFICATION passed; leave ORG-06 [x]
+- [Phase 22.1]: 22.1-10: Waive obsolete Wave 0 WINDOWS stubs; keep coverage floor (53) and CI llvm-cov skip (54)
+- [Phase 22.1]: 22.1-10: parallel-tracks integrate closed after PR #16 merge to main
 
 ### Pending Todos
 
@@ -574,6 +599,10 @@ Recent decisions affecting current work:
 ### Blockers/Concerns
 
 None. Phase 7 planning should assume Query session cache + Octane `.tsrx` + decisions in `07-CONTEXT.md` (including GIT-09 amendment).
+
+### Roadmap Evolution
+
+- Phase 22.1 inserted after Phase 22: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (URGENT)
 
 ## Deferred Items
 
@@ -587,8 +616,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T20:29:31.437Z
-Stopped at: Completed Phase 19 (19-00…19-11)
+Last session: 2026-09-19T16:41:29.701Z
+Stopped at: Phase 22.1 complete — all phases complete
 Resume file: None
 
 ## Accumulated Context
@@ -803,3 +832,7 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 Last session: 2026-09-14T02:09:39.092Z
 Stopped at: Phase 10 complete, ready to plan Phase 9
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

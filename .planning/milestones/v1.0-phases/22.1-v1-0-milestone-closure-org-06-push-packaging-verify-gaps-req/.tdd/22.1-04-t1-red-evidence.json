@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-api --test branch_protect_push sweep_protection_hooks_installs_missing_hooks -- --exact --nocapture",
+  "exitCode": 101,
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s\n     Running tests/branch_protect_push.rs (target/debug/build/octanest-api/49a50539de2589a4/out/branch_protect_push-49a50539de2589a4)\n\nrunning 1 test\n\nthread 'sweep_protection_hooks_installs_missing_hooks' (754757) panicked at crates/octanest-api/tests/branch_protect_push.rs:423:5:\nsweep must install hooks/update on bare without hooks (D-PKG-04)\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest sweep_protection_hooks_installs_missing_hooks ... FAILED\n\nfailures:\n\nfailures:\n    sweep_protection_hooks_installs_missing_hooks\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p octanest-api --test branch_protect_push`\n\nnot ok 1 - sweep_protection_hooks_installs_missing_hooks\n  ---\n  message: \"sweep must install hooks/update on bare without hooks (D-PKG-04)\"\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n",
+  "targetTest": "sweep_protection_hooks_installs_missing_hooks",
+  "targetFile": "crates/octanest-api/tests/branch_protect_push.rs",
+  "expected": "Bare under temp repos_dir without hooks becomes hooks_installed after sweep (D-PKG-04)",
+  "actual": "sweep_protection_hooks RED stub returned default stats; hooks/update still missing"
+}

@@ -56,9 +56,18 @@ macro_rules! flag_col {
 macro_rules! map_rule {
     ($row:expr) => {{
         let row = $row;
-        let count: i64 = row
-            .try_get("required_approving_review_count")
-            .map_err(|e| format!("rule review count: {e}"))?;
+        // Postgres INTEGER is INT4; SQLite INTEGER often decodes as i64.
+        let count: i32 = match row.try_get::<i32, _>("required_approving_review_count") {
+            Ok(v) => v,
+            Err(_) => {
+                let n: i64 = row
+                    .try_get("required_approving_review_count")
+                    .map_err(|e| format!("rule review count: {e}"))?;
+                i32::try_from(n).map_err(|_| {
+                    format!("rule review count out of range: {n}")
+                })?
+            }
+        };
         BranchProtectionRuleRow {
             id: row.try_get("id").map_err(|e| format!("rule id: {e}"))?,
             repo_id: row
@@ -68,7 +77,7 @@ macro_rules! map_rule {
                 .try_get("pattern")
                 .map_err(|e| format!("rule pattern: {e}"))?,
             require_reviews: flag_col!(row, "require_reviews"),
-            required_approving_review_count: count as i32,
+            required_approving_review_count: count,
             dismiss_stale_reviews: flag_col!(row, "dismiss_stale_reviews"),
             require_conversation_resolution: flag_col!(row, "require_conversation_resolution"),
             require_last_push_approval: flag_col!(row, "require_last_push_approval"),

@@ -10,7 +10,8 @@ use http_body_util::BodyExt;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::git::bare_repo_path;
 use octanest_api::protection::{
-    check_ref_update, hooks_installed, reconcile_hooks, ProtectionIntent, ZERO_SHA,
+    check_ref_update, hooks_installed, reconcile_hooks, sweep_protection_hooks, ProtectionIntent,
+    ZERO_SHA,
 };
 use octanest_api::repo::Capability;
 use octanest_api::{build_cors, router_with_state, AppState};
@@ -250,4 +251,252 @@ async fn branch_protect_push_reconcile_hooks() {
     reconcile_hooks(&bare).await.expect("reconcile");
     assert!(hooks_installed(&bare).await);
     let _ = ZERO_SHA;
+}
+
+/// D-PKG-01: env helper path wins; empty/unset falls back to default_helper_path input.
+#[test]
+fn branch_protect_default_helper_resolution_prefers_env() {
+    use octanest_api::protection::resolve_protection_helper_with;
+    use std::path::PathBuf;
+
+    let preferred = resolve_protection_helper_with(
+        Some("/from/env/octanest-protection-hook".into()),
+        Some(PathBuf::from("/from/sibling/octanest-protection-hook")),
+    );
+    assert_eq!(
+        preferred.as_deref(),
+        Some("/from/env/octanest-protection-hook")
+    );
+
+    let fallback = resolve_protection_helper_with(
+        None,
+        Some(PathBuf::from("/from/sibling/octanest-protection-hook")),
+    );
+    assert_eq!(
+        fallback.as_deref(),
+        Some("/from/sibling/octanest-protection-hook")
+    );
+}
+
+/// Invoke installed hooks/update with ref args under a given OCTANEST_ENV / helper.
+async fn run_protection_hook_script(
+    bare: &std::path::Path,
+    octanest_env: Option<&str>,
+    helper: Option<&std::path::Path>,
+) -> std::process::Output {
+    let update = bare.join("hooks").join("update");
+    let mut cmd = tokio::process::Command::new(&update);
+    cmd.args([
+        "refs/heads/main",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    ])
+    .env_remove("OCTANEST_PROTECTION_HELPER");
+    match octanest_env {
+        Some(v) => {
+            cmd.env("OCTANEST_ENV", v);
+        }
+        None => {
+            cmd.env_remove("OCTANEST_ENV");
+        }
+    }
+    if let Some(h) = helper {
+        cmd.env("OCTANEST_PROTECTION_HELPER", h);
+    }
+    cmd.output().await.expect("spawn hooks/update")
+}
+
+/// D-PKG-02: missing helper + production|cloud → fail-closed (non-zero).
+#[tokio::test]
+async fn protection_hook_script_fail_closed_when_helper_missing_in_production() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("prod.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    for env_name in ["production", "cloud"] {
+        let out = run_protection_hook_script(&bare, Some(env_name), None).await;
+        assert!(
+            !out.status.success(),
+            "OCTANEST_ENV={env_name} must deny when helper missing — stderr={}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(
+            stderr.contains("protection helper") || stderr.contains("OCTANEST"),
+            "stderr should explain missing helper — {stderr}"
+        );
+    }
+}
+
+/// D-PKG-02: missing helper + compose|development|dev (or default) → fail-open.
+#[tokio::test]
+async fn protection_hook_script_fail_open_when_helper_missing_in_dev() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("dev.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    for env_name in [Some("compose"), Some("development"), Some("dev"), None] {
+        let out = run_protection_hook_script(&bare, env_name, None).await;
+        assert!(
+            out.status.success(),
+            "OCTANEST_ENV={env_name:?} must fail-open when helper missing — stderr={}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+}
+
+/// D-PKG-02: executable helper is exec'd with ref args.
+#[tokio::test]
+async fn protection_hook_script_execs_helper_when_present() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("helper.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    let marker = dir.path().join("helper-ran");
+    let helper = dir.path().join("fake-helper.sh");
+    let script = format!(
+        "#!/bin/sh\necho \"$1 $2\" > {}\nexit 0\n",
+        marker.display()
+    );
+    std::fs::write(&helper, script).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&helper).unwrap().permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&helper, perms).unwrap();
+    }
+
+    let out = run_protection_hook_script(&bare, Some("production"), Some(&helper)).await;
+    assert!(
+        out.status.success(),
+        "helper exec must succeed — stderr={}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let ran = std::fs::read_to_string(&marker).expect("helper marker");
+    assert!(
+        ran.contains("update refs/heads/main"),
+        "helper must receive update + refname — {ran}"
+    );
+}
+
+/// Minimal bare layout under `repos_dir/owner/name.git` (HEAD + objects).
+async fn make_sweep_bare(
+    repos: &std::path::Path,
+    owner: &str,
+    name: &str,
+) -> std::path::PathBuf {
+    let bare = repos.join(owner).join(format!("{name}.git"));
+    tokio::fs::create_dir_all(bare.join("objects"))
+        .await
+        .unwrap();
+    tokio::fs::create_dir_all(bare.join("refs/heads"))
+        .await
+        .unwrap();
+    tokio::fs::write(bare.join("HEAD"), b"ref: refs/heads/main\n")
+        .await
+        .unwrap();
+    bare
+}
+
+/// D-PKG-04: bare without hooks becomes hooks_installed after sweep.
+#[tokio::test]
+async fn sweep_protection_hooks_installs_missing_hooks() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let bare = make_sweep_bare(&repos, "alice", "core").await;
+    assert!(
+        !hooks_installed(&bare).await,
+        "fixture must start without hooks"
+    );
+
+    let stats = sweep_protection_hooks(&repos).await;
+    assert!(
+        hooks_installed(&bare).await,
+        "sweep must install hooks/update on bare without hooks (D-PKG-04)"
+    );
+    assert!(
+        stats.installed >= 1,
+        "stats.installed must count the install — {stats:?}"
+    );
+    assert_eq!(stats.errors, 0, "clean install must not error — {stats:?}");
+}
+
+/// D-PKG-04: outdated hook script is overwritten (install, not reconcile-skip).
+#[tokio::test]
+async fn sweep_protection_hooks_overwrites_outdated_hook() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let bare = make_sweep_bare(&repos, "bob", "legacy").await;
+    let hooks = bare.join("hooks");
+    tokio::fs::create_dir_all(&hooks).await.unwrap();
+    let update = hooks.join("update");
+    // Stale fail-open-only script (pre-D-PKG-02) — must be overwritten.
+    tokio::fs::write(
+        &update,
+        b"#!/bin/sh\n# STALE_PRE_DPKG02_HOOK\nexit 0\n",
+    )
+    .await
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = tokio::fs::metadata(&update).await.unwrap().permissions();
+        perms.set_mode(0o755);
+        tokio::fs::set_permissions(&update, perms).await.unwrap();
+    }
+    assert!(hooks_installed(&bare).await);
+
+    let stats = sweep_protection_hooks(&repos).await;
+    let body = tokio::fs::read_to_string(&update)
+        .await
+        .expect("hooks/update after sweep");
+    assert!(
+        !body.contains("STALE_PRE_DPKG02_HOOK"),
+        "sweep must overwrite stale script — {body}"
+    );
+    assert!(
+        body.contains("D-PKG-02") || body.contains("protection helper"),
+        "overwrite must install known-good packaged script — {body}"
+    );
+    assert!(
+        stats.installed >= 1,
+        "overwrite counts as install — {stats:?}"
+    );
+}
+
+/// D-PKG-04: non-bare entries are skipped without panic.
+#[tokio::test]
+async fn sweep_protection_hooks_skips_non_bare() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let not_bare = repos.join("carol").join("notes.git");
+    tokio::fs::create_dir_all(&not_bare).await.unwrap();
+    tokio::fs::write(not_bare.join("README"), b"not a bare repo\n")
+        .await
+        .unwrap();
+    // Loose file under owner (not a repo dir).
+    tokio::fs::write(repos.join("carol").join("readme.txt"), b"x")
+        .await
+        .unwrap();
+
+    let stats = sweep_protection_hooks(&repos).await;
+    assert!(
+        !hooks_installed(&not_bare).await,
+        "non-bare must not get hooks forced"
+    );
+    assert_eq!(stats.errors, 0, "skip must not count as error — {stats:?}");
+    assert!(
+        stats.skipped >= 1 || stats.scanned == 0,
+        "non-bare should be skipped or not scanned as bare — {stats:?}"
+    );
 }

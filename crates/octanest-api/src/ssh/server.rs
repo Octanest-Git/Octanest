@@ -174,6 +174,7 @@ impl Handler for SshHandler {
                 owner_slug,
                 repo_name,
                 is_push,
+                capability,
             } => {
                 let program = match &cmd {
                     PackCommand::UploadPack { .. } => "upload-pack",
@@ -189,6 +190,7 @@ impl Handler for SshHandler {
                 let repos_dir = self.state.repos_dir.clone();
                 let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
                 let user_id = user_id.clone();
+                let actor_capability = pack::capability_env_label(capability);
                 tokio::spawn(async move {
                     let git: std::sync::Arc<dyn octanest_git::GitBackend> =
                         std::sync::Arc::new(octanest_git::CliGitBackend::new());
@@ -202,10 +204,37 @@ impl Handler for SshHandler {
                     let writer = ch.make_writer();
                     let stderr_writer = ch.make_writer_ext(Some(1));
                     let reader = ch.make_reader();
-                    let code =
-                        pack::run_pack_command(program, &bare, reader, writer, stderr_writer)
-                            .await
-                            .unwrap_or(1);
+                    // D-PKG-01: receive-pack gets helper/DB/repos/capability/ENV for hooks.
+                    let protection_pairs = if is_push {
+                        let db_url = std::env::var("OCTANEST_DATABASE_URL")
+                            .or_else(|_| std::env::var("DATABASE_URL"))
+                            .unwrap_or_default();
+                        let helper = crate::protection::resolve_protection_helper();
+                        let octanest_env = std::env::var("OCTANEST_ENV").ok();
+                        if db_url.is_empty() {
+                            None
+                        } else {
+                            Some(pack::receive_pack_protection_env(
+                                &db_url,
+                                &repos_dir,
+                                actor_capability,
+                                helper.as_deref(),
+                                octanest_env.as_deref(),
+                            ))
+                        }
+                    } else {
+                        None
+                    };
+                    let code = pack::run_pack_command(
+                        program,
+                        &bare,
+                        reader,
+                        writer,
+                        stderr_writer,
+                        protection_pairs.as_deref(),
+                    )
+                    .await
+                    .unwrap_or(1);
                     if code == 0 && is_push {
                         if let Ok(Some(user)) = db.find_user_by_id(&user_id).await {
                             let after_refs = git.list_refs(&bare).await.unwrap_or_default();
