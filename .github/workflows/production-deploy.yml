@@ -1,0 +1,120 @@
+# Manual promote / rollback for Railway production (api, web, gateway).
+# Does not Sync environments or mutate variables — deploys a commit SHA or
+# rolls back to the previous canRollback deployment per service.
+#
+# Setup (once per repo):
+#   1. Reuse GitHub Environment `Octanest / production` (or create it)
+#   2. Add secret RAILWAY_TOKEN (project/account token with deploy rights)
+#   3. Optional: enable required reviewers on the environment
+#
+# Run: Actions → Production deploy → Run workflow
+
+name: Production deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: promote a commit, or rollback each service
+        required: true
+        type: choice
+        options:
+          - promote
+          - rollback
+        default: promote
+      commit_sha:
+        description: Commit SHA to promote (empty = origin/main HEAD). Ignored for rollback.
+        required: false
+        type: string
+        default: ""
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    name: ${{ inputs.action }} production
+    runs-on: ubuntu-latest
+    environment: Octanest / production
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_PROJECT_ID: cec803d0-289b-4078-80cf-7291c16fc5ec
+      RAILWAY_ENVIRONMENT_ID: b1c33c22-90ce-433b-99f6-864656512115
+      RAILWAY_SERVICE_API_ID: 19bf0a47-2fdf-4130-b6b0-858de92cb858
+      RAILWAY_SERVICE_WEB_ID: 26b7e1b6-6cfa-4c7e-942a-bed8e5ce12a2
+      RAILWAY_SERVICE_GATEWAY_ID: 864fa81c-6e5d-4939-b33b-85eb435365ac
+      OCTANEST_PRODUCTION_HEALTH_URL: https://octanest.jereko.dev/health
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch main
+        run: git fetch origin main:refs/remotes/origin/main
+
+      - name: Install jq
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq jq
+
+      - name: Require RAILWAY_TOKEN
+        run: |
+          if [[ -z "${RAILWAY_TOKEN:-}" ]]; then
+            echo "RAILWAY_TOKEN is not set on the GitHub Environment \`Octanest / production\`." >&2
+            exit 1
+          fi
+
+      - name: Resolve promote SHA
+        id: sha
+        if: inputs.action == 'promote'
+        run: |
+          set -euo pipefail
+          INPUT="${{ inputs.commit_sha }}"
+          if [[ -z "${INPUT// }" ]]; then
+            SHA="$(git rev-parse origin/main)"
+            echo "Using origin/main HEAD: ${SHA}"
+          else
+            SHA="$(git rev-parse "${INPUT}^{commit}")"
+            echo "Using input commit: ${SHA}"
+          fi
+          if ! git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "Refuse: ${SHA} is not an ancestor of origin/main" >&2
+            exit 1
+          fi
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Require CI success on SHA
+        if: inputs.action == 'promote'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          RUNS_JSON="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${SHA}&per_page=30" \
+            --jq '[.workflow_runs[] | select(.name=="CI") | {id,status,conclusion,html_url}]')"
+          echo "$RUNS_JSON" | jq .
+          COUNT="$(echo "$RUNS_JSON" | jq 'length')"
+          if [[ "$COUNT" == "0" ]]; then
+            echo "No CI workflow runs found for ${SHA}" >&2
+            exit 1
+          fi
+          # Newest CI run must be completed successfully.
+          STATUS="$(echo "$RUNS_JSON" | jq -r '.[0].status')"
+          CONCLUSION="$(echo "$RUNS_JSON" | jq -r '.[0].conclusion // empty')"
+          if [[ "$STATUS" != "completed" || "$CONCLUSION" != "success" ]]; then
+            echo "Latest CI run for ${SHA} is status=${STATUS} conclusion=${CONCLUSION}" >&2
+            exit 1
+          fi
+          echo "CI success confirmed for ${SHA}"
+
+      - name: Promote
+        if: inputs.action == 'promote'
+        run: bash scripts/railway-production-deploy.sh promote "${{ steps.sha.outputs.sha }}"
+
+      - name: Rollback
+        if: inputs.action == 'rollback'
+        run: bash scripts/railway-production-deploy.sh rollback

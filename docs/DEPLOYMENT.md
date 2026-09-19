@@ -35,7 +35,7 @@ Cloud deploys the **same** `crates/octanest-api/Dockerfile` and `apps/web/Docker
 |-------------|------|----------------|
 | `preview` | Base for Railway **PR Environments** (ephemeral per-PR copies) | Autodeploy off |
 | `staging` | Always-on integration | Autodeploy from `main` + Wait for CI |
-| `production` | Live | Autodeploy off; promote from staging |
+| `production` | Live | Autodeploy off; promote via GitHub Action |
 
 PR Environments inherit from **`preview`** (Project Settings → Environments). Only authors who are Railway project members with GitHub linked get automatic PR deploys. Invite future collaborators as project **Viewer** (or higher) and have them link GitHub. Keep Bot PR Environments off unless you want Dependabot-style previews.
 
@@ -60,17 +60,25 @@ Focused PR Environments (optional but recommended for this monorepo): enable in 
 8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=false`. For first boot of an environment, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
 9. Confirm `GET https://<domain>/health` and browser `/`.
 
-#### Promote staging → production
+#### Promote / rollback production
 
-1. Validate the commit on staging.
-2. On the production canvas: **Sync** from staging, or deploy that known-good commit without enabling autodeploy.
-3. Review staged changes → Deploy; re-check production-only secrets and origins.
+Do **not** use Railway Environment Sync to promote: Sync copies service **variables** and can overwrite production origins (`OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_CORS_ORIGINS`, `OCTANEST_ENV`, etc.) with staging values.
+
+**Primary path — GitHub Action “Production deploy”** ([`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml)):
+
+1. Validate the commit on **staging** (autodeploys from `main` + Wait for CI).
+2. Repo → **Actions** → **Production deploy** → **Run workflow**:
+   - `action=promote` — deploys a commit SHA to production `api`, `web`, and `gateway` (default SHA = `main` HEAD; optional override). Requires a successful **CI** run on that SHA. Does not mutate Railway variables.
+   - `action=rollback` — Railway `deploymentRollback` to the previous `canRollback` deployment on each of those services (restores that deployment’s image; Railway may also restore that deployment’s custom variables).
+3. Confirm `GET https://octanest.jereko.dev/health`.
+
+**One-time GitHub setup:** On Environment [`Octanest / production`](https://github.com/Octanest-Git/Octanest/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`.
+
+**Avoid:** Sync staging → production unless you carefully reject variable diffs in staged changes.
 
 **Volumes (D-CLOUD-04):** `forge-data` mounts at `/var` on `api` (repos, lfs, packages, release-assets, uploads, ssh host keys as subdirs — same paths as Compose). Each environment has its own volume and database.
 
 **Git (D-CLOUD-08):** HTTPS Smart HTTP through the gateway is the always-on cloud clone path. Optional TCP publish for `OCTANEST_SSH_PORT` (2222) on `api` when the host supports it — do not route SSH through the HTTP gateway.
-
-**Rollback:** Railway → previous successful deployment for `gateway` / `api` / `web`, or `railway redeploy` of a known-good revision after `git checkout` of that commit.
 
 See [`.railway/README.md`](../.railway/README.md) and [`deploy/cloud/README.md`](../deploy/cloud/README.md).
 
