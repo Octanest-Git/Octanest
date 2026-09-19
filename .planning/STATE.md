@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
-Current Plan: 6
+Current Plan: 10
 Total Plans in Phase: 10
-Status: Ready to execute
-Last activity: 2026-09-19 — Phase 22.1 execution started
+Status: Hygiene complete (PLAT flips, WINDOWS open_count 55→2, parallel-tracks closed); next: plan SUMMARY → `/gsd-verify-work` / re-audit → milestone close
+Last activity: 2026-09-19 — Phase 22.1 plan 10 hygiene (D-HYG-01…05)
 
-See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/`
+See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/` · `.planning/parallel-tracks/README.md`
 
 ## Performance Metrics
 
@@ -189,19 +189,17 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 12 — Pull Requests (discuss in progress; integration branch `feat/forge-core` awaiting ship)
+**Current focus:** Phase 22.1 — v1.0 milestone closure (hygiene finishing; integrate track closed)
 
 ## Current Position
 
-Phase: 12 — Pull Requests (discuss)
-Current Plan: —
-Total Plans in Phase: 8
-Status: Phases 11, 14, 15, 20 verified + merged on `feat/forge-core`; discuss Area 1 locked; pause for CI + `/gsd-ship`
-Last activity: 2026-09-14 — Docs refresh for pre-ship; CI fixes for MySQL TEXT / web Settings / e2e load / link jobs
+Phase: 22.1 (v1.0 milestone closure) — EXECUTING plan 10
+Current Plan: 10
+Total Plans in Phase: 10
+Status: Remaining-phases integrate (`cursor/gsd-remaining-integrate-c82f`) merged to `main` (PR #16, 2026-09-16). Phase 22.1 hygiene (D-HYG-01…05) completing; WINDOWS open_count 2 (coverage floor + CI llvm-cov skip retained).
+Last activity: 2026-09-19 — Phase 22.1 plan 10 STATE / parallel-tracks refresh
 
-Completed on forge-core (verification `passed` + UAT closed where needed): **11 Issues**, **14 Git LFS**, **15 Releases & Transfer**, **20 Packages Registry**.
-
-See also: `.planning/ROADMAP.md` · `.planning/phases/12-pull-requests/12-DISCUSS-CHECKPOINT.json`
+See also: `.planning/ROADMAP.md` · `.planning/parallel-tracks/README.md` · `.planning/v1.0-MILESTONE-AUDIT.md`
 
 ## Performance Metrics
 
