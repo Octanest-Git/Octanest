@@ -1,0 +1,82 @@
+{
+  "phase": "12",
+  "phase_name": "Pull Requests",
+  "timestamp": "2026-09-15T18:32:00+02:00",
+  "areas_completed": [
+    "PR identity & forks",
+    "Review model",
+    "Line comments & diff UX",
+    "Merge strategies",
+    "Closing keywords",
+    "UI chrome & list"
+  ],
+  "areas_remaining": [],
+  "decisions": {
+    "PR identity & forks": [
+      {
+        "question": "Where can a PR head come from?",
+        "answer": "Same-repo and fork PRs (GitHub/Gitea parity)"
+      },
+      {
+        "question": "How are PR numbers assigned?",
+        "answer": "Shared per-repo #N with issues (GitHub-style)"
+      },
+      {
+        "question": "Cross-fork head rules?",
+        "answer": "Head must be fork of this repo or same-repo branch; base on this repo"
+      },
+      {
+        "question": "Updating head after open?",
+        "answer": "Allow force-push head and change base; mark outdated line comments"
+      }
+    ],
+    "Review model": [
+      {
+        "question": "Who can approve / request changes?",
+        "answer": "Write+ (GitHub classic); author cannot Approve own PR"
+      },
+      {
+        "question": "Requested reviewers / merge gate?",
+        "answer": "Optional requests only; no required-approval merge gate until Phase 13"
+      }
+    ],
+    "Line comments & diff UX": [
+      {
+        "question": "Diff / comments UX?",
+        "answer": "Conversation|Commits|Files; unified+split; line+multiline comments; resolve threads; outdated on force-push"
+      }
+    ],
+    "Merge strategies": [
+      {
+        "question": "Merge methods?",
+        "answer": "merge commit / squash / rebase; per-repo enable toggles; defaults all on"
+      }
+    ],
+    "Closing keywords": [
+      {
+        "question": "When do fixes/closes apply?",
+        "answer": "On merge to default branch from PR body + commits; replace pr_stub with real PRs"
+      }
+    ],
+    "UI chrome & list": [
+      {
+        "question": "Chrome / list?",
+        "answer": "Pulls tab in layout RepoChrome; Open/Closed/All + filters; compare → open PR"
+      }
+    ]
+  },
+  "deferred_ideas": [
+    "CODEOWNERS",
+    "Required reviews / conversation resolution (Phase 13)",
+    "Merge queue / auto-merge"
+  ],
+  "canonical_refs": [
+    ".planning/ROADMAP.md",
+    ".planning/REQUIREMENTS.md",
+    ".planning/phases/12-pull-requests/12-CONTEXT.md",
+    ".planning/phases/11-issues/11-CONTEXT.md",
+    ".planning/phases/10-orgs-permissions/10-CONTEXT.md",
+    ".planning/phases/11.1-quality-hardening/11.1-CONTEXT.md"
+  ],
+  "user_directive": "GitHub parity for all remaining discuss areas (2026-09-15)"
+}

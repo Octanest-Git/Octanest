@@ -1,0 +1,18 @@
+{
+  "phase": "10",
+  "status": "complete",
+  "updated": "2026-09-13T22:44:00Z",
+  "selected_areas": ["1-owner-slug", "2-role-model", "3-invites", "4-personal-collaborators"],
+  "deferred_to_defaults": ["5-acl-enforcement", "6-org-ux", "7-teams"],
+  "completed_areas": ["1-owner-slug", "2-role-model", "3-invites", "4-personal-collaborators"],
+  "pending_areas": [],
+  "context_path": ".planning/phases/10-orgs-permissions/10-CONTEXT.md",
+  "decisions": [
+    {"id": "D-ORG-01", "area": "1-owner-slug"},
+    {"id": "D-ORG-02a", "area": "2-role-model"},
+    {"id": "D-ORG-02b", "area": "2-role-model"},
+    {"id": "D-ORG-02c", "area": "4-personal-collaborators"},
+    {"id": "D-ORG-03", "area": "3-invites"},
+    {"id": "D-ORG-04", "area": "4-personal-collaborators"}
+  ]
+}

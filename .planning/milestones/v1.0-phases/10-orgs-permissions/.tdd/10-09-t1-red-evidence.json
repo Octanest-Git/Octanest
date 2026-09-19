@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-api --test user_lookup user_lookup_prefix_returns_public_fields_without_email -- --nocapture",
+  "exitCode": 101,
+  "targetTest": "user_lookup_prefix_returns_public_fields_without_email",
+  "targetFile": "crates/octanest-api/tests/user_lookup.rs",
+  "expected": "user.lookup returns \u226410 public profiles (username/display/avatar) without emails for prefix \u22652",
+  "actual": "HTTP 404 rpc.unknown_procedure for user.lookup",
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s\n     Running tests/user_lookup.rs (target/debug/build/octanest-api/43017409650bdad5/out/user_lookup-43017409650bdad5)\n\nrunning 1 test\n\nthread 'user_lookup_prefix_returns_public_fields_without_email' (1295737) panicked at crates/octanest-api/tests/user_lookup.rs:152:5:\nassertion `left == right` failed: user.lookup prefix \u2014 {\"error\":{\"code\":\"rpc.unknown_procedure\",\"message\":\"unknown procedure: user.lookup\"},\"ok\":false}\n  left: 404\n right: 200\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest user_lookup_prefix_returns_public_fields_without_email ... FAILED\n\nfailures:\n\nfailures:\n    user_lookup_prefix_returns_public_fields_without_email\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 2 filtered out; finished in 7.27s\n\nerror: test failed, to rerun pass `-p octanest-api --test user_lookup`\n\nnot ok 1 - user_lookup_prefix_returns_public_fields_without_email\n  ---\n  message: 'assertion failed: user.lookup prefix \u2014 unknown procedure user.lookup (HTTP 404)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n"
+}

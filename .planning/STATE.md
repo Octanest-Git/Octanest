@@ -1,40 +1,38 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase: "22.1"
-current_plan: Not started
-status: completed
+milestone_name: MVP
+current_plan: 10
+status: Awaiting next milestone
 stopped_at: Phase 22.1 complete — all phases complete
-last_updated: "2026-09-19T16:50:48.898Z"
+last_updated: "2026-09-19T18:17:37.965Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 22.1 complete
-state_head: 6bfac1a7301a2b9bf63fe7851371ab5635594d2c
+last_activity_desc: Milestone v1.0 completed and archived
+state_head: a1b642f044b7bf3da7d1d49b2c97203454eee0a5
 progress:
   total_phases: 24
-  completed_phases: 2
+  completed_phases: 19
   total_plans: 220
   completed_plans: 220
-milestone_name: milestone
+  percent: 79
+current_phase: "22.1"
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-09)
+See: .planning/PROJECT.md (updated 2026-09-19 after v1.0)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase 22.1 — v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
+**Current focus:** Planning next milestone (`/gsd-new-milestone`)
 
 ## Current Position
 
-Phase: 22.1
-Current Plan: Not started
-Total Plans in Phase: 10
-Status: All phases complete
-Last activity: 2026-09-19 — Phase 22.1 complete
-
-See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/` · `.planning/parallel-tracks/README.md`
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-19 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
@@ -834,3 +832,7 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 Last session: 2026-09-14T02:09:39.092Z
 Stopped at: Phase 10 complete, ready to plan Phase 9
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

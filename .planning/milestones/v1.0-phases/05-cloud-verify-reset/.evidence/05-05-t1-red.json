@@ -1,0 +1,9 @@
+{
+  "command": "cargo test -p octanest-api --lib link_or_create_marks_verified_when_idp_asserts -- --nocapture",
+  "exitCode": 101,
+  "targetTest": "auth::external::tests::link_or_create_marks_verified_when_idp_asserts",
+  "targetFile": "crates/octanest-api/src/auth/external.rs",
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.18s\n     Running unittests src/lib.rs (target/debug/build/octanest-api/c08bff3a19c96d52/out/octanest_api-c08bff3a19c96d52)\n\nrunning 1 test\n\nthread 'auth::external::tests::link_or_create_marks_verified_when_idp_asserts' (792877) panicked at crates/octanest-api/src/auth/external.rs:296:9:\nIdP email_verified=true must set email_verified_at\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest auth::external::tests::link_or_create_marks_verified_when_idp_asserts ... FAILED\n\nfailures:\n\nfailures:\n    auth::external::tests::link_or_create_marks_verified_when_idp_asserts\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.01s\n\nerror: test failed, to rerun pass `-p octanest-api --lib`\n\n\n# tests 1\n# pass 0\n# fail 1\nnot ok 1 - auth::external::tests::link_or_create_marks_verified_when_idp_asserts\n",
+  "expected": "user.email_verified_at.is_some() when ExternalIdentity.email_verified=true",
+  "actual": "assertion panicked: IdP email_verified=true must set email_verified_at (email_verified_at was None)"
+}

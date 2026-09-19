@@ -1,0 +1,9 @@
+{
+  "command": "bunx vitest run src/routes/admin/auth.integration.test.ts --reporter=tap",
+  "exitCode": 1,
+  "targetTest": "shows Allow open signup Switch with wizard helper copy",
+  "targetFile": "src/routes/admin/auth.integration.test.ts",
+  "expected": "Admin auth form shows Allow open signup Switch + wizard helper (D-08)",
+  "actual": "Auth settings form renders without Allow open signup text — Switch not yet wired",
+  "output": "TAP version 13\n# tests 1\n# pass 0\n# fail 1\nnot ok 1 - shows Allow open signup Switch with wizard helper copy\n  ---\n  error:\n    name: \"Error\"\n    message: \"Unable to find an element with the text: Allow open signup\"\n  ...\n"
+}
