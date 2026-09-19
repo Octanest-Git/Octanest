@@ -872,7 +872,7 @@ Plans:
 **Wave 1**
 
 - [ ] `22.1-01-PLAN.md` — Tracer: package protection helper → Compose HTTPS push denied (ORG-06)
-- [ ] `22.1-05-PLAN.md` — Lightweight VERIFICATION for phases 01, 02, 03
+- [x] `22.1-05-PLAN.md` — Lightweight VERIFICATION for phases 01, 02, 03
 - [ ] `22.1-06-PLAN.md` — Lightweight VERIFICATION for phases 11.1, 12, 16
 - [ ] `22.1-07-PLAN.md` — Lightweight VERIFICATION for phases 17, 18, 21
 - [ ] `22.1-09-PLAN.md` — Nyquist validate-phase for 8, 14, 15, 20
