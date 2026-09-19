@@ -404,6 +404,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     ],
   },
   {
+    route: "$owner.$repo.activity.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/$owner.$repo.social-lists.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "$owner.$repo.stargazers.tsrx",
     coverage: [
       {

@@ -25,6 +25,7 @@ import { apiClient } from "@/lib/api-client";
 import { blobHref, activityHref } from "@/lib/repo-browse";
 import { languagePercent } from "@/lib/language-bar";
 import { useRepoStore } from "@/lib/repo-store";
+import { safeExternalHttpUrl } from "@/lib/safe-external-url";
 import { toastError, toastSuccess } from "@/lib/toast";
 
 type RepoAboutSidebarProps = {
@@ -95,6 +96,7 @@ export function RepoAboutSidebar({
   const topics = live.topics ?? [];
   const desc = (live.description ?? "").trim();
   const home = (live.homepage ?? "").trim();
+  const homeHref = safeExternalHttpUrl(home);
   const starCount = live.star_count ?? 0;
   const watchCount = live.watch_count ?? 0;
   const forkCount = live.fork_count ?? 0;
@@ -221,9 +223,9 @@ export function RepoAboutSidebar({
               No description provided.
             </p>;
           }
-          @if (home) {
+          @if (homeHref) {
             <a
-              href={home as string}
+              href={homeHref as string}
               className="inline-flex max-w-full items-center gap-1.5 truncate text-[12px] text-primary no-underline hover:underline"
               rel="noopener noreferrer"
               target="_blank"
@@ -231,6 +233,13 @@ export function RepoAboutSidebar({
               <Link2 aria-hidden size={14} className="shrink-0" />
               <span className="truncate">{home as string}</span>
             </a>;
+          } @else {
+            @if (home) {
+              <span className="inline-flex max-w-full items-center gap-1.5 truncate text-[12px] text-muted-foreground">
+                <Link2 aria-hidden size={14} className="shrink-0" />
+                <span className="truncate">{home as string}</span>
+              </span>;
+            }
           }
           @if (topics.length > 0) {
             <ul className="flex flex-wrap gap-1.5" aria-label="Topics">

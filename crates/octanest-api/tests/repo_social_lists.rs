@@ -256,6 +256,27 @@ async fn social_lists_empty_and_acl() {
     assert_eq!(forks_created["ok"], true, "{forks_created}");
     assert_eq!(forks_created["data"]["total"], 1);
 
+    // Private fork must not appear on the public forks list (ACL leak guard).
+    let hide = rpc_json(
+        &app,
+        Some(&outsider_cookie),
+        r#"{"procedure":"repo.updateVisibility","input":{"owner":"listout","name":"hello","visibility":"private"}}"#,
+    )
+    .await;
+    assert_eq!(hide["ok"], true, "{hide}");
+    let forks_after_private = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.forks.list","input":{"owner":"listown","name":"hello"}}"#,
+    )
+    .await;
+    assert_eq!(forks_after_private["ok"], true, "{forks_after_private}");
+    assert_eq!(forks_after_private["data"]["total"], 0);
+    assert!(forks_after_private["data"]["forks"]
+        .as_array()
+        .unwrap()
+        .is_empty());
+
     // Private: anonymous cannot list watchers.
     create_repo(&app, &owner_cookie, "secret", "private").await;
     let priv_watch = rpc_json(

@@ -131,6 +131,24 @@ async fn repo_about_admin_updates_metadata() {
     assert_eq!(topics.len(), 2);
     assert!(topics.iter().any(|t| t == "cli"));
     assert!(topics.iter().any(|t| t == "rust"));
+
+    let rejected = rpc_json(
+        &app,
+        Some(&cookie),
+        r#"{"procedure":"repo.updateMetadata","input":{"owner":"metaown","name":"hello","homepage":"javascript:alert(1)"}}"#,
+    )
+    .await;
+    assert_eq!(rejected["ok"], false, "{rejected}");
+    assert_eq!(rejected["error"]["code"], "repo.invalid_homepage");
+
+    let bare = rpc_json(
+        &app,
+        Some(&cookie),
+        r#"{"procedure":"repo.updateMetadata","input":{"owner":"metaown","name":"hello","homepage":"octanest.dev"}}"#,
+    )
+    .await;
+    assert_eq!(bare["ok"], true, "{bare}");
+    assert_eq!(bare["data"]["homepage"], "https://octanest.dev");
 }
 
 #[tokio::test]

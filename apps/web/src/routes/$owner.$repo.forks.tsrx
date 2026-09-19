@@ -4,9 +4,11 @@ import type { RepoForkPublic, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
+import { apiClient } from "@/lib/api-client";
 import {
   forksSortLabel,
   parseForksSort,
@@ -27,9 +29,12 @@ export type ForksLoaderData =
       total: number;
       q: string;
       sort: ForksSortOption;
+      offset: number;
+      limit: number;
     };
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const PAGE_LIMIT = 50;
 
 async function loadForksPage(
   owner: string,
@@ -43,7 +48,7 @@ async function loadForksPage(
     return { kind: "error", message: got.error.message || "Could not load repository." };
   }
   const listRes = await fetchRepoForks({
-    data: { owner, name: repoName, q, sort, offset: 0, limit: 50 },
+    data: { owner, name: repoName, q, sort, offset: 0, limit: PAGE_LIMIT },
   });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
@@ -59,6 +64,8 @@ async function loadForksPage(
     total: listRes.data.total,
     q,
     sort,
+    offset: 0,
+    limit: PAGE_LIMIT,
   };
 }
 
@@ -97,15 +104,45 @@ export function RepoForksPage() @{
   const ready = data?.kind === "ready" ? data : null;
   const [q, setQ] = useState(ready?.q ?? "");
   const [sort, setSort] = useState<ForksSortOption>(ready?.sort ?? "stars");
+  const [forks, setForks] = useState(ready?.forks ?? []);
+  const [offset, setOffset] = useState(ready?.offset ?? 0);
+  const [total, setTotal] = useState(ready?.total ?? 0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const limit = ready?.limit ?? PAGE_LIMIT;
   const base = `/${owner}/${repoName}/forks`;
-  const forks = ready?.forks ?? [];
-  const total = ready?.total ?? 0;
   const activeQ = ready?.q ?? "";
+  const activeSort = ready?.sort ?? "stars";
   const emptyTitle = activeQ ? "No matching forks" : "No forks yet";
   const emptyDesc = activeQ
     ? "Try a different owner or repository name."
     : "Forks of this repository will appear here.";
   const desc = `${String(total)} forks of ${owner}/${repoName}`;
+
+  async function loadMore() {
+    if (loadingMore || forks.length >= total) return;
+    const nextOffset = offset + limit;
+    setLoadingMore(true);
+    try {
+      const list = await apiClient.repo.forksList({
+        owner,
+        name: repoName,
+        q: activeQ || null,
+        sort: activeSort,
+        offset: nextOffset,
+        limit,
+      });
+      if (!list.ok) {
+        setLoadingMore(false);
+        return;
+      }
+      setForks([...forks, ...list.data.forks]);
+      setOffset(nextOffset);
+      setTotal(list.data.total);
+      setLoadingMore(false);
+    } catch {
+      setLoadingMore(false);
+    }
+  }
 
   @if (showNotFound) {
     <RepoNotFound />;
@@ -235,6 +272,18 @@ export function RepoForksPage() @{
               </ListRow>;
             }
           </List>;
+        }
+        @if (forks.length > 0 && forks.length < total) {
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              {(loadingMore ? "Loading…" : "Load more") as string}
+            </Button>
+          </div>;
         }
       </div>;
     }

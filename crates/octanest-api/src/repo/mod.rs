@@ -34,8 +34,8 @@ pub use rename_transfer::{
     transfer, DEFAULT_REPO_REDIRECT_RETENTION_DAYS,
 };
 pub use activity::{
-    list as activity_list, record_branch_creation, record_branch_deletion, record_pr_merge,
-    record_ref_updates,
+    list as activity_list, record_branch_creation, record_branch_deletion, record_branch_rename,
+    record_pr_merge, record_ref_updates,
 };
 pub use search::search;
 pub use social_lists::{forks_list, stargazers_list, watchers_list};
@@ -86,6 +86,50 @@ fn db_err(e: String) -> AppError {
 
 fn map_visibility(v: RepoVisibility) -> &'static str {
     v.as_str()
+}
+
+/// Normalize homepage to empty or an http(s) URL (blocks javascript:/data: stored XSS).
+/// Bare hosts (`example.com`) become `https://example.com/`.
+fn normalize_homepage(raw: &str) -> Result<String, AppError> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(String::new());
+    }
+    if trimmed.starts_with("//") {
+        return Err(AppError::new(
+            "repo.invalid_homepage",
+            "homepage must be an http(s) URL",
+        ));
+    }
+    let candidate = if trimmed.contains("://") {
+        trimmed.to_string()
+    } else {
+        format!("https://{trimmed}")
+    };
+    let parsed = url::Url::parse(&candidate).map_err(|_| {
+        AppError::new(
+            "repo.invalid_homepage",
+            "homepage must be a valid http(s) URL",
+        )
+    })?;
+    match parsed.scheme() {
+        "http" | "https" => {}
+        _ => {
+            return Err(AppError::new(
+                "repo.invalid_homepage",
+                "homepage must use http or https",
+            ));
+        }
+    }
+    if parsed.host_str().is_none() {
+        return Err(AppError::new(
+            "repo.invalid_homepage",
+            "homepage must include a host",
+        ));
+    }
+    // Keep the trimmed input (or https-prefixed bare host) after validation — avoid
+    // Url::to_string() rewriting (trailing slash, etc.).
+    Ok(candidate)
 }
 
 fn none_like_opt(v: &Option<String>) -> bool {
@@ -456,7 +500,7 @@ pub async fn update_metadata(
         None => accessible.row.description.clone(),
     };
     let homepage = match &req.homepage {
-        Some(h) => h.trim().to_string(),
+        Some(h) => normalize_homepage(h)?,
         None => ctx
             .db
             .get_repo_homepage(&accessible.row.id)
@@ -1300,6 +1344,11 @@ pub async fn branch_rename(
         )
     })?;
     let accessible = resolve_repo_for_owner_mutate(ctx, &req.owner, &req.name).await?;
+    let actor_id = ctx
+        .session
+        .as_ref()
+        .map(|s| s.user_id.clone())
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "sign in required"))?;
     let from = req.from.trim();
     let to = req.to.trim();
     if from.is_empty() || to.is_empty() {
@@ -1316,10 +1365,31 @@ pub async fn branch_rename(
         &accessible.owner_username,
         &accessible.row.name,
     )?;
+    let tip_oid = ctx
+        .git
+        .list_refs(&path)
+        .await
+        .ok()
+        .and_then(|refs| {
+            let want = format!("refs/heads/{from}");
+            refs.into_iter()
+                .find(|r| r.name == want)
+                .map(|r| r.oid)
+        })
+        .unwrap_or_default();
     ctx.git
         .branch_rename(&path, from, to)
         .await
         .map_err(map_git_err)?;
+    crate::repo::record_branch_rename(
+        &ctx.db,
+        &accessible.row.id,
+        &actor_id,
+        from,
+        to,
+        &tip_oid,
+    )
+    .await;
     Ok(RepoBranchMutationResponse {
         branch: to.to_string(),
     })

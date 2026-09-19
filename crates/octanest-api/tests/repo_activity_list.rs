@@ -204,3 +204,112 @@ async fn activity_list_empty_and_acl() {
     assert_eq!(item["commit_message"], "Initial commit");
     assert_eq!(item["pusher"]["login"], "actown");
 }
+
+#[tokio::test]
+async fn activity_list_rejects_invalid_since() {
+    let dir = tempfile::tempdir().unwrap();
+    let url = format!("sqlite:{}", dir.path().join("activity-since.db").display());
+    let db = Database::connect(&url).await.unwrap();
+    db.migrate().await.unwrap();
+    support::unlock_signup(&db).await;
+    let repos_dir = dir.path().join("repos");
+    std::fs::create_dir_all(&repos_dir).unwrap();
+    let app = test_app(db.clone(), repos_dir).await;
+
+    let (cookie, login) = signup_and_login(&app, "since@ex.com", "sinceown").await;
+    verify_user(&db, login["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &cookie, "hello", "public").await;
+
+    let bad = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.activity.list","input":{"owner":"sinceown","name":"hello","since":"not-a-timestamp"}}"#,
+    )
+    .await;
+    assert_eq!(bad["ok"], false, "{bad}");
+    assert_eq!(bad["error"]["code"], "rpc.bad_input");
+
+    let ok = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.activity.list","input":{"owner":"sinceown","name":"hello","since":"2020-01-01T00:00:00Z"}}"#,
+    )
+    .await;
+    assert_eq!(ok["ok"], true, "{ok}");
+}
+
+#[tokio::test]
+async fn activity_recorded_from_branch_create_rename_delete() {
+    let dir = tempfile::tempdir().unwrap();
+    let url = format!("sqlite:{}", dir.path().join("activity-write.db").display());
+    let db = Database::connect(&url).await.unwrap();
+    db.migrate().await.unwrap();
+    support::unlock_signup(&db).await;
+    let repos_dir = dir.path().join("repos");
+    std::fs::create_dir_all(&repos_dir).unwrap();
+    let app = test_app(db.clone(), repos_dir).await;
+
+    let (cookie, login) = signup_and_login(&app, "write@ex.com", "writeown").await;
+    verify_user(&db, login["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &cookie, "flow", "public").await;
+
+    let create = rpc_json(
+        &app,
+        Some(&cookie),
+        r#"{"procedure":"repo.branchCreate","input":{"owner":"writeown","name":"flow","branch":"feature-a","start":"main"}}"#,
+    )
+    .await;
+    assert_eq!(create["ok"], true, "{create}");
+
+    let rename = rpc_json(
+        &app,
+        Some(&cookie),
+        r#"{"procedure":"repo.branchRename","input":{"owner":"writeown","name":"flow","from":"feature-a","to":"feature-b"}}"#,
+    )
+    .await;
+    assert_eq!(rename["ok"], true, "{rename}");
+
+    let delete = rpc_json(
+        &app,
+        Some(&cookie),
+        r#"{"procedure":"repo.branchDelete","input":{"owner":"writeown","name":"flow","branch":"feature-b"}}"#,
+    )
+    .await;
+    assert_eq!(delete["ok"], true, "{delete}");
+
+    let listed = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.activity.list","input":{"owner":"writeown","name":"flow","limit":20}}"#,
+    )
+    .await;
+    assert_eq!(listed["ok"], true, "{listed}");
+    assert!(listed["data"]["total"].as_i64().unwrap() >= 3, "{listed}");
+    let types: Vec<&str> = listed["data"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|i| i["push_type"].as_str())
+        .collect();
+    assert!(
+        types.contains(&"branch_creation"),
+        "missing branch_creation — {types:?}"
+    );
+    assert!(
+        types.contains(&"branch_rename"),
+        "missing branch_rename — {types:?}"
+    );
+    assert!(
+        types.contains(&"branch_deletion"),
+        "missing branch_deletion — {types:?}"
+    );
+
+    let rename_item = listed["data"]["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["push_type"] == "branch_rename")
+        .expect("rename row");
+    assert_eq!(rename_item["ref_short"], "feature-b");
+    assert_eq!(rename_item["commit_message"], "feature-a");
+}

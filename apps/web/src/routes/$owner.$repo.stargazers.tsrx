@@ -4,9 +4,11 @@ import type { RepoPublic, RepoStargazerPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
+import { apiClient } from "@/lib/api-client";
 import { socialListHref } from "@/lib/repo-social-lists";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { fetchRepoGet, fetchRepoStargazers } from "@/lib/ssr-repo";
@@ -20,9 +22,12 @@ export type StargazersLoaderData =
       stargazers: RepoStargazerPublic[];
       total: number;
       q: string;
+      offset: number;
+      limit: number;
     };
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const PAGE_LIMIT = 50;
 
 async function loadStargazersPage(
   owner: string,
@@ -37,7 +42,7 @@ async function loadStargazersPage(
   if (!got.data.can_write) return { kind: "not_found" };
 
   const listRes = await fetchRepoStargazers({
-    data: { owner, name: repoName, q, offset: 0, limit: 50 },
+    data: { owner, name: repoName, q, offset: 0, limit: PAGE_LIMIT },
   });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
@@ -52,6 +57,8 @@ async function loadStargazersPage(
     stargazers: listRes.data.stargazers,
     total: listRes.data.total,
     q,
+    offset: 0,
+    limit: PAGE_LIMIT,
   };
 }
 
@@ -90,15 +97,43 @@ export function RepoStargazersPage() @{
   const errorMessage = data?.kind === "error" ? data.message : "";
   const ready = data?.kind === "ready" ? data : null;
   const [q, setQ] = useState(ready?.q ?? "");
+  const [stargazers, setStargazers] = useState(ready?.stargazers ?? []);
+  const [offset, setOffset] = useState(ready?.offset ?? 0);
+  const [total, setTotal] = useState(ready?.total ?? 0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const limit = ready?.limit ?? PAGE_LIMIT;
   const base = `/${owner}/${repoName}/stargazers`;
-  const stargazers = ready?.stargazers ?? [];
-  const total = ready?.total ?? 0;
   const activeQ = ready?.q ?? "";
   const emptyTitle = activeQ ? "No matching stargazers" : "There are no stargazers yet";
   const emptyDesc = activeQ
     ? "Try a different username or clear the search."
     : "People who star this repository will appear here.";
   const desc = `${String(total)} starring ${owner}/${repoName}`;
+
+  async function loadMore() {
+    if (loadingMore || stargazers.length >= total) return;
+    const nextOffset = offset + limit;
+    setLoadingMore(true);
+    try {
+      const list = await apiClient.repo.stargazersList({
+        owner,
+        name: repoName,
+        q: activeQ || null,
+        offset: nextOffset,
+        limit,
+      });
+      if (!list.ok) {
+        setLoadingMore(false);
+        return;
+      }
+      setStargazers([...stargazers, ...list.data.stargazers]);
+      setOffset(nextOffset);
+      setTotal(list.data.total);
+      setLoadingMore(false);
+    } catch {
+      setLoadingMore(false);
+    }
+  }
 
   @if (showNotFound) {
     <RepoNotFound />;
@@ -188,6 +223,18 @@ export function RepoStargazersPage() @{
               </ListRow>;
             }
           </List>;
+        }
+        @if (stargazers.length > 0 && stargazers.length < total) {
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              {(loadingMore ? "Loading…" : "Load more") as string}
+            </Button>
+          </div>;
         }
       </div>;
     }

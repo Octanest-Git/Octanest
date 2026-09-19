@@ -37,5 +37,15 @@ describe("repo about sidebar social links", () => {
     expect(src).not.toMatch(/i18n|locale|translation/i);
     // No dead GitHub-enterprise rows without product surfaces.
     expect(src).not.toMatch(/Custom properties|Audit log|Report repository/);
+    // Homepage links must go through safeExternalHttpUrl (no raw javascript: href).
+    expect(src).toMatch(/safeExternalHttpUrl/);
+  });
+});
+
+describe("empty + populated code home About", () => {
+  it("passes showActivity on empty and non-empty code home", () => {
+    const index = readFileSync(join(dir, "../../routes/$owner.$repo.index.tsrx"), "utf8");
+    const activityTrue = index.match(/showActivity=\{true\}/g) ?? [];
+    expect(activityTrue.length).toBeGreaterThanOrEqual(2);
   });
 });

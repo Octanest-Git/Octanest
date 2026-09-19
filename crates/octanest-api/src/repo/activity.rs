@@ -23,6 +23,7 @@ const VALID_PUSH_TYPES: &[&str] = &[
     "pr_merge",
     "branch_creation",
     "branch_deletion",
+    "branch_rename",
 ];
 
 fn is_zero_oid(oid: &str) -> bool {
@@ -49,18 +50,21 @@ fn classify_push_type(before: &str, after: &str, forced: bool) -> &'static str {
     }
 }
 
-async fn is_ancestor(bare: &Path, maybe_ancestor: &str, tip: &str) -> bool {
+/// Whether `maybe_ancestor` is an ancestor of `tip`.
+///
+/// - `Some(true)` / `Some(false)` — definitive git result (exit 0 / 1)
+/// - `None` — cannot tell (spawn failure, missing objects, bad path); callers must
+///   **not** treat this as a force-push (avoids false `force_push` labels).
+async fn is_ancestor(bare: &Path, maybe_ancestor: &str, tip: &str) -> Option<bool> {
     if maybe_ancestor.is_empty()
         || tip.is_empty()
         || maybe_ancestor == tip
         || is_zero_oid(maybe_ancestor)
         || is_zero_oid(tip)
     {
-        return true;
+        return Some(true);
     }
-    let Some(bare_str) = bare.to_str() else {
-        return true;
-    };
+    let bare_str = bare.to_str()?;
     let out = tokio::process::Command::new("git")
         .args([
             "-C",
@@ -71,8 +75,13 @@ async fn is_ancestor(bare: &Path, maybe_ancestor: &str, tip: &str) -> bool {
             tip,
         ])
         .output()
-        .await;
-    matches!(out, Ok(o) if o.status.success())
+        .await
+        .ok()?;
+    match out.status.code() {
+        Some(0) => Some(true),
+        Some(1) => Some(false),
+        _ => None,
+    }
 }
 
 async fn enrich_commits(
@@ -120,7 +129,7 @@ pub async fn record_ref_updates(
         let forced = if let (_, Some(path)) = (git.as_ref(), bare) {
             !is_zero_oid(before)
                 && !is_zero_oid(after)
-                && !is_ancestor(path, before, after).await
+                && matches!(is_ancestor(path, before, after).await, Some(false))
         } else {
             false
         };
@@ -227,6 +236,42 @@ pub async fn record_branch_deletion(
     }
 }
 
+/// Record a UI/API branch rename (no receive-pack).
+pub async fn record_branch_rename(
+    db: &Database,
+    repository_id: &str,
+    actor_id: &str,
+    from: &str,
+    to: &str,
+    tip_oid: &str,
+) {
+    let ref_name = if to.starts_with("refs/") {
+        to.to_string()
+    } else {
+        format!("refs/heads/{to}")
+    };
+    let from_short = short_ref(from);
+    let after = if tip_oid.is_empty() { ZERO_OID } else { tip_oid };
+    let id = Uuid::new_v4().to_string();
+    if let Err(e) = db
+        .insert_repo_activity(
+            &id,
+            repository_id,
+            actor_id,
+            "branch_rename",
+            &ref_name,
+            after,
+            after,
+            0,
+            Some(from_short.as_str()),
+            None,
+        )
+        .await
+    {
+        tracing::warn!(error = %e, "branch_rename activity insert failed");
+    }
+}
+
 /// Record a successful pull-request merge.
 pub async fn record_pr_merge(
     db: &Database,
@@ -273,6 +318,30 @@ fn period_since(period: Option<&str>) -> Option<String> {
     };
     let since = Utc::now() - Duration::days(days);
     Some(since.format("%Y-%m-%dT%H:%M:%SZ").to_string())
+}
+
+/// Accept RFC3339 / `YYYY-MM-DDTHH:MM:SSZ` only — reject garbage that would 500 in SQL.
+fn parse_since_timestamp(raw: &str) -> Result<String, AppError> {
+    let t = raw.trim();
+    if t.is_empty() {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "since must be an ISO-8601 UTC timestamp",
+        ));
+    }
+    if chrono::DateTime::parse_from_rfc3339(t).is_ok() {
+        return Ok(t.to_string());
+    }
+    if chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%dT%H:%M:%SZ").is_ok() {
+        return Ok(t.to_string());
+    }
+    if chrono::NaiveDateTime::parse_from_str(t, "%Y-%m-%d %H:%M:%S").is_ok() {
+        return Ok(t.to_string());
+    }
+    Err(AppError::new(
+        "rpc.bad_input",
+        "since must be an ISO-8601 UTC timestamp",
+    ))
 }
 
 fn row_to_item(row: octanest_db::RepoActivityRow) -> RepoActivityItem {
@@ -330,13 +399,15 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoActivity
         }
     }
 
-    let since = req
+    let since = match req
         .since
         .as_deref()
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .map(|s| s.to_string())
-        .or_else(|| period_since(req.period.as_deref()));
+    {
+        Some(raw) => Some(parse_since_timestamp(raw)?),
+        None => period_since(req.period.as_deref()),
+    };
 
     let offset = req.offset.unwrap_or(0).max(0);
     let limit = req.limit.unwrap_or(30).clamp(1, 100);
@@ -391,5 +462,13 @@ mod tests {
         assert!(period_since(Some("week")).is_some());
         assert!(period_since(Some("all")).is_none());
         assert!(period_since(None).is_none());
+    }
+
+    #[test]
+    fn parse_since_accepts_iso_rejects_garbage() {
+        assert!(parse_since_timestamp("2026-01-02T03:04:05Z").is_ok());
+        assert!(parse_since_timestamp("2026-01-02T03:04:05+00:00").is_ok());
+        assert!(parse_since_timestamp("not-a-date").is_err());
+        assert!(parse_since_timestamp("'; DROP TABLE").is_err());
     }
 }

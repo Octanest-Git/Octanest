@@ -441,7 +441,8 @@ pub struct RepoActivityItem {
 pub struct RepoActivityListRequest {
     pub owner: String,
     pub name: String,
-    /// Optional push_type filter (`push`, `force_push`, `pr_merge`, …).
+    /// Optional push_type filter (`push`, `force_push`, `pr_merge`, `branch_creation`,
+    /// `branch_deletion`, `branch_rename`, …).
     #[serde(default)]
     pub push_type: Option<String>,
     /// Optional lower bound as ISO-8601 UTC (`2024-01-01T00:00:00Z`).

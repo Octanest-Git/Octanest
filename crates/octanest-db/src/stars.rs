@@ -942,6 +942,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = $1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END ILIKE $2 ESCAPE '\\'
                          OR r.name ILIKE $2 ESCAPE '\\'
@@ -966,6 +967,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = $1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                      ORDER BY {order}
                      LIMIT $2 OFFSET $3"
                 )
@@ -1007,6 +1009,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = ?
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ? ESCAPE '\\\\'
                          OR r.name LIKE ? ESCAPE '\\\\'
@@ -1031,6 +1034,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = ?
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                      ORDER BY {order}
                      LIMIT ? OFFSET ?"
                 )
@@ -1073,6 +1077,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = ?1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ?2 ESCAPE '\\'
                          OR r.name LIKE ?2 ESCAPE '\\'
@@ -1097,6 +1102,7 @@ pub async fn list_network_forks(
                      WHERE r.fork_network_id = ?1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                      ORDER BY {order}
                      LIMIT ?2 OFFSET ?3"
                 )
@@ -1139,6 +1145,7 @@ pub async fn count_network_forks(
                      WHERE r.fork_network_id = $1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END ILIKE $2 ESCAPE '\\'
                          OR r.name ILIKE $2 ESCAPE '\\'
@@ -1153,7 +1160,8 @@ pub async fn count_network_forks(
                     "SELECT COUNT(*) FROM repositories
                      WHERE fork_network_id = $1
                        AND forked_from_repo_id IS NOT NULL
-                       AND deleted_at IS NULL",
+                       AND deleted_at IS NULL
+                       AND lower(visibility) = 'public'",
                 )
                 .bind(fork_network_id)
                 .fetch_one(p)
@@ -1170,6 +1178,7 @@ pub async fn count_network_forks(
                      WHERE r.fork_network_id = ?
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ? ESCAPE '\\\\'
                          OR r.name LIKE ? ESCAPE '\\\\'
@@ -1185,7 +1194,8 @@ pub async fn count_network_forks(
                     "SELECT COUNT(*) FROM repositories
                      WHERE fork_network_id = ?
                        AND forked_from_repo_id IS NOT NULL
-                       AND deleted_at IS NULL",
+                       AND deleted_at IS NULL
+                       AND lower(visibility) = 'public'",
                 )
                 .bind(fork_network_id)
                 .fetch_one(p)
@@ -1202,6 +1212,7 @@ pub async fn count_network_forks(
                      WHERE r.fork_network_id = ?1
                        AND r.forked_from_repo_id IS NOT NULL
                        AND r.deleted_at IS NULL
+                       AND lower(r.visibility) = 'public'
                        AND (
                          CASE WHEN r.owner_type = 'org' THEN o.slug ELSE u.username END LIKE ?2 ESCAPE '\\'
                          OR r.name LIKE ?2 ESCAPE '\\'
@@ -1216,7 +1227,8 @@ pub async fn count_network_forks(
                     "SELECT COUNT(*) FROM repositories
                      WHERE fork_network_id = ?1
                        AND forked_from_repo_id IS NOT NULL
-                       AND deleted_at IS NULL",
+                       AND deleted_at IS NULL
+                       AND lower(visibility) = 'public'",
                 )
                 .bind(fork_network_id)
                 .fetch_one(p)

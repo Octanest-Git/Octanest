@@ -350,6 +350,7 @@ export function RepoCodeHome() @{
                 contributors={phase.contributors}
                 languages={phase.languages}
                 hasReadme={false}
+                showActivity={true}
               />
             </div>;
           } @else {

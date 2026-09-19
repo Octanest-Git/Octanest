@@ -14,6 +14,11 @@ function actionCopy(item: RepoActivityItem): string {
       return `created branch ${branch}`;
     case "branch_deletion":
       return `deleted branch ${branch}`;
+    case "branch_rename":
+      if (item.commit_message) {
+        return `renamed branch ${item.commit_message} to ${branch}`;
+      }
+      return `renamed branch to ${branch}`;
     case "force_push":
       return `force-pushed to ${branch}`;
     case "pr_merge":

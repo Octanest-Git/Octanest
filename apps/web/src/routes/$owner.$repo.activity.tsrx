@@ -64,6 +64,7 @@ const TYPES = [
   { id: "pr_merge", label: "Merges", value: "pr_merge" },
   { id: "branch_creation", label: "Branch creates", value: "branch_creation" },
   { id: "branch_deletion", label: "Branch deletes", value: "branch_deletion" },
+  { id: "branch_rename", label: "Branch renames", value: "branch_rename" },
 ] as const;
 
 function activityHrefWithFilters(

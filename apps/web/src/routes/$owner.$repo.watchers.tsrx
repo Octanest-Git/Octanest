@@ -4,9 +4,11 @@ import type { RepoPublic, RepoWatcherPublic } from "@octanest/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
+import { apiClient } from "@/lib/api-client";
 import { socialListHref } from "@/lib/repo-social-lists";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { fetchRepoGet, fetchRepoWatchers } from "@/lib/ssr-repo";
@@ -20,9 +22,12 @@ export type WatchersLoaderData =
       watchers: RepoWatcherPublic[];
       total: number;
       q: string;
+      offset: number;
+      limit: number;
     };
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const PAGE_LIMIT = 50;
 
 async function loadWatchersPage(
   owner: string,
@@ -35,7 +40,7 @@ async function loadWatchersPage(
     return { kind: "error", message: got.error.message || "Could not load repository." };
   }
   const listRes = await fetchRepoWatchers({
-    data: { owner, name: repoName, q, offset: 0, limit: 50 },
+    data: { owner, name: repoName, q, offset: 0, limit: PAGE_LIMIT },
   });
   if (!listRes.ok) {
     if (listRes.error.code === "repo.not_found") return { kind: "not_found" };
@@ -50,6 +55,8 @@ async function loadWatchersPage(
     watchers: listRes.data.watchers,
     total: listRes.data.total,
     q,
+    offset: 0,
+    limit: PAGE_LIMIT,
   };
 }
 
@@ -85,15 +92,43 @@ export function RepoWatchersPage() @{
   const errorMessage = data?.kind === "error" ? data.message : "";
   const ready = data?.kind === "ready" ? data : null;
   const [q, setQ] = useState(ready?.q ?? "");
+  const [watchers, setWatchers] = useState(ready?.watchers ?? []);
+  const [offset, setOffset] = useState(ready?.offset ?? 0);
+  const [total, setTotal] = useState(ready?.total ?? 0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const limit = ready?.limit ?? PAGE_LIMIT;
   const base = `/${owner}/${repoName}/watchers`;
-  const watchers = ready?.watchers ?? [];
-  const total = ready?.total ?? 0;
   const activeQ = ready?.q ?? "";
   const emptyTitle = activeQ ? "No matching watchers" : "There are no watchers yet";
   const emptyDesc = activeQ
     ? "Try a different username or clear the search."
     : "People who watch this repository will appear here.";
   const desc = `${String(total)} watching ${owner}/${repoName}`;
+
+  async function loadMore() {
+    if (loadingMore || watchers.length >= total) return;
+    const nextOffset = offset + limit;
+    setLoadingMore(true);
+    try {
+      const list = await apiClient.repo.watchersList({
+        owner,
+        name: repoName,
+        q: activeQ || null,
+        offset: nextOffset,
+        limit,
+      });
+      if (!list.ok) {
+        setLoadingMore(false);
+        return;
+      }
+      setWatchers([...watchers, ...list.data.watchers]);
+      setOffset(nextOffset);
+      setTotal(list.data.total);
+      setLoadingMore(false);
+    } catch {
+      setLoadingMore(false);
+    }
+  }
 
   @if (showNotFound) {
     <RepoNotFound />;
@@ -183,6 +218,18 @@ export function RepoWatchersPage() @{
               </ListRow>;
             }
           </List>;
+        }
+        @if (watchers.length > 0 && watchers.length < total) {
+          <div className="mt-4 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingMore}
+              onClick={() => void loadMore()}
+            >
+              {(loadingMore ? "Loading…" : "Load more") as string}
+            </Button>
+          </div>;
         }
       </div>;
     }
