@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS repository_activity (
   actor_id        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   push_type       TEXT NOT NULL
     CHECK (push_type IN (
-      'push', 'force_push', 'pr_merge', 'branch_creation', 'branch_deletion', 'branch_rename'
+      'push', 'force_push', 'pr_merge', 'branch_creation', 'branch_deletion'
     )),
   ref_name        TEXT NOT NULL,
   before_oid      TEXT NOT NULL DEFAULT '',

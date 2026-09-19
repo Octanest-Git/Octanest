@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS repository_activity (
     FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT chk_repository_activity_push_type
     CHECK (push_type IN (
-      'push', 'force_push', 'pr_merge', 'branch_creation', 'branch_deletion', 'branch_rename'
+      'push', 'force_push', 'pr_merge', 'branch_creation', 'branch_deletion'
     ))
 ) ENGINE=InnoDB;
 
