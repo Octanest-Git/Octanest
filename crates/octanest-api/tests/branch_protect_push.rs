@@ -276,3 +276,114 @@ fn branch_protect_default_helper_resolution_prefers_env() {
         Some("/from/sibling/octanest-protection-hook")
     );
 }
+
+/// Invoke installed hooks/update with ref args under a given OCTANEST_ENV / helper.
+async fn run_protection_hook_script(
+    bare: &std::path::Path,
+    octanest_env: Option<&str>,
+    helper: Option<&std::path::Path>,
+) -> std::process::Output {
+    let update = bare.join("hooks").join("update");
+    let mut cmd = tokio::process::Command::new(&update);
+    cmd.args([
+        "refs/heads/main",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    ])
+    .env_remove("OCTANEST_PROTECTION_HELPER");
+    match octanest_env {
+        Some(v) => {
+            cmd.env("OCTANEST_ENV", v);
+        }
+        None => {
+            cmd.env_remove("OCTANEST_ENV");
+        }
+    }
+    if let Some(h) = helper {
+        cmd.env("OCTANEST_PROTECTION_HELPER", h);
+    }
+    cmd.output().await.expect("spawn hooks/update")
+}
+
+/// D-PKG-02: missing helper + production|cloud → fail-closed (non-zero).
+#[tokio::test]
+async fn protection_hook_script_fail_closed_when_helper_missing_in_production() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("prod.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    for env_name in ["production", "cloud"] {
+        let out = run_protection_hook_script(&bare, Some(env_name), None).await;
+        assert!(
+            !out.status.success(),
+            "OCTANEST_ENV={env_name} must deny when helper missing — stderr={}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        assert!(
+            stderr.contains("protection helper") || stderr.contains("OCTANEST"),
+            "stderr should explain missing helper — {stderr}"
+        );
+    }
+}
+
+/// D-PKG-02: missing helper + compose|development|dev (or default) → fail-open.
+#[tokio::test]
+async fn protection_hook_script_fail_open_when_helper_missing_in_dev() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("dev.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    for env_name in [Some("compose"), Some("development"), Some("dev"), None] {
+        let out = run_protection_hook_script(&bare, env_name, None).await;
+        assert!(
+            out.status.success(),
+            "OCTANEST_ENV={env_name:?} must fail-open when helper missing — stderr={}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+    }
+}
+
+/// D-PKG-02: executable helper is exec'd with ref args.
+#[tokio::test]
+async fn protection_hook_script_execs_helper_when_present() {
+    let dir = tempfile::tempdir().unwrap();
+    let bare = dir.path().join("helper.git");
+    std::fs::create_dir_all(&bare).unwrap();
+    octanest_git::install_protection_hooks(&bare)
+        .await
+        .expect("install hooks");
+
+    let marker = dir.path().join("helper-ran");
+    let helper = dir.path().join("fake-helper.sh");
+    let script = format!(
+        "#!/bin/sh\necho \"$1 $2\" > {}\nexit 0\n",
+        marker.display()
+    );
+    std::fs::write(&helper, script).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = std::fs::metadata(&helper).unwrap().permissions();
+        perms.set_mode(0o755);
+        std::fs::set_permissions(&helper, perms).unwrap();
+    }
+
+    let out = run_protection_hook_script(&bare, Some("production"), Some(&helper)).await;
+    assert!(
+        out.status.success(),
+        "helper exec must succeed — stderr={}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let ran = std::fs::read_to_string(&marker).expect("helper marker");
+    assert!(
+        ran.contains("update refs/heads/main"),
+        "helper must receive update + refname — {ran}"
+    );
+}
