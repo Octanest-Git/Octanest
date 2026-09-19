@@ -27,7 +27,7 @@ Cloud default database is **managed Postgres** (`postgres()` helper). MySQL/SQLi
 |-------------|------|----------------|
 | `preview` | Persistent base for Railway **PR Environments** | Autodeploy off (IaC / manual only) |
 | `staging` | Always-on integration | Autodeploy from `main` + Wait for CI |
-| `production` | Live | Autodeploy off; promote from staging manually |
+| `production` | Live | Autodeploy off; promote via GitHub Action |
 
 Ephemeral PR environments clone `preview` (services, networking, variables) when a project member opens a PR. They are deleted when the PR merges or closes. Bot PR Environments stay off unless you explicitly enable them.
 
@@ -62,14 +62,19 @@ Secrets (`OCTANEST_ENV`, `OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_CORS_ORIGINS`, `OCT
 
 On **`web`**, set `OCTANEST_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,octanest.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
 
-### Promote staging → production
+### Promote / rollback production
 
-1. Validate the commit on **staging**.
-2. On the **production** canvas: **Sync** from **staging**, or deploy that known-good commit without enabling autodeploy.
-3. Review staged changes → Deploy.
-4. Confirm production-only secrets and origins were not overwritten.
+Do **not** rely on Environment Sync for promote: Sync includes variables and can clobber production-only origins and `OCTANEST_ENV`.
 
-Rollback: previous successful deployment on production services.
+1. Confirm the commit is healthy on **staging**.
+2. GitHub → **Actions** → **Production deploy** → Run workflow:
+   - **promote** — `serviceInstanceDeployV2` with `commitSha` for `api` / `web` / `gateway` (default: `main` HEAD). Gated on CI success for that SHA. Leaves production variables alone.
+   - **rollback** — `deploymentRollback` to the prior `canRollback` deployment on each of those services.
+3. Smoke `https://octanest.jereko.dev/health`.
+
+Script: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
+
+**GitHub Environment `production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
 
 ## Related
 
