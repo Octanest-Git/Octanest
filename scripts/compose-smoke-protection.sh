@@ -3,11 +3,16 @@
 # Brings up a fresh Compose stack (wipes project volumes), asserts the protection
 # helper binary is executable, creates a reviews-required rule with
 # enforce_admins, and expects an HTTPS push to the protected ref to fail.
+# When SSH TCP 2222 is reachable and SMOKE_SKIP_LS_REMOTE is unset, also
+# expects an SSH push to the same protected ref to fail (D-PKG-03 SSH half).
 #
 # Env:
-#   OCTANEST_SMOKE_URL   default http://localhost
-#   COMPOSE_FILE         default docker-compose.yml
-#   SMOKE_REQUIRE_STACK  if 1 (or CI=true), fail closed when Docker missing
+#   OCTANEST_SMOKE_URL     default http://localhost
+#   COMPOSE_FILE           default docker-compose.yml
+#   SMOKE_REQUIRE_STACK    if 1 (or CI=true), fail closed when Docker missing
+#   OCTANEST_SSH_HOST      default localhost
+#   OCTANEST_SSH_PORT      default 2222
+#   SMOKE_SKIP_LS_REMOTE   if 1, skip SSH denial branch (HTTPS remains mandatory)
 #
 # Operator hosts without Docker: exits 0 with a skip message (unless fail-closed).
 set -euo pipefail
@@ -26,6 +31,8 @@ COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 OWNER="${SMOKE_PROTECT_OWNER:-protowner}"
 REPO="${SMOKE_PROTECT_REPO:-protrepo}"
 PASSWORD="${SMOKE_PROTECT_PASSWORD:-ProtectSmoke1!}"
+SSH_HOST="${OCTANEST_SSH_HOST:-localhost}"
+SSH_PORT="${OCTANEST_SSH_PORT:-2222}"
 
 smoke_require_docker
 
@@ -151,7 +158,60 @@ if [[ "$push_rc" -eq 0 ]]; then
   echo "$push_out" >&2
   exit 1
 fi
-echo "==> push denied as expected (rc=$push_rc)"
+echo "==> HTTPS push denied as expected (rc=$push_rc)"
 echo "$push_out" | head -20 || true
 
-echo "==> compose-smoke-protection OK (helper present + HTTPS protected push denied)"
+# --- D-PKG-03 SSH half: optional when TCP published and not skip-flagged ---
+ssh_skip_reason=""
+if [[ "${SMOKE_SKIP_LS_REMOTE:-0}" == "1" ]]; then
+  ssh_skip_reason="SMOKE_SKIP_LS_REMOTE=1"
+elif ! command -v ssh >/dev/null 2>&1; then
+  ssh_skip_reason="ssh client not on PATH"
+elif ! command -v ssh-keygen >/dev/null 2>&1; then
+  ssh_skip_reason="ssh-keygen not on PATH"
+else
+  echo "==> probe SSH TCP ${SSH_HOST}:${SSH_PORT}"
+  tcp_ok=0
+  if timeout 3 bash -c "echo >/dev/tcp/${SSH_HOST}/${SSH_PORT}" 2>/dev/null; then
+    tcp_ok=1
+  elif command -v nc >/dev/null 2>&1 && nc -z -w 3 "${SSH_HOST}" "${SSH_PORT}" 2>/dev/null; then
+    tcp_ok=1
+  fi
+  if [[ "$tcp_ok" -ne 1 ]]; then
+    ssh_skip_reason="SSH TCP ${SSH_HOST}:${SSH_PORT} unreachable"
+  fi
+fi
+
+if [[ -n "$ssh_skip_reason" ]]; then
+  echo "==> skip SSH protected-push denial ($ssh_skip_reason); HTTPS denial remains mandatory"
+else
+  echo "==> SSH protected-push denial (D-PKG-03)"
+  identity="${WORK}/id_ed25519"
+  ssh-keygen -t ed25519 -N "" -f "$identity" -C "protect-smoke-ssh@octanest" -q
+  pub="$(cat "${identity}.pub")"
+  pub_json=$(printf '%s' "$pub" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
+  rpc "$(printf '{"procedure":"sshKey.add","input":{"title":"protect-smoke-ssh","public_key":%s}}' "$pub_json")"
+  echo "==> SSH key registered"
+
+  GIT_SSH_URL="git@${SSH_HOST}:${OWNER}/${REPO}.git"
+  export GIT_SSH_COMMAND="ssh -i ${identity} -p ${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=${WORK}/known_hosts"
+
+  set +e
+  ssh_push_out="$(GIT_TERMINAL_PROMPT=0 git -C "$WORK/repo" push "${GIT_SSH_URL}" HEAD:refs/heads/main 2>&1)"
+  ssh_push_rc=$?
+  set -e
+
+  if [[ "$ssh_push_rc" -eq 0 ]]; then
+    echo "FAIL: SSH push to protected main succeeded (expected denial)" >&2
+    echo "$ssh_push_out" >&2
+    exit 1
+  fi
+  echo "==> SSH push denied as expected (rc=$ssh_push_rc)"
+  echo "$ssh_push_out" | head -20 || true
+fi
+
+if [[ -n "$ssh_skip_reason" ]]; then
+  echo "==> compose-smoke-protection OK (helper present + HTTPS protected push denied; SSH skipped: ${ssh_skip_reason})"
+else
+  echo "==> compose-smoke-protection OK (helper present + HTTPS and SSH protected push denied)"
+fi

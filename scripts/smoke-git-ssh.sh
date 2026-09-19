@@ -19,7 +19,9 @@
 #   SMOKE_GIT_REPO          default smokerepo
 #   SMOKE_SESSION_COOKIE   session cookie (e.g. octanest_session=…) for sshKey.add
 #   SMOKE_SSH_IDENTITY     private key path (skips keygen + register)
-#   SMOKE_SKIP_LS_REMOTE   if 1, only assert TCP listen (no git client)
+#   SMOKE_SKIP_LS_REMOTE   if 1, only assert TCP listen (no git client).
+#                          Also skips the SSH denial branch in compose-smoke-protection.sh
+#                          (D-PKG-03); HTTPS denial there remains mandatory.
 #   SMOKE_SSH_PUSH         if 1, also push a throwaway ref (needs write + verified email)
 #
 # Operator hosts without Docker: exits 0 with a skip message.

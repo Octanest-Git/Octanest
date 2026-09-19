@@ -46,7 +46,7 @@ help:
 	@echo "  make web-format-check - oxfmt --check (@tsrx/oxc)"
 	@echo "  make smoke-actions  - Actions/runner Compose smoke (ACT-04/05; skip-ok without Docker)"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
-	@echo "  make smoke-protection - ORG-06 helper + HTTPS protected-push denial (D-PKG-03)"
+	@echo "  make smoke-protection - ORG-06 helper + HTTPS/SSH protected-push denial (D-PKG-03)"
 	@echo "  make smoke-git-https - Traefik .git → API + git ls-remote smoke (GIT-02)"
 	@echo "  make smoke-git-ssh   - Compose TCP SSH + git ls-remote/push smoke (GIT-03)"
 	@echo "  make smoke-git-lfs   - Traefik .git/info/lfs batch routing smoke (GIT-12)"
@@ -160,7 +160,8 @@ smoke:
 	@EXPECT_DIALECT=postgres ./scripts/compose-smoke.sh
 
 # ORG-06 / D-PKG-03: fresh Compose up, assert helper binary, deny HTTPS push to
-# reviews-required protected branch (enforce_admins). Wipes compose volumes.
+# reviews-required protected branch (enforce_admins). When SSH TCP 2222 is up and
+# SMOKE_SKIP_LS_REMOTE is unset, also deny the same push over SSH. Wipes volumes.
 # Docker-missing skips exit 0 locally; CI=true / SMOKE_REQUIRE_STACK=1 fails closed.
 smoke-protection:
 	@./scripts/compose-smoke-protection.sh
