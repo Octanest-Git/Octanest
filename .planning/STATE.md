@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
-current_plan: 3
+current_plan: 4
 status: executing
-stopped_at: Completed 22.1-02-PLAN.md
-last_updated: "2026-09-19T16:07:26.888Z"
+stopped_at: Completed 22.1-03-PLAN.md
+last_updated: "2026-09-19T16:20:38.528Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 22.1 execution started
-state_head: e6369abed98193684c6b63d5dc2adf141bf7bf2b
+state_head: 1c1ad4fc208011ec60b0bb03383972b059e489db
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 216
+  completed_plans: 217
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
-Current Plan: 3
+Current Plan: 4
 Total Plans in Phase: 10
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 22.1 execution started
@@ -178,6 +178,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 22.1 P09 | 5min | 2 tasks | 4 files |
 | Phase 22.1 P01 | 15min | 3 tasks | 11 files |
 | Phase 22.1 P02 | 10min | 2 tasks | 3 files |
+| Phase 22.1 P03 | 12min | 2 tasks | 5 files |
 
 # Project State
 
@@ -583,6 +584,8 @@ Recent decisions affecting current work:
 - [Phase 22.1]: Smart HTTP resolve_protection_helper_with(env, default_helper_path) + OCTANEST_ENV CGI re-inject
 - [Phase 22.1]: Reuse repo.fork_failed + compensate for clone_bare hook-install failure
 - [Phase 22.1]: Force hook-install failure in tests via GIT_TEMPLATE_DIR hooks-as-file
+- [Phase 22.1]: SSH receive-pack uses receive_pack_protection_env (helper/DB/repos/capability/ENV); upload-pack unchanged
+- [Phase 22.1]: Compose protection smoke SSH denial when TCP 2222 up; skip via SMOKE_SKIP_LS_REMOTE without failing HTTPS
 
 ### Pending Todos
 
@@ -608,8 +611,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:07:26.747Z
-Stopped at: Completed 22.1-02-PLAN.md
+Last session: 2026-09-19T16:20:38.387Z
+Stopped at: Completed 22.1-03-PLAN.md
 Resume file: None
 
 ## Accumulated Context
