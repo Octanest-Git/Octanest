@@ -5,16 +5,16 @@ current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
 current_plan: 1
 status: executing
-stopped_at: Completed 22.1-05-PLAN.md
-last_updated: "2026-09-19T15:21:07.936Z"
+stopped_at: Completed 22.1-06-PLAN.md
+last_updated: "2026-09-19T15:24:19.376Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 22.1 execution started
-state_head: 969507b86f745b9612cc3bd5d02970dd3e142950
+state_head: 1c3e83e8e7265b58cedcb21cccbb8ca9780b7e5c
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 211
+  completed_plans: 212
 milestone_name: milestone
 ---
 
@@ -173,6 +173,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 19 P10 | 90 | 3 tasks | - files |
 | Phase 19 P11 | 20min | 2 tasks | 6 files |
 | Phase 22.1 P05 | 2min | 3 tasks | 3 files |
+| Phase 22.1 P06 | 2min | 3 tasks | 3 files |
 
 # Project State
 
@@ -569,6 +570,8 @@ Recent decisions affecting current work:
 - [Phase 22]: Phase 22 VALIDATION marks live Railway apply as human-verify only
 - [Phase 22.1]: 22.1-05: Phases 01–03 VERIFICATION marked passed with caveats (D-VER-03); PLAT checkbox flips deferred to 22.1-10
 - [Phase 22.1]: 22.1-05: PLAT-08 empty/adjacency/ordering documented from Make smoke-* and CI db-matrix separate legs
+- [Phase 22.1]: Mark all three VERIFICATIONs passed with caveats — SUMMARYs/VALIDATION/UAT support phase goals (D-VER-03) — Evidence backfill sufficient; residual WINDOWS coverage floor stays open
+- [Phase 22.1]: Keep WINDOWS coverage-floor residuals open and cited as caveats (do not waive) — Plan forbids waiving WINDOWS in this backfill
 
 ### Pending Todos
 
@@ -594,8 +597,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:20:31.239Z
-Stopped at: Completed 22.1-05-PLAN.md
+Last session: 2026-09-19T15:24:07.449Z
+Stopped at: Completed 22.1-06-PLAN.md
 Resume file: None
 
 ## Accumulated Context
