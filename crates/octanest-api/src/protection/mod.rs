@@ -536,6 +536,41 @@ mod tests {
     }
 
     #[test]
+    fn protection_helper_env_wins_over_default_helper_path() {
+        let env = Some("/explicit/octanest-protection-hook".into());
+        let default = Some(PathBuf::from("/sibling/octanest-protection-hook"));
+        let got = resolve_protection_helper_with(env, default);
+        assert_eq!(
+            got.as_deref(),
+            Some("/explicit/octanest-protection-hook"),
+            "non-empty OCTANEST_PROTECTION_HELPER must win (D-PKG-01)"
+        );
+    }
+
+    #[test]
+    fn protection_helper_falls_back_to_default_helper_path_when_env_unset() {
+        let default = Some(PathBuf::from("/usr/local/bin/octanest-protection-hook"));
+        let got = resolve_protection_helper_with(None, default.clone());
+        assert_eq!(
+            got.as_deref(),
+            Some("/usr/local/bin/octanest-protection-hook"),
+            "unset env must use default_helper_path (D-PKG-01)"
+        );
+        let empty = resolve_protection_helper_with(Some(String::new()), default);
+        assert_eq!(
+            empty.as_deref(),
+            Some("/usr/local/bin/octanest-protection-hook"),
+            "empty env must fall back like unset"
+        );
+    }
+
+    #[test]
+    fn protection_helper_none_when_env_and_default_missing() {
+        assert!(resolve_protection_helper_with(None, None).is_none());
+        assert!(resolve_protection_helper_with(Some(String::new()), None).is_none());
+    }
+
+    #[test]
     fn union_takes_max_reviews_and_restrictive_allows() {
         let r1 = BranchProtectionRuleRow {
             id: "1".into(),

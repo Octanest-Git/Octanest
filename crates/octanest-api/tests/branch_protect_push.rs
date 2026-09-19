@@ -251,3 +251,28 @@ async fn branch_protect_push_reconcile_hooks() {
     assert!(hooks_installed(&bare).await);
     let _ = ZERO_SHA;
 }
+
+/// D-PKG-01: env helper path wins; empty/unset falls back to default_helper_path input.
+#[test]
+fn branch_protect_default_helper_resolution_prefers_env() {
+    use octanest_api::protection::resolve_protection_helper_with;
+    use std::path::PathBuf;
+
+    let preferred = resolve_protection_helper_with(
+        Some("/from/env/octanest-protection-hook".into()),
+        Some(PathBuf::from("/from/sibling/octanest-protection-hook")),
+    );
+    assert_eq!(
+        preferred.as_deref(),
+        Some("/from/env/octanest-protection-hook")
+    );
+
+    let fallback = resolve_protection_helper_with(
+        None,
+        Some(PathBuf::from("/from/sibling/octanest-protection-hook")),
+    );
+    assert_eq!(
+        fallback.as_deref(),
+        Some("/from/sibling/octanest-protection-hook")
+    );
+}
