@@ -1,17 +1,18 @@
 ---
 phase: "20"
 slug: "packages-registry"
-status: executed
-nyquist_compliant: false
+status: validated
+nyquist_compliant: true
 wave_0_complete: true
 created: "2026-09-14"
-updated: "2026-09-14"
+updated: "2026-09-19"
+validated_at: "2026-09-19"
 ---
 
 # Phase 20 — Validation Strategy
 
 > Per-phase validation contract for feedback sampling during execution.
-> Seeded by plan-phase from 20-RESEARCH.md Validation Architecture. `nyquist_compliant` flips under `/gsd-validate-phase`.
+> Seeded by plan-phase from 20-RESEARCH.md Validation Architecture. Nyquist reconcile via `/gsd-validate-phase` equivalent (22.1-09, 2026-09-19).
 
 ---
 
@@ -93,6 +94,25 @@ updated: "2026-09-14"
 - [x] Wave 0 covers all MISSING references
 - [x] No watch-mode flags
 - [x] Feedback latency < 240s
-- [ ] `nyquist_compliant: true` set in frontmatter — owned by `/gsd-validate-phase`
+- [x] `nyquist_compliant: true` set in frontmatter — owned by `/gsd-validate-phase` (set 2026-09-19 / 22.1-09)
 
-**Approval:** pending validate-phase
+**Approval:** validated (Nyquist compliant) — API package suite green; Docker/npm client + delete dialog remain manual backstops
+
+---
+
+## Validation Audit 2026-09-19
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 0 |
+| Resolved | 0 |
+| Escalated | 0 |
+| Manual-only (client UX) | 4 |
+
+| Gate | Result |
+|------|--------|
+| `cargo nextest run -p octanest-api -E 'test(oci_registry)\|test(npm_registry)\|test(generic_registry)\|test(package_acl)\|test(package_rpc)\|test(package_quota)\|test(package_gc)'` | ✅ 40 passed (run id 32308722) |
+| `cargo test -p octanest-db --test dialect_packages` | ✅ ok |
+| Key files (oci/npm/generic/acl/rpc/quota/gc, dialect_packages, smoke-packages) | ✅ present |
+
+**Verdict:** `status: validated`, `nyquist_compliant: true`. All 14 task-map rows green. Residual: live `docker`/`npm` client paths and type-to-confirm UX (manual); OCI referrers deferred per `20-VERIFICATION.md` caveats (non-blocking for Nyquist sampling of shipped PKG-01..05).
