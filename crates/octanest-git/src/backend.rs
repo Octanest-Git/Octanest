@@ -79,6 +79,21 @@ pub struct CommitSummary {
     pub authored_at: String,
 }
 
+/// Aggregated author from `git shortlog` (issue #23 contributors).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContributorSummary {
+    pub name: String,
+    pub email: String,
+    pub commit_count: i64,
+}
+
+/// Blob path + byte size from `git ls-tree -r -l` (About language stats).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SizedBlobEntry {
+    pub path: String,
+    pub size: u64,
+}
+
 /// One file in a commit or compare diff.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiffFile {
@@ -340,4 +355,44 @@ pub trait GitBackend: Send + Sync {
         skip: u32,
         limit: u32,
     ) -> Result<Vec<CommitSummary>, GitError>;
+
+    /// Last commit touching `path` under `refname` (`git log -1 -- <path>`).
+    /// Missing/empty history → `Ok(vec![])`.
+    async fn log_path(
+        &self,
+        repo: &Path,
+        refname: &str,
+        path: &str,
+        limit: u32,
+    ) -> Result<Vec<CommitSummary>, GitError>;
+
+    /// Last commit per directory entry name (batched; concurrency-capped).
+    /// Keys are bare entry names (not full paths). Missing entries omitted.
+    async fn path_last_commits(
+        &self,
+        repo: &Path,
+        refname: &str,
+        dir_path: &str,
+        entry_names: &[String],
+    ) -> Result<std::collections::HashMap<String, CommitSummary>, GitError>;
+
+    /// `git rev-list --count <refname>`. Unborn → 0.
+    async fn rev_list_count(&self, repo: &Path, refname: &str) -> Result<u64, GitError>;
+
+    /// `git shortlog -sn -e` contributors for `refname`, capped to `limit` (max 100).
+    async fn shortlog(
+        &self,
+        repo: &Path,
+        refname: &str,
+        limit: u32,
+    ) -> Result<Vec<ContributorSummary>, GitError>;
+
+    /// Recursive `git ls-tree -r -l` blob paths + sizes for language stats.
+    /// Empty / unborn → `Ok(vec![])`. Soft-capped by `max_entries`.
+    async fn ls_tree_sized_blobs(
+        &self,
+        repo: &Path,
+        treeish: &str,
+        max_entries: u32,
+    ) -> Result<Vec<SizedBlobEntry>, GitError>;
 }

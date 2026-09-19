@@ -1,7 +1,11 @@
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
 import { createClient, type OctanestClient } from "@octanest/api-client";
-import { resolveThemeForSsr, themePreferenceFromCookieHeader } from "@/lib/theme";
+import {
+  resolveThemeForSsr,
+  themePreferenceFromCookieHeader,
+  resolvedColorSchemeFromCookieHeader,
+} from "@/lib/theme";
 
 /** API origin for SSR Cookie-forward RPCs — never the browser origin during SSR. */
 function ssrApiOrigin(): string {
@@ -106,12 +110,14 @@ export const fetchSystemHealth = createServerFn({ method: "GET" }).handler(async
   return client.system.health();
 });
 
-/** SSR: resolved Shiki theme (cookie + Client Hints). */
+/** SSR: resolved Shiki theme (cookie + resolved scheme + Client Hints). */
 export const resolveSsrHighlightTheme = createServerFn({ method: "GET" }).handler(
   async (): Promise<"github-light" | "github-dark"> => {
-    const pref = themePreferenceFromCookieHeader(incomingCookie());
+    const cookie = incomingCookie();
+    const pref = themePreferenceFromCookieHeader(cookie);
+    const resolvedBoot = resolvedColorSchemeFromCookieHeader(cookie);
     const ch = getRequestHeader("sec-ch-prefers-color-scheme");
-    const resolved = resolveThemeForSsr(pref, ch);
+    const resolved = resolveThemeForSsr(pref, ch, resolvedBoot);
     return resolved === "dark" ? "github-dark" : "github-light";
   },
 );

@@ -150,6 +150,21 @@ pub struct RepoPublic {
     /// True when owners expose this repo as a create-from template (issue #18).
     #[serde(default)]
     pub is_template: bool,
+    /// Project homepage URL / text (issue #23).
+    #[serde(default)]
+    pub homepage: String,
+    /// Topic slugs (issue #23).
+    #[serde(default)]
+    pub topics: Vec<String>,
+    /// Active forks in this repo's network (issue #23).
+    #[serde(default)]
+    pub fork_count: i64,
+    /// Watch / subscribe counter (issue #23).
+    #[serde(default)]
+    pub watch_count: i64,
+    /// Whether the authenticated viewer is watching this repo.
+    #[serde(default)]
+    pub viewer_is_watching: bool,
     /// Fork network root id (own id for roots) — D-SOC-14 / D-PR-01.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fork_network_id: Option<String>,
@@ -163,6 +178,291 @@ pub struct RepoPublic {
 pub struct RepoStarRequest {
     pub owner: String,
     pub name: String,
+}
+
+/// Public stargazer row for `repo.stargazers.list` (no email). Write+ only.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoStargazerPublic {
+    pub user_id: String,
+    pub username: String,
+    pub display_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+    /// When the user starred (ISO-8601).
+    pub starred_at: String,
+}
+
+/// `repo.stargazers.list` — paginated stargazers; Write+ gated; optional username search.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoStargazersListRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub q: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoStargazersListResponse {
+    pub stargazers: Vec<RepoStargazerPublic>,
+    pub total: i64,
+}
+
+/// `repo.watch` / `repo.unwatch` input (same shape as star).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoWatchRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+/// Public watcher row for `repo.watchers.list` (no email).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoWatcherPublic {
+    pub user_id: String,
+    pub username: String,
+    pub display_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+    /// When the user started watching (ISO-8601).
+    pub watched_at: String,
+}
+
+/// `repo.watchers.list` — paginated watchers; optional username/display_name search.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoWatchersListRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub q: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoWatchersListResponse {
+    pub watchers: Vec<RepoWatcherPublic>,
+    /// Total matching rows (after `q` filter).
+    pub total: i64,
+}
+
+/// Sort keys for `repo.forks.list` (GitHub-parity subset we can support with stored data).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RepoForksSort {
+    #[default]
+    Stars,
+    Updated,
+    Created,
+}
+
+impl RepoForksSort {
+    pub fn parse(raw: &str) -> Self {
+        match raw.trim().to_ascii_lowercase().as_str() {
+            "updated" | "recently_updated" => Self::Updated,
+            "created" | "recently_created" => Self::Created,
+            _ => Self::Stars,
+        }
+    }
+}
+
+/// Public fork row for `repo.forks.list`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoForkPublic {
+    pub id: String,
+    pub owner_username: String,
+    pub name: String,
+    #[serde(default)]
+    pub description: String,
+    pub star_count: i64,
+    pub fork_count: i64,
+    pub created_at: String,
+    pub updated_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_avatar_url: Option<String>,
+}
+
+/// `repo.forks.list` — paginated forks in the network; search by owner/name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoForksListRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub q: Option<String>,
+    /// `stars` (default) | `updated` | `created`
+    #[serde(default)]
+    pub sort: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoForksListResponse {
+    pub forks: Vec<RepoForkPublic>,
+    pub total: i64,
+}
+
+/// `repo.updateMetadata` — Admin updates description / homepage / topics (issue #23).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoUpdateMetadataRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    #[serde(default)]
+    pub homepage: Option<String>,
+    #[serde(default)]
+    pub topics: Option<Vec<String>>,
+}
+
+/// `repo.pathLastCommits` — last commit per tree entry name (issue #23).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoPathLastCommitsRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    #[serde(default)]
+    pub path: Option<String>,
+}
+
+/// Map of entry basename → last commit that touched that path.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoPathLastCommitsResponse {
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub path: String,
+    pub commits: std::collections::BTreeMap<String, RepoCommitSummary>,
+}
+
+/// `repo.commitCount` — `rev-list --count` for the commits header (issue #23).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitCountRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoCommitCountResponse {
+    #[serde(rename = "ref")]
+    pub ref_name: String,
+    pub count: u64,
+}
+
+/// Public contributor row for About sidebar (no email).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoContributorPublic {
+    pub display_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+    pub commit_count: i64,
+}
+
+/// `repo.contributors.list` input.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoContributorsListRequest {
+    pub owner: String,
+    pub name: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoContributorsListResponse {
+    pub contributors: Vec<RepoContributorPublic>,
+}
+
+/// One language in the About sidebar breakdown (linguist-lite, byte-weighted).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLanguageStat {
+    pub name: String,
+    /// Raw byte total for this language on the default branch.
+    pub bytes: u64,
+    /// Linguist-conventional hex color (`#rrggbb`), when known.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+}
+
+/// `repo.languages` input — default-branch language stats for About.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLanguagesRequest {
+    pub owner: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoLanguagesResponse {
+    pub languages: Vec<RepoLanguageStat>,
+}
+
+/// Actor on a repository activity feed item (public fields only).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoActivityActor {
+    pub login: String,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar_url: Option<String>,
+    /// Profile path (`/{login}`).
+    pub path: String,
+}
+
+/// One push / branch / merge event for `repo.activity.list`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoActivityItem {
+    pub id: String,
+    /// `push` | `force_push` | `pr_merge` | `branch_creation` | `branch_deletion`
+    pub push_type: String,
+    pub ref_name: String,
+    /// Short branch/tag name when `ref_name` is under `refs/heads/` or `refs/tags/`.
+    pub ref_short: String,
+    pub before: String,
+    pub after: String,
+    pub pushed_at: String,
+    pub commits_count: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub commit_message: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pr_number: Option<i64>,
+    pub pusher: RepoActivityActor,
+}
+
+/// `repo.activity.list` — GitHub-shaped repo activity feed (Read+).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoActivityListRequest {
+    pub owner: String,
+    pub name: String,
+    /// Optional push_type filter (`push`, `force_push`, `pr_merge`, `branch_creation`,
+    /// `branch_deletion`, `branch_rename`, …).
+    #[serde(default)]
+    pub push_type: Option<String>,
+    /// Optional lower bound as ISO-8601 UTC (`2024-01-01T00:00:00Z`).
+    #[serde(default)]
+    pub since: Option<String>,
+    /// Convenience period: `week` | `month` | `year` | `all` (default all).
+    #[serde(default)]
+    pub period: Option<String>,
+    #[serde(default)]
+    pub offset: Option<i64>,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoActivityListResponse {
+    pub items: Vec<RepoActivityItem>,
+    pub total: i64,
+    pub offset: i64,
+    pub limit: i64,
 }
 
 /// `user.listStarred` — caller's starred repos (D-SOC-03).
@@ -822,8 +1122,19 @@ pub struct RepoCollaboratorsRemoveRequest {
     pub user_id: String,
 }
 
+/// Org profile meta-repos (Octanest-first, GitHub-compatible). Leading `.` is otherwise rejected.
+const ALLOWED_DOT_REPO_NAMES: &[&str] = &[".octanest", ".github"];
+
+fn is_allowed_dot_repo_name(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    ALLOWED_DOT_REPO_NAMES
+        .iter()
+        .any(|allowed| *allowed == lower.as_str())
+}
+
 /// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
+/// Exception: `.octanest` and `.github` (org profile README special repos).
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {
     let name = raw.trim();
     if name.is_empty() || name.len() > 100 {
@@ -832,9 +1143,10 @@ pub fn validate_repo_name(raw: &str) -> Result<(), String> {
     if name == "." || name == ".." {
         return Err("repository name is invalid".into());
     }
+    let allow_leading_dot = is_allowed_dot_repo_name(name);
     if name.starts_with('-')
         || name.ends_with('-')
-        || name.starts_with('.')
+        || (name.starts_with('.') && !allow_leading_dot)
         || name.ends_with('.')
     {
         return Err("repository name cannot start or end with a hyphen or period".into());
@@ -900,5 +1212,29 @@ mod tests {
             "expected reserved rejection, got: {err}"
         );
         assert!(is_reserved_username("login"));
+    }
+
+    #[test]
+    fn validate_repo_name_accepts_profile_special_dot_repos() {
+        assert!(
+            validate_repo_name(".octanest").is_ok(),
+            "org profile special repo .octanest must be allowed"
+        );
+        assert!(
+            validate_repo_name(".github").is_ok(),
+            "org profile special repo .github must be allowed"
+        );
+        assert!(
+            validate_repo_name(".OCTANEST").is_ok(),
+            "allowlist is case-insensitive"
+        );
+        assert!(validate_repo_name(".GitHub").is_ok());
+    }
+
+    #[test]
+    fn validate_repo_name_rejects_other_leading_dot_names() {
+        assert!(validate_repo_name(".hidden").is_err());
+        assert!(validate_repo_name(".config").is_err());
+        assert!(validate_repo_name(".git").is_err());
     }
 }

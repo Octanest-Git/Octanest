@@ -7,6 +7,7 @@ import {
   type OrgPublic,
   type RepoPublic,
 } from "@octanest/api-client";
+import { fetchOrgProfileReadme, type ProfileReadme } from "@/lib/profile-readme";
 
 function ssrApiOrigin(): string {
   return (
@@ -37,6 +38,8 @@ export type OrgOverviewPayload = {
   memberCount: number | null;
   repos: RepoPublic[];
   canAdmin: boolean;
+  /** Public `.octanest` / `.github` `profile/README.md`, or null. */
+  profileReadme: ProfileReadme | null;
 };
 
 /** SSR: org overview — org.get + member count + ACL-filtered repos (D-ORG-06). */
@@ -75,7 +78,9 @@ export const fetchOrgOverview = createServerFn({ method: "GET" })
       repos = listed.data.repos;
     }
 
-    return { org, memberCount, repos, canAdmin };
+    const profileReadme = await fetchOrgProfileReadme(client, org.slug);
+
+    return { org, memberCount, repos, canAdmin, profileReadme };
   });
 
 /** SSR: org.get for settings loaders. */

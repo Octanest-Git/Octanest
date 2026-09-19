@@ -1,8 +1,15 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { PullDiffFile } from "@octanest/api-client";
-import { useState } from "octane";
+import { useEffect, useState } from "octane";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { apiClient } from "@/lib/api-client";
+import { clientHighlightTheme } from "@/lib/highlight";
+import {
+  highlightDiffLines,
+  highlightedDiffRowsEqual,
+  plainHighlightedDiffLines,
+  type HighlightedDiffLine,
+} from "@/lib/highlight-diff";
 import { parseUnifiedDiffLines } from "@/lib/parse-unified-diff";
 import { cn } from "@/lib/utils";
 
@@ -22,34 +29,96 @@ function splitLineClass(kind: string): string {
 }
 
 function SplitDiff(props: { path: string; status: string; patch: string }) @{
-  const lines = parseUnifiedDiffLines(props.patch).map((line, index) => ({
-    ...line,
-    index,
-  }));
+  const parsed = parseUnifiedDiffLines(props.patch);
+  const [rows, setRows] = useState<HighlightedDiffLine[]>(() => plainHighlightedDiffLines(parsed));
+
+  useEffect(() => {
+    const lines = parseUnifiedDiffLines(props.patch);
+    setRows(plainHighlightedDiffLines(lines));
+
+    let cancelled = false;
+    let appliedTheme: ReturnType<typeof clientHighlightTheme> | null = null;
+
+    async function run() {
+      const theme = clientHighlightTheme();
+      if (appliedTheme === theme) return;
+      const next = await highlightDiffLines(lines, {
+        path: props.path,
+        theme,
+      });
+      if (cancelled) return;
+      appliedTheme = theme;
+      setRows((prev) => (highlightedDiffRowsEqual(prev, next) ? prev : next));
+    }
+
+    void run();
+
+    if (typeof document === "undefined") {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const mo = new MutationObserver(() => {
+      void run();
+    });
+    mo.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      cancelled = true;
+      mo.disconnect();
+    };
+  }, [props.patch, props.path]);
+
+  const keyed = rows.map((line, index) => ({ ...line, index }));
 
   <section className="overflow-hidden border border-border">
     <h3 className="border-b border-border bg-muted/40 px-3 py-2 font-mono text-[14px]">
       {props.path as string}{" "}
       <span className="text-muted-foreground">({props.status as string})</span>
     </h3>
-    @if (lines.length === 0) {
+    @if (keyed.length === 0) {
       <p className="px-3 py-3 text-[14px] text-muted-foreground">
         No textual patch for this file.
       </p>;
     } @else {
-      <div className="overflow-x-auto font-mono text-[14px] leading-[1.45]">
-        @for (const line of lines; key line.index) {
+      <div className="diff-code overflow-x-auto font-mono text-[14px] leading-[1.45]">
+        @for (const line of keyed; key line.index) {
           <div
             className={cn(
               "grid grid-cols-2 whitespace-pre border-b border-border/40",
               splitLineClass(line.kind) as string,
             )}
+            data-diff-kind={line.kind as string}
           >
-            <div className="border-r border-border/50 px-2 py-0.5 text-muted-foreground">
-              {(line.kind === "add" ? "" : line.text) as string}
+            <div className="flex border-r border-border/50 px-2 py-0.5 text-muted-foreground">
+              @if (line.kind !== "add") {
+                @if (line.prefix) {
+                  <span className="shrink-0 select-none" aria-hidden="true">
+                    {line.prefix as string}
+                  </span>;
+                }
+                <span
+                  className="min-w-0 grow"
+                  dangerouslySetInnerHTML={{ __html: line.contentHtml as string }}
+                />;
+              }
             </div>
-            <div className="px-2 py-0.5">
-              {(line.kind === "del" ? "" : line.text) as string}
+            <div className="flex px-2 py-0.5">
+              @if (line.kind !== "del") {
+                @if (line.prefix) {
+                  <span className="shrink-0 select-none" aria-hidden="true">
+                    {line.prefix as string}
+                  </span>;
+                }
+                <span
+                  className="min-w-0 grow"
+                  dangerouslySetInnerHTML={{ __html: line.contentHtml as string }}
+                />;
+              }
             </div>
           </div>;
         }

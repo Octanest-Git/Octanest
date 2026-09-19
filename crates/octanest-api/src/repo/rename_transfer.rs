@@ -62,6 +62,11 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         viewer_has_starred: false,
         is_fork: false,
         is_template: false,
+        homepage: String::new(),
+        topics: Vec::new(),
+        fork_count: 0,
+        watch_count: 0,
+        viewer_is_watching: false,
         fork_network_id: None,
         forked_from: None,
     }

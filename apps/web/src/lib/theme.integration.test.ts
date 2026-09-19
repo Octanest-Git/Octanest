@@ -3,11 +3,13 @@ import {
   THEME_BOOT_SCRIPT,
   THEME_COOKIE_KEY,
   THEME_OPTIONS,
+  THEME_RESOLVED_COOKIE_KEY,
   THEME_STORAGE_KEY,
   applyTheme,
   readThemePreference,
   resolveTheme,
   resolveThemeForSsr,
+  resolvedColorSchemeFromCookieHeader,
   themePreferenceFromCookieHeader,
 } from "./theme";
 
@@ -16,6 +18,7 @@ describe("theme helpers", () => {
     localStorage.removeItem(THEME_STORAGE_KEY);
     document.documentElement.classList.remove("dark");
     document.cookie = `${THEME_COOKIE_KEY}=; path=/; max-age=0`;
+    document.cookie = `${THEME_RESOLVED_COOKIE_KEY}=; path=/; max-age=0`;
     vi.restoreAllMocks();
   });
 
@@ -71,11 +74,13 @@ describe("theme helpers", () => {
     expect(readThemePreference()).toBe("dark");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(document.cookie).toMatch(/octanest-theme=dark/);
+    expect(document.cookie).toMatch(/octanest-color-scheme=dark/);
 
     applyTheme("light");
     expect(readThemePreference()).toBe("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(document.cookie).toMatch(/octanest-theme=light/);
+    expect(document.cookie).toMatch(/octanest-color-scheme=light/);
 
     applyTheme("system");
     expect(readThemePreference()).toBe("system");
@@ -86,9 +91,13 @@ describe("theme helpers", () => {
     expect(themePreferenceFromCookieHeader("octanest-theme=dark")).toBe("dark");
     expect(themePreferenceFromCookieHeader("a=1; octanest-theme=system; b=2")).toBe("system");
     expect(themePreferenceFromCookieHeader(undefined)).toBeNull();
+    expect(resolvedColorSchemeFromCookieHeader("octanest-color-scheme=dark")).toBe("dark");
+    expect(resolvedColorSchemeFromCookieHeader(undefined)).toBeNull();
 
     expect(resolveThemeForSsr("dark")).toBe("dark");
     expect(resolveThemeForSsr("system", "dark")).toBe("dark");
+    expect(resolveThemeForSsr("system", null, "dark")).toBe("dark");
+    expect(resolveThemeForSsr(null, null, "dark")).toBe("dark");
     expect(resolveThemeForSsr(null, null)).toBe("light");
   });
 
@@ -96,6 +105,7 @@ describe("theme helpers", () => {
     expect(THEME_BOOT_SCRIPT).toContain('localStorage.getItem("octanest-theme")');
     expect(THEME_BOOT_SCRIPT).toContain("prefers-color-scheme: dark");
     expect(THEME_BOOT_SCRIPT).toContain('classList.toggle("dark"');
+    expect(THEME_BOOT_SCRIPT).toContain("octanest-color-scheme=");
     expect(THEME_BOOT_SCRIPT).not.toMatch(/\$\{|`/);
   });
 });

@@ -15,6 +15,7 @@ import { TypeToConfirmDialog } from "@/components/repo/type-to-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { type RepoLayoutLoaderData, useRepoStore } from "@/lib/repo-store";
 import { toastError, toastSuccess } from "@/lib/toast";
@@ -58,6 +59,10 @@ export function RepoSettingsPage() @{
 
   const [visibility, setVisibility] = useState<RepoVisibility>(() => repo?.visibility ?? "public");
   const [visPending, setVisPending] = useState(false);
+  const [description, setDescription] = useState(() => repo?.description ?? "");
+  const [homepage, setHomepage] = useState(() => repo?.homepage ?? "");
+  const [topicsText, setTopicsText] = useState(() => (repo?.topics ?? []).join(", "));
+  const [metaPending, setMetaPending] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [deletePending, setDeletePending] = useState(false);
@@ -94,6 +99,38 @@ export function RepoSettingsPage() @{
     } catch {
       toastError(NETWORK_ERROR);
       setVisPending(false);
+    }
+  }
+
+  async function saveMetadata() {
+    if (!repo) return;
+    setMetaPending(true);
+    try {
+      const topics = topicsText
+        .split(/[,\s]+/)
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+      const res = await apiClient.repo.updateMetadata({
+        owner,
+        name: repoName,
+        description,
+        homepage: homepage.trim(),
+        topics,
+      });
+      if (!res.ok) {
+        toastError(res.error.message || "Could not update repository details.");
+        setMetaPending(false);
+        return;
+      }
+      setDescription(res.data.description ?? "");
+      setHomepage(res.data.homepage ?? "");
+      setTopicsText((res.data.topics ?? []).join(", "));
+      setRepo(res.data);
+      toastSuccess("Repository details updated.");
+      setMetaPending(false);
+    } catch {
+      toastError(NETWORK_ERROR);
+      setMetaPending(false);
     }
   }
 
@@ -192,6 +229,62 @@ export function RepoSettingsPage() @{
   } @else if (repo && canAdmin) {
     <>
       <div className="max-w-3xl">
+        <section className="mt-8 flex flex-col gap-4" aria-labelledby="general-heading">
+          <h2
+            id="general-heading"
+            className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-foreground"
+          >
+            General
+          </h2>
+          <p className="text-[14px] text-muted-foreground">
+            Description, homepage, and topics shown on the Code home About panel.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="repo-description">Description</Label>
+            <Textarea
+              id="repo-description"
+              value={description}
+              onInput={(e) => setDescription((e.currentTarget as HTMLTextAreaElement).value)}
+              disabled={metaPending}
+              rows={3}
+              maxLength={350}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="repo-homepage">Homepage</Label>
+            <Input
+              id="repo-homepage"
+              value={homepage}
+              onInput={(e) => setHomepage((e.currentTarget as HTMLInputElement).value)}
+              disabled={metaPending}
+              placeholder="https://example.com"
+              autoComplete="off"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="repo-topics">Topics</Label>
+            <Input
+              id="repo-topics"
+              value={topicsText}
+              onInput={(e) => setTopicsText((e.currentTarget as HTMLInputElement).value)}
+              disabled={metaPending}
+              placeholder="rust, forge, self-hosted"
+              autoComplete="off"
+            />
+            <p className="text-[13px] text-muted-foreground">
+              Comma-separated lowercase slugs (letters, digits, hyphens).
+            </p>
+          </div>
+          <Button
+            type="button"
+            disabled={metaPending}
+            onClick={() => void saveMetadata()}
+            className="w-full sm:w-auto"
+          >
+            {(metaPending ? "Saving…" : "Save details") as string}
+          </Button>
+        </section>
+
         <section className="mt-8 flex flex-col gap-4" aria-labelledby="vis-heading">
           <h2
             id="vis-heading"

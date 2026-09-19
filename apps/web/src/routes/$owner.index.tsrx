@@ -7,6 +7,7 @@ import {
 } from "@octanejs/tanstack-router";
 import { useState } from "octane";
 import { BookMarked, Star } from "@octanejs/lucide";
+import { ReadmePanel } from "@/components/repo/readme-panel";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -65,6 +66,7 @@ export function OrgOverviewPage() @{
   const memberCount = orgData?.memberCount;
   const repos = orgData?.repos ?? [];
   const canAdmin = orgData?.canAdmin === true;
+  const profileReadme = orgData?.profileReadme ?? null;
 
   @if (!org) {
     <div className="mx-auto max-w-6xl px-4 py-16">
@@ -107,6 +109,10 @@ export function OrgOverviewPage() @{
           </div>;
         }
       </div>
+
+      @if (profileReadme) {
+        <ReadmePanel html={profileReadme.html} fileName={profileReadme.name} />;
+      }
 
       <section className="mt-10" aria-labelledby="org-repos-heading">
         <h2
@@ -170,6 +176,7 @@ export function UserProfilePage() @{
   const repos = payload?.repos ?? [];
   const starred = payload?.starred ?? [];
   const isSelf = payload?.isSelf === true;
+  const profileReadme = payload?.profileReadme ?? null;
   const [tab, setTab] = useState<"repos" | "stars">("repos");
 
   const display = profile?.display_name?.trim() || profile?.username || "";
@@ -201,6 +208,10 @@ export function UserProfilePage() @{
           }
         </div>
       </div>
+
+      @if (profileReadme) {
+        <ReadmePanel html={profileReadme.html} fileName={profileReadme.name} />;
+      }
 
       <div className="mt-8 flex gap-4 border-b border-border">
         <button

@@ -38,6 +38,7 @@ vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
         },
       ],
       canAdmin: true,
+      profileReadme: null,
     },
   };
   return {

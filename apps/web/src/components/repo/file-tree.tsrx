@@ -1,4 +1,4 @@
-import type { RepoTreeEntry } from "@octanest/api-client";
+import type { RepoCommitSummary, RepoTreeEntry } from "@octanest/api-client";
 import { FileCode2, Folder, Package } from "@octanejs/lucide";
 import {
   blobHref,
@@ -7,6 +7,7 @@ import {
   sortTreeEntries,
   treeHref,
 } from "@/lib/repo-browse";
+import { formatRelativeUpdated } from "@/lib/relative-time";
 
 type FileTreeProps = {
   owner: string;
@@ -14,18 +15,35 @@ type FileTreeProps = {
   refName: string;
   basePath: string;
   entries: RepoTreeEntry[];
+  /** Optional last-commit map keyed by entry basename (issue #23). */
+  lastCommits?: Record<string, RepoCommitSummary>;
 };
 
-/** Sorted directory listing — dirs/gitlinks first; `..` when nested (D-15, D-21). */
-export function FileTree({ owner, repo, refName, basePath, entries }: FileTreeProps) @{
+function relativeCommitTime(iso: string): string {
+  return formatRelativeUpdated(iso).replace(/^Updated\s+/i, "");
+}
+
+/** Sorted directory listing — dirs/gitlinks first; commit columns when provided (D-15, issue #23). */
+export function FileTree({
+  owner,
+  repo,
+  refName,
+  basePath,
+  entries,
+  lastCommits,
+}: FileTreeProps) @{
   const sorted = sortTreeEntries(entries);
   const nested = Boolean(basePath.replace(/^\/+|\/+$/g, ""));
   const parentHref = nested ? treeHref(owner, repo, refName, parentRepoPath(basePath)) : "";
+  const hasHistory = lastCommits != null;
+  const rounded = hasHistory
+    ? "rounded-b-md border border-border"
+    : "rounded-md border border-border";
 
   <ul
     role="list"
     aria-label="Directories and files"
-    className="divide-y divide-border overflow-y-auto rounded-md border border-border bg-card/40"
+    className={(rounded + " divide-y divide-border overflow-y-auto bg-card/40") as string}
     data-testid="repo-file-tree"
   >
     @if (nested) {
@@ -49,39 +67,67 @@ export function FileTree({ owner, repo, refName, basePath, entries }: FileTreePr
         : isLink
           ? treeHref(owner, repo, refName, childPath)
           : blobHref(owner, repo, refName, childPath);
-      <li className="flex min-h-11 items-center gap-3 px-3 py-2">
-        @if (isTree) {
-          <Folder aria-hidden size={16} className="shrink-0 text-muted-foreground" />;
-        } @else {
-          @if (isLink) {
-            <Package
-              aria-hidden
-              size={16}
-              className="shrink-0 text-muted-foreground"
-            />;
+      const last = lastCommits ? lastCommits[entry.name] : undefined;
+      <li className="grid min-h-11 grid-cols-1 items-center gap-x-3 gap-y-1 px-3 py-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_7rem]">
+        <div className="flex min-w-0 items-center gap-3">
+          @if (isTree) {
+            <Folder aria-hidden size={16} className="shrink-0 text-muted-foreground" />;
           } @else {
-            <FileCode2
-              aria-hidden
-              size={16}
-              className="shrink-0 text-muted-foreground"
-            />;
+            @if (isLink) {
+              <Package
+                aria-hidden
+                size={16}
+                className="shrink-0 text-muted-foreground"
+              />;
+            } @else {
+              <FileCode2
+                aria-hidden
+                size={16}
+                className="shrink-0 text-muted-foreground"
+              />;
+            }
           }
-        }
-        <a
-          href={href as string}
-          className="min-w-0 flex-1 truncate text-[14px] font-normal text-foreground no-underline hover:underline"
-          title={
-            isLink
-              ? (`Submodule ${entry.name} @ ${entry.oid.slice(0, 7)}` as string)
-              : (entry.name as string)
+          <a
+            href={href as string}
+            className="min-w-0 flex-1 truncate text-[14px] font-normal text-foreground no-underline hover:underline"
+            title={
+              isLink
+                ? (`Submodule ${entry.name} @ ${entry.oid.slice(0, 7)}` as string)
+                : (entry.name as string)
+            }
+          >
+            {entry.name as string}
+          </a>
+          @if (isLink) {
+            <span className="shrink-0 font-mono text-[12px] text-muted-foreground md:hidden">
+              {entry.oid.slice(0, 7) as string}
+            </span>;
           }
-        >
-          {entry.name as string}
-        </a>
-        @if (isLink) {
-          <span className="shrink-0 font-mono text-[12px] text-muted-foreground">
-            {entry.oid.slice(0, 7) as string}
-          </span>;
+        </div>
+        @if (last) {
+          <a
+            href={`/${owner}/${repo}/commit/${last.sha}` as string}
+            className="hidden min-w-0 truncate text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline md:block"
+            title={last.subject as string}
+          >
+            {last.subject as string}
+          </a>;
+          <time
+            dateTime={last.authored_at as string}
+            className="text-[12px] text-muted-foreground md:text-right"
+          >
+            {relativeCommitTime(last.authored_at) as string}
+          </time>;
+        } @else {
+          @if (hasHistory) {
+            <span className="hidden md:block" />;
+            <span className="hidden md:block" />;
+          }
+          @if (isLink) {
+            <span className="hidden shrink-0 font-mono text-[12px] text-muted-foreground md:block md:text-right">
+              {entry.oid.slice(0, 7) as string}
+            </span>;
+          }
         }
       </li>;
     } @empty {

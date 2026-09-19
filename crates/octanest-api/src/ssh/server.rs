@@ -210,6 +210,15 @@ impl Handler for SshHandler {
                         if let Ok(Some(user)) = db.find_user_by_id(&user_id).await {
                             let after_refs = git.list_refs(&bare).await.unwrap_or_default();
                             let updates = ref_updates_from_lists(&before_refs, &after_refs);
+                            crate::repo::record_ref_updates(
+                                &db,
+                                &repo_id,
+                                &user.id,
+                                &updates,
+                                Some(git.clone()),
+                                Some(bare.as_path()),
+                            )
+                            .await;
                             crate::webhook::dispatch::notify_push(
                                 &db,
                                 &repo_id,

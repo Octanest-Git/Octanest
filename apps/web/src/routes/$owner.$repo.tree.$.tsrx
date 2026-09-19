@@ -1,15 +1,44 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { RepoPublic, RepoRefEntry, RepoTreeEntry } from "@octanest/api-client";
+import type {
+  PackagePublic,
+  ReleasePublic,
+  RepoCommitSummary,
+  RepoContributorPublic,
+  RepoLanguageStat,
+  RepoPublic,
+  RepoRefEntry,
+  RepoTreeEntry,
+} from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
+import { RepoAboutSidebar } from "@/components/repo/repo-about-sidebar";
 import { RepoBrowseToolbar } from "@/components/repo/repo-browse-toolbar";
+import { RepoLastCommitBar } from "@/components/repo/repo-last-commit-bar";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { ReadmePanel } from "@/components/repo/readme-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
-import { findReadmeName, joinRepoPath, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
+import {
+  findReadmeName,
+  joinRepoPath,
+  parseRefAndPath,
+  resolveAboutRootFiles,
+  shortRefName,
+} from "@/lib/repo-browse";
 import { renderGfm } from "@/lib/markdown";
-import { fetchRepoBlob, fetchRepoGet, fetchRepoRefs, fetchRepoTree } from "@/lib/ssr-repo";
+import {
+  fetchPackagesForRepo,
+  fetchReleaseList,
+  fetchRepoBlob,
+  fetchRepoCommitCount,
+  fetchRepoCommits,
+  fetchRepoContributors,
+  fetchRepoGet,
+  fetchRepoLanguages,
+  fetchRepoPathLastCommits,
+  fetchRepoRefs,
+  fetchRepoTree,
+} from "@/lib/ssr-repo";
 
 export type TreeLoaderData =
   | { kind: "not_found" }
@@ -23,6 +52,16 @@ export type TreeLoaderData =
       refs: RepoRefEntry[];
       /** Nested-dir README when present (same rules as code home). */
       readme: { name: string; html: string } | null;
+      tip: RepoCommitSummary | null;
+      commitCount: number | null;
+      lastCommits: Record<string, RepoCommitSummary>;
+      latestRelease: ReleasePublic | null;
+      packages: PackagePublic[];
+      contributors: RepoContributorPublic[];
+      languages: RepoLanguageStat[];
+      licenseFile: string | null;
+      licenseLabel: string | null;
+      contributingFile: string | null;
     };
 
 type Phase = { kind: "loading" } | TreeLoaderData;
@@ -37,6 +76,13 @@ async function loadTreePage(
   fetchTree: typeof fetchRepoTree = fetchRepoTree,
   fetchRefs: typeof fetchRepoRefs = fetchRepoRefs,
   fetchBlob: typeof fetchRepoBlob = fetchRepoBlob,
+  fetchCommits: typeof fetchRepoCommits = fetchRepoCommits,
+  fetchPathLast: typeof fetchRepoPathLastCommits = fetchRepoPathLastCommits,
+  fetchCount: typeof fetchRepoCommitCount = fetchRepoCommitCount,
+  fetchReleases: typeof fetchReleaseList = fetchReleaseList,
+  fetchPackages: typeof fetchPackagesForRepo = fetchPackagesForRepo,
+  fetchContributors: typeof fetchRepoContributors = fetchRepoContributors,
+  fetchLanguages: typeof fetchRepoLanguages = fetchRepoLanguages,
 ): Promise<TreeLoaderData> {
   const got = await fetchGet({ data: { owner, name: repoName } });
   if (!got.ok) {
@@ -70,15 +116,16 @@ async function loadTreePage(
   }
   const entries = treeRes.data.entries;
   const dirPath = treeRes.data.path || path;
-  const readmeName = findReadmeName(entries);
-  let readme: { name: string; html: string } | null = null;
-  if (readmeName) {
+  const shortRef = shortRefName(treeRes.data.ref) || refName;
+  const atRoot = !dirPath;
+
+  async function fetchUtf8Blob(relPath: string): Promise<string | null> {
     const blobRes = await fetchBlob({
       data: {
         owner,
         name: repoName,
-        ref: refName,
-        path: joinRepoPath(dirPath, readmeName),
+        ref: shortRef,
+        path: relPath,
       },
     });
     if (
@@ -87,23 +134,78 @@ async function loadTreePage(
       blobRes.data.encoding === "utf-8" &&
       blobRes.data.content
     ) {
-      readme = {
-        name: readmeName,
-        html: await renderGfm(blobRes.data.content, {
-          owner,
-          repo: repoName,
-        }),
-      };
+      return blobRes.data.content;
     }
+    return null;
   }
+
+  const [commitsRes, pathRes, countRes, relRes, pkgRes, contribRes, langRes, readme, aboutFiles] =
+    await Promise.all([
+      fetchCommits({
+        data: { owner, name: repoName, ref: shortRef, skip: 0, limit: 1 },
+      }).catch(() => null),
+      fetchPathLast({
+        data: { owner, name: repoName, ref: shortRef, path: dirPath },
+      }).catch(() => null),
+      fetchCount({ data: { owner, name: repoName, ref: shortRef } }).catch(() => null),
+      fetchReleases({ data: { owner, name: repoName } }).catch(() => null),
+      fetchPackages({ data: { repository_id: repo.id } }).catch(() => null),
+      fetchContributors({ data: { owner, name: repoName, limit: 30 } }).catch(() => null),
+      fetchLanguages({ data: { owner, name: repoName } }).catch(() => null),
+      (async () => {
+        const readmeName = findReadmeName(entries);
+        if (!readmeName) return null as { name: string; html: string } | null;
+        const content = await fetchUtf8Blob(joinRepoPath(dirPath, readmeName));
+        if (!content) return null;
+        return {
+          name: readmeName,
+          html: await renderGfm(content, {
+            owner,
+            repo: repoName,
+          }),
+        };
+      })(),
+      atRoot
+        ? resolveAboutRootFiles(entries, fetchUtf8Blob)
+        : Promise.resolve({
+            licenseFile: null as string | null,
+            licenseLabel: null as string | null,
+            contributingFile: null as string | null,
+          }),
+    ]);
+
+  const tip =
+    commitsRes && commitsRes.ok && commitsRes.data.commits.length > 0
+      ? commitsRes.data.commits[0]
+      : null;
+  // For nested dirs, tip of whole ref is less ideal — still show branch tip for parity.
+  const commitCount = countRes && countRes.ok ? Number(countRes.data.count) : null;
+  const lastCommits =
+    pathRes && pathRes.ok ? (pathRes.data.commits as Record<string, RepoCommitSummary>) : {};
+  const latestRelease =
+    relRes && relRes.ok && relRes.data.releases.length > 0 ? relRes.data.releases[0] : null;
+  const packages = pkgRes && pkgRes.ok ? pkgRes.data.packages : [];
+  const contributors = contribRes && contribRes.ok ? contribRes.data.contributors : [];
+  const languages = langRes && langRes.ok ? langRes.data.languages : [];
+
   return {
     kind: "ready",
     repo,
-    refName: shortRefName(treeRes.data.ref) || refName,
+    refName: shortRef,
     path: dirPath,
     entries,
     refs,
     readme,
+    tip,
+    commitCount,
+    lastCommits,
+    latestRelease,
+    packages,
+    contributors,
+    languages,
+    licenseFile: aboutFiles.licenseFile,
+    licenseLabel: aboutFiles.licenseLabel,
+    contributingFile: aboutFiles.contributingFile,
   };
 }
 
@@ -131,7 +233,7 @@ export const Route = createFileRoute("/$owner/$repo/tree/$")({
   },
 });
 
-/** Nested tree — same toolbar / file list / README chrome as code home (GitHub/Gitea). */
+/** Nested tree — toolbar / last-commit / file list / About / README (issue #23). */
 export function RepoTreePage() @{
   const params = useParams({ from: "/$owner/$repo/tree/$" }) as {
     owner: string;
@@ -162,6 +264,13 @@ export function RepoTreePage() @{
           async ({ data }) => apiClient.repo.tree(data) as never,
           async ({ data }) => apiClient.repo.refs(data) as never,
           async ({ data }) => apiClient.repo.blob(data) as never,
+          async ({ data }) => apiClient.repo.commits(data) as never,
+          async ({ data }) => apiClient.repo.pathLastCommits(data) as never,
+          async ({ data }) => apiClient.repo.commitCount(data) as never,
+          async ({ data }) => apiClient.release.list(data) as never,
+          async ({ data }) => apiClient.packages.list(data) as never,
+          async ({ data }) => apiClient.repo.contributorsList(data) as never,
+          async ({ data }) => apiClient.repo.languages(data) as never,
         );
         if (!cancelled) setPhase(next);
       } catch {
@@ -175,37 +284,69 @@ export function RepoTreePage() @{
 
   @if (phase.kind === "not_found") {
     <RepoNotFound />;
-  } @else if (phase.kind === "loading") {
-    <div className="flex flex-col gap-4" aria-busy="true" data-testid="repo-tree-loading">
-      <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-10 w-full" />
-      <Skeleton className="h-48 w-full" />
-    </div>;
-  } @else if (phase.kind === "error") {
-    <p role="alert" className="text-[16px] text-destructive">
-      {phase.message as string}
-    </p>;
   } @else {
-    <>
-      <RepoBrowseToolbar
-        owner={owner}
-        repo={repoName}
-        refName={phase.refName}
-        refs={phase.refs}
-        path={phase.path}
-        showPathCrumbs={true}
-        empty={false}
-      />
-      <FileTree
-        owner={owner}
-        repo={repoName}
-        refName={phase.refName}
-        basePath={phase.path}
-        entries={phase.entries}
-      />
-      @if (phase.readme) {
-        <ReadmePanel html={phase.readme.html} fileName={phase.readme.name} />;
+    @if (phase.kind === "loading") {
+      <div className="flex flex-col gap-4" aria-busy="true" data-testid="repo-tree-loading">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>;
+    } @else {
+      @if (phase.kind === "error") {
+        <p role="alert" className="text-[16px] text-destructive">
+          {phase.message as string}
+        </p>;
+      } @else {
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="min-w-0">
+            <RepoBrowseToolbar
+              owner={owner}
+              repo={repoName}
+              refName={phase.refName}
+              refs={phase.refs}
+              path={phase.path}
+              showPathCrumbs={true}
+              empty={false}
+            />
+            <div className="mt-4">
+              <RepoLastCommitBar
+                owner={owner}
+                repo={repoName}
+                refName={phase.refName}
+                tip={phase.tip}
+                commitCount={phase.commitCount}
+              />
+              <FileTree
+                owner={owner}
+                repo={repoName}
+                refName={phase.refName}
+                basePath={phase.path}
+                entries={phase.entries}
+                lastCommits={phase.lastCommits}
+              />
+            </div>
+            @if (phase.readme) {
+              <ReadmePanel html={phase.readme.html} fileName={phase.readme.name} />;
+            }
+          </div>
+          <RepoAboutSidebar
+            repo={phase.repo}
+            latestRelease={phase.latestRelease}
+            packages={phase.packages}
+            contributors={phase.contributors}
+            languages={phase.languages}
+            hasReadme={!!phase.readme}
+            refName={phase.refName}
+            license={
+              phase.licenseFile
+                ? { path: phase.licenseFile, label: phase.licenseLabel || "License" }
+                : null
+            }
+            contributingPath={phase.contributingFile}
+            showActivity={true}
+          />
+        </div>;
       }
-    </>;
+    }
   }
 }

@@ -19,7 +19,7 @@ import { fetchPublicOrigin, fetchRepoGet } from "@/lib/ssr-repo";
 export type { RepoLayoutLoaderData };
 
 /**
- * Layout for `/{owner}/{repo}` — fixed max-w-6xl shell + SSR cookie-forward
+ * Layout for `/{owner}/{repo}` — fixed max-w-7xl shell + SSR cookie-forward
  * repo/session/public origin so private repos and clone URLs paint without CLS.
  */
 export const Route = createFileRoute("/$owner/$repo")({

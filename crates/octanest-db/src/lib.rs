@@ -22,13 +22,16 @@ pub mod pulls;
 pub mod redirects;
 pub mod releases;
 pub mod webhooks;
+pub mod repo_activity;
 pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
 pub mod stars;
 pub mod templates;
+pub mod topics;
 pub mod users;
+pub mod watches;
 
 pub use actions::{
     ActionJobRow, ActionRunRow, ActionRunnerRow, ActionSecretCipherRow, ActionSecretMetaRow,
@@ -51,7 +54,10 @@ pub use pats::PatRow;
 pub use pulls::{PullCommentRow, PullReviewRow, PullRow, PullSearchFilters, RepoMergeSettingsRow};
 pub use redirects::RedirectRow;
 pub use releases::{ReleaseAssetRow, ReleaseRow};
+pub use repo_activity::RepoActivityRow;
 pub use repo_collaborators::{RepoCollaboratorListRow, RepoCollaboratorRow};
+pub use stars::{ForkListSort, RepoForkListRow, RepoStargazerListRow};
+pub use watches::RepoWatcherListRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
 pub use templates::{InstanceTemplatePackRow, TemplateRepoListRow};
@@ -431,6 +437,131 @@ impl Database {
         repository_id: &str,
     ) -> Result<bool, String> {
         stars::has_starred(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn watch_repository(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<i64, String> {
+        watches::watch_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn unwatch_repository(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<i64, String> {
+        watches::unwatch_repository(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn get_repo_watch_count(&self, repository_id: &str) -> Result<i64, String> {
+        watches::get_watch_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn has_watched_repo(
+        &self,
+        user_id: &str,
+        repository_id: &str,
+    ) -> Result<bool, String> {
+        watches::has_watched(self.require_pool()?, user_id, repository_id).await
+    }
+
+    pub async fn list_repo_watchers(
+        &self,
+        repository_id: &str,
+        q: Option<&str>,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<watches::RepoWatcherListRow>, String> {
+        watches::list_repo_watchers(self.require_pool()?, repository_id, q, offset, limit).await
+    }
+
+    pub async fn count_repo_watchers(
+        &self,
+        repository_id: &str,
+        q: Option<&str>,
+    ) -> Result<i64, String> {
+        watches::count_repo_watchers(self.require_pool()?, repository_id, q).await
+    }
+
+    pub async fn list_repo_stargazers(
+        &self,
+        repository_id: &str,
+        q: Option<&str>,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<stars::RepoStargazerListRow>, String> {
+        stars::list_repo_stargazers(self.require_pool()?, repository_id, q, offset, limit).await
+    }
+
+    pub async fn count_repo_stargazers(
+        &self,
+        repository_id: &str,
+        q: Option<&str>,
+    ) -> Result<i64, String> {
+        stars::count_repo_stargazers(self.require_pool()?, repository_id, q).await
+    }
+
+    pub async fn list_network_forks(
+        &self,
+        fork_network_id: &str,
+        q: Option<&str>,
+        sort: stars::ForkListSort,
+        offset: i64,
+        limit: i64,
+    ) -> Result<Vec<stars::RepoForkListRow>, String> {
+        stars::list_network_forks(self.require_pool()?, fork_network_id, q, sort, offset, limit)
+            .await
+    }
+
+    pub async fn count_network_forks(
+        &self,
+        fork_network_id: &str,
+        q: Option<&str>,
+    ) -> Result<i64, String> {
+        stars::count_network_forks(self.require_pool()?, fork_network_id, q).await
+    }
+
+    pub async fn get_repo_homepage(&self, repository_id: &str) -> Result<String, String> {
+        repositories::get_homepage(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn update_repository_metadata(
+        &self,
+        id: &str,
+        description: &str,
+        homepage: &str,
+    ) -> Result<RepositoryRow, String> {
+        repositories::update_metadata(self.require_pool()?, id, description, homepage).await
+    }
+
+    pub async fn list_repo_topics(&self, repository_id: &str) -> Result<Vec<String>, String> {
+        topics::list_repo_topics(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn set_repo_topics(
+        &self,
+        repository_id: &str,
+        topic_names: &[String],
+    ) -> Result<Vec<String>, String> {
+        topics::set_repo_topics(self.require_pool()?, repository_id, topic_names).await
+    }
+
+    pub async fn get_repo_fork_count(&self, repository_id: &str) -> Result<i64, String> {
+        repositories::get_fork_count(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn recount_fork_count_for_network(
+        &self,
+        network_id: &str,
+    ) -> Result<i64, String> {
+        repositories::recount_fork_count_for_network(self.require_pool()?, network_id).await
+    }
+
+    /// Recount and return the network fork_count (alias for fork bump after create).
+    pub async fn bump_fork_count_for_network(&self, network_id: &str) -> Result<i64, String> {
+        self.recount_fork_count_for_network(network_id).await
     }
 
     pub async fn get_repo_fork_network_id(
@@ -2512,6 +2643,56 @@ impl Database {
 
     pub async fn delete_webhook(&self, id: &str) -> Result<(), String> {
         webhooks::delete_webhook(self.require_pool()?, id).await
+    }
+
+    pub async fn insert_repo_activity(
+        &self,
+        id: &str,
+        repository_id: &str,
+        actor_id: &str,
+        push_type: &str,
+        ref_name: &str,
+        before_oid: &str,
+        after_oid: &str,
+        commits_count: i64,
+        commit_message: Option<&str>,
+        pr_number: Option<i64>,
+    ) -> Result<(), String> {
+        repo_activity::insert_activity(
+            self.require_pool()?,
+            repo_activity::InsertRepoActivity {
+                id,
+                repository_id,
+                actor_id,
+                push_type,
+                ref_name,
+                before_oid,
+                after_oid,
+                commits_count,
+                commit_message,
+                pr_number,
+            },
+        )
+        .await
+    }
+
+    pub async fn list_repo_activity(
+        &self,
+        repository_id: &str,
+        push_type: Option<&str>,
+        since: Option<&str>,
+        offset: i64,
+        limit: i64,
+    ) -> Result<(Vec<RepoActivityRow>, i64), String> {
+        repo_activity::list_activity(
+            self.require_pool()?,
+            repository_id,
+            push_type,
+            since,
+            offset,
+            limit,
+        )
+        .await
     }
 
     pub async fn insert_webhook_delivery(

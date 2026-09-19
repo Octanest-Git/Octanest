@@ -131,6 +131,7 @@ async fn package_rpc_list_by_repo_link() {
     .await
     .unwrap();
     let res = app
+        .clone()
         .oneshot(rpc(
             &format!(
                 r#"{{"procedure":"packages.list","input":{{"repository_id":"{repo_id}"}}}}"#
@@ -149,6 +150,29 @@ async fn package_rpc_list_by_repo_link() {
             .iter()
             .any(|p| p["name"] == "linkedpkg"),
         "expected packages.list filtered by repository_id"
+    );
+
+    // Anonymous viewers of a public repo must still see linked public packages (About sidebar).
+    let anon = app
+        .oneshot(rpc(
+            &format!(
+                r#"{{"procedure":"packages.list","input":{{"repository_id":"{repo_id}"}}}}"#
+            ),
+            None,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(anon.status(), StatusCode::OK);
+    let av: serde_json::Value =
+        serde_json::from_slice(&anon.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(av["ok"], true, "{av}");
+    assert!(
+        av["data"]["packages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["name"] == "linkedpkg"),
+        "anonymous packages.list by repository_id — {av}"
     );
 }
 

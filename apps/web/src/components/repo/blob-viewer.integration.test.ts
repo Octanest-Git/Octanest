@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/highlight", () => ({
   languageIdForPath: () => "javascript",
+  clientHighlightTheme: () => "github-dark",
   countCodeLines: (code: string) => {
     if (!code) return 0;
     const parts = code.split("\n");

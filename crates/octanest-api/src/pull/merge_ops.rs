@@ -363,6 +363,22 @@ pub async fn merge(ctx: &RpcCtx, input: serde_json::Value) -> Result<MergePullRe
         .await
         .map_err(db_err)?;
 
+    let merge_subject = full_message.lines().next().unwrap_or("").trim();
+    crate::repo::record_pr_merge(
+        &ctx.db,
+        &accessible.row.id,
+        &user.id,
+        &row.base_ref,
+        &sha,
+        row.number,
+        if merge_subject.is_empty() {
+            None
+        } else {
+            Some(merge_subject)
+        },
+    )
+    .await;
+
     if row.base_ref == accessible.row.default_branch {
         let mut nums = parse_closing_issue_numbers(&row.body);
         nums.extend(parse_closing_issue_numbers(&full_message));

@@ -92,7 +92,7 @@ async fn to_public(ctx: &RpcCtx, row: PackageRow) -> Result<Option<PackagePublic
 }
 
 pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PackagesListResponse, AppError> {
-    let _user = require_verified(ctx).await?;
+    // Anonymous OK — `to_public` enforces Pull ACL (public packages / linked-repo Read).
     let req: PackagesListRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new("rpc.bad_input", format!("invalid packages.list input: {e}"))
     })?;

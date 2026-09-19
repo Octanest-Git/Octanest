@@ -405,7 +405,11 @@ WHERE id = ?1 AND deleted_at IS NULL",
 }
 
 /// Soft-delete: set `deleted_at` (disk purge deferred — D-35).
+/// When soft-deleting a fork, recount `fork_count` for its network (issue #23).
 pub async fn soft_delete(pool: &DbPool, id: &str) -> Result<(), String> {
+    let network_id = get_fork_network_id_for_repo(pool, id).await?;
+    let was_fork = get_forked_from_repo_id(pool, id).await?.is_some();
+
     match pool {
         DbPool::Postgres(p) => {
             let n = sqlx::query(
@@ -449,6 +453,12 @@ WHERE id = ?1 AND deleted_at IS NULL",
             if n == 0 {
                 return Err("repository not found".into());
             }
+        }
+    }
+
+    if was_fork {
+        if let Some(nid) = network_id {
+            recount_fork_count_for_network(pool, &nid).await?;
         }
     }
     Ok(())
@@ -627,4 +637,257 @@ pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<RepositoryRow>
             })
         }
     }
+}
+
+/// Homepage URL / text (issue #23) — separate get to avoid rewriting REPO_SELECT.
+pub async fn get_homepage(pool: &DbPool, id: &str) -> Result<String, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COALESCE(homepage, '') FROM repositories WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_homepage: {e}"))
+        .map(|o| o.unwrap_or_default()),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COALESCE(homepage, '') FROM repositories WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_homepage: {e}"))
+        .map(|o| o.unwrap_or_default()),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COALESCE(homepage, '') FROM repositories WHERE id = ?1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_homepage: {e}"))
+        .map(|o| o.unwrap_or_default()),
+    }
+}
+
+/// Update description + homepage + updated_at (issue #23).
+pub async fn update_metadata(
+    pool: &DbPool,
+    id: &str,
+    description: &str,
+    homepage: &str,
+) -> Result<RepositoryRow, String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET description = $2, homepage = $3, updated_at = now()
+WHERE id = $1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(description)
+            .bind(homepage)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update_metadata: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::MySql(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET description = ?, homepage = ?, updated_at = NOW()
+WHERE id = ? AND deleted_at IS NULL",
+            )
+            .bind(description)
+            .bind(homepage)
+            .bind(id)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update_metadata: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+        DbPool::Sqlite(p) => {
+            let n = sqlx::query(
+                "UPDATE repositories SET description = ?2, homepage = ?3,
+updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
+WHERE id = ?1 AND deleted_at IS NULL",
+            )
+            .bind(id)
+            .bind(description)
+            .bind(homepage)
+            .execute(p)
+            .await
+            .map_err(|e| format!("update_metadata: {e}"))?
+            .rows_affected();
+            if n == 0 {
+                return Err("repository not found".into());
+            }
+        }
+    }
+    find_by_id(pool, id)
+        .await?
+        .ok_or_else(|| "repository not found after metadata update".into())
+}
+
+pub async fn get_fork_count(pool: &DbPool, id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COALESCE(fork_count, 0) FROM repositories WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_fork_count: {e}"))
+        .map(|o| o.unwrap_or(0)),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COALESCE(fork_count, 0) FROM repositories WHERE id = ?",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_fork_count: {e}"))
+        .map(|o| o.unwrap_or(0)),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COALESCE(fork_count, 0) FROM repositories WHERE id = ?1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get_fork_count: {e}"))
+        .map(|o| o.unwrap_or(0)),
+    }
+}
+
+async fn get_fork_network_id_for_repo(
+    pool: &DbPool,
+    id: &str,
+) -> Result<Option<String>, String> {
+    let nested: Option<Option<String>> = match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT fork_network_id FROM repositories WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get fork_network_id: {e}"))?,
+        DbPool::MySql(p) => {
+            sqlx::query_scalar("SELECT fork_network_id FROM repositories WHERE id = ?")
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("get fork_network_id: {e}"))?
+        }
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT fork_network_id FROM repositories WHERE id = ?1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get fork_network_id: {e}"))?,
+    };
+    Ok(nested.flatten())
+}
+
+async fn get_forked_from_repo_id(pool: &DbPool, id: &str) -> Result<Option<String>, String> {
+    let nested: Option<Option<String>> = match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT forked_from_repo_id FROM repositories WHERE id = $1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get forked_from: {e}"))?,
+        DbPool::MySql(p) => {
+            sqlx::query_scalar("SELECT forked_from_repo_id FROM repositories WHERE id = ?")
+                .bind(id)
+                .fetch_optional(p)
+                .await
+                .map_err(|e| format!("get forked_from: {e}"))?
+        }
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT forked_from_repo_id FROM repositories WHERE id = ?1",
+        )
+        .bind(id)
+        .fetch_optional(p)
+        .await
+        .map_err(|e| format!("get forked_from: {e}"))?,
+    };
+    Ok(nested.flatten())
+}
+
+/// Count active forks in a network and set `fork_count` on every repo in that network.
+pub async fn recount_fork_count_for_network(
+    pool: &DbPool,
+    network_id: &str,
+) -> Result<i64, String> {
+    let count: i64 = match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM repositories
+             WHERE fork_network_id = $1
+               AND forked_from_repo_id IS NOT NULL
+               AND deleted_at IS NULL",
+        )
+        .bind(network_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count forks: {e}"))?,
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM repositories
+             WHERE fork_network_id = ?
+               AND forked_from_repo_id IS NOT NULL
+               AND deleted_at IS NULL",
+        )
+        .bind(network_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count forks: {e}"))?,
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM repositories
+             WHERE fork_network_id = ?1
+               AND forked_from_repo_id IS NOT NULL
+               AND deleted_at IS NULL",
+        )
+        .bind(network_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count forks: {e}"))?,
+    };
+
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE repositories SET fork_count = $2 WHERE fork_network_id = $1",
+            )
+            .bind(network_id)
+            .bind(count)
+            .execute(p)
+            .await
+            .map_err(|e| format!("set fork_count: {e}"))?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE repositories SET fork_count = ? WHERE fork_network_id = ?")
+                .bind(count)
+                .bind(network_id)
+                .execute(p)
+                .await
+                .map_err(|e| format!("set fork_count: {e}"))?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE repositories SET fork_count = ?2 WHERE fork_network_id = ?1")
+                .bind(network_id)
+                .bind(count)
+                .execute(p)
+                .await
+                .map_err(|e| format!("set fork_count: {e}"))?;
+        }
+    }
+    Ok(count)
+}
+
+/// Alias used by Database wrapper naming.
+pub async fn recount_fork_network(pool: &DbPool, network_id: &str) -> Result<i64, String> {
+    recount_fork_count_for_network(pool, network_id).await
 }

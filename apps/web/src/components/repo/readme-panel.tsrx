@@ -8,7 +8,7 @@ type ReadmePanelProps = {
 
 /** Sanitized GFM README below the tree (D-18). */
 export function ReadmePanel({ html, fileName }: ReadmePanelProps) @{
-  <section className="mt-8" aria-labelledby="readme-heading">
+  <section id="readme" className="mt-8" aria-labelledby="readme-heading">
     <h2 id="readme-heading" className="mb-3 text-[14px] font-semibold text-foreground">
       {fileName as string}
     </h2>

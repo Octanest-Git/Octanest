@@ -1,5 +1,6 @@
 import { createHighlighter, type Highlighter } from "shiki";
 import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
+import { readThemePreference, resolveTheme } from "@/lib/theme";
 import tsrxGrammar from "./grammars/tsrx.tmLanguage.json";
 import rippleGrammar from "./grammars/ripple.tmLanguage.json";
 
@@ -7,6 +8,18 @@ import rippleGrammar from "./grammars/ripple.tmLanguage.json";
 const THEMES = ["github-light", "github-dark"] as const;
 
 export type HighlightTheme = (typeof THEMES)[number];
+
+/**
+ * Resolve github-light / github-dark for client highlighting.
+ * Prefer `html.dark` (set by the FOUC boot script) so we match SSR + first paint
+ * instead of re-deriving from localStorage/matchMedia and causing a flicker.
+ */
+export function clientHighlightTheme(): HighlightTheme {
+  if (typeof document !== "undefined") {
+    return document.documentElement.classList.contains("dark") ? "github-dark" : "github-light";
+  }
+  return resolveTheme(readThemePreference()) === "dark" ? "github-dark" : "github-light";
+}
 
 const GITHUB_CLASS_LANGS = [
   "typescript",

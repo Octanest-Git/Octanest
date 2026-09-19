@@ -531,7 +531,21 @@ async fn authorize_and_cgi(
                         let env_name = state.env_name.clone();
                         let updates_wh = updates.clone();
                         let updates_pull = updates.clone();
+                        let updates_act = updates.clone();
+                        let git_act = state.git.clone();
                         tokio::spawn(async move {
+                            let bare = repos_dir
+                                .join(&owner_slug)
+                                .join(format!("{repo_name}.git"));
+                            crate::repo::record_ref_updates(
+                                &db,
+                                &repo_id,
+                                &uid,
+                                &updates_act,
+                                Some(git_act),
+                                Some(bare.as_path()),
+                            )
+                            .await;
                             crate::webhook::dispatch::notify_push(
                                 &db,
                                 &repo_id,

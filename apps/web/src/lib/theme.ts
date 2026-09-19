@@ -3,6 +3,11 @@ export type ThemePreference = "system" | "light" | "dark";
 export const THEME_STORAGE_KEY = "octanest-theme";
 /** Cookie mirrors localStorage so SSR can pick github-light vs github-dark. */
 export const THEME_COOKIE_KEY = "octanest-theme";
+/**
+ * Resolved light/dark after system preference — set by the FOUC boot script so
+ * SSR highlighting matches `html.dark` on the next request (and hydrate).
+ */
+export const THEME_RESOLVED_COOKIE_KEY = "octanest-color-scheme";
 
 export function readThemePreference(): ThemePreference {
   if (typeof localStorage === "undefined") return "system";
@@ -26,15 +31,27 @@ export function themePreferenceFromCookieHeader(
   return match ? (match[1] as ThemePreference) : null;
 }
 
+/** Parse resolved `octanest-color-scheme` cookie (SSR highlight alignment). */
+export function resolvedColorSchemeFromCookieHeader(
+  cookieHeader: string | undefined | null,
+): "light" | "dark" | null {
+  if (!cookieHeader) return null;
+  const match = /(?:^|;\s*)octanest-color-scheme=(light|dark)(?:;|$)/.exec(cookieHeader);
+  return match ? (match[1] as "light" | "dark") : null;
+}
+
 /**
  * Resolve light/dark for SSR highlighting.
- * Explicit cookie wins; else Sec-CH-Prefers-Color-Scheme; else light.
+ * Order: explicit preference cookie → resolved scheme cookie (from boot) →
+ * Sec-CH-Prefers-Color-Scheme → light.
  */
 export function resolveThemeForSsr(
   pref: ThemePreference | null,
   prefersColorScheme?: string | null,
+  resolvedFromBoot?: "light" | "dark" | null,
 ): "light" | "dark" {
   if (pref === "light" || pref === "dark") return pref;
+  if (resolvedFromBoot === "light" || resolvedFromBoot === "dark") return resolvedFromBoot;
   const ch = prefersColorScheme?.trim().toLowerCase();
   if (ch === "dark") return "dark";
   if (ch === "light") return "light";
@@ -44,6 +61,8 @@ export function resolveThemeForSsr(
 function persistThemeCookie(pref: ThemePreference) {
   if (typeof document === "undefined") return;
   document.cookie = `${THEME_COOKIE_KEY}=${pref}; path=/; max-age=31536000; SameSite=Lax`;
+  const resolved = resolveTheme(pref);
+  document.cookie = `${THEME_RESOLVED_COOKIE_KEY}=${resolved}; path=/; max-age=31536000; SameSite=Lax`;
 }
 
 export function applyTheme(pref: ThemePreference) {
@@ -57,13 +76,15 @@ export const THEME_OPTIONS: readonly ThemePreference[] = ["system", "light", "da
 
 // Runs in <head> before first paint (D-12). Static literal — never interpolate
 // request data or storage values into this string (T-03-04).
-// Also mirrors preference into a cookie so the next SSR request can highlight.
+// Mirrors preference + resolved scheme into cookies so the next SSR request
+// highlights with the same theme hydrate will use (`html.dark`).
 export const THEME_BOOT_SCRIPT =
   '(function(){try{var v=localStorage.getItem("octanest-theme");' +
   'var p=(v==="light"||v==="dark"||v==="system")?v:"system";' +
   'var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);' +
   'document.documentElement.classList.toggle("dark",d);' +
   'document.cookie="octanest-theme="+p+";path=/;max-age=31536000;SameSite=Lax";' +
+  'document.cookie="octanest-color-scheme="+(d?"dark":"light")+";path=/;max-age=31536000;SameSite=Lax";' +
   "}catch(e){}})();";
 
 /**
