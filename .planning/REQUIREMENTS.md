@@ -9,17 +9,17 @@ Requirements for the GitHub-shaped first release. Each maps to roadmap phases la
 
 ### Platform & delivery
 
-- [ ] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
+- [x] **PLAT-01**: Operator can run the full Octanest stack with Docker Compose locally
 - [x] **PLAT-02**: Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
 - [x] **PLAT-03**: Project CI builds and validates Docker Compose (bring-up health) on every PR
-- [ ] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
-- [ ] **PLAT-05**: Backend forge/API services are implemented in Rust
-- [ ] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
-- [ ] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
-- [ ] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
+- [x] **PLAT-04**: Web UI is implemented with OctaneJS on TanStack Start (`@octanejs/tanstack-start`)
+- [x] **PLAT-05**: Backend forge/API services are implemented in Rust
+- [x] **PLAT-06**: API is exposed as a typed RPC layer from Rust (rspc/specta-style); OctaneJS consumes a generated TypeScript client; local development regenerates client/types on change (watch-friendly)
+- [x] **PLAT-07**: Operator can configure the instance to use SQLite, PostgreSQL, or MySQL for application data
+- [x] **PLAT-08**: Migrations and core app flows work on all three supported database dialects
 - [x] **PLAT-09**: Project CI exercises at least PostgreSQL and SQLite; MySQL is either in CI or covered by an explicit compatibility test job
-- [ ] **PLAT-10**: UI components are built with ShadCN + Base UI
-- [ ] **PLAT-11**: Styles use Tailwind CSS v4 with CSS-based configuration (CSS is the Tailwind config source of truth)
+- [x] **PLAT-10**: UI components are built with ShadCN + Base UI
+- [x] **PLAT-11**: Styles use Tailwind CSS v4 with CSS-based configuration (CSS is the Tailwind config source of truth)
 
 ### Authentication & accounts
 
@@ -166,17 +166,17 @@ Deferred; not in the current roadmap until promoted.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PLAT-01 | Phase 1 | Pending |
+| PLAT-01 | Phase 1 | Complete |
 | PLAT-02 | Phase 22 | Complete |
 | PLAT-03 | Phase 22 | Complete |
-| PLAT-04 | Phase 1 | Pending |
-| PLAT-05 | Phase 1 | Pending |
-| PLAT-06 | Phase 1 | Pending |
-| PLAT-07 | Phase 2 | Pending |
-| PLAT-08 | Phase 2 | Pending |
+| PLAT-04 | Phase 1 | Complete |
+| PLAT-05 | Phase 1 | Complete |
+| PLAT-06 | Phase 1 | Complete |
+| PLAT-07 | Phase 2 | Complete |
+| PLAT-08 | Phase 2 | Complete |
 | PLAT-09 | Phase 22 | Complete |
-| PLAT-10 | Phase 1 | Pending |
-| PLAT-11 | Phase 1 | Pending |
+| PLAT-10 | Phase 1 | Complete |
+| PLAT-11 | Phase 1 | Complete |
 | AUTH-01 | Phase 4 | Complete |
 | AUTH-02 | Phase 4 | Complete |
 | AUTH-03 | Phase 4 | Complete |
@@ -262,4 +262,4 @@ Deferred; not in the current roadmap until promoted.
 
 ---
 *Requirements defined: 2026-09-08*
-*Last updated: 2026-09-14 — forge-core pre-ship: ISS/GIT-12…17/PKG marked Complete; Phase 12 next*
+*Last updated: 2026-09-19 — Phase 22.1 hygiene: PLAT-01/04–08/10–11 flipped Complete after 01/02 VERIFICATION passed (D-HYG-02)*
