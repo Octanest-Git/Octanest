@@ -407,6 +407,42 @@ pub async fn reconcile_hooks(bare: &Path) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+/// Aggregate counts from a boot-time repos_dir hook sweep (D-PKG-04).
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct SweepHooksStats {
+    pub scanned: u32,
+    pub installed: u32,
+    pub skipped: u32,
+    pub errors: u32,
+}
+
+/// Progress log interval while walking `OCTANEST_REPOS_DIR` (serial walk, A4).
+pub const SWEEP_PROGRESS_EVERY: u32 = 25;
+
+/// True when `path` looks like a bare git repo (has `HEAD` and `objects/`).
+pub async fn looks_like_bare_repo(path: &Path) -> bool {
+    let head = path.join("HEAD");
+    let objects = path.join("objects");
+    match (
+        tokio::fs::metadata(&head).await,
+        tokio::fs::metadata(&objects).await,
+    ) {
+        (Ok(h), Ok(o)) => h.is_file() && o.is_dir(),
+        _ => false,
+    }
+}
+
+/// Boot-time walk of `repos_dir` installing/overwriting protection hooks (D-PKG-04).
+///
+/// Uses [`install_hooks`] (overwrite), never reconcile-only, so packaged script
+/// upgrades land on pre-existing forks. Per-repo errors are counted; the sweep
+/// continues so API listen is not blocked by one bad path.
+pub async fn sweep_protection_hooks(repos_dir: &Path) -> SweepHooksStats {
+    // RED stub (22.1-04): no-op until GREEN walks owner/repo.git and install_hooks.
+    let _ = (repos_dir, SWEEP_PROGRESS_EVERY);
+    SweepHooksStats::default()
+}
+
 /// Resolve helper binary path for current process (octanest-protection-hook).
 pub fn default_helper_path() -> Option<PathBuf> {
     std::env::current_exe().ok().and_then(|p| {

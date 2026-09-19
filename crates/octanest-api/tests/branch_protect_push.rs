@@ -10,7 +10,8 @@ use http_body_util::BodyExt;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::git::bare_repo_path;
 use octanest_api::protection::{
-    check_ref_update, hooks_installed, reconcile_hooks, ProtectionIntent, ZERO_SHA,
+    check_ref_update, hooks_installed, reconcile_hooks, sweep_protection_hooks, ProtectionIntent,
+    ZERO_SHA,
 };
 use octanest_api::repo::Capability;
 use octanest_api::{build_cors, router_with_state, AppState};
@@ -385,5 +386,117 @@ async fn protection_hook_script_execs_helper_when_present() {
     assert!(
         ran.contains("update refs/heads/main"),
         "helper must receive update + refname — {ran}"
+    );
+}
+
+/// Minimal bare layout under `repos_dir/owner/name.git` (HEAD + objects).
+async fn make_sweep_bare(
+    repos: &std::path::Path,
+    owner: &str,
+    name: &str,
+) -> std::path::PathBuf {
+    let bare = repos.join(owner).join(format!("{name}.git"));
+    tokio::fs::create_dir_all(bare.join("objects"))
+        .await
+        .unwrap();
+    tokio::fs::create_dir_all(bare.join("refs/heads"))
+        .await
+        .unwrap();
+    tokio::fs::write(bare.join("HEAD"), b"ref: refs/heads/main\n")
+        .await
+        .unwrap();
+    bare
+}
+
+/// D-PKG-04: bare without hooks becomes hooks_installed after sweep.
+#[tokio::test]
+async fn sweep_protection_hooks_installs_missing_hooks() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let bare = make_sweep_bare(&repos, "alice", "core").await;
+    assert!(
+        !hooks_installed(&bare).await,
+        "fixture must start without hooks"
+    );
+
+    let stats = sweep_protection_hooks(&repos).await;
+    assert!(
+        hooks_installed(&bare).await,
+        "sweep must install hooks/update on bare without hooks (D-PKG-04)"
+    );
+    assert!(
+        stats.installed >= 1,
+        "stats.installed must count the install — {stats:?}"
+    );
+    assert_eq!(stats.errors, 0, "clean install must not error — {stats:?}");
+}
+
+/// D-PKG-04: outdated hook script is overwritten (install, not reconcile-skip).
+#[tokio::test]
+async fn sweep_protection_hooks_overwrites_outdated_hook() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let bare = make_sweep_bare(&repos, "bob", "legacy").await;
+    let hooks = bare.join("hooks");
+    tokio::fs::create_dir_all(&hooks).await.unwrap();
+    let update = hooks.join("update");
+    // Stale fail-open-only script (pre-D-PKG-02) — must be overwritten.
+    tokio::fs::write(
+        &update,
+        b"#!/bin/sh\n# STALE_PRE_DPKG02_HOOK\nexit 0\n",
+    )
+    .await
+    .unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = tokio::fs::metadata(&update).await.unwrap().permissions();
+        perms.set_mode(0o755);
+        tokio::fs::set_permissions(&update, perms).await.unwrap();
+    }
+    assert!(hooks_installed(&bare).await);
+
+    let stats = sweep_protection_hooks(&repos).await;
+    let body = tokio::fs::read_to_string(&update)
+        .await
+        .expect("hooks/update after sweep");
+    assert!(
+        !body.contains("STALE_PRE_DPKG02_HOOK"),
+        "sweep must overwrite stale script — {body}"
+    );
+    assert!(
+        body.contains("D-PKG-02") || body.contains("protection helper"),
+        "overwrite must install known-good packaged script — {body}"
+    );
+    assert!(
+        stats.installed >= 1,
+        "overwrite counts as install — {stats:?}"
+    );
+}
+
+/// D-PKG-04: non-bare entries are skipped without panic.
+#[tokio::test]
+async fn sweep_protection_hooks_skips_non_bare() {
+    let dir = tempfile::tempdir().unwrap();
+    let repos = dir.path().join("repos");
+    let not_bare = repos.join("carol").join("notes.git");
+    tokio::fs::create_dir_all(&not_bare).await.unwrap();
+    tokio::fs::write(not_bare.join("README"), b"not a bare repo\n")
+        .await
+        .unwrap();
+    // Loose file under owner (not a repo dir).
+    tokio::fs::write(repos.join("carol").join("readme.txt"), b"x")
+        .await
+        .unwrap();
+
+    let stats = sweep_protection_hooks(&repos).await;
+    assert!(
+        !hooks_installed(&not_bare).await,
+        "non-bare must not get hooks forced"
+    );
+    assert_eq!(stats.errors, 0, "skip must not count as error — {stats:?}");
+    assert!(
+        stats.skipped >= 1 || stats.scanned == 0,
+        "non-bare should be skipped or not scanned as bare — {stats:?}"
     );
 }
