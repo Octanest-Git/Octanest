@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
-current_plan: 3
+current_plan: 2
 status: executing
 stopped_at: Completed 22.1-01-PLAN.md
 last_updated: "2026-09-19T15:52:35.366Z"
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
-Current Plan: 3
+Current Plan: 2
 Total Plans in Phase: 10
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 22.1 execution started
