@@ -835,7 +835,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
-| 22.1 v1.0 Milestone Closure | 4/10 | In Progress|  |
+| 22.1 v1.0 Milestone Closure | 5/10 | In Progress|  |
 
 ---
 *Roadmap created: 2026-09-09*
@@ -854,11 +854,11 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
   3. PLAT-* REQUIREMENTS checkboxes match evidence; WINDOWS open_count reduced (fixed/waived obsolete Wave 0 stubs)
   4. Re-audit (`/gsd-audit-milestone`) no longer reports ORG-06 packaging as a blocker
 
-**Plans:** 4/10 plans executed
+**Plans:** 5/10 plans executed
 
 Plans:
 
-- [ ] 22.1-01-PLAN.md
+- [x] 22.1-01-PLAN.md
 - [ ] 22.1-02-PLAN.md
 - [ ] 22.1-03-PLAN.md
 - [ ] 22.1-04-PLAN.md

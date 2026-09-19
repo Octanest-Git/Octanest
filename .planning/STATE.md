@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 22.1-09-PLAN.md
-last_updated: "2026-09-19T15:35:11.237Z"
+stopped_at: Completed 22.1-01-PLAN.md
+last_updated: "2026-09-19T15:52:35.366Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 22.1 execution started
-state_head: 394910eb25f513295178a32d5b741c9310f16385
+state_head: 0f2b26935c5b447b62c73dc4a56ec621b528a96c
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 214
+  completed_plans: 215
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
-Current Plan: 2
+Current Plan: 3
 Total Plans in Phase: 10
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 22.1 execution started
@@ -176,6 +176,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 22.1 P06 | 2min | 3 tasks | 3 files |
 | Phase 22.1 P07 | 2min | 3 tasks | 3 files |
 | Phase 22.1 P09 | 5min | 2 tasks | 4 files |
+| Phase 22.1 P01 | 15min | 3 tasks | 11 files |
 
 # Project State
 
@@ -577,6 +578,8 @@ Recent decisions affecting current work:
 - [Phase 22.1]: 22.1-07: VERIFICATION passed+caveats for phases 17/18/21 (D-VER-03); WINDOWS 55-58 cited not waived; clone_bare hooks deferred to 22.1-02
 - [Phase 22.1]: Nyquist compliant only after live nextest/vitest + green task maps (D-VER-02) — Threat T-22.1-04 forbids hand-faked nyquist_compliant
 - [Phase 22.1]: Phase 15 draft Wave 0 VALIDATION map was documentation drift, not missing coverage — Greened release/transfer tests already on disk; map reconciled during validate-phase
+- [Phase 22.1]: Sibling make smoke-protection with enforce_admins for ORG-06 Compose denial proof
+- [Phase 22.1]: Smart HTTP resolve_protection_helper_with(env, default_helper_path) + OCTANEST_ENV CGI re-inject
 
 ### Pending Todos
 
@@ -602,8 +605,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T15:35:11.078Z
-Stopped at: Completed 22.1-09-PLAN.md
+Last session: 2026-09-19T15:52:35.202Z
+Stopped at: Completed 22.1-01-PLAN.md
 Resume file: None
 
 ## Accumulated Context
