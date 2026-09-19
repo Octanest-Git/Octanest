@@ -438,9 +438,161 @@ pub async fn looks_like_bare_repo(path: &Path) -> bool {
 /// upgrades land on pre-existing forks. Per-repo errors are counted; the sweep
 /// continues so API listen is not blocked by one bad path.
 pub async fn sweep_protection_hooks(repos_dir: &Path) -> SweepHooksStats {
-    // RED stub (22.1-04): no-op until GREEN walks owner/repo.git and install_hooks.
-    let _ = (repos_dir, SWEEP_PROGRESS_EVERY);
-    SweepHooksStats::default()
+    let mut stats = SweepHooksStats::default();
+    if !repos_dir.exists() {
+        tracing::info!(
+            path = %repos_dir.display(),
+            "protection hook sweep: repos_dir missing; skipping"
+        );
+        return stats;
+    }
+
+    let root = match tokio::fs::canonicalize(repos_dir).await {
+        Ok(p) => p,
+        Err(e) => {
+            tracing::error!(
+                error = %e,
+                path = %repos_dir.display(),
+                "protection hook sweep: canonicalize repos_dir failed"
+            );
+            stats.errors = stats.errors.saturating_add(1);
+            return stats;
+        }
+    };
+
+    let mut owners = match tokio::fs::read_dir(&root).await {
+        Ok(d) => d,
+        Err(e) => {
+            tracing::error!(
+                error = %e,
+                path = %root.display(),
+                "protection hook sweep: read_dir repos_dir failed"
+            );
+            stats.errors = stats.errors.saturating_add(1);
+            return stats;
+        }
+    };
+
+    loop {
+        let owner_ent = match owners.next_entry().await {
+            Ok(Some(e)) => e,
+            Ok(None) => break,
+            Err(e) => {
+                tracing::error!(error = %e, "protection hook sweep: owner entry read failed");
+                stats.errors = stats.errors.saturating_add(1);
+                break;
+            }
+        };
+        let owner_ft = match owner_ent.file_type().await {
+            Ok(ft) => ft,
+            Err(e) => {
+                tracing::warn!(error = %e, "protection hook sweep: owner file_type failed");
+                stats.errors = stats.errors.saturating_add(1);
+                continue;
+            }
+        };
+        if !owner_ft.is_dir() {
+            stats.skipped = stats.skipped.saturating_add(1);
+            continue;
+        }
+        let owner_name = owner_ent.file_name();
+        let owner_str = owner_name.to_string_lossy();
+        if owner_str == "." || owner_str == ".." || owner_str.contains('/') {
+            stats.skipped = stats.skipped.saturating_add(1);
+            continue;
+        }
+
+        let mut repos = match tokio::fs::read_dir(owner_ent.path()).await {
+            Ok(d) => d,
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    owner = %owner_str,
+                    "protection hook sweep: read_dir owner failed"
+                );
+                stats.errors = stats.errors.saturating_add(1);
+                continue;
+            }
+        };
+
+        loop {
+            let repo_ent = match repos.next_entry().await {
+                Ok(Some(e)) => e,
+                Ok(None) => break,
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        owner = %owner_str,
+                        "protection hook sweep: repo entry read failed"
+                    );
+                    stats.errors = stats.errors.saturating_add(1);
+                    break;
+                }
+            };
+            let name_os = repo_ent.file_name();
+            let name = name_os.to_string_lossy();
+            if !name.ends_with(".git") {
+                stats.skipped = stats.skipped.saturating_add(1);
+                continue;
+            }
+            let path = repo_ent.path();
+            let ft = match repo_ent.file_type().await {
+                Ok(ft) => ft,
+                Err(e) => {
+                    tracing::warn!(
+                        error = %e,
+                        path = %path.display(),
+                        "protection hook sweep: repo file_type failed"
+                    );
+                    stats.errors = stats.errors.saturating_add(1);
+                    continue;
+                }
+            };
+            if !ft.is_dir() {
+                stats.skipped = stats.skipped.saturating_add(1);
+                continue;
+            }
+            if !looks_like_bare_repo(&path).await {
+                stats.skipped = stats.skipped.saturating_add(1);
+                continue;
+            }
+
+            stats.scanned = stats.scanned.saturating_add(1);
+            match install_hooks(&path).await {
+                Ok(()) => {
+                    stats.installed = stats.installed.saturating_add(1);
+                }
+                Err(e) => {
+                    tracing::error!(
+                        error = %e,
+                        path = %path.display(),
+                        "protection hook sweep: install_hooks failed"
+                    );
+                    stats.errors = stats.errors.saturating_add(1);
+                }
+            }
+
+            if stats.scanned > 0 && stats.scanned % SWEEP_PROGRESS_EVERY == 0 {
+                tracing::info!(
+                    scanned = stats.scanned,
+                    installed = stats.installed,
+                    errors = stats.errors,
+                    skipped = stats.skipped,
+                    "protection hook sweep progress"
+                );
+            }
+        }
+    }
+
+    tracing::info!(
+        scanned = stats.scanned,
+        installed = stats.installed,
+        errors = stats.errors,
+        skipped = stats.skipped,
+        path = %root.display(),
+        "protection hook sweep complete (D-PKG-04)"
+    );
+    stats
 }
 
 /// Resolve helper binary path for current process (octanest-protection-hook).
