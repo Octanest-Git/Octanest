@@ -491,12 +491,14 @@ async fn authorize_and_cgi(
     let db_url = std::env::var("OCTANEST_DATABASE_URL")
         .or_else(|_| std::env::var("DATABASE_URL"))
         .unwrap_or_default();
-    let helper = std::env::var("OCTANEST_PROTECTION_HELPER").ok();
+    let helper = crate::protection::resolve_protection_helper();
+    let octanest_env = std::env::var("OCTANEST_ENV").ok();
     let protection = if receive && !db_url.is_empty() {
         Some(http_backend::ProtectionCgiEnv {
             database_url: &db_url,
             actor_capability: actor_capability_label,
             helper_path: helper.as_deref(),
+            octanest_env: octanest_env.as_deref(),
         })
     } else {
         None

@@ -56,6 +56,8 @@ services:
       RUST_LOG: ${RUST_LOG:-info}
       # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
       OCTANEST_REPOS_DIR: /var/repos
+      # Branch-protection update-hook helper (ORG-06 / D-PKG-01) — shipped beside octanest-api.
+      OCTANEST_PROTECTION_HELPER: /usr/local/bin/octanest-protection-hook
       # Git LFS object store (D-LFS-01 / GIT-13) — absolute like REPOS_DIR.
       OCTANEST_LFS_DIR: /var/lfs
       OCTANEST_RELEASE_ASSETS_DIR: /var/release-assets

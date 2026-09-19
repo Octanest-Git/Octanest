@@ -419,6 +419,24 @@ pub fn default_helper_path() -> Option<PathBuf> {
     })
 }
 
+/// Prefer non-empty `OCTANEST_PROTECTION_HELPER`; otherwise sibling `default_helper_path` (D-PKG-01).
+pub fn resolve_protection_helper_with(
+    env_value: Option<String>,
+    default_path: Option<PathBuf>,
+) -> Option<String> {
+    env_value
+        .filter(|s| !s.is_empty())
+        .or_else(|| default_path.map(|p| p.display().to_string()))
+}
+
+/// Resolve helper from process env or [`default_helper_path`].
+pub fn resolve_protection_helper() -> Option<String> {
+    resolve_protection_helper_with(
+        std::env::var("OCTANEST_PROTECTION_HELPER").ok(),
+        default_helper_path(),
+    )
+}
+
 /// Parse capability from env (`admin` | `write` | `read`).
 pub fn capability_from_env(raw: &str) -> Capability {
     match raw.trim().to_ascii_lowercase().as_str() {
