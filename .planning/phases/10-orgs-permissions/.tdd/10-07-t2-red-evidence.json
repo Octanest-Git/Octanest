@@ -1,9 +1,0 @@
-{
-  "command": "cargo test -p octanest-api --test repo_collaborators_acl collab_visibility_change_requires_admin -- --nocapture",
-  "exitCode": 101,
-  "targetTest": "collab_visibility_change_requires_admin",
-  "targetFile": "crates/octanest-api/tests/repo_collaborators_acl.rs",
-  "expected": "Visibility mutate requires Admin capability (org Owner / collab admin), not owner_id equality (ORG-03)",
-  "actual": "repo.not_found \u2014 session.user_id == owner_id rejects org Owner on org-owned repo",
-  "output": "\nrunning 1 test\ntest collab_visibility_change_requires_admin ... FAILED\n\nfailures:\n\nfailures:\n    collab_visibility_change_requires_admin\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 5 filtered out; finished in 2.06s\n\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.16s\n     Running tests/repo_collaborators_acl.rs (target/debug/build/octanest-api/db2e9e25fa969ffe/out/repo_collaborators_acl-db2e9e25fa969ffe)\n\nthread 'collab_visibility_change_requires_admin' (1244562) panicked at crates/octanest-api/tests/repo_collaborators_acl.rs:540:5:\nassertion `left == right` failed: org Owner must update visibility via Admin capability \u2014 {\"error\":{\"code\":\"repo.not_found\",\"message\":\"Repository not found\"},\"ok\":false}\n  left: Bool(false)\n right: true\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `-p octanest-api --test repo_collaborators_acl`\n\n\nnot ok 1 - collab_visibility_change_requires_admin\n  ---\n  message: 'org Owner visibility update failed \u2014 owner_id equality blocks org-owned repos (expected Admin capability)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n"
-}

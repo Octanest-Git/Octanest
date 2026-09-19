@@ -1,9 +1,0 @@
-{
-  "command": "cargo nextest run -p octanest-git -E 'test(git_archive_formats_zip_and_tar_gz)'",
-  "exitCode": 100,
-  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s\n────────────\n Nextest run ID e2d36486-9f1c-4f05-b016-349c5882cf98 with nextest profile: default\n    Starting 1 test across 1 binary (10 tests skipped)\n        FAIL [   0.051s] (1/1) octanest-git cli::tests::git_archive_formats_zip_and_tar_gz\n  stdout ───\n\n    running 1 test\n    test cli::tests::git_archive_formats_zip_and_tar_gz ... FAILED\n\n    failures:\n\n    failures:\n        cli::tests::git_archive_formats_zip_and_tar_gz\n\n    test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 10 filtered out; finished in 0.05s\n\n  stderr ───\n\n    thread 'cli::tests::git_archive_formats_zip_and_tar_gz' (503277) panicked at crates/octanest-git/src/cli.rs:1168:14:\n    zip archive: Process(\"archive not implemented\")\n    note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n────────────\n     Summary [   0.052s] 1 test run: 0 passed, 1 failed, 10 skipped\n        FAIL [   0.051s] (1/1) octanest-git cli::tests::git_archive_formats_zip_and_tar_gz\nerror: test run failed\n\nnot ok 1 - git_archive_formats_zip_and_tar_gz\n  ---\n  message: \"zip archive: Process(archive not implemented)\"\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n",
-  "targetTest": "git_archive_formats_zip_and_tar_gz",
-  "targetFile": "crates/octanest-git/src/cli.rs",
-  "expected": "zip and tar.gz bytes non-empty for seeded ref",
-  "actual": "zip archive: Process(\"archive not implemented\")"
-}

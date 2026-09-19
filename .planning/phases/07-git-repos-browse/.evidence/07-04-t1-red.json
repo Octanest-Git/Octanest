@@ -1,9 +1,0 @@
-{
-  "command": "bunx vitest run src/components/signed-in-home.integration.test.ts --reporter=tap",
-  "exitCode": 1,
-  "targetTest": "empty list shows Create your first repository hero and activity placeholder",
-  "targetFile": "src/components/signed-in-home.integration.test.ts",
-  "expected": "Empty hero heading 'Create your first repository' + activity placeholder (D-13 / UI E1)",
-  "actual": "Stub home still shows 'Welcome, Ada' \u2014 no empty hero / dashboard IA",
-  "output": "TAP version 13\n# tests 5\n# pass 0\n# fail 5\nnot ok 1 - unverified: disabled CTA + verify-email hint\nnot ok 2 - verified: enabled New repository navigates to /new\nnot ok 3 - empty list shows Create your first repository hero and activity placeholder\n  ---\n  error:\n    name: \"Error\"\n    message: \"Unable to find role=\\\"heading\\\" and name=\\\"Create your first repository\\\" \u2014 found heading \\\"Welcome, Ada\\\"\"\n  ...\nnot ok 4 - populated list shows owner/name and visibility Badge\nnot ok 5 - keeps incomplete-profile banner above the list\n"
-}

@@ -1,9 +1,0 @@
-{
-  "command": "bunx vitest run src/routes/signup.integration.test.ts --reporter=tap",
-  "exitCode": 1,
-  "targetTest": "beforeLoad calls notFound when allow_signup is false",
-  "targetFile": "src/routes/signup.integration.test.ts",
-  "expected": "signup beforeLoad throws notFound() when allow_signup is false (D-06 SSR 404)",
-  "actual": "beforeLoad is undefined; SignupPage still soft-renders AuthShell without SSR gate",
-  "output": "TAP version 13\n# tests 3\n# pass 1\n# fail 2\nnot ok 1 - beforeLoad calls notFound when allow_signup is false\nnot ok 2 - beforeLoad allows render when allow_signup is true\nok 3 - local signup form has email/username/password only — no invite fields\n"
-}

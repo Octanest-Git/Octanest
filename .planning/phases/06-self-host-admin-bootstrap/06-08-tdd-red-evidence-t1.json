@@ -1,9 +1,0 @@
-{
-  "command": "bunx vitest run src/components/chrome.integration.test.ts --reporter=tap",
-  "exitCode": 1,
-  "targetTest": "omits Sign up when allow_signup is false",
-  "targetFile": "src/components/chrome.integration.test.ts",
-  "expected": "Sign up link omitted when allow_signup is false (D-06 fail-closed)",
-  "actual": "Sign up link still rendered (href=/signup) — chrome does not gate on providerConfig.allow_signup",
-  "output": "TAP version 13\n# tests 4\n# pass 1\n# fail 3\nnot ok 1 - omits Sign up when allow_signup is false\n  ---\n  error:\n    name: \"Error\"\n    message: \"expect(element).not.toBeInTheDocument() — found <a href=\\\"/signup\\\">Sign up</a>\"\n  ...\nnot ok 2 - omits Sign up when allow_signup is unknown\nnot ok 3 - omits Sign in and Sign up while needs_setup\nok 4 - shows Sign up when allow_signup is true\n"
-}

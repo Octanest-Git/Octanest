@@ -1,9 +1,0 @@
-{
-  "command": "bunx vitest run src/routes/$owner.$repo.integration.test.ts",
-  "exitCode": 1,
-  "targetTest": "tree route lists dirs first when commits exist",
-  "targetFile": "apps/web/src/routes/$owner.$repo.integration.test.ts",
-  "expected": "Directory entries (src) listed first; Quick setup not shown when commits exist",
-  "actual": "Stub always renders Quick setup; Unable to find text: src",
-  "output": "TAP version 13\n# Vitest RED run projected to node-test TAP for gsd check tdd-red-evidence\n# Source: bunx vitest run src/routes/$owner.$repo.integration.test.ts\n# Raw vitest: 2 failed | 1 passed \u2014 stub always renders Quick setup\nok 1 - empty repo Code home shows Quick setup (not tree)\nnot ok 2 - tree route lists dirs first when commits exist\n  ---\n  error: TestingLibraryElementError\n  message: Unable to find an element with the text: src\n  expected: Directory entries listed first; Quick setup hidden when commits exist\n  actual: Stub always renders Quick setup; no tree listing\n  ...\nnot ok 3 - private non-owner (or missing) shows Not found \u2014 same copy\n  ---\n  error: TestingLibraryElementError\n  message: Unable to find an element with the text: Page not found\n  expected: Page not found + We couldn't find that page\n  actual: Stub always renders Quick setup\n  ...\n1..3\n# tests 3\n# pass 1\n# fail 2\n# cancelled 0\n"
-}

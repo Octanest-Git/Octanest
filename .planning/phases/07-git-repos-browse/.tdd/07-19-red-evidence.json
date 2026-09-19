@@ -1,9 +1,0 @@
-{
-  "command": "cargo test -p octanest-api --test repo_branch_soft_protect repo_branch_create_rejects_option_like_name_leaves_default_intact -- --exact",
-  "exitCode": 101,
-  "output": "   Compiling octanest-api v0.1.0 (/home/jesse/wsl-projects/personal/typescript/octanest/crates/octanest-api)\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.87s\n     Running tests/repo_branch_soft_protect.rs (target/debug/build/octanest-api/907bdeeedc4f651f/out/repo_branch_soft_protect-907bdeeedc4f651f)\n\nrunning 1 test\ntest repo_branch_create_rejects_option_like_name_leaves_default_intact ... FAILED\n\nfailures:\n\n---- repo_branch_create_rejects_option_like_name_leaves_default_intact stdout ----\n\nthread 'repo_branch_create_rejects_option_like_name_leaves_default_intact' (679137) panicked at crates/octanest-api/tests/repo_branch_soft_protect.rs:247:5:\nassertion `left == right` failed: option-like branchCreate must fail \u2014 {\"data\":{\"branch\":\"-D\"},\"ok\":true}\n  left: Bool(true)\n right: false\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    repo_branch_create_rejects_option_like_name_leaves_default_intact\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.93s\n\nerror: test failed, to rerun pass `-p octanest-api --test repo_branch_soft_protect`\n\n\nnot ok 1 - repo_branch_create_rejects_option_like_name_leaves_default_intact\n  ---\n  message: 'assertion failed: option-like branchCreate must fail \u2014 ok was true with branch=-D'\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n",
-  "targetTest": "repo_branch_create_rejects_option_like_name_leaves_default_intact",
-  "targetFile": "crates/octanest-api/tests/repo_branch_soft_protect.rs",
-  "expected": "ok=false with invalid-ref style error; default branch soft-protect still observes main",
-  "actual": "ok=true with data.branch=-D (option-like name accepted)"
-}

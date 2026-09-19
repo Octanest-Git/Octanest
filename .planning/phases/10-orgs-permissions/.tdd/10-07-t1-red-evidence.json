@@ -1,9 +1,0 @@
-{
-  "command": "cargo test -p octanest-api --test repo_collaborators_acl collab_crud_on_personal_repo -- --nocapture",
-  "exitCode": 101,
-  "targetTest": "collab_crud_on_personal_repo",
-  "targetFile": "crates/octanest-api/tests/repo_collaborators_acl.rs",
-  "expected": "Admin can add/list/update/remove collaborators; non-admin \u2192 repo.not_found (ORG-03 / D-ORG-04)",
-  "actual": "rpc.unknown_procedure \u2014 repo.collaborators.add not registered; HTTP 404 vs 200",
-  "output": "\nrunning 1 test\ntest collab_crud_on_personal_repo ... FAILED\n\nfailures:\n\nfailures:\n    collab_crud_on_personal_repo\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 5 filtered out; finished in 2.26s\n\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.20s\n     Running tests/repo_collaborators_acl.rs (target/debug/build/octanest-api/db2e9e25fa969ffe/out/repo_collaborators_acl-db2e9e25fa969ffe)\n\nthread 'collab_crud_on_personal_repo' (1228166) panicked at crates/octanest-api/tests/repo_collaborators_acl.rs:84:5:\nassertion `left == right` failed: rpc http status for {\"procedure\":\"repo.collaborators.add\",\"input\":{\"owner\":\"owner1\",\"name\":\"personal-priv\",\"username\":\"collab1\",\"permission\":\"read\"}}\n  left: 404\n right: 200\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nerror: test failed, to rerun pass `-p octanest-api --test repo_collaborators_acl`\n\n\nnot ok 1 - collab_crud_on_personal_repo\n  ---\n  message: 'rpc.unknown_procedure \u2014 repo.collaborators.add not registered (expected StatusCode::OK)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n"
-}
