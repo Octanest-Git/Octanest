@@ -174,6 +174,7 @@ impl Handler for SshHandler {
                 owner_slug,
                 repo_name,
                 is_push,
+                capability: _capability,
             } => {
                 let program = match &cmd {
                     PackCommand::UploadPack { .. } => "upload-pack",
@@ -202,6 +203,7 @@ impl Handler for SshHandler {
                     let writer = ch.make_writer();
                     let stderr_writer = ch.make_writer_ext(Some(1));
                     let reader = ch.make_reader();
+                    // RED: protection env not yet injected (GREEN wires D-PKG-01).
                     let code =
                         pack::run_pack_command(program, &bare, reader, writer, stderr_writer)
                             .await
