@@ -1072,6 +1072,9 @@ impl GitBackend for CliGitBackend {
             tokio::fs::create_dir_all(parent).await?;
         }
         run_git(&["clone", "--bare", source_s, dest_s]).await?;
+        // D-FORK-02: every bare copy gets protection hooks (same as init_bare).
+        // Failure propagates so fork RPC can compensate (D-FORK-04).
+        install_protection_hooks(&dest_abs).await?;
         Ok(())
     }
 
@@ -2406,9 +2409,15 @@ mod tests {
     }
 
     /// D-FORK-04: hook install failure after clone propagates as Err.
+    /// Uses a template where `hooks` is a file so create_dir_all fails
+    /// (bare clone installs from GIT_TEMPLATE_DIR, not source hooks).
     #[tokio::test]
-    async fn clone_bare_fails_when_hooks_update_is_directory() {
+    async fn clone_bare_fails_when_hook_install_blocked() {
         let tmp = tempfile::tempdir().unwrap();
+        let template = tmp.path().join("tmpl");
+        std::fs::create_dir_all(&template).unwrap();
+        std::fs::write(template.join("hooks"), b"not-a-directory\n").unwrap();
+
         let source = tmp.path().join("src.git");
         let dest = tmp.path().join("dest.git");
         let git = CliGitBackend::new();
@@ -2421,18 +2430,19 @@ mod tests {
         )
         .await
         .unwrap();
-        // Make source hooks/update a directory so bare clone copies it and
-        // install_protection_hooks cannot overwrite with a file.
-        let src_update = source.join("hooks").join("update");
-        let _ = tokio::fs::remove_file(&src_update).await;
-        tokio::fs::create_dir_all(&src_update).await.unwrap();
 
-        let err = git
-            .clone_bare(&source, &dest)
-            .await
-            .expect_err("hook install must fail");
+        let prev = std::env::var_os("GIT_TEMPLATE_DIR");
+        // nextest runs each test in its own process — safe to set for this call.
+        std::env::set_var("GIT_TEMPLATE_DIR", &template);
+        let result = git.clone_bare(&source, &dest).await;
+        match prev {
+            Some(v) => std::env::set_var("GIT_TEMPLATE_DIR", v),
+            None => std::env::remove_var("GIT_TEMPLATE_DIR"),
+        }
+
+        let err = result.expect_err("hook install must fail");
         assert!(
-            matches!(err, GitError::Io(_) | GitError::Process(_)),
+            matches!(err, GitError::Io(_)),
             "unexpected error variant: {err:?}"
         );
     }

@@ -273,11 +273,12 @@ async fn repo_fork_failed_when_hook_install_blocked() {
     verify_user(&db, &src_id).await;
     create_repo(&app, &src_c, "upstream", "public").await;
 
-    // Poison source hooks/update so bare clone copies a directory and install fails.
-    let source = bare_repo_path(&repos, "failsrc", "upstream").expect("source path");
-    let src_update = source.join("hooks").join("update");
-    std::fs::remove_file(&src_update).expect("remove update file");
-    std::fs::create_dir_all(&src_update).expect("update as directory");
+    // Poison GIT_TEMPLATE_DIR so bare clone's hooks dir is a file; install fails.
+    let template = dir.path().join("bad-template");
+    std::fs::create_dir_all(&template).expect("template");
+    std::fs::write(template.join("hooks"), b"not-a-directory\n").expect("hooks file");
+    let prev = std::env::var_os("GIT_TEMPLATE_DIR");
+    std::env::set_var("GIT_TEMPLATE_DIR", &template);
 
     let (fork_c, fork_v) = signup_and_login(&app, "failfork@ex.com", "failfork").await;
     let fork_uid = fork_v["data"]["id"].as_str().unwrap().to_string();
@@ -289,6 +290,12 @@ async fn repo_fork_failed_when_hook_install_blocked() {
         r#"{"procedure":"repo.fork","input":{"owner":"failsrc","name":"upstream"}}"#,
     )
     .await;
+
+    match prev {
+        Some(v) => std::env::set_var("GIT_TEMPLATE_DIR", v),
+        None => std::env::remove_var("GIT_TEMPLATE_DIR"),
+    }
+
     assert_eq!(forked["ok"], false, "{forked}");
     assert_eq!(
         forked["error"]["code"].as_str().unwrap_or(""),
