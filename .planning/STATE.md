@@ -3,18 +3,18 @@ gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: "22.1"
 current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
-current_plan: 6
-status: executing
-stopped_at: Completed 22.1-08-PLAN.md
-last_updated: "2026-09-19T16:36:27.451Z"
+current_plan: 10
+status: ready_for_verification
+stopped_at: Completed 22.1-10-PLAN.md
+last_updated: "2026-09-19T16:41:29.843Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 22.1 execution started
-state_head: 3ef68f0bfb7d31ac47bd6d2231f2717c68f456d4
+last_activity_desc: Completed 22.1-10 hygiene (PLAT/WINDOWS/STATE)
+state_head: 881f76555f0499700d71fbdc4435cd2d1ae28037
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 219
+  completed_plans: 220
 milestone_name: milestone
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 
 ## Current Position
 
-Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
-Current Plan: 10
+Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — READY FOR VERIFICATION
+Current Plan: 10 (final)
 Total Plans in Phase: 10
-Status: Hygiene complete (PLAT flips, WINDOWS open_count 55→2, parallel-tracks closed); next: plan SUMMARY → `/gsd-verify-work` / re-audit → milestone close
-Last activity: 2026-09-19 — Phase 22.1 plan 10 hygiene (D-HYG-01…05)
+Status: All 10 plans executed; hygiene complete (PLAT flips, WINDOWS open_count 55→2, parallel-tracks closed); next: `/gsd-verify-work` / re-audit → milestone close
+Last activity: 2026-09-19 — Completed 22.1-10 hygiene (D-HYG-01…05)
 
 See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/` · `.planning/parallel-tracks/README.md`
 
@@ -181,6 +181,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 22.1 P03 | 12min | 2 tasks | 5 files |
 | Phase 22.1 P04 | 5min | 2 tasks | 4 files |
 | Phase 22.1 P08 | 6 min | 2 tasks | 2 files |
+| Phase 22.1 P10 | 3min | 3 tasks | 4 files |
 
 # Project State
 
@@ -589,6 +590,9 @@ Recent decisions affecting current work:
 - [Phase 22.1]: Boot sweep uses install_hooks overwrite (never reconcile-only) so D-PKG-02 upgrades land on existing bares
 - [Phase 22.1]: Per-repo sweep install failures are logged/counted; API listen continues
 - [Phase 22.1]: 22.1-08: Phase 13/22 thorough VERIFICATION passed after ORG-06 packaging (live smoke + CI/IaC) — D-VER-04 rigor; D-VER-03 forbids human_needed
+- [Phase 22.1]: 22.1-10: Flip PLAT only after VERIFICATION passed; leave ORG-06 [x]
+- [Phase 22.1]: 22.1-10: Waive obsolete Wave 0 WINDOWS stubs; keep coverage floor (53) and CI llvm-cov skip (54)
+- [Phase 22.1]: 22.1-10: parallel-tracks integrate closed after PR #16 merge to main
 
 ### Pending Todos
 
@@ -614,8 +618,8 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T16:36:27.308Z
-Stopped at: Completed 22.1-08-PLAN.md
+Last session: 2026-09-19T16:41:29.701Z
+Stopped at: Completed 22.1-10-PLAN.md
 Resume file: None
 
 ## Accumulated Context
