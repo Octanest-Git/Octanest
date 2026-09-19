@@ -145,7 +145,6 @@ pub async fn authorize_pack(
                 owner_slug: disk_owner.to_string(),
                 repo_name: disk_name.to_string(),
                 is_push: false,
-                // RED: field present; GREEN will keep computed capability (D-PKG-01).
                 capability,
             }
         }
@@ -186,25 +185,36 @@ pub async fn authorize_pack(
 }
 
 /// Spawn `git-upload-pack` or `git-receive-pack` with argv only (no shell) and bridge stdio.
+///
+/// When `protection_env` is `Some` (receive-pack), inject helper/DB/repos/capability/ENV
+/// so bare-repo update hooks can evaluate branch protection (D-PKG-01). Upload-pack
+/// callers pass `None`.
 pub async fn run_pack_command<R, W, E>(
     program: &str,
     bare: &Path,
     mut stdin_rx: R,
     mut stdout_tx: W,
     mut stderr_tx: E,
+    protection_env: Option<&[(String, String)]>,
 ) -> Result<i32, String>
 where
     R: AsyncRead + Unpin,
     W: AsyncWrite + Unpin,
     E: AsyncWrite + Unpin,
 {
-    let mut child = Command::new("git")
-        .arg(program)
+    let mut cmd = Command::new("git");
+    cmd.arg(program)
         .arg(bare)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
+        .kill_on_drop(true);
+    if let Some(pairs) = protection_env {
+        for (k, v) in pairs {
+            cmd.env(k, v);
+        }
+    }
+    let mut child = cmd
         .spawn()
         .map_err(|e| format!("spawn git {program}: {e}"))?;
 
@@ -249,9 +259,11 @@ pub async fn write_git_stderr_deny(
 
 /// Map forge capability to `OCTANEST_ACTOR_CAPABILITY` (D-PKG-01 / Smart HTTP).
 pub fn capability_env_label(capability: Option<Capability>) -> &'static str {
-    // RED stub (22.1-03): always "read" until GREEN wires Admin/Write.
-    let _ = capability;
-    "read"
+    match capability {
+        Some(Capability::Admin) => "admin",
+        Some(Capability::Write) => "write",
+        Some(Capability::Read) | None => "read",
+    }
 }
 
 /// Env pairs injected into `git receive-pack` for protection hooks (D-PKG-01).
@@ -263,9 +275,26 @@ pub fn receive_pack_protection_env(
     helper: Option<&str>,
     octanest_env: Option<&str>,
 ) -> Vec<(String, String)> {
-    // RED stub (22.1-03): intentionally empty so unit tests fail until GREEN.
-    let _ = (database_url, repos_dir, actor_capability, helper, octanest_env);
-    Vec::new()
+    let mut out = Vec::with_capacity(5);
+    out.push((
+        "OCTANEST_DATABASE_URL".into(),
+        database_url.to_string(),
+    ));
+    out.push((
+        "OCTANEST_REPOS_DIR".into(),
+        repos_dir.display().to_string(),
+    ));
+    out.push((
+        "OCTANEST_ACTOR_CAPABILITY".into(),
+        actor_capability.to_string(),
+    ));
+    if let Some(h) = helper.filter(|s| !s.is_empty()) {
+        out.push(("OCTANEST_PROTECTION_HELPER".into(), h.to_string()));
+    }
+    if let Some(env_name) = octanest_env.filter(|s| !s.is_empty()) {
+        out.push(("OCTANEST_ENV".into(), env_name.to_string()));
+    }
+    out
 }
 
 #[cfg(test)]
