@@ -36,6 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 20: Packages Registry** - OCI, npm, and generic/raw packages with auth *(repo packages chrome/IA closed in 11.1; OCI referrers deferred)*
 - [x] **Phase 21: Social & Explore** - Stars, profiles, explore, and forks
 - [x] **Phase 22: Compose CI & Cloud Deploy** - PR Compose matrix and Railway-class deploy path
+- [ ] **Phase 22.1: v1.0 Milestone Closure** (INSERTED) - ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene
 
 ## Phase Details
 
@@ -834,8 +835,36 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
+| 22.1 v1.0 Milestone Closure | 0/0 | Not started |  |
 
 ---
 *Roadmap created: 2026-09-09*
-*Last updated: 2026-09-16 — Phase 19 Actions & Runners complete (12/12 plans on cursor/phase-19-actions-runners-c82f)*
-*Granularity: fine — 22 phases, 85/85 v1 requirements mapped*
+*Last updated: 2026-09-19 — Full v1.0 audit gaps_found; Phase 22.1 (INSERTED) for ORG-06 packaging + verify/REQUIREMENTS/windows hygiene*
+*Granularity: fine — 23 roadmap phases (22 + 11.1 + 22.1), 87 v1 requirements*
+
+### Phase 22.1: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
+
+**Goal:** Close v1.0 audit gaps before `/gsd-complete-milestone`: ship ORG-06 direct-push protection in Compose/API image, produce missing VERIFICATION.md for unverified phases, flip PLAT-* REQUIREMENTS checkboxes where evidence exists, and sweep WINDOWS ledger / stale planning pointers
+**Requirements**: ORG-06 (push half); PLAT-01, PLAT-04–08, PLAT-10–11 (checkbox/verify hygiene); process: unverified phases 01–03, 11.1, 12–13, 16–18, 21–22
+**Depends on:** Phase 22
+**Success Criteria** (what must be TRUE):
+
+  1. Direct HTTPS and SSH push to a protected branch is denied in the shipped Compose/API image (ORG-06 push half)
+  2. Missing phase VERIFICATION.md files are written (or `/gsd-verify-work` run) for previously unverified executed phases
+  3. PLAT-* REQUIREMENTS checkboxes match evidence; WINDOWS open_count reduced (fixed/waived obsolete Wave 0 stubs)
+  4. Re-audit (`/gsd-audit-milestone`) no longer reports ORG-06 packaging as a blocker
+
+**Plans:** 10 plans
+
+Plans:
+
+- [ ] `22.1-01-PLAN.md` — Tracer: package protection helper → Compose HTTPS push denied (ORG-06)
+- [ ] `22.1-02-PLAN.md` — Fail-closed update hook + clone_bare/fork hooks (D-PKG-02, D-FORK-*)
+- [ ] `22.1-03-PLAN.md` — SSH receive-pack protection env + SSH smoke (D-PKG-01/03)
+- [ ] `22.1-04-PLAN.md` — Boot repos_dir hook overwrite sweep (D-PKG-04)
+- [ ] `22.1-05-PLAN.md` — Lightweight VERIFICATION for phases 01, 02, 03
+- [ ] `22.1-06-PLAN.md` — Lightweight VERIFICATION for phases 11.1, 12, 16
+- [ ] `22.1-07-PLAN.md` — Lightweight VERIFICATION for phases 17, 18, 21
+- [ ] `22.1-08-PLAN.md` — Thorough VERIFICATION for phases 13 and 22 (after packaging)
+- [ ] `22.1-09-PLAN.md` — Nyquist validate-phase for 8, 14, 15, 20
+- [ ] `22.1-10-PLAN.md` — PLAT flips, WINDOWS mass-waive, STATE/parallel-tracks refresh
