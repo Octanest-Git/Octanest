@@ -72,7 +72,7 @@ Do **not** use Railway Environment Sync to promote: Sync copies service **variab
    - `action=rollback` — Railway `deploymentRollback` to the previous `canRollback` deployment on each of those services (restores that deployment’s image; Railway may also restore that deployment’s custom variables).
 3. Confirm `GET https://octanest.jereko.dev/health`.
 
-**One-time GitHub setup:** Settings → Environments → create `production`, add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`.
+**One-time GitHub setup:** On Environment [`Octanest / production`](https://github.com/Octanest-Git/Octanest/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`.
 
 **Avoid:** Sync staging → production unless you carefully reject variable diffs in staged changes.
 

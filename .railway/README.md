@@ -74,7 +74,7 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
 
 Script: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 
-**GitHub Environment `production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
+**GitHub Environment `Octanest / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
 
 ## Related
 
