@@ -2363,4 +2363,77 @@ mod tests {
             "unexpected err: {msg}"
         );
     }
+
+    /// D-FORK-02/03: clone_bare must install hooks/update (same as init_bare).
+    #[tokio::test]
+    async fn clone_bare_installs_protection_hooks() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("src.git");
+        let dest = tmp.path().join("dest.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&source, "main").await.unwrap();
+        git.seed_commit(
+            &source,
+            "main",
+            "seed",
+            &[("README.md".into(), b"hi\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Strip hooks so clone cannot inherit a valid update file from source.
+        let _ = tokio::fs::remove_file(source.join("hooks").join("update")).await;
+
+        git.clone_bare(&source, &dest).await.expect("clone_bare");
+        let update = dest.join("hooks").join("update");
+        let meta = tokio::fs::metadata(&update)
+            .await
+            .expect("hooks/update must exist after clone_bare");
+        assert!(meta.is_file(), "hooks/update must be a file");
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            assert_eq!(
+                meta.permissions().mode() & 0o111,
+                0o111,
+                "hooks/update must be executable"
+            );
+        }
+        let body = tokio::fs::read_to_string(&update).await.unwrap();
+        assert!(
+            body.contains("OCTANEST_ENV") && body.contains("production|cloud"),
+            "cloned hook script must include D-PKG-02 gate"
+        );
+    }
+
+    /// D-FORK-04: hook install failure after clone propagates as Err.
+    #[tokio::test]
+    async fn clone_bare_fails_when_hooks_update_is_directory() {
+        let tmp = tempfile::tempdir().unwrap();
+        let source = tmp.path().join("src.git");
+        let dest = tmp.path().join("dest.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&source, "main").await.unwrap();
+        git.seed_commit(
+            &source,
+            "main",
+            "seed",
+            &[("README.md".into(), b"hi\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // Make source hooks/update a directory so bare clone copies it and
+        // install_protection_hooks cannot overwrite with a file.
+        let src_update = source.join("hooks").join("update");
+        let _ = tokio::fs::remove_file(&src_update).await;
+        tokio::fs::create_dir_all(&src_update).await.unwrap();
+
+        let err = git
+            .clone_bare(&source, &dest)
+            .await
+            .expect_err("hook install must fail");
+        assert!(
+            matches!(err, GitError::Io(_) | GitError::Process(_)),
+            "unexpected error variant: {err:?}"
+        );
+    }
 }
