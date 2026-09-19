@@ -102,6 +102,17 @@ async fn main() {
         octanest_api::email::build_email_sender_from_env()
     };
     let state = octanest_api::AppState::new(db, email, env_name);
+    // D-PKG-04: overwrite protection hooks on existing bares (upgrade safety net).
+    let sweep = octanest_api::protection::sweep_protection_hooks(&state.repos_dir).await;
+    if sweep.errors > 0 {
+        tracing::warn!(
+            scanned = sweep.scanned,
+            installed = sweep.installed,
+            errors = sweep.errors,
+            skipped = sweep.skipped,
+            "protection hook boot sweep completed with errors; continuing listen"
+        );
+    }
     let job_cfg = octanest_api::jobs::JobConfig::from_env();
     octanest_api::jobs::spawn_background_jobs(
         state.db.clone(),
