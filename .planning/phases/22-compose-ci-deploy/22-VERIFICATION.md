@@ -1,34 +1,36 @@
 ---
 phase: 22-compose-ci-deploy
-verified: 2026-09-19T16:34:11Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 6/6 must-haves verified
 covered_files:
+  - .github/workflows/ci.yml
   - .planning/REQUIREMENTS.md
+  - .planning/phases/22-compose-ci-deploy/22-01-PLAN.md
   - .planning/phases/22-compose-ci-deploy/22-01-SUMMARY.md
+  - .planning/phases/22-compose-ci-deploy/22-02-PLAN.md
   - .planning/phases/22-compose-ci-deploy/22-02-SUMMARY.md
+  - .planning/phases/22-compose-ci-deploy/22-03-PLAN.md
   - .planning/phases/22-compose-ci-deploy/22-03-SUMMARY.md
   - .planning/phases/22-compose-ci-deploy/22-CONTEXT.md
   - .planning/phases/22-compose-ci-deploy/22-VALIDATION.md
-  - .github/workflows/ci.yml
-  - scripts/ci-compose-smoke.sh
-  - scripts/compose-smoke.sh
-  - Makefile
-  - docs/TESTING.md
-  - docs/DEPLOYMENT.md
-  - docs/ARCHITECTURE.md
-  - .railway/railway.ts
   - .railway/README.md
+  - .railway/railway.ts
+  - Makefile
   - deploy/cloud/Caddyfile
   - deploy/cloud/Dockerfile
   - deploy/cloud/README.md
   - docker-compose.yml
+  - docs/ARCHITECTURE.md
+  - docs/DEPLOYMENT.md
+  - docs/TESTING.md
+  - scripts/ci-compose-smoke.sh
+  - scripts/compose-smoke.sh
+covered_digest: "v1:sha256:3053bcd4f86db4cbb97fdb70c11e2317843fbdebaf13ff4118ef5cd1a1cf76b2"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 6
-  total: 6
-  not_honored: []
+decision_coverage: "{'honored': 6, 'total': 6, 'not_honored': []}"
 ---
 
 # Phase 22: Compose CI & Cloud Deploy Verification Report
@@ -124,3 +126,10 @@ No blocking gaps. Phase 22 goal achieved: PR Compose bring-up matrix (Postgres/S
 
 _Verified: 2026-09-19T16:34:11Z_  
 _Verifier: gsd-executor (thorough D-VER-04)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 22 files
+

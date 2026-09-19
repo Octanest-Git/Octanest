@@ -1,7 +1,8 @@
 ---
 phase: 06-self-host-admin-bootstrap
-verified: 2026-09-11T22:08:37Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 11/11 must-haves verified
 covered_files:
   - .env.example
@@ -75,20 +76,11 @@ covered_files:
   - crates/octanest-db/src/users.rs
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
-covered_digest: "v1:sha256:860976761a0fdaebee13ae6573dd51fb897fff25229526a2f8cb9a152b0663ed"
+covered_digest: "v1:sha256:efd5411da467e72a08cbb3fe4aaa32827bc9ea734deb432c1e7c7a9beffe84a8"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 22
-  total: 22
-  not_honored: []
-re_verification:
-  previous_status: human_needed
-  previous_score: 10/11
-  gaps_closed:
-    - "Long-text support/helpers wrap in max-w-md on setup surfaces (UAT backstop passed 1/1)"
-  gaps_remaining: []
-  regressions: []
+decision_coverage: "{'honored': 22, 'total': 22, 'not_honored': []}"
+re_verification: "{'previous_status': 'human_needed', 'previous_score': '10/11', 'gaps_closed': ['Long-text support/helpers wrap in max-w-md on setup surfaces (UAT backstop passed 1/1)'], 'gaps_remaining': [], 'regressions': []}"
 ---
 
 # Phase 6: Self-Host Admin Bootstrap Verification Report
@@ -235,3 +227,10 @@ No gaps. All 11 must-haves verified. Roadmap success criteria and AUTH-06/AUTH-0
 
 _Verified: 2026-09-11T22:08:37Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 71 files
+

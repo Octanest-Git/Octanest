@@ -1,10 +1,10 @@
 ---
 phase: 05-cloud-verify-reset
-verified: 2026-09-11T16:45:52Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 10/10 must-haves verified
 covered_files:
-
   - .planning/REQUIREMENTS.md
   - .planning/phases/05-cloud-verify-reset/05-01-PLAN.md
   - .planning/phases/05-cloud-verify-reset/05-01-SUMMARY.md
@@ -22,24 +22,25 @@ covered_files:
   - .planning/phases/05-cloud-verify-reset/05-07-SUMMARY.md
   - .planning/phases/05-cloud-verify-reset/05-CONTEXT.md
   - .planning/phases/05-cloud-verify-reset/05-RESEARCH.md
+  - .planning/phases/05-cloud-verify-reset/05-UAT.md
   - .planning/phases/05-cloud-verify-reset/05-UI-SPEC.md
   - .planning/phases/05-cloud-verify-reset/05-VALIDATION.md
   - apps/web/package.json
+  - apps/web/src/components/signed-in-home.integration.test.ts
+  - apps/web/src/components/signed-in-home.tsrx
   - apps/web/src/components/ui/input-otp.tsrx
   - apps/web/src/components/verify-banner.tsrx
-  - apps/web/src/components/signed-in-home.tsrx
+  - apps/web/src/lib/reset-password-copy.ts
   - apps/web/src/routeTree.gen.ts
   - apps/web/src/routes/__root.tsrx
   - apps/web/src/routes/dashboard.tsrx
   - apps/web/src/routes/login.tsrx
+  - apps/web/src/routes/reset-password.integration.test.ts
   - apps/web/src/routes/reset-password.tsrx
+  - apps/web/src/routes/signup.integration.test.ts
   - apps/web/src/routes/signup.tsrx
   - apps/web/src/routes/verify.tsrx
   - apps/web/src/styles.css
-  - apps/web/src/lib/reset-password-copy.ts
-  - apps/web/src/routes/reset-password.integration.test.ts
-  - apps/web/src/routes/signup.integration.test.ts
-  - apps/web/src/components/signed-in-home.integration.test.ts
   - crates/octanest-api/src/app.rs
   - crates/octanest-api/src/auth/external.rs
   - crates/octanest-api/src/auth/gate.rs
@@ -64,28 +65,13 @@ covered_files:
   - crates/octanest-db/src/users.rs
   - crates/octanest-db/tests/dialect_auth.rs
   - packages/api-client/src/index.ts
-
-covered_digest: "v1:sha256:4a3a49df1d7b2e88fe41b540434a39258cfc692219cab96f9bdab1c48723cc59"
+covered_digest: "v1:sha256:fe566044c4f0e08dc1393b932dc187c69b1bf27f33b3ac2fb8e6c3ba991f890d"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 28
-  total: 28
-  not_honored: []
-re_verification:
-  previous_status: stale
-  previous_score: 10/10
-  gaps_closed:
-    - "Covered-file fingerprint refreshed after .tsx → .tsrx rename; digest matches live artifacts"
-    - "SUMMARY path citations updated to concrete migrations / .tsrx / phase .evidence path"
-  gaps_remaining: []
-  regressions: []
-deferred:
-
-  - truth: "Authenticated (and verified) user can create a repository via real repo.create"
-    addressed_in: "Phase 7"
-    evidence: "Phase 7 success criteria: 'Authenticated (and verified, on cloud) user can create a public or private repository'; Phase 5 CONTEXT D-09/D-10 ships require_verified + auth.dev.privileged_ping only"
-human_verification: []
+decision_coverage: "{'honored': 28, 'total': 28, 'not_honored': []}"
+re_verification: "{'previous_status': 'stale', 'previous_score': '10/10', 'gaps_closed': ['Covered-file fingerprint refreshed after .tsx → .tsrx rename; digest matches live artifacts', 'SUMMARY path citations updated to concrete migrations / .tsrx / phase .evidence path'], 'gaps_remaining': [], 'regressions': []}"
+deferred: "[{'truth': 'Authenticated (and verified) user can create a repository via real repo.create', 'addressed_in': 'Phase 7', 'evidence': \"Phase 7 success criteria: 'Authenticated (and verified, on cloud) user can create a public or private repository'; Phase 5 CONTEXT D-09/D-10 ships require_verified + auth.dev.privileged_ping only\"}]"
+human_verification: "[]"
 ---
 
 # Phase 5: Cloud Verify & Reset Verification Report
@@ -220,3 +206,10 @@ No automated gaps. All roadmap success criteria and merged must-have truths are 
 
 _Verified: 2026-09-11T16:45:52Z_
 _Verifier: execute-phase regenerate (fingerprint refresh)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 60 files
+

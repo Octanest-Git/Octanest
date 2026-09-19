@@ -1,21 +1,28 @@
 ---
 phase: 18-webhooks
-verified: 2026-09-19T15:26:30Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 3/3 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
+  - .planning/WINDOWS.md
+  - .planning/phases/18-webhooks/18-00-PLAN.md
   - .planning/phases/18-webhooks/18-00-SUMMARY.md
+  - .planning/phases/18-webhooks/18-01-PLAN.md
   - .planning/phases/18-webhooks/18-01-SUMMARY.md
+  - .planning/phases/18-webhooks/18-02-PLAN.md
   - .planning/phases/18-webhooks/18-02-SUMMARY.md
+  - .planning/phases/18-webhooks/18-03-PLAN.md
   - .planning/phases/18-webhooks/18-03-SUMMARY.md
+  - .planning/phases/18-webhooks/18-04-PLAN.md
   - .planning/phases/18-webhooks/18-04-SUMMARY.md
   - .planning/phases/18-webhooks/18-VALIDATION.md
-  - .planning/WINDOWS.md
-  - crates/octanest-api/tests/webhook_rpc.rs
-  - crates/octanest-api/tests/webhook_delivery.rs
-  - crates/octanest-db/tests/dialect_webhooks.rs
   - apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts
+  - crates/octanest-api/tests/webhook_delivery.rs
+  - crates/octanest-api/tests/webhook_rpc.rs
+  - crates/octanest-db/tests/dialect_webhooks.rs
+covered_digest: "v1:sha256:32c401d43c28af06dc964f528bb10dd4f8a5bab7d3c96c3bc52b9ac11fac6599"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -87,3 +94,10 @@ No blocking gaps for the phase goal. Residual WINDOWS Wave 0 stub entries stay o
 
 _Verified: 2026-09-19T15:26:30Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 17 files
+

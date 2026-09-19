@@ -1,14 +1,9 @@
 ---
 phase: 15-releases-transfer
-verified: 2026-09-14T17:54:05Z
-status: passed with caveats
+verified: "2026-09-19T18:14:28Z"
+status: passed
+status_note: Passed with documented caveats (see report body). — Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 3/3 must-haves verified
-behavior_unverified: 0
-overrides_applied: 0
-decision_coverage:
-  honored: 13
-  total: 13
-  not_honored: []
 covered_files:
   - .env.example
   - .planning/REQUIREMENTS.md
@@ -27,6 +22,7 @@ covered_files:
   - .planning/phases/15-releases-transfer/15-06-PLAN.md
   - .planning/phases/15-releases-transfer/15-06-SUMMARY.md
   - .planning/phases/15-releases-transfer/15-CONTEXT.md
+  - .planning/phases/15-releases-transfer/15-VALIDATION.md
   - apps/web/src/components/repo/repo-chrome.tsrx
   - apps/web/src/routes/$owner.$repo.releases.$tag.tsrx
   - apps/web/src/routes/$owner.$repo.releases.integration.test.ts
@@ -55,11 +51,11 @@ covered_files:
   - docs/API.md
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
-covered_digest: "v1:sha256:1c873e9c2ce4fd7450cc5d6e7b8af8cf4f05f61cf3cb82903911b0cbb1551317"
-human_verification:
-  - test: "Open a repo with Write+: create a release for an existing tag, upload an asset, download it. As Admin: rename and transfer with type-confirm; confirm old URL redirects."
-    expected: "Release notes + assets work end-to-end in the browser; rename/transfer update owner/name and old /{owner}/{repo} still resolves within retention."
-    why_human: "Harvested from 15-05-PLAN.md <human-check>; browser UX, redirects, and download feel cannot be certified by unit/API tests alone."
+covered_digest: "v1:sha256:0e29b43cbe6a606ea341c497cd1ea617dbc60c64e2eb63fcfd808aaefae0bc23"
+behavior_unverified: 0
+overrides_applied: 0
+decision_coverage: "{'honored': 13, 'total': 13, 'not_honored': []}"
+human_verification: "[{'test': 'Open a repo with Write+: create a release for an existing tag, upload an asset, download it. As Admin: rename and transfer with type-confirm; confirm old URL redirects.', 'expected': 'Release notes + assets work end-to-end in the browser; rename/transfer update owner/name and old /{owner}/{repo} still resolves within retention.', 'why_human': 'Harvested from 15-05-PLAN.md <human-check>; browser UX, redirects, and download feel cannot be certified by unit/API tests alone.'}]"
 ---
 
 # Phase 15: Releases & Transfer Verification Report
@@ -243,3 +239,10 @@ _Residual 11.1-05: releases stack-browser create marked closed (keep Danger zone
 
 Compose+browser UAT 2026-09-14: release list+detail SSR, rename RPC; PG draft decode + releases index layout fixes.
 Verified: 2026-09-14T19:36:46Z
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 46 files
+

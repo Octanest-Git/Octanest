@@ -1,14 +1,9 @@
 ---
 phase: 10-orgs-permissions
-verified: 2026-09-14T02:07:44Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 3/3 must-haves verified
-behavior_unverified: 0
-overrides_applied: 0
-decision_coverage:
-  honored: 9
-  total: 9
-  not_honored: []
 covered_files:
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
@@ -49,7 +44,6 @@ covered_files:
   - apps/web/src/components/repo/collaborators-panel.tsrx
   - apps/web/src/routes/$owner.$repo.settings.collaborators.integration.test.ts
   - apps/web/src/routes/$owner.$repo.settings.tsrx
-  - apps/web/src/routes/$owner.settings.members.integration.test.ts
   - apps/web/src/routes/$owner.settings.members.tsrx
   - apps/web/src/routes/$owner.settings.tsrx
   - apps/web/src/routes/$owner.tsrx
@@ -97,7 +91,10 @@ covered_files:
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
-covered_digest: "v1:sha256:2b01b4361f3d6633994693770ee0ca4dd49bb0d790a64724a07fdde45cad6738"
+covered_digest: "v1:sha256:70ad10f920a8eaad218eaef4520c6f84e3ed9a4d1123fa7a87df0a96aca1fcf4"
+behavior_unverified: 0
+overrides_applied: 0
+decision_coverage: "{'honored': 9, 'total': 9, 'not_honored': []}"
 ---
 
 # Phase 10: Orgs & Permissions Verification Report
@@ -223,7 +220,7 @@ All plan `requirements:` IDs are subsets of ORG-01..04 — every ID accounted fo
 | File | Line | Pattern | Severity | Impact |
 | ---- | ---- | ------- | -------- | ------ |
 | `$owner.settings.members.integration.test.ts` | — | Existence-only Vitest assertions (`toBeTruthy` on export) | ⚠️ Warning | UI smoke only; ORG behaviors covered by API integration tests |
-| `deferred-items.md` | — | Signup/rename still skip `organizations.slug` dual-check | ℹ️ Info | Known follow-up; `org.create` already dual-checks; not a roadmap SC failure |
+| `deferred-items.md` | — | Shared-namespace dual-check on signup/rename (resolved) | ℹ️ Info | `auth.signup` + profile/bootstrap rename use `login_slug_taken` / org-slug checks; `status: resolved` in deferred-items.md |
 
 No unresolved `TBD`/`FIXME`/`XXX` debt markers in phase implementation files. No teams tables/RPCs. No dialect SQL in `octanest-api`. ARCHITECTURE no longer claims owner-only private ACL.
 
@@ -251,9 +248,16 @@ N/A — Roadmap truths are behaviorally proven by named API/git tests and Vitest
 
 None. Phase goal achieved: organizations, roles/`member_base`, visibility/collaborators, and private-data enforcement (web soft-404 + git/PAT ACL) are present, wired, and covered by passing behavioral tests.
 
-**Known non-blocking follow-up** (from `deferred-items.md`): close shared-namespace dual-check on `auth.signup` / username rename so users cannot claim an existing org slug — schedule when those surfaces are next touched.
+**Resolved follow-up** (from `deferred-items.md`): shared-namespace dual-check on `auth.signup` / username rename is in tree (`login_slug_taken` / org-slug checks); deferred items marked `status: resolved`.
 
 ---
 
 _Verified: 2026-09-14T02:07:44Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 86 files
+

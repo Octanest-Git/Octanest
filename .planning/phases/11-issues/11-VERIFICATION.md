@@ -1,8 +1,8 @@
 ---
 phase: 11-issues
-verified: 2026-09-14T16:52:48Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
-honesty: passed_with_documented_stubs
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 13/13 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -75,29 +75,12 @@ covered_files:
   - crates/octanest-db/tests/factory_reset_issues.rs
   - docs/API.md
   - packages/api-client/src/index.ts
-covered_digest: "v1:sha256:c342a9b40d75ca6b2bdaec90b1ae902153a63ef248aaa819200ad98e1d2d7569"
+covered_digest: "v1:sha256:e3550907e1546aba3f42c9f74febe847131baa7dedc6599bcffe317fc4fe8031"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 20
-  total: 20
-  not_honored: []
-human_verification:
-  - test: "Create issue #1; edit title/body; close and reopen; Admin hard-delete with typed number confirm"
-    expected: "Lifecycle works end-to-end in browser; delete requires matching confirmNumber and does not reuse #N"
-    why_human: "Visual flow, dialog UX, and cross-page navigation cannot be proven by API/integration DOM stubs alone"
-  - test: "Comment thread — author edit/delete; Write+ moderate-delete others; Write|Preview markdown"
-    expected: "Comments persist; Preview renders sanitized GFM; moderation ACL matches role"
-    why_human: "Preview fidelity and moderation UX feel require a live session"
-  - test: "Org default labels + repo hide/local-only; assign labels/assignees with Write+; Admin-only label defs"
-    expected: "Effective labels match inherit+hide+local model; non-Admin cannot mutate defs"
-    why_human: "Settings surfaces and picker UX need human walkthrough"
-  - test: "Autolink #N and owner/repo#N in body; Linked PRs panel stubs + manual link control"
-    expected: "Rendered hrefs point at /{owner}/{repo}/issues/{n}; stubs add/remove without closing-keyword auto-close"
-    why_human: "Rendered markdown + sidebar interaction is user-facing"
-  - test: "List Open default; Closed/All; filter author/label/assignee/text; offset pages; private soft not-found"
-    expected: "Filters and pagination behave; unauthorized private viewer sees soft not-found with no enumeration"
-    why_human: "List UX and private ACL presentation need a real browser session"
+honesty: passed_with_documented_stubs
+decision_coverage: "{'honored': 20, 'total': 20, 'not_honored': []}"
+human_verification: "[{'test': 'Create issue #1; edit title/body; close and reopen; Admin hard-delete with typed number confirm', 'expected': 'Lifecycle works end-to-end in browser; delete requires matching confirmNumber and does not reuse #N', 'why_human': 'Visual flow, dialog UX, and cross-page navigation cannot be proven by API/integration DOM stubs alone'}, {'test': 'Comment thread — author edit/delete; Write+ moderate-delete others; Write|Preview markdown', 'expected': 'Comments persist; Preview renders sanitized GFM; moderation ACL matches role', 'why_human': 'Preview fidelity and moderation UX feel require a live session'}, {'test': 'Org default labels + repo hide/local-only; assign labels/assignees with Write+; Admin-only label defs', 'expected': 'Effective labels match inherit+hide+local model; non-Admin cannot mutate defs', 'why_human': 'Settings surfaces and picker UX need human walkthrough'}, {'test': 'Autolink #N and owner/repo#N in body; Linked PRs panel stubs + manual link control', 'expected': 'Rendered hrefs point at /{owner}/{repo}/issues/{n}; stubs add/remove without closing-keyword auto-close', 'why_human': 'Rendered markdown + sidebar interaction is user-facing'}, {'test': 'List Open default; Closed/All; filter author/label/assignee/text; offset pages; private soft not-found', 'expected': 'Filters and pagination behave; unauthorized private viewer sees soft not-found with no enumeration', 'why_human': 'List UX and private ACL presentation need a real browser session'}]"
 ---
 
 # Phase 11: Issues Verification Report
@@ -302,3 +285,10 @@ _Residual 11.1-05: issues stack-browser CRUD marked closed (keep pr_stub / closi
 
 Compose+browser UAT 2026-09-14: repo/issues list+detail, close/reopen RPC; layout Outlet fix.
 Verified: 2026-09-14T19:36:46Z
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 70 files
+

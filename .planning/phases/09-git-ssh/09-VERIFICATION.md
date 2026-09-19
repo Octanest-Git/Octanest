@@ -1,18 +1,9 @@
 ---
 phase: 09-git-ssh
-verified: 2026-09-15T15:39:42Z
-status: passed_with_caveats
+verified: "2026-09-19T18:14:28Z"
+status: passed
+status_note: Passed with documented caveats (see report body). — Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 2/2 must-haves verified
-behavior_unverified: 0
-overrides_applied: 0
-decision_coverage:
-  honored: 7
-  total: 7
-  not_honored: []
-nyquist_complete: true
-caveats:
-  - clonebox_live_ls_remote_optional_client_depth
-  - smoke_git_ssh_ci_routing_tcp_default_skip_ls_remote
 covered_files:
   - .planning/REQUIREMENTS.md
   - .planning/ROADMAP.md
@@ -63,13 +54,13 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-git-ssh.sh
-human_verification:
-  - test: "Register ed25519 key at /settings/ssh-keys; CloneBox shows git@…:owner/repo.git"
-    expected: "Add/list/revoke works in a live browser; SSH URL + Port hint match env"
-    why_human: "Stack-browser covers add/list (11.1-04); revoke UX + CloneBox visual polish remain human-friendly"
-  - test: "make up then make smoke-git-ssh (ls-remote/push on TCP 2222) with fixtures"
-    expected: "Compose SSH listener accepts registered key; push/fetch succeed"
-    why_human: "CI smoke-protocol asserts TCP fail-closed; full ls-remote/push needs seeded key+repo (SMOKE_SKIP_LS_REMOTE=0)"
+covered_digest: "v1:sha256:757e24c4ddd1568fb4645a694dad87f6b70205cded6274295d02a23717fbb57a"
+behavior_unverified: 0
+overrides_applied: 0
+decision_coverage: "{'honored': 7, 'total': 7, 'not_honored': []}"
+nyquist_complete: true
+caveats: "['clonebox_live_ls_remote_optional_client_depth', 'smoke_git_ssh_ci_routing_tcp_default_skip_ls_remote']"
+human_verification: "[{'test': 'Register ed25519 key at /settings/ssh-keys; CloneBox shows git@…:owner/repo.git', 'expected': 'Add/list/revoke works in a live browser; SSH URL + Port hint match env', 'why_human': 'Stack-browser covers add/list (11.1-04); revoke UX + CloneBox visual polish remain human-friendly'}, {'test': 'make up then make smoke-git-ssh (ls-remote/push on TCP 2222) with fixtures', 'expected': 'Compose SSH listener accepts registered key; push/fetch succeed', 'why_human': 'CI smoke-protocol asserts TCP fail-closed; full ls-remote/push needs seeded key+repo (SMOKE_SKIP_LS_REMOTE=0)'}]"
 ---
 
 # Phase 09: Git SSH Verification Report
@@ -216,3 +207,10 @@ No orphaned REQUIREMENTS.md IDs for Phase 09 (GIT-03/04).
 _Verified: 2026-09-15T15:39:42Z_  
 _Verifier: Claude (gsd-honesty / Phase 11.1)_  
 _Residual Nyquist closeout: 2026-09-15 (11.1-05 — stack-browser SSH + CI smoke-protocol)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 49 files
+

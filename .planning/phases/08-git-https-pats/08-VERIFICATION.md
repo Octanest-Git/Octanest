@@ -1,7 +1,8 @@
 ---
 phase: 08-git-https-pats
-verified: 2026-09-13T21:49:18Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 7/7 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -85,25 +86,13 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-git-https.sh
-covered_digest: "v1:sha256:7b47664c4eaba6259d9cb1fc91a7118f3f14b84822033dc0e8b84fe72dcd2e3e"
+covered_digest: "v1:sha256:00d950089d1d12bff72589ec260752b96e47d7e2b689ab22be707e77443c95c6"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 26
-  total: 26
-  not_honored: []
-re_verification:
-  previous_status: passed
-  previous_score: 7/7
-  gaps_closed:
-    - "covered_digest refresh — prior VERIFICATION status:passed but digest stale (stored ≠ recomputed); UAT already complete 4/4"
-    - "08-UAT.md complete 4/4 — tokens UI, FG+Smart HTTP, how-to wrap backstop, judgment prohibitions (not reopened)"
-    - "Truth 7 long clone URL wrap — prior backstop closed via UAT #3 + vitest wrap-class assertion"
-    - "Post-review fixes WR-01..04, IN-01..03 still present (transactional FG create, XFF rightmost, expires_at, repos_required, token_prefix fingerprint, cookie+private 401)"
-  gaps_remaining: []
-  regressions: []
-behavior_unverified_items: []
-human_verification: []
+decision_coverage: "{'honored': 26, 'total': 26, 'not_honored': []}"
+re_verification: "{'previous_status': 'passed', 'previous_score': '7/7', 'gaps_closed': ['covered_digest refresh — prior VERIFICATION status:passed but digest stale (stored ≠ recomputed); UAT already complete 4/4', '08-UAT.md complete 4/4 — tokens UI, FG+Smart HTTP, how-to wrap backstop, judgment prohibitions (not reopened)', 'Truth 7 long clone URL wrap — prior backstop closed via UAT #3 + vitest wrap-class assertion', 'Post-review fixes WR-01..04, IN-01..03 still present (transactional FG create, XFF rightmost, expires_at, repos_required, token_prefix fingerprint, cookie+private 401)'], 'gaps_remaining': [], 'regressions': []}"
+behavior_unverified_items: "[]"
+human_verification: "[]"
 ---
 
 # Phase 8: Git HTTPS & PATs Verification Report
@@ -241,3 +230,10 @@ None. Roadmap success criteria, GIT-02 / GIT-11, and all 7 must-have truths rema
 
 _Verified: 2026-09-13T21:49:18Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 81 files
+

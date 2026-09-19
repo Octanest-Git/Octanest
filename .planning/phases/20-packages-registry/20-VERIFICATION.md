@@ -1,12 +1,9 @@
 ---
 phase: 20-packages-registry
-verified: 2026-09-14T18:10:12Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
-status_note: "passed with caveats — OCI referrers deferred; packages chrome/IA + stack-browser + CI smoke closed in Phase 11.1"
+status_note: passed with caveats — OCI referrers deferred; packages chrome/IA + stack-browser + CI smoke closed in Phase 11.1 — Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 7/7 must-haves verified
-behavior_unverified: 0
-overrides_applied: 0
-honesty_annotated: 2026-09-15
 covered_files:
   - .planning/phases/20-packages-registry/20-00-PLAN.md
   - .planning/phases/20-packages-registry/20-00-SUMMARY.md
@@ -79,23 +76,13 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-packages.sh
-covered_digest: "v1:sha256:f88a9f065434a2d8af6fe06bf060cb0fd9b801cbf45640e1320ad7ca1383d66f"
-decision_coverage:
-  honored: 16
-  total: 16
-  not_honored: []
-re_verification:
-  previous_status: gaps_found
-  previous_score: 6/7
-  gaps_closed:
-    - "Repo packages page lists packages linked to that repository (D-PKG-11)"
-  gaps_remaining: []
-  regressions: []
-advisory:
-  - "Repo packages chrome / Packages tab IA — CLOSED in Phase 11.1-01/03/06 (D-QH-01)"
-  - "OCI referrers_deferred (404) — documented Phase 20 deferral; out of 11.1 scope"
-  - "Packages list stack-browser — CLOSED in Phase 11.1-04 (forge-repo / forge-packages-ssh-orgs)"
-  - "CI smoke-packages — CLOSED in Phase 11.1-05 (smoke-protocol job)"
+covered_digest: "v1:sha256:9e3b795de526663875aae55c984df1c09f5b10fb1781ca230e5d3346a6f2960e"
+behavior_unverified: 0
+overrides_applied: 0
+honesty_annotated: 2026-09-15
+decision_coverage: "{'honored': 16, 'total': 16, 'not_honored': []}"
+re_verification: "{'previous_status': 'gaps_found', 'previous_score': '6/7', 'gaps_closed': ['Repo packages page lists packages linked to that repository (D-PKG-11)'], 'gaps_remaining': [], 'regressions': []}"
+advisory: "['Repo packages chrome / Packages tab IA — CLOSED in Phase 11.1-01/03/06 (D-QH-01)', 'OCI referrers_deferred (404) — documented Phase 20 deferral; out of 11.1 scope', 'Packages list stack-browser — CLOSED in Phase 11.1-04 (forge-repo / forge-packages-ssh-orgs)', 'CI smoke-packages — CLOSED in Phase 11.1-05 (smoke-protocol job)']"
 ---
 
 # Phase 20: Packages Registry Verification Report
@@ -241,3 +228,10 @@ _Verified: 2026-09-14T18:10:12Z_
 _Verifier: Claude (gsd-verifier)_  
 _Honesty annotate: 2026-09-15 (Phase 11.1 GSD truth pass)_  
 _Residual 11.1-05: packages chrome + stack-browser + CI smoke closed; OCI referrers remain deferred_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 71 files
+

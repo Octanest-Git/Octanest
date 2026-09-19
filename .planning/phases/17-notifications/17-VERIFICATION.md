@@ -1,20 +1,27 @@
 ---
 phase: 17-notifications
-verified: 2026-09-19T15:26:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 2/2 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
+  - .planning/phases/17-notifications/17-00-PLAN.md
   - .planning/phases/17-notifications/17-00-SUMMARY.md
+  - .planning/phases/17-notifications/17-01-PLAN.md
   - .planning/phases/17-notifications/17-01-SUMMARY.md
+  - .planning/phases/17-notifications/17-02-PLAN.md
   - .planning/phases/17-notifications/17-02-SUMMARY.md
+  - .planning/phases/17-notifications/17-03-PLAN.md
   - .planning/phases/17-notifications/17-03-SUMMARY.md
+  - .planning/phases/17-notifications/17-04-PLAN.md
   - .planning/phases/17-notifications/17-04-SUMMARY.md
   - .planning/phases/17-notifications/17-VALIDATION.md
-  - crates/octanest-api/tests/notification_rpc.rs
-  - crates/octanest-db/tests/dialect_notifications.rs
   - apps/web/src/components/chrome.notifications.integration.test.ts
   - apps/web/src/routes/notifications.integration.test.ts
+  - crates/octanest-api/tests/notification_rpc.rs
+  - crates/octanest-db/tests/dialect_notifications.rs
+covered_digest: "v1:sha256:bb372fbfe9546d13b6e8dbcf0d610a075486b15ad2fb6d08aadaa07b7863bdf7"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -83,3 +90,10 @@ No blocking gaps. Phase 17 / NOTF-01–02 achieved: in-app notification fan-out 
 
 _Verified: 2026-09-19T15:26:00Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 16 files
+

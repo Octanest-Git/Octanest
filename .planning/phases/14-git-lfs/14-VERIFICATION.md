@@ -1,7 +1,8 @@
 ---
 phase: 14-git-lfs
-verified: 2026-09-14T18:08:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 10/10 must-haves verified
 covered_files:
   - .planning/phases/14-git-lfs/14-00-PLAN.md
@@ -66,13 +67,10 @@ covered_files:
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
   - scripts/smoke-git-lfs.sh
-covered_digest: "v1:sha256:8f0181acd8e5eb44791548596ad1737d5b56d55e9b854e258c65f8a474458e89"
+covered_digest: "v1:sha256:89d721b16fcc4b768366e9bf086b40b4ef681b367234fef2251d2edbec7c0a1c"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 19
-  total: 19
-  not_honored: []
+decision_coverage: "{'honored': 19, 'total': 19, 'not_honored': []}"
 ---
 
 # Phase 14: Git LFS Verification Report
@@ -207,3 +205,10 @@ None. Roadmap success criteria and D-LFS delivery are present, wired, and behavi
 
 _Verified: 2026-09-14T18:08:00Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 62 files
+

@@ -1,21 +1,27 @@
 ---
 phase: 16-in-repo-search
-verified: 2026-09-19T15:24:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 2/2 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
+  - .planning/phases/16-in-repo-search/16-00-PLAN.md
   - .planning/phases/16-in-repo-search/16-00-SUMMARY.md
+  - .planning/phases/16-in-repo-search/16-01-PLAN.md
   - .planning/phases/16-in-repo-search/16-01-SUMMARY.md
+  - .planning/phases/16-in-repo-search/16-02-PLAN.md
   - .planning/phases/16-in-repo-search/16-02-SUMMARY.md
+  - .planning/phases/16-in-repo-search/16-03-PLAN.md
   - .planning/phases/16-in-repo-search/16-03-SUMMARY.md
   - .planning/phases/16-in-repo-search/16-VALIDATION.md
+  - apps/web/src/routes/$owner.$repo.search.integration.test.ts
+  - apps/web/src/routes/$owner.$repo.search.tsrx
   - crates/octanest-api/tests/repo_search.rs
   - crates/octanest-git/src/cli.rs
-  - apps/web/src/routes/$owner.$repo.search.tsrx
-  - apps/web/src/routes/$owner.$repo.search.integration.test.ts
-  - packages/api-client/src/index.ts
   - docs/CONFIGURATION.md
+  - packages/api-client/src/index.ts
+covered_digest: "v1:sha256:2dc7bf0bc7b5fe99253342491356acbbed5b7a92c28e59ac4a3f97e2bf3c1f75"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -84,3 +90,10 @@ No blocking gaps. Phase 16 / GIT-18 achieved: in-repo code, commits, issues, and
 
 _Verified: 2026-09-19T15:24:00Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 16 files
+

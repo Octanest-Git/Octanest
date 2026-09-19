@@ -1,36 +1,43 @@
 ---
 phase: 01-monorepo-scaffold
-verified: 2026-09-19T15:19:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 6/6 must-haves verified
 covered_files:
-  - .planning/REQUIREMENTS.md
-  - .planning/phases/01-monorepo-scaffold/01-01-SUMMARY.md
-  - .planning/phases/01-monorepo-scaffold/01-02-SUMMARY.md
-  - .planning/phases/01-monorepo-scaffold/01-03-SUMMARY.md
-  - .planning/phases/01-monorepo-scaffold/01-04-SUMMARY.md
-  - .planning/phases/01-monorepo-scaffold/01-05-SUMMARY.md
-  - .planning/phases/01-monorepo-scaffold/01-VALIDATION.md
-  - .planning/phases/01-monorepo-scaffold/01-UAT.md
-  - docker-compose.yml
-  - docker-compose.mysql.yml
-  - docker-compose.sqlite.yml
-  - scripts/compose-smoke.sh
-  - Makefile
   - .github/workflows/ci.yml
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/src/cors.rs
-  - crates/octanest-api/src/bin/rpc_gen.rs
-  - crates/octanest-api/tests/rpc_http.rs
-  - crates/octanest-api/tests/rpc_ws.rs
-  - packages/api-client/src/index.ts
-  - scripts/check-rpc-sync.sh
+  - .planning/REQUIREMENTS.md
+  - .planning/phases/01-monorepo-scaffold/01-01-PLAN.md
+  - .planning/phases/01-monorepo-scaffold/01-01-SUMMARY.md
+  - .planning/phases/01-monorepo-scaffold/01-02-PLAN.md
+  - .planning/phases/01-monorepo-scaffold/01-02-SUMMARY.md
+  - .planning/phases/01-monorepo-scaffold/01-03-PLAN.md
+  - .planning/phases/01-monorepo-scaffold/01-03-SUMMARY.md
+  - .planning/phases/01-monorepo-scaffold/01-04-PLAN.md
+  - .planning/phases/01-monorepo-scaffold/01-04-SUMMARY.md
+  - .planning/phases/01-monorepo-scaffold/01-05-PLAN.md
+  - .planning/phases/01-monorepo-scaffold/01-05-SUMMARY.md
+  - .planning/phases/01-monorepo-scaffold/01-UAT.md
+  - .planning/phases/01-monorepo-scaffold/01-VALIDATION.md
+  - Makefile
   - apps/web/package.json
-  - apps/web/src/styles.css
   - apps/web/src/components/ui/button.tsrx
   - apps/web/src/components/ui/input.tsrx
   - apps/web/src/components/ui/select.tsrx
   - apps/web/src/routes/__root.tsrx
+  - apps/web/src/styles.css
+  - crates/octanest-api/src/bin/rpc_gen.rs
+  - crates/octanest-api/src/cors.rs
+  - crates/octanest-api/src/rpc.rs
+  - crates/octanest-api/tests/rpc_http.rs
+  - crates/octanest-api/tests/rpc_ws.rs
+  - docker-compose.mysql.yml
+  - docker-compose.sqlite.yml
+  - docker-compose.yml
+  - packages/api-client/src/index.ts
+  - scripts/check-rpc-sync.sh
+  - scripts/compose-smoke.sh
+covered_digest: "v1:sha256:bfb175a4e553730dee0dcc93af8d69597af13e86c499363154116f3ec07ee685"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -112,3 +119,10 @@ No blocking gaps. Phase 01 goal achieved: monorepo, Compose, Rust API, typed RPC
 
 _Verified: 2026-09-19T15:19:00Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 32 files
+

@@ -1,9 +1,9 @@
 ---
 phase: 07-git-repos-browse
-verified: 2026-09-13T21:40:32Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 7/7 must-haves verified
-next_action: "Verification passed — continue."
 covered_files:
   - .env.example
   - .planning/REQUIREMENTS.md
@@ -97,21 +97,13 @@ covered_files:
   - docker-compose.yml
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
-covered_digest: "v1:sha256:33a9b2258d0b8c766477a7fb2bdaac9f52e46fdeffaae11c26ede91eaa454b49"
+covered_digest: "v1:sha256:52d4f5fd7872eda628ab6e760b3e5b325ea4bd5a66a95596551ad04c0fdec0fb"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 38
-  total: 38
-  not_honored: []
-re_verification:
-  previous_status: passed
-  previous_score: 7/7
-  gaps_closed:
-    - "Stale covered_digest refresh after UAT complete (prior report 2026-09-13T01:32:57Z) — live content drift from Phase 08 edits to shared files; must-haves reconfirmed green"
-  gaps_remaining: []
-  regressions: []
-advisory: []
+next_action: Verification passed — continue.
+decision_coverage: "{'honored': 38, 'total': 38, 'not_honored': []}"
+re_verification: "{'previous_status': 'passed', 'previous_score': '7/7', 'gaps_closed': ['Stale covered_digest refresh after UAT complete (prior report 2026-09-13T01:32:57Z) — live content drift from Phase 08 edits to shared files; must-haves reconfirmed green'], 'gaps_remaining': [], 'regressions': []}"
+advisory: "[]"
 ---
 
 # Phase 7: Git Repos & Browse Verification Report
@@ -285,3 +277,10 @@ No open gaps. All seven roadmap/must-have truths verify in code and named tests.
 
 _Verified: 2026-09-13T21:40:32Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 92 files
+

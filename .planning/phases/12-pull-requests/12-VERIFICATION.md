@@ -1,31 +1,41 @@
 ---
 phase: 12-pull-requests
-verified: 2026-09-19T15:23:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 4/4 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
+  - .planning/phases/12-pull-requests/12-00-PLAN.md
   - .planning/phases/12-pull-requests/12-00-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-01-PLAN.md
   - .planning/phases/12-pull-requests/12-01-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-02-PLAN.md
   - .planning/phases/12-pull-requests/12-02-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-03-PLAN.md
   - .planning/phases/12-pull-requests/12-03-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-04-PLAN.md
   - .planning/phases/12-pull-requests/12-04-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-05-PLAN.md
   - .planning/phases/12-pull-requests/12-05-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-06-PLAN.md
   - .planning/phases/12-pull-requests/12-06-SUMMARY.md
+  - .planning/phases/12-pull-requests/12-07-PLAN.md
   - .planning/phases/12-pull-requests/12-07-SUMMARY.md
   - .planning/phases/12-pull-requests/12-VALIDATION.md
-  - crates/octanest-db/migrations/sqlite/0016_pull_requests.sql
-  - crates/octanest-db/migrations/postgres/0016_pull_requests.sql
-  - crates/octanest-db/migrations/mysql/0016_pull_requests.sql
-  - crates/octanest-api/tests/pull_lifecycle.rs
-  - crates/octanest-api/tests/pull_files.rs
+  - apps/web/src/routes/$owner.$repo.pulls.integration.test.ts
+  - apps/web/src/routes/$owner.$repo.pulls.tsrx
   - crates/octanest-api/tests/pull_comments.rs
-  - crates/octanest-api/tests/pull_reviews.rs
+  - crates/octanest-api/tests/pull_files.rs
+  - crates/octanest-api/tests/pull_lifecycle.rs
   - crates/octanest-api/tests/pull_merge.rs
   - crates/octanest-api/tests/pull_merge_settings.rs
-  - apps/web/src/routes/$owner.$repo.pulls.tsrx
-  - apps/web/src/routes/$owner.$repo.pulls.integration.test.ts
+  - crates/octanest-api/tests/pull_reviews.rs
+  - crates/octanest-db/migrations/mysql/0016_pull_requests.sql
+  - crates/octanest-db/migrations/postgres/0016_pull_requests.sql
+  - crates/octanest-db/migrations/sqlite/0016_pull_requests.sql
   - packages/api-client/src/index.ts
+covered_digest: "v1:sha256:97cc2d083cde23641f58d4676aa84c81d33a9d0fcf1db1d88dc88687e374eca1"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -102,3 +112,10 @@ No blocking gaps. Phase 12 goal achieved: open/review/comment/merge/close PRs wi
 
 _Verified: 2026-09-19T15:23:00Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 30 files
+

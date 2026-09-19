@@ -1,27 +1,37 @@
 ---
 phase: 21-social-explore
-verified: 2026-09-19T15:27:00Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 4/4 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
-  - .planning/phases/21-social-explore/21-CONTEXT.md
+  - .planning/phases/21-social-explore/21-00-PLAN.md
   - .planning/phases/21-social-explore/21-00-SUMMARY.md
+  - .planning/phases/21-social-explore/21-01-PLAN.md
   - .planning/phases/21-social-explore/21-01-SUMMARY.md
+  - .planning/phases/21-social-explore/21-02-PLAN.md
   - .planning/phases/21-social-explore/21-02-SUMMARY.md
+  - .planning/phases/21-social-explore/21-03-PLAN.md
   - .planning/phases/21-social-explore/21-03-SUMMARY.md
+  - .planning/phases/21-social-explore/21-04-PLAN.md
   - .planning/phases/21-social-explore/21-04-SUMMARY.md
+  - .planning/phases/21-social-explore/21-05-PLAN.md
   - .planning/phases/21-social-explore/21-05-SUMMARY.md
+  - .planning/phases/21-social-explore/21-06-PLAN.md
   - .planning/phases/21-social-explore/21-06-SUMMARY.md
+  - .planning/phases/21-social-explore/21-07-PLAN.md
   - .planning/phases/21-social-explore/21-07-SUMMARY.md
+  - .planning/phases/21-social-explore/21-CONTEXT.md
   - .planning/phases/21-social-explore/21-VALIDATION.md
-  - crates/octanest-api/tests/repo_stars.rs
-  - crates/octanest-api/tests/repo_fork.rs
+  - apps/web/src/components/repo/repo-chrome.social.integration.test.ts
+  - apps/web/src/routes/explore.integration.test.ts
   - crates/octanest-api/tests/repo_explore.rs
+  - crates/octanest-api/tests/repo_fork.rs
+  - crates/octanest-api/tests/repo_stars.rs
   - crates/octanest-api/tests/user_public_profile.rs
   - crates/octanest-git/src/cli.rs
-  - apps/web/src/routes/explore.integration.test.ts
-  - apps/web/src/components/repo/repo-chrome.social.integration.test.ts
+covered_digest: "v1:sha256:355c186e30205b3bee736ab26037690dd5d66bab67fe2bbd7f535c8f0fe0928c"
 behavior_unverified: 0
 overrides_applied: 0
 ---
@@ -97,3 +107,10 @@ No blocking gaps for Phase 21 social/explore goals. Residual `clone_bare` hook-i
 
 _Verified: 2026-09-19T15:27:00Z_  
 _Verifier: gsd-executor (lightweight D-VER-01 evidence backfill)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 26 files
+

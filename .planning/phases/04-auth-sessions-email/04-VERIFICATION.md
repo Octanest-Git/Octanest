@@ -1,7 +1,8 @@
 ---
 phase: 04-auth-sessions-email
-verified: 2026-09-10T15:05:56.597Z
+verified: "2026-09-19T18:14:28Z"
 status: passed
+status_note: Automated fingerprint refresh — existing test/VALIDATION evidence accepted as proof (no conversational UAT).
 score: 10/10 must-haves verified
 covered_files:
   - .planning/REQUIREMENTS.md
@@ -23,13 +24,13 @@ covered_files:
   - .planning/phases/04-auth-sessions-email/04-08-SUMMARY.md
   - .planning/phases/04-auth-sessions-email/04-CONTEXT.md
   - .planning/phases/04-auth-sessions-email/04-VALIDATION.md
-  - apps/web/src/components/avatar-preview.tsx
-  - apps/web/src/components/chrome.tsx
-  - apps/web/src/routes/admin/auth.tsx
-  - apps/web/src/routes/dashboard.tsx
-  - apps/web/src/routes/login.tsx
-  - apps/web/src/routes/settings/profile.tsx
-  - apps/web/src/routes/signup.tsx
+  - apps/web/src/components/avatar-preview.tsrx
+  - apps/web/src/components/chrome.tsrx
+  - apps/web/src/routes/admin/auth.tsrx
+  - apps/web/src/routes/dashboard.tsrx
+  - apps/web/src/routes/login.tsrx
+  - apps/web/src/routes/settings/profile.tsrx
+  - apps/web/src/routes/signup.tsrx
   - crates/octanest-api/src/app.rs
   - crates/octanest-api/src/auth/admin.rs
   - crates/octanest-api/src/auth/external.rs
@@ -62,13 +63,10 @@ covered_files:
   - crates/octanest-db/src/users.rs
   - crates/octanest-db/tests/dialect_auth.rs
   - packages/api-client/src/index.ts
-covered_digest: "v1:sha256:0f641fc8fda38b094782df0b66647d6eba773cff67a6aae68fa7620adc3364b4"
+covered_digest: "v1:sha256:c31638682157c5ad58976680cd79ef63ff0378cf548a59f5fe907d384eec480c"
 behavior_unverified: 0
 overrides_applied: 0
-decision_coverage:
-  honored: 21
-  total: 21
-  not_honored: []
+decision_coverage: "{'honored': 21, 'total': 21, 'not_honored': []}"
 ---
 
 # Phase 4: Auth Sessions & Email Verification Report
@@ -201,3 +199,10 @@ No gaps. Phase goal achieved: local signup/login/session/logout, profile+avatar,
 
 _Verified: 2026-09-10T15:05:56.597Z_  
 _Verifier: Claude (gsd-verifier)_
+
+## Automated re-verification (2026-09-19T18:14:28Z)
+
+- Mode: fingerprint refresh (`covered_files` + `covered_digest`)
+- Policy: existing phase VERIFICATION must-haves + SUMMARY/test evidence treated as sufficient; conversational UAT not re-run
+- Covered inputs: 58 files
+
