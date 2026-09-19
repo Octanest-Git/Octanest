@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
 milestone: v1.0
-current_phase_name: Actions & Runners
-current_plan: 12
-status: complete
-stopped_at: Completed Phase 19 (19-00…19-11)
-last_updated: "2026-09-16T20:30:00.000Z"
-last_activity: 2026-09-16
-last_activity_desc: Phase 19 Actions & Runners complete (12/12 plans) on cursor/phase-19-actions-runners-c82f
-state_head: 8fb5cfe669142d09ff6484c51426c47e0b83d1fc
+current_phase_name: v1.0 Milestone Closure
+current_plan: —
+status: ready
+stopped_at: Phase 22.1 context gathered
+last_updated: "2026-09-19T14:44:37.562Z"
+last_activity: 2026-09-19
+last_activity_desc: full milestone audit + Phase 22.1 insert
+state_head: 54d6aad48a4a642622c11c24359e953c8ec6a704
 progress:
-  total_phases: 23
+  total_phases: 24
   completed_phases: 1
   total_plans: 210
   completed_plans: 210
 milestone_name: milestone
-current_phase: 19
+current_phase: "22.1"
 ---
 
 # Project State
@@ -25,17 +25,17 @@ current_phase: 19
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase **19** Actions & Runners **complete** merged into `cursor/gsd-remaining-integrate-c82f` (umbrella #16 → main pending CI)
+**Current focus:** Phase **22.1** — v1.0 Milestone Closure (INSERTED; discuss/plan next) after full-milestone audit `gaps_found`
 
 ## Current Position
 
-Phase: **19** — Actions & Runners (**complete** — 12/12 plans)
-Current Plan: 12 / 12
-Total Plans in Phase: 12
-Status: Phase 19 complete (ACT-01…07) and merged to integrate.
-Last activity: 2026-09-16 — protoc CI/Docker + route-coverage for Actions settings/admin runners
+Phase: **22.1** — v1.0 Milestone Closure (not planned yet)
+Current Plan: —
+Total Plans in Phase: 0
+Status: ready
+Last activity: 2026-09-19 — full milestone audit + Phase 22.1 insert
 
-See also: `.planning/phases/19-actions-runners/` · branch `cursor/phase-19-actions-runners-c82f`
+See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/`
 
 ## Performance Metrics
 
@@ -575,6 +575,10 @@ Recent decisions affecting current work:
 
 None. Phase 7 planning should assume Query session cache + Octane `.tsrx` + decisions in `07-CONTEXT.md` (including GIT-09 amendment).
 
+### Roadmap Evolution
+
+- Phase 22.1 inserted after Phase 22: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (URGENT)
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
@@ -587,9 +591,9 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-16T20:29:31.437Z
-Stopped at: Completed Phase 19 (19-00…19-11)
-Resume file: None
+Last session: 2026-09-19T14:44:37.272Z
+Stopped at: Phase 22.1 context gathered
+Resume file: .planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/22.1-CONTEXT.md
 
 ## Accumulated Context
 
