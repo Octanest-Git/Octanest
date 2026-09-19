@@ -16,6 +16,7 @@ One forge you can trust in the cloud or on your own machines — without splitti
 
 - ✓ Web UI brand shell: Octanest mark, chrome, landing/status, favicon/PWA — Phase 3
 - ✓ Theme: light + dark; system default; persisted light/dark override — Phase 3
+- ✓ Branch protection direct-push denial in Compose/API image (HTTPS + SSH helper packaging) — Phase 22.1
 
 ### Active
 
@@ -121,4 +122,4 @@ One forge you can trust in the cloud or on your own machines — without splitti
 | Phase 3: **semantic tokens + PWA shell** | Squircle mark, system/light/dark, assets-only SW | ✓ Good |
 
 ---
-*Last updated: 2026-09-13 after Phase 7 sealed (repos/browse verified) + Phase 8 HTTPS/PATs*
+*Last updated: 2026-09-19 after Phase 22.1 (ORG-06 push packaging + verify/REQUIREMENTS/windows hygiene)*
