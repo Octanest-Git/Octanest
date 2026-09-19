@@ -835,7 +835,7 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
 | 20. Packages Registry | 13/13 | Complete    | 2026-09-14 |
 | 21. Social & Explore | 8/8 | Complete    | 2026-09-16 |
 | 22. Compose CI & Cloud Deploy | 3/3 | Complete    | 2026-09-16 |
-| 22.1 v1.0 Milestone Closure | 0/0 | Not started |  |
+| 22.1 v1.0 Milestone Closure | 1/10 | In Progress|  |
 
 ---
 *Roadmap created: 2026-09-09*
@@ -854,11 +854,23 @@ Phases execute in numeric order: 1 → 2 → 3 → … → 22
   3. PLAT-* REQUIREMENTS checkboxes match evidence; WINDOWS open_count reduced (fixed/waived obsolete Wave 0 stubs)
   4. Re-audit (`/gsd-audit-milestone`) no longer reports ORG-06 packaging as a blocker
 
-**Plans:** 10 plans
+**Plans:** 1/10 plans executed
 
 Plans:
 
+- [ ] 22.1-01-PLAN.md
+- [ ] 22.1-02-PLAN.md
+- [ ] 22.1-03-PLAN.md
+- [ ] 22.1-04-PLAN.md
+- [x] 22.1-05-PLAN.md
+- [ ] 22.1-06-PLAN.md
+- [ ] 22.1-07-PLAN.md
+- [ ] 22.1-08-PLAN.md
+- [ ] 22.1-09-PLAN.md
+- [ ] 22.1-10-PLAN.md
+
 **Wave 1**
+
 - [ ] `22.1-01-PLAN.md` — Tracer: package protection helper → Compose HTTPS push denied (ORG-06)
 - [ ] `22.1-05-PLAN.md` — Lightweight VERIFICATION for phases 01, 02, 03
 - [ ] `22.1-06-PLAN.md` — Lightweight VERIFICATION for phases 11.1, 12, 16
@@ -866,14 +878,18 @@ Plans:
 - [ ] `22.1-09-PLAN.md` — Nyquist validate-phase for 8, 14, 15, 20
 
 **Wave 2** *(blocked on Wave 1 / 22.1-01)*
+
 - [ ] `22.1-02-PLAN.md` — Fail-closed update hook + clone_bare/fork hooks (D-PKG-02, D-FORK-*)
 - [ ] `22.1-03-PLAN.md` — SSH receive-pack protection env + SSH smoke (D-PKG-01/03)
 
 **Wave 3** *(blocked on Wave 2 / 22.1-02)*
+
 - [ ] `22.1-04-PLAN.md` — Boot repos_dir hook overwrite sweep (D-PKG-04)
 
 **Wave 4** *(blocked on Waves 2–3 packaging)*
+
 - [ ] `22.1-08-PLAN.md` — Thorough VERIFICATION for phases 13 and 22 (after packaging)
 
 **Wave 5** *(blocked on Waves 1 + 4 VERIFICATION)*
+
 - [ ] `22.1-10-PLAN.md` — PLAT flips, WINDOWS mass-waive, STATE/parallel-tracks refresh

@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v1.0
 current_phase: "22.1"
-current_phase_name: v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req
-current_plan: —
-status: ready
-stopped_at: Phase 22.1 context gathered
-last_updated: "2026-09-19T15:16:07.585Z"
+current_phase_name: v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
+current_plan: 2
+status: executing
+stopped_at: Completed 22.1-05-PLAN.md
+last_updated: "2026-09-19T15:20:31.387Z"
 last_activity: 2026-09-19
-last_activity_desc: full milestone audit + Phase 22.1 insert
-state_head: 920cf33eb0a0e4a098e5391c35207b232cde3fa0
+last_activity_desc: Phase 22.1 execution started
+state_head: df17ca7576c6d5e081ac4ac72ae5c9e7947829b6
 progress:
   total_phases: 24
   completed_phases: 1
   total_plans: 220
-  completed_plans: 210
+  completed_plans: 211
 milestone_name: milestone
 ---
 
@@ -25,15 +25,15 @@ milestone_name: milestone
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** One forge you can trust in the cloud or on your own machines — without splitting into separate “hosted brand” vs “self-host software” products.
-**Current focus:** Phase **22.1** — v1.0 Milestone Closure (INSERTED; discuss/plan next) after full-milestone audit `gaps_found`
+**Current focus:** Phase 22.1 — v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)
 
 ## Current Position
 
-Phase: 22.1 (v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req) — READY TO EXECUTE
-Current Plan: —
+Phase: 22.1 (v1.0 milestone closure — ORG-06 push packaging, verify gaps, REQUIREMENTS and windows hygiene (INSERTED)) — EXECUTING
+Current Plan: 2
 Total Plans in Phase: 10
-Status: ready
-Last activity: 2026-09-19 — full milestone audit + Phase 22.1 insert
+Status: Ready to execute
+Last activity: 2026-09-19 — Phase 22.1 execution started
 
 See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/`
 
@@ -172,6 +172,7 @@ See also: `.planning/v1.0-MILESTONE-AUDIT.md` · `.planning/phases/22.1-v1-0-mil
 | Phase 19 P09 | 35min | 3 tasks | 15 files |
 | Phase 19 P10 | 90 | 3 tasks | - files |
 | Phase 19 P11 | 20min | 2 tasks | 6 files |
+| Phase 22.1 P05 | 2min | 3 tasks | 3 files |
 
 # Project State
 
@@ -566,6 +567,8 @@ Recent decisions affecting current work:
 - [Phase 13]: compose-smoke uses one GHA matrix job (postgres/sqlite/mysql) with fail-fast false
 - [Phase 22]: Cloud gateway is Caddy file-config; forge-data volume at /var; human-only railway apply
 - [Phase 22]: Phase 22 VALIDATION marks live Railway apply as human-verify only
+- [Phase 22.1]: 22.1-05: Phases 01–03 VERIFICATION marked passed with caveats (D-VER-03); PLAT checkbox flips deferred to 22.1-10
+- [Phase 22.1]: 22.1-05: PLAT-08 empty/adjacency/ordering documented from Make smoke-* and CI db-matrix separate legs
 
 ### Pending Todos
 
@@ -591,9 +594,9 @@ Post-06 shipped polish (not deferred — already in tree): see `phases/06-self-h
 
 ## Session Continuity
 
-Last session: 2026-09-19T14:44:37.272Z
-Stopped at: Phase 22.1 context gathered
-Resume file: .planning/phases/22.1-v1-0-milestone-closure-org-06-push-packaging-verify-gaps-req/22.1-CONTEXT.md
+Last session: 2026-09-19T15:20:31.239Z
+Stopped at: Completed 22.1-05-PLAN.md
+Resume file: None
 
 ## Accumulated Context
 
