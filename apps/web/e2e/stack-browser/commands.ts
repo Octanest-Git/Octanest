@@ -590,6 +590,9 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
  * mount (keepMounted=false) racing Octane sibling panel updates — fixed via
  * keepMounted on RadioGroupItem. happy-dom does not throw this race; this flow
  * is the Chromium gate.
+ *
+ * Click the Base UI radio root (`data-testid` on RadioGroupItem), not the wrapping
+ * label — label clicks often miss hydrated onValueChange in stack-browser.
  */
 export const expectMirrorAuthToggleFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
@@ -610,24 +613,32 @@ export const expectMirrorAuthToggleFlow: BrowserCommand<[]> = async (ctx) => {
     });
     assertNoOctaneOverlay(await page.content(), "repo mirror settings initial");
 
-    // onClick needs client hydration (SSR shows the panel but handlers attach later).
-    await new Promise((r) => setTimeout(r, 800));
-
-    const sshKind = page.locator('[data-testid="mirror-auth-kind-ssh"]');
-    await sshKind.waitFor({ state: "visible", timeout: 15_000 });
-    await sshKind.click();
+    const sshRadio = page.locator('[data-testid="mirror-auth-kind-ssh"]');
+    await sshRadio.waitFor({ state: "visible", timeout: 15_000 });
 
     const sshPanel = page.locator('[data-testid="mirror-auth-ssh"]');
     await sshPanel.waitFor({ state: "attached", timeout: 15_000 });
+
+    // Retry: SSR paints radios before Octane/Base UI handlers hydrate.
     let sshClass = "";
-    for (let i = 0; i < 20; i++) {
-      sshClass = (await sshPanel.getAttribute("class").catch(() => null)) ?? "";
-      if (sshClass && !/\bhidden\b/.test(sshClass)) break;
-      await new Promise((r) => setTimeout(r, 100));
+    let selected = false;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      await sshRadio.click({ force: true });
+      for (let i = 0; i < 10; i++) {
+        const aria = (await sshRadio.getAttribute("aria-checked").catch(() => null)) ?? "";
+        sshClass = (await sshPanel.getAttribute("class").catch(() => null)) ?? "";
+        if (aria === "true" && sshClass && !/\bhidden\b/.test(sshClass)) {
+          selected = true;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      if (selected) break;
+      await new Promise((r) => setTimeout(r, 250));
     }
-    if (!sshClass || /\bhidden\b/.test(sshClass)) {
+    if (!selected) {
       throw new Error(
-        `mirror-auth-ssh still hidden after SSH click (class=${JSON.stringify(sshClass)}); pageerrors=${pageGuard.pageErrors.join(" | ") || "none"}`,
+        `SSH auth not selected after clicks (aria-checked=${JSON.stringify(await sshRadio.getAttribute("aria-checked").catch(() => null))}, class=${JSON.stringify(sshClass)}); pageerrors=${pageGuard.pageErrors.join(" | ") || "none"}`,
       );
     }
 
