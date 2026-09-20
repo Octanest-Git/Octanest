@@ -8,7 +8,11 @@
 // or /health (T-03-16, HIGH), and drop stale caches on activate so a new
 // deploy replaces the shell instead of pinning clients to an old bundle
 // (T-03-18).
-const CACHE_NAME = "octanest-shell-v2";
+//
+// `__OCTANEST_SW_BUILD__` is replaced at build/serve time with a per-deploy
+// fingerprint (commit SHA or local build id) so CACHE_NAME changes every
+// release and browsers install a fresh worker.
+const CACHE_NAME = "octanest-shell-__OCTANEST_SW_BUILD__";
 
 const PRECACHE_URLS = [
   "/favicon.ico",
@@ -41,6 +45,12 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {

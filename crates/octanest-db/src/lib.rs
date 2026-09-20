@@ -10,6 +10,7 @@ pub mod issue_labels;
 pub mod issues;
 pub mod lfs;
 pub mod migrate;
+pub mod mirrors;
 pub mod notifications;
 pub mod org_invites;
 pub mod org_members;
@@ -43,6 +44,7 @@ pub use issues::{
     CommentRevisionRow, IssueCommentRow, IssueLinkRow, IssueListFilters, IssueRevisionRow, IssueRow,
 };
 pub use lfs::LfsObjectRow;
+pub use mirrors::{RepositoryMirrorRefResultRow, RepositoryMirrorRow};
 pub use notifications::NotificationRow;
 pub use octanest_core::DbProbeResponse;
 pub use pool::DbPool;
@@ -2610,6 +2612,109 @@ impl Database {
         repository_id: &str,
     ) -> Result<Vec<WebhookRow>, String> {
         webhooks::list_webhooks_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn get_mirror_by_repo(
+        &self,
+        repository_id: &str,
+    ) -> Result<Option<RepositoryMirrorRow>, String> {
+        mirrors::get_mirror_by_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn get_mirror_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<RepositoryMirrorRow>, String> {
+        mirrors::get_mirror_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn list_enabled_mirrors(&self) -> Result<Vec<RepositoryMirrorRow>, String> {
+        mirrors::list_enabled_mirrors(self.require_pool()?).await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn upsert_mirror(
+        &self,
+        id: &str,
+        repository_id: &str,
+        remote_url: &str,
+        auth_kind: &str,
+        username: &str,
+        secret_ciphertext: &str,
+        ssh_public_key: &str,
+        known_hosts: &str,
+        webhook_secret_ciphertext: &str,
+        poll_interval_secs: i64,
+        enabled: bool,
+    ) -> Result<RepositoryMirrorRow, String> {
+        mirrors::upsert_mirror(
+            self.require_pool()?,
+            id,
+            repository_id,
+            remote_url,
+            auth_kind,
+            username,
+            secret_ciphertext,
+            ssh_public_key,
+            known_hosts,
+            webhook_secret_ciphertext,
+            poll_interval_secs,
+            enabled,
+        )
+        .await
+    }
+
+    pub async fn delete_mirror_by_repo(&self, repository_id: &str) -> Result<bool, String> {
+        mirrors::delete_mirror_by_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn update_mirror_status(
+        &self,
+        mirror_id: &str,
+        status: &str,
+        last_error: &str,
+        synced: bool,
+    ) -> Result<(), String> {
+        mirrors::update_mirror_status(self.require_pool()?, mirror_id, status, last_error, synced)
+            .await
+    }
+
+    pub async fn set_mirror_webhook_secret(
+        &self,
+        mirror_id: &str,
+        ciphertext: &str,
+    ) -> Result<(), String> {
+        mirrors::set_webhook_secret(self.require_pool()?, mirror_id, ciphertext).await
+    }
+
+    pub async fn upsert_mirror_ref_result(
+        &self,
+        id: &str,
+        mirror_id: &str,
+        refname: &str,
+        outcome: &str,
+        local_oid: &str,
+        remote_oid: &str,
+        detail: &str,
+    ) -> Result<(), String> {
+        mirrors::upsert_ref_result(
+            self.require_pool()?,
+            id,
+            mirror_id,
+            refname,
+            outcome,
+            local_oid,
+            remote_oid,
+            detail,
+        )
+        .await
+    }
+
+    pub async fn list_mirror_ref_results(
+        &self,
+        mirror_id: &str,
+    ) -> Result<Vec<RepositoryMirrorRefResultRow>, String> {
+        mirrors::list_ref_results(self.require_pool()?, mirror_id).await
     }
 
     pub async fn list_active_webhooks_for_event(

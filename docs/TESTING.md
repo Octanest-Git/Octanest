@@ -35,9 +35,9 @@ Integration-style Rust tests live under `crates/octanest-api/tests/` and `crates
 | Project | Environment | Include pattern | Notes |
 |---------|-------------|-----------------|-------|
 | `unit` | `node` | `src/**/*.unit.test.ts` | Fast pure logic |
-| `integration` | `happy-dom` | `src/**/*.integration.test.{ts,tsx}` | Setup: `src/test/setup-integration.ts` |
+| `integration` | `happy-dom` | `src/**/*.integration.test.{ts,tsx}` | Setup: `src/test/setup-integration.ts` (global `trackDomErrors` — every test fails on Octane `insertBefore` / hierarchy races **when happy-dom surfaces them**). **Not sufficient** for Base UI Indicator mount + Octane Chromium races; those need stack-browser `pageerror`. For high-risk clicks you may still wrap with a local tracker for a clearer label. |
 | `e2e-stack` | `node` | `e2e/stack/**/*.stack.test.ts` | Only if `E2E_STACK=1`; 60s timeout; no file parallelism |
-| `e2e-stack-browser` | Playwright Chromium | `e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}` | Only if `E2E_STACK=1`; 60s timeout |
+| `e2e-stack-browser` | Playwright Chromium | `e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}` | Only if `E2E_STACK=1`; commands open pages via `newGuardedPage` (fails on `pageerror` / DOM races). **Gate** for Base UI + Octane hierarchy races that happy-dom misses (e.g. mirror auth SSH click). |
 
 ### `@octanest/api-client`
 
@@ -124,6 +124,7 @@ Import from `vitest` explicitly (`globals: false` in the web Vitest config).
 |------------|--------|
 | `auth-ui.stack.browser.test.tsx` | Local signup UI, WorkOS CTA, OIDC SSO, `/status`, `auth.me` dedupe |
 | `forge-repo.stack.browser.test.tsx` | Seeded repo code home + Packages tab / packages list |
+| `forge-mirror.stack.browser.test.tsx` | Repo settings mirror auth HTTPS→SSH toggle (Chromium `insertBefore` gate) |
 | `forge-issues-releases.stack.browser.test.tsx` | Issues create→close; release create from seeded tag |
 | `forge-packages-ssh-orgs.stack.browser.test.tsx` | SSH keys add/list; org members settings |
 | `forge-admin.stack.browser.test.tsx` | Forge admin `/admin/lfs`, `/admin/packages`, `/admin/auth` chrome (no factory-reset click) (G-11.1-15) |
@@ -166,6 +167,7 @@ Weighted forge-core gate (**D-QH-02**). Layers and weights:
 |-------|--------|------------------|
 | Unit | **25%** (`0.25`) | Web Vitest `--project unit` line coverage (`@vitest/coverage-v8`). Rust lib units via `cargo-llvm-cov` when available (optional today; see residual below). |
 | Integration | **40%** (`0.40`) | Web Vitest `--project integration` (happy-dom) line coverage. Rust `tests/` included when llvm-cov runs. |
+
 | E2E / hydration | **35%** (`0.35`) | Interim **checklist score** (fraction of required stack-browser + stack HTTP + smoke script paths present). Not Playwright % coverage yet — forge stack-browser matrix landed in Phase 11.1-04 (see Writing new tests). |
 
 **Weighted score**

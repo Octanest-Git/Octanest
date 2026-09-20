@@ -28,6 +28,11 @@ pub struct CallbackQuery {
 }
 
 fn public_origin(headers: &HeaderMap) -> String {
+    let resolved = crate::public_origin::resolve_public_origin();
+    // Prefer Railway / env resolution when it is not the local default.
+    if resolved != "http://localhost:8080" {
+        return resolved;
+    }
     if let Ok(origin) = std::env::var("OCTANEST_PUBLIC_ORIGIN") {
         let o = origin.trim().trim_end_matches('/');
         if !o.is_empty() {

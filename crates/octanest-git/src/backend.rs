@@ -9,6 +9,106 @@ use std::path::Path;
 
 use thiserror::Error;
 
+/// How to authenticate to an external git remote (two-way mirroring).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemoteAuthKind {
+    /// HTTPS Basic with token/password (PAT, app password, oauth2 token).
+    HttpsToken,
+    /// SSH private key + known_hosts (deploy key).
+    SshKey,
+}
+
+/// Ephemeral credentials for one outbound git URL operation.
+///
+/// Callers own secret lifetime; the CLI adapter materializes temp askpass /
+/// key / known_hosts files for the duration of a single command.
+#[derive(Debug, Clone)]
+pub struct RemoteCredentials {
+    pub kind: RemoteAuthKind,
+    /// HTTPS username (often a token username or `oauth2` / `git`).
+    pub username: Option<String>,
+    /// HTTPS password/token, or SSH private key PEM (OpenSSH format).
+    pub secret: String,
+    /// OpenSSH `known_hosts` file contents (required for SSH).
+    pub known_hosts: Option<String>,
+}
+
+/// Validate a remote git URL for mirroring (reject dangerous schemes/paths).
+pub fn validate_remote_url(url: &str) -> Result<&str, GitError> {
+    let u = url.trim();
+    if u.is_empty() {
+        return Err(GitError::InvalidArg("remote URL is required".into()));
+    }
+    if u.contains('\0') || u.contains('\n') || u.contains('\r') {
+        return Err(GitError::InvalidArg("remote URL contains invalid characters".into()));
+    }
+    let lower = u.to_ascii_lowercase();
+    if lower.starts_with("file:")
+        || lower.starts_with("ext::")
+        || lower.starts_with("fd:")
+        || Path::new(u).is_absolute()
+        || u.starts_with('.')
+        || u.starts_with('/')
+    {
+        return Err(GitError::InvalidArg(
+            "remote URL must be https://, http://, ssh://, or git@host:path".into(),
+        ));
+    }
+    let ok = lower.starts_with("https://")
+        || lower.starts_with("http://")
+        || lower.starts_with("ssh://")
+        || lower.starts_with("git@");
+    if !ok {
+        return Err(GitError::InvalidArg(
+            "remote URL must be https://, http://, ssh://, or git@host:path".into(),
+        ));
+    }
+    Ok(u)
+}
+
+/// Extract SSH hostname from an SSH-style remote URL for `ssh-keyscan`.
+/// Accepts `git@host:path` and `ssh://[user@]host[:port]/path`. Rejects HTTPS/HTTP.
+pub fn ssh_host_from_remote_url(url: &str) -> Result<String, GitError> {
+    let u = validate_remote_url(url)?;
+    let lower = u.to_ascii_lowercase();
+    if lower.starts_with("https://") || lower.starts_with("http://") {
+        return Err(GitError::InvalidArg(
+            "fetch host key requires an SSH remote (git@host:path or ssh://…)".into(),
+        ));
+    }
+    if let Some(rest) = u.strip_prefix("ssh://") {
+        // ssh://[user@]host[:port]/path
+        let after_auth = rest.split_once('@').map(|(_, h)| h).unwrap_or(rest);
+        let hostport = after_auth.split('/').next().unwrap_or(after_auth);
+        let host = hostport
+            .rsplit_once(':')
+            .and_then(|(h, port)| {
+                if port.chars().all(|c| c.is_ascii_digit()) {
+                    Some(h)
+                } else {
+                    None
+                }
+            })
+            .unwrap_or(hostport);
+        let host = host.trim().trim_start_matches('[').trim_end_matches(']');
+        if host.is_empty() {
+            return Err(GitError::InvalidArg("could not parse SSH host from URL".into()));
+        }
+        return Ok(host.to_string());
+    }
+    // git@host:path
+    if let Some(rest) = u.strip_prefix("git@") {
+        let host = rest.split_once(':').map(|(h, _)| h).unwrap_or(rest).trim();
+        if host.is_empty() {
+            return Err(GitError::InvalidArg("could not parse SSH host from URL".into()));
+        }
+        return Ok(host.to_string());
+    }
+    Err(GitError::InvalidArg(
+        "fetch host key requires an SSH remote (git@host:path or ssh://…)".into(),
+    ))
+}
+
 /// Errors from git backend operations (CLI or future gitoxide adapter).
 #[derive(Debug, Error)]
 pub enum GitError {
@@ -395,4 +495,85 @@ pub trait GitBackend: Send + Sync {
         treeish: &str,
         max_entries: u32,
     ) -> Result<Vec<SizedBlobEntry>, GitError>;
+
+    /// `git ls-remote --heads --tags <url>` — remote tips only (no objects).
+    async fn ls_remote_url(
+        &self,
+        url: &str,
+        credentials: &RemoteCredentials,
+    ) -> Result<Vec<GitRef>, GitError>;
+
+    /// Fetch heads+tags from `url` into `refs/octanest/mirror/{heads,tags}/*` on bare `dest`.
+    /// Never uses `--force` / `--mirror` on push; fetch refspecs overwrite only the mirror namespace.
+    async fn fetch_from_url(
+        &self,
+        dest: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+    ) -> Result<(), GitError>;
+
+    /// Push an explicit refspec to `url` (**no** `--force` / `--mirror`).
+    /// `local_ref` and `remote_ref` are full ref names (e.g. `refs/heads/main`).
+    async fn push_to_url(
+        &self,
+        repo: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+        local_ref: &str,
+        remote_ref: &str,
+    ) -> Result<(), GitError>;
+
+    /// Bare clone from a remote URL into a new bare `dest` (first import).
+    async fn clone_bare_url(
+        &self,
+        url: &str,
+        dest: &Path,
+        credentials: &RemoteCredentials,
+    ) -> Result<(), GitError>;
+
+    /// True when `maybe_ancestor` is an ancestor of `tip` (`git merge-base --is-ancestor`).
+    async fn is_ancestor(
+        &self,
+        repo: &Path,
+        maybe_ancestor: &str,
+        tip: &str,
+    ) -> Result<bool, GitError>;
+
+    /// Fast-forward (or create) `refname` to `target_sha` via a worktree push so
+    /// bare `hooks/update` runs. Non-FF → [`GitError::Process`].
+    async fn fast_forward_ref(
+        &self,
+        repo: &Path,
+        refname: &str,
+        target_sha: &str,
+    ) -> Result<(), GitError>;
+
+    /// Resolve a ref / SHA to a commit OID (`git rev-parse`).
+    async fn rev_parse(&self, repo: &Path, rev: &str) -> Result<String, GitError>;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ssh_host_from_scp_style() {
+        assert_eq!(
+            ssh_host_from_remote_url("git@github.com:Org/repo.git").unwrap(),
+            "github.com"
+        );
+    }
+
+    #[test]
+    fn ssh_host_from_ssh_url_with_port() {
+        assert_eq!(
+            ssh_host_from_remote_url("ssh://git@gitlab.example:2222/org/repo.git").unwrap(),
+            "gitlab.example"
+        );
+    }
+
+    #[test]
+    fn ssh_host_rejects_https() {
+        assert!(ssh_host_from_remote_url("https://github.com/Org/repo.git").is_err());
+    }
 }

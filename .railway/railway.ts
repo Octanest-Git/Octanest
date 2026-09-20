@@ -46,8 +46,8 @@ export default defineRailway((ctx) => {
       ],
     },
     healthcheck: "/health",
-    // API image has no migrate binary; keep AUTO_MIGRATE=false and run migrations
-    // via a one-off / temporary AUTO_MIGRATE=true first boot (see docs/DEPLOYMENT.md).
+    // Production stays manual-first-boot (AUTO_MIGRATE=false). Preview and every
+    // PR Environment cloned from preview migrate on boot so ephemeral DBs get schema.
     volumeMounts: {
       "/var": forgeData,
     },
@@ -56,7 +56,7 @@ export default defineRailway((ctx) => {
       // Set per environment in the dashboard (preview / staging / production).
       OCTANEST_ENV: preserve(),
       OCTANEST_DB_DIALECT: "postgres",
-      OCTANEST_AUTO_MIGRATE: "false",
+      OCTANEST_AUTO_MIGRATE: ctx.isEnvironment("production") ? "false" : "true",
       OCTANEST_ALLOW_SIGNUP: "true",
       // Align Railway healthcheck PORT with the API listen address.
       PORT: "8080",
@@ -70,15 +70,18 @@ export default defineRailway((ctx) => {
       // Default SSH port (clients expect 22). Railway still publishes a random
       // public TCP proxy port → this application port.
       OCTANEST_SSH_PORT: "22",
-      // Public origin + CORS — set in dashboard / preserve existing (D-CLOUD-06).
-      OCTANEST_PUBLIC_ORIGIN: preserve(),
-      OCTANEST_CORS_ORIGINS: preserve(),
+      // Track gateway public domain (PR Environments get unique hosts; do not preserve).
+      OCTANEST_PUBLIC_ORIGIN: "https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
+      OCTANEST_CORS_ORIGINS: "https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       OCTANEST_ADMIN_EMAIL: preserve(),
       OCTANEST_ADMIN_PASSWORD: preserve(),
       OCTANEST_RESEND_API_KEY: preserve(),
       OCTANEST_SMTP_URL: preserve(),
       OCTANEST_MAIL_FROM: preserve(),
-      OCTANEST_SSH_HOST: preserve(),
+      // AES-256-GCM for Actions secrets, mirror credentials, webhook secrets (D-ACT-17).
+      // Required — set a unique value per environment in the dashboard (never commit).
+      OCTANEST_ACTIONS_SECRETS_KEY: preserve(),
+      OCTANEST_SSH_HOST: "${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       WORKOS_API_KEY: preserve(),
       WORKOS_CLIENT_ID: preserve(),
       OCTANEST_OIDC_ISSUER: preserve(),
@@ -102,14 +105,14 @@ export default defineRailway((ctx) => {
       PORT: "3000",
       // SSR / server-fn RPCs must hit the API on the private network (not
       // 127.0.0.1:8080). Browser clients still use same-origin via gateway.
-      OCTANEST_API_ORIGIN: "http://api.railway.internal:8080",
-      // Public site origin (magic links / clone URLs / Vite host allowlist merge).
-      OCTANEST_PUBLIC_ORIGIN: preserve(),
+      OCTANEST_API_ORIGIN: "http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080",
+      // Public site origin — track gateway domain (PR Environments need this).
+      OCTANEST_PUBLIC_ORIGIN: "https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       // Vite preview Host allowlist (comma-separated; leading `.` = suffix).
       // Example: `.up.railway.app,octanest.jereko.dev` — see docs/CONFIGURATION.md.
       OCTANEST_VITE_ALLOWED_HOSTS: preserve(),
       // CloneBox SSH advertise (SSR’d into the page; match api listen/advertise).
-      OCTANEST_SSH_HOST: preserve(),
+      OCTANEST_SSH_HOST: "${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       OCTANEST_SSH_PORT: "22",
     },
   });

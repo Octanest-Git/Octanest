@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
+import { networkErrorMessage, rpcErrorMessage } from "@/lib/rpc-error-message";
 import { syncSessionPresenceHint } from "@/lib/session-hint";
 import { fetchBootstrapStatus } from "@/lib/ssr-auth";
 
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/setup/")({
       const status = await fetchBootstrapStatus();
       if (!status.ok) {
         return {
-          loadError: "Can't reach Octanest. Check your connection and try again.",
+          loadError: rpcErrorMessage(status.error),
         };
       }
       if (!status.data.needs_setup) {
@@ -45,13 +46,13 @@ export const Route = createFileRoute("/setup/")({
     } catch (e) {
       if (e && typeof e === "object" && "href" in e) throw e;
       return {
-        loadError: "Can't reach Octanest. Check your connection and try again.",
+        loadError: networkErrorMessage(),
       };
     }
   },
 });
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = networkErrorMessage();
 const UNAVAILABLE_ERROR = "Setup is no longer available. Sign in or create an account instead.";
 
 const PROVIDER_OPTIONS: { value: ProviderMode; label: string }[] = [
@@ -108,7 +109,7 @@ export function SetupPage() @{
           ) {
             setError(`${res.error.message}. Fix the highlighted fields and try again.`);
           } else {
-            setError(NETWORK_ERROR);
+            setError(rpcErrorMessage(res.error));
           }
           return;
         }

@@ -1327,6 +1327,12 @@ pub async fn branch_create(
         &after_oid,
     )
     .await;
+    crate::mirror::notify_mirror_after_local_mutation(
+        ctx.db.clone(),
+        ctx.git.clone(),
+        ctx.repos_dir.clone(),
+        accessible.row.id.clone(),
+    );
     Ok(RepoBranchMutationResponse {
         branch: branch.to_string(),
     })
@@ -1390,6 +1396,12 @@ pub async fn branch_rename(
         &tip_oid,
     )
     .await;
+    crate::mirror::notify_mirror_after_local_mutation(
+        ctx.db.clone(),
+        ctx.git.clone(),
+        ctx.repos_dir.clone(),
+        accessible.row.id.clone(),
+    );
     Ok(RepoBranchMutationResponse {
         branch: to.to_string(),
     })
@@ -1464,6 +1476,12 @@ pub async fn branch_delete(
         &before_oid,
     )
     .await;
+    crate::mirror::notify_mirror_after_local_mutation(
+        ctx.db.clone(),
+        ctx.git.clone(),
+        ctx.repos_dir.clone(),
+        accessible.row.id.clone(),
+    );
     Ok(RepoBranchMutationResponse {
         branch: branch.to_string(),
     })

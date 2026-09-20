@@ -9,9 +9,10 @@ COPY crates ./crates
 RUN cargo build --release -p octanest-api --bin octanest-api --bin octanest-protection-hook
 
 FROM debian:bookworm-slim
-# git required for forge ops + D-33 boot gate (GIT-09); ca-certificates/curl for TLS + healthcheck
+# git: forge ops + D-33 boot gate (GIT-09); ca-certificates/curl: TLS + healthcheck;
+# openssh-client: two-way mirror SSH remotes (ssh, ssh-keygen, ssh-keyscan)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git \
+  && apt-get install -y --no-install-recommends ca-certificates curl git openssh-client \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/octanest-api /usr/local/bin/octanest-api
 COPY --from=builder /app/target/release/octanest-protection-hook /usr/local/bin/octanest-protection-hook

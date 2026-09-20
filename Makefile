@@ -42,7 +42,7 @@ help:
 	@echo "  make coverage-weighted - D-QH-02 weighted gate (25/40/35, floor 0.65→0.70)"
 	@echo "  make coverage-contract - aggregator contract self-test"
 	@echo "  make route-coverage-check - G-11.1-15 every .tsrx page has happy-dom/browser/skip"
-	@echo "  make web-lint       - oxlint type-aware + deny-warnings (@tsrx/oxc)"
+	@echo "  make web-lint       - oxlint type-aware + octane DOM-race heuristic + deny-warnings"
 	@echo "  make web-format-check - oxfmt --check (@tsrx/oxc)"
 	@echo "  make smoke-actions  - Actions/runner Compose smoke (ACT-04/05; skip-ok without Docker)"
 	@echo "  make smoke          - compose bring-up smoke (PLAT-01)"
@@ -273,6 +273,7 @@ route-coverage-check:
 
 web-lint:
 	bun run --filter @octanest/web lint
+	bun run scripts/check-octane-dom-races.ts
 
 web-format-check:
 	bun run --filter @octanest/web format:check

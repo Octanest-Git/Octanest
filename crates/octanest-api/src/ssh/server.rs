@@ -272,6 +272,7 @@ impl Handler for SshHandler {
                             )
                             .await;
                             let actions_enabled = crate::actions::env_actions_enabled();
+                            let git_mirror = git.clone();
                             crate::actions::notify_push_actions(
                                 &db,
                                 git,
@@ -284,6 +285,12 @@ impl Handler for SshHandler {
                                 actions_enabled,
                             )
                             .await;
+                            crate::mirror::notify_mirror_after_local_mutation(
+                                db.clone(),
+                                git_mirror,
+                                repos_dir.clone(),
+                                repo_id.clone(),
+                            );
                         }
                     }
                     let _ = handle.exit_status_request(channel, code as u32).await;

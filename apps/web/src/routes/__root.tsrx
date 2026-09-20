@@ -32,13 +32,14 @@ import {
   resolveAppAccessRedirect,
 } from "@/lib/ssr-auth";
 import { THEME_BOOT_SCRIPT, FONT_WARM_SCRIPT } from "@/lib/theme";
+import { buildSwRegisterScript } from "@/lib/sw-register";
 import "@/styles.css";
 
-// Static literal, no interpolation (T-03-19) — registers the hand-authored
-// assets-only service worker (see apps/web/public/sw.js, 03-05-SUMMARY.md).
-const SW_REGISTER_SCRIPT =
-  '(function(){if("serviceWorker" in navigator){window.addEventListener("load",' +
-  'function(){navigator.serviceWorker.register("/sw.js").catch(function(){});});}})();';
+// Build id is Vite-defined at compile time (commit SHA / local stamp). Script
+// body stays free of user input (T-03-19).
+const SW_REGISTER_SCRIPT = buildSwRegisterScript(
+  (import.meta.env.VITE_OCTANEST_SW_BUILD as string | undefined) ?? "dev",
+);
 
 const PROVIDER_CONFIG_LOCKED: ProviderConfigPublic = {
   mode: "local",

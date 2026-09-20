@@ -392,6 +392,10 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
         kind: "happy-dom",
         test: "apps/web/src/routes/$owner.$repo.settings.integration.test.ts",
       },
+      {
+        kind: "stack-browser",
+        test: "apps/web/e2e/stack-browser/forge-mirror.stack.browser.test.tsx",
+      },
     ],
   },
   {

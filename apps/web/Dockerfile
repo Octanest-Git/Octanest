@@ -7,6 +7,14 @@ RUN bun install --frozen-lockfile
 
 FROM deps AS build
 WORKDIR /app
+# Railway / CI may inject the git SHA so the service worker CACHE_NAME changes
+# every deploy (clients pick up a new worker instead of a stale shell cache).
+ARG RAILWAY_GIT_COMMIT_SHA
+ARG SOURCE_COMMIT
+ARG GITHUB_SHA
+ENV RAILWAY_GIT_COMMIT_SHA=$RAILWAY_GIT_COMMIT_SHA \
+    SOURCE_COMMIT=$SOURCE_COMMIT \
+    GITHUB_SHA=$GITHUB_SHA
 COPY apps/web ./apps/web
 COPY packages/api-client ./packages/api-client
 RUN bun run --filter @octanest/web build

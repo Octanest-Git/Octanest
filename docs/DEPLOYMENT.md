@@ -48,16 +48,16 @@ Focused PR Environments (optional but recommended for this monorepo): enable in 
 3. For each of `preview`, `staging`, and `production`: link that environment, then `make cloud-plan` (wraps `railway config plan`).
 4. In the Railway dashboard, set per-environment vars:
    - `OCTANEST_ENV=preview` \| `staging` \| `production`
-   - `OCTANEST_PUBLIC_ORIGIN=https://<gateway-domain-for-that-env>` (production custom domain example: `https://octanest.jereko.dev`)
-   - `OCTANEST_CORS_ORIGINS=https://<gateway-domain-for-that-env>`
    - **`web`:** `OCTANEST_VITE_ALLOWED_HOSTS` — comma-separated Vite Host allowlist. Cloud example: `.up.railway.app,octanest.jereko.dev` (leading `.` allows all Railway `*.up.railway.app` PR/gateway hosts; add each custom apex/host you terminate on the gateway). Without this, `vite preview` returns “Blocked request. This host is not allowed.” See [CONFIGURATION.md](CONFIGURATION.md).
    - Optional: `OCTANEST_ADMIN_EMAIL` / `OCTANEST_ADMIN_PASSWORD`, email/SSO keys
+   - **`api`:** `OCTANEST_ACTIONS_SECRETS_KEY` — unique per environment (AES-256-GCM for Actions secrets, mirror credentials, and inbound webhook secrets). Required; encrypt fails closed if unset. Generate with `openssl rand -base64 32`. PR Environments inherit this from **preview**, so set it on preview before opening PRs that exercise mirrors/Actions secrets.
+   - IaC wires `OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_CORS_ORIGINS`, and `OCTANEST_SSH_HOST` from the **gateway** public domain (`https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}`). Do not `preserve()` those on preview/PR copies — stale preview hosts break setup/CORS. Production custom domains still need the gateway service domain (or override) to match the browser URL. At runtime, a stale `*.up.railway.app` `OCTANEST_PUBLIC_ORIGIN` is replaced with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN`; custom domains are not overridden.
 5. Attach a Railway-provided (or custom) domain to **`gateway`** in each environment (required so PR Environments get automatic preview URLs).
 6. Review the plan, then **only with explicit approval**: `railway config apply`.
 7. **Deploy policy after apply:**
    - `staging`: GitHub branch `main`, autodeploy on, Wait for CI on
    - `preview` and `production`: GitHub connected, autodeploy **off**
-8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=false`. For first boot of an environment, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
+8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=true` for non-production (preview, staging, and PR Environments cloned from preview) so ephemeral databases get schema on boot. **Production** stays `false` — for first boot, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
 9. Confirm `GET https://<domain>/health` and browser `/`.
 
 #### Promote / rollback production

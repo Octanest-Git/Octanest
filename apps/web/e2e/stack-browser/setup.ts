@@ -1,6 +1,10 @@
 import { beforeAll } from "vitest";
 import { webOrigin } from "../stack/env";
 
+/**
+ * Stack-browser commands open pages via `newGuardedPage` (dom-race-guard.ts),
+ * which fails the flow on Octane insertBefore / any uncaught pageerror.
+ */
 beforeAll(async () => {
   // requireStack() lives in env.ts and is browser-safe (no bare `process`).
   const { requireStack } = await import("../stack/env");
