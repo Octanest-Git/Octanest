@@ -1,6 +1,11 @@
 /**
- * MirrorSettingsPanel: switching HTTPS ↔ SSH auth must not throw Octane
- * insertBefore races (RadioGroup + sibling field swap).
+ * MirrorSettingsPanel: HTTPS ↔ SSH auth toggle must not throw Octane
+ * insertBefore races (Base UI RadioIndicator mount + sibling panel update).
+ *
+ * happy-dom does not throw this Chromium HierarchyRequestError — the real gate
+ * is stack-browser `expectMirrorAuthToggleFlow`. This suite is a fast smoke for
+ * class toggles + CSS-hidden panels. Product fix: RadioGroupItem Indicator
+ * `keepMounted` (see `components/ui/radio-group.tsrx`).
  */
 import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -52,7 +57,7 @@ describe("MirrorSettingsPanel DOM races", () => {
       expect(screen.getByTestId("mirror-auth-https")).not.toHaveClass("hidden");
       expect(screen.getByTestId("mirror-auth-ssh")).toHaveClass("hidden");
 
-      fireEvent.click(screen.getByText("SSH deploy key"));
+      fireEvent.click(screen.getByTestId("mirror-auth-kind-ssh"));
 
       await waitFor(() => {
         expect(screen.getByTestId("mirror-auth-ssh")).not.toHaveClass("hidden");
@@ -79,11 +84,11 @@ describe("MirrorSettingsPanel DOM races", () => {
       });
 
       for (let i = 0; i < 4; i++) {
-        fireEvent.click(screen.getByText("SSH deploy key"));
+        fireEvent.click(screen.getByTestId("mirror-auth-kind-ssh"));
         await waitFor(() => {
           expect(screen.getByTestId("mirror-auth-ssh")).not.toHaveClass("hidden");
         });
-        fireEvent.click(screen.getByText("HTTPS token"));
+        fireEvent.click(screen.getByTestId("mirror-auth-kind-https"));
         await waitFor(() => {
           expect(screen.getByTestId("mirror-auth-https")).not.toHaveClass("hidden");
         });

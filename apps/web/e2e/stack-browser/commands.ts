@@ -585,6 +585,72 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
 };
 
 /**
+ * Repo settings mirror panel: toggle HTTPS → SSH auth without Chromium
+ * insertBefore / HierarchyRequestError. Root cause was Base UI Radio.Indicator
+ * mount (keepMounted=false) racing Octane sibling panel updates — fixed via
+ * keepMounted on RadioGroupItem. happy-dom does not throw this race; this flow
+ * is the Chromium gate.
+ */
+export const expectMirrorAuthToggleFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/settings`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-mirror-settings").waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    assertNoOctaneOverlay(await page.content(), "repo mirror settings initial");
+
+    // onClick needs client hydration (SSR shows the panel but handlers attach later).
+    await new Promise((r) => setTimeout(r, 800));
+
+    const sshKind = page.locator('[data-testid="mirror-auth-kind-ssh"]');
+    await sshKind.waitFor({ state: "visible", timeout: 15_000 });
+    await sshKind.click();
+
+    const sshPanel = page.locator('[data-testid="mirror-auth-ssh"]');
+    await sshPanel.waitFor({ state: "attached", timeout: 15_000 });
+    let sshClass = "";
+    for (let i = 0; i < 20; i++) {
+      sshClass = (await sshPanel.getAttribute("class").catch(() => null)) ?? "";
+      if (sshClass && !/\bhidden\b/.test(sshClass)) break;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    if (!sshClass || /\bhidden\b/.test(sshClass)) {
+      throw new Error(
+        `mirror-auth-ssh still hidden after SSH click (class=${JSON.stringify(sshClass)}); pageerrors=${pageGuard.pageErrors.join(" | ") || "none"}`,
+      );
+    }
+
+    await page.locator("#mirror-kh").waitFor({ state: "visible", timeout: 10_000 });
+    const httpsClass =
+      (await page
+        .locator('[data-testid="mirror-auth-https"]')
+        .getAttribute("class")
+        .catch(() => null)) ?? "";
+    if (!/\bhidden\b/.test(httpsClass)) {
+      throw new Error(
+        `mirror-auth-https should be hidden after SSH click (class=${JSON.stringify(httpsClass)})`,
+      );
+    }
+
+    assertNoOctaneOverlay(await page.content(), "repo mirror settings after SSH");
+    return true;
+  } finally {
+    await pageGuard.close("repo mirror auth toggle");
+  }
+};
+
+/**
  * Issues CRUD happy path (D-QH-03): prove new-issue form via UI, create + close
  * via RPC when Button onClick hydration is unavailable (signupThroughUi pattern),
  * assert detail chrome via SSR-friendly markers.

@@ -461,8 +461,12 @@ export function MirrorSettingsPanel(props: {
             if (v === "https_token" || v === "ssh_key") setAuthKind(v);
           }}
           className="gap-3"
+          aria-label="Authentication"
         >
-          <label className="flex cursor-pointer items-start gap-3">
+          <label
+            className="flex cursor-pointer items-start gap-3"
+            data-testid="mirror-auth-kind-https"
+          >
             <RadioGroupItem value="https_token" className="mt-0.5" />
             <span className="flex flex-col gap-0.5">
               <span className="text-[14px] font-medium text-foreground">HTTPS token</span>
@@ -471,7 +475,10 @@ export function MirrorSettingsPanel(props: {
               </span>
             </span>
           </label>
-          <label className="flex cursor-pointer items-start gap-3">
+          <label
+            className="flex cursor-pointer items-start gap-3"
+            data-testid="mirror-auth-kind-ssh"
+          >
             <RadioGroupItem value="ssh_key" className="mt-0.5" />
             <span className="flex flex-col gap-0.5">
               <span className="text-[14px] font-medium text-foreground">SSH deploy key</span>

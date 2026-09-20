@@ -14,6 +14,11 @@ export function RadioGroup({
   />;
 }
 
+/**
+ * Indicator uses Base UI `keepMounted` so selecting a radio does not mount/unmount
+ * the indicator span. Without it, Base UI's insertBefore races Octane when the same
+ * click also updates sibling panels (HierarchyRequestError / “Something went wrong!”).
+ */
 export function RadioGroupItem({
   className,
   ...props
@@ -31,8 +36,9 @@ export function RadioGroupItem({
     {...props}
   >
     <RadioPrimitive.Indicator
+      keepMounted
       data-slot="radio-group-indicator"
-      className="flex items-center justify-center"
+      className="flex items-center justify-center data-[unchecked]:hidden"
     >
       <span className="size-2.5 rounded-full bg-primary" />
     </RadioPrimitive.Indicator>

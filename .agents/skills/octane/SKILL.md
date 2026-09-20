@@ -84,10 +84,10 @@ Only if required: `ReactCompat` / `OctaneCompat` from `octane/react`. Do **not**
 1. **Export undefined / no hydration** — component used `return (` with `@if` / `@{` fragments → Vite import protection. Fix: full Rivet `@{` body.
 2. **GET form submits** — missing `method="post" action="#"` or button `type="button"` on SPA forms.
 3. **Duplicate `auth.me`** — bypass shared Query helpers; always go through session query options / cache helpers.
-4. **`insertBefore` / HierarchyRequestError (“Something went wrong!”)** — swapping a large sibling tree with `@if`/`@else` in the **same parent** as a Base UI control that also mutates the DOM on click (`RadioGroup`, Select, dialog). Octane and the primitive race on the reference node.
-   - **Fix:** keep both panels mounted and toggle with `hidden` / `className` (or extract to a child that owns the whole subtree), do **not** `@if`/`@else` the panels next to the radio.
+4. **`insertBefore` / HierarchyRequestError (“Something went wrong!”)** — Base UI controls that **mount/unmount** DOM on click (notably `Radio.Indicator` with default `keepMounted={false}`) while Octane re-renders siblings in the same interaction. The library’s `insertBefore` for the indicator races Octane’s reconciliation of nearby nodes.
+   - **Fix (prefer keeping Base UI):** set `keepMounted` on `Radio.Indicator` (our `RadioGroupItem` does this). Also keep large auth/detail panels always mounted and toggle with `hidden` / `className` — do **not** `@if`/`@else` them next to the radio. Avoid replacing Base UI with plain buttons unless a primitive has no keepMounted-style escape hatch.
    - **Multi-root `@if`:** wrap multiple siblings in `<>…</>` — a bare `@if` with two root nodes also breaks reconciliation.
-   - **Tests (automatic):** happy-dom integration installs a global `trackDomErrors()` in `setup-integration.ts`. Stack-browser flows use `newGuardedPage()` so every Playwright page fails on `pageerror` / DOM races. Add a local tracker only for a tighter failure label. Opt out of the global assert with `allowDomRacesInThisTest()` (rare).
+   - **Tests:** happy-dom `trackDomErrors()` (global in `setup-integration.ts`) is **necessary but not sufficient** — happy-dom often never throws the Chromium `insertBefore` path for Base UI + Octane. The real gate is stack-browser `newGuardedPage()` / `pageerror` (e.g. `expectMirrorAuthToggleFlow` clicking SSH on repo settings). Add a local tracker only for a tighter failure label. Opt out of the global assert with `allowDomRacesInThisTest()` (rare).
 
 ## When stuck
 

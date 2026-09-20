@@ -5,11 +5,17 @@
  *
  * Prefer this whenever a test clicks a control that also swaps sibling trees
  * (RadioGroup, Select, dialog open/close + parent setState). See Octane skill
- * “Failure modes” — RadioGroup + `@if`/`@else` sibling swap.
+ * “Failure modes” — Base UI Radio.Indicator mount + sibling panel update.
  *
  * Integration suite (`setup-integration.ts`) installs a global tracker for every
  * happy-dom test; call `trackDomErrors()` locally for high-risk interactions when
  * you want a tighter scope or clearer failure label.
+ *
+ * Limitations: happy-dom often does **not** throw the Chromium HierarchyRequestError
+ * for Base UI Indicator mount + Octane sibling re-renders. Treat stack-browser
+ * `newGuardedPage` / `pageerror` (e.g. `expectMirrorAuthToggleFlow`) as the real
+ * gate for those races; this helper is still useful for smoke and other failures.
+ * Product fix for radios: `keepMounted` on Indicator (`components/ui/radio-group`).
  */
 
 export const DOM_RACE_RE =
