@@ -68,6 +68,7 @@ IaC sets public browser/SSH advertise vars from the **gateway** domain (not `pre
 | `OCTANEST_SSH_HOST` | `${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
 | `OCTANEST_API_ORIGIN` (web) | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` |
 | `OCTANEST_AUTO_MIGRATE` | `true` on all environments (including production) |
+| `OCTANEST_PROTECTION_HELPER` | `/usr/local/bin/octanest-protection-hook` (API image) |
 
 PR Environments inherit from `preview`; dynamic gateway refs and auto-migrate on every environment (including production) keep schema current and avoid stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
 

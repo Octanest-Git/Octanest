@@ -75,6 +75,36 @@ async fn run_git(args: &[&str]) -> Result<(), GitError> {
     Ok(())
 }
 
+async fn run_git_with_env(args: &[&str], extra_env: &[(&str, &str)]) -> Result<(), GitError> {
+    let _ = run_git_stdout_env(args, extra_env).await?;
+    Ok(())
+}
+
+/// Env for `git push` into a forge bare repo so `hooks/update` can find the
+/// protection helper (D-PKG-01/02). Prefer `OCTANEST_PROTECTION_HELPER`; else a
+/// sibling `octanest-protection-hook` next to the current executable (API image).
+///
+/// Sets `OCTANEST_ACTOR_CAPABILITY=admin` for system ref updates (mirror FF /
+/// internal sync) that already passed API-layer policy — without this, production
+/// fail-closed hooks deny with default capability `read`.
+fn protection_hook_push_env() -> Vec<(String, String)> {
+    let mut out = Vec::with_capacity(2);
+    let helper = std::env::var("OCTANEST_PROTECTION_HELPER")
+        .ok()
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            std::env::current_exe().ok().and_then(|p| {
+                let sibling = p.parent()?.join("octanest-protection-hook");
+                sibling.is_file().then(|| sibling.display().to_string())
+            })
+        });
+    if let Some(h) = helper {
+        out.push(("OCTANEST_PROTECTION_HELPER".into(), h));
+    }
+    out.push(("OCTANEST_ACTOR_CAPABILITY".into(), "admin".into()));
+    out
+}
+
 async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
     run_git_stdout_env(args, &[]).await
 }
@@ -1886,7 +1916,12 @@ impl GitBackend for CliGitBackend {
         // Detached checkout of target, then push to branch (FF only — no +).
         run_git(&["-C", work_s, "checkout", "--detach", target_sha]).await?;
         let refspec = format!("HEAD:refs/heads/{branch}");
-        run_git(&["-C", work_s, "push", "origin", &refspec]).await?;
+        let hook_env = protection_hook_push_env();
+        let hook_env_refs: Vec<(&str, &str)> = hook_env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        run_git_with_env(&["-C", work_s, "push", "origin", &refspec], &hook_env_refs).await?;
         Ok(())
     }
 
@@ -2055,7 +2090,12 @@ async fn merge_via_worktree(
     let sha_bytes = run_git_stdout(&["-C", work_s, "rev-parse", "HEAD"]).await?;
     let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
     let refspec = format!("HEAD:refs/heads/{base_ref}");
-    run_git(&["-C", work_s, "push", "origin", &refspec]).await?;
+    let hook_env = protection_hook_push_env();
+    let hook_env_refs: Vec<(&str, &str)> = hook_env
+        .iter()
+        .map(|(k, v)| (k.as_str(), v.as_str()))
+        .collect();
+    run_git_with_env(&["-C", work_s, "push", "origin", &refspec], &hook_env_refs).await?;
     Ok(sha)
 }
 
@@ -2778,6 +2818,30 @@ mod tests {
         assert!(
             body.contains("OCTANEST_ENV") && body.contains("production|cloud"),
             "cloned hook script must include D-PKG-02 gate"
+        );
+    }
+
+    #[test]
+    fn protection_hook_push_env_sets_admin_and_optional_helper() {
+        let prev = std::env::var_os("OCTANEST_PROTECTION_HELPER");
+        std::env::set_var(
+            "OCTANEST_PROTECTION_HELPER",
+            "/usr/local/bin/octanest-protection-hook",
+        );
+        let env = protection_hook_push_env();
+        match prev {
+            Some(v) => std::env::set_var("OCTANEST_PROTECTION_HELPER", v),
+            None => std::env::remove_var("OCTANEST_PROTECTION_HELPER"),
+        }
+        let map: std::collections::HashMap<_, _> = env.into_iter().collect();
+        assert_eq!(
+            map.get("OCTANEST_ACTOR_CAPABILITY").map(String::as_str),
+            Some("admin"),
+            "system pushes must use admin capability for hook evaluation"
+        );
+        assert_eq!(
+            map.get("OCTANEST_PROTECTION_HELPER").map(String::as_str),
+            Some("/usr/local/bin/octanest-protection-hook")
         );
     }
 

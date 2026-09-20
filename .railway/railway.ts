@@ -58,6 +58,8 @@ export default defineRailway((ctx) => {
       OCTANEST_DB_DIALECT: "postgres",
       OCTANEST_AUTO_MIGRATE: "true",
       OCTANEST_ALLOW_SIGNUP: "true",
+      // Branch-protection update-hook helper (same path as Compose / API image).
+      OCTANEST_PROTECTION_HELPER: "/usr/local/bin/octanest-protection-hook",
       // Align Railway healthcheck PORT with the API listen address.
       PORT: "8080",
       API_BIND: "0.0.0.0:8080",
