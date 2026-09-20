@@ -11,7 +11,7 @@ fn secrets_key_bytes() -> Result<[u8; 32], String> {
     let raw = std::env::var("OCTANEST_ACTIONS_SECRETS_KEY")
         .or_else(|_| std::env::var("OCTANEST_SESSION_SECRET"))
         .map_err(|_| {
-            "OCTANEST_ACTIONS_SECRETS_KEY (or OCTANEST_SESSION_SECRET) is required to encrypt Actions secrets"
+            "OCTANEST_ACTIONS_SECRETS_KEY (or OCTANEST_SESSION_SECRET) is required to encrypt secrets at rest"
                 .to_string()
         })?;
     let mut h = Sha256::new();

@@ -15,6 +15,7 @@ pub mod org;
 pub mod packages;
 pub mod pat;
 pub mod protection;
+pub mod public_origin;
 pub mod pull;
 pub mod release;
 pub mod ssh;
@@ -28,3 +29,4 @@ pub mod webhook;
 
 pub use app::{router, router_with_state, AppState};
 pub use cors::build_cors;
+pub use public_origin::resolve_public_origin;

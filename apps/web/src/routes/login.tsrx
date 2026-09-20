@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
+import { networkErrorMessage, rpcErrorMessage } from "@/lib/rpc-error-message";
 import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 import { fetchProviderConfig, fetchSessionMe } from "@/lib/ssr-auth";
 
@@ -18,7 +19,7 @@ export type LoginLoaderData = {
 };
 
 const LOGIN_ERROR = "Incorrect email/username or password. Check your details and try again.";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = networkErrorMessage();
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/login")({
     try {
       const cfg = await fetchProviderConfig();
       if (!cfg.ok) {
-        return { mode: "local", allow_signup: false, loadError: NETWORK_ERROR };
+        return { mode: "local", allow_signup: false, loadError: rpcErrorMessage(cfg.error) };
       }
       return {
         mode: cfg.data.mode,

@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
+import { networkErrorMessage, rpcErrorMessage } from "@/lib/rpc-error-message";
 import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 import { fetchSessionMe } from "@/lib/ssr-auth";
 
 const DEFAULT_USERNAME = "system-administrator";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = networkErrorMessage();
 const DEFAULT_USERNAME_ERROR = "Choose a username other than the default system-administrator.";
 
 export const Route = createFileRoute("/setup/credentials")({
@@ -91,7 +92,7 @@ export function CredentialsPage() @{
             window.location.assign(`/login?returnTo=${encodeURIComponent("/setup/credentials")}`);
             return;
           } else {
-            setError(NETWORK_ERROR);
+            setError(rpcErrorMessage(res.error));
           }
           return;
         }

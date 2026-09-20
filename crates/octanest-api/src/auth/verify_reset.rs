@@ -58,13 +58,10 @@ fn bytes_to_hex(bytes: &[u8]) -> String {
     out
 }
 
-/// Absolute origin for magic links — `OCTANEST_PUBLIC_ORIGIN` only (T-05-07).
+/// Absolute origin for magic links — `OCTANEST_PUBLIC_ORIGIN`, with Railway
+/// gateway fallback when the configured host is stale (PR Environments).
 pub fn public_origin() -> String {
-    std::env::var("OCTANEST_PUBLIC_ORIGIN")
-        .ok()
-        .map(|o| o.trim().trim_end_matches('/').to_string())
-        .filter(|o| !o.is_empty())
-        .unwrap_or_else(|| "http://localhost:8080".into())
+    crate::public_origin::resolve_public_origin()
 }
 
 /// CSPRNG 32-byte magic → lowercase hex (64 chars).

@@ -20,10 +20,50 @@ describe("public-origin", () => {
 
   it("reads OCTANEST_PUBLIC_ORIGIN when set", () => {
     const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+    const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    delete process.env.RAILWAY_PUBLIC_DOMAIN;
     process.env.OCTANEST_PUBLIC_ORIGIN = "https://git.example/";
     expect(resolvePublicOriginFromEnv()).toBe("https://git.example");
     if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
     else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
+    if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    else process.env.RAILWAY_PUBLIC_DOMAIN = prevDom;
+  });
+
+  it("prefers Railway gateway when OCTANEST_PUBLIC_ORIGIN host is stale", () => {
+    const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+    const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    process.env.OCTANEST_PUBLIC_ORIGIN = "https://gateway-preview-4893.up.railway.app";
+    process.env.RAILWAY_SERVICE_GATEWAY_URL = "gateway-octanest-pr-31.up.railway.app";
+    expect(resolvePublicOriginFromEnv()).toBe("https://gateway-octanest-pr-31.up.railway.app");
+    if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
+    else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
+    if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    else process.env.RAILWAY_PUBLIC_DOMAIN = prevDom;
+  });
+
+  it("keeps custom domain when Railway gateway host differs", () => {
+    const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+    const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
+    delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    process.env.OCTANEST_PUBLIC_ORIGIN = "https://octanest.jereko.dev";
+    process.env.RAILWAY_PUBLIC_DOMAIN = "gateway-production.up.railway.app";
+    expect(resolvePublicOriginFromEnv()).toBe("https://octanest.jereko.dev");
+    if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
+    else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
+    else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
+    if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
+    else process.env.RAILWAY_PUBLIC_DOMAIN = prevDom;
   });
 
   it("builds scp-style SSH URLs for port 22 and 2222 (never ssh://)", () => {

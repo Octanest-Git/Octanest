@@ -58,7 +58,18 @@ railway config plan
 railway config apply
 ```
 
-Secrets (`OCTANEST_ENV`, `OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_CORS_ORIGINS`, `OCTANEST_VITE_ALLOWED_HOSTS`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git.
+Secrets (`OCTANEST_ENV`, `OCTANEST_VITE_ALLOWED_HOSTS`, `OCTANEST_ACTIONS_SECRETS_KEY`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git. Set a unique `OCTANEST_ACTIONS_SECRETS_KEY` on each environment’s **api** service (`openssl rand -base64 32`); without it, mirror credentials and Actions secrets cannot be saved.
+
+IaC sets public browser/SSH advertise vars from the **gateway** domain (not `preserve()`):
+
+| Variable | Source |
+|----------|--------|
+| `OCTANEST_PUBLIC_ORIGIN` / `OCTANEST_CORS_ORIGINS` (api + web origin) | `https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
+| `OCTANEST_SSH_HOST` | `${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
+| `OCTANEST_API_ORIGIN` (web) | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` |
+| `OCTANEST_AUTO_MIGRATE` | `true` except **production** (`false`) |
+
+PR Environments inherit from `preview`; dynamic gateway refs + auto-migrate avoid empty schemas and stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
 
 On **`web`**, set `OCTANEST_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,octanest.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
 

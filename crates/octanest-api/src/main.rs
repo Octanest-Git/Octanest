@@ -17,7 +17,9 @@ async fn main() {
     }
 
     let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
-    let cors_origins = std::env::var("OCTANEST_CORS_ORIGINS").ok();
+    let cors_origins = octanest_api::public_origin::resolve_cors_origins(
+        std::env::var("OCTANEST_CORS_ORIGINS").ok().as_deref(),
+    );
     let cors = match build_cors(&env_name, cors_origins.as_deref()) {
         Ok(c) => c,
         Err(e) => {

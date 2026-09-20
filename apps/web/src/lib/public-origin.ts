@@ -1,15 +1,65 @@
 /**
  * Browser-facing site origin for clone URLs and other absolute links.
  * Prefer configured public origin (same knob as API magic links).
+ * On Railway PR Environments, replace a stale `*.up.railway.app` configured
+ * origin with the live gateway host. Custom domains are left alone.
  */
-export function resolvePublicOriginFromEnv(): string | null {
-  const configured =
-    process.env.OCTANEST_PUBLIC_ORIGIN?.trim() ||
-    process.env.OCTANEST_COMPOSE_PUBLIC_ORIGIN?.trim() ||
-    "";
-  if (configured) {
-    return configured.replace(/\/$/, "");
+
+function originHostname(origin: string): string | null {
+  const trimmed = origin.trim().replace(/\/$/, "");
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`);
+    return u.hostname || null;
+  } catch {
+    return null;
   }
+}
+
+function isRailwayAppHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return h === "up.railway.app" || h.endsWith(".up.railway.app");
+}
+
+/** Railway gateway hostname when the web process runs on Railway. */
+export function railwayGatewayHost(env: NodeJS.ProcessEnv = process.env): string | null {
+  for (const key of ["RAILWAY_SERVICE_GATEWAY_URL", "RAILWAY_PUBLIC_DOMAIN"] as const) {
+    const raw = env[key]?.trim();
+    if (!raw) continue;
+    const host = originHostname(raw);
+    if (host) return host;
+  }
+  return null;
+}
+
+function railwayGatewayOrigin(env: NodeJS.ProcessEnv = process.env): string | null {
+  const host = railwayGatewayHost(env);
+  return host ? `https://${host}` : null;
+}
+
+export function resolvePublicOriginFromEnv(env: NodeJS.ProcessEnv = process.env): string | null {
+  const configured = (
+    env.OCTANEST_PUBLIC_ORIGIN?.trim() ||
+    env.OCTANEST_COMPOSE_PUBLIC_ORIGIN?.trim() ||
+    ""
+  ).replace(/\/$/, "");
+  const railway = railwayGatewayOrigin(env);
+
+  if (configured && railway) {
+    const cfgHost = originHostname(configured);
+    const rwHost = originHostname(railway);
+    if (
+      cfgHost &&
+      rwHost &&
+      isRailwayAppHost(cfgHost) &&
+      cfgHost.toLowerCase() !== rwHost.toLowerCase()
+    ) {
+      return railway;
+    }
+    return configured;
+  }
+  if (railway) return railway;
+  if (configured) return configured;
   return null;
 }
 
@@ -51,7 +101,22 @@ export function resolveSshHost(
   envHost = process.env.OCTANEST_SSH_HOST,
 ): string {
   const fromEnv = envHost?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  if (fromEnv) {
+    // Prefer live Railway gateway host when SSH_HOST still points at another
+    // *.up.railway.app preview/PR host. Custom SSH advertise hosts stay put.
+    const railway = railwayGatewayHost();
+    if (railway) {
+      const envHostname = originHostname(fromEnv);
+      if (
+        envHostname &&
+        isRailwayAppHost(envHostname) &&
+        envHostname.toLowerCase() !== railway.toLowerCase()
+      ) {
+        return railway;
+      }
+    }
+    return fromEnv.replace(/\/$/, "");
+  }
   const origin =
     (publicOrigin || "").trim() || resolvePublicOriginFromEnv() || resolvePublicOriginClient();
   try {
