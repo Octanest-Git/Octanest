@@ -9,6 +9,7 @@ import {
 } from "./vite-plugins/fix-type-only-imports.ts";
 import { parseViteAllowedHosts } from "./vite-plugins/vite-allowed-hosts.ts";
 import { webHealthPlugin } from "./vite-plugins/web-health.ts";
+import { swBuildIdPlugin } from "./vite-plugins/sw-build-id.ts";
 
 // NOTE (03-05): vite-plugin-pwa was evaluated here but does not emit a service
 // worker under this Vite 8 / @octanejs/tanstack-start multi-environment build
@@ -16,7 +17,8 @@ import { webHealthPlugin } from "./vite-plugins/web-health.ts";
 // hook never fires — no sw.js is produced, silently). Per the 03-05 plan's
 // documented fallback, the manifest and service worker are hand-authored as
 // static files in apps/web/public/ instead (manifest.webmanifest, sw.js).
-// See .planning/phases/03-brand-shell-theme/03-05-SUMMARY.md for details.
+// swBuildIdPlugin stamps CACHE_NAME + VITE_OCTANEST_SW_BUILD per deploy so
+// clients install a fresh worker instead of pinning an old shell cache.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
@@ -47,6 +49,8 @@ export default defineConfig(() => {
     plugins: [
       // Before Start/proxy: Compose + Dockerfile probe `/health` with Octanest-Health-Probe.
       webHealthPlugin(),
+      // Per-deploy CACHE_NAME + VITE_OCTANEST_SW_BUILD for SW update busting.
+      swBuildIdPlugin(),
       fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX),
       tanstackStart({
         // Keep colocated *.integration.test.* / *.unit.test.* out of the route tree

@@ -1,10 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach } from "vitest";
-import {
-  consumeDomRaceAllowlist,
-  trackDomErrors,
-  type DomErrorTracker,
-} from "./dom-errors";
+import { consumeDomRaceAllowlist, trackDomErrors, type DomErrorTracker } from "./dom-errors";
 
 /**
  * Every happy-dom integration test fails on Octane insertBefore / hierarchy

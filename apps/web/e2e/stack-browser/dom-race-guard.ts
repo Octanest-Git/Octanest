@@ -23,17 +23,14 @@ export type GuardedPage<P extends GuardablePage = GuardablePage> = {
   close: (label?: string) => Promise<void>;
 };
 
-export async function newGuardedPage<P extends GuardablePage>(
-  context: { newPage: () => Promise<P> },
-): Promise<GuardedPage<P>> {
+export async function newGuardedPage<P extends GuardablePage>(context: {
+  newPage: () => Promise<P>;
+}): Promise<GuardedPage<P>> {
   const page = await context.newPage();
   const pageErrors: string[] = [];
-  page.on(
-    "pageerror",
-    ((err: Error) => {
-      pageErrors.push(err?.message ?? String(err));
-    }) as (...args: never[]) => void,
-  );
+  page.on("pageerror", ((err: Error) => {
+    pageErrors.push(err?.message ?? String(err));
+  }) as (...args: never[]) => void);
 
   const assertNoPageErrors = (label = "page") => {
     const races = pageErrors.filter((m) => DOM_RACE_RE.test(m));
