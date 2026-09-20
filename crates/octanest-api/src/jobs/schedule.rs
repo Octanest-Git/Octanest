@@ -59,6 +59,7 @@ pub fn spawn_background_jobs(
 ) {
     let env_name = std::env::var("OCTANEST_ENV").unwrap_or_else(|_| "development".into());
     crate::webhook::worker::spawn_webhook_worker(db.clone(), env_name);
+    crate::mirror::spawn_mirror_poller(db.clone(), git.clone(), repos_dir.clone());
     if config.orphan_interval.as_secs() > 0 {
         let db_o = db.clone();
         let repos_o = repos_dir.clone();

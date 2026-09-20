@@ -292,6 +292,10 @@ pub fn router_with_state(state: AppState, cors: CorsLayer) -> Router {
             "/api/repos/{owner}/{repo}/archive/{*archive_file}",
             get(repo_raw::serve_archive),
         )
+        .route(
+            "/api/repos/{owner}/{repo}/mirror/hook",
+            axum::routing::post(crate::mirror::mirror_hook),
+        )
         // Smart HTTP — D-18/D-22: only on /{owner}/{repo}.git (segment includes .git suffix)
         .route(
             "/{owner}/{repo_git}/info/refs",

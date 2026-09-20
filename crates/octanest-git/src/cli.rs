@@ -6,9 +6,10 @@ use std::process::Stdio;
 use tokio::process::Command;
 
 use crate::backend::{
-    ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary, ContributorSummary, DiffFile,
-    DiffResult, GitBackend, GitError, GitRef, GrepHit, GrepResult, SizedBlobEntry, TreeEntry,
-    TreeEntryKind, ARCHIVE_TIMEOUT, BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
+    validate_remote_url, ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary,
+    ContributorSummary, DiffFile, DiffResult, GitBackend, GitError, GitRef, GrepHit, GrepResult,
+    RemoteAuthKind, RemoteCredentials, SizedBlobEntry, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
+    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -75,17 +76,27 @@ async fn run_git(args: &[&str]) -> Result<(), GitError> {
 }
 
 async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
+    run_git_stdout_env(args, &[]).await
+}
+
+async fn run_git_stdout_env(args: &[&str], extra_env: &[(&str, &str)]) -> Result<Vec<u8>, GitError> {
     // Tests / CI often have no global git identity; env overrides avoid
     // "Author identity unknown" without mutating the runner's ~/.gitconfig.
-    let output = Command::new("git")
-        .args(args)
+    let mut cmd = Command::new("git");
+    cmd.args(args)
         .env("GIT_AUTHOR_NAME", "Octanest")
         .env("GIT_AUTHOR_EMAIL", "noreply@octanest.local")
         .env("GIT_COMMITTER_NAME", "Octanest")
         .env("GIT_COMMITTER_EMAIL", "noreply@octanest.local")
+        // Never prompt interactively for credentials during mirror ops.
+        .env("GIT_TERMINAL_PROMPT", "0")
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+    for (k, v) in extra_env {
+        cmd.env(k, v);
+    }
+    let output = cmd
         .output()
         .await
         .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
@@ -95,6 +106,12 @@ async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
     }
     let stderr = String::from_utf8_lossy(&output.stderr);
     let stdout = String::from_utf8_lossy(&output.stdout);
+    let combined = format!("{stderr}\n{stdout}");
+    if looks_like_missing_ssh(&combined) {
+        return Err(GitError::Process(
+            "OpenSSH client is not installed on this Octanest API host (install openssh-client / ensure `ssh` is on PATH)".into(),
+        ));
+    }
     Err(GitError::Process(format!(
         "git {} failed (status {:?}): {}{}",
         args.join(" "),
@@ -106,6 +123,168 @@ async fn run_git_stdout(args: &[&str]) -> Result<Vec<u8>, GitError> {
             format!(" | {}", stdout.trim())
         }
     )))
+}
+
+fn looks_like_missing_ssh(combined: &str) -> bool {
+    let lower = combined.to_ascii_lowercase();
+    lower.contains("cannot run ssh")
+        || lower.contains("error: cannot run ssh")
+        || (lower.contains("ssh:") && lower.contains("no such file or directory"))
+}
+
+/// Materialize askpass / SSH key / known_hosts for one outbound URL op.
+struct RemoteAuthFiles {
+    _dir: tempfile::TempDir,
+    env: Vec<(String, String)>,
+}
+
+impl RemoteAuthFiles {
+    fn prepare(credentials: &RemoteCredentials) -> Result<Self, GitError> {
+        let dir = tempfile::tempdir().map_err(GitError::Io)?;
+        let mut env = Vec::new();
+        match credentials.kind {
+            RemoteAuthKind::HttpsToken => {
+                let user = credentials
+                    .username
+                    .as_deref()
+                    .unwrap_or("git")
+                    .trim();
+                if user.is_empty() {
+                    return Err(GitError::InvalidArg("HTTPS username is required".into()));
+                }
+                if credentials.secret.contains('\0') || credentials.secret.contains('\n') {
+                    return Err(GitError::InvalidArg(
+                        "HTTPS token contains invalid characters".into(),
+                    ));
+                }
+                let askpass = dir.path().join("askpass.sh");
+                // Echo password for any credential prompt; username via URL or
+                // GIT_ASKPASS first call — we inject via http.extraHeader instead
+                // so askpass only needs the token.
+                let script = format!(
+                    "#!/bin/sh\necho '{}'\n",
+                    credentials.secret.replace('\'', "'\\''")
+                );
+                std::fs::write(&askpass, script).map_err(GitError::Io)?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = std::fs::metadata(&askpass).map_err(GitError::Io)?.permissions();
+                    perms.set_mode(0o700);
+                    std::fs::set_permissions(&askpass, perms).map_err(GitError::Io)?;
+                }
+                let auth_b64 = {
+                    use std::fmt::Write as _;
+                    let raw = format!("{user}:{}", credentials.secret);
+                    let mut out = String::new();
+                    // Manual base64 (stdlib) — avoid new dependency in octanest-git.
+                    const T: &[u8] =
+                        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+                    let bytes = raw.as_bytes();
+                    let mut i = 0;
+                    while i < bytes.len() {
+                        let b0 = bytes[i] as u32;
+                        let b1 = if i + 1 < bytes.len() {
+                            bytes[i + 1] as u32
+                        } else {
+                            0
+                        };
+                        let b2 = if i + 2 < bytes.len() {
+                            bytes[i + 2] as u32
+                        } else {
+                            0
+                        };
+                        let n = (b0 << 16) | (b1 << 8) | b2;
+                        let _ = write!(
+                            out,
+                            "{}{}{}{}",
+                            T[((n >> 18) & 63) as usize] as char,
+                            T[((n >> 12) & 63) as usize] as char,
+                            if i + 1 < bytes.len() {
+                                T[((n >> 6) & 63) as usize] as char
+                            } else {
+                                '='
+                            },
+                            if i + 2 < bytes.len() {
+                                T[(n & 63) as usize] as char
+                            } else {
+                                '='
+                            }
+                        );
+                        i += 3;
+                    }
+                    out
+                };
+                env.push((
+                    "GIT_CONFIG_COUNT".into(),
+                    "1".into(),
+                ));
+                env.push((
+                    "GIT_CONFIG_KEY_0".into(),
+                    "http.extraHeader".into(),
+                ));
+                env.push((
+                    "GIT_CONFIG_VALUE_0".into(),
+                    format!("Authorization: Basic {auth_b64}"),
+                ));
+                let _ = askpass; // reserved if we switch to ASKPASS later
+            }
+            RemoteAuthKind::SshKey => {
+                let known = credentials.known_hosts.as_deref().unwrap_or("").trim();
+                if known.is_empty() {
+                    return Err(GitError::InvalidArg(
+                        "SSH known_hosts is required for outbound SSH remotes".into(),
+                    ));
+                }
+                if credentials.secret.contains('\0') {
+                    return Err(GitError::InvalidArg("SSH private key contains NUL".into()));
+                }
+                let key_path = dir.path().join("id_mirror");
+                let kh_path = dir.path().join("known_hosts");
+                let mut key = credentials.secret.clone();
+                if !key.ends_with('\n') {
+                    key.push('\n');
+                }
+                std::fs::write(&key_path, key).map_err(GitError::Io)?;
+                std::fs::write(&kh_path, format!("{known}\n")).map_err(GitError::Io)?;
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = std::fs::metadata(&key_path).map_err(GitError::Io)?.permissions();
+                    perms.set_mode(0o600);
+                    std::fs::set_permissions(&key_path, perms).map_err(GitError::Io)?;
+                }
+                let key_s = key_path
+                    .to_str()
+                    .ok_or_else(|| GitError::InvalidArg("non-utf8 key path".into()))?;
+                let kh_s = kh_path
+                    .to_str()
+                    .ok_or_else(|| GitError::InvalidArg("non-utf8 known_hosts path".into()))?;
+                // IdentitiesOnly + pinned known_hosts; no agent / default keys.
+                let ssh_cmd = format!(
+                    "ssh -i {key_s} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={kh_s} -o GlobalKnownHostsFile=/dev/null"
+                );
+                env.push(("GIT_SSH_COMMAND".into(), ssh_cmd));
+            }
+        }
+        Ok(Self { _dir: dir, env })
+    }
+
+    fn as_pairs(&self) -> Vec<(&str, &str)> {
+        self.env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect()
+    }
+}
+
+async fn run_git_remote(
+    args: &[&str],
+    credentials: &RemoteCredentials,
+) -> Result<Vec<u8>, GitError> {
+    let files = RemoteAuthFiles::prepare(credentials)?;
+    let pairs = files.as_pairs();
+    run_git_stdout_env(args, &pairs).await
 }
 
 /// Reject NUL / `..` / leading `-` / absolute-looking refs (T-07-15 / T-07-17 / CR-02).
@@ -1531,6 +1710,192 @@ impl GitBackend for CliGitBackend {
         }
         Ok(out)
     }
+
+    async fn ls_remote_url(
+        &self,
+        url: &str,
+        credentials: &RemoteCredentials,
+    ) -> Result<Vec<GitRef>, GitError> {
+        let url = validate_remote_url(url)?;
+        let stdout =
+            run_git_remote(&["ls-remote", "--heads", "--tags", url], credentials).await?;
+        let text = String::from_utf8_lossy(&stdout);
+        let mut out = Vec::new();
+        for line in text.lines() {
+            let line = line.trim();
+            if line.is_empty() {
+                continue;
+            }
+            let mut parts = line.split_whitespace();
+            let oid = parts.next().unwrap_or("").to_string();
+            let name = parts.next().unwrap_or("").to_string();
+            if oid.is_empty() || name.is_empty() {
+                continue;
+            }
+            // Skip peeled tags (`^{}`).
+            if name.ends_with("^{}") {
+                continue;
+            }
+            out.push(GitRef { name, oid });
+        }
+        Ok(out)
+    }
+
+    async fn fetch_from_url(
+        &self,
+        dest: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+    ) -> Result<(), GitError> {
+        let url = validate_remote_url(url)?;
+        let dest_abs = absolute_path(dest)?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        // Overwrite only the mirror tracking namespace (not local heads).
+        let _ = run_git_remote(
+            &[
+                "-C",
+                dest_s,
+                "fetch",
+                "--prune",
+                url,
+                "+refs/heads/*:refs/octanest/mirror/heads/*",
+                "+refs/tags/*:refs/octanest/mirror/tags/*",
+            ],
+            credentials,
+        )
+        .await?;
+        Ok(())
+    }
+
+    async fn push_to_url(
+        &self,
+        repo: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+        local_ref: &str,
+        remote_ref: &str,
+    ) -> Result<(), GitError> {
+        let url = validate_remote_url(url)?;
+        let local_ref = validate_treeish(local_ref)?;
+        let remote_ref = validate_treeish(remote_ref)?;
+        if local_ref.contains(':') || remote_ref.contains(':') {
+            return Err(GitError::InvalidArg("ref names must not contain ':'".into()));
+        }
+        let repo_abs = absolute_path(repo)?;
+        let repo_s = repo_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 repo: {}", repo_abs.display()))
+        })?;
+        // Explicit refspec only — never --force / --mirror.
+        let refspec = format!("{local_ref}:{remote_ref}");
+        let _ = run_git_remote(&["-C", repo_s, "push", url, &refspec], credentials).await?;
+        Ok(())
+    }
+
+    async fn clone_bare_url(
+        &self,
+        url: &str,
+        dest: &Path,
+        credentials: &RemoteCredentials,
+    ) -> Result<(), GitError> {
+        let url = validate_remote_url(url)?;
+        let dest_abs = absolute_path(dest)?;
+        let dest_s = dest_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 dest: {}", dest_abs.display()))
+        })?;
+        if dest_abs.exists() {
+            return Err(GitError::InvalidArg(format!(
+                "dest already exists: {}",
+                dest_abs.display()
+            )));
+        }
+        if let Some(parent) = dest_abs.parent() {
+            tokio::fs::create_dir_all(parent).await?;
+        }
+        let _ = run_git_remote(&["clone", "--bare", url, dest_s], credentials).await?;
+        install_protection_hooks(&dest_abs).await?;
+        Ok(())
+    }
+
+    async fn is_ancestor(
+        &self,
+        repo: &Path,
+        maybe_ancestor: &str,
+        tip: &str,
+    ) -> Result<bool, GitError> {
+        let maybe_ancestor = validate_treeish(maybe_ancestor)?;
+        let tip = validate_treeish(tip)?;
+        let repo_s = repo_str(repo)?;
+        let output = Command::new("git")
+            .args([
+                "-C",
+                repo_s,
+                "merge-base",
+                "--is-ancestor",
+                maybe_ancestor,
+                tip,
+            ])
+            .env("GIT_TERMINAL_PROMPT", "0")
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await
+            .map_err(|e| GitError::Process(format!("failed to spawn git: {e}")))?;
+        match output.status.code() {
+            Some(0) => Ok(true),
+            Some(1) => Ok(false),
+            _ => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                Err(GitError::Process(format!(
+                    "git merge-base --is-ancestor failed: {}",
+                    stderr.trim()
+                )))
+            }
+        }
+    }
+
+    async fn fast_forward_ref(
+        &self,
+        repo: &Path,
+        refname: &str,
+        target_sha: &str,
+    ) -> Result<(), GitError> {
+        let refname = validate_treeish(refname)?;
+        let target_sha = validate_treeish(target_sha)?;
+        let bare_abs = absolute_path(repo)?;
+        let bare_s = bare_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
+        })?;
+
+        // Ensure the object exists locally.
+        let _ = run_git_stdout(&["-C", bare_s, "cat-file", "-e", &format!("{target_sha}^{{commit}}")])
+            .await?;
+
+        // Push through a worktree so hooks/update runs (same pattern as merge).
+        let tmp = tempfile::tempdir().map_err(GitError::Io)?;
+        let work = tmp.path();
+        let work_s = work
+            .to_str()
+            .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree".into()))?;
+        run_git(&["clone", bare_s, work_s]).await?;
+        let branch = refname
+            .strip_prefix("refs/heads/")
+            .unwrap_or(refname);
+        // Detached checkout of target, then push to branch (FF only — no +).
+        run_git(&["-C", work_s, "checkout", "--detach", target_sha]).await?;
+        let refspec = format!("HEAD:refs/heads/{branch}");
+        run_git(&["-C", work_s, "push", "origin", &refspec]).await?;
+        Ok(())
+    }
+
+    async fn rev_parse(&self, repo: &Path, rev: &str) -> Result<String, GitError> {
+        let rev = validate_treeish(rev)?;
+        let repo_s = repo_str(repo)?;
+        let stdout = run_git_stdout(&["-C", repo_s, "rev-parse", rev]).await?;
+        Ok(String::from_utf8_lossy(&stdout).trim().to_string())
+    }
 }
 
 /// Parse `git ls-tree -r -l` lines: `mode type oid size\tpath` (blobs only).
@@ -1742,6 +2107,14 @@ mod tests {
         let joined = absolute_path(&rel).unwrap();
         assert!(joined.is_absolute());
         assert!(joined.ends_with("var/repos/x.git"));
+    }
+
+    #[test]
+    fn missing_ssh_binary_error_is_detected() {
+        assert!(looks_like_missing_ssh(
+            "error: cannot run ssh: No such file or directory\nfatal: unable to fork"
+        ));
+        assert!(!looks_like_missing_ssh("Permission denied (publickey)."));
     }
 
     #[tokio::test]
@@ -2444,6 +2817,199 @@ mod tests {
         assert!(
             matches!(err, GitError::Io(_)),
             "unexpected error variant: {err:?}"
+        );
+    }
+
+    fn file_url(path: &Path) -> String {
+        let abs = absolute_path(path).unwrap();
+        format!("file://{}", abs.display())
+    }
+
+    fn https_cred() -> RemoteCredentials {
+        RemoteCredentials {
+            kind: RemoteAuthKind::HttpsToken,
+            username: Some("git".into()),
+            secret: "token".into(),
+            known_hosts: None,
+        }
+    }
+
+    #[test]
+    fn validate_remote_url_rejects_file_and_relative() {
+        assert!(validate_remote_url("file:///tmp/x.git").is_err());
+        assert!(validate_remote_url("/tmp/x.git").is_err());
+        assert!(validate_remote_url("./x.git").is_err());
+        assert!(validate_remote_url("https://github.com/a/b.git").is_ok());
+        assert!(validate_remote_url("git@github.com:a/b.git").is_ok());
+        assert!(validate_remote_url("ssh://git@host/a/b.git").is_ok());
+    }
+
+    #[tokio::test]
+    async fn fetch_push_ff_and_merge_between_bares_via_path_url_rejected() {
+        // Path / file:// URLs are rejected — use two local bares via fetch_ref_from
+        // pattern covered elsewhere. This asserts URL validation on fetch_from_url.
+        let tmp = tempfile::tempdir().unwrap();
+        let a = tmp.path().join("a.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&a, "main").await.unwrap();
+        let cred = https_cred();
+        let err = git
+            .fetch_from_url(&a, &file_url(&a), &cred)
+            .await
+            .expect_err("file:// must be rejected");
+        assert!(err.to_string().contains("remote URL"));
+    }
+
+    #[tokio::test]
+    async fn two_way_ff_and_merge_on_diverge_local_path_engine() {
+        // Simulate the mirror engine algorithm between two local bares
+        // (URL remotes use the same ancestry/merge/push primitives).
+        let tmp = tempfile::tempdir().unwrap();
+        let local = tmp.path().join("local.git");
+        let remote = tmp.path().join("remote.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&local, "main").await.unwrap();
+        git.seed_commit(
+            &local,
+            "main",
+            "seed",
+            &[("a.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        // remote starts as a clone of local
+        git.clone_bare(&local, &remote).await.unwrap();
+
+        // Advance local only → should FF-push to remote.
+        push_branch_with_file(&local, "main", "main", "b.txt", b"local\n", "local only").await;
+        let local_tip = git.rev_parse(&local, "refs/heads/main").await.unwrap();
+        // Fetch remote tip into local mirror namespace via path fetch.
+        let remote_tip_before = git.rev_parse(&remote, "refs/heads/main").await.unwrap();
+        assert!(
+            git.is_ancestor(&local, &remote_tip_before, &local_tip)
+                .await
+                .unwrap()
+        );
+        // Push local → remote (path URL not allowed; use fetch_ref_from inverse:
+        // clone objects by fetching from local into remote via path).
+        let fetched = git
+            .fetch_ref_from(&remote, &local, "refs/heads/main")
+            .await
+            .unwrap();
+        assert_eq!(fetched, local_tip);
+        git.fast_forward_ref(&remote, "refs/heads/main", &local_tip)
+            .await
+            .unwrap();
+        assert_eq!(
+            git.rev_parse(&remote, "refs/heads/main").await.unwrap(),
+            local_tip
+        );
+
+        // Diverge both sides → merge_commit then FF both.
+        push_branch_with_file(
+            &local,
+            "main",
+            "main",
+            "l.txt",
+            b"L\n",
+            "local diverge",
+        )
+        .await;
+        push_branch_with_file(
+            &remote,
+            "main",
+            "main",
+            "r.txt",
+            b"R\n",
+            "remote diverge",
+        )
+        .await;
+        let local_sha = git.rev_parse(&local, "refs/heads/main").await.unwrap();
+        let remote_sha = git
+            .fetch_ref_from(&local, &remote, "refs/heads/main")
+            .await
+            .unwrap();
+        assert_ne!(local_sha, remote_sha);
+        assert!(
+            !git.is_ancestor(&local, &remote_sha, &local_sha)
+                .await
+                .unwrap()
+        );
+        assert!(
+            !git.is_ancestor(&local, &local_sha, &remote_sha)
+                .await
+                .unwrap()
+        );
+        let merged = git
+            .merge_commit(&local, "main", &remote_sha, "Mirror merge")
+            .await
+            .expect("merge on diverge");
+        let fetched_m = git
+            .fetch_ref_from(&remote, &local, "refs/heads/main")
+            .await
+            .unwrap();
+        assert_eq!(fetched_m, merged);
+        git.fast_forward_ref(&remote, "refs/heads/main", &merged)
+            .await
+            .unwrap();
+        assert_eq!(
+            git.rev_parse(&remote, "refs/heads/main").await.unwrap(),
+            merged
+        );
+    }
+
+    #[tokio::test]
+    async fn merge_conflict_does_not_force() {
+        let tmp = tempfile::tempdir().unwrap();
+        let local = tmp.path().join("local.git");
+        let remote = tmp.path().join("remote.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&local, "main").await.unwrap();
+        git.seed_commit(
+            &local,
+            "main",
+            "seed",
+            &[("clash.txt".into(), b"base\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        git.clone_bare(&local, &remote).await.unwrap();
+        push_branch_with_file(
+            &local,
+            "main",
+            "main",
+            "clash.txt",
+            b"local\n",
+            "local clash",
+        )
+        .await;
+        push_branch_with_file(
+            &remote,
+            "main",
+            "main",
+            "clash.txt",
+            b"remote\n",
+            "remote clash",
+        )
+        .await;
+        let before = git.rev_parse(&local, "refs/heads/main").await.unwrap();
+        let remote_sha = git
+            .fetch_ref_from(&local, &remote, "refs/heads/main")
+            .await
+            .unwrap();
+        let err = git
+            .merge_commit(&local, "main", &remote_sha, "Mirror merge")
+            .await
+            .expect_err("conflict");
+        let msg = err.to_string().to_lowercase();
+        assert!(
+            msg.contains("conflict") || msg.contains("failed") || msg.contains("process"),
+            "unexpected err: {msg}"
+        );
+        // Local tip unchanged (no force).
+        assert_eq!(
+            git.rev_parse(&local, "refs/heads/main").await.unwrap(),
+            before
         );
     }
 }

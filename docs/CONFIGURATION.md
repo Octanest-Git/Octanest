@@ -74,6 +74,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_WEBHOOK_TIMEOUT_SECS` | Optional | `10` | Outbound webhook HTTP timeout. |
 | `OCTANEST_WEBHOOK_WORKER_INTERVAL_SECS` | Optional | `5` | Pending-delivery drain interval. Set `0` to disable the retry worker. |
 | `OCTANEST_WEBHOOK_RETENTION_DAYS` | Optional | `30` | Soft retention hint for delivery history (UI/list caps also apply). |
+| `OCTANEST_MIRROR_POLL_TICK_SECS` | Optional | `30` | How often the API wakes the two-way mirror poller to enqueue mirrors whose per-repo `poll_interval_secs` elapsed. Set `0` to disable the ticker (event-driven sync + Sync Now still work). Per-mirror interval defaults to `60`; `0` on a mirror disables that mirror’s poll backstop. |
 
 \* Strongly recommended for any real instance; without it the API runs with a skipped DB pool.  
 † Required only when the corresponding auth provider mode is enabled (Admin → Auth / ENV bootstrap).
@@ -187,6 +188,24 @@ Phase 9 adds Git **clone/fetch/push over SSH** beside Smart HTTP. Keys are regis
 
 **Failed pubkey rate limit:** Same windows as Smart HTTP PAT failures (20/IP, 10/fingerprint per 15 minutes); successful auth clears the fingerprint bucket.
 
+## Two-way repository mirroring
+
+Existing repos can attach **one** two-way remote (HTTPS token or SSH deploy key). Behavior and RPC: [API.md](API.md#two-way-repository-mirroring). UI: repository Settings → Two-way mirror.
+
+| Env / setting | Role |
+| --- | --- |
+| `OCTANEST_MIRROR_POLL_TICK_SECS` | Instance ticker that checks enabled mirrors (default **30**; `0` disables the ticker) |
+| Per-mirror `poll_interval_secs` | Backstop only when inbound webhooks are missing (default **60**; `0` = no poll for that mirror) |
+| `OCTANEST_ACTIONS_SECRETS_KEY` | Encrypts git credentials, SSH private keys, and inbound webhook secrets at rest (same key as Actions secrets) |
+
+**Primary sync path is event-driven** (local git activity + inbound push webhook + Sync Now). The poll is a backstop for SSH-only remotes or forges that cannot POST to this instance — not an 8-hour timer.
+
+**SSH deploy keys:** generate or paste a private key in Settings; copy the public key to the remote as a deploy key (write access required for push-out). Paste the remote host line into `known_hosts` (StrictHostKeyChecking), or use **Fetch host key** in Settings (`ssh-keyscan`). Fingerprint mismatch fails closed until an admin updates it.
+
+**OpenSSH on the API host:** Compose/API images include `openssh-client`. Host `make dev` needs `ssh`, `ssh-keygen`, and `ssh-keyscan` on `PATH` (e.g. Arch `openssh`, Debian/Ubuntu `openssh-client`) or SSH remotes fail with a clear “OpenSSH client is not installed” error.
+
+**Inbound webhook:** copy the hook URL + secret into GitHub/GitLab/Gitea as a Push webhook. Secret rotation returns plaintext once.
+
 ## Config file format
 
 There is no separate application `config.json` / TOML. Configuration is:
@@ -238,7 +257,7 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | Both `OCTANEST_ADMIN_*` set and empty-instance seed returns error | Fail closed: printed to stderr; process exits (no wizard fallback) |
 | `git` missing or version &lt; 2.5.0 | `git version gate failed: …`; process exits (D-33) |
 
-**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false), `OCTANEST_REPOS_DIR` (defaults `var/repos`), `OCTANEST_LFS_DIR` (defaults `var/lfs`), orphan/gc/LFS interval vars (use documented defaults; `0` disables that job).
+**Do not fail boot if unset:** `DATABASE_URL` (warns and skips pool), email/SSO secrets (features degrade to log sink / unavailable provider), admin seed vars (wizard path when either/both unset on empty instance), `OCTANEST_ALLOW_SIGNUP` (defaults false), `OCTANEST_REPOS_DIR` (defaults `var/repos`), `OCTANEST_LFS_DIR` (defaults `var/lfs`), orphan/gc/LFS/mirror interval vars (use documented defaults; `0` disables that job).
 
 ## Defaults
 
@@ -264,6 +283,7 @@ Or wipe `users` / `sessions` and re-bootstrap with `OCTANEST_ADMIN_*` or the `/s
 | Repo redirect retention | 90 days | `crates/octanest-api/src/repo/rename_transfer.rs` / `app.rs` |
 | Git gc interval | 604800s | `crates/octanest-api/src/jobs/schedule.rs` |
 | LFS GC interval | 86400s | `jobs/schedule.rs` / `jobs/lfs_gc.rs` |
+| Mirror poll ticker | 30s | `OCTANEST_MIRROR_POLL_TICK_SECS` / `mirror/queue.rs` |
 
 Email sender selection when building from ENV: Resend key → SMTP URL → log sink.
 

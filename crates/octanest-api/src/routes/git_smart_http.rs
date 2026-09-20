@@ -595,6 +595,13 @@ async fn authorize_and_cgi(
                             )
                             .await;
                         });
+                        let db3 = state.db.clone();
+                        let git3 = state.git.clone();
+                        let repos3 = state.repos_dir.clone();
+                        let rid3 = resolved.row.id.clone();
+                        crate::mirror::notify_mirror_after_local_mutation(
+                            db3, git3, repos3, rid3,
+                        );
                     }
                 }
             }

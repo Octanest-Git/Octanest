@@ -468,6 +468,38 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.mirror.get" => match crate::mirror::get(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mirror.upsert" => match crate::mirror::upsert(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mirror.delete" => match crate::mirror::delete(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mirror.syncNow" => match crate::mirror::sync_now(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.mirror.generateSshKey" => {
+            match crate::mirror::generate_ssh_key(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.mirror.rotateWebhookSecret" => {
+            match crate::mirror::rotate_webhook_secret(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.mirror.fetchHostKey" => match crate::mirror::fetch_host_key(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.templates.getEnabled" => {
             match crate::templates::handlers::repo_get_enabled(ctx, req.input).await {
                 Ok(v) => RpcResponse::ok(v),

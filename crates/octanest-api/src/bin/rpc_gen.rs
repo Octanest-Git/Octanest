@@ -738,6 +738,109 @@ export type RepoLfsDownloadResponse = {
   content: string;
 };
 
+export type RepoMirrorRefResultPublic = {
+  refname: string;
+  outcome: string;
+  local_oid: string;
+  remote_oid: string;
+  detail: string;
+  updated_at: string;
+};
+
+export type RepoMirrorPublic = {
+  id: string;
+  repository_id: string;
+  remote_url: string;
+  auth_kind: string;
+  username: string;
+  has_secret: boolean;
+  ssh_public_key: string;
+  known_hosts: string;
+  webhook_url: string;
+  webhook_secret_masked: string;
+  poll_interval_secs: number;
+  enabled: boolean;
+  last_synced_at?: string | null;
+  last_status: string;
+  last_error: string;
+  created_at: string;
+  updated_at: string;
+  ref_results: RepoMirrorRefResultPublic[];
+  webhook_secret?: string | null;
+};
+
+export type RepoMirrorGetRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoMirrorGetResponse = {
+  mirror?: RepoMirrorPublic | null;
+};
+
+export type RepoMirrorUpsertRequest = {
+  owner: string;
+  name: string;
+  remote_url: string;
+  auth_kind: string;
+  username?: string | null;
+  secret?: string | null;
+  ssh_public_key?: string | null;
+  known_hosts?: string | null;
+  poll_interval_secs?: number | null;
+  enabled?: boolean | null;
+};
+
+export type RepoMirrorDeleteRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoMirrorDeleteResponse = {
+  deleted: boolean;
+};
+
+export type RepoMirrorSyncNowRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoMirrorSyncNowResponse = {
+  enqueued: boolean;
+  mirror: RepoMirrorPublic;
+};
+
+export type RepoMirrorGenerateSshKeyRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoMirrorGenerateSshKeyResponse = {
+  ssh_public_key: string;
+  mirror: RepoMirrorPublic;
+};
+
+export type RepoMirrorRotateWebhookSecretRequest = {
+  owner: string;
+  name: string;
+};
+
+export type RepoMirrorRotateWebhookSecretResponse = {
+  webhook_secret: string;
+  mirror: RepoMirrorPublic;
+};
+
+export type RepoMirrorFetchHostKeyRequest = {
+  owner: string;
+  name: string;
+  remote_url: string;
+};
+
+export type RepoMirrorFetchHostKeyResponse = {
+  host: string;
+  known_hosts: string;
+};
+
 export type InstanceTemplatePackPublic = {
   id: string;
   slug: string;
@@ -2192,6 +2295,26 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<RepoLfsListObjectsResponse>(opts, "repo.lfs.listObjects", input),
         download: (input: RepoLfsDownloadRequest) =>
           rpcCall<RepoLfsDownloadResponse>(opts, "repo.lfs.download", input),
+      },
+      mirror: {
+        get: (input: RepoMirrorGetRequest) =>
+          rpcCall<RepoMirrorGetResponse>(opts, "repo.mirror.get", input),
+        upsert: (input: RepoMirrorUpsertRequest) =>
+          rpcCall<RepoMirrorPublic>(opts, "repo.mirror.upsert", input),
+        delete: (input: RepoMirrorDeleteRequest) =>
+          rpcCall<RepoMirrorDeleteResponse>(opts, "repo.mirror.delete", input),
+        syncNow: (input: RepoMirrorSyncNowRequest) =>
+          rpcCall<RepoMirrorSyncNowResponse>(opts, "repo.mirror.syncNow", input),
+        generateSshKey: (input: RepoMirrorGenerateSshKeyRequest) =>
+          rpcCall<RepoMirrorGenerateSshKeyResponse>(opts, "repo.mirror.generateSshKey", input),
+        rotateWebhookSecret: (input: RepoMirrorRotateWebhookSecretRequest) =>
+          rpcCall<RepoMirrorRotateWebhookSecretResponse>(
+            opts,
+            "repo.mirror.rotateWebhookSecret",
+            input,
+          ),
+        fetchHostKey: (input: RepoMirrorFetchHostKeyRequest) =>
+          rpcCall<RepoMirrorFetchHostKeyResponse>(opts, "repo.mirror.fetchHostKey", input),
       },
       templates: {
         getEnabled: (input: RepoTemplateGetEnabledRequest) =>

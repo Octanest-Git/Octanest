@@ -379,6 +379,13 @@ pub async fn merge(ctx: &RpcCtx, input: serde_json::Value) -> Result<MergePullRe
     )
     .await;
 
+    crate::mirror::notify_mirror_after_local_mutation(
+        ctx.db.clone(),
+        ctx.git.clone(),
+        ctx.repos_dir.clone(),
+        accessible.row.id.clone(),
+    );
+
     if row.base_ref == accessible.row.default_branch {
         let mut nums = parse_closing_issue_numbers(&row.body);
         nums.extend(parse_closing_issue_numbers(&full_message));

@@ -8,6 +8,7 @@ pub mod issue;
 pub mod jobs;
 pub mod label;
 pub mod lfs;
+pub mod mirror;
 pub mod notification;
 pub mod notify;
 pub mod org;

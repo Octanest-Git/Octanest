@@ -71,6 +71,7 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `POST` | `/api/actions/fetch_task` | Claim queued workflow job | Bearer runner token |
 | `POST` | `/api/actions/update_task` | Job state transition | Bearer runner token |
 | `POST` | `/api/actions/update_log` | Append job log chunk | Bearer runner token |
+| `POST` | `/api/repos/{owner}/{repo}/mirror/hook` | Inbound push webhook (wake two-way mirror) | Shared secret (HMAC / token headers) |
 
 SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is missing, start returns HTTP 503 with `auth.not_configured`. Failures typically redirect to `/login?error=sso`.
 
@@ -147,6 +148,8 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `repo.actions.listRuns` / `getRun` / `getJobLog` | Workflow run list, detail, job log text | Session + Read+ |
 | `repo.actions.secrets.list` / `put` / `delete` | Repo Actions secrets (names only on list) | Session + Admin |
 | `repo.actions.getEnabled` / `setEnabled` | Per-repo Actions enable toggle | Session + Read+ / Admin |
+| `repo.mirror.get` / `upsert` / `delete` / `syncNow` | Two-way remote mirror config + enqueue sync | Session + Admin |
+| `repo.mirror.generateSshKey` / `rotateWebhookSecret` / `fetchHostKey` | Deploy key, inbound webhook secret, ssh-keyscan | Session + Admin |
 | `repo.commitStatus.create` / `list` | Commit statuses (Phase 13 + Actions publisher) | Session + Write+ / Read+ |
 | `admin.actions.createRegistrationToken` | Mint one-time runner registration token | Sys-admin |
 | `admin.actions.listRunners` | List registered runners (no secrets) | Sys-admin |
@@ -443,6 +446,53 @@ git add .gitattributes
 Clone / fetch / push over SSH use an in-process listener (Compose TCP **2222** by default — not Traefik). Remotes are **scp-style** `git@{host}:{owner}/{repo}.git` (D-SSH-02). The SSH username must be `git`; identity comes only from a registered public-key fingerprint (full account ACL — no PAT scopes). When advertised port ≠ 22, clients set `Port` in `~/.ssh/config` (or `ssh -p`); do not treat `ssh://` as the primary CloneBox URL.
 
 Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprint buckets). See [CONFIGURATION.md](CONFIGURATION.md) for `OCTANEST_SSH_*`.
+
+### Two-way repository mirroring
+
+Attach one external git remote (HTTPS token or SSH deploy key) to an existing repository. Sync is **per-ref**: fast-forward when one side is behind; on diverged **branches**, create a merge commit and push it to both sides; **tags never merge** (identical → skip, different SHAs → conflict). Deletes are not propagated. Force-push / `git push --mirror` are not used.
+
+**Triggers (event-driven):**
+
+1. Local ref mutation (HTTPS/SSH receive-pack, PR merge, branch/tag RPC) — async enqueue; the git client is never blocked on the remote.
+2. Inbound push webhook from the remote forge.
+3. `repo.mirror.syncNow` (Admin).
+4. Short poll backstop per mirror (`poll_interval_secs`, default ~60; `0` disables). Instance ticker: `OCTANEST_MIRROR_POLL_TICK_SECS` (see [CONFIGURATION.md](CONFIGURATION.md)).
+
+Per repo: at most one sync in flight plus one coalesced follow-up. Mirror-driven local ref updates do **not** re-enqueue (avoids loops after we push to GitHub and it webhooks us back). Equal tips are a cheap skip.
+
+**Protected branches:** local fast-forward that would violate protection opens a PR from `mirror/<id-prefix>/sync/<branch>` instead of updating the protected tip. Merge conflicts open a PR from `mirror/<id-prefix>/<branch>` so a human resolves with the normal PR flow.
+
+#### Inbound webhook
+
+| Method | Path | Auth |
+| --- | --- | --- |
+| `POST` | `/api/repos/{owner}/{repo}/mirror/hook` | Shared secret (see below) |
+
+Configure a **Push** (and tag-push) webhook on GitHub / GitLab / Gitea / Forgejo pointing at that URL. The payload SHAs are **not** trusted as a sync plan — a valid authenticated POST only wakes the engine; `fetch` is the source of truth. Ping / unrelated events return **204** after auth. Missing repo, disabled mirror, or bad auth → **404** (anti-enumeration) or **401** for failed signature after the repo resolves.
+
+Accept any of:
+
+- GitHub / Gitea: `X-Hub-Signature-256: sha256=<hmac>` (or `X-Gitea-Signature`)
+- GitLab: `X-Gitlab-Token: <secret>`
+- `Authorization: Bearer <secret>`
+
+The secret is generated on mirror upsert / `repo.mirror.rotateWebhookSecret`. RPC list/get return a masked value; plaintext is returned **once** on create/rotate. Store it like Actions secrets (AES-256-GCM via `OCTANEST_ACTIONS_SECRETS_KEY`).
+
+#### Admin RPC
+
+| Procedure | Notes |
+| --- | --- |
+| `repo.mirror.get` | Current config + last status + per-ref outcomes (no decrypted git credentials) |
+| `repo.mirror.upsert` | Create/update remote URL, auth kind, poll interval, enable; may return `webhook_secret` once |
+| `repo.mirror.delete` | Remove mirror row |
+| `repo.mirror.syncNow` | Enqueue a two-way run (rate-limited) |
+| `repo.mirror.generateSshKey` | Generate Ed25519 deploy key; UI shows public key for the remote |
+| `repo.mirror.rotateWebhookSecret` | New inbound secret (plaintext once) |
+| `repo.mirror.fetchHostKey` | Run `ssh-keyscan` for an SSH remote URL; returns `known_hosts` lines (admin still saves) |
+
+**SSH remotes:** paste or generate a private key; set `known_hosts` (TOFU — first fingerprint must match later or sync fails closed). Git uses `GIT_SSH_COMMAND` with `IdentitiesOnly=yes` and a dedicated `UserKnownHostsFile`. HTTPS remotes use a token/password via askpass/extraheader. `file://` and non-git schemes are rejected.
+
+Settings UI: repository **Settings → Two-way mirror** (after Webhooks).
 
 ### Packages registry (OCI / npm / generic)
 
