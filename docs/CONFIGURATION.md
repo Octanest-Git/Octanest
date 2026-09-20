@@ -11,7 +11,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 |----------|----------|---------|-------------|
 | `DATABASE_URL` | Optional* | _(unset)_ | Connection URL. Scheme selects dialect: `postgres://` / `postgresql://`, `mysql://`, or `sqlite:` (also `sqlite://`, `sqlite::memory:`). `mariadb://` is not supported. If unset, the API boots without a DB pool. |
 | `OCTANEST_DB_DIALECT` | Optional | _(inferred from URL)_ | Explicit dialect: `postgres`, `mysql`, or `sqlite`. When set, must agree with `DATABASE_URL` or boot exits. |
-| `OCTANEST_AUTO_MIGRATE` | Optional | `true` | When `true`/`1`, run sqlx migrations on API boot if a database is configured. Set `false` for prod-like deploys and run `make db-migrate`. |
+| `OCTANEST_AUTO_MIGRATE` | Optional | `true` | When `true`/`1`, run sqlx migrations on API boot if a database is configured. Octanest Cloud sets this to `true` on all environments (including production) so promote applies schema. Self-host prod-like Compose may set `false` and run `make db-migrate`. |
 | `OCTANEST_ENV` | Optional | `development` | Runtime mode. Affects CORS, session cookie `Secure`, and whether `OCTANEST_OIDC_ALLOW_INSECURE` is honored. Common values: `development`, `dev`, `compose`, `production`. |
 | `OCTANEST_CORS_ORIGINS` | Conditional | _(none)_ | Comma-separated browser origins. **Required** when `OCTANEST_ENV` is not `development` or `dev` (e.g. `compose`). Ignored for CORS allowlisting in `development`/`dev` (request origin is mirrored). |
 | `API_BIND` | Optional | `0.0.0.0:8080` | Listen address for `octanest-api`. Host `make` workflows often use `127.0.0.1:8080`. |

@@ -130,4 +130,16 @@ async fn dialect_pulls_migrate_0016_schema_presence() {
         .expect("list");
     assert_eq!(total, 1);
     assert_eq!(list.len(), 1);
+
+    // Postgres maps TIMESTAMPTZ → String via PULL_COLS_PG; keep the cast list in sync.
+    let pulls_src = include_str!("../src/pulls.rs");
+    assert!(
+        pulls_src.contains("PULL_COLS_PG"),
+        "Postgres pull SELECTs must use PULL_COLS_PG (TIMESTAMPTZ → text)"
+    );
+    assert!(
+        pulls_src.contains("to_char(created_at AT TIME ZONE 'UTC'")
+            && pulls_src.contains("AS created_at"),
+        "PULL_COLS_PG must cast created_at for sqlx String decode"
+    );
 }

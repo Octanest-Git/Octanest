@@ -93,6 +93,15 @@ macro_rules! map_pull {
 
 const PULL_COLS: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, merged_at, merged_by, merge_commit_sha, merge_method, closed_at, closed_by, created_at, updated_at";
 
+/// Postgres stores timestamps as TIMESTAMPTZ; map_pull expects String / Option<String>.
+const PULL_COLS_PG: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, \
+to_char(merged_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS merged_at, \
+merged_by, merge_commit_sha, merge_method, \
+to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS closed_at, \
+closed_by, \
+to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, \
+to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at";
+
 pub async fn insert_pull(
     pool: &DbPool,
     id: &str,
@@ -190,7 +199,7 @@ pub async fn find_by_repo_and_number(
     repo_id: &str,
     number: i64,
 ) -> Result<Option<PullRow>, String> {
-    let sql = format!("SELECT {PULL_COLS} FROM pull_requests WHERE repo_id = $1 AND number = $2");
+    let sql = format!("SELECT {PULL_COLS_PG} FROM pull_requests WHERE repo_id = $1 AND number = $2");
     match pool {
         DbPool::Postgres(p) => {
             let row = sqlx::query(&sql)
@@ -302,7 +311,7 @@ pub async fn list_by_repo(
                 .await
                 .map_err(|e| format!("count pulls failed: {e}"))?;
                 let rows = sqlx::query(&format!(
-                    "SELECT {PULL_COLS} FROM pull_requests WHERE repo_id = $1 AND state = $2
+                    "SELECT {PULL_COLS_PG} FROM pull_requests WHERE repo_id = $1 AND state = $2
                      ORDER BY updated_at DESC LIMIT $3 OFFSET $4"
                 ))
                 .bind(repo_id)
@@ -321,7 +330,7 @@ pub async fn list_by_repo(
                         .await
                         .map_err(|e| format!("count pulls failed: {e}"))?;
                 let rows = sqlx::query(&format!(
-                    "SELECT {PULL_COLS} FROM pull_requests WHERE repo_id = $1
+                    "SELECT {PULL_COLS_PG} FROM pull_requests WHERE repo_id = $1
                      ORDER BY updated_at DESC LIMIT $2 OFFSET $3"
                 ))
                 .bind(repo_id)
@@ -483,7 +492,7 @@ WHERE repo_id = $1
             .await
             .map_err(|e| format!("count pull search failed: {e}"))?;
             let rows = sqlx::query(&format!(
-                r#"SELECT {PULL_COLS} FROM pull_requests
+                r#"SELECT {PULL_COLS_PG} FROM pull_requests
 WHERE repo_id = $1
   AND ($2::text IS NULL OR state = $2)
   AND ($3::text IS NULL OR author_id = $3)

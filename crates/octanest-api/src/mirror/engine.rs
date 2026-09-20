@@ -213,7 +213,8 @@ async fn sync_branch(
         None => {
             // Create local from remote (through FF push path for hooks).
             if let Err(e) =
-                apply_local_ff(db, git, bare, mirror_id, repository_id, local_ref, remote_oid).await
+                apply_local_ff(db, git, bare, mirror_id, repository_id, local_ref, remote_oid, false)
+                    .await
             {
                 return RefOutcome {
                     outcome: "error".into(),
@@ -266,9 +267,17 @@ async fn sync_branch(
                 }
             } else if local_anc && !remote_anc {
                 // Remote ahead — FF local.
-                if let Err(e) =
-                    apply_local_ff(db, git, bare, mirror_id, repository_id, local_ref, remote_oid)
-                        .await
+                if let Err(e) = apply_local_ff(
+                    db,
+                    git,
+                    bare,
+                    mirror_id,
+                    repository_id,
+                    local_ref,
+                    remote_oid,
+                    true,
+                )
+                .await
                 {
                     return RefOutcome {
                         outcome: "error".into(),
@@ -458,17 +467,23 @@ async fn apply_local_ff(
     repository_id: &str,
     local_ref: &str,
     target_sha: &str,
+    local_exists: bool,
 ) -> Result<(), String> {
     let branch = local_ref
         .strip_prefix("refs/heads/")
         .unwrap_or(local_ref);
-    let eff = effective_for_branch(db, repository_id, branch)
-        .await
-        .map_err(|e| e.message)?;
-    // Mirror actor has no capability → cannot bypass require_reviews / lock.
-    if evaluate_push(&eff, ProtectionIntent::Push, None).is_err() {
-        return open_protection_pr(db, git, bare, mirror_id, repository_id, branch, target_sha)
-            .await;
+    // Unborn / missing local branch: always create from the remote tip. Branch
+    // protection cannot apply to a ref that does not exist yet — diverting to a
+    // mirror/*/sync/* PR leaves the default branch empty (seen in production).
+    if local_exists {
+        let eff = effective_for_branch(db, repository_id, branch)
+            .await
+            .map_err(|e| e.message)?;
+        // Mirror actor has no capability → cannot bypass require_reviews / lock.
+        if evaluate_push(&eff, ProtectionIntent::Push, None).is_err() {
+            return open_protection_pr(db, git, bare, mirror_id, repository_id, branch, target_sha)
+                .await;
+        }
     }
     git.fast_forward_ref(bare, local_ref, target_sha)
         .await

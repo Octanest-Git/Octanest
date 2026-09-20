@@ -57,7 +57,7 @@ Focused PR Environments (optional but recommended for this monorepo): enable in 
 7. **Deploy policy after apply:**
    - `staging`: GitHub branch `main`, autodeploy on, Wait for CI on
    - `preview` and `production`: GitHub connected, autodeploy **off**
-8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=true` for non-production (preview, staging, and PR Environments cloned from preview) so ephemeral databases get schema on boot. **Production** stays `false` — for first boot, temporarily set `OCTANEST_AUTO_MIGRATE=true` on `api` (or run a one-off migrate job), then return to `false`.
+8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=true` on **all** environments (preview, staging, production, and PR Environments). Promoting production deploys a new `api` image; on boot it applies pending sqlx migrations before listening. A failed migration exits before `/health` passes, so Railway keeps the previous replica.
 9. Confirm `GET https://<domain>/health` and browser `/`.
 
 #### Promote / rollback production
@@ -68,7 +68,7 @@ Do **not** use Railway Environment Sync to promote: Sync copies service **variab
 
 1. Validate the commit on **staging** (autodeploys from `main` + Wait for CI).
 2. Repo → **Actions** → **Production deploy** → **Run workflow**:
-   - `action=promote` — deploys a commit SHA to production `api`, `web`, and `gateway` (default SHA = `main` HEAD; optional override). Requires a successful **CI** run on that SHA. Does not mutate Railway variables.
+   - `action=promote` — deploys a commit SHA to production `api`, `web`, and `gateway` (default SHA = `main` HEAD; optional override). Requires a successful **CI** run on that SHA. Does not mutate Railway variables. New `api` containers run pending sqlx migrations on boot (`OCTANEST_AUTO_MIGRATE=true`); a failed migration keeps the previous replica.
    - `action=rollback` — Railway `deploymentRollback` to the previous `canRollback` deployment on each of those services (restores that deployment’s image; Railway may also restore that deployment’s custom variables).
    - `dry_run=true` — resolves SHA / CI / rollback targets and prints the plan only (no deploys, rollbacks, or health probe).
 3. Confirm `GET https://octanest.jereko.dev/health` (skipped when `dry_run=true`).
@@ -184,7 +184,7 @@ Production-like Compose should copy [`.env.example`](../.env.example) to `.env` 
 | `DATABASE_URL` | Real DB URL matching dialect |
 | `OCTANEST_ENV` | Not `development`/`dev` (Compose default is `compose`) |
 | `OCTANEST_CORS_ORIGINS` | Comma-separated public browser origins (**required** when env is not `development`/`dev`) |
-| `OCTANEST_AUTO_MIGRATE` | Prefer `false` for prod-like; run `make db-migrate` |
+| `OCTANEST_AUTO_MIGRATE` | Cloud: `true` (schema on API boot / promote). Self-host prod-like Compose may still use `false` + `make db-migrate` |
 | `OCTANEST_PUBLIC_ORIGIN` | Browser-facing origin for SSO callbacks behind Traefik |
 | Auth / email secrets | `WORKOS_*`, `OCTANEST_OIDC_*`, `OCTANEST_RESEND_API_KEY` / `OCTANEST_SMTP_URL` as needed |
 
