@@ -84,6 +84,10 @@ Only if required: `ReactCompat` / `OctaneCompat` from `octane/react`. Do **not**
 1. **Export undefined / no hydration** — component used `return (` with `@if` / `@{` fragments → Vite import protection. Fix: full Rivet `@{` body.
 2. **GET form submits** — missing `method="post" action="#"` or button `type="button"` on SPA forms.
 3. **Duplicate `auth.me`** — bypass shared Query helpers; always go through session query options / cache helpers.
+4. **`insertBefore` / HierarchyRequestError (“Something went wrong!”)** — swapping a large sibling tree with `@if`/`@else` in the **same parent** as a Base UI control that also mutates the DOM on click (`RadioGroup`, Select, dialog). Octane and the primitive race on the reference node.
+   - **Fix:** keep both panels mounted and toggle with `hidden` / `className` (or extract to a child that owns the whole subtree), do **not** `@if`/`@else` the panels next to the radio.
+   - **Multi-root `@if`:** wrap multiple siblings in `<>…</>` — a bare `@if` with two root nodes also breaks reconciliation.
+   - **Tests (automatic):** happy-dom integration installs a global `trackDomErrors()` in `setup-integration.ts`. Stack-browser flows use `newGuardedPage()` so every Playwright page fails on `pageerror` / DOM races. Add a local tracker only for a tighter failure label. Opt out of the global assert with `allowDomRacesInThisTest()` (rare).
 
 ## When stuck
 

@@ -462,12 +462,7 @@ export function MirrorSettingsPanel(props: {
           }}
           className="gap-3"
         >
-          <div
-            className="flex cursor-pointer items-start gap-3"
-            onClick={() => {
-              if (!pending) setAuthKind("https_token");
-            }}
-          >
+          <label className="flex cursor-pointer items-start gap-3">
             <RadioGroupItem value="https_token" className="mt-0.5" />
             <span className="flex flex-col gap-0.5">
               <span className="text-[14px] font-medium text-foreground">HTTPS token</span>
@@ -475,13 +470,8 @@ export function MirrorSettingsPanel(props: {
                 Recommended for GitHub and GitLab. Uses a remote forge PAT with write access.
               </span>
             </span>
-          </div>
-          <div
-            className="flex cursor-pointer items-start gap-3"
-            onClick={() => {
-              if (!pending) setAuthKind("ssh_key");
-            }}
-          >
+          </label>
+          <label className="flex cursor-pointer items-start gap-3">
             <RadioGroupItem value="ssh_key" className="mt-0.5" />
             <span className="flex flex-col gap-0.5">
               <span className="text-[14px] font-medium text-foreground">SSH deploy key</span>
@@ -489,132 +479,135 @@ export function MirrorSettingsPanel(props: {
                 Dedicated key for this mirror — not your Octanest account SSH keys.
               </span>
             </span>
-          </div>
+          </label>
         </RadioGroup>
       </div>
 
       <div className="flex flex-col gap-3" data-testid="mirror-auth-fields">
-        @if (authKind === "https_token") {
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="mirror-user">Username</Label>
-              <Input
-                id="mirror-user"
-                value={username}
-                onInput={(e) => setUsername((e.currentTarget as HTMLInputElement).value)}
-                disabled={pending}
-                autoComplete="off"
-              />
-              <p className="text-[13px] text-muted-foreground">
-                Often <code className="rounded bg-muted px-1 font-mono text-[12px]">git</code>{" "}
-                or{" "}
-                <code className="rounded bg-muted px-1 font-mono text-[12px]">
-                  x-access-token
-                </code>{" "}
-                on GitHub. Remote forge username, not your Octanest login.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="mirror-token">
-                {
-                  (existing?.has_secret
-                    ? "Remote token (leave blank to keep)"
-                    : "Remote token / password") as string
-                }
-              </Label>
-              <Input
-                id="mirror-token"
-                type="password"
-                value={secret}
-                onInput={(e) => setSecret((e.currentTarget as HTMLInputElement).value)}
-                disabled={pending}
-                autoComplete="new-password"
-              />
-              <p className="text-[13px] text-muted-foreground">
-                Token on the <strong className="font-medium text-foreground">remote</strong>{" "}
-                forge with write access — not an Octanest PAT.
-              </p>
-            </div>
-          </div>;
-        } @else {
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="mirror-kh">Host key (known_hosts)</Label>
-              <Textarea
-                id="mirror-kh"
-                className="min-h-[80px] font-mono text-[12px]"
-                value={knownHosts}
-                onInput={(e) => setKnownHosts((e.currentTarget as HTMLTextAreaElement).value)}
-                disabled={pending || fetchKhPending}
-                placeholder="github.com ssh-ed25519 AAAA…"
-              />
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={pending || fetchKhPending || !remoteUrl.trim()}
-                  onClick={() => void fetchHostKey()}
-                >
-                  {(fetchKhPending ? "Fetching…" : "Fetch host key") as string}
-                </Button>
-                <p className="text-[13px] text-muted-foreground">
-                  Pins the remote SSH fingerprint. Required before sync.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="mirror-key">
-                {
-                  (existing?.has_secret
-                    ? "Private key PEM (leave blank to keep)"
-                    : existing
-                      ? "Private key PEM (or generate below)"
-                      : "Private key PEM (optional — or generate after save)") as string
-                }
-              </Label>
-              <Textarea
-                id="mirror-key"
-                className="min-h-[80px] font-mono text-[12px]"
-                value={secret}
-                onInput={(e) => setSecret((e.currentTarget as HTMLTextAreaElement).value)}
-                disabled={pending}
-                placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
-              />
-              @if (existing) {
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-fit"
-                  disabled={pending || !knownHosts.trim()}
-                  onClick={() => void generateKey()}
-                >
-                  Generate deploy key
-                </Button>;
-              } @else {
-                <p className="text-[13px] text-muted-foreground">
-                  Save the URL and host key first, then generate a deploy key (or paste
-                  a private key now).
-                </p>;
+        <div
+          className={authKind === "https_token" ? "flex flex-col gap-3" : "hidden"}
+          data-testid="mirror-auth-https"
+          aria-hidden={authKind !== "https_token"}
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mirror-user">Username</Label>
+            <Input
+              id="mirror-user"
+              value={username}
+              onInput={(e) => setUsername((e.currentTarget as HTMLInputElement).value)}
+              disabled={pending}
+              autoComplete="off"
+            />
+            <p className="text-[13px] text-muted-foreground">
+              Often <code className="rounded bg-muted px-1 font-mono text-[12px]">git</code> or{" "}
+              <code className="rounded bg-muted px-1 font-mono text-[12px]">x-access-token</code> on
+              GitHub. Remote forge username, not your Octanest login.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mirror-token">
+              {
+                (existing?.has_secret
+                  ? "Remote token (leave blank to keep)"
+                  : "Remote token / password") as string
               }
-            </div>
+            </Label>
+            <Input
+              id="mirror-token"
+              type="password"
+              value={secret}
+              onInput={(e) => setSecret((e.currentTarget as HTMLInputElement).value)}
+              disabled={pending}
+              autoComplete="new-password"
+            />
+            <p className="text-[13px] text-muted-foreground">
+              Token on the <strong className="font-medium text-foreground">remote</strong> forge
+              with write access — not an Octanest PAT.
+            </p>
+          </div>
+        </div>
 
-            @if (existing?.ssh_public_key) {
-              <>
-                <CopyField
-                  label="Deploy public key"
-                  value={existing.ssh_public_key}
-                  ariaLabel="Mirror deploy public key"
-                  testId="mirror-ssh-public-key"
-                />
-                <p className="text-[13px] text-muted-foreground">
-                  Add this on the remote as a deploy key with{" "}
-                  <strong className="font-medium text-foreground">write</strong> access.
-                </p>
-              </>;
+        <div
+          className={authKind === "ssh_key" ? "flex flex-col gap-3" : "hidden"}
+          data-testid="mirror-auth-ssh"
+          aria-hidden={authKind !== "ssh_key"}
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mirror-kh">Host key (known_hosts)</Label>
+            <Textarea
+              id="mirror-kh"
+              className="min-h-[80px] font-mono text-[12px]"
+              value={knownHosts}
+              onInput={(e) => setKnownHosts((e.currentTarget as HTMLTextAreaElement).value)}
+              disabled={pending || fetchKhPending}
+              placeholder="github.com ssh-ed25519 AAAA…"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={pending || fetchKhPending || !remoteUrl.trim()}
+                onClick={() => void fetchHostKey()}
+              >
+                {(fetchKhPending ? "Fetching…" : "Fetch host key") as string}
+              </Button>
+              <p className="text-[13px] text-muted-foreground">
+                Pins the remote SSH fingerprint. Required before sync.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mirror-key">
+              {
+                (existing?.has_secret
+                  ? "Private key PEM (leave blank to keep)"
+                  : existing
+                    ? "Private key PEM (or generate below)"
+                    : "Private key PEM (optional — or generate after save)") as string
+              }
+            </Label>
+            <Textarea
+              id="mirror-key"
+              className="min-h-[80px] font-mono text-[12px]"
+              value={secret}
+              onInput={(e) => setSecret((e.currentTarget as HTMLTextAreaElement).value)}
+              disabled={pending}
+              placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+            />
+            @if (existing) {
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-fit"
+                disabled={pending || !knownHosts.trim()}
+                onClick={() => void generateKey()}
+              >
+                Generate deploy key
+              </Button>;
+            } @else {
+              <p className="text-[13px] text-muted-foreground">
+                Save the URL and host key first, then generate a deploy key (or paste a
+                private key now).
+              </p>;
             }
-          </div>;
-        }
+          </div>
+
+          @if (existing?.ssh_public_key) {
+            <>
+              <CopyField
+                label="Deploy public key"
+                value={existing.ssh_public_key}
+                ariaLabel="Mirror deploy public key"
+                testId="mirror-ssh-public-key"
+              />
+              <p className="text-[13px] text-muted-foreground">
+                Add this on the remote as a deploy key with{" "}
+                <strong className="font-medium text-foreground">write</strong> access.
+              </p>
+            </>;
+          }
+        </div>
       </div>
 
       @if (existing) {

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
 import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client.ts";
 import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env.ts";
+import { newGuardedPage } from "./dom-race-guard.ts";
 
 type AuthPatch = {
   provider_mode: "local" | "workos" | "oidc";
@@ -209,7 +210,8 @@ export const signupThroughUi: BrowserCommand<
 > = async (ctx, creds) => {
   const { context } = asPlaywright(ctx);
   await context.clearCookies();
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     // Prefer domcontentloaded — `load` hangs in CI while Vite finishes dep
     // optimize/reload after the harness marks the origin "ready".
@@ -260,7 +262,7 @@ export const signupThroughUi: BrowserCommand<
     }
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -269,7 +271,8 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
   // Drop session from prior signup so /login is not redirected home.
   await context.clearCookies();
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/login`, { waitUntil: "domcontentloaded" });
     try {
@@ -284,7 +287,7 @@ export const expectWorkosCta: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "login WorkOS CTA");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -302,7 +305,8 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
     oidc_client_id: "octanest-dev",
   });
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/login`, { waitUntil: "domcontentloaded" });
     await new Promise((r) => setTimeout(r, 750));
@@ -328,7 +332,7 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
     );
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
     try {
       await restoreLocalAuth(lastAdminCookie ?? cookie);
     } catch {
@@ -340,7 +344,8 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
 /** Live /status page reflects system.health via TanStack Query. */
 export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/status`, { waitUntil: "domcontentloaded" });
     await page
@@ -350,7 +355,7 @@ export const expectStatusHealthy: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "status");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -373,7 +378,8 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
     },
   ]);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   const meBodies: string[] = [];
   try {
     page.on(
@@ -409,7 +415,7 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
     }
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -549,7 +555,8 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
   const seed = await seedForgeRepo();
   await injectSessionCookie(context, seed.cookie);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}`, {
       waitUntil: "domcontentloaded",
@@ -573,7 +580,7 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "repo packages");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -588,7 +595,8 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
   const seed = await seedForgeRepo();
   await injectSessionCookie(context, seed.cookie);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   const title = `E2E issue ${Date.now()}`;
   try {
     await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/issues/new`, {
@@ -667,7 +675,7 @@ export const expectForgeIssuesCrudFlow: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "issue after close");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -689,7 +697,8 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
   });
   await injectSessionCookie(context, seed.cookie);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   const releaseTitle = `E2E release ${tag}`;
   try {
     await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/releases/new`, {
@@ -742,7 +751,7 @@ export const expectForgeReleasesCrudFlow: BrowserCommand<[]> = async (ctx) => {
       `release detail missing tag/title. url=${page.url()} body=${(await page.content()).slice(0, 1000)}`,
     );
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -758,7 +767,8 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/admin/lfs`, {
       waitUntil: "domcontentloaded",
@@ -824,7 +834,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
     }
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -857,7 +867,8 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
   }
 
   const keyTitle = `e2e-key-${suffix}`;
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.goto(`${webOrigin()}/settings/ssh-keys`, {
       waitUntil: "domcontentloaded",
@@ -930,7 +941,7 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
     assertNoOctaneOverlay(await page.content(), "org settings labels");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -943,7 +954,8 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
 
   // --- Unhappy: anonymous ---
   await context.clearCookies();
-  const anon = await context.newPage();
+  const anonGuard = await newGuardedPage(context);
+  const anon = anonGuard.page;
   try {
     await anon.goto(`${webOrigin()}/`, {
       waitUntil: "domcontentloaded",
@@ -962,14 +974,15 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
       throw new Error("anonymous chrome unexpectedly exposed Account menu");
     }
   } finally {
-    await anon.close();
+    await anonGuard.close("stack-browser-anon");
   }
 
   // --- Happy: signed-in forge admin ---
   await context.clearCookies();
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto(`${webOrigin()}/`, {
@@ -989,7 +1002,7 @@ export const expectChromeCreateAndAccountMenusFlow: BrowserCommand<[]> = async (
     assertNoOctaneOverlay(await page.content(), "signed-in chrome menus");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
 
@@ -1002,13 +1015,10 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
   await context.clearCookies();
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
-  const page = await context.newPage();
-  const pageErrors: string[] = [];
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  const pageErrors = pageGuard.pageErrors;
   try {
-    page.on("pageerror", ((err: Error) => {
-      pageErrors.push(err?.message ?? String(err));
-    }) as (...args: never[]) => void);
-
     await page.goto(`${webOrigin()}/new`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -1084,18 +1094,9 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
       );
     }
 
-    const races = pageErrors.filter((m) =>
-      /insertBefore|HierarchyRequestError|NotFoundError|The node before which/i.test(m),
-    );
-    if (races.length > 0) {
-      throw new Error(`/new template pick pageerror: ${races.join(" | ")}`);
-    }
-    if (pageErrors.length > 0) {
-      throw new Error(`/new template pick unexpected pageerror: ${pageErrors.join(" | ")}`);
-    }
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("/new template pick");
   }
 };
 
@@ -1113,7 +1114,8 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
   // Unhappy first (same order as chrome menus): anonymous cannot open settings.
   // Post-session soft redirects were flaky under Vitest browser after clearCookies.
   await context.clearCookies();
-  const anon = await context.newPage();
+  const anonGuard = await newGuardedPage(context);
+  const anon = anonGuard.page;
   try {
     await anon.goto(`${webOrigin()}/settings/general`, {
       waitUntil: "domcontentloaded",
@@ -1133,14 +1135,15 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       }
     }
   } finally {
-    await anon.close();
+    await anonGuard.close("stack-browser-anon");
   }
 
   await context.clearCookies();
   const { cookie } = await ensureForgeAdminSession();
   await injectSessionCookie(context, cookie);
 
-  const page = await context.newPage();
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
   try {
     // Signed-in home dashboard (happy).
     await page.goto(`${webOrigin()}/`, {
@@ -1253,6 +1256,6 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
     assertNoOctaneOverlay(await page.content(), "settings profile avatar controls");
     return true;
   } finally {
-    await page.close();
+    await pageGuard.close("stack-browser");
   }
 };
