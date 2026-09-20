@@ -63,6 +63,7 @@ async fn main() {
                 eprintln!("migration failed: {e}");
                 std::process::exit(1);
             }
+            tracing::info!("database migrations applied");
         } else {
             tracing::info!(
                 "OCTANEST_AUTO_MIGRATE=false; run `make db-migrate` to apply migrations"

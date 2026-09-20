@@ -46,8 +46,8 @@ export default defineRailway((ctx) => {
       ],
     },
     healthcheck: "/health",
-    // Production stays manual-first-boot (AUTO_MIGRATE=false). Preview and every
-    // PR Environment cloned from preview migrate on boot so ephemeral DBs get schema.
+    // All environments migrate on API boot (including production promote). A
+    // failed migration exits before listen so Railway keeps the previous replica.
     volumeMounts: {
       "/var": forgeData,
     },
@@ -56,7 +56,7 @@ export default defineRailway((ctx) => {
       // Set per environment in the dashboard (preview / staging / production).
       OCTANEST_ENV: preserve(),
       OCTANEST_DB_DIALECT: "postgres",
-      OCTANEST_AUTO_MIGRATE: ctx.isEnvironment("production") ? "false" : "true",
+      OCTANEST_AUTO_MIGRATE: "true",
       OCTANEST_ALLOW_SIGNUP: "true",
       // Align Railway healthcheck PORT with the API listen address.
       PORT: "8080",

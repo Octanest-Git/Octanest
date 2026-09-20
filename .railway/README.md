@@ -67,9 +67,9 @@ IaC sets public browser/SSH advertise vars from the **gateway** domain (not `pre
 | `OCTANEST_PUBLIC_ORIGIN` / `OCTANEST_CORS_ORIGINS` (api + web origin) | `https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
 | `OCTANEST_SSH_HOST` | `${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
 | `OCTANEST_API_ORIGIN` (web) | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` |
-| `OCTANEST_AUTO_MIGRATE` | `true` except **production** (`false`) |
+| `OCTANEST_AUTO_MIGRATE` | `true` on all environments (including production) |
 
-PR Environments inherit from `preview`; dynamic gateway refs + auto-migrate avoid empty schemas and stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
+PR Environments inherit from `preview`; dynamic gateway refs and auto-migrate on every environment (including production) keep schema current and avoid stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
 
 On **`web`**, set `OCTANEST_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,octanest.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
 
