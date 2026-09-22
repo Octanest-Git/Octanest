@@ -120,6 +120,15 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
     ],
   },
   {
+    route: "settings/emails.tsrx",
+    coverage: [
+      {
+        kind: "happy-dom",
+        test: "apps/web/src/routes/settings/emails.integration.test.ts",
+      },
+    ],
+  },
+  {
     route: "settings/ssh-keys.tsrx",
     coverage: [
       {

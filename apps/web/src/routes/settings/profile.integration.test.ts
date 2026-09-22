@@ -1,24 +1,34 @@
 /**
- * RESEARCH P1 / D-QH-03 — settings/profile export/render contracts (happy-dom).
+ * Account page (`/settings/profile`): profile fields + email addresses section.
  */
 import { createElement } from "octane";
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 const getProfileMock = vi.fn();
+const listMock = vi.fn();
 const meMock = vi.fn();
+const verifyMock = vi.fn();
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
     auth: {
       me: (...args: unknown[]) => meMock(...args),
+      verify: (...args: unknown[]) => verifyMock(...args),
       logout: vi.fn(),
       logoutAll: vi.fn(),
     },
     user: {
       getProfile: (...args: unknown[]) => getProfileMock(...args),
       updateProfile: vi.fn(),
+    },
+    email: {
+      list: (...args: unknown[]) => listMock(...args),
+      add: vi.fn(),
+      remove: vi.fn(),
+      setPrimary: vi.fn(),
+      resendVerify: vi.fn(),
     },
   },
 }));
@@ -41,6 +51,7 @@ type LoaderShape =
         must_change_credentials: boolean;
         default_branch: string;
       };
+      emails: unknown[];
     };
 
 let loaderData: LoaderShape;
@@ -72,7 +83,7 @@ import { ProfilePage, Route } from "./profile";
 
 const readyUser = {
   id: "u1",
-  email: "profile@octanest.local",
+  email: "ada@example.com",
   username: "profileuser",
   display_name: "Profile User",
   bio: "",
@@ -84,31 +95,100 @@ const readyUser = {
   default_branch: "main",
 };
 
+const readyEmails = [
+  {
+    id: "e1",
+    email: "ada@example.com",
+    is_primary: true,
+    verified: true,
+    verified_at: "2026-01-01T00:00:00Z",
+    created_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "e2",
+    email: "work@example.com",
+    is_primary: false,
+    verified: false,
+    verified_at: null,
+    created_at: "2026-01-02T00:00:00Z",
+  },
+];
+
+beforeEach(() => {
+  getProfileMock.mockReset();
+  listMock.mockReset();
+  meMock.mockReset();
+  verifyMock.mockReset();
+  loaderData = { kind: "ready", user: readyUser, emails: readyEmails };
+  getProfileMock.mockResolvedValue({ ok: true, data: readyUser });
+  listMock.mockResolvedValue({ ok: true, data: readyEmails });
+  meMock.mockResolvedValue({ ok: true, data: readyUser });
+});
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
 
-describe("/settings/profile Wave 0 contracts (RESEARCH P1)", () => {
+describe("/settings/profile (Account)", () => {
   it("exports Route and ProfilePage", () => {
     expect(Route).toBeTruthy();
     expect(typeof ProfilePage).toBe("function");
   });
 
-  it("renders profile form when loader is ready", async () => {
-    loaderData = { kind: "ready", user: readyUser };
-    getProfileMock.mockResolvedValue({ ok: true, data: readyUser });
-    meMock.mockResolvedValue({ ok: true, data: readyUser });
-
+  it("renders Account heading, profile form, and emails section", async () => {
     renderWithQueryClient(ProfilePage);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Profile" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "Account" })).toBeInTheDocument();
     });
     expect(screen.getByDisplayValue("profileuser")).toBeInTheDocument();
-    // Profile is profile-only — theme / default branch / logout live on General.
+    expect(screen.getByTestId("settings-account-emails")).toBeInTheDocument();
+    expect(screen.getAllByText("ada@example.com").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Primary")).toBeInTheDocument();
+    expect(screen.getByText("Primary address")).toBeInTheDocument();
+    expect(screen.getByTestId("email-primary-badge")).toBeInTheDocument();
+    expect(screen.getByText(/Primary email/)).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Make primary" })).not.toBeInTheDocument();
+    const add = screen.getAllByRole("button", { name: /Add email address/i })[0]!;
+    expect(add).toBeInTheDocument();
+    expect(add).not.toBeDisabled();
+    // Theme / default branch / logout live on General.
     expect(screen.queryByLabelText("Default branch name")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Log out" })).not.toBeInTheDocument();
     expect(screen.queryByRole("listbox", { name: "Theme" })).not.toBeInTheDocument();
+  });
+
+  it("settings nav labels Account under Settings header", async () => {
+    const { container } = renderWithQueryClient(ProfilePage);
+
+    await waitFor(() => {
+      expect(container.querySelector('nav[aria-label="Account settings"]')).toBeTruthy();
+    });
+    const nav = container.querySelector('nav[aria-label="Account settings"]')!;
+    expect(nav.querySelector("p")?.textContent).toBe("Settings");
+    const account = nav.querySelector('a[href="/settings/profile"]');
+    expect(account?.textContent).toBe("Account");
+    expect(account?.getAttribute("aria-current")).toBe("page");
+    expect(nav.querySelector('a[href="/settings/emails"]')).toBeNull();
+  });
+
+  it("Enter code opens OTP panel for unverified secondary", async () => {
+    renderWithQueryClient(ProfilePage);
+
+    await waitFor(() => {
+      expect(screen.getByText("work@example.com")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Enter code" }).click();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("settings-email-verify-code")).toBeInTheDocument();
+    });
+    const panel = screen.getByTestId("settings-email-verify-code");
+    expect(panel.textContent).toMatch(/We sent an 8-digit code to/);
+    expect(panel.querySelector("#account-email-verify-code")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Verify email" })).toBeDisabled();
   });
 });

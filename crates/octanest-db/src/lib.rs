@@ -29,6 +29,7 @@ pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
 pub mod gpg_keys;
+pub mod user_emails;
 pub mod stars;
 pub mod templates;
 pub mod topics;
@@ -64,6 +65,7 @@ pub use watches::RepoWatcherListRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
 pub use gpg_keys::GpgKeyRow;
+pub use user_emails::UserEmailRow;
 pub use templates::{InstanceTemplatePackRow, TemplateRepoListRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
@@ -1492,7 +1494,7 @@ impl Database {
         role: octanest_core::Role,
     ) -> Result<UserRow, String> {
         let pool = self.require_pool()?;
-        users::insert_user(
+        let user = users::insert_user(
             pool,
             id,
             email,
@@ -1503,7 +1505,13 @@ impl Database {
             avatar_path,
             role,
         )
-        .await
+        .await?;
+        // Mirror primary into user_emails (idempotent if backfill already ran).
+        if user_emails::find_primary_for_user(pool, id).await?.is_none() {
+            let email_id = format!("{id}-primary-email");
+            let _ = user_emails::create(pool, &email_id, id, email, true, None).await;
+        }
+        Ok(user)
     }
 
     pub async fn find_user_by_email(&self, email: &str) -> Result<Option<UserRow>, String> {
@@ -1567,11 +1575,24 @@ impl Database {
         id: &str,
         at: &str,
     ) -> Result<UserRow, String> {
-        users::set_email_verified_at(self.require_pool()?, id, at).await
+        let pool = self.require_pool()?;
+        let user = users::set_email_verified_at(pool, id, at).await?;
+        if let Some(primary) = user_emails::find_primary_for_user(pool, id).await? {
+            let _ = user_emails::set_verified_at(pool, &primary.id, Some(at)).await;
+        } else {
+            let email_id = format!("{id}-primary-email");
+            let _ = user_emails::create(pool, &email_id, id, &user.email, true, Some(at)).await;
+        }
+        Ok(user)
     }
 
     pub async fn clear_email_verified_at(&self, id: &str) -> Result<UserRow, String> {
-        users::clear_email_verified_at(self.require_pool()?, id).await
+        let pool = self.require_pool()?;
+        let user = users::clear_email_verified_at(pool, id).await?;
+        if let Some(primary) = user_emails::find_primary_for_user(pool, id).await? {
+            let _ = user_emails::set_verified_at(pool, &primary.id, None).await;
+        }
+        Ok(user)
     }
 
     pub async fn set_password_hash(
@@ -1583,7 +1604,16 @@ impl Database {
     }
 
     pub async fn update_user_email(&self, id: &str, email: &str) -> Result<UserRow, String> {
-        users::update_user_email(self.require_pool()?, id, email).await
+        let pool = self.require_pool()?;
+        let email = email.trim().to_ascii_lowercase();
+        let user = users::update_user_email(pool, id, &email).await?;
+        if let Some(primary) = user_emails::find_primary_for_user(pool, id).await? {
+            let _ = user_emails::update_email_address(pool, &primary.id, &email).await;
+        } else {
+            let email_id = format!("{id}-primary-email");
+            let _ = user_emails::create(pool, &email_id, id, &email, true, None).await;
+        }
+        Ok(user)
     }
 
     pub async fn set_must_change_credentials(
@@ -1610,11 +1640,37 @@ impl Database {
         expires_at: &str,
         issue_count: i32,
     ) -> Result<email_tokens::EmailTokenRow, String> {
+        self.upsert_email_token_for_target(
+            id,
+            user_id,
+            purpose,
+            "",
+            token_hash,
+            otp_hash,
+            expires_at,
+            issue_count,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn upsert_email_token_for_target(
+        &self,
+        id: &str,
+        user_id: &str,
+        purpose: &str,
+        target_email: &str,
+        token_hash: &str,
+        otp_hash: &str,
+        expires_at: &str,
+        issue_count: i32,
+    ) -> Result<email_tokens::EmailTokenRow, String> {
         email_tokens::upsert_by_user_purpose(
             self.require_pool()?,
             id,
             user_id,
             purpose,
+            target_email,
             token_hash,
             otp_hash,
             expires_at,
@@ -1642,7 +1698,18 @@ impl Database {
         user_id: &str,
         purpose: &str,
     ) -> Result<Option<email_tokens::EmailTokenRow>, String> {
-        email_tokens::find_by_user_purpose(self.require_pool()?, user_id, purpose).await
+        self.find_email_token_by_user_purpose_target(user_id, purpose, "")
+            .await
+    }
+
+    pub async fn find_email_token_by_user_purpose_target(
+        &self,
+        user_id: &str,
+        purpose: &str,
+        target_email: &str,
+    ) -> Result<Option<email_tokens::EmailTokenRow>, String> {
+        email_tokens::find_by_user_purpose(self.require_pool()?, user_id, purpose, target_email)
+            .await
     }
 
     pub async fn increment_email_token_attempts(&self, id: &str) -> Result<i32, String> {
@@ -1660,7 +1727,85 @@ impl Database {
         purpose: &str,
         created_at: &str,
     ) -> Result<(), String> {
-        email_tokens::set_created_at(self.require_pool()?, user_id, purpose, created_at).await
+        email_tokens::set_created_at(self.require_pool()?, user_id, purpose, "", created_at).await
+    }
+
+    // --- user emails ---
+
+    pub async fn create_user_email(
+        &self,
+        id: &str,
+        user_id: &str,
+        email: &str,
+        is_primary: bool,
+        verified_at: Option<&str>,
+    ) -> Result<UserEmailRow, String> {
+        user_emails::create(
+            self.require_pool()?,
+            id,
+            user_id,
+            email,
+            is_primary,
+            verified_at,
+        )
+        .await
+    }
+
+    pub async fn find_user_email_by_id(
+        &self,
+        id: &str,
+    ) -> Result<Option<UserEmailRow>, String> {
+        user_emails::find_by_id(self.require_pool()?, id).await
+    }
+
+    pub async fn find_user_email_by_address(
+        &self,
+        email: &str,
+    ) -> Result<Option<UserEmailRow>, String> {
+        user_emails::find_by_email(self.require_pool()?, email).await
+    }
+
+    pub async fn list_user_emails(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<UserEmailRow>, String> {
+        user_emails::list_for_user(self.require_pool()?, user_id).await
+    }
+
+    pub async fn count_user_emails(&self, user_id: &str) -> Result<i64, String> {
+        user_emails::count_for_user(self.require_pool()?, user_id).await
+    }
+
+    pub async fn set_user_email_verified_at(
+        &self,
+        id: &str,
+        verified_at: Option<&str>,
+    ) -> Result<UserEmailRow, String> {
+        user_emails::set_verified_at(self.require_pool()?, id, verified_at).await
+    }
+
+    pub async fn set_user_email_primary(&self, id: &str) -> Result<UserEmailRow, String> {
+        let pool = self.require_pool()?;
+        let primary = user_emails::set_primary(pool, id).await?;
+        // Mirror onto users.email / email_verified_at.
+        users::update_user_email(pool, &primary.user_id, &primary.email).await?;
+        if let Some(at) = primary.verified_at.as_deref() {
+            users::set_email_verified_at(pool, &primary.user_id, at).await?;
+        } else {
+            users::clear_email_verified_at(pool, &primary.user_id).await?;
+        }
+        Ok(primary)
+    }
+
+    pub async fn delete_user_email(&self, id: &str) -> Result<(), String> {
+        user_emails::delete(self.require_pool()?, id).await
+    }
+
+    pub async fn list_verified_emails_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<String>, String> {
+        user_emails::list_verified_emails_for_user(self.require_pool()?, user_id).await
     }
 
     // --- sessions ---

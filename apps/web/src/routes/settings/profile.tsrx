@@ -1,8 +1,9 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
-import type { UserPublic } from "@octanest/api-client";
+import type { EmailListItem, UserPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { AccountEmailsSection } from "@/components/settings/account-emails-section";
 import { ProfileAvatarField } from "@/components/settings/profile-avatar-field";
 import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Button } from "@/components/ui/button";
@@ -11,20 +12,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { setAuthMeCache } from "@/lib/session-queries";
-import { fetchUserGetProfile } from "@/lib/ssr-auth";
-import { toastError, toastSuccess } from "@/lib/toast";
+import { fetchEmailList, fetchUserGetProfile } from "@/lib/ssr-auth";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
 
 export type ProfileLoaderData =
   | { kind: "unauthenticated" }
   | { kind: "error"; message: string }
-  | { kind: "ready"; user: UserPublic };
+  | { kind: "ready"; user: UserPublic; emails: EmailListItem[] };
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const BIO_MAX = 160;
 
 export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
-  head: () => ({ meta: [{ title: "Profile · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Account · Octanest" }] }),
   loader: async (): Promise<ProfileLoaderData> => {
     try {
       const res = await fetchUserGetProfile();
@@ -37,7 +38,14 @@ export const Route = createFileRoute("/settings/profile")({
           message: res.error.message || "Could not load profile.",
         };
       }
-      return { kind: "ready", user: res.data };
+      const listRes = await fetchEmailList();
+      if (!listRes.ok) {
+        return {
+          kind: "error",
+          message: listRes.error.message || "Could not load email addresses.",
+        };
+      }
+      return { kind: "ready", user: res.data, emails: listRes.data };
     } catch {
       return { kind: "error", message: NETWORK_ERROR };
     }
@@ -46,7 +54,7 @@ export const Route = createFileRoute("/settings/profile")({
 
 type Phase =
   | { kind: "loading" }
-  | { kind: "ready"; user: UserPublic }
+  | { kind: "ready"; user: UserPublic; emails: EmailListItem[] }
   | { kind: "error"; message: string };
 
 /** Exported for profile.integration.test.ts (RESEARCH P1 / D-QH-03). */
@@ -63,7 +71,9 @@ export function ProfilePage() @{
   const initialUser = loaderData?.kind === "ready" ? loaderData.user : null;
 
   const [phase, setPhase] = useState<Phase>(() => {
-    if (loaderData?.kind === "ready") return { kind: "ready", user: loaderData.user };
+    if (loaderData?.kind === "ready") {
+      return { kind: "ready", user: loaderData.user, emails: loaderData.emails };
+    }
     if (loaderData?.kind === "error") {
       return { kind: "error", message: loaderData.message };
     }
@@ -100,7 +110,10 @@ export function ProfilePage() @{
           setPending(false);
           return;
         }
-        setPhase({ kind: "ready", user: res.data });
+        setPhase((prev) => {
+          if (prev.kind !== "ready") return { kind: "ready", user: res.data, emails: [] };
+          return { kind: "ready", user: res.data, emails: prev.emails };
+        });
         profileForm.setFieldValue("display_name", res.data.display_name ?? "");
         profileForm.setFieldValue("username", res.data.username ?? "");
         profileForm.setFieldValue("bio", res.data.bio ?? "");
@@ -123,7 +136,7 @@ export function ProfilePage() @{
       profileForm.setFieldValue("username", user.username ?? "");
       profileForm.setFieldValue("bio", user.bio ?? "");
       setAvatarUrl(user.avatar_url);
-      setPhase({ kind: "ready", user });
+      setPhase({ kind: "ready", user, emails: loaderData.emails });
       return;
     }
     if (loaderData.kind === "error") {
@@ -142,12 +155,21 @@ export function ProfilePage() @{
           window.location.assign("/login?returnTo=/settings/profile");
           return;
         }
+        const listRes = await apiClient.email.list();
+        if (cancelled) return;
+        if (!listRes.ok) {
+          setPhase({
+            kind: "error",
+            message: listRes.error.message || "Could not load email addresses.",
+          });
+          return;
+        }
         const user = res.data;
         profileForm.setFieldValue("display_name", user.display_name ?? "");
         profileForm.setFieldValue("username", user.username ?? "");
         profileForm.setFieldValue("bio", user.bio ?? "");
         setAvatarUrl(user.avatar_url);
-        setPhase({ kind: "ready", user });
+        setPhase({ kind: "ready", user, emails: listRes.data });
       } catch {
         if (cancelled) return;
         setPhase({ kind: "error", message: NETWORK_ERROR });
@@ -185,7 +207,7 @@ export function ProfilePage() @{
         if (prev.kind !== "ready") return prev;
         const nextUser = { ...prev.user, avatar_url: json.avatar_url };
         setAuthMeCache(queryClient, nextUser);
-        return { kind: "ready", user: nextUser };
+        return { kind: "ready", user: nextUser, emails: prev.emails };
       });
       toastSuccess("Profile picture updated.");
       setAvatarUploadPending(false);
@@ -220,7 +242,7 @@ export function ProfilePage() @{
         if (prev.kind !== "ready") return prev;
         const nextUser = { ...prev.user, avatar_url: null };
         setAuthMeCache(queryClient, nextUser);
-        return { kind: "ready", user: nextUser };
+        return { kind: "ready", user: nextUser, emails: prev.emails };
       });
       toastSuccess("Profile picture removed.");
       setAvatarRemovePending(false);
@@ -240,7 +262,7 @@ export function ProfilePage() @{
     } @else {
       <AccountSettingsLayout active="profile" data-testid="settings-profile-page">
         <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-          Profile
+          Account
         </h1>
 
         <div className="mt-8 flex flex-col gap-6">
@@ -325,6 +347,8 @@ export function ProfilePage() @{
             </Button>
           </form>
         </div>
+
+        <AccountEmailsSection initialEmails={phase.emails} />
       </AccountSettingsLayout>;
     }
   }

@@ -190,7 +190,7 @@ pub async fn build_allowed_signers_file(
     }
 
     let mut seen_users = HashSet::new();
-    for (email, author) in resolved {
+    for (_email, author) in resolved {
         let Some(uid) = author.user_id.as_deref() else {
             continue;
         };
@@ -200,6 +200,26 @@ pub async fn build_allowed_signers_file(
         let Ok(keys) = db.list_ssh_keys_for_user(uid).await else {
             continue;
         };
+        let Ok(verified_emails) = db.list_verified_emails_for_user(uid).await else {
+            continue;
+        };
+        // Always include the commit email that resolved this user, plus every
+        // verified address on the account (forge multi-email principals).
+        let mut principals: HashSet<String> = HashSet::new();
+        for e in verified_emails {
+            let t = e.trim().to_string();
+            if !t.is_empty() {
+                principals.insert(t);
+            }
+        }
+        for (page_email, page_author) in resolved {
+            if page_author.user_id.as_deref() == Some(uid) {
+                let t = page_email.trim();
+                if !t.is_empty() {
+                    principals.insert(t.to_string());
+                }
+            }
+        }
         for key_row in keys {
             if !key_row.can_sign {
                 continue;
@@ -207,11 +227,9 @@ pub async fn build_allowed_signers_file(
             let Some((key_type, key)) = openssh_key_material(&key_row.public_key) else {
                 continue;
             };
-            let e = email.trim();
-            if e.is_empty() {
-                continue;
+            for e in &principals {
+                lines.push(format!("{e} namespaces=\"git\" {key_type} {key}"));
             }
-            lines.push(format!("{e} namespaces=\"git\" {key_type} {key}"));
         }
     }
 

@@ -174,7 +174,7 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     });
   }, 30_000);
 
-  it("settings secondary nav General | Profile | Personal access tokens | SSH and GPG keys", async () => {
+  it("settings secondary nav General | Account | Personal access tokens | SSH and GPG keys", async () => {
     const mod = await loadSshKeysModule();
     const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(SshKeysPage);
@@ -184,15 +184,17 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     });
 
     const nav = container.querySelector('nav[aria-label="Account settings"]')!;
+    expect(nav.querySelector("p")?.textContent).toBe("Settings");
     const general = nav.querySelector('a[href="/settings/general"]');
-    const profile = nav.querySelector('a[href="/settings/profile"]');
+    const account = nav.querySelector('a[href="/settings/profile"]');
     const tokens = nav.querySelector('a[href="/settings/tokens"]');
     const sshKeys = nav.querySelector('a[href="/settings/ssh-keys"]');
     expect(general?.textContent).toBe("General");
-    expect(profile?.textContent).toBe("Profile");
+    expect(account?.textContent).toBe("Account");
     expect(tokens?.textContent).toBe("Personal access tokens");
     expect(sshKeys?.textContent).toBe("SSH and GPG keys");
     expect(sshKeys?.getAttribute("aria-current")).toBe("page");
+    expect(nav.querySelector('a[href="/settings/emails"]')).toBeNull();
   }, 15_000);
 
   it("list rows show SHA256 fingerprint", async () => {

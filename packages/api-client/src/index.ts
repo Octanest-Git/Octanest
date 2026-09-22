@@ -1460,6 +1460,24 @@ export type RevokeGpgKeyRequest = {
   id: string;
 };
 
+/** `email.add` input — secondary account email (verified via magic/OTP). */
+export type AddEmailRequest = {
+  email: string;
+};
+
+export type EmailIdRequest = {
+  id: string;
+};
+
+export type EmailListItem = {
+  id: string;
+  email: string;
+  is_primary: boolean;
+  verified: boolean;
+  verified_at?: string | null;
+  created_at: string;
+};
+
 export type IssueState = "open" | "closed";
 
 export type LabelScope = "org" | "repo";
@@ -2652,6 +2670,21 @@ export function createClient(opts: CreateClientOptions) {
       revoke: (input: RevokeGpgKeyRequest) =>
         rpcCall<{ ok: boolean }>(opts, "gpgKey.revoke", input),
     },
+    email: {
+      list: () => rpcCall<EmailListItem[]>(opts, "email.list", {}),
+      add: (input: AddEmailRequest) =>
+        rpcCall<EmailListItem>(opts, "email.add", input),
+      remove: (input: EmailIdRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "email.remove", input),
+      setPrimary: (input: EmailIdRequest) =>
+        rpcCall<EmailListItem>(opts, "email.setPrimary", input),
+      resendVerify: (input: EmailIdRequest) =>
+        rpcCall<{ ok: boolean; already_verified?: boolean }>(
+          opts,
+          "email.resendVerify",
+          input,
+        ),
+    },
     admin: {
       auth: {
         getSettings: () =>
@@ -3251,6 +3284,61 @@ export function gpgKeyRevokeMutationOptions(client: OctanestClient) {
   };
 }
 
+export function emailListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["email", "list"] as const,
+    queryFn: async () => {
+      const res = await client.email.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function emailAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["email", "add"] as const,
+    mutationFn: async (input: AddEmailRequest) => {
+      const res = await client.email.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function emailRemoveMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["email", "remove"] as const,
+    mutationFn: async (input: EmailIdRequest) => {
+      const res = await client.email.remove(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function emailSetPrimaryMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["email", "setPrimary"] as const,
+    mutationFn: async (input: EmailIdRequest) => {
+      const res = await client.email.setPrimary(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function emailResendVerifyMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["email", "resendVerify"] as const,
+    mutationFn: async (input: EmailIdRequest) => {
+      const res = await client.email.resendVerify(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function issueListQueryOptions(
   client: OctanestClient,
   input: IssueListRequest,
@@ -3630,6 +3718,7 @@ export const queryOptions = {
   patList: patListQueryOptions,
   sshKeyList: sshKeyListQueryOptions,
   gpgKeyList: gpgKeyListQueryOptions,
+  emailList: emailListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
@@ -3647,5 +3736,9 @@ export const mutationOptions = {
   sshKeyRevoke: sshKeyRevokeMutationOptions,
   gpgKeyAdd: gpgKeyAddMutationOptions,
   gpgKeyRevoke: gpgKeyRevokeMutationOptions,
+  emailAdd: emailAddMutationOptions,
+  emailRemove: emailRemoveMutationOptions,
+  emailSetPrimary: emailSetPrimaryMutationOptions,
+  emailResendVerify: emailResendVerifyMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };

@@ -121,7 +121,8 @@ async fn build_gpg_home(
 
 /// Apply forge Verified policy after crypto `%G?` succeeded.
 ///
-/// - Committer email must resolve to a user with a verified account email (or noreply).
+/// - Committer email must resolve to a user, and that exact address must be
+///   verified on the account (or be a forge noreply address).
 /// - For GPG signatures, committer email must appear in a registered key UID.
 pub async fn apply_verified_policy(
     db: &Database,
@@ -147,17 +148,20 @@ pub async fn apply_verified_policy(
         return "unknown".into();
     };
 
-    // Prefer primary email verified: user row must exist; noreply counts as forge-recognized.
-    let Ok(user) = db.find_user_by_id(user_id).await else {
-        return "unknown".into();
-    };
-    let Some(user) = user else {
-        return "unknown".into();
-    };
-    let email_ok = user.email_verified_at.is_some()
-        || author_resolve::is_forge_noreply_email(email);
-    if !email_ok {
-        return "unknown".into();
+    // Noreply is always forge-recognized for the resolved user.
+    if author_resolve::is_forge_noreply_email(email) {
+        // fall through to GPG UID check below when kind is gpg
+    } else {
+        let Ok(verified) = db.list_verified_emails_for_user(user_id).await else {
+            return "unknown".into();
+        };
+        let email_l = email.to_ascii_lowercase();
+        let addr_ok = verified
+            .iter()
+            .any(|v| v.eq_ignore_ascii_case(&email_l));
+        if !addr_ok {
+            return "unknown".into();
+        }
     }
 
     if signature_kind == "gpg" {
@@ -187,4 +191,50 @@ pub fn allowed_signers_path(ring: &VerifyKeyring) -> Option<&Path> {
 #[allow(dead_code)]
 pub fn gpg_home_path(ring: &VerifyKeyring) -> Option<&Path> {
     ring.gpg_home.as_deref()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use octanest_core::Role;
+    use octanest_db::Database;
+
+    #[tokio::test]
+    async fn verified_policy_requires_that_address_verified() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!("sqlite:{}", dir.path().join("policy.db").display());
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+
+        let user = db
+            .create_user(
+                "u-policy",
+                "primary@ex.com",
+                "policyuser",
+                Some("hash"),
+                "P",
+                "",
+                None,
+                Role::User,
+            )
+            .await
+            .unwrap();
+        let now = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        db.set_email_verified_at(&user.id, &now).await.unwrap();
+        db.create_user_email("sec-unverified", &user.id, "sec@ex.com", false, None)
+            .await
+            .unwrap();
+
+        let status =
+            apply_verified_policy(&db, "sec@ex.com", "sec@ex.com", "valid", "ssh").await;
+        assert_eq!(status, "unknown");
+
+        db.set_user_email_verified_at("sec-unverified", Some(&now))
+            .await
+            .unwrap();
+        let status =
+            apply_verified_policy(&db, "sec@ex.com", "sec@ex.com", "valid", "ssh").await;
+        assert_eq!(status, "valid");
+    }
 }

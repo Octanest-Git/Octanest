@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { InputOtp } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
+import { safeReturnTo } from "@/lib/return-to";
 
 export const Route = createFileRoute("/verify")({
   component: VerifyPage,
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/verify")({
 });
 
 const SUPPORT_DEFAULT =
-  "We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in.";
+  "We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in. Codes also work for additional addresses on your account.";
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 const INVALID_EXPIRED =
   "That code or link is invalid or expired. Request a new email and try again.";
@@ -44,6 +44,18 @@ function loginHrefWithToken(token: string | null): string {
   return `/login?returnTo=${encodeURIComponent(verifyPath)}`;
 }
 
+/** After redeem: honor returnTo; else Account when primary was already verified (secondary). */
+function verifySuccessHref(primaryAlreadyVerified: boolean): string {
+  if (typeof window === "undefined") {
+    return primaryAlreadyVerified ? "/settings/profile" : "/";
+  }
+  const raw = new URLSearchParams(window.location.search).get("returnTo");
+  if (raw != null && raw.trim() !== "") {
+    return safeReturnTo(raw);
+  }
+  return primaryAlreadyVerified ? "/settings/profile" : "/";
+}
+
 type Phase =
   | { kind: "loading" }
   | { kind: "need-sign-in"; token: string | null }
@@ -53,6 +65,7 @@ type Phase =
       user: UserPublic;
       token: string | null;
       verifyingToken: boolean;
+      primaryAlreadyVerified: boolean;
     };
 
 /** Exported for verify.integration.test.ts (RESEARCH P1 / D-QH-03). */
@@ -75,6 +88,7 @@ export function VerifyPage() @{
       if (trimmed.length !== 8 || !/^\d{8}$/.test(trimmed)) return;
       submitLock.current = true;
       setError("");
+      const primaryAlreadyVerified = phase.kind === "form" ? phase.primaryAlreadyVerified : false;
       try {
         const res = await apiClient.auth.verify({ code: trimmed });
         if (!res.ok) {
@@ -86,7 +100,7 @@ export function VerifyPage() @{
           submitLock.current = false;
           return;
         }
-        window.location.assign(safeReturnTo(readReturnToFromLocation()));
+        window.location.assign(verifySuccessHref(primaryAlreadyVerified));
       } catch {
         setError(NETWORK_ERROR);
         submitLock.current = false;
@@ -105,7 +119,9 @@ export function VerifyPage() @{
           setPhase({ kind: "need-sign-in", token });
           return;
         }
-        if (me.data.email_verified) {
+        // Primary verified + no token → nothing to redeem here (secondaries use Account OTP
+        // or a magic link with ?token=).
+        if (me.data.email_verified && !token) {
           setPhase({ kind: "already-verified" });
           return;
         }
@@ -114,6 +130,7 @@ export function VerifyPage() @{
           user: me.data,
           token,
           verifyingToken: Boolean(token),
+          primaryAlreadyVerified: me.data.email_verified,
         });
       } catch {
         if (cancelled) return;
@@ -131,6 +148,7 @@ export function VerifyPage() @{
     if (tokenAttempted.current) return;
     tokenAttempted.current = true;
     const token = phase.token;
+    const primaryAlreadyVerified = phase.primaryAlreadyVerified;
     let cancelled = false;
     void (async () => {
       setTokenPending(true);
@@ -145,11 +163,12 @@ export function VerifyPage() @{
             user: phase.user,
             token: null,
             verifyingToken: false,
+            primaryAlreadyVerified,
           });
           setTokenPending(false);
           return;
         }
-        window.location.assign(safeReturnTo(readReturnToFromLocation()));
+        window.location.assign(verifySuccessHref(primaryAlreadyVerified));
       } catch {
         if (cancelled) return;
         setError(NETWORK_ERROR);
@@ -158,6 +177,7 @@ export function VerifyPage() @{
           user: phase.user,
           token: null,
           verifyingToken: false,
+          primaryAlreadyVerified,
         });
         setTokenPending(false);
       }

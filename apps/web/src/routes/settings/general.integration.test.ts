@@ -112,8 +112,11 @@ describe("/settings/general", () => {
     expect(screen.getByRole("button", { name: "Log out all devices" })).toBeInTheDocument();
 
     const nav = screen.getByRole("navigation", { name: "Account settings" });
+    expect(nav.querySelector("p")?.textContent).toBe("Settings");
     expect(nav.querySelector('a[href="/settings/general"]')).toBeTruthy();
-    expect(nav.querySelector('a[href="/settings/profile"]')).toBeTruthy();
+    const account = nav.querySelector('a[href="/settings/profile"]');
+    expect(account?.textContent).toBe("Account");
+    expect(nav.querySelector('a[href="/settings/emails"]')).toBeNull();
   });
 
   it("unhappy: shows loader error message", async () => {

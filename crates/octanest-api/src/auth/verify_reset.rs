@@ -197,22 +197,15 @@ If you did not request a password reset, you can ignore this email.\n"
 ///
 /// Applies soft rate limits when `enforce_rate_limit` is true (RPC paths).
 /// Library/test helpers may pass `false` to seed a known OTP without waiting.
-pub async fn issue_verify_inner(
-    db: &octanest_db::Database,
-    user_id: &str,
-    enforce_rate_limit: bool,
-) -> Result<IssuedVerifySecrets, AppError> {
-    issue_token_inner(db, user_id, PURPOSE_VERIFY, enforce_rate_limit).await
-}
-
 async fn issue_token_inner(
     db: &octanest_db::Database,
     user_id: &str,
     purpose: &str,
+    target_email: &str,
     enforce_rate_limit: bool,
 ) -> Result<IssuedVerifySecrets, AppError> {
     let existing = db
-        .find_email_token_by_user_purpose(user_id, purpose)
+        .find_email_token_by_user_purpose_target(user_id, purpose, target_email)
         .await
         .map_err(db_err)?;
     let issue_count = if enforce_rate_limit {
@@ -231,10 +224,11 @@ async fn issue_token_inner(
     let expires_at = (Utc::now() + chrono::Duration::seconds(TTL_SECS))
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     let id = Uuid::new_v4().to_string();
-    db.upsert_email_token(
+    db.upsert_email_token_for_target(
         &id,
         user_id,
         purpose,
+        target_email,
         &token_hash,
         &otp_hash,
         &expires_at,
@@ -258,7 +252,43 @@ pub async fn issue_reset(
     db: &octanest_db::Database,
     user_id: &str,
 ) -> Result<IssuedVerifySecrets, AppError> {
-    issue_token_inner(db, user_id, PURPOSE_RESET, false).await
+    issue_token_inner(db, user_id, PURPOSE_RESET, "", false).await
+}
+
+pub async fn issue_verify_inner(
+    db: &octanest_db::Database,
+    user_id: &str,
+    enforce_rate_limit: bool,
+) -> Result<IssuedVerifySecrets, AppError> {
+    // Primary verify uses empty target (legacy) — callers that know the address
+    // should use issue_verify_for_target.
+    issue_token_inner(db, user_id, PURPOSE_VERIFY, "", enforce_rate_limit).await
+}
+
+async fn issue_verify_for_target_inner(
+    db: &octanest_db::Database,
+    user_id: &str,
+    target_email: &str,
+    enforce_rate_limit: bool,
+) -> Result<IssuedVerifySecrets, AppError> {
+    issue_token_inner(
+        db,
+        user_id,
+        PURPOSE_VERIFY,
+        target_email,
+        enforce_rate_limit,
+    )
+    .await
+}
+
+/// Issue (or replace) a verify token for a specific address — no rate limit (tests).
+pub async fn issue_verify_for_target(
+    db: &octanest_db::Database,
+    user_id: &str,
+    target_email: &str,
+) -> Result<IssuedVerifySecrets, AppError> {
+    let target = target_email.trim().to_ascii_lowercase();
+    issue_verify_for_target_inner(db, user_id, &target, false).await
 }
 
 /// Issue + send verify email with rate limits (request/resend/signup auto-send).
@@ -268,10 +298,20 @@ pub async fn issue_and_send_verify(
     email: &str,
     username: &str,
 ) -> Result<(), AppError> {
-    let secrets = issue_verify_inner(&ctx.db, user_id, true).await?;
-    let msg = build_verify_email(email, username, &secrets.magic, &secrets.otp);
+    issue_and_send_verify_for_target(ctx, user_id, email, username).await
+}
+
+/// Issue + send verify for a specific address (primary or secondary).
+pub async fn issue_and_send_verify_for_target(
+    ctx: &RpcCtx,
+    user_id: &str,
+    email: &str,
+    username: &str,
+) -> Result<(), AppError> {
+    let target = email.trim().to_ascii_lowercase();
+    let secrets = issue_verify_for_target_inner(&ctx.db, user_id, &target, true).await?;
+    let msg = build_verify_email(&target, username, &secrets.magic, &secrets.otp);
     if let Err(e) = ctx.email.send(msg).await {
-        // Never log plaintext OTP/token (T-05-08).
         tracing::error!(error = %e, "verify email send failed");
     }
     Ok(())
@@ -307,7 +347,7 @@ pub async fn request_password_reset(
 
     if let Some(user) = user {
         if user.password_hash.is_some() {
-            match issue_token_inner(&ctx.db, &user.id, PURPOSE_RESET, true).await {
+            match issue_token_inner(&ctx.db, &user.id, PURPOSE_RESET, "", true).await {
                 Ok(secrets) => {
                     let msg =
                         build_reset_email(&user.email, &user.username, &secrets.magic, &secrets.otp);
@@ -391,17 +431,29 @@ pub async fn verify(ctx: &RpcCtx, input: serde_json::Value) -> Result<UserPublic
         return Err(AppError::new("rpc.bad_input", "provide token or code"));
     }
 
-    // Session-scoped row lookup so failed attempts attribute to this issuance (T-05-06).
-    let Some(row) = ctx
-        .db
-        .find_email_token_by_user_purpose(&session.user_id, PURPOSE_VERIFY)
-        .await
-        .map_err(db_err)?
-    else {
+    // Resolve by hash so secondary-address tokens (non-empty target_email) redeem.
+    let row = if let Some(token) = token {
+        ctx.db
+            .find_email_token_by_token_hash(&sha256_hex(token.as_bytes()))
+            .await
+            .map_err(db_err)?
+    } else if let Some(code) = code {
+        if code.len() != 8 || !code.chars().all(|c| c.is_ascii_digit()) {
+            None
+        } else {
+            ctx.db
+                .find_email_token_by_otp_hash(&sha256_hex(code.as_bytes()))
+                .await
+                .map_err(db_err)?
+        }
+    } else {
+        None
+    };
+    let Some(row) = row else {
         return Err(invalid_token());
     };
 
-    if row.purpose != PURPOSE_VERIFY {
+    if row.user_id != session.user_id || row.purpose != PURPOSE_VERIFY {
         return Err(invalid_token());
     }
 
@@ -413,35 +465,38 @@ pub async fn verify(ctx: &RpcCtx, input: serde_json::Value) -> Result<UserPublic
         return Err(invalid_token());
     }
 
-    let matches = if let Some(code) = code {
-        if code.len() != 8 || !code.chars().all(|c| c.is_ascii_digit()) {
-            false
-        } else {
-            sha256_hex(code.as_bytes()) == row.otp_hash
-        }
-    } else if let Some(token) = token {
-        sha256_hex(token.as_bytes()) == row.token_hash
-    } else {
-        false
-    };
-
-    if !matches {
-        let attempts = ctx
-            .db
-            .increment_email_token_attempts(&row.id)
+    // Token/OTP already matched via hash lookup above.
+    let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+    let target = row.target_email.trim().to_ascii_lowercase();
+    if target.is_empty() {
+        // Legacy primary verify token (empty target).
+        ctx.db
+            .set_email_verified_at(&session.user_id, &now)
             .await
             .map_err(db_err)?;
-        if attempts >= MAX_REDEEM_ATTEMPTS {
-            let _ = ctx.db.delete_email_token(&row.id).await;
+    } else if let Some(addr) = ctx
+        .db
+        .find_user_email_by_address(&target)
+        .await
+        .map_err(db_err)?
+    {
+        if addr.user_id != session.user_id {
+            return Err(invalid_token());
         }
+        ctx.db
+            .set_user_email_verified_at(&addr.id, Some(&now))
+            .await
+            .map_err(db_err)?;
+        if addr.is_primary {
+            ctx.db
+                .set_email_verified_at(&session.user_id, &now)
+                .await
+                .map_err(db_err)?;
+        }
+    } else {
         return Err(invalid_token());
     }
 
-    let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    ctx.db
-        .set_email_verified_at(&session.user_id, &now)
-        .await
-        .map_err(db_err)?;
     ctx.db
         .delete_email_token(&row.id)
         .await
