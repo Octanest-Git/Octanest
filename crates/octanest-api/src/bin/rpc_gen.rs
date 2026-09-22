@@ -776,6 +776,8 @@ export type RepoMirrorPublic = {
   webhook_secret_masked: string;
   poll_interval_secs: number;
   enabled: boolean;
+  /** `merge` | `exact` */
+  sync_mode: string;
   last_synced_at?: string | null;
   last_status: string;
   last_error: string;
@@ -805,6 +807,8 @@ export type RepoMirrorUpsertRequest = {
   known_hosts?: string | null;
   poll_interval_secs?: number | null;
   enabled?: boolean | null;
+  /** `merge` | `exact` */
+  sync_mode?: string | null;
 };
 
 export type RepoMirrorDeleteRequest = {

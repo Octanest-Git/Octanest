@@ -57,6 +57,12 @@ describe("MirrorSettingsPanel DOM races", () => {
       expect(screen.getByTestId("mirror-auth-https")).not.toHaveClass("hidden");
       expect(screen.getByTestId("mirror-auth-ssh")).toHaveClass("hidden");
 
+      expect(screen.getByTestId("mirror-sync-mode")).toBeInTheDocument();
+      fireEvent.click(screen.getByTestId("mirror-sync-mode-exact"));
+      await waitFor(() => {
+        expect(screen.getByTestId("mirror-exact-warning")).toBeInTheDocument();
+      });
+
       fireEvent.click(screen.getByTestId("mirror-auth-kind-ssh"));
 
       await waitFor(() => {

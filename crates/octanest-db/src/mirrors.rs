@@ -17,6 +17,8 @@ pub struct RepositoryMirrorRow {
     pub webhook_secret_ciphertext: String,
     pub poll_interval_secs: i64,
     pub enabled: bool,
+    pub sync_mode: String,
+    pub last_ref_snapshot: String,
     pub last_synced_at: Option<String>,
     pub last_status: String,
     pub last_error: String,
@@ -83,6 +85,12 @@ macro_rules! map_mirror {
                 .map_err(|e| format!("webhook_secret_ciphertext: {e}"))?,
             poll_interval_secs: poll,
             enabled: enabled_i != 0,
+            sync_mode: row
+                .try_get("sync_mode")
+                .unwrap_or_else(|_| "merge".to_string()),
+            last_ref_snapshot: row
+                .try_get("last_ref_snapshot")
+                .unwrap_or_else(|_| "{}".to_string()),
             last_synced_at: row.try_get("last_synced_at").ok(),
             last_status: row
                 .try_get("last_status")
@@ -137,7 +145,7 @@ pub async fn get_mirror_by_repo(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at::text, last_status, last_error,
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at::text, last_status, last_error,
                           created_at::text, updated_at::text
                    FROM repository_mirrors WHERE repository_id = $1"#,
             )
@@ -151,7 +159,7 @@ pub async fn get_mirror_by_repo(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE repository_id = ?"#,
             )
             .bind(repository_id)
@@ -164,7 +172,7 @@ pub async fn get_mirror_by_repo(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE repository_id = ?"#,
             )
             .bind(repository_id)
@@ -185,7 +193,7 @@ pub async fn get_mirror_by_id(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at::text, last_status, last_error,
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at::text, last_status, last_error,
                           created_at::text, updated_at::text
                    FROM repository_mirrors WHERE id = $1"#,
             )
@@ -199,7 +207,7 @@ pub async fn get_mirror_by_id(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE id = ?"#,
             )
             .bind(id)
@@ -212,7 +220,7 @@ pub async fn get_mirror_by_id(
             let row = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE id = ?"#,
             )
             .bind(id)
@@ -230,7 +238,7 @@ pub async fn list_enabled_mirrors(pool: &DbPool) -> Result<Vec<RepositoryMirrorR
             let rows = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at::text, last_status, last_error,
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at::text, last_status, last_error,
                           created_at::text, updated_at::text
                    FROM repository_mirrors WHERE enabled = TRUE"#,
             )
@@ -243,7 +251,7 @@ pub async fn list_enabled_mirrors(pool: &DbPool) -> Result<Vec<RepositoryMirrorR
             let rows = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE enabled = 1"#,
             )
             .fetch_all(p)
@@ -255,7 +263,7 @@ pub async fn list_enabled_mirrors(pool: &DbPool) -> Result<Vec<RepositoryMirrorR
             let rows = sqlx::query(
                 r#"SELECT id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                           ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                          enabled, last_synced_at, last_status, last_error, created_at, updated_at
+                          enabled, sync_mode, last_ref_snapshot, last_synced_at, last_status, last_error, created_at, updated_at
                    FROM repository_mirrors WHERE enabled = 1"#,
             )
             .fetch_all(p)
@@ -280,16 +288,19 @@ pub async fn upsert_mirror(
     webhook_secret_ciphertext: &str,
     poll_interval_secs: i64,
     enabled: bool,
+    sync_mode: &str,
+    clear_ref_snapshot: bool,
 ) -> Result<RepositoryMirrorRow, String> {
     let enabled_i: i32 = if enabled { 1 } else { 0 };
+    let snapshot_value = if clear_ref_snapshot { "{}" } else { "" };
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
                 r#"INSERT INTO repository_mirrors (
                      id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                      ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                     enabled
-                   ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                     enabled, sync_mode
+                   ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
                    ON CONFLICT (repository_id) DO UPDATE SET
                      remote_url = EXCLUDED.remote_url,
                      auth_kind = EXCLUDED.auth_kind,
@@ -308,6 +319,10 @@ pub async fn upsert_mirror(
                        ELSE EXCLUDED.webhook_secret_ciphertext END,
                      poll_interval_secs = EXCLUDED.poll_interval_secs,
                      enabled = EXCLUDED.enabled,
+                     sync_mode = EXCLUDED.sync_mode,
+                     last_ref_snapshot = CASE
+                       WHEN $13 <> '' THEN $13
+                       ELSE repository_mirrors.last_ref_snapshot END,
                      updated_at = NOW()"#,
             )
             .bind(id)
@@ -321,6 +336,8 @@ pub async fn upsert_mirror(
             .bind(webhook_secret_ciphertext)
             .bind(poll_interval_secs)
             .bind(enabled)
+            .bind(sync_mode)
+            .bind(snapshot_value)
             .execute(p)
             .await
             .map_err(|e| e.to_string())?;
@@ -330,8 +347,8 @@ pub async fn upsert_mirror(
                 r#"INSERT INTO repository_mirrors (
                      id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                      ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                     enabled, last_error
-                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?, '')
+                     enabled, sync_mode, last_error
+                   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?, '')
                    ON DUPLICATE KEY UPDATE
                      remote_url = VALUES(remote_url),
                      auth_kind = VALUES(auth_kind),
@@ -342,6 +359,8 @@ pub async fn upsert_mirror(
                      webhook_secret_ciphertext = IF(VALUES(webhook_secret_ciphertext) = '', webhook_secret_ciphertext, VALUES(webhook_secret_ciphertext)),
                      poll_interval_secs = VALUES(poll_interval_secs),
                      enabled = VALUES(enabled),
+                     sync_mode = VALUES(sync_mode),
+                     last_ref_snapshot = IF(? <> '', ?, last_ref_snapshot),
                      updated_at = CURRENT_TIMESTAMP"#,
             )
             .bind(id)
@@ -355,6 +374,9 @@ pub async fn upsert_mirror(
             .bind(webhook_secret_ciphertext)
             .bind(poll_interval_secs)
             .bind(enabled_i)
+            .bind(sync_mode)
+            .bind(snapshot_value)
+            .bind(snapshot_value)
             .execute(p)
             .await
             .map_err(|e| e.to_string())?;
@@ -383,11 +405,17 @@ pub async fn upsert_mirror(
                 } else {
                     webhook_secret_ciphertext
                 };
+                let snap = if clear_ref_snapshot {
+                    "{}"
+                } else {
+                    ex.last_ref_snapshot.as_str()
+                };
                 sqlx::query(
                     r#"UPDATE repository_mirrors SET
                          remote_url = ?, auth_kind = ?, username = ?,
                          secret_ciphertext = ?, ssh_public_key = ?, known_hosts = ?,
                          webhook_secret_ciphertext = ?, poll_interval_secs = ?, enabled = ?,
+                         sync_mode = ?, last_ref_snapshot = ?,
                          updated_at = strftime('%Y-%m-%d %H:%M:%S','now')
                        WHERE repository_id = ?"#,
                 )
@@ -400,6 +428,8 @@ pub async fn upsert_mirror(
                 .bind(wh)
                 .bind(poll_interval_secs)
                 .bind(enabled_i)
+                .bind(sync_mode)
+                .bind(snap)
                 .bind(repository_id)
                 .execute(p)
                 .await
@@ -409,8 +439,8 @@ pub async fn upsert_mirror(
                     r#"INSERT INTO repository_mirrors (
                          id, repository_id, remote_url, auth_kind, username, secret_ciphertext,
                          ssh_public_key, known_hosts, webhook_secret_ciphertext, poll_interval_secs,
-                         enabled, last_error
-                       ) VALUES (?,?,?,?,?,?,?,?,?,?,?, '')"#,
+                         enabled, sync_mode, last_error
+                       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?, '')"#,
                 )
                 .bind(id)
                 .bind(repository_id)
@@ -423,6 +453,7 @@ pub async fn upsert_mirror(
                 .bind(webhook_secret_ciphertext)
                 .bind(poll_interval_secs)
                 .bind(enabled_i)
+                .bind(sync_mode)
                 .execute(p)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -586,6 +617,50 @@ pub async fn set_webhook_secret(
                        updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?"#,
             )
             .bind(ciphertext)
+            .bind(mirror_id)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+
+pub async fn update_mirror_ref_snapshot(
+    pool: &DbPool,
+    mirror_id: &str,
+    snapshot_json: &str,
+) -> Result<(), String> {
+    match pool {
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                r#"UPDATE repository_mirrors SET last_ref_snapshot = $2, updated_at = NOW()
+                   WHERE id = $1"#,
+            )
+            .bind(mirror_id)
+            .bind(snapshot_json)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                r#"UPDATE repository_mirrors SET last_ref_snapshot = ?,
+                       updated_at = CURRENT_TIMESTAMP WHERE id = ?"#,
+            )
+            .bind(snapshot_json)
+            .bind(mirror_id)
+            .execute(p)
+            .await
+            .map_err(|e| e.to_string())?;
+        }
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                r#"UPDATE repository_mirrors SET last_ref_snapshot = ?,
+                       updated_at = strftime('%Y-%m-%d %H:%M:%S','now') WHERE id = ?"#,
+            )
+            .bind(snapshot_json)
             .bind(mirror_id)
             .execute(p)
             .await

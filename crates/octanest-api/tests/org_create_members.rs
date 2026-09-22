@@ -348,6 +348,42 @@ async fn org_get_and_list_mine() {
     assert_eq!(get_v["data"]["display_name"], "Get Org");
     assert_eq!(get_v["data"]["member_base_permission"], "none");
 
+    // Anonymous org overview (public profile parity with user.getPublicProfile).
+    let (anon_status, anon_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.get","input":{"slug":"get-org"}}"#,
+        None,
+    )
+    .await;
+    assert_eq!(anon_status, StatusCode::OK, "org.get anonymous — {anon_v}");
+    assert_eq!(anon_v["ok"], true, "{anon_v}");
+    assert_eq!(anon_v["data"]["slug"], "get-org");
+    assert_eq!(anon_v["data"]["display_name"], "Get Org");
+
+    let (missing_status, missing_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.get","input":{"slug":"no-such-org"}}"#,
+        None,
+    )
+    .await;
+    assert_eq!(
+        missing_status,
+        StatusCode::BAD_REQUEST,
+        "org.get missing — {missing_v}"
+    );
+    assert_eq!(missing_v["ok"], false, "{missing_v}");
+    assert_eq!(missing_v["error"]["code"], "org.not_found");
+
+    let (list_anon_status, list_anon_v) = rpc_json(
+        &app,
+        r#"{"procedure":"org.listMine","input":{}}"#,
+        None,
+    )
+    .await;
+    assert_eq!(list_anon_v["ok"], false, "{list_anon_v}");
+    assert_eq!(list_anon_v["error"]["code"], "auth.unauthenticated");
+    let _ = list_anon_status;
+
     let (list_status, list_v) = rpc_json(
         &app,
         r#"{"procedure":"org.listMine","input":{}}"#,

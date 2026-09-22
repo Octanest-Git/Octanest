@@ -557,6 +557,29 @@ pub trait GitBackend: Send + Sync {
         remote_ref: &str,
     ) -> Result<(), GitError>;
 
+    /// Push with force (`+local:remote`) or delete (`:remote` when `local_ref` is empty).
+    /// Exact-sync only — never used by merge mode.
+    async fn push_to_url_force(
+        &self,
+        repo: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+        local_ref: &str,
+        remote_ref: &str,
+    ) -> Result<(), GitError>;
+
+    /// Force-update (or create) a local ref to `target_sha` via worktree push with `+`.
+    /// Heads use branch push; tags use force tag push.
+    async fn force_update_ref(
+        &self,
+        repo: &Path,
+        refname: &str,
+        target_sha: &str,
+    ) -> Result<(), GitError>;
+
+    /// Committer unix timestamp (`git log -1 --format=%ct`) for LWW tip comparison.
+    async fn committer_unix_time(&self, repo: &Path, sha: &str) -> Result<i64, GitError>;
+
     /// Bare clone from a remote URL into a new bare `dest` (first import).
     async fn clone_bare_url(
         &self,

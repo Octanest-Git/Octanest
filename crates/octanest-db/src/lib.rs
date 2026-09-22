@@ -2843,6 +2843,8 @@ impl Database {
         webhook_secret_ciphertext: &str,
         poll_interval_secs: i64,
         enabled: bool,
+        sync_mode: &str,
+        clear_ref_snapshot: bool,
     ) -> Result<RepositoryMirrorRow, String> {
         mirrors::upsert_mirror(
             self.require_pool()?,
@@ -2857,8 +2859,18 @@ impl Database {
             webhook_secret_ciphertext,
             poll_interval_secs,
             enabled,
+            sync_mode,
+            clear_ref_snapshot,
         )
         .await
+    }
+
+    pub async fn update_mirror_ref_snapshot(
+        &self,
+        mirror_id: &str,
+        snapshot_json: &str,
+    ) -> Result<(), String> {
+        mirrors::update_mirror_ref_snapshot(self.require_pool()?, mirror_id, snapshot_json).await
     }
 
     pub async fn delete_mirror_by_repo(&self, repository_id: &str) -> Result<bool, String> {
