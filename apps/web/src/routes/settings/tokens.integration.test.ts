@@ -199,7 +199,7 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     });
   }, 15_000);
 
-  it("settings secondary nav General | Profile | Personal access tokens", async () => {
+  it("settings secondary nav General | Account | Personal access tokens", async () => {
     const mod = await loadTokensModule();
     const TokensPage = (mod.TokensPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(TokensPage);
@@ -209,13 +209,15 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     });
 
     const nav = container.querySelector('nav[aria-label="Account settings"]')!;
+    expect(nav.querySelector("p")?.textContent).toBe("Settings");
     const general = nav.querySelector('a[href="/settings/general"]');
-    const profile = nav.querySelector('a[href="/settings/profile"]');
+    const account = nav.querySelector('a[href="/settings/profile"]');
     const tokens = nav.querySelector('a[href="/settings/tokens"]');
     expect(general?.textContent).toBe("General");
-    expect(profile?.textContent).toBe("Profile");
+    expect(account?.textContent).toBe("Account");
     expect(tokens?.textContent).toBe("Personal access tokens");
     expect(tokens?.getAttribute("aria-current")).toBe("page");
+    expect(nav.querySelector('a[href="/settings/emails"]')).toBeNull();
   }, 15_000);
 });
 

@@ -12,6 +12,16 @@ pub struct AddSshKeyRequest {
     pub title: String,
     /// OpenSSH authorized_keys line (`ssh-ed25519 AAAA… comment`).
     pub public_key: String,
+    /// When omitted, defaults to true (Git SSH auth).
+    #[serde(default = "default_true")]
+    pub can_authenticate: bool,
+    /// When omitted, defaults to true (commit signature verify).
+    #[serde(default = "default_true")]
+    pub can_sign: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 /// List / metadata item — public key optional; no one-time secret field (D-SSH-05).
@@ -21,6 +31,8 @@ pub struct SshKeyListItem {
     pub title: String,
     pub fingerprint: String,
     pub key_type: String,
+    pub can_authenticate: bool,
+    pub can_sign: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub public_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -41,6 +53,8 @@ mod tests {
             title: "laptop".into(),
             fingerprint: "SHA256:deadbeef".into(),
             key_type: "ssh-ed25519".into(),
+            can_authenticate: true,
+            can_sign: true,
             public_key: Some("ssh-ed25519 AAAA laptop".into()),
             last_used_at: None,
             last_used_ip: None,
@@ -51,16 +65,17 @@ mod tests {
         assert!(v.get("secret").is_none());
         assert_eq!(v["fingerprint"], "SHA256:deadbeef");
         assert_eq!(v["title"], "laptop");
+        assert_eq!(v["can_sign"], true);
     }
 
     #[test]
-    fn add_request_is_title_plus_public_key() {
-        let req = AddSshKeyRequest {
-            title: "ci".into(),
-            public_key: "ssh-ed25519 AAAA ci".into(),
-        };
-        let v = serde_json::to_value(&req).unwrap();
-        assert_eq!(v["title"], "ci");
-        assert!(v["public_key"].as_str().unwrap().starts_with("ssh-ed25519"));
+    fn add_request_defaults_usage_flags() {
+        let req: AddSshKeyRequest = serde_json::from_value(serde_json::json!({
+            "title": "ci",
+            "public_key": "ssh-ed25519 AAAA ci"
+        }))
+        .unwrap();
+        assert!(req.can_authenticate);
+        assert!(req.can_sign);
     }
 }

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@octanejs/tanstack-query";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,8 @@ type SshKeyAddFormProps = {
 export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps) @{
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
+  const [canAuthenticate, setCanAuthenticate] = useState(true);
+  const [canSign, setCanSign] = useState(true);
 
   const form = useForm({
     defaultValues: {
@@ -36,7 +39,16 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
         setError("Public key is required.");
         return;
       }
-      add.mutate({ title: t, public_key: k });
+      if (!canAuthenticate && !canSign) {
+        setError("Enable authentication and/or commit signing.");
+        return;
+      }
+      add.mutate({
+        title: t,
+        public_key: k,
+        can_authenticate: canAuthenticate,
+        can_sign: canSign,
+      });
     },
   });
 
@@ -45,6 +57,8 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
     onSuccess: async () => {
       form.reset();
       setError("");
+      setCanAuthenticate(true);
+      setCanSign(true);
       await queryClient.invalidateQueries({ queryKey: ["sshKey", "list"] });
       onAdded?.();
     },
@@ -96,6 +110,27 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
         </div>
       )}
     </form.Field>
+    <div className="flex flex-col gap-2">
+      <p className="text-[14px] font-medium text-foreground">Usage</p>
+      <label className="flex cursor-pointer items-start gap-3">
+        <Checkbox
+          checked={canAuthenticate}
+          disabled={disabled || add.isPending}
+          aria-label="Authentication"
+          onCheckedChange={(checked) => setCanAuthenticate(checked === true)}
+        />
+        <span className="text-[14px] text-foreground">Authentication (git over SSH)</span>
+      </label>
+      <label className="flex cursor-pointer items-start gap-3">
+        <Checkbox
+          checked={canSign}
+          disabled={disabled || add.isPending}
+          aria-label="Commit signing"
+          onCheckedChange={(checked) => setCanSign(checked === true)}
+        />
+        <span className="text-[14px] text-foreground">Commit signing (SSH signatures)</span>
+      </label>
+    </div>
     @if (error) {
       <p role="alert" className="text-[14px] text-destructive">
         {error as string}
@@ -104,7 +139,7 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
         <Button type="submit" disabled={disabled || add.isPending || isSubmitting}>
-          {(add.isPending ? "Adding…" : "Add key") as string}
+          {(add.isPending ? "Adding…" : "Add SSH key") as string}
         </Button>
       )}
     </form.Subscribe>

@@ -68,6 +68,8 @@ async fn dialect_ssh_keys_migrate_0009_schema_presence() {
         pk1,
         fp1,
         "ssh-ed25519",
+        true,
+        true,
     )
     .await
     .expect("create ssh key");
@@ -82,10 +84,12 @@ async fn dialect_ssh_keys_migrate_0009_schema_presence() {
     assert_eq!(found.fingerprint, fp1);
     assert_eq!(found.key_type, "ssh-ed25519");
     assert_eq!(found.public_key, pk1);
+    assert!(found.can_authenticate);
+    assert!(found.can_sign);
 
     let fp2 = "SHA256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     let pk2 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB ci";
-    db.create_ssh_key("ssh-key-2", &owner.id, "ci", pk2, fp2, "ssh-ed25519")
+    db.create_ssh_key("ssh-key-2", &owner.id, "ci", pk2, fp2, "ssh-ed25519", true, true)
         .await
         .expect("create second key");
 
@@ -128,6 +132,8 @@ async fn dialect_ssh_keys_migrate_0009_schema_presence() {
             pk2,
             fp2,
             "ssh-ed25519",
+            true,
+            true,
         )
         .await;
     assert!(dup.is_err(), "duplicate fingerprint must be rejected");

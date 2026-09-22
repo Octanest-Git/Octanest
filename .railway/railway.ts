@@ -29,7 +29,9 @@ export default defineRailway((ctx) => {
   const forgeData = volume("forge-data", { sizeMB: 20480 });
 
   // Wait for CI only on staging (autodeploy from main). Preview/production
-  // keep GitHub connected but deployment triggers disabled in the dashboard.
+  // keep GitHub connected for promote-by-SHA, but Autodeploy must be disabled
+  // in the dashboard after apply — IaC cannot express "no deploymentTriggers".
+  // Verify: make cloud-production-autodeploy-check
   const stagingWaitForCi = ctx.isEnvironment("staging");
 
   const api = service("api", {

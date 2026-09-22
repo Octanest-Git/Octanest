@@ -165,10 +165,16 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
 }
 
 pub async fn find_by_email(pool: &DbPool, email: &str) -> Result<Option<UserRow>, String> {
+    // Prefer user_emails (primary + secondary); fall back to users.email for
+    // pre-migration safety during rolling deploys.
+    if let Some(addr) = crate::user_emails::find_by_email(pool, email).await? {
+        return find_by_id(pool, &addr.user_id).await;
+    }
+    let email = email.trim().to_ascii_lowercase();
     match pool {
         DbPool::Postgres(p) => {
-            let row = sqlx::query(&format!("{USER_SELECT_PG} WHERE email = $1"))
-                .bind(email)
+            let row = sqlx::query(&format!("{USER_SELECT_PG} WHERE lower(email) = lower($1)"))
+                .bind(&email)
                 .fetch_optional(p)
                 .await
                 .map_err(|e| format!("find user by email failed: {e}"))?;
@@ -178,8 +184,8 @@ pub async fn find_by_email(pool: &DbPool, email: &str) -> Result<Option<UserRow>
             })
         }
         DbPool::MySql(p) => {
-            let row = sqlx::query(&format!("{USER_SELECT_MYSQL} WHERE email = ?"))
-                .bind(email)
+            let row = sqlx::query(&format!("{USER_SELECT_MYSQL} WHERE lower(email) = lower(?)"))
+                .bind(&email)
                 .fetch_optional(p)
                 .await
                 .map_err(|e| format!("find user by email failed: {e}"))?;
@@ -189,8 +195,8 @@ pub async fn find_by_email(pool: &DbPool, email: &str) -> Result<Option<UserRow>
             })
         }
         DbPool::Sqlite(p) => {
-            let row = sqlx::query(&format!("{USER_SELECT_SQLITE} WHERE email = ?1"))
-                .bind(email)
+            let row = sqlx::query(&format!("{USER_SELECT_SQLITE} WHERE lower(email) = lower(?1)"))
+                .bind(&email)
                 .fetch_optional(p)
                 .await
                 .map_err(|e| format!("find user by email failed: {e}"))?;

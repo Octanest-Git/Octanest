@@ -309,6 +309,8 @@ async fn ssh_key_add_26th_key_max_25() {
             &pk,
             &fp,
             "ssh-ed25519",
+            true,
+            true,
         )
         .await
         .expect("seed key");

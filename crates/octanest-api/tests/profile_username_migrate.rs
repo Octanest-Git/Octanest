@@ -1,4 +1,4 @@
-//! Username change must move `{repos_dir}/{old}/` → `{new}/` before DB commit.
+//! Usernames are immutable — `user.update_profile` must reject renames.
 
 mod support;
 
@@ -51,11 +51,11 @@ fn session_cookie_from_response(res: &axum::http::Response<Body>) -> String {
 }
 
 #[tokio::test]
-async fn update_profile_renames_owner_repos_dir() {
+async fn update_profile_rejects_username_change() {
     let dir = tempfile::tempdir().expect("tempdir");
     let repos = dir.path().join("repos");
     tokio::fs::create_dir_all(&repos).await.unwrap();
-    let url = format!("sqlite:{}", dir.path().join("migrate.db").display());
+    let url = format!("sqlite:{}", dir.path().join("immutable.db").display());
     let db = Database::connect(&url).await.expect("connect");
     db.migrate().await.expect("migrate");
     support::unlock_signup(&db).await;
@@ -87,9 +87,6 @@ async fn update_profile_renames_owner_repos_dir() {
         .await
         .unwrap();
     assert_eq!(create.status(), StatusCode::OK);
-    let create_bytes = create.into_body().collect().await.unwrap().to_bytes();
-    let create_v: serde_json::Value = serde_json::from_slice(&create_bytes).unwrap();
-    assert_eq!(create_v["ok"], true);
     assert!(repos.join("alice").join("hello.git").exists());
 
     let update = app
@@ -100,79 +97,10 @@ async fn update_profile_renames_owner_repos_dir() {
         ))
         .await
         .unwrap();
-    assert_eq!(update.status(), StatusCode::OK);
     let update_bytes = update.into_body().collect().await.unwrap().to_bytes();
     let update_v: serde_json::Value = serde_json::from_slice(&update_bytes).unwrap();
-    assert_eq!(update_v["ok"], true);
-    assert_eq!(update_v["data"]["username"], "bob");
-
-    assert!(!repos.join("alice").exists());
-    assert!(repos.join("bob").join("hello.git").exists());
-
-    let got = app
-        .clone()
-        .oneshot(rpc_req_with_cookie(
-            r#"{"procedure":"repo.get","input":{"owner":"bob","name":"hello"}}"#,
-            &cookie,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(got.status(), StatusCode::OK);
-    let got_bytes = got.into_body().collect().await.unwrap().to_bytes();
-    let got_v: serde_json::Value = serde_json::from_slice(&got_bytes).unwrap();
-    assert_eq!(got_v["ok"], true);
-    assert_eq!(got_v["data"]["owner_username"], "bob");
-    assert_eq!(got_v["data"]["name"], "hello");
-}
-
-#[tokio::test]
-async fn update_profile_username_conflict_when_dest_dir_exists() {
-    let dir = tempfile::tempdir().expect("tempdir");
-    let repos = dir.path().join("repos");
-    tokio::fs::create_dir_all(repos.join("alice").join("hello.git"))
-        .await
-        .unwrap();
-    tokio::fs::create_dir_all(repos.join("taken"))
-        .await
-        .unwrap();
-    let url = format!("sqlite:{}", dir.path().join("conflict.db").display());
-    let db = Database::connect(&url).await.expect("connect");
-    db.migrate().await.expect("migrate");
-    support::unlock_signup(&db).await;
-    let app = test_app(db.clone(), repos.clone()).await;
-
-    let signup = app
-        .clone()
-        .oneshot(rpc_req(
-            r#"{"procedure":"auth.signup","input":{"email":"c@ex.com","username":"alice","password":"password1"}}"#,
-        ))
-        .await
-        .unwrap();
-    assert_eq!(signup.status(), StatusCode::OK);
-    let cookie = session_cookie_from_response(&signup);
-    let signup_bytes = signup.into_body().collect().await.unwrap().to_bytes();
-    let signup_v: serde_json::Value = serde_json::from_slice(&signup_bytes).unwrap();
-    let user_id = signup_v["data"]["id"].as_str().unwrap().to_string();
-    // Seed DB repo row is optional for conflict — FS dest already exists.
-    let _ = user_id;
-
-    let update = app
-        .clone()
-        .oneshot(rpc_req_with_cookie(
-            r#"{"procedure":"user.update_profile","input":{"display_name":"Alice","username":"taken","bio":""}}"#,
-            &cookie,
-        ))
-        .await
-        .unwrap();
-    let update_status = update.status();
-    let update_bytes = update.into_body().collect().await.unwrap().to_bytes();
-    let update_v: serde_json::Value = serde_json::from_slice(&update_bytes).unwrap();
-    assert!(
-        update_status.is_success() || update_status.as_u16() == 400,
-        "unexpected status {update_status}: {update_v}"
-    );
     assert_eq!(update_v["ok"], false, "{update_v}");
-    assert_eq!(update_v["error"]["code"], "repo.owner_dir_conflict");
+    assert_eq!(update_v["error"]["code"], "auth.username_immutable");
 
     let me = app
         .clone()
@@ -185,5 +113,43 @@ async fn update_profile_username_conflict_when_dest_dir_exists() {
     let me_bytes = me.into_body().collect().await.unwrap().to_bytes();
     let me_v: serde_json::Value = serde_json::from_slice(&me_bytes).unwrap();
     assert_eq!(me_v["data"]["username"], "alice");
-    assert!(repos.join("alice").exists());
+    assert!(repos.join("alice").join("hello.git").exists());
+    assert!(!repos.join("bob").exists());
+}
+
+#[tokio::test]
+async fn update_profile_allows_same_username() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    tokio::fs::create_dir_all(&repos).await.unwrap();
+    let url = format!("sqlite:{}", dir.path().join("same.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos.clone()).await;
+
+    let signup = app
+        .clone()
+        .oneshot(rpc_req(
+            r#"{"procedure":"auth.signup","input":{"email":"same@ex.com","username":"alice","password":"password1"}}"#,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(signup.status(), StatusCode::OK);
+    let cookie = session_cookie_from_response(&signup);
+
+    let update = app
+        .clone()
+        .oneshot(rpc_req_with_cookie(
+            r#"{"procedure":"user.update_profile","input":{"display_name":"Alice Wonder","username":"alice","bio":"hi"}}"#,
+            &cookie,
+        ))
+        .await
+        .unwrap();
+    let update_bytes = update.into_body().collect().await.unwrap().to_bytes();
+    let update_v: serde_json::Value = serde_json::from_slice(&update_bytes).unwrap();
+    assert_eq!(update_v["ok"], true, "{update_v}");
+    assert_eq!(update_v["data"]["username"], "alice");
+    assert_eq!(update_v["data"]["display_name"], "Alice Wonder");
+    assert_eq!(update_v["data"]["bio"], "hi");
 }

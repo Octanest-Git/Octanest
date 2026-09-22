@@ -87,6 +87,12 @@ export function SshKeyList({ enabled = true, initialData }: SshKeyListProps) @{
                       {item.title as string}
                     </p>
                     <Badge variant="outline">{item.key_type as string}</Badge>
+                    @if (item.can_authenticate) {
+                      <Badge variant="secondary">Authentication</Badge>;
+                    }
+                    @if (item.can_sign) {
+                      <Badge variant="secondary">Signing</Badge>;
+                    }
                   </div>
                   <p className="mt-1 font-mono text-[12px] text-muted-foreground">
                     {item.fingerprint as string}

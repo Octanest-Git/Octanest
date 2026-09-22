@@ -177,6 +177,12 @@ pub struct CommitSummary {
     pub author_email: String,
     /// Author date as ISO-8601 (`%aI`).
     pub authored_at: String,
+    /// Committer email (`%ce`) — used for signature verification policy.
+    pub committer_email: String,
+    /// `none` | `valid` | `invalid` | `unknown` (from `%G?` + optional allowedSigners).
+    pub signature_status: String,
+    /// `ssh` | `gpg` | empty when unsigned / unknown.
+    pub signature_kind: String,
 }
 
 /// Aggregated author from `git shortlog` (issue #23 contributors).
@@ -214,10 +220,13 @@ pub struct CommitDetail {
     pub author_name: String,
     pub author_email: String,
     pub authored_at: String,
+    pub committer_email: String,
     pub parents: Vec<String>,
     pub files: Vec<DiffFile>,
     /// True when patch payload was soft-capped (D-20 / T-07-18).
     pub truncated: bool,
+    pub signature_status: String,
+    pub signature_kind: String,
 }
 
 /// Compare `base...head` (or empty when identical).
@@ -250,6 +259,7 @@ pub struct GrepResult {
 pub struct BlameLine {
     pub sha: String,
     pub author_name: String,
+    pub author_email: String,
     pub authored_at: String,
     pub line_number: u32,
     pub content: String,
@@ -311,12 +321,26 @@ pub trait GitBackend: Send + Sync {
 
     /// Write `files` (relative path → bytes) as a single commit on `branch` in an
     /// existing bare repo (temp worktree + push). No-op when `files` is empty.
+    /// Uses Octanest noreply identity (tests / system seeds).
     async fn seed_commit(
         &self,
         bare_path: &Path,
         branch: &str,
         message: &str,
         files: &[(String, Vec<u8>)],
+    ) -> Result<(), GitError>;
+
+    /// Like [`seed_commit`], but author is `author_name`/`author_email`, committer is
+    /// Octanest noreply, and optionally SSH-signs with `signing_key_path` (`gpg.format=ssh`).
+    async fn seed_commit_authored(
+        &self,
+        bare_path: &Path,
+        branch: &str,
+        message: &str,
+        files: &[(String, Vec<u8>)],
+        author_name: &str,
+        author_email: &str,
+        signing_key_path: Option<&Path>,
     ) -> Result<(), GitError>;
 
     /// List tree entries at `path` under `treeish` (branch/tag/sha). Empty repo /
@@ -340,16 +364,26 @@ pub trait GitBackend: Send + Sync {
     async fn list_refs(&self, repo: &Path) -> Result<Vec<GitRef>, GitError>;
 
     /// Paged `git log` for `refname` (`skip` / `limit`). Empty history → `Ok(vec![])`.
+    /// When `allowed_signers` is set, configures `gpg.ssh.allowedSignersFile` for `%G?`.
+    /// When `gpg_home` is set, sets `GNUPGHOME` + `gpg.trustModel=always` for OpenPGP verify.
     async fn log(
         &self,
         repo: &Path,
         refname: &str,
         skip: u32,
         limit: u32,
+        allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
     ) -> Result<Vec<CommitSummary>, GitError>;
 
     /// Commit metadata + per-file unified patches (`git show`).
-    async fn show_commit(&self, repo: &Path, sha: &str) -> Result<CommitDetail, GitError>;
+    async fn show_commit(
+        &self,
+        repo: &Path,
+        sha: &str,
+        allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
+    ) -> Result<CommitDetail, GitError>;
 
     /// Unified diff `base...head`. Identical trees → `empty: true` (not an error).
     async fn diff(

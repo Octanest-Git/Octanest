@@ -54,9 +54,10 @@ Focused PR Environments (optional but recommended for this monorepo): enable in 
    - IaC wires `OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_CORS_ORIGINS`, and `OCTANEST_SSH_HOST` from the **gateway** public domain (`https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}`). Do not `preserve()` those on preview/PR copies — stale preview hosts break setup/CORS. Production custom domains still need the gateway service domain (or override) to match the browser URL. At runtime, a stale `*.up.railway.app` `OCTANEST_PUBLIC_ORIGIN` is replaced with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN`; custom domains are not overridden.
 5. Attach a Railway-provided (or custom) domain to **`gateway`** in each environment (required so PR Environments get automatic preview URLs).
 6. Review the plan, then **only with explicit approval**: `railway config apply`.
-7. **Deploy policy after apply:**
-   - `staging`: GitHub branch `main`, autodeploy on, Wait for CI on
-   - `preview` and `production`: GitHub connected, autodeploy **off**
+7. **Deploy policy after apply (IaC does not set this):** `railway config apply` connects GitHub and may leave Autodeploy enabled. You must set triggers in the dashboard (or delete production `deploymentTriggers` via GraphQL) after every apply that recreates them:
+   - `staging`: GitHub branch `main`, **Autodeploy on**, **Wait for CI** on
+   - `preview` and `production`: GitHub **connected** (needed for promote-by-SHA), **Autodeploy off** (no deployment triggers). Production releases only via the manual **Production deploy** GitHub Action — never on merge to `main`.
+   - Verify: `make cloud-production-autodeploy-check` (expects zero production triggers for `api` / `web` / `gateway`).
 8. **Migrations:** IaC sets `OCTANEST_AUTO_MIGRATE=true` on **all** environments (preview, staging, production, and PR Environments). Promoting production deploys a new `api` image; on boot it applies pending sqlx migrations before listening. A failed migration exits before `/health` passes, so Railway keeps the previous replica.
 9. Confirm `GET https://<domain>/health` and browser `/`.
 
@@ -73,9 +74,9 @@ Do **not** use Railway Environment Sync to promote: Sync copies service **variab
    - `dry_run=true` — resolves SHA / CI / rollback targets and prints the plan only (no deploys, rollbacks, or health probe).
 3. Confirm `GET https://octanest.jereko.dev/health` (skipped when `dry_run=true`).
 
-**One-time GitHub setup:** On Environment [`Octanest / production`](https://github.com/Octanest-Git/Octanest/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`.
+**One-time GitHub setup:** On Environment [`Octanest / production`](https://github.com/Octanest-Git/Octanest/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`. Confirm production Autodeploy stays off: `scripts/railway-production-autodeploy-check.sh` / `make cloud-production-autodeploy-check`.
 
-**Avoid:** Sync staging → production unless you carefully reject variable diffs in staged changes.
+**Avoid:** Sync staging → production unless you carefully reject variable diffs in staged changes. **Avoid:** re-enabling Autodeploy on production after an IaC apply.
 
 **Volumes (D-CLOUD-04):** `forge-data` mounts at `/var` on `api` (repos, lfs, packages, release-assets, uploads, ssh host keys as subdirs — same paths as Compose). Each environment has its own volume and database.
 
@@ -135,7 +136,7 @@ Default Compose publishes HTTP via Traefik and raw TCP for Git-over-SSH. Persist
 | `./var/lfs` | `/var/lfs` (`OCTANEST_LFS_DIR`) | Git LFS object store |
 | `./var/packages` | `/var/packages` (`OCTANEST_PACKAGES_DIR`) | OCI / npm / generic blobs |
 | `./var/release-assets` | `/var/release-assets` (`OCTANEST_RELEASE_ASSETS_DIR`) | Release asset files (distinct from LFS) |
-| `./var/ssh` | `/var/ssh` (`OCTANEST_SSH_HOST_KEY_DIR`) | SSH host keys (TOFU across restarts) |
+| `./var/ssh` | `/var/ssh` (`OCTANEST_SSH_HOST_KEY_DIR`) | SSH host keys (TOFU) + web-flow commit signing key (`web-flow` / `web-flow.pub`) |
 | `./var/uploads` | `/var/uploads` | Avatars / uploads |
 | `./var/actions-logs` | `/var/actions-logs` (`OCTANEST_ACTIONS_LOG_DIR`) | Actions job logs (distinct from repos/LFS/packages) |
 

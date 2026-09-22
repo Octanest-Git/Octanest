@@ -1,4 +1,6 @@
 import type { RepoCommitSummary } from "@octanest/api-client";
+import { CommitAuthorLink } from "@/components/repo/commit-author-link";
+import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { formatRelativeUpdated } from "@/lib/relative-time";
 
 type RepoLastCommitBarProps = {
@@ -35,12 +37,19 @@ export function RepoLastCommitBar({
       className="mb-0 flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 rounded-t-md border border-b-0 border-border bg-muted/40 px-3 py-2 text-[13px]"
       data-testid="repo-last-commit"
     >
-      <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-        <span className="text-muted-foreground">{tip.author_name as string}</span>
-        <span className="mx-1 text-muted-foreground">·</span>
+      <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 truncate">
+        <CommitAuthorLink
+          name={tip.author_name}
+          username={tip.author_username}
+          avatarUrl={tip.author_avatar_url}
+        />
+        <CommitVerifiedBadge status={tip.signature_status} kind={tip.signature_kind} />
+        <span className="text-muted-foreground" aria-hidden="true">
+          ·
+        </span>
         <a
           href={`/${owner}/${repo}/commit/${tip.sha}` as string}
-          className="text-foreground no-underline hover:text-primary hover:underline"
+          className="min-w-0 truncate font-medium text-foreground no-underline hover:text-primary hover:underline"
           title={tip.subject as string}
         >
           {tip.subject as string}

@@ -12,7 +12,7 @@ FROM debian:bookworm-slim
 # git: forge ops + D-33 boot gate (GIT-09); ca-certificates/curl: TLS + healthcheck;
 # openssh-client: two-way mirror SSH remotes (ssh, ssh-keygen, ssh-keyscan)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git openssh-client \
+  && apt-get install -y --no-install-recommends ca-certificates curl git openssh-client gnupg \
   && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/octanest-api /usr/local/bin/octanest-api
 COPY --from=builder /app/target/release/octanest-protection-hook /usr/local/bin/octanest-protection-hook

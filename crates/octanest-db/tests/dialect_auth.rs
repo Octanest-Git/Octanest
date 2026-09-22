@@ -230,4 +230,90 @@ async fn migrate_0006_bootstrap_flags_columns() {
         .await
         .expect("update email");
     assert_eq!(renamed.email, "flags-renamed@example.com");
+
+    // Primary mirror stays in sync on rename.
+    let primary = db
+        .list_user_emails(&user.id)
+        .await
+        .expect("list emails")
+        .into_iter()
+        .find(|e| e.is_primary)
+        .expect("primary row");
+    assert_eq!(primary.email, "flags-renamed@example.com");
+}
+
+#[tokio::test]
+async fn user_emails_backfill_uniqueness_and_primary_sync() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("user_emails.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let a = db
+        .create_user(
+            "u-emails-a",
+            "alice@example.com",
+            "alice-emails",
+            Some("hash"),
+            "Alice",
+            "",
+            None,
+            octanest_core::Role::User,
+        )
+        .await
+        .expect("user a");
+    let emails = db.list_user_emails(&a.id).await.expect("list a");
+    assert_eq!(emails.len(), 1);
+    assert!(emails[0].is_primary);
+    assert_eq!(emails[0].email, "alice@example.com");
+
+    let now = "2026-01-01T00:00:00Z";
+    db.set_email_verified_at(&a.id, now)
+        .await
+        .expect("verify a");
+    let by_email = db
+        .find_user_by_email("alice@example.com")
+        .await
+        .expect("find")
+        .expect("present");
+    assert_eq!(by_email.id, a.id);
+
+    let secondary = db
+        .create_user_email("sec-a", &a.id, "alice-work@example.com", false, Some(now))
+        .await
+        .expect("secondary");
+    let found = db
+        .find_user_by_email("alice-work@example.com")
+        .await
+        .expect("find secondary")
+        .expect("present");
+    assert_eq!(found.id, a.id);
+
+    let b = db
+        .create_user(
+            "u-emails-b",
+            "bob@example.com",
+            "bob-emails",
+            Some("hash"),
+            "Bob",
+            "",
+            None,
+            octanest_core::Role::User,
+        )
+        .await
+        .expect("user b");
+    let taken = db
+        .create_user_email("sec-b-taken", &b.id, "alice@example.com", false, None)
+        .await;
+    assert!(taken.is_err(), "email must be unique across users");
+
+    let promoted = db
+        .set_user_email_primary(&secondary.id)
+        .await
+        .expect("set primary");
+    assert!(promoted.is_primary);
+    assert_eq!(promoted.email, "alice-work@example.com");
+    let mirrored = db.find_user_by_id(&a.id).await.expect("find").expect("user");
+    assert_eq!(mirrored.email, "alice-work@example.com");
+    assert!(mirrored.email_verified_at.is_some());
 }

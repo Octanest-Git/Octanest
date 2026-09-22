@@ -27,7 +27,9 @@ Cloud default database is **managed Postgres** (`postgres()` helper). MySQL/SQLi
 |-------------|------|----------------|
 | `preview` | Persistent base for Railway **PR Environments** | Autodeploy off (IaC / manual only) |
 | `staging` | Always-on integration | Autodeploy from `main` + Wait for CI |
-| `production` | Live | Autodeploy off; promote via GitHub Action |
+| `production` | Live | Autodeploy **off**; promote only via GitHub Action |
+
+**Important:** TypeScript IaC (`github()` + `checkSuites`) does **not** disable Autodeploy. After `railway config apply` on production, open each of `api` / `web` / `gateway` → Settings → GitHub and click **Disable** (or delete `deploymentTriggers`), while leaving the repo connected for promote-by-SHA. Verify with `make cloud-production-autodeploy-check`.
 
 Ephemeral PR environments clone `preview` (services, networking, variables) when a project member opens a PR. They are deleted when the PR merges or closes. Bot PR Environments stay off unless you explicitly enable them.
 
@@ -85,7 +87,7 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
    - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN` for rollback target lookup).
 3. Smoke `https://octanest.jereko.dev/health` (skipped on dry-run).
 
-Script: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
+Scripts: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh), [`scripts/railway-production-autodeploy-check.sh`](../scripts/railway-production-autodeploy-check.sh) (`make cloud-production-autodeploy-check`). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 
 **GitHub Environment `Octanest / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
 

@@ -2,6 +2,7 @@
 
 mod acl;
 mod activity;
+pub(crate) mod author_resolve;
 mod branch_protection;
 mod commit_status;
 mod collaborators;
@@ -10,6 +11,7 @@ mod language_stats;
 mod rename_transfer;
 mod search;
 mod search_query;
+pub(crate) mod signatures;
 mod social_lists;
 mod templates;
 
@@ -929,24 +931,65 @@ pub async fn commits(
         req.ref_name.trim().to_string()
     };
     let limit = if req.limit == 0 { 30 } else { req.limit.min(100) };
-    let commits = ctx
+    let emails_probe = ctx
         .git
-        .log(&path, &ref_name, req.skip, limit)
+        .log(&path, &ref_name, req.skip, limit, None, None)
         .await
         .map_err(map_git_err)?;
+    let mut emails: Vec<String> = Vec::new();
+    for c in &emails_probe {
+        if !c.committer_email.trim().is_empty() {
+            emails.push(c.committer_email.clone());
+        }
+        emails.push(c.author_email.clone());
+    }
+    let keyring = signatures::keyring_for_emails(&ctx.db, &emails).await;
+    let commits = if keyring.has_any() {
+        ctx.git
+            .log(
+                &path,
+                &ref_name,
+                req.skip,
+                limit,
+                keyring.allowed_signers.as_deref(),
+                keyring.gpg_home.as_deref(),
+            )
+            .await
+            .map_err(map_git_err)?
+    } else {
+        emails_probe
+    };
+    let resolved =
+        author_resolve::resolve_author_emails(&ctx.db, commits.iter().map(|c| c.author_email.as_str()))
+            .await;
+    let mut out_commits = Vec::with_capacity(commits.len());
+    for c in commits {
+        let r = resolved.get(&c.author_email).cloned().unwrap_or_default();
+        let signature_status = signatures::apply_verified_policy(
+            &ctx.db,
+            &c.committer_email,
+            &c.author_email,
+            &c.signature_status,
+            &c.signature_kind,
+        )
+        .await;
+        out_commits.push(RepoCommitSummary {
+            sha: c.sha,
+            short_sha: c.short_sha,
+            subject: c.subject,
+            author_name: c.author_name,
+            author_email: c.author_email,
+            authored_at: c.authored_at,
+            author_user_id: r.user_id,
+            author_username: r.username,
+            author_avatar_url: r.avatar_url,
+            signature_status,
+            signature_kind: c.signature_kind,
+        });
+    }
     Ok(RepoCommitsResponse {
         ref_name,
-        commits: commits
-            .into_iter()
-            .map(|c| RepoCommitSummary {
-                sha: c.sha,
-                short_sha: c.short_sha,
-                subject: c.subject,
-                author_name: c.author_name,
-                author_email: c.author_email,
-                authored_at: c.authored_at,
-            })
-            .collect(),
+        commits: out_commits,
         skip: req.skip,
         limit,
     })
@@ -994,7 +1037,13 @@ pub async fn path_last_commits(
         .await
         .map_err(map_git_err)?;
     let mut commits = std::collections::BTreeMap::new();
+    let resolved = author_resolve::resolve_author_emails(
+        &ctx.db,
+        map.values().map(|c| c.author_email.as_str()),
+    )
+    .await;
     for (name, c) in map {
+        let r = resolved.get(&c.author_email).cloned().unwrap_or_default();
         commits.insert(
             name,
             RepoCommitSummary {
@@ -1004,6 +1053,11 @@ pub async fn path_last_commits(
                 author_name: c.author_name,
                 author_email: c.author_email,
                 authored_at: c.authored_at,
+                author_user_id: r.user_id,
+                author_username: r.username,
+                author_avatar_url: r.avatar_url,
+                signature_status: c.signature_status,
+                signature_kind: c.signature_kind,
             },
         );
     }
@@ -1138,9 +1192,36 @@ pub async fn commit(
     let path = bare_repo_path(&ctx.repos_dir, &accessible.owner_username, &accessible.row.name)?;
     let detail = ctx
         .git
-        .show_commit(&path, req.sha.trim())
+        .show_commit(&path, req.sha.trim(), None, None)
         .await
         .map_err(map_git_err)?;
+    let mut emails = vec![detail.author_email.clone()];
+    if !detail.committer_email.trim().is_empty() {
+        emails.push(detail.committer_email.clone());
+    }
+    let keyring = signatures::keyring_for_emails(&ctx.db, &emails).await;
+    let detail = if keyring.has_any() {
+        ctx.git
+            .show_commit(
+                &path,
+                req.sha.trim(),
+                keyring.allowed_signers.as_deref(),
+                keyring.gpg_home.as_deref(),
+            )
+            .await
+            .map_err(map_git_err)?
+    } else {
+        detail
+    };
+    let r = author_resolve::resolve_author_email(&ctx.db, &detail.author_email).await;
+    let signature_status = signatures::apply_verified_policy(
+        &ctx.db,
+        &detail.committer_email,
+        &detail.author_email,
+        &detail.signature_status,
+        &detail.signature_kind,
+    )
+    .await;
     Ok(RepoCommitResponse {
         sha: detail.sha,
         short_sha: detail.short_sha,
@@ -1149,6 +1230,11 @@ pub async fn commit(
         author_name: detail.author_name,
         author_email: detail.author_email,
         authored_at: detail.authored_at,
+        author_user_id: r.user_id,
+        author_username: r.username,
+        author_avatar_url: r.avatar_url,
+        signature_status,
+        signature_kind: detail.signature_kind,
         parents: detail.parents,
         files: detail
             .files
@@ -1216,18 +1302,30 @@ pub async fn blame(
         .blame(&path, &ref_name, &file_path)
         .await
         .map_err(map_git_err)?;
+    let resolved = author_resolve::resolve_author_emails(
+        &ctx.db,
+        blame.lines.iter().map(|l| l.author_email.as_str()),
+    )
+    .await;
     Ok(RepoBlameResponse {
         path: blame.path,
         ref_name: blame.ref_name,
         lines: blame
             .lines
             .into_iter()
-            .map(|l| RepoBlameLine {
-                sha: l.sha,
-                author_name: l.author_name,
-                authored_at: l.authored_at,
-                line_number: l.line_number,
-                content: l.content,
+            .map(|l| {
+                let r = resolved.get(&l.author_email).cloned().unwrap_or_default();
+                RepoBlameLine {
+                    sha: l.sha,
+                    author_name: l.author_name,
+                    author_email: l.author_email,
+                    authored_at: l.authored_at,
+                    line_number: l.line_number,
+                    content: l.content,
+                    author_user_id: r.user_id,
+                    author_username: r.username,
+                    author_avatar_url: r.avatar_url,
+                }
             })
             .collect(),
         truncated: blame.truncated,
@@ -1954,20 +2052,39 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
     }
 
     if !seed_files.is_empty() {
+        let author_name = if user.display_name.trim().is_empty() {
+            user.username.clone()
+        } else {
+            user.display_name.clone()
+        };
+        let signing_key = match crate::git::web_flow::ensure_web_flow_key().await {
+            Ok(p) => p,
+            Err(e) => {
+                tracing::error!(error = %e, "web-flow signing key unavailable for seed");
+                compensate_failed_create(ctx, &row.id, &path).await;
+                return Err(AppError::new(
+                    "repo.git_seed_failed",
+                    "failed to prepare web-flow signing key for initial commit",
+                ));
+            }
+        };
         if let Err(e) = ctx
             .git
-            .seed_commit(
+            .seed_commit_authored(
                 &path,
                 &default_branch,
                 "Initial commit",
                 &seed_files,
+                &author_name,
+                &user.email,
+                Some(signing_key.as_path()),
             )
             .await
         {
             tracing::error!(
                 error = %e,
                 path = %path.display(),
-                "seed_commit failed after init_bare"
+                "seed_commit_authored failed after init_bare"
             );
             compensate_failed_create(ctx, &row.id, &path).await;
             return Err(AppError::new(

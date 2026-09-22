@@ -1,24 +1,27 @@
-.PHONY: help \
-	dev rpc-gen rpc-sync-check check-stack-presets sync-stack-presets \
-	up down logs test smoke smoke-git-https smoke-git-ssh \
-	smoke-git-lfs \
-	smoke-packages \
-	smoke-actions \
-	smoke-protection \
-	smoke-protocol-ci smoke-compose-ci \
-	cloud-plan cloud-docs \
-	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
-	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
-	db-migrate db-switch-dialect db-matrix \
-	coverage-web coverage-rust coverage-weighted coverage-contract \
-	route-coverage-check \
-	web-lint web-format-check
+# One target per .PHONY line group — checkmake does not parse backslash-continued
+# .PHONY lists, so keep each declaration on a single physical line.
+.PHONY: help makefile-lint
+.PHONY: dev rpc-gen rpc-sync-check check-stack-presets sync-stack-presets
+.PHONY: up down logs test smoke smoke-git-https smoke-git-ssh
+.PHONY: smoke-git-lfs
+.PHONY: smoke-packages
+.PHONY: smoke-actions
+.PHONY: smoke-protection
+.PHONY: smoke-protocol-ci smoke-compose-ci
+.PHONY: cloud-plan cloud-docs cloud-production-autodeploy-check
+.PHONY: up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite
+.PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack
+.PHONY: db-migrate db-switch-dialect db-matrix
+.PHONY: coverage-web coverage-rust coverage-weighted coverage-contract
+.PHONY: route-coverage-check
+.PHONY: web-lint web-format-check
 
 COMPOSE ?= docker compose
 COMPOSE_FILE ?= docker-compose.yml
 
 help:
 	@echo "Octanest targets:"
+	@echo "  make makefile-lint  - parse Makefile + checkmake (CI early gate)"
 	@echo "  make dev            - local API + web (Vite proxy; D-10)"
 	@echo "  make rpc-gen        - regenerate packages/api-client from Rust"
 	@echo "  make rpc-sync-check - fail if generated client is out of sync"
@@ -57,6 +60,7 @@ help:
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make cloud-plan     - railway config plan (Octanest Cloud IaC; no apply)"
 	@echo "  make cloud-docs     - print pointers to cloud deploy docs"
+	@echo "  make cloud-production-autodeploy-check - assert production has no GitHub autodeploy triggers"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
 	@echo "  make db-switch-dialect - migrate an EMPTY target DB to a new dialect"
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
@@ -78,6 +82,9 @@ rpc-gen:
 
 rpc-sync-check:
 	@./scripts/check-rpc-sync.sh
+
+makefile-lint:
+	@./scripts/check-makefile.sh
 
 check-stack-presets:
 	@./scripts/check-stack-presets.sh
@@ -206,6 +213,9 @@ cloud-plan:
 	fi
 	@echo "==> railway config plan (review only — apply requires explicit human approval)"
 	@railway config plan
+
+cloud-production-autodeploy-check:
+	@bash scripts/railway-production-autodeploy-check.sh
 
 cloud-docs:
 	@echo "Octanest Cloud:"

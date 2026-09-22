@@ -1,10 +1,13 @@
 import { useQuery } from "@octanejs/tanstack-query";
 import { GitCommitHorizontal } from "@octanejs/lucide";
 import type { PullCommitSummary } from "@octanest/api-client";
+import { CommitAuthorLink } from "@/components/repo/commit-author-link";
+import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
+import { commitHref } from "@/lib/repo-browse";
 
 export type PullCommitsProps = {
   owner: string;
@@ -57,14 +60,27 @@ export function PullCommits(props: PullCommitsProps) @{
           <List>
             @for (const c of commits; key c.sha) {
               <ListRow className="flex-wrap items-baseline gap-3 text-sm">
-                <code className="font-mono text-[13px] text-primary">
+                <a
+                  href={commitHref(props.owner, props.repoName, c.sha) as string}
+                  className="font-mono text-[13px] text-primary no-underline hover:underline"
+                >
                   {c.short_sha as string}
-                </code>
+                </a>
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {c.subject as string}
                 </span>
+                <CommitVerifiedBadge
+                  status={c.signature_status}
+                  kind={c.signature_kind}
+                />
+                <CommitAuthorLink
+                  name={c.author_name}
+                  username={c.author_username}
+                  avatarUrl={c.author_avatar_url}
+                  className="text-[12px]"
+                />
                 <span className="text-[12px] text-muted-foreground">
-                  {c.author_name as string} · {c.authored_at as string}
+                  {c.authored_at as string}
                 </span>
               </ListRow>;
             }

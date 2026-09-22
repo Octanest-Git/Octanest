@@ -1,4 +1,5 @@
 //! Email verify/reset token CRUD via `DbPool` match — hash-at-rest only (T-05-03).
+//! `target_email` scopes verify tokens per address (`''` for primary/legacy + reset).
 
 use sqlx::Row;
 
@@ -9,6 +10,7 @@ pub struct EmailTokenRow {
     pub id: String,
     pub user_id: String,
     pub purpose: String,
+    pub target_email: String,
     pub token_hash: String,
     pub otp_hash: String,
     pub expires_at: String,
@@ -40,6 +42,9 @@ macro_rules! map_email_token {
             purpose: row
                 .try_get("purpose")
                 .map_err(|e| format!("email token row: {e}"))?,
+            target_email: row
+                .try_get::<String, _>("target_email")
+                .unwrap_or_default(),
             token_hash: row
                 .try_get("token_hash")
                 .map_err(|e| format!("email token row: {e}"))?,
@@ -58,39 +63,42 @@ macro_rules! map_email_token {
     }};
 }
 
-const TOKEN_SELECT_PG: &str = "SELECT id, user_id, purpose, token_hash, otp_hash, attempt_count, issue_count,
+const TOKEN_SELECT_PG: &str = "SELECT id, user_id, purpose, target_email, token_hash, otp_hash, attempt_count, issue_count,
        to_char(expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS expires_at,
        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at
 FROM auth_email_tokens";
 
-const TOKEN_SELECT_MYSQL: &str = "SELECT id, user_id, purpose, token_hash, otp_hash, attempt_count, issue_count,
+const TOKEN_SELECT_MYSQL: &str = "SELECT id, user_id, purpose, target_email, token_hash, otp_hash, attempt_count, issue_count,
        DATE_FORMAT(expires_at, '%Y-%m-%dT%H:%i:%sZ') AS expires_at,
        DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at
 FROM auth_email_tokens";
 
-const TOKEN_SELECT_SQLITE: &str = "SELECT id, user_id, purpose, token_hash, otp_hash, attempt_count, issue_count,
+const TOKEN_SELECT_SQLITE: &str = "SELECT id, user_id, purpose, target_email, token_hash, otp_hash, attempt_count, issue_count,
        strftime('%Y-%m-%dT%H:%M:%SZ', expires_at) AS expires_at,
        strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at
 FROM auth_email_tokens";
 
-/// Insert or replace the single row for `(user_id, purpose)` (resend invalidates prior).
+/// Insert or replace the row for `(user_id, purpose, target_email)`.
+#[allow(clippy::too_many_arguments)]
 pub async fn upsert_by_user_purpose(
     pool: &DbPool,
     id: &str,
     user_id: &str,
     purpose: &str,
+    target_email: &str,
     token_hash: &str,
     otp_hash: &str,
     expires_at: &str,
     issue_count: i32,
 ) -> Result<EmailTokenRow, String> {
+    let target = target_email.trim().to_ascii_lowercase();
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
                 "INSERT INTO auth_email_tokens
-(id, user_id, purpose, token_hash, otp_hash, expires_at, attempt_count, issue_count)
-VALUES ($1, $2, $3, $4, $5, $6::timestamptz, 0, $7)
-ON CONFLICT (user_id, purpose) DO UPDATE
+(id, user_id, purpose, target_email, token_hash, otp_hash, expires_at, attempt_count, issue_count)
+VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, 0, $8)
+ON CONFLICT (user_id, purpose, target_email) DO UPDATE
 SET id = EXCLUDED.id,
     token_hash = EXCLUDED.token_hash,
     otp_hash = EXCLUDED.otp_hash,
@@ -102,6 +110,7 @@ SET id = EXCLUDED.id,
             .bind(id)
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .bind(token_hash)
             .bind(otp_hash)
             .bind(expires_at)
@@ -113,8 +122,8 @@ SET id = EXCLUDED.id,
         DbPool::MySql(p) => {
             sqlx::query(
                 "INSERT INTO auth_email_tokens
-(id, user_id, purpose, token_hash, otp_hash, expires_at, attempt_count, issue_count)
-VALUES (?, ?, ?, ?, ?, ?, 0, ?) AS new
+(id, user_id, purpose, target_email, token_hash, otp_hash, expires_at, attempt_count, issue_count)
+VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?) AS new
 ON DUPLICATE KEY UPDATE
   id = new.id,
   token_hash = new.token_hash,
@@ -127,6 +136,7 @@ ON DUPLICATE KEY UPDATE
             .bind(id)
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .bind(token_hash)
             .bind(otp_hash)
             .bind(expires_at)
@@ -138,9 +148,9 @@ ON DUPLICATE KEY UPDATE
         DbPool::Sqlite(p) => {
             sqlx::query(
                 "INSERT INTO auth_email_tokens
-(id, user_id, purpose, token_hash, otp_hash, expires_at, attempt_count, issue_count)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7)
-ON CONFLICT (user_id, purpose) DO UPDATE SET
+(id, user_id, purpose, target_email, token_hash, otp_hash, expires_at, attempt_count, issue_count)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0, ?8)
+ON CONFLICT (user_id, purpose, target_email) DO UPDATE SET
   id = excluded.id,
   token_hash = excluded.token_hash,
   otp_hash = excluded.otp_hash,
@@ -152,6 +162,7 @@ ON CONFLICT (user_id, purpose) DO UPDATE SET
             .bind(id)
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .bind(token_hash)
             .bind(otp_hash)
             .bind(expires_at)
@@ -161,7 +172,7 @@ ON CONFLICT (user_id, purpose) DO UPDATE SET
             .map_err(|e| format!("upsert email token failed: {e}"))?;
         }
     }
-    find_by_user_purpose(pool, user_id, purpose)
+    find_by_user_purpose(pool, user_id, purpose, &target)
         .await?
         .ok_or_else(|| "upsert email token failed: row missing after upsert".into())
 }
@@ -170,14 +181,17 @@ pub async fn find_by_user_purpose(
     pool: &DbPool,
     user_id: &str,
     purpose: &str,
+    target_email: &str,
 ) -> Result<Option<EmailTokenRow>, String> {
+    let target = target_email.trim().to_ascii_lowercase();
     match pool {
         DbPool::Postgres(p) => {
             let row = sqlx::query(&format!(
-                "{TOKEN_SELECT_PG} WHERE user_id = $1 AND purpose = $2"
+                "{TOKEN_SELECT_PG} WHERE user_id = $1 AND purpose = $2 AND target_email = $3"
             ))
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .fetch_optional(p)
             .await
             .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
@@ -188,10 +202,11 @@ pub async fn find_by_user_purpose(
         }
         DbPool::MySql(p) => {
             let row = sqlx::query(&format!(
-                "{TOKEN_SELECT_MYSQL} WHERE user_id = ? AND purpose = ?"
+                "{TOKEN_SELECT_MYSQL} WHERE user_id = ? AND purpose = ? AND target_email = ?"
             ))
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .fetch_optional(p)
             .await
             .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
@@ -202,10 +217,11 @@ pub async fn find_by_user_purpose(
         }
         DbPool::Sqlite(p) => {
             let row = sqlx::query(&format!(
-                "{TOKEN_SELECT_SQLITE} WHERE user_id = ?1 AND purpose = ?2"
+                "{TOKEN_SELECT_SQLITE} WHERE user_id = ?1 AND purpose = ?2 AND target_email = ?3"
             ))
             .bind(user_id)
             .bind(purpose)
+            .bind(&target)
             .fetch_optional(p)
             .await
             .map_err(|e| format!("find email token by user/purpose failed: {e}"))?;
@@ -351,6 +367,9 @@ RETURNING attempt_count",
 }
 
 /// Test/helper: set `created_at` for rate-limit window simulation.
+///
+/// Updates **all** tokens for `(user_id, purpose)` regardless of `target_email`,
+/// so backdate helpers keep working after primary verify tokens use the address.
 pub async fn set_created_at(
     pool: &DbPool,
     user_id: &str,
@@ -372,7 +391,8 @@ WHERE user_id = $1 AND purpose = $2",
         }
         DbPool::MySql(p) => {
             sqlx::query(
-                "UPDATE auth_email_tokens SET created_at = ? WHERE user_id = ? AND purpose = ?",
+                "UPDATE auth_email_tokens SET created_at = ?
+WHERE user_id = ? AND purpose = ?",
             )
             .bind(created_at)
             .bind(user_id)
@@ -383,7 +403,8 @@ WHERE user_id = $1 AND purpose = $2",
         }
         DbPool::Sqlite(p) => {
             sqlx::query(
-                "UPDATE auth_email_tokens SET created_at = ?1 WHERE user_id = ?2 AND purpose = ?3",
+                "UPDATE auth_email_tokens SET created_at = ?1
+WHERE user_id = ?2 AND purpose = ?3",
             )
             .bind(created_at)
             .bind(user_id)

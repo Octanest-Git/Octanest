@@ -13,6 +13,8 @@ pub mod pull_types;
 pub mod release_types;
 pub mod repo_types;
 pub mod ssh_key_types;
+pub mod gpg_key_types;
+pub mod email_types;
 pub mod webhook_types;
 
 pub use action_types::*;
@@ -28,6 +30,8 @@ pub use pull_types::*;
 pub use release_types::*;
 pub use repo_types::*;
 pub use ssh_key_types::*;
+pub use gpg_key_types::*;
+pub use email_types::*;
 pub use webhook_types::*;
 
 use serde::{Deserialize, Serialize};

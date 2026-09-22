@@ -86,6 +86,18 @@ export const fetchSshKeyList = createServerFn({ method: "GET" }).handler(async (
   return client.sshKey.list();
 });
 
+/** SSR: gpgKey.list with Cookie forward. */
+export const fetchGpgKeyList = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.gpgKey.list();
+});
+
+/** SSR: email.list with Cookie forward. */
+export const fetchEmailList = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createSsrClient(incomingCookie());
+  return client.email.list();
+});
+
 /** SSR: admin.auth.getSettings with Cookie forward. */
 export const fetchAdminAuthSettings = createServerFn({ method: "GET" }).handler(async () => {
   const client = createSsrClient(incomingCookie());
