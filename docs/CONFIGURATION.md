@@ -195,7 +195,7 @@ Phase 9 adds Git **clone/fetch/push over SSH** beside Smart HTTP. Keys are regis
 
 ## Two-way repository mirroring
 
-Existing repos can attach **one** two-way remote (HTTPS token or SSH deploy key). Behavior and RPC: [API.md](API.md#two-way-repository-mirroring). UI: repository Settings → Two-way mirror.
+Existing repos can attach **one** two-way remote (HTTPS token or SSH deploy key). Behavior and RPC: [API.md](API.md#two-way-repository-mirroring). UI: repository Settings → Two-way mirror. Sync mode is per mirror: **`merge`** (default, FF/merge/PR) or **`exact`** (1:1 LWW + delete propagation).
 
 | Env / setting | Role |
 | --- | --- |

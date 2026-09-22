@@ -95,7 +95,7 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `user.update_profile` | Update `display_name`, `username`, `bio` | Session |
 | `user.lookup` | Username prefix autocomplete (public fields only; never emails) | Session (rate-limited) |
 | `org.create` | Create organization; slug shares username reserved list | Session + verified email |
-| `org.get` | Org profile by slug | Session + verified |
+| `org.get` | Org profile by slug | Anonymous OK; unknown → `org.not_found` |
 | `org.listMine` | Orgs the caller belongs to (includes caller `role`) | Session + verified |
 | `org.updateSettings` | Update `display_name` / `member_base_permission` | Org Admin+ |
 | `org.members.list` | Members (`username`, `role`, ids — no emails) | Org member |
@@ -449,7 +449,14 @@ Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprin
 
 ### Two-way repository mirroring
 
-Attach one external git remote (HTTPS token or SSH deploy key) to an existing repository. Sync is **per-ref**: fast-forward when one side is behind; on diverged **branches**, create a merge commit and push it to both sides; **tags never merge** (identical → skip, different SHAs → conflict). Deletes are not propagated. Force-push / `git push --mirror` are not used.
+Attach one external git remote (HTTPS token or SSH deploy key) to an existing repository. Choose a **sync mode**:
+
+| Mode | Tips | Deletes | Protected default |
+| --- | --- | --- | --- |
+| **`merge`** (default) | Fast-forward when one side is behind; diverged **branches** get a merge commit pushed both ways; **tags never merge** (identical → skip, different SHAs → conflict) | Not propagated | Local FF that would violate protection opens a PR from `mirror/<id-prefix>/sync/<branch>`; merge conflicts open `mirror/<id-prefix>/<branch>` |
+| **`exact`** | Last-writer-wins by tip committer time (tie → remote); force-update the older side | Both ways via a per-mirror ref snapshot (first Exact run baselines only — no mass deletes on mode switch) | Updates the real tip (mirror Admin bypass; still blocked when `enforce_admins`). No helper `mirror/*` branches or PRs |
+
+Force-push / `git push --mirror` are used only in **exact** mode. Helper branches under `refs/heads/mirror/**` are never synced in Exact mode and are cleaned up when Exact runs.
 
 **Triggers (event-driven):**
 
@@ -460,7 +467,7 @@ Attach one external git remote (HTTPS token or SSH deploy key) to an existing re
 
 Per repo: at most one sync in flight plus one coalesced follow-up. Mirror-driven local ref updates do **not** re-enqueue (avoids loops after we push to GitHub and it webhooks us back). Equal tips are a cheap skip.
 
-**Protected branches:** local fast-forward that would violate protection opens a PR from `mirror/<id-prefix>/sync/<branch>` instead of updating the protected tip. Merge conflicts open a PR from `mirror/<id-prefix>/<branch>` so a human resolves with the normal PR flow.
+Set `sync_mode` on `repo.mirror.upsert` (`merge` | `exact`). Changing mode clears the Exact ref snapshot so the next Exact run re-baselines.
 
 #### Inbound webhook
 

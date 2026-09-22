@@ -167,9 +167,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<OrgPublic,
     to_public(&row)
 }
 
-/// `org.get` — public org profile by slug.
+/// `org.get` — public org profile by slug (anonymous OK; mirrors `user.getPublicProfile`).
 pub async fn get(ctx: &RpcCtx, input: serde_json::Value) -> Result<OrgPublic, AppError> {
-    let _ = require_verified(ctx).await?;
     let req: OrgSlugRequest = serde_json::from_value(input)
         .map_err(|e| AppError::new("rpc.bad_input", format!("invalid org.get input: {e}")))?;
     let org = load_org_by_slug(ctx, &req.slug).await?;

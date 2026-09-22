@@ -154,6 +154,7 @@ export function MirrorSettingsPanel(props: {
   const [knownHosts, setKnownHosts] = useState("");
   const [pollSecs, setPollSecs] = useState("60");
   const [enabled, setEnabled] = useState(true);
+  const [syncMode, setSyncMode] = useState<"merge" | "exact">("merge");
   const [pending, setPending] = useState(false);
   const [syncPending, setSyncPending] = useState(false);
   const [fetchKhPending, setFetchKhPending] = useState(false);
@@ -168,6 +169,7 @@ export function MirrorSettingsPanel(props: {
     setKnownHosts(existing.known_hosts || "");
     setPollSecs(String(existing.poll_interval_secs));
     setEnabled(existing.enabled);
+    setSyncMode(existing.sync_mode === "exact" ? "exact" : "merge");
   }, [existing?.id, existing?.updated_at]);
 
   async function save() {
@@ -186,6 +188,7 @@ export function MirrorSettingsPanel(props: {
         known_hosts: knownHosts.trim() || null,
         poll_interval_secs: Number.isFinite(poll) ? poll : 60,
         enabled,
+        sync_mode: syncMode,
       });
       if (!res.ok) {
         setError(res.error.message || "Could not save mirror.");
@@ -450,6 +453,49 @@ export function MirrorSettingsPanel(props: {
         <p className="text-[13px] text-muted-foreground">
           Clone URL of the external repository to keep in sync.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-3" data-testid="mirror-sync-mode">
+        <p className="text-[14px] font-medium text-foreground">Sync mode</p>
+        <RadioGroup
+          value={syncMode}
+          disabled={pending}
+          onValueChange={(v) => {
+            if (v === "merge" || v === "exact") setSyncMode(v);
+          }}
+          className="gap-3"
+          aria-label="Sync mode"
+        >
+          <label className="flex cursor-pointer items-start gap-3">
+            <RadioGroupItem value="merge" className="mt-0.5" data-testid="mirror-sync-mode-merge" />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[14px] font-medium text-foreground">Merge (safe)</span>
+              <span className="text-[13px] text-muted-foreground">
+                Fast-forward or merge diverged branches. Protected tips open a PR. Deletes are not
+                propagated.
+              </span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3">
+            <RadioGroupItem value="exact" className="mt-0.5" data-testid="mirror-sync-mode-exact" />
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[14px] font-medium text-foreground">Exact sync (1:1)</span>
+              <span className="text-[13px] text-muted-foreground">
+                Force-update tips with last-writer-wins and propagate deletes both ways. Can
+                overwrite history. Does not open mirror helper PRs.
+              </span>
+            </span>
+          </label>
+        </RadioGroup>
+        @if (syncMode === "exact") {
+          <p
+            className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[13px] text-muted-foreground"
+            data-testid="mirror-exact-warning"
+          >
+            Exact sync can force-push and delete branches on both sides. Use only when you
+            want true one-to-one mirroring.
+          </p>;
+        }
       </div>
 
       <div className="flex flex-col gap-3">

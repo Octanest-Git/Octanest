@@ -18,6 +18,8 @@ pub struct RepoMirrorPublic {
     pub webhook_secret_masked: String,
     pub poll_interval_secs: i64,
     pub enabled: bool,
+    /// `merge` | `exact`
+    pub sync_mode: String,
     pub last_synced_at: Option<String>,
     /// `never` | `ok` | `error` | `conflict` | `running`
     pub last_status: String,
@@ -72,6 +74,9 @@ pub struct RepoMirrorUpsertRequest {
     pub poll_interval_secs: Option<i64>,
     #[serde(default)]
     pub enabled: Option<bool>,
+    /// `merge` | `exact` — omit to keep existing / default `merge` on create.
+    #[serde(default)]
+    pub sync_mode: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

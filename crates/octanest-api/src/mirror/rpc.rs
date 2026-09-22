@@ -73,6 +73,11 @@ async fn to_public(
         webhook_secret_masked: mask_secret(!row.webhook_secret_ciphertext.is_empty()),
         poll_interval_secs: row.poll_interval_secs,
         enabled: row.enabled,
+        sync_mode: if row.sync_mode == "exact" {
+            "exact".into()
+        } else {
+            "merge".into()
+        },
         last_synced_at: row.last_synced_at.clone(),
         last_status: row.last_status.clone(),
         last_error: row.last_error.clone(),
@@ -193,6 +198,25 @@ pub async fn upsert(
     let username = req.username.unwrap_or_default();
     let ssh_pub = req.ssh_public_key.unwrap_or_default();
     let known_hosts = req.known_hosts.unwrap_or_default();
+    let sync_mode = match req.sync_mode.as_deref().map(str::trim).filter(|s| !s.is_empty()) {
+        Some("exact") => "exact",
+        Some("merge") => "merge",
+        Some(_) => {
+            return Err(AppError::new(
+                "repo.mirror.invalid_sync_mode",
+                "sync_mode must be merge or exact",
+            ))
+        }
+        None => existing
+            .as_ref()
+            .map(|e| e.sync_mode.as_str())
+            .filter(|s| *s == "exact" || *s == "merge")
+            .unwrap_or("merge"),
+    };
+    let clear_ref_snapshot = existing
+        .as_ref()
+        .map(|e| e.sync_mode.as_str() != sync_mode)
+        .unwrap_or(false);
 
     let row = ctx
         .db
@@ -208,6 +232,8 @@ pub async fn upsert(
             &webhook_ct,
             poll,
             enabled,
+            sync_mode,
+            clear_ref_snapshot,
         )
         .await
         .map_err(db_err)?;
@@ -328,6 +354,12 @@ pub async fn generate_ssh_key(
             "",
             existing.poll_interval_secs,
             existing.enabled,
+            if existing.sync_mode == "exact" {
+                "exact"
+            } else {
+                "merge"
+            },
+            false,
         )
         .await
         .map_err(db_err)?;

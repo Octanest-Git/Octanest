@@ -2016,6 +2016,100 @@ impl GitBackend for CliGitBackend {
         Ok(())
     }
 
+    async fn push_to_url_force(
+        &self,
+        repo: &Path,
+        url: &str,
+        credentials: &RemoteCredentials,
+        local_ref: &str,
+        remote_ref: &str,
+    ) -> Result<(), GitError> {
+        let url = validate_remote_url(url)?;
+        let remote_ref = validate_treeish(remote_ref)?;
+        if remote_ref.contains(':') {
+            return Err(GitError::InvalidArg("ref names must not contain ':'".into()));
+        }
+        let refspec = if local_ref.is_empty() {
+            // Delete remote ref.
+            format!(":{remote_ref}")
+        } else {
+            let local_ref = validate_treeish(local_ref)?;
+            if local_ref.contains(':') {
+                return Err(GitError::InvalidArg("ref names must not contain ':'".into()));
+            }
+            format!("+{local_ref}:{remote_ref}")
+        };
+        let repo_abs = absolute_path(repo)?;
+        let repo_s = repo_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 repo: {}", repo_abs.display()))
+        })?;
+        let _ = run_git_remote(&["-C", repo_s, "push", url, &refspec], credentials).await?;
+        Ok(())
+    }
+
+    async fn force_update_ref(
+        &self,
+        repo: &Path,
+        refname: &str,
+        target_sha: &str,
+    ) -> Result<(), GitError> {
+        let refname = validate_treeish(refname)?;
+        let target_sha = validate_treeish(target_sha)?;
+        let bare_abs = absolute_path(repo)?;
+        let bare_s = bare_abs.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
+        })?;
+
+        let _ = run_git_stdout(&[
+            "-C",
+            bare_s,
+            "cat-file",
+            "-e",
+            &format!("{target_sha}^{{commit}}"),
+        ])
+        .await?;
+
+        let tmp = tempfile::tempdir().map_err(GitError::Io)?;
+        let work = tmp.path();
+        let work_s = work
+            .to_str()
+            .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree".into()))?;
+        run_git(&["clone", bare_s, work_s]).await?;
+        run_git(&["-C", work_s, "checkout", "--detach", target_sha]).await?;
+
+        let hook_env = protection_hook_push_env();
+        let hook_env_refs: Vec<(&str, &str)> = hook_env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+
+        if let Some(branch) = refname.strip_prefix("refs/heads/") {
+            let refspec = format!("+HEAD:refs/heads/{branch}");
+            run_git_with_env(&["-C", work_s, "push", "origin", &refspec], &hook_env_refs).await?;
+            return Ok(());
+        }
+        if let Some(tag) = refname.strip_prefix("refs/tags/") {
+            // Force-move tag on bare via worktree.
+            let _ = run_git(&["-C", work_s, "tag", "-f", tag, target_sha]).await;
+            let refspec = format!("+refs/tags/{tag}:refs/tags/{tag}");
+            run_git_with_env(&["-C", work_s, "push", "origin", &refspec], &hook_env_refs).await?;
+            return Ok(());
+        }
+        Err(GitError::InvalidArg(format!(
+            "force_update_ref supports heads/tags only: {refname}"
+        )))
+    }
+
+    async fn committer_unix_time(&self, repo: &Path, sha: &str) -> Result<i64, GitError> {
+        let sha = validate_treeish(sha)?;
+        let repo_s = repo_str(repo)?;
+        let stdout =
+            run_git_stdout(&["-C", repo_s, "log", "-1", "--format=%ct", sha]).await?;
+        let s = String::from_utf8_lossy(&stdout).trim().to_string();
+        s.parse::<i64>()
+            .map_err(|e| GitError::Process(format!("invalid committer time for {sha}: {e}")))
+    }
+
     async fn clone_bare_url(
         &self,
         url: &str,
@@ -3268,6 +3362,42 @@ mod tests {
             git.rev_parse(&local, "refs/heads/main").await.unwrap(),
             before
         );
+    }
+
+    #[tokio::test]
+    async fn force_update_ref_moves_non_ff_tip() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("force.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit(
+            &bare,
+            "main",
+            "first",
+            &[("a.txt".into(), b"1\n".to_vec())],
+        )
+        .await
+        .unwrap();
+        let first = git.rev_parse(&bare, "refs/heads/main").await.unwrap();
+        push_branch_with_file(&bare, "main", "main", "b.txt", b"2\n", "second").await;
+        let second = git.rev_parse(&bare, "refs/heads/main").await.unwrap();
+        assert_ne!(first, second);
+        // Force main back to the older tip (non-FF).
+        assert!(
+            git.fast_forward_ref(&bare, "refs/heads/main", &first)
+                .await
+                .is_err(),
+            "non-FF must fail without force"
+        );
+        git.force_update_ref(&bare, "refs/heads/main", &first)
+            .await
+            .unwrap();
+        assert_eq!(
+            git.rev_parse(&bare, "refs/heads/main").await.unwrap(),
+            first
+        );
+        let ct = git.committer_unix_time(&bare, &first).await.unwrap();
+        assert!(ct > 0, "committer unix time should be positive");
     }
 
     #[tokio::test]

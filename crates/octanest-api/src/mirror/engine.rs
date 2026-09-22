@@ -1,4 +1,4 @@
-//! Per-ref two-way sync: FF or merge, never force-overwrite.
+//! Per-ref two-way sync: merge mode (FF/merge/PR) or exact mode (LWW + deletes).
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -72,21 +72,33 @@ async fn run_mirror_sync_inner(
         .map_err(|e| e.to_string())?
         .to_string();
 
-    // Optional known_hosts TOFU for SSH: if empty, try once to capture? Plan says
-    // require known_hosts — credentials_from_mirror already errors if missing.
-
     git.fetch_from_url(&bare, &url, &credentials)
         .await
         .map_err(|e| e.to_string())?;
 
-    let local_refs = git.list_refs(&bare).await.map_err(|e| e.to_string())?;
+    if mirror.sync_mode == "exact" {
+        return run_exact_sync(db, git, &bare, &url, &credentials, mirror).await;
+    }
+
+    run_merge_sync(db, git, &bare, &url, &credentials, mirror).await
+}
+
+async fn run_merge_sync(
+    db: &Database,
+    git: &dyn GitBackend,
+    bare: &Path,
+    url: &str,
+    credentials: &RemoteCredentials,
+    mirror: &RepositoryMirrorRow,
+) -> Result<&'static str, String> {
+    let local_refs = git.list_refs(bare).await.map_err(|e| e.to_string())?;
     let mut local_map: HashMap<String, String> = HashMap::new();
     for r in &local_refs {
         local_map.insert(r.name.clone(), r.oid.clone());
     }
 
-    let mirror_heads = list_mirror_namespace(git, &bare, "refs/octanest/mirror/heads/").await?;
-    let mirror_tags = list_mirror_namespace(git, &bare, "refs/octanest/mirror/tags/").await?;
+    let mirror_heads = list_mirror_namespace(git, bare, "refs/octanest/mirror/heads/").await?;
+    let mirror_tags = list_mirror_namespace(git, bare, "refs/octanest/mirror/tags/").await?;
 
     let mut had_conflict = false;
     let mut had_error = false;
@@ -96,9 +108,9 @@ async fn run_mirror_sync_inner(
         let outcome = sync_branch(
             db,
             git,
-            &bare,
-            &url,
-            &credentials,
+            bare,
+            url,
+            credentials,
             &mirror.id,
             &mirror.repository_id,
             &local_ref,
@@ -118,9 +130,9 @@ async fn run_mirror_sync_inner(
         let local_ref = format!("refs/tags/{short}");
         let outcome = sync_tag(
             git,
-            &bare,
-            &url,
-            &credentials,
+            bare,
+            url,
+            credentials,
             &local_ref,
             local_map.get(&local_ref).map(|s| s.as_str()),
             remote_oid,
@@ -141,7 +153,7 @@ async fn run_mirror_sync_inner(
                 continue;
             }
             match git
-                .push_to_url(&bare, &url, &credentials, &r.name, &r.name)
+                .push_to_url(bare, url, credentials, &r.name, &r.name)
                 .await
             {
                 Ok(()) => {
@@ -183,6 +195,466 @@ async fn run_mirror_sync_inner(
         Ok("error")
     } else {
         Ok("ok")
+    }
+}
+
+/// Exact 1:1 sync: LWW tips, both-way deletes via snapshot, no mirror/* PRs.
+async fn run_exact_sync(
+    db: &Database,
+    git: &dyn GitBackend,
+    bare: &Path,
+    url: &str,
+    credentials: &RemoteCredentials,
+    mirror: &RepositoryMirrorRow,
+) -> Result<&'static str, String> {
+    // Drop stale merge-mode helper branches so they are never pushed.
+    cleanup_mirror_helper_branches(git, bare).await;
+
+    let local_refs = git.list_refs(bare).await.map_err(|e| e.to_string())?;
+    let mut local_heads: HashMap<String, String> = HashMap::new();
+    let mut local_tags: HashMap<String, String> = HashMap::new();
+    for r in &local_refs {
+        if let Some(short) = r.name.strip_prefix("refs/heads/") {
+            if short.starts_with("mirror/") {
+                continue;
+            }
+            local_heads.insert(short.to_string(), r.oid.clone());
+        } else if let Some(short) = r.name.strip_prefix("refs/tags/") {
+            local_tags.insert(short.to_string(), r.oid.clone());
+        }
+    }
+
+    let remote_heads = list_mirror_namespace(git, bare, "refs/octanest/mirror/heads/").await?;
+    let remote_tags = list_mirror_namespace(git, bare, "refs/octanest/mirror/tags/").await?;
+
+    let snapshot = parse_ref_snapshot(&mirror.last_ref_snapshot);
+    let mut had_error = false;
+    let mut next_snapshot: HashMap<String, String> = HashMap::new();
+
+    // Heads
+    let mut head_names: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    head_names.extend(local_heads.keys().cloned());
+    head_names.extend(remote_heads.keys().cloned());
+
+    for short in head_names {
+        if short.starts_with("mirror/") {
+            continue;
+        }
+        let local_ref = format!("refs/heads/{short}");
+        let local_oid = local_heads.get(&short).cloned();
+        let remote_oid = remote_heads.get(&short).cloned();
+        let in_snap = snapshot.contains_key(&local_ref);
+
+        let outcome = exact_sync_one_ref(
+            db,
+            git,
+            bare,
+            url,
+            credentials,
+            &mirror.repository_id,
+            &local_ref,
+            local_oid.as_deref(),
+            remote_oid.as_deref(),
+            in_snap,
+            true,
+        )
+        .await;
+        if outcome.outcome == "error" {
+            had_error = true;
+        }
+        record_outcome(db, &mirror.id, &local_ref, &outcome).await?;
+
+        // Agreed tip for snapshot: surviving side after sync.
+        match (outcome.outcome.as_str(), local_oid.as_deref(), remote_oid.as_deref()) {
+            ("error", _, _) => {
+                // Keep prior snapshot entry if any so deletes can retry.
+                if let Some(prev) = snapshot.get(&local_ref) {
+                    next_snapshot.insert(local_ref.clone(), prev.clone());
+                } else if let Some(oid) = local_oid.or(remote_oid) {
+                    next_snapshot.insert(local_ref.clone(), oid);
+                }
+            }
+            ("ff_in" | "ff_out" | "skipped", _, _) => {
+                let tip = if !outcome.local_oid.is_empty() {
+                    outcome.local_oid.clone()
+                } else if !outcome.remote_oid.is_empty() {
+                    outcome.remote_oid.clone()
+                } else {
+                    String::new()
+                };
+                if outcome.detail.starts_with("deleted") {
+                    // Gone on both sides — omit from snapshot.
+                } else if !tip.is_empty() {
+                    next_snapshot.insert(local_ref, tip);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // Tags
+    let mut tag_names: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    tag_names.extend(local_tags.keys().cloned());
+    tag_names.extend(remote_tags.keys().cloned());
+
+    for short in tag_names {
+        let local_ref = format!("refs/tags/{short}");
+        let local_oid = local_tags.get(&short).cloned();
+        let remote_oid = remote_tags.get(&short).cloned();
+        let in_snap = snapshot.contains_key(&local_ref);
+
+        let outcome = exact_sync_one_ref(
+            db,
+            git,
+            bare,
+            url,
+            credentials,
+            &mirror.repository_id,
+            &local_ref,
+            local_oid.as_deref(),
+            remote_oid.as_deref(),
+            in_snap,
+            false,
+        )
+        .await;
+        if outcome.outcome == "error" {
+            had_error = true;
+        }
+        record_outcome(db, &mirror.id, &local_ref, &outcome).await?;
+
+        match (outcome.outcome.as_str(), local_oid.as_deref(), remote_oid.as_deref()) {
+            ("error", _, _) => {
+                if let Some(prev) = snapshot.get(&local_ref) {
+                    next_snapshot.insert(local_ref.clone(), prev.clone());
+                } else if let Some(oid) = local_oid.or(remote_oid) {
+                    next_snapshot.insert(local_ref.clone(), oid);
+                }
+            }
+            ("ff_in" | "ff_out" | "skipped", _, _) => {
+                let tip = if !outcome.local_oid.is_empty() {
+                    outcome.local_oid.clone()
+                } else if !outcome.remote_oid.is_empty() {
+                    outcome.remote_oid.clone()
+                } else {
+                    String::new()
+                };
+                if outcome.detail.starts_with("deleted") {
+                    // omit
+                } else if !tip.is_empty() {
+                    next_snapshot.insert(local_ref, tip);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    if !had_error {
+        let snap_json =
+            serde_json::to_string(&next_snapshot).unwrap_or_else(|_| "{}".to_string());
+        db.update_mirror_ref_snapshot(&mirror.id, &snap_json)
+            .await?;
+        Ok("ok")
+    } else {
+        // Still persist partial snapshot progress so baselines advance when possible.
+        let snap_json =
+            serde_json::to_string(&next_snapshot).unwrap_or_else(|_| "{}".to_string());
+        let _ = db
+            .update_mirror_ref_snapshot(&mirror.id, &snap_json)
+            .await;
+        Ok("error")
+    }
+}
+
+fn parse_ref_snapshot(raw: &str) -> HashMap<String, String> {
+    serde_json::from_str::<HashMap<String, String>>(raw.trim())
+        .unwrap_or_default()
+}
+
+async fn cleanup_mirror_helper_branches(git: &dyn GitBackend, bare: &Path) {
+    let Ok(refs) = git.list_refs(bare).await else {
+        return;
+    };
+    for r in refs {
+        if let Some(short) = r.name.strip_prefix("refs/heads/") {
+            if short.starts_with("mirror/") {
+                let _ = git.branch_delete(bare, short).await;
+            }
+        }
+    }
+}
+
+async fn exact_sync_one_ref(
+    db: &Database,
+    git: &dyn GitBackend,
+    bare: &Path,
+    url: &str,
+    credentials: &RemoteCredentials,
+    repository_id: &str,
+    local_ref: &str,
+    local_oid: Option<&str>,
+    remote_oid: Option<&str>,
+    in_snapshot: bool,
+    is_branch: bool,
+) -> RefOutcome {
+    match (local_oid, remote_oid) {
+        (Some(l), Some(r)) if l == r => RefOutcome {
+            outcome: "skipped".into(),
+            local_oid: l.into(),
+            remote_oid: r.into(),
+            detail: "equal".into(),
+        },
+        (Some(l), Some(r)) => {
+            // LWW by committer unix time; tie → remote wins.
+            let lt = git.committer_unix_time(bare, l).await.unwrap_or(0);
+            let rt = git.committer_unix_time(bare, r).await.unwrap_or(0);
+            if rt >= lt {
+                exact_force_local(
+                    db,
+                    git,
+                    bare,
+                    repository_id,
+                    local_ref,
+                    r,
+                    is_branch,
+                    "exact: remote LWW",
+                )
+                .await
+            } else {
+                exact_force_remote(git, bare, url, credentials, local_ref, l, "exact: local LWW")
+                    .await
+            }
+        }
+        (None, Some(r)) => {
+            if in_snapshot {
+                // Local deleted while remote still has the tip — delete remote.
+                exact_delete_remote(git, bare, url, credentials, local_ref, r).await
+            } else {
+                // Remote-only — create local from remote.
+                exact_force_local(
+                    db,
+                    git,
+                    bare,
+                    repository_id,
+                    local_ref,
+                    r,
+                    is_branch,
+                    "exact: create from remote",
+                )
+                .await
+            }
+        }
+        (Some(l), None) => {
+            if in_snapshot {
+                // Remote deleted — delete local.
+                exact_delete_local(db, git, bare, repository_id, local_ref, l, is_branch).await
+            } else {
+                // Local-only — create on remote.
+                exact_force_remote(
+                    git,
+                    bare,
+                    url,
+                    credentials,
+                    local_ref,
+                    l,
+                    "exact: create on remote",
+                )
+                .await
+            }
+        }
+        (None, None) => RefOutcome {
+            outcome: "skipped".into(),
+            local_oid: String::new(),
+            remote_oid: String::new(),
+            detail: "absent both sides".into(),
+        },
+    }
+}
+
+async fn exact_force_local(
+    db: &Database,
+    git: &dyn GitBackend,
+    bare: &Path,
+    repository_id: &str,
+    local_ref: &str,
+    target_sha: &str,
+    is_branch: bool,
+    detail: &str,
+) -> RefOutcome {
+    if is_branch {
+        let branch = local_ref
+            .strip_prefix("refs/heads/")
+            .unwrap_or(local_ref);
+        if let Ok(eff) = effective_for_branch(db, repository_id, branch).await {
+            if evaluate_push(
+                &eff,
+                ProtectionIntent::ForcePush,
+                Some(crate::repo::Capability::Admin),
+            )
+            .is_err()
+            {
+                return RefOutcome {
+                    outcome: "error".into(),
+                    local_oid: String::new(),
+                    remote_oid: target_sha.into(),
+                    detail: "exact: blocked by enforce_admins / protection".into(),
+                };
+            }
+        }
+    }
+    match git.force_update_ref(bare, local_ref, target_sha).await {
+        Ok(()) => RefOutcome {
+            outcome: "ff_in".into(),
+            local_oid: target_sha.into(),
+            remote_oid: target_sha.into(),
+            detail: detail.into(),
+        },
+        Err(e) => RefOutcome {
+            outcome: "error".into(),
+            local_oid: String::new(),
+            remote_oid: target_sha.into(),
+            detail: e.to_string(),
+        },
+    }
+}
+
+async fn exact_force_remote(
+    git: &dyn GitBackend,
+    bare: &Path,
+    url: &str,
+    credentials: &RemoteCredentials,
+    local_ref: &str,
+    local_oid: &str,
+    detail: &str,
+) -> RefOutcome {
+    match git
+        .push_to_url_force(bare, url, credentials, local_ref, local_ref)
+        .await
+    {
+        Ok(()) => RefOutcome {
+            outcome: "ff_out".into(),
+            local_oid: local_oid.into(),
+            remote_oid: local_oid.into(),
+            detail: detail.into(),
+        },
+        Err(e) => RefOutcome {
+            outcome: "error".into(),
+            local_oid: local_oid.into(),
+            remote_oid: String::new(),
+            detail: e.to_string(),
+        },
+    }
+}
+
+async fn exact_delete_local(
+    db: &Database,
+    git: &dyn GitBackend,
+    bare: &Path,
+    repository_id: &str,
+    local_ref: &str,
+    local_oid: &str,
+    is_branch: bool,
+) -> RefOutcome {
+    if is_branch {
+        let branch = local_ref
+            .strip_prefix("refs/heads/")
+            .unwrap_or(local_ref);
+        if let Ok(eff) = effective_for_branch(db, repository_id, branch).await {
+            if evaluate_push(
+                &eff,
+                ProtectionIntent::Delete,
+                Some(crate::repo::Capability::Admin),
+            )
+            .is_err()
+            {
+                return RefOutcome {
+                    outcome: "error".into(),
+                    local_oid: local_oid.into(),
+                    remote_oid: String::new(),
+                    detail: "exact: delete blocked by enforce_admins / protection".into(),
+                };
+            }
+        }
+        match git.branch_delete(bare, branch).await {
+            Ok(()) => RefOutcome {
+                outcome: "ff_in".into(),
+                local_oid: String::new(),
+                remote_oid: String::new(),
+                detail: "deleted local".into(),
+            },
+            Err(e) => RefOutcome {
+                outcome: "error".into(),
+                local_oid: local_oid.into(),
+                remote_oid: String::new(),
+                detail: e.to_string(),
+            },
+        }
+    } else {
+        // Tag delete via update-ref delete through force push empty — use branch_delete-like:
+        // `git update-ref -d` not exposed; use push delete to local bare via force_update is wrong.
+        // Delete tag with: push :refs/tags/X to file://bare — simpler: shell update-ref.
+        let bare_s = match bare.to_str() {
+            Some(s) => s,
+            None => {
+                return RefOutcome {
+                    outcome: "error".into(),
+                    local_oid: local_oid.into(),
+                    remote_oid: String::new(),
+                    detail: "non-utf8 bare".into(),
+                };
+            }
+        };
+        let status = tokio::process::Command::new("git")
+            .args(["-C", bare_s, "update-ref", "-d", local_ref])
+            .output()
+            .await;
+        match status {
+            Ok(o) if o.status.success() => RefOutcome {
+                outcome: "ff_in".into(),
+                local_oid: String::new(),
+                remote_oid: String::new(),
+                detail: "deleted local".into(),
+            },
+            Ok(o) => RefOutcome {
+                outcome: "error".into(),
+                local_oid: local_oid.into(),
+                remote_oid: String::new(),
+                detail: String::from_utf8_lossy(&o.stderr).trim().to_string(),
+            },
+            Err(e) => RefOutcome {
+                outcome: "error".into(),
+                local_oid: local_oid.into(),
+                remote_oid: String::new(),
+                detail: e.to_string(),
+            },
+        }
+    }
+}
+
+/// Delete a ref on the remote (local already missing).
+async fn exact_delete_remote(
+    git: &dyn GitBackend,
+    bare: &Path,
+    url: &str,
+    credentials: &RemoteCredentials,
+    local_ref: &str,
+    remote_oid: &str,
+) -> RefOutcome {
+    match git
+        .push_to_url_force(bare, url, credentials, "", local_ref)
+        .await
+    {
+        Ok(()) => RefOutcome {
+            outcome: "ff_out".into(),
+            local_oid: String::new(),
+            remote_oid: String::new(),
+            detail: "deleted remote".into(),
+        },
+        Err(e) => RefOutcome {
+            outcome: "error".into(),
+            local_oid: String::new(),
+            remote_oid: remote_oid.into(),
+            detail: e.to_string(),
+        },
     }
 }
 
@@ -706,4 +1178,19 @@ pub fn generate_webhook_secret() -> String {
         out.push_str(&format!("{b:02x}"));
     }
     out
+}
+
+#[cfg(test)]
+mod exact_snapshot_tests {
+    use super::parse_ref_snapshot;
+
+    #[test]
+    fn parse_ref_snapshot_empty_and_object() {
+        assert!(parse_ref_snapshot("{}").is_empty());
+        assert!(parse_ref_snapshot("").is_empty());
+        assert!(parse_ref_snapshot("not-json").is_empty());
+        let m = parse_ref_snapshot(r#"{"refs/heads/main":"abc","refs/tags/v1":"def"}"#);
+        assert_eq!(m.get("refs/heads/main").map(String::as_str), Some("abc"));
+        assert_eq!(m.get("refs/tags/v1").map(String::as_str), Some("def"));
+    }
 }
