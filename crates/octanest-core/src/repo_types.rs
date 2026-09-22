@@ -699,6 +699,22 @@ pub struct RepoCommitSummary {
     pub author_name: String,
     pub author_email: String,
     pub authored_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_avatar_url: Option<String>,
+    /// `none` | `valid` | `invalid` | `unknown`
+    #[serde(default = "default_signature_none")]
+    pub signature_status: String,
+    /// `ssh` | `gpg` | empty
+    #[serde(default)]
+    pub signature_kind: String,
+}
+
+fn default_signature_none() -> String {
+    "none".into()
 }
 
 /// `repo.commits` response.
@@ -737,6 +753,16 @@ pub struct RepoCommitResponse {
     pub author_name: String,
     pub author_email: String,
     pub authored_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_avatar_url: Option<String>,
+    #[serde(default = "default_signature_none")]
+    pub signature_status: String,
+    #[serde(default)]
+    pub signature_kind: String,
     pub parents: Vec<String>,
     pub files: Vec<RepoDiffFile>,
     pub truncated: bool,
@@ -776,9 +802,17 @@ pub struct RepoBlameRequest {
 pub struct RepoBlameLine {
     pub sha: String,
     pub author_name: String,
+    #[serde(default)]
+    pub author_email: String,
     pub authored_at: String,
     pub line_number: u32,
     pub content: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_avatar_url: Option<String>,
 }
 
 /// `repo.blame` response.

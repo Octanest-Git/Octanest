@@ -113,32 +113,10 @@ pub async fn update_profile(
         .ok_or_else(|| AppError::new("auth.unauthenticated", "not authenticated"))?;
 
     if username != existing.username {
-        if let Some(other) = ctx
-            .db
-            .find_user_by_username(&username)
-            .await
-            .map_err(db_err)?
-        {
-            if other.id != existing.id {
-                return Err(AppError::new(
-                    "auth.taken",
-                    "email or username already taken",
-                ));
-            }
-        } else if ctx
-            .db
-            .find_organization_by_slug(&username)
-            .await
-            .map_err(db_err)?
-            .is_some()
-        {
-            return Err(AppError::new(
-                "auth.taken",
-                "email or username already taken",
-            ));
-        }
-        // FS-then-DB: move `{old}/` → `{new}/` before rewriting users.username.
-        crate::git::rename_owner_repos_dir(&ctx.repos_dir, &existing.username, &username).await?;
+        return Err(AppError::new(
+            "auth.username_immutable",
+            "Usernames cannot be changed",
+        ));
     }
 
     let updated = match ctx
@@ -146,25 +124,14 @@ pub async fn update_profile(
         .update_user_profile(
             &session.user_id,
             &display_name,
-            &username,
+            &existing.username,
             &bio,
             existing.avatar_path.as_deref(),
         )
         .await
     {
         Ok(u) => u,
-        Err(e) => {
-            if username != existing.username {
-                // Best-effort compensate: put owner dir back if DB write failed.
-                let _ = crate::git::rename_owner_repos_dir(
-                    &ctx.repos_dir,
-                    &username,
-                    &existing.username,
-                )
-                .await;
-            }
-            return Err(db_err(e));
-        }
+        Err(e) => return Err(db_err(e)),
     };
 
     let updated = if let Some(branch) = req.default_branch {

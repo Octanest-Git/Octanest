@@ -440,6 +440,13 @@ export type RepoCommitSummary = {
   author_name: string;
   author_email: string;
   authored_at: string;
+  author_user_id?: string | null;
+  author_username?: string | null;
+  author_avatar_url?: string | null;
+  /** none | valid | invalid | unknown */
+  signature_status?: string;
+  /** ssh | gpg | empty */
+  signature_kind?: string;
 };
 
 export type RepoCommitsResponse = {
@@ -563,6 +570,11 @@ export type RepoCommitResponse = {
   author_name: string;
   author_email: string;
   authored_at: string;
+  author_user_id?: string | null;
+  author_username?: string | null;
+  author_avatar_url?: string | null;
+  signature_status?: string;
+  signature_kind?: string;
   parents: string[];
   files: RepoDiffFile[];
   truncated: boolean;
@@ -593,9 +605,13 @@ export type RepoBlameRequest = {
 export type RepoBlameLine = {
   sha: string;
   author_name: string;
+  author_email?: string;
   authored_at: string;
   line_number: number;
   content: string;
+  author_user_id?: string | null;
+  author_username?: string | null;
+  author_avatar_url?: string | null;
 };
 
 export type RepoBlameResponse = {
@@ -1633,6 +1649,11 @@ export type PullCommitSummary = {
   author_name: string;
   author_email: string;
   authored_at: string;
+  author_user_id?: string | null;
+  author_username?: string | null;
+  author_avatar_url?: string | null;
+  signature_status?: string;
+  signature_kind?: string;
 };
 
 export type PullCommitsResponse = {

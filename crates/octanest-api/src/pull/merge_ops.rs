@@ -143,19 +143,42 @@ pub async fn commits(
     )?;
     let summaries = ctx
         .git
-        .log(&path, &row.head_ref, 0, 100)
+        .log(&path, &row.head_ref, 0, 100, None)
         .await
         .map_err(|e| AppError::new("pull.commits_failed", format!("log failed: {e}")))?;
+    let emails: Vec<String> = summaries.iter().map(|c| c.author_email.clone()).collect();
+    let signers = crate::repo::signatures::allowed_signers_for_emails(&ctx.db, &emails).await;
+    let summaries = if let Some((_, ref p)) = signers {
+        ctx.git
+            .log(&path, &row.head_ref, 0, 100, Some(p.as_path()))
+            .await
+            .map_err(|e| AppError::new("pull.commits_failed", format!("log failed: {e}")))?
+    } else {
+        summaries
+    };
+    let resolved = crate::repo::author_resolve::resolve_author_emails(
+        &ctx.db,
+        summaries.iter().map(|c| c.author_email.as_str()),
+    )
+    .await;
     Ok(PullCommitsResponse {
         commits: summaries
             .into_iter()
-            .map(|c| PullCommitSummary {
-                sha: c.sha,
-                short_sha: c.short_sha,
-                subject: c.subject,
-                author_name: c.author_name,
-                author_email: c.author_email,
-                authored_at: c.authored_at,
+            .map(|c| {
+                let r = resolved.get(&c.author_email).cloned().unwrap_or_default();
+                PullCommitSummary {
+                    sha: c.sha,
+                    short_sha: c.short_sha,
+                    subject: c.subject,
+                    author_name: c.author_name,
+                    author_email: c.author_email,
+                    authored_at: c.authored_at,
+                    author_user_id: r.user_id,
+                    author_username: r.username,
+                    author_avatar_url: r.avatar_url,
+                    signature_status: c.signature_status,
+                    signature_kind: c.signature_kind,
+                }
             })
             .collect(),
     })

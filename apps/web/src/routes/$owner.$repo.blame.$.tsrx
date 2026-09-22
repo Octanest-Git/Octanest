@@ -1,6 +1,7 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import type { RepoBlameResponse, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { CommitAuthorLink } from "@/components/repo/commit-author-link";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { commitHref, parseRefAndPath, shortRefName } from "@/lib/repo-browse";
@@ -156,8 +157,12 @@ export function RepoBlamePage() @{
                   >
                     {shortSha(line.sha) as string}
                   </a>
-                  <span className="ml-2 text-muted-foreground">
-                    {line.author_name as string}
+                  <span className="ml-2 inline-flex items-center font-[family-name:var(--font-sans)] text-muted-foreground">
+                    <CommitAuthorLink
+                      name={line.author_name}
+                      username={line.author_username}
+                      avatarUrl={line.author_avatar_url}
+                    />
                   </span>
                   <time
                     className="ml-2 text-muted-foreground"

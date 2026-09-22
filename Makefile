@@ -6,7 +6,7 @@
 	smoke-actions \
 	smoke-protection \
 	smoke-protocol-ci smoke-compose-ci \
-	cloud-plan cloud-docs \
+	cloud-plan cloud-docs cloud-production-autodeploy-check \
 	up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite \
 	up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack \
 	db-migrate db-switch-dialect db-matrix \
@@ -57,6 +57,7 @@ help:
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
 	@echo "  make cloud-plan     - railway config plan (Octanest Cloud IaC; no apply)"
 	@echo "  make cloud-docs     - print pointers to cloud deploy docs"
+	@echo "  make cloud-production-autodeploy-check - assert production has no GitHub autodeploy triggers"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
 	@echo "  make db-switch-dialect - migrate an EMPTY target DB to a new dialect"
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
@@ -206,6 +207,9 @@ cloud-plan:
 	fi
 	@echo "==> railway config plan (review only — apply requires explicit human approval)"
 	@railway config plan
+
+cloud-production-autodeploy-check:
+	@bash scripts/railway-production-autodeploy-check.sh
 
 cloud-docs:
 	@echo "Octanest Cloud:"

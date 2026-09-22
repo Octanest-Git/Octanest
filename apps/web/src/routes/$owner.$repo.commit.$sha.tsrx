@@ -2,6 +2,8 @@ import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-ro
 import type { RepoCommitResponse, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { FileDiff } from "@octanejs/lucide";
+import { CommitAuthorLink } from "@/components/repo/commit-author-link";
+import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -152,13 +154,21 @@ export function RepoCommitPage() @{
             {phase.commit.body as string}
           </pre>;
         }
-        <p className="mt-3 text-[14px] text-muted-foreground">
-          <span className="font-medium text-foreground">{phase.commit.author_name as string}</span>
-          {" · "}
+        <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-muted-foreground">
+          <CommitAuthorLink
+            name={phase.commit.author_name}
+            username={phase.commit.author_username}
+            avatarUrl={phase.commit.author_avatar_url}
+          />
+          <CommitVerifiedBadge
+            status={phase.commit.signature_status}
+            kind={phase.commit.signature_kind}
+          />
+          <span aria-hidden="true">·</span>
           <time dateTime={phase.commit.authored_at as string}>
             {relativeCommitTime(phase.commit.authored_at) as string}
           </time>
-          {" · "}
+          <span aria-hidden="true">·</span>
           <code className="font-mono text-[13px]">{phase.commit.short_sha as string}</code>
         </p>
         @if (phase.commit.truncated) {

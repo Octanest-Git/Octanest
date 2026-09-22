@@ -381,8 +381,29 @@ fn repo_str(repo: &Path) -> Result<&str, GitError> {
         .ok_or_else(|| GitError::InvalidArg(format!("non-utf8 repo path: {}", repo.display())))
 }
 
+fn map_signature_status(g: &str) -> String {
+    match g.trim() {
+        "N" | "" => "none".into(),
+        "G" => "valid".into(),
+        "B" => "invalid".into(),
+        _ => "unknown".into(),
+    }
+}
+
+fn signature_kind_from_commit(raw: &str) -> String {
+    // SSH signatures use "gpgsig -----BEGIN SSH SIGNATURE-----"
+    if raw.contains("BEGIN SSH SIGNATURE") {
+        "ssh".into()
+    } else if raw.contains("BEGIN PGP SIGNATURE") || raw.contains("BEGIN SIGNATURE") {
+        "gpg".into()
+    } else {
+        String::new()
+    }
+}
+
 fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
     let parts: Vec<&str> = record.split('\0').collect();
+    // sha, short, subject, author_name, author_email, authored_at, %G?
     if parts.len() < 6 {
         return None;
     }
@@ -390,6 +411,7 @@ fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
     if sha.is_empty() {
         return None;
     }
+    let g = if parts.len() >= 7 { parts[6] } else { "N" };
     Some(CommitSummary {
         sha: sha.to_string(),
         short_sha: parts[1].trim().to_string(),
@@ -397,6 +419,8 @@ fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
         author_name: parts[3].to_string(),
         author_email: parts[4].to_string(),
         authored_at: parts[5].trim().to_string(),
+        signature_status: map_signature_status(g),
+        signature_kind: String::new(),
     })
 }
 
@@ -526,6 +550,7 @@ fn parse_blame_porcelain(text: &str, soft_max_lines: usize) -> (Vec<BlameLine>, 
     let mut truncated = false;
     let mut sha = String::new();
     let mut author = String::new();
+    let mut author_email = String::new();
     let mut authored_at = String::new();
     let mut line_number = 0u32;
 
@@ -538,6 +563,7 @@ fn parse_blame_porcelain(text: &str, soft_max_lines: usize) -> (Vec<BlameLine>, 
             lines.push(BlameLine {
                 sha: sha.clone(),
                 author_name: author.clone(),
+                author_email: author_email.clone(),
                 authored_at: authored_at.clone(),
                 line_number,
                 content: raw[1..].to_string(),
@@ -557,6 +583,12 @@ fn parse_blame_porcelain(text: &str, soft_max_lines: usize) -> (Vec<BlameLine>, 
             }
         } else if first == "author" {
             author = raw.strip_prefix("author ").unwrap_or("").to_string();
+        } else if first == "author-mail" {
+            let mail = raw.strip_prefix("author-mail ").unwrap_or("").trim();
+            author_email = mail
+                .trim_start_matches('<')
+                .trim_end_matches('>')
+                .to_string();
         } else if first == "author-time" {
             let secs: i64 = parts.next().and_then(|s| s.parse().ok()).unwrap_or(0);
             authored_at = chrono_like_iso(secs);
@@ -625,6 +657,28 @@ impl GitBackend for CliGitBackend {
         message: &str,
         files: &[(String, Vec<u8>)],
     ) -> Result<(), GitError> {
+        self.seed_commit_authored(
+            bare_path,
+            branch,
+            message,
+            files,
+            "Octanest",
+            "noreply@octanest.local",
+            None,
+        )
+        .await
+    }
+
+    async fn seed_commit_authored(
+        &self,
+        bare_path: &Path,
+        branch: &str,
+        message: &str,
+        files: &[(String, Vec<u8>)],
+        author_name: &str,
+        author_email: &str,
+        signing_key_path: Option<&Path>,
+    ) -> Result<(), GitError> {
         if files.is_empty() {
             return Ok(());
         }
@@ -642,11 +696,14 @@ impl GitBackend for CliGitBackend {
         if message.contains('\0') {
             return Err(GitError::InvalidArg("commit message contains NUL".into()));
         }
+        let author_name = author_name.trim();
+        let author_email = author_email.trim();
+        if author_name.is_empty() || author_email.is_empty() {
+            return Err(GitError::InvalidArg(
+                "author name and email are required".into(),
+            ));
+        }
 
-        // Relative bare paths (e.g. default OCTANEST_REPOS_DIR=var/repos) must be
-        // absolutized: push runs with `-C` in a temp worktree, so git would otherwise
-        // resolve `origin` relative to /tmp/... and fail with "does not appear to be a
-        // git repository".
         let bare_abs = absolute_path(bare_path)?;
         let bare_str = bare_abs.to_str().ok_or_else(|| {
             GitError::InvalidArg(format!("non-utf8 bare path: {}", bare_abs.display()))
@@ -654,14 +711,19 @@ impl GitBackend for CliGitBackend {
 
         let tmp = tempfile::tempdir().map_err(GitError::Io)?;
         let work = tmp.path();
-        let work_str = work.to_str().ok_or_else(|| {
-            GitError::InvalidArg("non-utf8 temp worktree path".into())
-        })?;
+        let work_str = work
+            .to_str()
+            .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree path".into()))?;
 
         run_git(&["init", work_str]).await?;
-        // Detached orphan-style first commit on the target branch name.
-        run_git(&["-C", work_str, "symbolic-ref", "HEAD", &format!("refs/heads/{branch}")])
-            .await?;
+        run_git(&[
+            "-C",
+            work_str,
+            "symbolic-ref",
+            "HEAD",
+            &format!("refs/heads/{branch}"),
+        ])
+        .await?;
 
         for (rel, content) in files {
             let dest = safe_worktree_path(work, rel)?;
@@ -671,10 +733,52 @@ impl GitBackend for CliGitBackend {
             tokio::fs::write(&dest, content).await?;
         }
 
-        run_git(&["-C", work_str, "config", "user.email", "noreply@octanest.local"]).await?;
+        // Committer is always the forge web-flow identity; author is the acting user.
+        run_git(&[
+            "-C",
+            work_str,
+            "config",
+            "user.email",
+            "noreply@octanest.local",
+        ])
+        .await?;
         run_git(&["-C", work_str, "config", "user.name", "Octanest"]).await?;
         run_git(&["-C", work_str, "add", "-A"]).await?;
-        run_git(&["-C", work_str, "commit", "-m", message]).await?;
+
+        let commit_env: Vec<(&str, String)> = vec![
+            ("GIT_AUTHOR_NAME", author_name.to_string()),
+            ("GIT_AUTHOR_EMAIL", author_email.to_string()),
+            ("GIT_COMMITTER_NAME", "Octanest".into()),
+            ("GIT_COMMITTER_EMAIL", "noreply@octanest.local".into()),
+        ];
+        let mut commit_args: Vec<String> = vec!["-C".into(), work_str.into()];
+        if let Some(key) = signing_key_path {
+            let key_s = key.to_str().ok_or_else(|| {
+                GitError::InvalidArg(format!("non-utf8 signing key path: {}", key.display()))
+            })?;
+            commit_args.push("-c".into());
+            commit_args.push("gpg.format=ssh".into());
+            commit_args.push("-c".into());
+            commit_args.push(format!("user.signingkey={key_s}"));
+            commit_args.push("commit".into());
+            commit_args.push("-S".into());
+            commit_args.push("-m".into());
+            commit_args.push(message.to_string());
+        } else {
+            // Disable ambient commit.gpgsign so unsigned seeds stay unsigned.
+            commit_args.push("-c".into());
+            commit_args.push("commit.gpgsign=false".into());
+            commit_args.push("commit".into());
+            commit_args.push("-m".into());
+            commit_args.push(message.to_string());
+        }
+        let commit_refs: Vec<&str> = commit_args.iter().map(String::as_str).collect();
+        let env_pairs: Vec<(&str, &str)> = commit_env
+            .iter()
+            .map(|(k, v)| (*k, v.as_str()))
+            .collect();
+        run_git_stdout_env(&commit_refs, &env_pairs).await?;
+
         run_git(&["-C", work_str, "remote", "add", "origin", bare_str]).await?;
         let refspec = format!("HEAD:refs/heads/{branch}");
         run_git(&["-C", work_str, "push", "origin", &refspec]).await?;
@@ -841,13 +945,13 @@ impl GitBackend for CliGitBackend {
         Ok(refs)
     }
 
-    // GREEN: real git log / show / diff / blame via argv.
     async fn log(
         &self,
         repo: &Path,
         refname: &str,
         skip: u32,
         limit: u32,
+        allowed_signers: Option<&Path>,
     ) -> Result<Vec<CommitSummary>, GitError> {
         let refname = validate_treeish(refname)?;
         let repo_s = repo_str(repo)?;
@@ -855,7 +959,6 @@ impl GitBackend for CliGitBackend {
         let skip_s = skip.to_string();
         let limit_s = limit.to_string();
 
-        // Empty / unborn → empty page.
         let rev = Command::new("git")
             .args([
                 "-C",
@@ -874,16 +977,23 @@ impl GitBackend for CliGitBackend {
             return Ok(Vec::new());
         }
 
-        let stdout = run_git_stdout(&[
-            "-C",
-            repo_s,
-            "log",
-            &format!("--skip={skip_s}"),
-            &format!("--max-count={limit_s}"),
-            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI",
-            refname,
-        ])
-        .await?;
+        let mut args: Vec<String> = vec!["-C".into(), repo_s.into()];
+        if let Some(p) = allowed_signers {
+            let ps = p.to_str().ok_or_else(|| {
+                GitError::InvalidArg(format!("non-utf8 allowedSigners path: {}", p.display()))
+            })?;
+            args.push("-c".into());
+            args.push("gpg.format=ssh".into());
+            args.push("-c".into());
+            args.push(format!("gpg.ssh.allowedSignersFile={ps}"));
+        }
+        args.push("log".into());
+        args.push(format!("--skip={skip_s}"));
+        args.push(format!("--max-count={limit_s}"));
+        args.push("--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%G?".into());
+        args.push(refname.to_string());
+        let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
+        let stdout = run_git_stdout(&arg_refs).await?;
         let text = String::from_utf8_lossy(&stdout);
         let mut out = Vec::new();
         for record in text.split('\n') {
@@ -891,27 +1001,51 @@ impl GitBackend for CliGitBackend {
             if record.is_empty() {
                 continue;
             }
-            if let Some(summary) = parse_commit_summary_record(record) {
+            if let Some(mut summary) = parse_commit_summary_record(record) {
+                if summary.signature_status != "none" {
+                    // Best-effort kind from raw commit object.
+                    if let Ok(raw) =
+                        run_git_stdout(&["-C", repo_s, "cat-file", "-p", &summary.sha]).await
+                    {
+                        let kind = signature_kind_from_commit(&String::from_utf8_lossy(&raw));
+                        if !kind.is_empty() {
+                            summary.signature_kind = kind;
+                        }
+                    }
+                }
                 out.push(summary);
             }
         }
         Ok(out)
     }
 
-    async fn show_commit(&self, repo: &Path, sha: &str) -> Result<CommitDetail, GitError> {
+    async fn show_commit(
+        &self,
+        repo: &Path,
+        sha: &str,
+        allowed_signers: Option<&Path>,
+    ) -> Result<CommitDetail, GitError> {
         let sha = validate_treeish(sha)?;
         let repo_s = repo_str(repo)?;
 
-        let meta = run_git_stdout(&[
-            "-C",
-            repo_s,
-            "show",
-            "-s",
-            "--format=%H%x00%h%x00%s%x00%b%x00%an%x00%ae%x00%aI%x00%P",
-            sha,
-        ])
-        .await
-        .map_err(|e| {
+        let mut meta_args: Vec<String> = vec!["-C".into(), repo_s.into()];
+        if let Some(p) = allowed_signers {
+            let ps = p.to_str().ok_or_else(|| {
+                GitError::InvalidArg(format!("non-utf8 allowedSigners path: {}", p.display()))
+            })?;
+            meta_args.push("-c".into());
+            meta_args.push("gpg.format=ssh".into());
+            meta_args.push("-c".into());
+            meta_args.push(format!("gpg.ssh.allowedSignersFile={ps}"));
+        }
+        meta_args.extend([
+            "show".into(),
+            "-s".into(),
+            "--format=%H%x00%h%x00%s%x00%b%x00%an%x00%ae%x00%aI%x00%P%x00%G?".into(),
+            sha.to_string(),
+        ]);
+        let meta_refs: Vec<&str> = meta_args.iter().map(String::as_str).collect();
+        let meta = run_git_stdout(&meta_refs).await.map_err(|e| {
             let msg = e.to_string();
             if msg.contains("unknown revision")
                 || msg.contains("bad object")
@@ -943,6 +1077,14 @@ impl GitBackend for CliGitBackend {
             .map(str::to_string)
             .filter(|s| !s.is_empty())
             .collect();
+        let g = if parts.len() >= 9 { parts[8] } else { "N" };
+        let signature_status = map_signature_status(g);
+        let mut signature_kind = String::new();
+        if signature_status != "none" {
+            if let Ok(raw) = run_git_stdout(&["-C", repo_s, "cat-file", "-p", &full_sha]).await {
+                signature_kind = signature_kind_from_commit(&String::from_utf8_lossy(&raw));
+            }
+        }
 
         let patch_bytes = run_git_stdout(&[
             "-C",
@@ -968,6 +1110,8 @@ impl GitBackend for CliGitBackend {
             parents,
             files,
             truncated,
+            signature_status,
+            signature_kind,
         })
     }
 
@@ -1432,7 +1576,7 @@ impl GitBackend for CliGitBackend {
             format!("--skip={skip_s}"),
             format!("--max-count={limit_s}"),
             "--regexp-ignore-case".into(),
-            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI".into(),
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%G?".into(),
         ];
         if let Some(g) = grep {
             args.push(format!("--grep={g}"));
@@ -1503,7 +1647,7 @@ impl GitBackend for CliGitBackend {
             repo_s,
             "log",
             &format!("--max-count={limit_s}"),
-            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI",
+            "--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%G?",
             refname,
             "--",
             path,
@@ -2407,7 +2551,7 @@ mod tests {
             .await
             .unwrap();
 
-        let page = git.log(&bare, "main", 0, 10).await.expect("log");
+        let page = git.log(&bare, "main", 0, 10, None).await.expect("log");
         assert!(
             page.len() >= 2,
             "expected at least 2 commits, got {}",
@@ -2419,7 +2563,7 @@ mod tests {
         assert!(!page[0].author_name.is_empty());
         assert!(!page[0].authored_at.is_empty());
 
-        let skipped = git.log(&bare, "main", 1, 1).await.expect("log skip");
+        let skipped = git.log(&bare, "main", 1, 1, None).await.expect("log skip");
         assert_eq!(skipped.len(), 1);
         assert_eq!(skipped[0].subject, "first commit");
     }
@@ -2444,7 +2588,7 @@ mod tests {
             .unwrap();
         let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
 
-        let detail = git.show_commit(&bare, &sha).await.expect("show_commit");
+        let detail = git.show_commit(&bare, &sha, None).await.expect("show_commit");
         assert_eq!(detail.sha, sha);
         assert_eq!(detail.subject, "seed subject");
         assert!(
@@ -3075,5 +3219,83 @@ mod tests {
             git.rev_parse(&local, "refs/heads/main").await.unwrap(),
             before
         );
+    }
+
+    #[tokio::test]
+    async fn seed_commit_authored_sets_author_email() {
+        let tmp = tempfile::tempdir().unwrap();
+        let bare = tmp.path().join("authored.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit_authored(
+            &bare,
+            "main",
+            "authored seed",
+            &[("README.md".into(), b"hi\n".to_vec())],
+            "Ada Lovelace",
+            "ada@example.com",
+            None,
+        )
+        .await
+        .expect("seed_commit_authored");
+        let page = git.log(&bare, "main", 0, 1, None).await.expect("log");
+        assert_eq!(page.len(), 1);
+        assert_eq!(page[0].author_name, "Ada Lovelace");
+        assert_eq!(page[0].author_email, "ada@example.com");
+        assert_eq!(page[0].signature_status, "none");
+    }
+
+    #[tokio::test]
+    async fn seed_commit_authored_ssh_signed_verifies_with_allowed_signers() {
+        let tmp = tempfile::tempdir().unwrap();
+        let key_dir = tmp.path().join("keys");
+        std::fs::create_dir_all(&key_dir).unwrap();
+        let key_path = key_dir.join("web-flow");
+        let key_s = key_path.to_str().unwrap();
+        let gen = std::process::Command::new("ssh-keygen")
+            .args(["-t", "ed25519", "-N", "", "-f", key_s, "-C", "octanest-web-flow"])
+            .output()
+            .expect("ssh-keygen");
+        assert!(gen.status.success(), "ssh-keygen failed: {}", String::from_utf8_lossy(&gen.stderr));
+
+        let pub_line = std::fs::read_to_string(key_dir.join("web-flow.pub")).unwrap();
+        let mut parts = pub_line.split_whitespace();
+        let key_type = parts.next().unwrap();
+        let key_b64 = parts.next().unwrap();
+        let allowed = tmp.path().join("allowed_signers");
+        // Principal must match the committer email used by seed_commit_authored.
+        std::fs::write(
+            &allowed,
+            format!("noreply@octanest.local namespaces=\"git\" {key_type} {key_b64}\n"),
+        )
+        .unwrap();
+
+        let bare = tmp.path().join("signed.git");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+        git.seed_commit_authored(
+            &bare,
+            "main",
+            "signed seed",
+            &[("README.md".into(), b"signed\n".to_vec())],
+            "Ada Lovelace",
+            "ada@example.com",
+            Some(&key_path),
+        )
+        .await
+        .expect("signed seed");
+
+        let page = git
+            .log(&bare, "main", 0, 1, Some(allowed.as_path()))
+            .await
+            .expect("log with allowed_signers");
+        assert_eq!(page.len(), 1);
+        assert_eq!(page[0].author_email, "ada@example.com");
+        assert_eq!(
+            page[0].signature_status, "valid",
+            "expected valid SSH signature, got status={} kind={}",
+            page[0].signature_status, page[0].signature_kind
+        );
+        assert_eq!(page[0].signature_kind, "ssh");
     }
 }

@@ -372,6 +372,20 @@ pub struct PullCommitSummary {
     pub author_name: String,
     pub author_email: String,
     pub authored_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_user_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub author_avatar_url: Option<String>,
+    #[serde(default = "default_sig_none")]
+    pub signature_status: String,
+    #[serde(default)]
+    pub signature_kind: String,
+}
+
+fn default_sig_none() -> String {
+    "none".into()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

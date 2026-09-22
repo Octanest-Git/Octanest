@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { setAuthMeCache } from "@/lib/session-queries";
 import { fetchUserGetProfile } from "@/lib/ssr-auth";
-import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 export type ProfileLoaderData =
   | { kind: "unauthenticated" }
@@ -87,11 +87,12 @@ export function ProfilePage() @{
     },
     onSubmit: async ({ value }) => {
       setPending(true);
-      const previousUsername = phase.kind === "ready" ? phase.user.username : "";
+      const lockedUsername =
+        phase.kind === "ready" ? phase.user.username : value.username.trim() || "";
       try {
         const res = await apiClient.user.updateProfile({
           display_name: value.display_name.trim(),
-          username: value.username.trim(),
+          username: lockedUsername,
           bio: value.bio.slice(0, BIO_MAX),
         });
         if (!res.ok) {
@@ -105,14 +106,7 @@ export function ProfilePage() @{
         profileForm.setFieldValue("bio", res.data.bio ?? "");
         setAvatarUrl(res.data.avatar_url);
         setAuthMeCache(queryClient, res.data);
-        if (previousUsername && res.data.username && previousUsername !== res.data.username) {
-          toastSuccess(
-            `Username updated to @${res.data.username}`,
-            `Update git remotes to /${res.data.username}/{repo}.git.`,
-          );
-        } else {
-          toastSuccess("Profile saved.");
-        }
+        toastSuccess("Profile saved.");
         setPending(false);
       } catch {
         toastError(NETWORK_ERROR);
@@ -292,13 +286,14 @@ export function ProfilePage() @{
                   <Input
                     id="username"
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onInput={(e) => field.handleChange((e.currentTarget as HTMLInputElement).value)}
+                    readOnly
+                    disabled
                     autoComplete="username"
+                    aria-readonly="true"
                   />
                   <p className="text-[14px] text-muted-foreground">
-                    1–39 characters; letters, numbers, and hyphens. Can't start or end with a
-                    hyphen.
+                    Usernames cannot be changed. Profile URLs and git remotes use{" "}
+                    <span className="font-mono">/{field.state.value || "username"}/…</span>.
                   </p>
                 </div>
               )}

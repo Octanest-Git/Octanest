@@ -2,6 +2,8 @@ import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-ro
 import type { RepoCommitSummary, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { GitCommitHorizontal } from "@octanejs/lucide";
+import { CommitAuthorLink } from "@/components/repo/commit-author-link";
+import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -228,9 +230,16 @@ export function RepoCommitsPage() @{
                 >
                   {c.subject as string}
                 </a>
-                <span className="text-[13px] text-muted-foreground">
-                  {c.author_name as string}
-                </span>
+                <CommitVerifiedBadge
+                  status={c.signature_status}
+                  kind={c.signature_kind}
+                />
+                <CommitAuthorLink
+                  name={c.author_name as string}
+                  username={c.author_username}
+                  avatarUrl={c.author_avatar_url}
+                  className="text-[13px]"
+                />
                 <time
                   className="text-[13px] text-muted-foreground"
                   dateTime={c.authored_at as string}

@@ -150,8 +150,9 @@ export function SshKeysPage() @{
               SSH keys
             </h1>
             <p className="mt-2 text-[16px] text-muted-foreground">
-              Keys authenticate git over SSH as user git. Identity comes from the key fingerprint,
-              not the SSH username.
+              Keys authenticate git over SSH as user git, and the same keys can sign commits when
+              your local git uses <code className="text-[14px]">gpg.format=ssh</code>. Identity
+              comes from the key fingerprint, not the SSH username.
             </p>
           </div>
           <Button type="button" disabled={!canAdd} onClick={() => setShowForm(true)}>
