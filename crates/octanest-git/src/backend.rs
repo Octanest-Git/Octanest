@@ -177,6 +177,8 @@ pub struct CommitSummary {
     pub author_email: String,
     /// Author date as ISO-8601 (`%aI`).
     pub authored_at: String,
+    /// Committer email (`%ce`) — used for signature verification policy.
+    pub committer_email: String,
     /// `none` | `valid` | `invalid` | `unknown` (from `%G?` + optional allowedSigners).
     pub signature_status: String,
     /// `ssh` | `gpg` | empty when unsigned / unknown.
@@ -218,6 +220,7 @@ pub struct CommitDetail {
     pub author_name: String,
     pub author_email: String,
     pub authored_at: String,
+    pub committer_email: String,
     pub parents: Vec<String>,
     pub files: Vec<DiffFile>,
     /// True when patch payload was soft-capped (D-20 / T-07-18).
@@ -362,6 +365,7 @@ pub trait GitBackend: Send + Sync {
 
     /// Paged `git log` for `refname` (`skip` / `limit`). Empty history → `Ok(vec![])`.
     /// When `allowed_signers` is set, configures `gpg.ssh.allowedSignersFile` for `%G?`.
+    /// When `gpg_home` is set, sets `GNUPGHOME` + `gpg.trustModel=always` for OpenPGP verify.
     async fn log(
         &self,
         repo: &Path,
@@ -369,6 +373,7 @@ pub trait GitBackend: Send + Sync {
         skip: u32,
         limit: u32,
         allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
     ) -> Result<Vec<CommitSummary>, GitError>;
 
     /// Commit metadata + per-file unified patches (`git show`).
@@ -377,6 +382,7 @@ pub trait GitBackend: Send + Sync {
         repo: &Path,
         sha: &str,
         allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
     ) -> Result<CommitDetail, GitError>;
 
     /// Unified diff `base...head`. Identical trees → `empty: true` (not an error).

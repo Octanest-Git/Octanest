@@ -36,6 +36,16 @@ fn from_user(user: &UserRow) -> ResolvedAuthor {
     }
 }
 
+/// True when `email` is a forge noreply address for this instance host.
+pub fn is_forge_noreply_email(email: &str) -> bool {
+    let email = email.trim();
+    let Some((_, domain)) = email.split_once('@') else {
+        return false;
+    };
+    let expected = format!("users.noreply.{}", noreply_host());
+    domain.eq_ignore_ascii_case(&expected)
+}
+
 /// Parse `{user_id}@users.noreply.<host>` or `{id}+{username}@users.noreply.<host>`.
 pub fn parse_noreply_local_part(local: &str) -> Option<(String, Option<String>)> {
     let local = local.trim();
@@ -191,6 +201,9 @@ pub async fn build_allowed_signers_file(
             continue;
         };
         for key_row in keys {
+            if !key_row.can_sign {
+                continue;
+            }
             let Some((key_type, key)) = openssh_key_material(&key_row.public_key) else {
                 continue;
             };
@@ -247,5 +260,83 @@ mod tests {
             .expect("parse");
         assert_eq!(t, "ssh-ed25519");
         assert_eq!(k, "AAAAC3NzaC1lZDI1NTE5AAAAI");
+    }
+
+    #[tokio::test]
+    async fn build_allowed_signers_excludes_can_sign_false() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!(
+            "sqlite:{}",
+            dir.path().join("allowed_signers.db").display()
+        );
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+
+        let user_id = "user-sign-filter";
+        db.create_user(
+            user_id,
+            "signer@example.com",
+            "signer",
+            Some("hash"),
+            "Signer",
+            "",
+            None,
+            octanest_core::Role::User,
+        )
+        .await
+        .expect("create user");
+
+        const AUTH_ONLY_BLOB: &str =
+            "AAAAC3NzaC1lZDI1NTE5AAAAIJqxgqAG6vw46mOJ8QZKNpHEoPuP5sW2YoBlT/24OycR";
+        const SIGN_BLOB: &str =
+            "AAAAC3NzaC1lZDI1NTE5AAAAIBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
+        db.create_ssh_key(
+            "k-auth-only",
+            user_id,
+            "auth-only",
+            &format!("ssh-ed25519 {AUTH_ONLY_BLOB} auth"),
+            "SHA256:auth-only-fp",
+            "ssh-ed25519",
+            true,
+            false,
+        )
+        .await
+        .expect("auth-only key");
+        db.create_ssh_key(
+            "k-sign",
+            user_id,
+            "sign",
+            &format!("ssh-ed25519 {SIGN_BLOB} sign"),
+            "SHA256:sign-fp",
+            "ssh-ed25519",
+            false,
+            true,
+        )
+        .await
+        .expect("sign key");
+
+        let email = "signer@example.com".to_string();
+        let mut resolved = HashMap::new();
+        resolved.insert(
+            email.clone(),
+            ResolvedAuthor {
+                user_id: Some(user_id.to_string()),
+                username: Some("signer".into()),
+                avatar_url: None,
+            },
+        );
+        let file = build_allowed_signers_file(&db, &[email], &resolved)
+            .await
+            .expect("allowed_signers file");
+        let contents = std::fs::read_to_string(file.path()).expect("read");
+        assert!(
+            contents.contains(SIGN_BLOB),
+            "can_sign=true key must appear: {contents}"
+        );
+        assert!(
+            !contents.contains(AUTH_ONLY_BLOB),
+            "can_sign=false key must be excluded: {contents}"
+        );
     }
 }

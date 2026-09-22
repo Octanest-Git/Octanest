@@ -181,7 +181,9 @@ Phase 9 adds Git **clone/fetch/push over SSH** beside Smart HTTP. Keys are regis
 
 **Web-flow signing key:** Under `OCTANEST_SSH_HOST_KEY_DIR`, Octanest keeps an Ed25519 key pair named `web-flow` / `web-flow.pub` (comment `octanest-web-flow`). New repositories seeded from the UI are authored as the creating user and **SSH-signed** with this key (`gpg.format=ssh`). In development the API generates the key on first use; in production/cloud the key must already exist (fail closed). Persist the directory across restarts so signatures keep verifying.
 
-**Remote URL (D-SSH-02):** Always scp-style `git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`. Do **not** treat `ssh://` as the primary CloneBox string. When `OCTANEST_SSH_PORT` ≠ 22, set `Port` under a matching `Host` in `~/.ssh/config` (or pass `ssh -p`).
+**User GPG keys:** Uploading and verifying OpenPGP commit signatures requires the `gpg` binary on the API host (`PATH`). The API Docker image installs `gnupg`. Local `cargo run` needs system GnuPG the same way.
+
+**Remote URL (D-SSH-02):** Always scp-style `git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`. Do **not** treat `ssh://` as the primary CloneBox string. When `OCTANEST_SSH_PORT` ≠ 22, set `Port` under a matching `Host` in `~/.ssh/config` (or pass `-p`).
 
 **Identity (D-SSH-03):** SSH username must be `git`. Account identity is the registered public-key **fingerprint** (full account ACL — no PAT scopes).
 

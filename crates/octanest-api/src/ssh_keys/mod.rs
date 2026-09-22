@@ -44,6 +44,8 @@ fn row_to_list_item(row: &octanest_db::SshKeyRow) -> SshKeyListItem {
         title: row.title.clone(),
         fingerprint: row.fingerprint.clone(),
         key_type: row.key_type.clone(),
+        can_authenticate: row.can_authenticate,
+        can_sign: row.can_sign,
         public_key: Some(row.public_key.clone()),
         last_used_at: row.last_used_at.clone(),
         last_used_ip: row.last_used_ip.clone(),
@@ -134,6 +136,13 @@ pub async fn add(ctx: &RpcCtx, input: serde_json::Value) -> Result<SshKeyListIte
         ));
     }
 
+    if !req.can_authenticate && !req.can_sign {
+        return Err(AppError::new(
+            "sshKey.usage_required",
+            "SSH key must allow authentication and/or commit signing",
+        ));
+    }
+
     let (_key, key_type, fingerprint) = parse_accepted_public_key(&req.public_key)?;
     let public_key_line = req.public_key.trim().to_string();
 
@@ -171,6 +180,8 @@ pub async fn add(ctx: &RpcCtx, input: serde_json::Value) -> Result<SshKeyListIte
             &public_key_line,
             &fingerprint,
             &key_type,
+            req.can_authenticate,
+            req.can_sign,
         )
         .await
         .map_err(db_err)?;

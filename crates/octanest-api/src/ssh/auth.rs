@@ -8,11 +8,14 @@ pub fn fingerprint_of(key: &PublicKey) -> String {
     key.fingerprint(HashAlg::Sha256).to_string()
 }
 
-/// Look up a registered SSH key by fingerprint.
+/// Look up a registered SSH key by fingerprint (authentication usage only).
 pub async fn find_registered_key(
     db: &Database,
     key: &PublicKey,
 ) -> Result<Option<SshKeyRow>, String> {
     let fp = fingerprint_of(key);
-    db.find_ssh_key_by_fingerprint(&fp).await
+    match db.find_ssh_key_by_fingerprint(&fp).await? {
+        Some(row) if row.can_authenticate => Ok(Some(row)),
+        _ => Ok(None),
+    }
 }

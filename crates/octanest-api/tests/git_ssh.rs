@@ -122,7 +122,7 @@ fn init_bare_repo(bare: &std::path::Path) {
     assert!(StdCommand::new("git")
         .args(["-C"])
         .arg(&work)
-        .args(["commit", "-m", "init"])
+        .args(["-c", "commit.gpgsign=false", "commit", "-m", "init"])
         .status()
         .unwrap()
         .success());
@@ -175,6 +175,8 @@ async fn git_ssh_username_other_than_git_rejected() {
         &pub_line,
         &fp,
         "ssh-ed25519",
+        true,
+        true,
     )
     .await
     .unwrap();
@@ -223,6 +225,8 @@ async fn git_ssh_registered_key_user_git_accepted() {
         &pub_line,
         &fp,
         "ssh-ed25519",
+        true,
+        true,
     )
     .await
     .unwrap();
@@ -273,6 +277,8 @@ async fn git_ssh_public_upload_pack_happy_path() {
         &pub_line,
         &fp,
         "ssh-ed25519",
+        true,
+        true,
     )
     .await
     .unwrap();
@@ -374,7 +380,7 @@ async fn git_ssh_private_non_owner_git_stderr_deny() {
         .unwrap();
 
     let (priv_path, pub_line, fp) = write_keypair(tmp.path());
-    db.create_ssh_key("k-priv", &other_id, "laptop", &pub_line, &fp, "ssh-ed25519")
+    db.create_ssh_key("k-priv", &other_id, "laptop", &pub_line, &fp, "ssh-ed25519", true, true)
         .await
         .unwrap();
 
@@ -438,7 +444,7 @@ async fn git_ssh_push_unverified_email_denied() {
         .unwrap();
 
     let (priv_path, pub_line, fp) = write_keypair(tmp.path());
-    db.create_ssh_key("k-push", &user_id, "laptop", &pub_line, &fp, "ssh-ed25519")
+    db.create_ssh_key("k-push", &user_id, "laptop", &pub_line, &fp, "ssh-ed25519", true, true)
         .await
         .unwrap();
 
@@ -504,6 +510,8 @@ async fn git_ssh_non_pack_exec_shell_rejected() {
         &pub_line,
         &fp,
         "ssh-ed25519",
+        true,
+        true,
     )
     .await
     .unwrap();

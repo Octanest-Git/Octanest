@@ -1427,6 +1427,10 @@ export type RevokePatRequest = {
 export type AddSshKeyRequest = {
   title: string;
   public_key: string;
+  /** Defaults to true when omitted. */
+  can_authenticate?: boolean;
+  /** Defaults to true when omitted. */
+  can_sign?: boolean;
 };
 
 export type SshKeyListItem = {
@@ -1434,6 +1438,8 @@ export type SshKeyListItem = {
   title: string;
   fingerprint: string;
   key_type: string;
+  can_authenticate: boolean;
+  can_sign: boolean;
   public_key?: string;
   last_used_at?: string | null;
   last_used_ip?: string | null;
@@ -1441,6 +1447,26 @@ export type SshKeyListItem = {
 };
 
 export type RevokeSshKeyRequest = {
+  id: string;
+};
+
+/** `gpgKey.add` input — ASCII-armored OpenPGP public key only. */
+export type AddGpgKeyRequest = {
+  title: string;
+  armored_public_key: string;
+};
+
+export type GpgKeyListItem = {
+  id: string;
+  title: string;
+  fingerprint: string;
+  key_id: string;
+  uid_emails: string[];
+  armored_public_key?: string;
+  created_at: string;
+};
+
+export type RevokeGpgKeyRequest = {
   id: string;
 };
 
@@ -2629,6 +2655,13 @@ export function createClient(opts: CreateClientOptions) {
       revoke: (input: RevokeSshKeyRequest) =>
         rpcCall<{ ok: boolean }>(opts, "sshKey.revoke", input),
     },
+    gpgKey: {
+      add: (input: AddGpgKeyRequest) =>
+        rpcCall<GpgKeyListItem>(opts, "gpgKey.add", input),
+      list: () => rpcCall<GpgKeyListItem[]>(opts, "gpgKey.list", {}),
+      revoke: (input: RevokeGpgKeyRequest) =>
+        rpcCall<{ ok: boolean }>(opts, "gpgKey.revoke", input),
+    },
     admin: {
       auth: {
         getSettings: () =>
@@ -3195,6 +3228,39 @@ export function sshKeyRevokeMutationOptions(client: OctanestClient) {
   };
 }
 
+export function gpgKeyListQueryOptions(client: OctanestClient) {
+  return {
+    queryKey: ["gpgKey", "list"] as const,
+    queryFn: async () => {
+      const res = await client.gpgKey.list();
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function gpgKeyAddMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["gpgKey", "add"] as const,
+    mutationFn: async (input: AddGpgKeyRequest) => {
+      const res = await client.gpgKey.add(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function gpgKeyRevokeMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["gpgKey", "revoke"] as const,
+    mutationFn: async (input: RevokeGpgKeyRequest) => {
+      const res = await client.gpgKey.revoke(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function issueListQueryOptions(
   client: OctanestClient,
   input: IssueListRequest,
@@ -3573,6 +3639,7 @@ export const queryOptions = {
   repoSearch: repoSearchQueryOptions,
   patList: patListQueryOptions,
   sshKeyList: sshKeyListQueryOptions,
+  gpgKeyList: gpgKeyListQueryOptions,
   adminAuthGetSettings: adminAuthGetSettingsQueryOptions,
 };
 export const mutationOptions = {
@@ -3588,6 +3655,8 @@ export const mutationOptions = {
   patRevoke: patRevokeMutationOptions,
   sshKeyAdd: sshKeyAddMutationOptions,
   sshKeyRevoke: sshKeyRevokeMutationOptions,
+  gpgKeyAdd: gpgKeyAddMutationOptions,
+  gpgKeyRevoke: gpgKeyRevokeMutationOptions,
   adminAuthUpdateSettings: adminAuthUpdateSettingsMutationOptions,
 };
 "#;

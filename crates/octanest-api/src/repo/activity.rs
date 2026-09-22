@@ -93,7 +93,7 @@ async fn enrich_commits(
     if is_zero_oid(after) {
         return (0, None);
     }
-    let message = match git.show_commit(bare, after, None).await {
+    let message = match git.show_commit(bare, after, None, None).await {
         Ok(detail) => {
             let subject = detail.subject.trim();
             if subject.is_empty() {

@@ -381,10 +381,41 @@ fn repo_str(repo: &Path) -> Result<&str, GitError> {
         .ok_or_else(|| GitError::InvalidArg(format!("non-utf8 repo path: {}", repo.display())))
 }
 
+fn push_signature_verify_config(
+    args: &mut Vec<String>,
+    extra_env: &mut Vec<(String, String)>,
+    allowed_signers: Option<&Path>,
+    gpg_home: Option<&Path>,
+) -> Result<(), GitError> {
+    if let Some(p) = allowed_signers {
+        let ps = p.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 allowedSigners path: {}", p.display()))
+        })?;
+        // Do not force gpg.format=ssh — that blocks OpenPGP %G? when gpg_home is set.
+        // SSH signatures still verify via allowedSignersFile.
+        if gpg_home.is_none() {
+            args.push("-c".into());
+            args.push("gpg.format=ssh".into());
+        }
+        args.push("-c".into());
+        args.push(format!("gpg.ssh.allowedSignersFile={ps}"));
+    }
+    if let Some(home) = gpg_home {
+        let hs = home.to_str().ok_or_else(|| {
+            GitError::InvalidArg(format!("non-utf8 GNUPGHOME path: {}", home.display()))
+        })?;
+        extra_env.push(("GNUPGHOME".into(), hs.to_string()));
+        args.push("-c".into());
+        args.push("gpg.trustModel=always".into());
+    }
+    Ok(())
+}
+
 fn map_signature_status(g: &str) -> String {
     match g.trim() {
         "N" | "" => "none".into(),
-        "G" => "valid".into(),
+        // G = good; U = good but untrusted (forge keyring uses trustModel=always).
+        "G" | "U" => "valid".into(),
         "B" => "invalid".into(),
         _ => "unknown".into(),
     }
@@ -403,7 +434,7 @@ fn signature_kind_from_commit(raw: &str) -> String {
 
 fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
     let parts: Vec<&str> = record.split('\0').collect();
-    // sha, short, subject, author_name, author_email, authored_at, %G?
+    // sha, short, subject, author_name, author_email, authored_at, committer_email, %G?
     if parts.len() < 6 {
         return None;
     }
@@ -411,7 +442,19 @@ fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
     if sha.is_empty() {
         return None;
     }
-    let g = if parts.len() >= 7 { parts[6] } else { "N" };
+    let committer_email = if parts.len() >= 7 {
+        parts[6].trim().to_string()
+    } else {
+        String::new()
+    };
+    let g = if parts.len() >= 8 {
+        parts[7]
+    } else if parts.len() >= 7 {
+        // Back-compat if committer missing.
+        parts[6]
+    } else {
+        "N"
+    };
     Some(CommitSummary {
         sha: sha.to_string(),
         short_sha: parts[1].trim().to_string(),
@@ -419,6 +462,7 @@ fn parse_commit_summary_record(record: &str) -> Option<CommitSummary> {
         author_name: parts[3].to_string(),
         author_email: parts[4].to_string(),
         authored_at: parts[5].trim().to_string(),
+        committer_email,
         signature_status: map_signature_status(g),
         signature_kind: String::new(),
     })
@@ -952,6 +996,7 @@ impl GitBackend for CliGitBackend {
         skip: u32,
         limit: u32,
         allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
     ) -> Result<Vec<CommitSummary>, GitError> {
         let refname = validate_treeish(refname)?;
         let repo_s = repo_str(repo)?;
@@ -978,22 +1023,19 @@ impl GitBackend for CliGitBackend {
         }
 
         let mut args: Vec<String> = vec!["-C".into(), repo_s.into()];
-        if let Some(p) = allowed_signers {
-            let ps = p.to_str().ok_or_else(|| {
-                GitError::InvalidArg(format!("non-utf8 allowedSigners path: {}", p.display()))
-            })?;
-            args.push("-c".into());
-            args.push("gpg.format=ssh".into());
-            args.push("-c".into());
-            args.push(format!("gpg.ssh.allowedSignersFile={ps}"));
-        }
+        let mut extra_env: Vec<(String, String)> = Vec::new();
+        push_signature_verify_config(&mut args, &mut extra_env, allowed_signers, gpg_home)?;
         args.push("log".into());
         args.push(format!("--skip={skip_s}"));
         args.push(format!("--max-count={limit_s}"));
-        args.push("--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%G?".into());
+        args.push("--format=%H%x00%h%x00%s%x00%an%x00%ae%x00%aI%x00%ce%x00%G?".into());
         args.push(refname.to_string());
         let arg_refs: Vec<&str> = args.iter().map(String::as_str).collect();
-        let stdout = run_git_stdout(&arg_refs).await?;
+        let env_refs: Vec<(&str, &str)> = extra_env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        let stdout = run_git_stdout_env(&arg_refs, &env_refs).await?;
         let text = String::from_utf8_lossy(&stdout);
         let mut out = Vec::new();
         for record in text.split('\n') {
@@ -1024,28 +1066,26 @@ impl GitBackend for CliGitBackend {
         repo: &Path,
         sha: &str,
         allowed_signers: Option<&Path>,
+        gpg_home: Option<&Path>,
     ) -> Result<CommitDetail, GitError> {
         let sha = validate_treeish(sha)?;
         let repo_s = repo_str(repo)?;
 
         let mut meta_args: Vec<String> = vec!["-C".into(), repo_s.into()];
-        if let Some(p) = allowed_signers {
-            let ps = p.to_str().ok_or_else(|| {
-                GitError::InvalidArg(format!("non-utf8 allowedSigners path: {}", p.display()))
-            })?;
-            meta_args.push("-c".into());
-            meta_args.push("gpg.format=ssh".into());
-            meta_args.push("-c".into());
-            meta_args.push(format!("gpg.ssh.allowedSignersFile={ps}"));
-        }
+        let mut extra_env: Vec<(String, String)> = Vec::new();
+        push_signature_verify_config(&mut meta_args, &mut extra_env, allowed_signers, gpg_home)?;
         meta_args.extend([
             "show".into(),
             "-s".into(),
-            "--format=%H%x00%h%x00%s%x00%b%x00%an%x00%ae%x00%aI%x00%P%x00%G?".into(),
+            "--format=%H%x00%h%x00%s%x00%b%x00%an%x00%ae%x00%aI%x00%P%x00%ce%x00%G?".into(),
             sha.to_string(),
         ]);
         let meta_refs: Vec<&str> = meta_args.iter().map(String::as_str).collect();
-        let meta = run_git_stdout(&meta_refs).await.map_err(|e| {
+        let env_refs: Vec<(&str, &str)> = extra_env
+            .iter()
+            .map(|(k, v)| (k.as_str(), v.as_str()))
+            .collect();
+        let meta = run_git_stdout_env(&meta_refs, &env_refs).await.map_err(|e| {
             let msg = e.to_string();
             if msg.contains("unknown revision")
                 || msg.contains("bad object")
@@ -1077,7 +1117,12 @@ impl GitBackend for CliGitBackend {
             .map(str::to_string)
             .filter(|s| !s.is_empty())
             .collect();
-        let g = if parts.len() >= 9 { parts[8] } else { "N" };
+        let committer_email = if parts.len() >= 9 {
+            parts[8].trim().to_string()
+        } else {
+            String::new()
+        };
+        let g = if parts.len() >= 10 { parts[9] } else { "N" };
         let signature_status = map_signature_status(g);
         let mut signature_kind = String::new();
         if signature_status != "none" {
@@ -1107,6 +1152,7 @@ impl GitBackend for CliGitBackend {
             author_name,
             author_email,
             authored_at,
+            committer_email,
             parents,
             files,
             truncated,
@@ -2551,7 +2597,7 @@ mod tests {
             .await
             .unwrap();
 
-        let page = git.log(&bare, "main", 0, 10, None).await.expect("log");
+        let page = git.log(&bare, "main", 0, 10, None, None).await.expect("log");
         assert!(
             page.len() >= 2,
             "expected at least 2 commits, got {}",
@@ -2563,7 +2609,7 @@ mod tests {
         assert!(!page[0].author_name.is_empty());
         assert!(!page[0].authored_at.is_empty());
 
-        let skipped = git.log(&bare, "main", 1, 1, None).await.expect("log skip");
+        let skipped = git.log(&bare, "main", 1, 1, None, None).await.expect("log skip");
         assert_eq!(skipped.len(), 1);
         assert_eq!(skipped[0].subject, "first commit");
     }
@@ -2588,7 +2634,7 @@ mod tests {
             .unwrap();
         let sha = String::from_utf8_lossy(&sha_bytes).trim().to_string();
 
-        let detail = git.show_commit(&bare, &sha, None).await.expect("show_commit");
+        let detail = git.show_commit(&bare, &sha, None, None).await.expect("show_commit");
         assert_eq!(detail.sha, sha);
         assert_eq!(detail.subject, "seed subject");
         assert!(
@@ -3238,7 +3284,7 @@ mod tests {
         )
         .await
         .expect("seed_commit_authored");
-        let page = git.log(&bare, "main", 0, 1, None).await.expect("log");
+        let page = git.log(&bare, "main", 0, 1, None, None).await.expect("log");
         assert_eq!(page.len(), 1);
         assert_eq!(page[0].author_name, "Ada Lovelace");
         assert_eq!(page[0].author_email, "ada@example.com");
@@ -3286,7 +3332,7 @@ mod tests {
         .expect("signed seed");
 
         let page = git
-            .log(&bare, "main", 0, 1, Some(allowed.as_path()))
+            .log(&bare, "main", 0, 1, Some(allowed.as_path()), None)
             .await
             .expect("log with allowed_signers");
         assert_eq!(page.len(), 1);
@@ -3297,5 +3343,187 @@ mod tests {
             page[0].signature_status, page[0].signature_kind
         );
         assert_eq!(page[0].signature_kind, "ssh");
+    }
+
+    #[tokio::test]
+    async fn gpg_signed_commit_verifies_with_gpg_home() {
+        let gpg_ok = std::process::Command::new("gpg")
+            .arg("--version")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false);
+        if !gpg_ok {
+            eprintln!("skipping: gpg not available");
+            return;
+        }
+
+        let tmp = tempfile::tempdir().unwrap();
+        let sign_home = tmp.path().join("gnupg-sign");
+        let verify_home = tmp.path().join("gnupg-verify");
+        std::fs::create_dir_all(&sign_home).unwrap();
+        std::fs::create_dir_all(&verify_home).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&sign_home, std::fs::Permissions::from_mode(0o700)).unwrap();
+            std::fs::set_permissions(&verify_home, std::fs::Permissions::from_mode(0o700))
+                .unwrap();
+        }
+
+        let email = "gpg-signer@example.com";
+        let gen = std::process::Command::new("gpg")
+            .args([
+                "--batch",
+                "--passphrase",
+                "",
+                "--quick-generate-key",
+                &format!("GPG Signer <{email}>"),
+                "ed25519",
+                "default",
+                "never",
+            ])
+            .env("GNUPGHOME", &sign_home)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .expect("gpg generate");
+        assert!(gen.success(), "gpg --quick-generate-key failed");
+
+        let export = std::process::Command::new("gpg")
+            .args(["--armor", "--export", email])
+            .env("GNUPGHOME", &sign_home)
+            .output()
+            .expect("gpg export");
+        assert!(export.status.success(), "gpg --export failed");
+        let armor = String::from_utf8(export.stdout).expect("utf8 armor");
+
+        let mut import = std::process::Command::new("gpg")
+            .args(["--batch", "--yes", "--import"])
+            .env("GNUPGHOME", &verify_home)
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("gpg import spawn");
+        {
+            use std::io::Write;
+            import
+                .stdin
+                .as_mut()
+                .unwrap()
+                .write_all(armor.as_bytes())
+                .unwrap();
+        }
+        assert!(import.wait().unwrap().success(), "gpg --import failed");
+
+        let bare = tmp.path().join("gpg-signed.git");
+        let work = tmp.path().join("work");
+        let git = CliGitBackend::new();
+        git.init_bare(&bare, "main").await.unwrap();
+
+        let bare_s = bare.to_str().unwrap();
+        let work_s = work.to_str().unwrap();
+        assert!(
+            std::process::Command::new("git")
+                .args(["clone", bare_s, work_s])
+                .status()
+                .unwrap()
+                .success()
+        );
+        for (k, v) in [
+            ("user.name", "GPG Signer"),
+            ("user.email", email),
+            ("commit.gpgsign", "true"),
+        ] {
+            assert!(
+                std::process::Command::new("git")
+                    .args(["-C", work_s, "config", k, v])
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+        }
+
+        // Resolve the freshly generated key id and pin signingkey so ambient
+        // ~/.gitconfig user.signingkey cannot steal the sign attempt.
+        let list_keys = std::process::Command::new("gpg")
+            .args(["--list-secret-keys", "--with-colons"])
+            .env("GNUPGHOME", &sign_home)
+            .output()
+            .expect("list secret keys");
+        assert!(list_keys.status.success());
+        let list_out = String::from_utf8_lossy(&list_keys.stdout);
+        let key_id = list_out
+            .lines()
+            .find_map(|line| {
+                let mut parts = line.split(':');
+                if parts.next()? != "sec" {
+                    return None;
+                }
+                // sec:…:…:…:…:<keyid>:…
+                parts.nth(3).map(|s| s.to_string())
+            })
+            .expect("secret key id");
+        assert!(
+            std::process::Command::new("git")
+                .args(["-C", work_s, "config", "user.signingkey", &key_id])
+                .status()
+                .unwrap()
+                .success()
+        );
+
+        std::fs::write(work.join("README.md"), "gpg signed\n").unwrap();
+        assert!(
+            std::process::Command::new("git")
+                .args(["-C", work_s, "add", "README.md"])
+                .status()
+                .unwrap()
+                .success()
+        );
+        let commit = std::process::Command::new("git")
+            .args([
+                "-C",
+                work_s,
+                "-c",
+                "gpg.program=gpg",
+                "-c",
+                &format!("user.signingkey={key_id}"),
+                "-c",
+                "commit.gpgsign=true",
+                "commit",
+                "-m",
+                "gpg seed",
+            ])
+            .env("GNUPGHOME", &sign_home)
+            .env_remove("GPG_TTY")
+            .output()
+            .expect("git commit");
+        assert!(
+            commit.status.success(),
+            "signed commit failed: {}",
+            String::from_utf8_lossy(&commit.stderr)
+        );
+        assert!(
+            std::process::Command::new("git")
+                .args(["-C", work_s, "push", "origin", "main"])
+                .status()
+                .unwrap()
+                .success()
+        );
+
+        let page = git
+            .log(&bare, "main", 0, 1, None, Some(verify_home.as_path()))
+            .await
+            .expect("log with gpg_home");
+        assert_eq!(page.len(), 1);
+        assert_eq!(
+            page[0].signature_status, "valid",
+            "expected valid GPG signature, got status={} kind={}",
+            page[0].signature_status, page[0].signature_kind
+        );
+        assert_eq!(page[0].signature_kind, "gpg");
     }
 }

@@ -1,5 +1,6 @@
 //! SSH public key CRUD via `DbPool` match — fingerprint UNIQUE (D-SSH-05).
 //! Revoke is hard-delete (ASSUME A3); no `revoked_at` column.
+//! `can_authenticate` / `can_sign` gate Git SSH auth vs commit signature verify.
 
 use sqlx::Row;
 
@@ -13,6 +14,8 @@ pub struct SshKeyRow {
     pub public_key: String,
     pub fingerprint: String,
     pub key_type: String,
+    pub can_authenticate: bool,
+    pub can_sign: bool,
     pub last_used_at: Option<String>,
     pub last_used_ip: Option<String>,
     pub created_at: String,
@@ -21,6 +24,27 @@ pub struct SshKeyRow {
 macro_rules! map_ssh_key {
     ($row:expr) => {{
         let row = $row;
+        let can_authenticate = row
+            .try_get::<i64, _>("can_authenticate")
+            .or_else(|_| {
+                row.try_get::<i8, _>("can_authenticate")
+                    .map(|v| i64::from(v))
+            })
+            .or_else(|_| {
+                row.try_get::<bool, _>("can_authenticate")
+                    .map(|v| if v { 1 } else { 0 })
+            })
+            .unwrap_or(1)
+            != 0;
+        let can_sign = row
+            .try_get::<i64, _>("can_sign")
+            .or_else(|_| row.try_get::<i8, _>("can_sign").map(|v| i64::from(v)))
+            .or_else(|_| {
+                row.try_get::<bool, _>("can_sign")
+                    .map(|v| if v { 1 } else { 0 })
+            })
+            .unwrap_or(1)
+            != 0;
         SshKeyRow {
             id: row.try_get("id").map_err(|e| format!("ssh key row: {e}"))?,
             user_id: row
@@ -38,6 +62,8 @@ macro_rules! map_ssh_key {
             key_type: row
                 .try_get("key_type")
                 .map_err(|e| format!("ssh key row: {e}"))?,
+            can_authenticate,
+            can_sign,
             last_used_at: row
                 .try_get("last_used_at")
                 .map_err(|e| format!("ssh key row: {e}"))?,
@@ -52,6 +78,8 @@ macro_rules! map_ssh_key {
 }
 
 const SSH_SELECT_PG: &str = "SELECT id, user_id, title, public_key, fingerprint, key_type,
+       CASE WHEN can_authenticate THEN 1 ELSE 0 END AS can_authenticate,
+       CASE WHEN can_sign THEN 1 ELSE 0 END AS can_sign,
        CASE WHEN last_used_at IS NULL THEN NULL
             ELSE to_char(last_used_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS last_used_at,
        last_used_ip,
@@ -59,6 +87,7 @@ const SSH_SELECT_PG: &str = "SELECT id, user_id, title, public_key, fingerprint,
 FROM ssh_public_keys";
 
 const SSH_SELECT_MYSQL: &str = "SELECT id, user_id, title, public_key, fingerprint, key_type,
+       can_authenticate, can_sign,
        CASE WHEN last_used_at IS NULL THEN NULL
             ELSE DATE_FORMAT(last_used_at, '%Y-%m-%dT%H:%i:%sZ') END AS last_used_at,
        last_used_ip,
@@ -66,6 +95,7 @@ const SSH_SELECT_MYSQL: &str = "SELECT id, user_id, title, public_key, fingerpri
 FROM ssh_public_keys";
 
 const SSH_SELECT_SQLITE: &str = "SELECT id, user_id, title, public_key, fingerprint, key_type,
+       can_authenticate, can_sign,
        CASE WHEN last_used_at IS NULL THEN NULL
             ELSE strftime('%Y-%m-%dT%H:%M:%SZ', last_used_at) END AS last_used_at,
        last_used_ip,
@@ -82,13 +112,15 @@ pub async fn create(
     public_key: &str,
     fingerprint: &str,
     key_type: &str,
+    can_authenticate: bool,
+    can_sign: bool,
 ) -> Result<(), String> {
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
                 "INSERT INTO ssh_public_keys
-(id, user_id, title, public_key, fingerprint, key_type)
-VALUES ($1, $2, $3, $4, $5, $6)",
+(id, user_id, title, public_key, fingerprint, key_type, can_authenticate, can_sign)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             )
             .bind(id)
             .bind(user_id)
@@ -96,6 +128,8 @@ VALUES ($1, $2, $3, $4, $5, $6)",
             .bind(public_key)
             .bind(fingerprint)
             .bind(key_type)
+            .bind(can_authenticate)
+            .bind(can_sign)
             .execute(p)
             .await
             .map_err(|e| format!("create ssh key failed: {e}"))?;
@@ -103,8 +137,8 @@ VALUES ($1, $2, $3, $4, $5, $6)",
         DbPool::MySql(p) => {
             sqlx::query(
                 "INSERT INTO ssh_public_keys
-(id, user_id, title, public_key, fingerprint, key_type)
-VALUES (?, ?, ?, ?, ?, ?)",
+(id, user_id, title, public_key, fingerprint, key_type, can_authenticate, can_sign)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             )
             .bind(id)
             .bind(user_id)
@@ -112,6 +146,8 @@ VALUES (?, ?, ?, ?, ?, ?)",
             .bind(public_key)
             .bind(fingerprint)
             .bind(key_type)
+            .bind(can_authenticate)
+            .bind(can_sign)
             .execute(p)
             .await
             .map_err(|e| format!("create ssh key failed: {e}"))?;
@@ -119,8 +155,8 @@ VALUES (?, ?, ?, ?, ?, ?)",
         DbPool::Sqlite(p) => {
             sqlx::query(
                 "INSERT INTO ssh_public_keys
-(id, user_id, title, public_key, fingerprint, key_type)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+(id, user_id, title, public_key, fingerprint, key_type, can_authenticate, can_sign)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             )
             .bind(id)
             .bind(user_id)
@@ -128,6 +164,8 @@ VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             .bind(public_key)
             .bind(fingerprint)
             .bind(key_type)
+            .bind(if can_authenticate { 1 } else { 0 })
+            .bind(if can_sign { 1 } else { 0 })
             .execute(p)
             .await
             .map_err(|e| format!("create ssh key failed: {e}"))?;

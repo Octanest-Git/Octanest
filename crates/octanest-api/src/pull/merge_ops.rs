@@ -143,14 +143,27 @@ pub async fn commits(
     )?;
     let summaries = ctx
         .git
-        .log(&path, &row.head_ref, 0, 100, None)
+        .log(&path, &row.head_ref, 0, 100, None, None)
         .await
         .map_err(|e| AppError::new("pull.commits_failed", format!("log failed: {e}")))?;
-    let emails: Vec<String> = summaries.iter().map(|c| c.author_email.clone()).collect();
-    let signers = crate::repo::signatures::allowed_signers_for_emails(&ctx.db, &emails).await;
-    let summaries = if let Some((_, ref p)) = signers {
+    let mut emails: Vec<String> = Vec::new();
+    for c in &summaries {
+        if !c.committer_email.trim().is_empty() {
+            emails.push(c.committer_email.clone());
+        }
+        emails.push(c.author_email.clone());
+    }
+    let keyring = crate::repo::signatures::keyring_for_emails(&ctx.db, &emails).await;
+    let summaries = if keyring.has_any() {
         ctx.git
-            .log(&path, &row.head_ref, 0, 100, Some(p.as_path()))
+            .log(
+                &path,
+                &row.head_ref,
+                0,
+                100,
+                keyring.allowed_signers.as_deref(),
+                keyring.gpg_home.as_deref(),
+            )
             .await
             .map_err(|e| AppError::new("pull.commits_failed", format!("log failed: {e}")))?
     } else {
@@ -161,27 +174,32 @@ pub async fn commits(
         summaries.iter().map(|c| c.author_email.as_str()),
     )
     .await;
-    Ok(PullCommitsResponse {
-        commits: summaries
-            .into_iter()
-            .map(|c| {
-                let r = resolved.get(&c.author_email).cloned().unwrap_or_default();
-                PullCommitSummary {
-                    sha: c.sha,
-                    short_sha: c.short_sha,
-                    subject: c.subject,
-                    author_name: c.author_name,
-                    author_email: c.author_email,
-                    authored_at: c.authored_at,
-                    author_user_id: r.user_id,
-                    author_username: r.username,
-                    author_avatar_url: r.avatar_url,
-                    signature_status: c.signature_status,
-                    signature_kind: c.signature_kind,
-                }
-            })
-            .collect(),
-    })
+    let mut commits = Vec::with_capacity(summaries.len());
+    for c in summaries {
+        let r = resolved.get(&c.author_email).cloned().unwrap_or_default();
+        let signature_status = crate::repo::signatures::apply_verified_policy(
+            &ctx.db,
+            &c.committer_email,
+            &c.author_email,
+            &c.signature_status,
+            &c.signature_kind,
+        )
+        .await;
+        commits.push(PullCommitSummary {
+            sha: c.sha,
+            short_sha: c.short_sha,
+            subject: c.subject,
+            author_name: c.author_name,
+            author_email: c.author_email,
+            authored_at: c.authored_at,
+            author_user_id: r.user_id,
+            author_username: r.username,
+            author_avatar_url: r.avatar_url,
+            signature_status,
+            signature_kind: c.signature_kind,
+        });
+    }
+    Ok(PullCommitsResponse { commits })
 }
 
 /// `pull.merge` — Write+ (PR-05 / D-PR-17..23).

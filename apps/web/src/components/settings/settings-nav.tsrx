@@ -14,7 +14,7 @@ const LINKS: { id: SettingsNavActive; href: string; label: string }[] = [
     href: "/settings/tokens",
     label: "Personal access tokens",
   },
-  { id: "ssh-keys", href: "/settings/ssh-keys", label: "SSH keys" },
+  { id: "ssh-keys", href: "/settings/ssh-keys", label: "SSH and GPG keys" },
 ];
 
 function linkClass(isActive: boolean): string {
@@ -26,7 +26,7 @@ function linkClass(isActive: boolean): string {
   );
 }
 
-/** Account settings sidebar: General | Profile | Personal access tokens | SSH keys. */
+/** Account settings sidebar: General | Profile | Personal access tokens | SSH and GPG keys. */
 export function SettingsNav({ active }: SettingsNavProps) @{
   <nav className="flex flex-col gap-1" aria-label="Account settings">
     <p className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">

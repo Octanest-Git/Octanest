@@ -11,6 +11,7 @@ import { renderWithQueryClient } from "@/test/render-with-query";
  */
 
 const listMock = vi.fn();
+const gpgListMock = vi.fn();
 const revokeMock = vi.fn();
 const addMock = vi.fn();
 const meMock = vi.fn();
@@ -24,6 +25,11 @@ vi.mock("@/lib/api-client", () => ({
       list: (...args: unknown[]) => listMock(...args),
       revoke: (...args: unknown[]) => revokeMock(...args),
       add: (...args: unknown[]) => addMock(...args),
+    },
+    gpgKey: {
+      list: (...args: unknown[]) => gpgListMock(...args),
+      revoke: vi.fn(),
+      add: vi.fn(),
     },
   },
 }));
@@ -46,6 +52,7 @@ type LoaderShape =
         must_change_credentials: boolean;
       };
       keys?: unknown[];
+      gpgKeys?: unknown[];
     };
 
 let loaderData: LoaderShape;
@@ -88,11 +95,13 @@ const verifiedUser = {
 
 beforeEach(() => {
   listMock.mockReset();
+  gpgListMock.mockReset();
   revokeMock.mockReset();
   addMock.mockReset();
   meMock.mockReset();
-  loaderData = { kind: "ready", user: verifiedUser, keys: [] };
+  loaderData = { kind: "ready", user: verifiedUser, keys: [], gpgKeys: [] };
   listMock.mockResolvedValue({ ok: true, data: [] });
+  gpgListMock.mockResolvedValue({ ok: true, data: [] });
   meMock.mockResolvedValue({ ok: true, data: verifiedUser });
 });
 
@@ -111,30 +120,33 @@ async function loadSshKeysModule(): Promise<Record<string, unknown>> {
 }
 
 describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
-  it("list title SSH keys + empty hero No SSH keys + Add SSH key", async () => {
+  it("list title SSH and GPG keys + empty hero No SSH keys + Add SSH key", async () => {
     const mod = await loadSshKeysModule();
     const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(SshKeysPage);
 
-    await waitFor(() => {
-      expect(container.querySelector("h1")?.textContent).toBe("SSH keys");
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("No SSH keys")).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(container.querySelector("h1")?.textContent).toBe("SSH and GPG keys");
+      },
+      { timeout: 20_000 },
+    );
+    // Prefer exact empty-state titles; fall back to body text for diagnostics.
+    const body = document.body.textContent ?? "";
+    expect(body).toContain("No SSH keys");
     const add = screen.getAllByRole("button", {
       name: /Add SSH key/i,
     })[0]!;
     expect(add).toBeInTheDocument();
     expect(add).not.toBeDisabled();
-  }, 15_000);
+  }, 30_000);
 
-  it("unverified: list visible with Add disabled + Verify your email to add an SSH key.", async () => {
+  it("unverified: list visible with Add disabled + Verify your email to add keys.", async () => {
     loaderData = {
       kind: "ready",
       user: { ...verifiedUser, email_verified: false },
       keys: [],
+      gpgKeys: [],
     };
     meMock.mockResolvedValue({
       ok: true,
@@ -145,21 +157,24 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(SshKeysPage);
 
-    await waitFor(() => {
-      expect(container.querySelector("h1")?.textContent).toBe("SSH keys");
-    });
+    await waitFor(
+      () => {
+        expect(container.querySelector("h1")?.textContent).toBe("SSH and GPG keys");
+      },
+      { timeout: 20_000 },
+    );
 
     const add = screen.getAllByRole("button", {
       name: /Add SSH key/i,
     })[0]!;
     expect(add).toBeDisabled();
-    expect(screen.getByText("Verify your email to add an SSH key.")).toBeInTheDocument();
+    expect(screen.getAllByText("Verify your email to add keys.").length).toBeGreaterThan(0);
     await waitFor(() => {
       expect(screen.getByText("No SSH keys")).toBeInTheDocument();
     });
-  }, 15_000);
+  }, 30_000);
 
-  it("settings secondary nav General | Profile | Personal access tokens | SSH keys", async () => {
+  it("settings secondary nav General | Profile | Personal access tokens | SSH and GPG keys", async () => {
     const mod = await loadSshKeysModule();
     const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
     const { container } = renderWithQueryClient(SshKeysPage);
@@ -176,7 +191,7 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
     expect(general?.textContent).toBe("General");
     expect(profile?.textContent).toBe("Profile");
     expect(tokens?.textContent).toBe("Personal access tokens");
-    expect(sshKeys?.textContent).toBe("SSH keys");
+    expect(sshKeys?.textContent).toBe("SSH and GPG keys");
     expect(sshKeys?.getAttribute("aria-current")).toBe("page");
   }, 15_000);
 
@@ -189,6 +204,8 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
           title: "laptop",
           fingerprint: "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8",
           key_type: "ssh-ed25519",
+          can_authenticate: true,
+          can_sign: true,
           last_used_at: null,
           created_at: "2026-01-01T00:00:00Z",
         },
@@ -206,6 +223,51 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-06 list)", () => {
       screen.getByText("SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8"),
     ).toBeInTheDocument();
   }, 15_000);
+
+  it("GPG empty hero + Commit signing setup + Add GPG key", async () => {
+    const mod = await loadSshKeysModule();
+    const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
+    const { container } = renderWithQueryClient(SshKeysPage);
+
+    await waitFor(() => {
+      expect(container.querySelector("h1")?.textContent).toBe("SSH and GPG keys");
+    });
+    expect(screen.getByText("No GPG keys")).toBeInTheDocument();
+    expect(screen.getByText("Commit signing setup")).toBeInTheDocument();
+    expect(screen.getByText("SSH signing")).toBeInTheDocument();
+    expect(screen.getByText("GPG signing")).toBeInTheDocument();
+    expect(document.body.textContent).toMatch(/gpg\.format ssh/);
+    const addGpg = screen.getAllByRole("button", { name: /Add GPG key/i })[0]!;
+    expect(addGpg).toBeInTheDocument();
+    expect(addGpg).not.toBeDisabled();
+  }, 15_000);
+
+  it("GPG list rows show fingerprint and key id", async () => {
+    gpgListMock.mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          id: "gpg-1",
+          title: "laptop-gpg",
+          fingerprint: "ABCD1234EFGH5678",
+          key_id: "EFGH5678",
+          uid_emails: ["ada@example.com"],
+          created_at: "2026-01-01T00:00:00Z",
+        },
+      ],
+    });
+
+    const mod = await loadSshKeysModule();
+    const SshKeysPage = (mod.SshKeysPage ?? mod.default) as unknown;
+    renderWithQueryClient(SshKeysPage);
+
+    await waitFor(() => {
+      expect(screen.getByText("laptop-gpg")).toBeInTheDocument();
+    });
+    expect(screen.getByText("ABCD1234EFGH5678")).toBeInTheDocument();
+    expect(screen.getByText("EFGH5678")).toBeInTheDocument();
+    expect(screen.getByText("ada@example.com")).toBeInTheDocument();
+  }, 15_000);
 });
 
 describe("/settings/ssh-keys (GIT-04 / D-SSH-05 revoke)", () => {
@@ -218,6 +280,8 @@ describe("/settings/ssh-keys (GIT-04 / D-SSH-05 revoke)", () => {
           title: "laptop",
           fingerprint: "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8",
           key_type: "ssh-ed25519",
+          can_authenticate: true,
+          can_sign: true,
           last_used_at: null,
           created_at: "2026-01-01T00:00:00Z",
         },

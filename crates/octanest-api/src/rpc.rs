@@ -24,6 +24,7 @@ use crate::pat;
 use crate::pull;
 use crate::release;
 use crate::ssh_keys;
+use crate::gpg_keys;
 use crate::repo;
 use crate::user;
 use crate::user::rate_limit::LookupLimiter;
@@ -931,6 +932,18 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "sshKey.revoke" => match ssh_keys::revoke(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "gpgKey.add" => match gpg_keys::add(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "gpgKey.list" => match gpg_keys::list(ctx).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "gpgKey.revoke" => match gpg_keys::revoke(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

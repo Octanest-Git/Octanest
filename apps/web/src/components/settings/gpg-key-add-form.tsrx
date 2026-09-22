@@ -1,36 +1,33 @@
-import { sshKeyAddMutationOptions } from "@octanest/api-client";
+import { gpgKeyAddMutationOptions } from "@octanest/api-client";
 import { useMutation, useQueryClient } from "@octanejs/tanstack-query";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 
-type SshKeyAddFormProps = {
+type GpgKeyAddFormProps = {
   disabled?: boolean;
   onAdded?: () => void;
 };
 
-/** Title + public key form — no one-time secret reveal (D-SSH-05). */
-export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps) @{
+/** Title + armored public key form. */
+export function GpgKeyAddForm({ disabled = false, onAdded }: GpgKeyAddFormProps) @{
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
-  const [canAuthenticate, setCanAuthenticate] = useState(true);
-  const [canSign, setCanSign] = useState(true);
 
   const form = useForm({
     defaultValues: {
       title: "",
-      public_key: "",
+      armored_public_key: "",
     },
     onSubmit: ({ value }) => {
       if (disabled || add.isPending) return;
       setError("");
       const t = value.title.trim();
-      const k = value.public_key.trim();
+      const k = value.armored_public_key.trim();
       if (!t) {
         setError("Title is required.");
         return;
@@ -39,31 +36,20 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
         setError("Public key is required.");
         return;
       }
-      if (!canAuthenticate && !canSign) {
-        setError("Enable authentication and/or commit signing.");
-        return;
-      }
-      add.mutate({
-        title: t,
-        public_key: k,
-        can_authenticate: canAuthenticate,
-        can_sign: canSign,
-      });
+      add.mutate({ title: t, armored_public_key: k });
     },
   });
 
   const add = useMutation({
-    ...sshKeyAddMutationOptions(apiClient),
+    ...gpgKeyAddMutationOptions(apiClient),
     onSuccess: async () => {
       form.reset();
       setError("");
-      setCanAuthenticate(true);
-      setCanSign(true);
-      await queryClient.invalidateQueries({ queryKey: ["sshKey", "list"] });
+      await queryClient.invalidateQueries({ queryKey: ["gpgKey", "list"] });
       onAdded?.();
     },
     onError: (err: Error) => {
-      setError(err.message || "Couldn't add SSH key.");
+      setError(err.message || "Couldn't add GPG key.");
     },
   });
 
@@ -79,9 +65,9 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
     <form.Field name="title">
       {(field) => (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="ssh-key-title">Title</Label>
+          <Label htmlFor="gpg-key-title">Title</Label>
           <Input
-            id="ssh-key-title"
+            id="gpg-key-title"
             name="title"
             value={field.state.value}
             disabled={disabled || add.isPending}
@@ -92,16 +78,18 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
         </div>
       )}
     </form.Field>
-    <form.Field name="public_key">
+    <form.Field name="armored_public_key">
       {(field) => (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="ssh-key-public">Key</Label>
+          <Label htmlFor="gpg-key-public">Public key</Label>
           <Textarea
-            id="ssh-key-public"
-            name="public_key"
-            rows={4}
+            id="gpg-key-public"
+            name="armored_public_key"
+            rows={8}
             className="font-mono text-[13px]"
-            placeholder="ssh-ed25519 AAAA… comment"
+            placeholder={
+              "-----BEGIN PGP PUBLIC KEY BLOCK-----\n…\n-----END PGP PUBLIC KEY BLOCK-----"
+            }
             value={field.state.value}
             disabled={disabled || add.isPending}
             onBlur={field.handleBlur}
@@ -110,27 +98,6 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
         </div>
       )}
     </form.Field>
-    <div className="flex flex-col gap-2">
-      <p className="text-[14px] font-medium text-foreground">Usage</p>
-      <label className="flex cursor-pointer items-start gap-3">
-        <Checkbox
-          checked={canAuthenticate}
-          disabled={disabled || add.isPending}
-          aria-label="Authentication"
-          onCheckedChange={(checked) => setCanAuthenticate(checked === true)}
-        />
-        <span className="text-[14px] text-foreground">Authentication (git over SSH)</span>
-      </label>
-      <label className="flex cursor-pointer items-start gap-3">
-        <Checkbox
-          checked={canSign}
-          disabled={disabled || add.isPending}
-          aria-label="Commit signing"
-          onCheckedChange={(checked) => setCanSign(checked === true)}
-        />
-        <span className="text-[14px] text-foreground">Commit signing (SSH signatures)</span>
-      </label>
-    </div>
     @if (error) {
       <p role="alert" className="text-[14px] text-destructive">
         {error as string}
@@ -139,7 +106,7 @@ export function SshKeyAddForm({ disabled = false, onAdded }: SshKeyAddFormProps)
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
         <Button type="submit" disabled={disabled || add.isPending || isSubmitting}>
-          {(add.isPending ? "Adding…" : "Add SSH key") as string}
+          {(add.isPending ? "Adding…" : "Add GPG key") as string}
         </Button>
       )}
     </form.Subscribe>

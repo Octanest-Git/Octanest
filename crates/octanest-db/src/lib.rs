@@ -28,6 +28,7 @@ pub mod repo_collaborators;
 pub mod repositories;
 pub mod sessions;
 pub mod ssh_keys;
+pub mod gpg_keys;
 pub mod stars;
 pub mod templates;
 pub mod topics;
@@ -62,6 +63,7 @@ pub use stars::{ForkListSort, RepoForkListRow, RepoStargazerListRow};
 pub use watches::RepoWatcherListRow;
 pub use repositories::{RepoDiskRef, RepositoryRow};
 pub use ssh_keys::SshKeyRow;
+pub use gpg_keys::GpgKeyRow;
 pub use templates::{InstanceTemplatePackRow, TemplateRepoListRow};
 pub use users::UserRow;
 pub use auth_settings::AuthSettingsRow;
@@ -2166,6 +2168,8 @@ impl Database {
         public_key: &str,
         fingerprint: &str,
         key_type: &str,
+        can_authenticate: bool,
+        can_sign: bool,
     ) -> Result<(), String> {
         ssh_keys::create(
             self.require_pool()?,
@@ -2175,6 +2179,8 @@ impl Database {
             public_key,
             fingerprint,
             key_type,
+            can_authenticate,
+            can_sign,
         )
         .await
     }
@@ -2204,6 +2210,50 @@ impl Database {
         last_used_ip: Option<&str>,
     ) -> Result<(), String> {
         ssh_keys::touch_last_used(self.require_pool()?, id, last_used_at, last_used_ip).await
+    }
+
+    // --- gpg public keys ---
+
+    #[allow(clippy::too_many_arguments)]
+    pub async fn create_gpg_key(
+        &self,
+        id: &str,
+        user_id: &str,
+        title: &str,
+        armored_public_key: &str,
+        fingerprint: &str,
+        key_id: &str,
+        uid_emails_json: &str,
+    ) -> Result<(), String> {
+        gpg_keys::create(
+            self.require_pool()?,
+            id,
+            user_id,
+            title,
+            armored_public_key,
+            fingerprint,
+            key_id,
+            uid_emails_json,
+        )
+        .await
+    }
+
+    pub async fn find_gpg_key_by_fingerprint(
+        &self,
+        fingerprint: &str,
+    ) -> Result<Option<gpg_keys::GpgKeyRow>, String> {
+        gpg_keys::find_by_fingerprint(self.require_pool()?, fingerprint).await
+    }
+
+    pub async fn list_gpg_keys_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<gpg_keys::GpgKeyRow>, String> {
+        gpg_keys::list_for_user(self.require_pool()?, user_id).await
+    }
+
+    pub async fn revoke_gpg_key(&self, id: &str) -> Result<(), String> {
+        gpg_keys::revoke(self.require_pool()?, id).await
     }
 
     // --- auth identities ---
