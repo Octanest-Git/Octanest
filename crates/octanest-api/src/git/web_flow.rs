@@ -35,14 +35,29 @@ fn is_dev_env() -> bool {
     )
 }
 
+/// Resolve against process cwd when relative.
+///
+/// Seed commits run `git -C <tmpdir> … -c user.signingkey=…`; a relative key
+/// path would resolve under the temp worktree, not the package cwd.
+fn absolute_key_path(path: PathBuf) -> Result<PathBuf, String> {
+    if path.is_absolute() {
+        return Ok(path);
+    }
+    let cwd = std::env::current_dir().map_err(|e| format!("cwd for web-flow key: {e}"))?;
+    Ok(cwd.join(path))
+}
+
 /// Ensure the Ed25519 web-flow key exists.
+///
+/// Returns an **absolute** private-key path so `git -C <tmpdir> commit -S` can
+/// load it (relative paths resolve under the worktree).
 ///
 /// - Development / compose / test: generate with `ssh-keygen` if missing.
 /// - Production / cloud: fail closed if missing (ops must provision the key).
 pub async fn ensure_web_flow_key() -> Result<PathBuf, String> {
-    let dir = web_flow_dir();
-    let priv_path = private_key_path();
-    let pub_path = public_key_path();
+    let dir = absolute_key_path(web_flow_dir())?;
+    let priv_path = dir.join(WEB_FLOW_KEY_BASENAME);
+    let pub_path = dir.join(format!("{WEB_FLOW_KEY_BASENAME}.pub"));
 
     if tokio::fs::try_exists(&priv_path).await.unwrap_or(false)
         && tokio::fs::try_exists(&pub_path).await.unwrap_or(false)

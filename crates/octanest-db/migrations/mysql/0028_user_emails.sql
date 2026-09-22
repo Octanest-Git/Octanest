@@ -30,8 +30,11 @@ WHERE NOT EXISTS (
 ALTER TABLE auth_email_tokens
   ADD COLUMN target_email VARCHAR(320) NOT NULL DEFAULT '';
 
-ALTER TABLE auth_email_tokens
-  DROP INDEX user_id;
-
+-- Add the replacement unique key first so FK on user_id still has an index
+-- covering it (leftmost prefix). Dropping `user_id` before this fails with
+-- MySQL 1553 (index needed in a foreign key constraint).
 ALTER TABLE auth_email_tokens
   ADD UNIQUE KEY uk_auth_email_tokens_user_purpose_target (user_id, purpose, target_email);
+
+ALTER TABLE auth_email_tokens
+  DROP INDEX user_id;

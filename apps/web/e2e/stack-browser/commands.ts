@@ -1307,12 +1307,12 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
     await page.getByTestId("settings-ssh-keys-page").waitFor({ state: "visible", timeout: 15_000 });
     assertNoOctaneOverlay(await page.content(), "settings ssh-keys");
 
-    // Profile + avatar crop (profile-only — no default branch / logout).
+    // Account + avatar crop (profile route — no default branch / logout).
     await page.goto(`${webOrigin()}/settings/profile`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
-    await page.getByRole("heading", { name: "Profile" }).waitFor({
+    await page.getByRole("heading", { name: "Account" }).waitFor({
       state: "visible",
       timeout: 30_000,
     });

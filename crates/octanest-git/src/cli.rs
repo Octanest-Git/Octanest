@@ -797,8 +797,11 @@ impl GitBackend for CliGitBackend {
         ];
         let mut commit_args: Vec<String> = vec!["-C".into(), work_str.into()];
         if let Some(key) = signing_key_path {
-            let key_s = key.to_str().ok_or_else(|| {
-                GitError::InvalidArg(format!("non-utf8 signing key path: {}", key.display()))
+            // Absolute: `git -C <work>` would otherwise resolve a relative key
+            // under the temp worktree.
+            let key_abs = absolute_path(key)?;
+            let key_s = key_abs.to_str().ok_or_else(|| {
+                GitError::InvalidArg(format!("non-utf8 signing key path: {}", key_abs.display()))
             })?;
             commit_args.push("-c".into());
             commit_args.push("gpg.format=ssh".into());

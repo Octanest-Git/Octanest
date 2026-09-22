@@ -1721,13 +1721,15 @@ impl Database {
     }
 
     /// Test helper: rewrite token `created_at` for rate-limit simulations.
+    ///
+    /// Updates every token for `(user_id, purpose)` (any `target_email`).
     pub async fn set_email_token_created_at(
         &self,
         user_id: &str,
         purpose: &str,
         created_at: &str,
     ) -> Result<(), String> {
-        email_tokens::set_created_at(self.require_pool()?, user_id, purpose, "", created_at).await
+        email_tokens::set_created_at(self.require_pool()?, user_id, purpose, created_at).await
     }
 
     // --- user emails ---

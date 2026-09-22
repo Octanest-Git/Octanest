@@ -240,6 +240,9 @@ async fn issue_token_inner(
 }
 
 /// Issue (or replace) a verify token row — no rate limit (tests / internal seed).
+///
+/// Uses the user's primary email as `target_email` so the row replaces the
+/// signup auto-issued token (same unique key).
 pub async fn issue_verify(
     db: &octanest_db::Database,
     user_id: &str,
@@ -260,9 +263,13 @@ pub async fn issue_verify_inner(
     user_id: &str,
     enforce_rate_limit: bool,
 ) -> Result<IssuedVerifySecrets, AppError> {
-    // Primary verify uses empty target (legacy) — callers that know the address
-    // should use issue_verify_for_target.
-    issue_token_inner(db, user_id, PURPOSE_VERIFY, "", enforce_rate_limit).await
+    let user = db
+        .find_user_by_id(user_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(|| AppError::new("auth.unauthenticated", "user not found"))?;
+    let target = user.email.trim().to_ascii_lowercase();
+    issue_verify_for_target_inner(db, user_id, &target, enforce_rate_limit).await
 }
 
 async fn issue_verify_for_target_inner(
@@ -449,7 +456,11 @@ pub async fn verify(ctx: &RpcCtx, input: serde_json::Value) -> Result<UserPublic
     } else {
         None
     };
+
     let Some(row) = row else {
+        // Wrong OTP/magic: attribute attempts to the session user's primary
+        // verify token (T-05-06). Fall back to legacy empty target.
+        bump_verify_attempt_on_miss(ctx, &session.user_id).await?;
         return Err(invalid_token());
     };
 
@@ -509,6 +520,45 @@ pub async fn verify(ctx: &RpcCtx, input: serde_json::Value) -> Result<UserPublic
         .map_err(db_err)?
         .ok_or_else(|| AppError::new("auth.unauthenticated", "not authenticated"))?;
     Ok(user_to_public(&user))
+}
+
+/// On OTP/magic miss, increment attempts on the session user's primary verify
+/// token (or legacy empty-target row) and invalidate at the cap.
+async fn bump_verify_attempt_on_miss(ctx: &RpcCtx, user_id: &str) -> Result<(), AppError> {
+    let user = ctx
+        .db
+        .find_user_by_id(user_id)
+        .await
+        .map_err(db_err)?;
+    let Some(user) = user else {
+        return Ok(());
+    };
+    let primary = user.email.trim().to_ascii_lowercase();
+    let row = match ctx
+        .db
+        .find_email_token_by_user_purpose_target(user_id, PURPOSE_VERIFY, &primary)
+        .await
+        .map_err(db_err)?
+    {
+        Some(r) => Some(r),
+        None => ctx
+            .db
+            .find_email_token_by_user_purpose_target(user_id, PURPOSE_VERIFY, "")
+            .await
+            .map_err(db_err)?,
+    };
+    let Some(row) = row else {
+        return Ok(());
+    };
+    let attempts = ctx
+        .db
+        .increment_email_token_attempts(&row.id)
+        .await
+        .map_err(db_err)?;
+    if attempts >= MAX_REDEEM_ATTEMPTS {
+        let _ = ctx.db.delete_email_token(&row.id).await;
+    }
+    Ok(())
 }
 
 /// Dev/test privileged RPC used to prove `require_verified` (D-10).

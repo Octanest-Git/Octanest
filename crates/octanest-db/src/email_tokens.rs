@@ -367,23 +367,23 @@ RETURNING attempt_count",
 }
 
 /// Test/helper: set `created_at` for rate-limit window simulation.
+///
+/// Updates **all** tokens for `(user_id, purpose)` regardless of `target_email`,
+/// so backdate helpers keep working after primary verify tokens use the address.
 pub async fn set_created_at(
     pool: &DbPool,
     user_id: &str,
     purpose: &str,
-    target_email: &str,
     created_at: &str,
 ) -> Result<(), String> {
-    let target = target_email.trim().to_ascii_lowercase();
     match pool {
         DbPool::Postgres(p) => {
             sqlx::query(
-                "UPDATE auth_email_tokens SET created_at = $4::timestamptz
-WHERE user_id = $1 AND purpose = $2 AND target_email = $3",
+                "UPDATE auth_email_tokens SET created_at = $3::timestamptz
+WHERE user_id = $1 AND purpose = $2",
             )
             .bind(user_id)
             .bind(purpose)
-            .bind(&target)
             .bind(created_at)
             .execute(p)
             .await
@@ -392,12 +392,11 @@ WHERE user_id = $1 AND purpose = $2 AND target_email = $3",
         DbPool::MySql(p) => {
             sqlx::query(
                 "UPDATE auth_email_tokens SET created_at = ?
-WHERE user_id = ? AND purpose = ? AND target_email = ?",
+WHERE user_id = ? AND purpose = ?",
             )
             .bind(created_at)
             .bind(user_id)
             .bind(purpose)
-            .bind(&target)
             .execute(p)
             .await
             .map_err(|e| format!("set email token created_at failed: {e}"))?;
@@ -405,12 +404,11 @@ WHERE user_id = ? AND purpose = ? AND target_email = ?",
         DbPool::Sqlite(p) => {
             sqlx::query(
                 "UPDATE auth_email_tokens SET created_at = ?1
-WHERE user_id = ?2 AND purpose = ?3 AND target_email = ?4",
+WHERE user_id = ?2 AND purpose = ?3",
             )
             .bind(created_at)
             .bind(user_id)
             .bind(purpose)
-            .bind(&target)
             .execute(p)
             .await
             .map_err(|e| format!("set email token created_at failed: {e}"))?;
