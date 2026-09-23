@@ -14,10 +14,12 @@ import {
   navigateSafe,
   newGuardedWebView,
   setCookieForOrigin,
+  submitForm,
   trackRpcPosts,
   viewHtml,
   waitForActionable,
   waitForButtonMatching,
+  waitForFormReady,
   waitForSelector,
   waitForText,
 } from "./webview-guard.ts";
@@ -329,18 +331,35 @@ export async function expectAuthMeDedupedOnHome(): Promise<boolean> {
     tracker = await trackRpcPosts(guard.view, "auth.me");
     await navigateSafe(guard.view, `${webOrigin()}/`);
 
-    // Wait for any sign-in indicator (account menu or user content)
-    try {
-      await waitForSelector(guard.view, 'button[aria-label="Account menu"]', 60_000);
-    } catch {
-      // Fallback: check for any signed-in indicators
+    // Wait for sign-in state - try multiple indicators
+    const signInIndicators = [
+      'button[aria-label="Account menu"]',
+      'button[aria-label="User menu"]',
+      '[data-testid="user-menu"]',
+      ".user-avatar",
+      'nav a[href*="/settings"]',
+      'nav a[href*="/admin"]',
+    ];
+
+    let signedIn = false;
+    for (const selector of signInIndicators) {
+      try {
+        await waitForSelector(guard.view, selector, 15_000);
+        signedIn = true;
+        break;
+      } catch {
+        continue;
+      }
+    }
+
+    if (!signedIn) {
+      // Final check: ensure we're not seeing sign-in UI
       const html = await viewHtml(guard.view);
-      if (!html.includes("Sign in") && !html.includes("Create new")) {
-        // Likely signed in but different UI structure
-        await Bun.sleep(2000);
-      } else {
+      if (html.includes("Sign in") || html.includes("Create your account")) {
         throw new Error("Still showing sign-in UI after authentication");
       }
+      // If no sign-in UI, assume we're signed in with different structure
+      await Bun.sleep(2000);
     }
 
     await Bun.sleep(3000); // Allow Query cache to settle
@@ -464,19 +483,9 @@ export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
     await guard.view.type(title);
     await Bun.sleep(500); // Let form validation settle
 
-    // Wait for submit button to be actionable
-    await waitForActionable(guard.view, 'button[type="submit"]', 30_000);
-
-    // Try to submit via button click, with form submission fallback
-    try {
-      await guard.view.click('button[type="submit"]');
-    } catch {
-      // Fallback: submit form directly via JavaScript
-      await guard.view.evaluate(`(() => {
-        const form = document.querySelector('form');
-        if (form) form.submit();
-      })()`);
-    }
+    // Wait for form to be ready and submit using robust method
+    await waitForFormReady(guard.view, "form", 30_000);
+    await submitForm(guard.view, 'button[type="submit"]', "form");
     await Bun.sleep(1000);
 
     // Check if we navigated to an issue number
@@ -651,19 +660,9 @@ export async function expectForgeReleasesCrudFlow(): Promise<boolean> {
     await guard.view.type(releaseTitle);
     await Bun.sleep(500); // Let form validation settle
 
-    // Wait for submit button to be actionable
-    await waitForActionable(guard.view, 'button[type="submit"]', 30_000);
-
-    // Try to submit via button click, with form submission fallback
-    try {
-      await guard.view.click('button[type="submit"]');
-    } catch {
-      // Fallback: submit form directly via JavaScript
-      await guard.view.evaluate(`(() => {
-        const form = document.querySelector('form');
-        if (form) form.submit();
-      })()`);
-    }
+    // Wait for form to be ready and submit using robust method
+    await waitForFormReady(guard.view, "form", 30_000);
+    await submitForm(guard.view, 'button[type="submit"]', "form");
     await Bun.sleep(1000);
 
     // Check if we navigated to the release page
@@ -992,11 +991,32 @@ export async function expectNewRepoTemplatePickerFlow(): Promise<boolean> {
     await setCookieForOrigin(guard.view, webOrigin(), cookie);
     await navigateSafe(guard.view, `${webOrigin()}/new`);
     await waitForText(guard.view, "Create a new repository", 45_000);
+
+    // Wait for page to be fully loaded and repo-stack to be actionable
+    await waitForFormReady(guard.view, "form", 30_000);
     await waitForActionable(guard.view, "#repo-stack", 45_000);
     assertNoOctaneOverlay(await viewHtml(guard.view), "/new initial");
 
-    await guard.view.click("#repo-stack");
-    await waitForSelector(guard.view, '[data-testid="repo-stack-overlay"]', 30_000);
+    // Click repo-stack with retry logic
+    let overlayOpened = false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await guard.view.click("#repo-stack");
+        await waitForSelector(guard.view, '[data-testid="repo-stack-overlay"]', 15_000);
+        overlayOpened = true;
+        break;
+      } catch {
+        if (attempt === 2) throw new Error("Failed to open repo-stack overlay after 3 attempts");
+        await Bun.sleep(1000);
+        // Re-check if element is still actionable
+        await waitForActionable(guard.view, "#repo-stack", 10_000);
+      }
+    }
+
+    if (!overlayOpened) {
+      throw new Error("repo-stack overlay did not open");
+    }
+
     await waitForText(guard.view, "Choose Stack / template", 20_000);
     await Bun.sleep(2000); // Let overlay fully render
 

@@ -182,14 +182,138 @@ export async function waitForActionable(
     if (actionable) return;
     await Bun.sleep(150);
   }
+
+  // Enhanced diagnostics on timeout
+  const diagnostics = await view
+    .evaluate(
+      `(() => {
+      const el = document.querySelector(${JSON.stringify(selector)});
+      if (!el) return { exists: false };
+      const rect = el.getBoundingClientRect();
+      const style = window.getComputedStyle(el);
+      return {
+        exists: true,
+        tagName: el.tagName,
+        type: el.type || null,
+        disabled: el.disabled || false,
+        classList: Array.from(el.classList),
+        rect: { width: rect.width, height: rect.height, x: rect.x, y: rect.y },
+        style: { display: style.display, visibility: style.visibility, opacity: style.opacity },
+        formValid: el.form ? el.form.checkValidity() : null,
+        formErrors: el.form ? Array.from(el.form.querySelectorAll(':invalid')).map(e => e.name || e.id || e.tagName) : [],
+        textContent: el.textContent?.trim() || '',
+        outerHTML: el.outerHTML.slice(0, 200)
+      };
+    })()`,
+    )
+    .catch(() => ({ error: "diagnostic failed" }));
+
   const url = await view.evaluate("location.href").catch(() => "?");
   const title = await view.evaluate("document.title").catch(() => "?");
   const snippet = await view
     .evaluate("document.body ? document.body.innerText.slice(0, 400) : ''")
     .catch(() => "");
+
   throw new Error(
-    `timeout waiting for actionable ${JSON.stringify(selector)} url=${url} title=${title} body=${JSON.stringify(snippet)}`,
+    `timeout waiting for actionable ${JSON.stringify(selector)} url=${url} title=${title} diagnostics=${JSON.stringify(diagnostics)} body=${JSON.stringify(snippet)}`,
   );
+}
+
+/** Wait until a form is ready for submission (no validation errors, not loading). */
+export async function waitForFormReady(
+  view: Bun.WebView,
+  formSelector = "form",
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const ready = await view.evaluate(
+      `(() => {
+        const form = document.querySelector(${JSON.stringify(formSelector)});
+        if (!form) return false;
+        
+        // Check for loading indicators
+        const loading = document.querySelector('[data-loading="true"], .loading, .spinner, [aria-busy="true"]');
+        if (loading) return false;
+        
+        // Check form validity
+        if (form.checkValidity && !form.checkValidity()) return false;
+        
+        // Check for error messages
+        const errors = document.querySelector('.error, [role="alert"], .field-error');
+        if (errors && errors.textContent?.trim()) return false;
+        
+        return true;
+      })()`,
+    );
+    if (ready) return;
+    await Bun.sleep(200);
+  }
+
+  const diagnostics = await view
+    .evaluate(
+      `(() => {
+      const form = document.querySelector(${JSON.stringify(formSelector)});
+      const loading = document.querySelector('[data-loading="true"], .loading, .spinner, [aria-busy="true"]');
+      const errors = Array.from(document.querySelectorAll('.error, [role="alert"], .field-error'));
+      const invalidFields = form ? Array.from(form.querySelectorAll(':invalid')) : [];
+      
+      return {
+        formExists: !!form,
+        formValid: form ? form.checkValidity() : null,
+        hasLoading: !!loading,
+        loadingText: loading?.textContent?.trim() || '',
+        errorCount: errors.length,
+        errorTexts: errors.map(e => e.textContent?.trim()).filter(Boolean),
+        invalidFieldCount: invalidFields.length,
+        invalidFields: invalidFields.map(e => ({ name: e.name, id: e.id, tagName: e.tagName, validationMessage: e.validationMessage }))
+      };
+    })()`,
+    )
+    .catch(() => ({ error: "form diagnostic failed" }));
+
+  throw new Error(
+    `timeout waiting for form ready ${JSON.stringify(formSelector)} diagnostics=${JSON.stringify(diagnostics)}`,
+  );
+}
+
+/** Submit a form using multiple strategies (click, Enter, form.submit()). */
+export async function submitForm(
+  view: Bun.WebView,
+  submitSelector = 'button[type="submit"]',
+  formSelector = "form",
+): Promise<void> {
+  // Strategy 1: Try clicking the submit button
+  try {
+    await waitForActionable(view, submitSelector, 10_000);
+    await view.click(submitSelector);
+    return;
+  } catch (clickError) {
+    // Strategy 2: Try pressing Enter on the form
+    try {
+      await view.evaluate(
+        `(() => {
+          const form = document.querySelector(${JSON.stringify(formSelector)});
+          const submitBtn = document.querySelector(${JSON.stringify(submitSelector)});
+          if (submitBtn) {
+            submitBtn.focus();
+            submitBtn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+            return true;
+          }
+          return false;
+        })()`,
+      );
+      return;
+    } catch (enterError) {
+      // Strategy 3: Direct form submission
+      await view.evaluate(
+        `(() => {
+          const form = document.querySelector(${JSON.stringify(formSelector)});
+          if (form) form.submit();
+        })()`,
+      );
+    }
+  }
 }
 
 /** Wait until a button/link whose visible text matches `re` is in the DOM. */
