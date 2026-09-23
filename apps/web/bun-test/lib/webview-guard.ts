@@ -28,10 +28,10 @@ function chromeBackend(chromePath?: string): {
   type: "chrome";
   url: false;
   path?: string;
-  args?: string[];
+  argv?: string[];
 } {
   const path = chromePath || process.env.BUN_CHROME_PATH || undefined;
-  const args = [
+  const argv = [
     "--no-sandbox",
     "--disable-setuid-sandbox",
     "--disable-dev-shm-usage",
@@ -39,9 +39,9 @@ function chromeBackend(chromePath?: string): {
     "--remote-debugging-port=0",
   ];
   if (path) {
-    return { type: "chrome", url: false, path, args };
+    return { type: "chrome", url: false, path, argv };
   }
-  return { type: "chrome", url: false, args };
+  return { type: "chrome", url: false, argv };
 }
 
 export async function newGuardedWebView(
