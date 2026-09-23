@@ -16,6 +16,7 @@ import {
   setCookieForOrigin,
   trackRpcPosts,
   viewHtml,
+  waitForActionable,
   waitForButtonMatching,
   waitForSelector,
   waitForText,
@@ -451,8 +452,7 @@ export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
     await Bun.sleep(500); // Let form validation settle
 
     // Wait for submit button to be actionable
-    await waitForSelector(guard.view, 'button[type="submit"]', 30_000);
-    await Bun.sleep(300); // Extra wait for button state
+    await waitForActionable(guard.view, 'button[type="submit"]', 30_000);
 
     // Try to submit via button click
     await guard.view.click('button[type="submit"]');
@@ -631,8 +631,7 @@ export async function expectForgeReleasesCrudFlow(): Promise<boolean> {
     await Bun.sleep(500); // Let form validation settle
 
     // Wait for submit button to be actionable
-    await waitForSelector(guard.view, 'button[type="submit"]', 30_000);
-    await Bun.sleep(300); // Extra wait for button state
+    await waitForActionable(guard.view, 'button[type="submit"]', 30_000);
 
     // Try to submit via button click
     await guard.view.click('button[type="submit"]');
@@ -964,7 +963,7 @@ export async function expectNewRepoTemplatePickerFlow(): Promise<boolean> {
     await setCookieForOrigin(guard.view, webOrigin(), cookie);
     await navigateSafe(guard.view, `${webOrigin()}/new`);
     await waitForText(guard.view, "Create a new repository", 45_000);
-    await waitForSelector(guard.view, "#repo-stack", 45_000);
+    await waitForActionable(guard.view, "#repo-stack", 45_000);
     assertNoOctaneOverlay(await viewHtml(guard.view), "/new initial");
 
     await guard.view.click("#repo-stack");

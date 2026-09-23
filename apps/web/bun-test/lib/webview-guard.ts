@@ -158,6 +158,40 @@ export async function waitForSelector(
   );
 }
 
+/** Wait until an element is actionable (visible, enabled, and stable). */
+export async function waitForActionable(
+  view: Bun.WebView,
+  selector: string,
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const actionable = await view.evaluate(
+      `(() => {
+        const el = document.querySelector(${JSON.stringify(selector)});
+        if (!el) return false;
+        const rect = el.getBoundingClientRect();
+        const style = window.getComputedStyle(el);
+        return rect.width > 0 && rect.height > 0 && 
+               style.display !== 'none' && 
+               style.visibility !== 'hidden' && 
+               !el.disabled &&
+               !el.classList.contains('disabled');
+      })()`,
+    );
+    if (actionable) return;
+    await Bun.sleep(150);
+  }
+  const url = await view.evaluate("location.href").catch(() => "?");
+  const title = await view.evaluate("document.title").catch(() => "?");
+  const snippet = await view
+    .evaluate("document.body ? document.body.innerText.slice(0, 400) : ''")
+    .catch(() => "");
+  throw new Error(
+    `timeout waiting for actionable ${JSON.stringify(selector)} url=${url} title=${title} body=${JSON.stringify(snippet)}`,
+  );
+}
+
 /** Wait until a button/link whose visible text matches `re` is in the DOM. */
 export async function waitForButtonMatching(
   view: Bun.WebView,

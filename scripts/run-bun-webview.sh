@@ -30,8 +30,30 @@ fi
 
 echo "==> Running ${#files[@]} WebView test files with $MAX_WORKERS isolated workers"
 
+# Auth-sensitive tests that modify global auth settings must run sequentially first
+auth_tests=(
+  "auth-me-dedupe.stack.browser.test.ts"
+  "signup.stack.browser.test.ts"
+)
+
 failed=0
+
+# Run auth-sensitive tests sequentially first
+for auth_test in "${auth_tests[@]}"; do
+  auth_file="$DIR/browser/$auth_test"
+  if [[ -f "$auth_file" ]]; then
+    echo "==> bun test (auth-sensitive, sequential): $auth_test"
+    if ! bun test --isolate "$auth_file"; then
+      failed=1
+    fi
+    # Remove from files array
+    files=("${files[@]/$auth_file}")
+  fi
+done
+
+# Run remaining tests with bounded parallelism
 for f in "${files[@]}"; do
+  [[ -z "$f" ]] && continue  # Skip empty entries from array filtering
   rel="${f#"$DIR"/}"
   echo "==> bun test (isolated worker): $rel"
   
