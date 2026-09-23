@@ -172,11 +172,22 @@ export async function waitForActionable(
         if (!el) return false;
         const rect = el.getBoundingClientRect();
         const style = window.getComputedStyle(el);
-        return rect.width > 0 && rect.height > 0 && 
-               style.display !== 'none' && 
-               style.visibility !== 'hidden' && 
-               !el.disabled &&
-               !el.classList.contains('disabled');
+        
+        // Check visibility and dimensions
+        if (rect.width <= 0 || rect.height <= 0) return false;
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+        if (parseFloat(style.opacity) === 0) return false;
+        
+        // Check if element is disabled (for form controls)
+        if (el.disabled === true) return false;
+        if (el.classList.contains('disabled')) return false;
+        if (el.hasAttribute('disabled')) return false;
+        if (el.getAttribute('aria-disabled') === 'true') return false;
+        
+        // Check if element is inside a disabled fieldset
+        if (el.closest('fieldset[disabled]')) return false;
+        
+        return true;
       })()`,
     );
     if (actionable) return;
