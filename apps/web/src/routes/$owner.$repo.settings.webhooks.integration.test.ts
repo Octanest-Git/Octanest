@@ -1,7 +1,7 @@
 /**
  * Phase 18 — Settings Webhooks UI (HOOK-01/03, D-HOOK-19..21).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 describe("repo settings Webhooks (HOOK-01/03)", () => {
   it("Admin Settings exposes a Webhooks heading/section", async () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { baseCoverScale, clampOffset, displayedSize, sourceRectFromFrame } from "./avatar-crop";
 
 describe("avatar-crop geometry", () => {

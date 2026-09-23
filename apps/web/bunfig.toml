@@ -1,0 +1,5 @@
+# bun:test config for @octanest/web (issue #37 migration).
+# Prefer explicit --preload in scripts (unit vs integration).
+
+[test]
+root = "."

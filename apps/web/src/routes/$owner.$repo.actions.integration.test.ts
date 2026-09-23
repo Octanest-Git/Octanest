@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { repoChromeActiveFromPath } from "@/lib/repo-chrome-active";
 
 const dir = dirname(fileURLToPath(import.meta.url));

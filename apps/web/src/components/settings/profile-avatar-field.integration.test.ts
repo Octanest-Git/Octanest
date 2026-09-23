@@ -1,5 +1,6 @@
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 import { AvatarCropDialog } from "./avatar-crop-dialog";
 import { ProfileAvatarField } from "./profile-avatar-field";

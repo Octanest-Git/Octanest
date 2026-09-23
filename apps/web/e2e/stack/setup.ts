@@ -1,4 +1,4 @@
-import { beforeAll } from "vitest";
+import { beforeAll } from "@octanest/web/test-runner";
 
 beforeAll(async () => {
   if (process.env.E2E_STACK !== "1") {

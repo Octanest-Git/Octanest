@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach } from "@octanest/web/test-runner";
 import { consumeDomRaceAllowlist, trackDomErrors, type DomErrorTracker } from "./dom-errors";
 
 /**

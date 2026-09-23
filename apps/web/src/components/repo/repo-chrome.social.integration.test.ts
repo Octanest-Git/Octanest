@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * SOC-01 / SOC-04 Wave 0 — RepoChrome Star + Fork affordances.

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { parentRepoPath, treeHref } from "./repo-browse";
 
 describe("parentRepoPath", () => {

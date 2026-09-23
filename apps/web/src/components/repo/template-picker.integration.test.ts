@@ -3,7 +3,7 @@
  * the parent also updates sibling fields (stack → default .gitignore on /new).
  */
 import { cleanup, fireEvent, screen, waitFor, within } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
 import { TemplatePickerSiblingHarness } from "@/components/repo/template-picker.harness";
 import { trackDomErrors } from "@/test/dom-errors";
 import { renderWithQueryClient } from "@/test/render-with-query";

@@ -1,7 +1,7 @@
 /**
  * Tokens UI package:read / package:write (D-PKG-04) + delete confirm (D-PKG-12).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { PatClassicForm } from "@/components/settings/pat-classic-form";
 import { PatFgForm } from "@/components/settings/pat-fg-form";
 import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";

@@ -1,7 +1,8 @@
 import type { RepoPublic, UserPublic } from "@octanest/api-client";
 import { createElement } from "octane";
 import { cleanup, fireEvent, render, screen } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 vi.mock("@octanejs/tanstack-router", () => ({
   Link: (props: { to?: string; children?: unknown; className?: string }) =>

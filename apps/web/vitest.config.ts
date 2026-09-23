@@ -70,6 +70,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(rootDir, "./src"),
+      // Self-import of the dual test-runner: Vite/Vitest must always get the
+      // Vitest re-export (Bun resolves via package.json exports + --conditions).
+      "@octanest/web/test-runner": path.resolve(rootDir, "./src/test/runner.vitest.ts"),
     },
   },
   test: {

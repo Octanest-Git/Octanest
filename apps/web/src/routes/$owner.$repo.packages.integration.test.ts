@@ -1,7 +1,7 @@
 /**
  * Repo-linked packages view (D-PKG-11) + chrome discovery (D-QH-01).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { RepoPackagesPage } from "./$owner.$repo.packages";
 
 describe("/$owner/$repo/packages", () => {

@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 const searchMock = vi.fn();

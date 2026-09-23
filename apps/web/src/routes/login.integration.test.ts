@@ -2,7 +2,8 @@
  * RESEARCH P1 / D-QH-03 — login route export/render contracts (happy-dom).
  */
 import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {

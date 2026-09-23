@@ -169,10 +169,14 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
-      - name: bun:test unit PoC
-        run: make test-bun-poc
-      - name: bench unit Vitest vs bun:test
-        run: make bench-bun-poc
+      - name: bun:test unit dual-run
+        run: make test-bun-unit
+      - name: bun:test lib integration dual-run
+        run: make test-bun-integration
+      - name: bun:test unit PoC + bench
+        run: |
+          make test-bun-poc
+          make bench-bun-poc
       - name: install Chromium for WebView
         run: |
           sudo apt-get update -qq
@@ -181,7 +185,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: install protoc
         run: sudo apt-get install -y -qq protobuf-compiler
-      - name: bun.webview browser PoC (stack)
+      - name: bun:test stack HTTP + WebView PoC
         run: |
           for p in /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/google-chrome-stable; do
             if [[ -x "$p" ]]; then export BUN_CHROME_PATH="$p"; break; fi

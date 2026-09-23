@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * D-LFS-10 / D-LFS-16 / D-LFS-19: repo Settings LFS section.

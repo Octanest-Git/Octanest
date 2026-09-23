@@ -1,4 +1,4 @@
-import { beforeAll } from "vitest";
+import { beforeAll } from "@octanest/web/test-runner";
 import { webOrigin } from "../stack/env";
 
 /**

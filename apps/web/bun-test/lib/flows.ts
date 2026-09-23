@@ -3,17 +3,30 @@
  * Keep selectors on stable ids / data-testid (no Playwright getByRole).
  * Target Octane `.tsrx` UI (onInput text fields, data-testid radios) — not React.
  */
-import { adminLogin, rpc } from "../../e2e/stack/client.ts";
+import {
+  adminLogin,
+  restoreLocalAuth,
+  rpc,
+  updateAuthSettings,
+} from "../../e2e/stack/client.ts";
 import { apiOrigin, webOrigin } from "./env.ts";
 import {
   assertNoOctaneOverlay,
   navigateSafe,
   newGuardedWebView,
   setCookieForOrigin,
+  trackRpcPosts,
   viewHtml,
+  waitForButtonMatching,
   waitForSelector,
   waitForText,
 } from "./webview-guard.ts";
+
+function envGet(key: string): string | undefined {
+  const v = process.env[key];
+  if (v !== undefined && v !== "") return v;
+  return undefined;
+}
 
 async function ensureForgeAdminSession(): Promise<{ cookie: string; username: string }> {
   let cookie = await adminLogin();
@@ -223,5 +236,241 @@ export async function expectMirrorAuthToggleFlow(): Promise<boolean> {
     return true;
   } finally {
     await guard.close("bun-webview mirror auth toggle");
+  }
+}
+
+/** WorkOS CTA visible on /login after admin flips provider_mode. */
+export async function expectWorkosCta(): Promise<boolean> {
+  const cookie = await adminLogin();
+  try {
+    await updateAuthSettings(cookie, {
+      provider_mode: "workos",
+      email_provider: "log",
+      workos_client_id: "client_dev_local",
+    });
+    const guard = await newGuardedWebView();
+    try {
+      await navigateSafe(guard.view, `${webOrigin()}/login`);
+      await waitForButtonMatching(guard.view, "continue with workos", 30_000);
+      assertNoOctaneOverlay(await viewHtml(guard.view), "login WorkOS CTA");
+      return true;
+    } finally {
+      await guard.close("bun-webview WorkOS CTA");
+    }
+  } finally {
+    try {
+      await restoreLocalAuth(cookie);
+    } catch {
+      // best-effort
+    }
+  }
+}
+
+/** Full OIDC SSO through mock IdP; asserts no auth skeleton on /login. */
+export async function loginThroughOidc(): Promise<boolean> {
+  const cookie = await adminLogin();
+  const issuer = envGet("OCTANEST_E2E_OIDC_ISSUER") || "http://127.0.0.1:9090/default";
+  try {
+    await updateAuthSettings(cookie, {
+      provider_mode: "oidc",
+      email_provider: "log",
+      oidc_issuer: issuer,
+      oidc_client_id: "octanest-dev",
+    });
+    const guard = await newGuardedWebView();
+    try {
+      await navigateSafe(guard.view, `${webOrigin()}/login`);
+      await Bun.sleep(750);
+      const html = await viewHtml(guard.view);
+      if (html.includes("Loading form") || html.includes("Preparing sign-in")) {
+        throw new Error("login showed auth form skeleton; expected prerendered CTA");
+      }
+      assertNoOctaneOverlay(html, "OIDC login");
+      await waitForButtonMatching(guard.view, "continue with sso", 15_000);
+      await navigateSafe(
+        guard.view,
+        `${webOrigin()}/api/auth/oidc/start?returnTo=${encodeURIComponent("/")}`,
+      );
+      const deadline = Date.now() + 45_000;
+      while (Date.now() < deadline) {
+        const path = String(await guard.view.evaluate("location.pathname"));
+        const origin = String(await guard.view.evaluate("location.origin"));
+        if (origin === webOrigin() && (path === "/" || path === "")) {
+          return true;
+        }
+        await Bun.sleep(250);
+      }
+      throw new Error(
+        `OIDC did not land on home; href=${await guard.view.evaluate("location.href")}`,
+      );
+    } finally {
+      await guard.close("bun-webview OIDC login");
+    }
+  } finally {
+    try {
+      await restoreLocalAuth(cookie);
+    } catch {
+      // best-effort
+    }
+  }
+}
+
+/**
+ * Signed-in home: chrome + verify banner share auth.me (Query cache).
+ * Counts CDP Network POST /api/rpc bodies containing auth.me.
+ */
+export async function expectAuthMeDedupedOnHome(): Promise<boolean> {
+  const cookie = await adminLogin();
+  const guard = await newGuardedWebView();
+  let tracker: { count: () => number; dispose: () => void } | null = null;
+  try {
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+    tracker = await trackRpcPosts(guard.view, "auth.me");
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await waitForSelector(guard.view, 'button[aria-label="Account menu"]', 30_000);
+    await Bun.sleep(2500);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "home auth.me dedupe");
+    const n = tracker.count();
+    if (n > 4) {
+      throw new Error(
+        `expected ≤4 auth.me RPCs on signed-in home (shared Query cache), got ${n}`,
+      );
+    }
+    return true;
+  } finally {
+    tracker?.dispose();
+    await guard.close("bun-webview auth.me dedupe");
+  }
+}
+
+/** Anonymous home hides Create/Account; signed-in forge admin shows both. */
+export async function expectChromeCreateAndAccountMenusFlow(): Promise<boolean> {
+  // --- Unhappy: anonymous ---
+  {
+    const guard = await newGuardedWebView();
+    try {
+      await navigateSafe(guard.view, `${webOrigin()}/`);
+      await waitForText(guard.view, "Sign in", 30_000);
+      const html = await viewHtml(guard.view);
+      assertNoOctaneOverlay(html, "anonymous home");
+      if (html.includes('aria-label="Create new') || html.includes("Create new…")) {
+        throw new Error("anonymous chrome unexpectedly exposed Create new menu");
+      }
+      if (html.includes('aria-label="Account menu"')) {
+        throw new Error("anonymous chrome unexpectedly exposed Account menu");
+      }
+    } finally {
+      await guard.close("bun-webview chrome anon");
+    }
+  }
+
+  // --- Happy: signed-in forge admin ---
+  const { cookie } = await ensureForgeAdminSession();
+  const guard = await newGuardedWebView();
+  try {
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await waitForSelector(guard.view, 'button[aria-label="Create new…"]', 30_000);
+    await waitForSelector(guard.view, 'button[aria-label="Account menu"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "signed-in chrome menus");
+    return true;
+  } finally {
+    await guard.close("bun-webview chrome menus");
+  }
+}
+
+/**
+ * /new template picker: open stack modal, pick a starter, assert gitignore autofill
+ * and no insertBefore / Octane hierarchy pageerrors.
+ */
+export async function expectNewRepoTemplatePickerFlow(): Promise<boolean> {
+  const { cookie } = await ensureForgeAdminSession();
+  const guard = await newGuardedWebView();
+  try {
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+    await navigateSafe(guard.view, `${webOrigin()}/new`);
+    await waitForText(guard.view, "Create a new repository", 30_000);
+    await waitForSelector(guard.view, "#repo-stack", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "/new initial");
+
+    await guard.view.click("#repo-stack");
+    await waitForSelector(guard.view, '[data-testid="repo-stack-overlay"]', 15_000);
+    await waitForText(guard.view, "Choose Stack / template", 10_000);
+    await Bun.sleep(1500);
+
+    let closed = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const pick = (await guard.view.evaluate(`(() => {
+        const next = document.querySelector('[data-template-id="nextjs"]');
+        const rust = document.querySelector('[data-template-id="rust"]');
+        const el = next || rust;
+        if (el instanceof HTMLElement) { el.click(); return true; }
+        return false;
+      })()`)) as boolean;
+      if (!pick) {
+        await Bun.sleep(400);
+        continue;
+      }
+      for (let i = 0; i < 10; i++) {
+        const visible = (await guard.view.evaluate(
+          `!!document.querySelector('[data-testid="repo-stack-overlay"]')`,
+        )) as boolean;
+        // Overlay may remain in DOM but hidden via class — check display/hidden.
+        const hidden = (await guard.view.evaluate(`(() => {
+          const el = document.querySelector('[data-testid="repo-stack-overlay"]');
+          if (!el) return true;
+          const style = window.getComputedStyle(el);
+          return style.display === "none" || style.visibility === "hidden" || el.classList.contains("hidden");
+        })()`)) as boolean;
+        if (!visible || hidden) {
+          closed = true;
+          break;
+        }
+        await Bun.sleep(200);
+      }
+      if (closed) break;
+      await Bun.sleep(400);
+    }
+    if (!closed) {
+      throw new Error(
+        `/new stack pick did not close overlay; pageerrors=${guard.pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    await Bun.sleep(300);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "/new after template pick");
+
+    let value = "";
+    for (let i = 0; i < 20; i++) {
+      value = String(
+        (await guard.view.evaluate(
+          `document.querySelector("#repo-stack")?.getAttribute("data-selected") ?? ""`,
+        )) ?? "",
+      );
+      if (value && value !== "none") break;
+      await Bun.sleep(200);
+    }
+    if (!value || value === "none") {
+      throw new Error(
+        `/new stack data-selected still none after pick (got ${JSON.stringify(value)}); pageerrors=${guard.pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    if (value === "nextjs") {
+      const gitignoreSelected = String(
+        (await guard.view.evaluate(
+          `document.querySelector("#repo-gitignore")?.getAttribute("data-selected") ?? ""`,
+        )) ?? "",
+      );
+      if (gitignoreSelected !== "Node") {
+        throw new Error(
+          `/new expected gitignore autofill Node after nextjs, got ${JSON.stringify(gitignoreSelected)}`,
+        );
+      }
+    }
+    return true;
+  } finally {
+    await guard.close("bun-webview /new template pick");
   }
 }

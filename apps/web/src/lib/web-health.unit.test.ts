@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import {
   WEB_HEALTH_PROBE_HEADER,
   WEB_HEALTH_PROBE_VALUE,

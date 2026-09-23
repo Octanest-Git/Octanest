@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * D-LFS-18: blob viewer LFS badge + Download affordance.

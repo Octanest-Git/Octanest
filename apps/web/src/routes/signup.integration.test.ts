@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
 import { isNotFound } from "@octanejs/tanstack-router";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 vi.mock("@/lib/bootstrap", () => ({
   redirectIfNeedsSetup: vi.fn(async () => false),

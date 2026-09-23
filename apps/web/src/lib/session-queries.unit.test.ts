@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 import { QueryClient } from "@octanejs/tanstack-query";
 
 vi.mock("@/lib/api-client", () => ({

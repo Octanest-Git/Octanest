@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 /**
  * ORG-01 / D-ORG-01 / D-ORG-06: /orgs/new create UI (10-13 tracer).

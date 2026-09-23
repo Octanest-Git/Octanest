@@ -4,6 +4,17 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "imports": {
+    "vitest": {
+      "octanest-bun-test": "./src/test/runner.bun.ts"
+    }
+  },
+  "exports": {
+    "./test-runner": {
+      "octanest-bun-test": "./src/test/runner.bun.ts",
+      "default": "./src/test/runner.vitest.ts"
+    }
+  },
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
@@ -12,6 +23,8 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e:stack": "vitest run --project e2e-stack && vitest run --project e2e-stack-browser",
+    "test:bun-unit": "bash ../../scripts/run-bun-unit.sh",
+    "test:bun-integration": "bash ../../scripts/run-bun-integration.sh",
     "test:bun-poc": "bun test --cwd bun-test ./unit",
     "test:bun-poc:browser": "bash ../../scripts/run-bun-webview-poc.sh",
     "test:coverage": "vitest run --coverage --project unit --project integration",
@@ -49,6 +62,7 @@
   "devDependencies": {
     "@fontsource-variable/sora": "^5.3.0",
     "@fontsource-variable/source-sans-3": "^5.3.0",
+    "@happy-dom/global-registrator": "^20.14.5",
     "@octanejs/testing-library": "^0.1.51",
     "@octanejs/vite-plugin": "^0.1.54",
     "@tailwindcss/vite": "^4.3.3",

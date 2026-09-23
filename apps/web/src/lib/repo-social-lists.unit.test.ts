@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { forksSortLabel, parseForksSort, socialListHref } from "@/lib/repo-social-lists";
 
 describe("repo-social-lists helpers", () => {

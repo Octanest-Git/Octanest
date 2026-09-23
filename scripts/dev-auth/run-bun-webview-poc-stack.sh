@@ -131,7 +131,10 @@ export OCTANEST_E2E_ADMIN_EMAIL="admin@octanest.local"
 export OCTANEST_E2E_ADMIN_PASSWORD="password1"
 export OCTANEST_E2E_DB_PATH="$DB_PATH"
 
+echo "==> running bun:test e2e/stack HTTP dual-run"
+bash "$ROOT/scripts/run-bun-e2e-stack.sh"
+
 echo "==> running bun.webview PoC browser suite"
 bash "$ROOT/scripts/run-bun-webview-poc.sh"
 
-echo "==> bun.webview PoC stack passed"
+echo "==> bun:test stack PoC (HTTP + WebView) passed"

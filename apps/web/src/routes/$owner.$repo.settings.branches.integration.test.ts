@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * ORG-05 / D-03 / D-25: Repo Settings → Branch protection.

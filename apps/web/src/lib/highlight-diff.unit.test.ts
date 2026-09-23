@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { parseUnifiedDiffLines } from "./parse-unified-diff";
 import {
   DIFF_HIGHLIGHT_SOFT_MAX_CHARS,

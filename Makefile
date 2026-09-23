@@ -12,6 +12,7 @@
 .PHONY: up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite
 .PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack
 .PHONY: test-bun-poc test-bun-poc-browser bench-bun-poc
+.PHONY: test-bun-unit test-bun-integration
 .PHONY: db-migrate db-switch-dialect db-matrix
 .PHONY: coverage-web coverage-rust coverage-weighted coverage-contract
 .PHONY: route-coverage-check
@@ -34,7 +35,7 @@ help:
 	@echo "  make up-dev-auth    - Mailpit + OIDC mock + Resend/WorkOS stubs (docs/dev-auth.md)"
 	@echo "  make up-with-dev-auth - make up + attach API to stubs (SMTP→Mailpit)"
 	@echo "  make test-e2e-stack - full Vitest e2e vs API + Mailpit/OIDC/stubs"
-	@echo "  make test-bun-poc / test-bun-poc-browser / bench-bun-poc - issue #37 bun:test PoC"
+	@echo "  make test-bun-poc / unit / integration / browser / bench - issue #37 bun:test PoC"
 	@echo "  make down           - docker compose down"
 	@echo "  make down-mysql     - docker compose down (mysql overlay)"
 	@echo "  make down-sqlite    - docker compose down (sqlite overlay)"
@@ -151,6 +152,12 @@ test-e2e-stack:
 	./scripts/dev-auth/run-stack-e2e.sh
 
 # Issue #37 — bun:test + Bun.WebView PoC (additive; Vitest remains the merge gate).
+test-bun-unit:
+	./scripts/run-bun-unit.sh
+
+test-bun-integration:
+	./scripts/run-bun-integration.sh
+
 test-bun-poc:
 	./scripts/run-bun-test-poc-unit.sh
 

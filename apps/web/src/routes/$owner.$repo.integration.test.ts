@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
 import { createElement } from "octane";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 /**
  * Code / tree / blob browse (D-15, D-17, D-25 / GIT-05 UI).

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { SSO_MODE_BODY, SUCCESS_BODY, SUCCESS_HEADING } from "./reset-password-copy";
 
 describe("reset-password-copy", () => {

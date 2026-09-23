@@ -5,10 +5,15 @@
   "license": "MIT",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./test-runner": {
+      "octanest-bun-test": "./src/test-runner.bun.ts",
+      "default": "./src/test-runner.vitest.ts"
+    }
   },
   "scripts": {
     "test": "vitest run",
+    "test:bun": "bun test --conditions=octanest-bun-test ./src",
     "build": "echo 'api-client: types-only package'"
   },
   "peerDependencies": {

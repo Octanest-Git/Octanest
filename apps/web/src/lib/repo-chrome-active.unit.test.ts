@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { repoChromeActiveFromPath } from "./repo-chrome-active";
 
 describe("repoChromeActiveFromPath", () => {

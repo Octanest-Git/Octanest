@@ -2,7 +2,8 @@
  * Phase 17 — /notifications inbox (D-09 / D-12 / NOTF-02).
  */
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 
 const navigateMock = vi.fn();

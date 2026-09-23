@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/api-client/test-runner";
 import { RPC_VERSION, RPC_VERSION_HEADER, createClient } from "./index";
 
 describe("api-client", () => {

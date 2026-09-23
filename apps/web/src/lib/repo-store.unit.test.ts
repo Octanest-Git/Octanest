@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { createRepoStore } from "./repo-store";
 
 describe("createRepoStore (@octanejs/zustand)", () => {

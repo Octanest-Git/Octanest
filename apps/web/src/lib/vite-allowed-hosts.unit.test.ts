@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { parseViteAllowedHosts } from "../../vite-plugins/vite-allowed-hosts.ts";
 
 describe("parseViteAllowedHosts", () => {

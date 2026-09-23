@@ -60,8 +60,10 @@ make help
 make rpc-gen                 # regenerate @octanest/api-client
 make test                    # Rust nextest + Vitest
 make test-e2e-stack          # full auth stack e2e
-make test-bun-poc            # issue #37 bun:test unit PoC
-make test-bun-poc-browser    # bun.webview browser PoC (stack)
+make test-bun-poc            # issue #37 bun:test unit dual-run + thin PoC
+make test-bun-unit           # dual-run web unit under bun:test
+make test-bun-integration    # dual-run lib happy-dom under bun:test
+make test-bun-poc-browser    # bun:test stack HTTP + WebView PoC
 make bench-bun-poc           # Vitest vs bun:test timings
 make up / make smoke         # Compose + health
 make rpc-sync-check          # CI gate for client drift

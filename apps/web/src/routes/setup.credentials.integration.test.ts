@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 const confirmAdminCredentials = vi.fn();
 const me = vi.fn(async () => ({

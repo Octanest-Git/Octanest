@@ -1,7 +1,7 @@
 /**
  * /settings/emails redirects to Account; coverage stays on profile.integration.test.ts.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 describe("/settings/emails redirect", () => {
   it("exports a Route that redirects to /settings/profile", async () => {

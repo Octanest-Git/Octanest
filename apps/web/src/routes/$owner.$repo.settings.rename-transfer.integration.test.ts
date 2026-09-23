@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * Wave 0 / Phase 15: GIT-16/17 settings Danger zone rename + transfer (D-REL-07/09/10).

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "@octanest/web/test-runner";
 import { rpc, updateAuthSettings, withAdminSession } from "./client";
 import { requireStack } from "./env";
 import { mailpitDeleteAll, waitForMailpit } from "./mailpit";

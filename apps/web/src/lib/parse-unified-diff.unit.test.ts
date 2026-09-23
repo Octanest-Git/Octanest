@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 import { classifyDiffLine, parseUnifiedDiffLines } from "./parse-unified-diff";
 
 describe("classifyDiffLine", () => {

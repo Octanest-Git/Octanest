@@ -1,7 +1,7 @@
 /**
  * Phase 19 — Actions run detail + job logs (ACT-03 / D-ACT-12 / D-ACT-13).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 describe("/$owner/$repo/actions/$run", () => {
   it("shows run detail with job list and statuses", async () => {

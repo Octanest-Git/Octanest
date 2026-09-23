@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "@octanest/web/test-runner";
 import { commands } from "vitest/browser";
 import { requireStack } from "../stack/env";
 

@@ -1,5 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
 import { highlightDiffLines } from "@/lib/highlight-diff";
 import { parseUnifiedDiffLines } from "@/lib/parse-unified-diff";
 import { DiffPatch } from "./diff-patch";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 /**
  * ORG-03 / D-ORG-02c / D-ORG-04: repo settings Collaborators panel.

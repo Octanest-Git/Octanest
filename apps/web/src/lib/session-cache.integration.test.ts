@@ -1,7 +1,8 @@
 import { createElement } from "octane";
 import { QueryClient, QueryClientProvider, useQuery } from "@octanejs/tanstack-query";
 import { cleanup, render, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {

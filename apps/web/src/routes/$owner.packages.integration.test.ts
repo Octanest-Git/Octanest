@@ -2,7 +2,8 @@
  * Owner packages list UI (D-PKG-11) + G-11.1-15 render mount.
  */
 import { cleanup, screen, waitFor } from "@octanejs/testing-library";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "@octanest/web/test-runner";
+import { vi } from "vitest";
 import { renderWithQueryClient } from "@/test/render-with-query";
 import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";
 

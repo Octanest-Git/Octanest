@@ -1,6 +1,6 @@
 import { createElement } from "octane";
 import { cleanup, render, screen } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
 import { AuthErrorBanner, AuthShell } from "./auth-shell";
 import { Button } from "./ui/button";
 

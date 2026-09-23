@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
 import { FileTree } from "./file-tree";
 import { PathBreadcrumb } from "./path-breadcrumb";
 

@@ -9,7 +9,7 @@ Octanest uses two test stacks:
 |-------|-----------|--------|
 | Rust (`crates/*`) | [cargo-nextest](https://nexte.st/) (falls back to `cargo test`) | `.config/nextest.toml` |
 | JS / TS (`apps/web`, `packages/api-client`) | Vitest `^5` (merge gate) | `apps/web/vitest.config.ts`, `packages/api-client/vitest.config.ts` |
-| Experimental PoC | `bun:test` + `Bun.WebView` | [bun-test-webview-poc.md](./bun-test-webview-poc.md) — `make test-bun-poc` / `make test-bun-poc-browser` |
+| Experimental PoC | `bun:test` + `Bun.WebView` | [bun-test-webview-poc.md](./bun-test-webview-poc.md) — `make test-bun-unit` / `test-bun-integration` / `test-bun-poc-browser` |
 
 **Prerequisites**
 
@@ -65,7 +65,9 @@ bun run --filter @octanest/web test             # web: unit + integration
 bun run --filter @octanest/web test:unit
 bun run --filter @octanest/web test:integration
 bun run --filter @octanest/api-client test
-make test-bun-poc                               # issue #37 bun:test unit PoC
+make test-bun-poc                               # issue #37 bun:test unit dual-run + thin PoC
+make test-bun-unit                              # all dual-run web unit under bun:test
+make test-bun-integration                       # lib happy-dom dual-run under bun:test
 make bench-bun-poc                              # Vitest vs bun:test timings → var/bun-test-poc/
 ```
 
@@ -82,8 +84,10 @@ bun run test:integration
 See [bun-test-webview-poc.md](./bun-test-webview-poc.md). Additive only — Vitest remains CI merge gate.
 
 ```bash
+make test-bun-unit
+make test-bun-integration
 make test-bun-poc
-make test-bun-poc-browser   # Docker stack + Chrome WebView
+make test-bun-poc-browser   # Docker stack: e2e HTTP dual-run + Chrome WebView
 make bench-bun-poc
 ```
 
@@ -231,7 +235,7 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | `route-coverage` | `make route-coverage-check` — every user-facing `.tsrx` page has happy-dom, stack-browser, or documented skip (G-11.1-15) |
 | `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
-| `bun-test-poc` | Issue #37 PoC: `make test-bun-poc` + `bench-bun-poc` + `test-bun-poc-browser` (`continue-on-error`); uploads `var/bun-test-poc/` + `var/e2e/` on failure. Vitest remains the merge gate. |
+| `bun-test-poc` | Issue #37 PoC: unit + lib integration dual-run, bench, stack HTTP + WebView (`continue-on-error`); uploads `var/bun-test-poc/` + `var/e2e/` on failure. Vitest remains the merge gate. |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` (config-only; does not build/bring-up) |
 | `compose-smoke` | Matrix `postgres` / `sqlite` / `mysql`: `./scripts/ci-compose-smoke.sh` → `make smoke` / `smoke-sqlite` / `smoke-mysql` (**D-CI-01…04**); fail-closed under `CI` / `SMOKE_REQUIRE_STACK`; image proof via `compose up --build` (**D-CI-06**); uploads `/tmp/octanest-smoke*.json` on failure. Complements config-only `compose` and stays separate from `smoke-protocol` (**D-CI-05**) |

@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@octanejs/testing-library";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "@octanest/web/test-runner";
 import { renderGfm } from "@/lib/markdown";
 import { ReadmePanel } from "./readme-panel";
 

@@ -150,6 +150,66 @@ export async function waitForSelector(
   );
 }
 
+/** Wait until a button/link whose visible text matches `re` is in the DOM. */
+export async function waitForButtonMatching(
+  view: Bun.WebView,
+  reSource: string,
+  timeoutMs = 30_000,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const found = await view.evaluate(
+      `(() => {
+        const re = new RegExp(${JSON.stringify(reSource)}, "i");
+        const nodes = Array.from(document.querySelectorAll("button, a[role='button'], a"));
+        return nodes.some((el) => re.test((el.textContent || "").trim()));
+      })()`,
+    );
+    if (found) return;
+    await Bun.sleep(150);
+  }
+  const snippet = await view
+    .evaluate("document.body ? document.body.innerText.slice(0, 800) : ''")
+    .catch(() => "");
+  throw new Error(
+    `timeout waiting for button matching /${reSource}/i body=${JSON.stringify(snippet)}`,
+  );
+}
+
+/** Enable CDP Network and count POST /api/rpc bodies that mention a procedure. */
+export async function trackRpcPosts(
+  view: Bun.WebView,
+  procedure: string,
+): Promise<{ count: () => number; dispose: () => void }> {
+  await view.cdp("Network.enable");
+  const bodies: string[] = [];
+  const needleA = `"${procedure}"`;
+  const needleB = `"procedure":"${procedure}"`;
+  const handler = ((event: Event) => {
+    const data = (event as MessageEvent).data as {
+      request?: { method?: string; url?: string; postData?: string };
+    };
+    const req = data?.request;
+    if (!req || req.method !== "POST") return;
+    if (!req.url?.includes("/api/rpc")) return;
+    const body = req.postData ?? "";
+    if (body.includes(needleA) || body.includes(needleB)) {
+      bodies.push(body);
+    }
+  }) as EventListener;
+  view.addEventListener("Network.requestWillBeSent", handler);
+  return {
+    count: () => bodies.length,
+    dispose: () => {
+      try {
+        view.removeEventListener("Network.requestWillBeSent", handler);
+      } catch {
+        // ignore
+      }
+    },
+  };
+}
+
 /** Navigate and tolerate mid-flight target swaps (Vite HMR / redirects). */
 export async function navigateSafe(view: Bun.WebView, url: string): Promise<void> {
   for (let attempt = 0; attempt < 3; attempt++) {

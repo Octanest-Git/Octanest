@@ -2,7 +2,7 @@
  * Layout parents for issues/releases must Outlet so detail/new routes render.
  * Leaf chrome lives only on `$owner.$repo` (D-QH-01).
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@octanest/web/test-runner";
 
 describe("issues/releases layout parents", () => {
   it("issues layout Outlets; list is on index", async () => {
