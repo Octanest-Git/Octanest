@@ -47,7 +47,8 @@ export async function newGuardedWebView(
     dataStore: "ephemeral",
     backend: chromeBackend(opts.chromePath),
     // Mirror Playwright pageerror: only uncaught exceptions (via CDP below).
-    // Do not treat React console.error warnings (e.g. autocomplete) as failures.
+    // Do not treat Octane/devtools console warnings (e.g. invalid DOM prop
+    // `autocomplete`) as failures — this app is Octane (`.tsrx`), not React.
   });
 
   // Establish CDP session with a blank document, then enable Runtime exceptions.

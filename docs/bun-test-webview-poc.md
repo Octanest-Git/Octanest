@@ -19,8 +19,10 @@ Artifacts: `var/bun-test-poc/` (bench JSON; gitignored). Local scratch: `tmp/bun
 | Ephemeral profile | `dataStore: "ephemeral"` — never commit Chrome user-data dirs |
 | Spawn mode | `backend: { type: "chrome", url: false }` — no desktop DevTools attach |
 | Process-per-file | Browser files run via `scripts/run-bun-webview-poc.sh` (one Bun process each) |
-| Page errors | CDP `Runtime.exceptionThrown` + `DOM_RACE_RE` (Playwright `pageerror` parity) |
+| Page errors | CDP `Runtime.exceptionThrown` + `DOM_RACE_RE` (Playwright `pageerror` parity). Octane DOM races (`insertBefore` / hierarchy) are the important signal — not console prop warnings. |
 | Teardown | `await using` / `close()` then assert; `Bun.WebView.closeAll()` in preload `afterAll` |
+
+The web UI is **Octane** (`.tsrx`), not React. PoC helpers use CSS / `data-testid` / trusted `click`+`type` against Octane `onInput` fields. Do not port React Testing Library patterns here.
 
 ## Results (local WSL, 2026-09-23)
 

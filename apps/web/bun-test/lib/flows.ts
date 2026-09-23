@@ -1,6 +1,7 @@
 /**
  * Stack flows driven by Bun.WebView for issue #37 PoC.
  * Keep selectors on stable ids / data-testid (no Playwright getByRole).
+ * Target Octane `.tsrx` UI (onInput text fields, data-testid radios) — not React.
  */
 import { adminLogin, rpc } from "../../e2e/stack/client.ts";
 import { apiOrigin, webOrigin } from "./env.ts";
