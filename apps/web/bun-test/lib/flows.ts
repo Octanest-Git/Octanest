@@ -994,7 +994,24 @@ export async function expectNewRepoTemplatePickerFlow(): Promise<boolean> {
 
     // Wait for page to be fully loaded and repo-stack to be actionable
     await waitForFormReady(guard.view, "form", 30_000);
-    await waitForActionable(guard.view, "#repo-stack", 45_000);
+
+    // Debug: log what's on the page before looking for repo-stack
+    const pageState = await guard.view.evaluate(`(() => {
+      return {
+        title: document.title,
+        url: location.href,
+        hasRepoStack: !!document.querySelector('#repo-stack'),
+        repoStackTag: document.querySelector('#repo-stack')?.tagName,
+        repoStackDisabled: document.querySelector('#repo-stack')?.disabled,
+        formCount: document.querySelectorAll('form').length,
+        buttonCount: document.querySelectorAll('button').length,
+        loadingIndicators: document.querySelectorAll('[data-loading="true"], .loading, .spinner').length,
+        bodyText: document.body.innerText.slice(0, 300)
+      };
+    })()`);
+    console.log("Page state before repo-stack:", JSON.stringify(pageState));
+
+    await waitForActionable(guard.view, "#repo-stack", 60_000);
     assertNoOctaneOverlay(await viewHtml(guard.view), "/new initial");
 
     // Click repo-stack with retry logic

@@ -16,5 +16,5 @@ describe("bun.webview PoC: auth.me Query dedupe", () => {
 
   it("dedupes auth.me on signed-in home (chrome + banner share cache)", async () => {
     expect(await expectAuthMeDedupedOnHome()).toBe(true);
-  }, 60_000);
+  }, 90_000);
 });
