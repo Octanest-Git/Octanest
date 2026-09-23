@@ -28,12 +28,20 @@ function chromeBackend(chromePath?: string): {
   type: "chrome";
   url: false;
   path?: string;
+  args?: string[];
 } {
   const path = chromePath || process.env.BUN_CHROME_PATH || undefined;
+  const args = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--remote-debugging-port=0",
+  ];
   if (path) {
-    return { type: "chrome", url: false, path };
+    return { type: "chrome", url: false, path, args };
   }
-  return { type: "chrome", url: false };
+  return { type: "chrome", url: false, args };
 }
 
 export async function newGuardedWebView(

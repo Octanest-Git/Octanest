@@ -71,15 +71,15 @@ jobs:
       - name: bun install
         run: bun install --frozen-lockfile
       - name: web lint (oxlint type-aware)
-        run: bun run --filter @octanest/web lint
+        run: make web-lint
       - name: web format check (oxfmt)
-        run: bun run --filter @octanest/web format:check
+        run: make web-format-check
       - name: bun:test unit dual-run (merge gate)
         run: make test-bun-unit
       - name: vitest integration residual (.tsrx until loader unblocks)
         run: bun run --filter @octanest/web test:integration
       - name: web build
-        run: bunx turbo run build --filter=@octanest/web
+        run: make web-build
 
   # G-11.1-15 — every user-facing apps/web route page must declare happy-dom,
   # stack-browser, or documented skip evidence in the route coverage manifest.
@@ -114,13 +114,7 @@ jobs:
       - name: collect web coverage + weighted gate
         env:
           COVERAGE_WEIGHTED_FLOOR: "0.65"
-        run: |
-          make coverage-web
-          ./scripts/coverage-e2e-checklist.sh | tee var/coverage/e2e-checklist.txt
-          ./scripts/coverage-weighted.sh \
-            --unit-json var/coverage/web-unit-summary.json \
-            --integration-json var/coverage/web-integration-summary.json \
-            --e2e-checklist | tee var/coverage/weighted.txt
+        run: make coverage-weighted
       - name: upload coverage artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -304,6 +304,9 @@ web-lint:
 web-format-check:
 	bun run --filter @octanest/web format:check
 
+web-build:
+	bunx turbo run build --filter=@octanest/web
+
 coverage-weighted: coverage-web
 	@mkdir -p var/coverage
 	@$(MAKE) --no-print-directory coverage-rust
