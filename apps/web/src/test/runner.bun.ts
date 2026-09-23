@@ -24,15 +24,4 @@ function mocked<T>(item: T): T {
 
 export const vi = Object.assign(bunVi, { mocked });
 
-export {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  mock,
-  spyOn,
-  test,
-};
+export { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock, spyOn, test };

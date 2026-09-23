@@ -7,12 +7,7 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  adminLogin,
-  restoreLocalAuth,
-  rpc,
-  updateAuthSettings,
-} from "../../e2e/stack/client.ts";
+import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../../e2e/stack/client.ts";
 import { apiOrigin, webOrigin } from "./env.ts";
 import {
   assertNoOctaneOverlay,
@@ -337,9 +332,7 @@ export async function expectAuthMeDedupedOnHome(): Promise<boolean> {
     assertNoOctaneOverlay(await viewHtml(guard.view), "home auth.me dedupe");
     const n = tracker.count();
     if (n > 4) {
-      throw new Error(
-        `expected ≤4 auth.me RPCs on signed-in home (shared Query cache), got ${n}`,
-      );
+      throw new Error(`expected ≤4 auth.me RPCs on signed-in home (shared Query cache), got ${n}`);
     }
     return true;
   } finally {
@@ -494,7 +487,7 @@ export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
     }
 
     // Close issue via button click
-    await waitForSelector(guard.view, 'button', 30_000);
+    await waitForSelector(guard.view, "button", 30_000);
     const closeButtonExists = await guard.view.evaluate(
       `(() => {
         const buttons = Array.from(document.querySelectorAll("button"));
@@ -516,7 +509,7 @@ export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
     // Check if Reopen button appeared (issue closed)
     let closedUi = false;
     try {
-      await waitForSelector(guard.view, 'button', 5_000);
+      await waitForSelector(guard.view, "button", 5_000);
       const reopenExists = await guard.view.evaluate(
         `(() => {
           const buttons = Array.from(document.querySelectorAll("button"));
@@ -539,7 +532,7 @@ export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
         throw new Error(`issue.close failed: ${JSON.stringify(closed.error)}`);
       }
       await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`);
-      await waitForSelector(guard.view, 'button', 30_000);
+      await waitForSelector(guard.view, "button", 30_000);
       const reopenExists = await guard.view.evaluate(
         `(() => {
           const buttons = Array.from(document.querySelectorAll("button"));
@@ -650,9 +643,7 @@ export async function expectForgeReleasesCrudFlow(): Promise<boolean> {
         seed.cookie,
       );
       if (!created.ok) {
-        throw new Error(
-          `release.create failed: ${JSON.stringify(created.error)} url=${url}`,
-        );
+        throw new Error(`release.create failed: ${JSON.stringify(created.error)} url=${url}`);
       }
       await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/releases/${tag}`);
     }
@@ -734,7 +725,9 @@ export async function expectAdminLfsQuotasFlow(): Promise<boolean> {
     }
     if (!authReady) {
       const body = await viewHtml(guard.view);
-      throw new Error(`admin auth chrome not ready. url=${await guard.view.evaluate("location.href")} body=${body.slice(0, 1500)}`);
+      throw new Error(
+        `admin auth chrome not ready. url=${await guard.view.evaluate("location.href")} body=${body.slice(0, 1500)}`,
+      );
     }
     return true;
   } finally {
@@ -750,7 +743,11 @@ export async function expectForgeSshAndOrgMembersFlow(): Promise<boolean> {
 
   const suffix = Date.now();
   const orgSlug = `bune2eorg${suffix}`;
-  const org = await rpc("org.create", { slug: orgSlug, display_name: `Bun E2E Org ${suffix}` }, cookie);
+  const org = await rpc(
+    "org.create",
+    { slug: orgSlug, display_name: `Bun E2E Org ${suffix}` },
+    cookie,
+  );
   if (!org.ok) {
     throw new Error(`org.create failed: ${JSON.stringify(org.error)}`);
   }
@@ -759,9 +756,13 @@ export async function expectForgeSshAndOrgMembersFlow(): Promise<boolean> {
   const keyPath = join(keyDir, "id_ed25519");
   let pubKey = "";
   try {
-    execFileSync("ssh-keygen", ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "bune2e@octanest"], {
-      stdio: "pipe",
-    });
+    execFileSync(
+      "ssh-keygen",
+      ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "bune2e@octanest"],
+      {
+        stdio: "pipe",
+      },
+    );
     pubKey = readFileSync(`${keyPath}.pub`, "utf8").trim();
   } finally {
     rmSync(keyDir, { recursive: true, force: true });
