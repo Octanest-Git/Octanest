@@ -77,7 +77,7 @@ jobs:
       - name: bun:test unit dual-run (merge gate)
         run: make test-bun-unit
       - name: vitest integration residual (.tsrx until loader unblocks)
-        run: bun run test:integration
+        run: bun run --filter @octanest/web test:integration
       - name: web build
         run: bunx turbo run build --filter=@octanest/web
 
