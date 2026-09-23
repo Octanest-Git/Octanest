@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Run bun.webview browser PoC files in parallel with process isolation.
+# Run bun.webview browser tests with process isolation (sequential for CI stability).
 # Each test file runs in its own Bun process (Chrome singleton isolation).
-# Requires E2E_STACK=1 and a live API/Vite stack (see make test-bun-unit-browser).
+# Requires E2E_STACK=1 and a live API/Vite stack (see make test-bun-browser).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIR="$ROOT/apps/web/bun-test"
@@ -15,22 +15,14 @@ fi
 shopt -s nullglob
 files=("$DIR"/browser/*.stack.browser.test.ts)
 if [[ ${#files[@]} -eq 0 ]]; then
-  echo "error: no browser PoC tests under $DIR/browser" >&2
+  echo "error: no browser tests under $DIR/browser" >&2
   exit 1
 fi
 
-# Run tests in parallel, each in its own isolated process
-pids=()
-for f in "${files[@]}"; do
-  echo "==> bun test (parallel isolated process): $(basename "$f")"
-  bun test --isolate "$f" &
-  pids+=($!)
-done
-
-# Wait for all tests and collect exit codes
 failed=0
-for pid in "${pids[@]}"; do
-  if ! wait "$pid"; then
+for f in "${files[@]}"; do
+  echo "==> bun test (isolated process): $(basename "$f")"
+  if ! bun test --isolate "$f"; then
     failed=1
   fi
 done
@@ -38,4 +30,4 @@ done
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
-echo "==> bun.webview PoC browser suite passed"
+echo "==> bun.webview browser suite passed"

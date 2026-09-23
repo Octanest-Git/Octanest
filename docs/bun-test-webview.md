@@ -45,7 +45,7 @@ Package `@octanejs/tanstack-query` ships `.tsrx` entrypoints Bun cannot load wit
 |------|--------|
 | Ephemeral profile | `dataStore: "ephemeral"` — never commit Chrome user-data dirs |
 | Spawn mode | `backend: { type: "chrome", url: false }` — no desktop DevTools attach |
-| Process-per-file | Browser files run via `scripts/run-bun-webview.sh` (parallel isolated processes) |
+| Process-per-file | Browser files run via `scripts/run-bun-webview.sh` (sequential isolated processes) |
 | Page errors | CDP `Runtime.exceptionThrown` + `DOM_RACE_RE` (Playwright `pageerror` parity). Octane DOM races (`insertBefore` / hierarchy) are the important signal — not console prop warnings. |
 | Teardown | `await using` / `close()` then assert; `Bun.WebView.closeAll()` in preload `afterAll` |
 
