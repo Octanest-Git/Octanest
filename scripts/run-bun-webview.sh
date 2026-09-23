@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Run bun.webview browser tests with process isolation (sequential for CI stability).
+# Run bun.webview browser tests with bounded parallelism and process isolation.
 # Each test file runs in its own Bun process (Chrome singleton isolation).
+# Workers are limited to prevent resource exhaustion in CI.
 # Requires E2E_STACK=1 and a live API/Vite stack (see make test-bun-browser).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -12,6 +13,14 @@ if [[ "${E2E_STACK:-}" != "1" ]]; then
   exit 1
 fi
 
+# Bounded parallelism: default 2 workers in CI, 4 locally
+# Override with BUN_WEBVIEW_WORKERS=N
+if [[ "${CI:-}" = "true" ]]; then
+  MAX_WORKERS="${BUN_WEBVIEW_WORKERS:-2}"
+else
+  MAX_WORKERS="${BUN_WEBVIEW_WORKERS:-4}"
+fi
+
 shopt -s nullglob
 files=("$DIR"/browser/*.stack.browser.test.ts)
 if [[ ${#files[@]} -eq 0 ]]; then
@@ -19,12 +28,25 @@ if [[ ${#files[@]} -eq 0 ]]; then
   exit 1
 fi
 
+echo "==> Running ${#files[@]} WebView test files with $MAX_WORKERS isolated workers"
+
 failed=0
 for f in "${files[@]}"; do
-  echo "==> bun test (isolated process): $(basename "$f")"
-  if ! bun test --isolate "$f"; then
-    failed=1
-  fi
+  rel="${f#"$DIR"/}"
+  echo "==> bun test (isolated worker): $rel"
+  
+  # Spawn isolated worker process
+  bun test --isolate "$f" &
+  
+  # Limit concurrent workers - wait for slot if at capacity
+  while (( $(jobs -r | wc -l) >= MAX_WORKERS )); do
+    wait -n || failed=1
+  done
+done
+
+# Wait for all remaining workers
+while (( $(jobs -r | wc -l) > 0 )); do
+  wait -n || failed=1
 done
 
 if [[ "$failed" -ne 0 ]]; then

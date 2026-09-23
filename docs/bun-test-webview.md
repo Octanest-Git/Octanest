@@ -45,11 +45,28 @@ Package `@octanejs/tanstack-query` ships `.tsrx` entrypoints Bun cannot load wit
 |------|--------|
 | Ephemeral profile | `dataStore: "ephemeral"` — never commit Chrome user-data dirs |
 | Spawn mode | `backend: { type: "chrome", url: false }` — no desktop DevTools attach |
-| Process-per-file | Browser files run via `scripts/run-bun-webview.sh` (sequential isolated processes) |
+| Process-per-file | Browser files run via `scripts/run-bun-webview.sh` (bounded parallel isolated workers) |
 | Page errors | CDP `Runtime.exceptionThrown` + `DOM_RACE_RE` (Playwright `pageerror` parity). Octane DOM races (`insertBefore` / hierarchy) are the important signal — not console prop warnings. |
 | Teardown | `await using` / `close()` then assert; `Bun.WebView.closeAll()` in preload `afterAll` |
 
 The web UI is **Octane** (`.tsrx`), not React. Test helpers use CSS / `data-testid` / trusted `click`+`type` against Octane `onInput` fields. Do not port React Testing Library patterns here.
+
+## Parallel Execution
+
+Browser tests run with **bounded parallelism** — each file gets its own Bun process + Chrome instance, but worker count is limited to prevent resource exhaustion:
+
+```bash
+# CI default: 2 workers (conservative for GitHub Actions)
+BUN_WEBVIEW_WORKERS=2 make test-bun-browser
+
+# Local default: 4 workers
+BUN_WEBVIEW_WORKERS=4 make test-bun-browser
+
+# Custom worker count
+BUN_WEBVIEW_WORKERS=3 make test-bun-browser
+```
+
+**Isolation maintained**: Each worker spawns a separate `bun test --isolate` process with its own Chrome instance and ephemeral profile. Workers run in parallel but never share browser state.
 
 ## Results (local WSL, 2026-09-23)
 
