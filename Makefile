@@ -11,8 +11,7 @@
 .PHONY: cloud-plan cloud-docs cloud-production-autodeploy-check
 .PHONY: up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite
 .PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack
-.PHONY: test-bun-poc test-bun-poc-browser bench-bun-poc
-.PHONY: test-bun-unit test-bun-integration
+.PHONY: test-bun-unit test-bun-browser bench-bun-unit test-bun-integration
 .PHONY: db-migrate db-switch-dialect db-matrix
 .PHONY: coverage-web coverage-rust coverage-weighted coverage-contract
 .PHONY: route-coverage-check
@@ -149,17 +148,14 @@ down-with-dev-auth:
 	    --profile dev-auth down --remove-orphans'
 
 test-e2e-stack:
-	./scripts/dev-auth/run-bun-webview-poc-stack.sh
+	./scripts/dev-auth/run-bun-webview-stack.sh
 
-# Issue #37 — bun:test + Bun.WebView PoC (additive; Vitest remains the merge gate).
+# Issue #37 — bun:test + Bun.WebView (primary test stack).
 test-bun-unit:
 	./scripts/run-bun-unit.sh
 
 test-bun-integration:
 	./scripts/run-bun-integration.sh
-
-test-bun-unit:
-	./scripts/run-bun-unit.sh
 
 test-bun-browser:
 	./scripts/dev-auth/run-bun-webview-stack.sh
