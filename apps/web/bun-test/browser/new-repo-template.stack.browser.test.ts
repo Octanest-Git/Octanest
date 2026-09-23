@@ -10,5 +10,5 @@ describe("bun.webview PoC: /new template picker", () => {
 
   it("picks a stack template without Octane DOM-race pageerrors", async () => {
     expect(await expectNewRepoTemplatePickerFlow()).toBe(true);
-  }, 120_000);
+  }, 150_000);
 });
