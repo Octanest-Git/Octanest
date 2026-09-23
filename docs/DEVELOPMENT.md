@@ -165,7 +165,7 @@ octanest/
 | `make up-mysql` / `up-sqlite` / `up-dev-auth` | Dialect and auth overlays |
 | `make test` | `cargo nextest` (or `cargo test`) + `bun run test` (Vitest merge gate) |
 | `make test-bun-unit` / `test-bun-integration` | Preferred local JS dual-run (`bun:test`) |
-| `make test-bun-poc-browser` | Stack HTTP + `Bun.WebView` (preferred browser authoring path) |
+| `make test-bun-browser` | Stack HTTP + `Bun.WebView` (preferred browser authoring path) |
 | `make web-lint` / `make web-format-check` | Web oxlint (type-aware) / oxfmt check |
 | `make test-e2e-stack` | Vitest + Playwright stack e2e (merge gate) |
 | `make smoke` / `smoke-mysql` / `smoke-sqlite` | Compose bring-up smoke |

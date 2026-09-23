@@ -8,7 +8,7 @@ Octanest uses two test stacks for product code, plus a dual-run authoring path f
 | Layer | Framework | Config |
 |-------|-----------|--------|
 | Rust (`crates/*`) | [cargo-nextest](https://nexte.st/) (falls back to `cargo test`) | `.config/nextest.toml` |
-| JS / TS — **author here** | **`bun:test`** + **`Bun.WebView`** (Chrome) | [bun-test-webview-poc.md](./bun-test-webview-poc.md); `make test-bun-unit` / `test-bun-integration` / `test-bun-poc-browser` |
+| JS / TS — **author here** | **`bun:test`** + **`Bun.WebView`** (Chrome) | [bun-test-webview.md](./bun-test-webview.md); `make test-bun-unit` / `test-bun-integration` / `test-bun-browser` |
 | JS / TS — **CI merge gate** | Vitest `^5` (+ Playwright for stack-browser) | `apps/web/vitest.config.ts`, `packages/api-client/vitest.config.ts` |
 
 **Authoring rule (agents + contributors):** new web / api-client tests must dual-run under `bun:test` via `@octanest/web/test-runner` or `@octanest/api-client/test-runner`. New live-browser stack flows belong in `apps/web/bun-test/` (`Bun.WebView`), not as Playwright-only additions. Do not invent a third runner. Vitest + Playwright remain the merge gate until a documented cutover.
@@ -68,10 +68,10 @@ bun run --filter @octanest/web test             # web: unit + integration
 bun run --filter @octanest/web test:unit
 bun run --filter @octanest/web test:integration
 bun run --filter @octanest/api-client test
-make test-bun-poc                               # issue #37 bun:test unit dual-run + thin PoC
+make test-bun-unit                               # issue #37 bun:test unit dual-run + thin PoC
 make test-bun-unit                              # all dual-run web unit under bun:test
 make test-bun-integration                       # lib happy-dom dual-run under bun:test
-make bench-bun-poc                              # Vitest vs bun:test timings → var/bun-test-poc/
+make bench-bun-unit                              # Vitest vs bun:test timings → var/bun-test/
 ```
 
 From `apps/web`:
@@ -84,14 +84,14 @@ bun run test:integration
 
 ### bun:test dual-run (authoring standard)
 
-See [bun-test-webview-poc.md](./bun-test-webview-poc.md). Prefer these for day-to-day verification of web/api-client changes. Vitest remains the CI merge gate.
+See [bun-test-webview.md](./bun-test-webview.md). Prefer these for day-to-day verification of web/api-client changes. Vitest remains the CI merge gate.
 
 ```bash
 make test-bun-unit
 make test-bun-integration
-make test-bun-poc
-make test-bun-poc-browser   # Docker stack: e2e HTTP dual-run + Chrome WebView
-make bench-bun-poc
+make test-bun-unit
+make test-bun-browser   # Docker stack: e2e HTTP dual-run + Chrome WebView
+make bench-bun-unit
 ```
 
 ### Full stack e2e (`make test-e2e-stack`)
@@ -130,7 +130,7 @@ cargo test -p octanest-db --test dialect_probe -- --nocapture
 | Integration (lib / dual-runable) | `*.integration.test.ts` | `src/lib/` when possible | `make test-bun-integration` + Vitest `integration` |
 | Integration (`.tsrx` render) | `*.integration.test.ts` | `src/routes/`, `src/components/` | Vitest `integration` until Bun loads Octane `.tsrx` |
 | Stack HTTP e2e | `*.stack.test.ts` | `e2e/stack/` | `scripts/run-bun-e2e-stack.sh` + Vitest `e2e-stack` |
-| Stack browser e2e (**new flows**) | `*.stack.browser.test.ts` | **`apps/web/bun-test/browser/`** + helpers in `bun-test/lib/flows.ts` | `Bun.WebView` via `make test-bun-poc-browser` |
+| Stack browser e2e (**new flows**) | `*.stack.browser.test.ts` | **`apps/web/bun-test/browser/`** + helpers in `bun-test/lib/flows.ts` | `Bun.WebView` via `make test-bun-browser` |
 | Stack browser e2e (legacy merge gate) | `*.stack.browser.test.ts(x)` | `e2e/stack-browser/` | Vitest + Playwright until cutover |
 
 Shared setup:
@@ -253,8 +253,8 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | `web-octane` | `bun install --frozen-lockfile` → `bun run test:unit` (bun:test dual-run) + `bun run test:integration` (Vitest residual for `.tsrx`) → Turbo build `@octanest/web` |
 | `route-coverage` | `make route-coverage-check` — every user-facing `.tsrx` page has happy-dom, stack-browser, or documented skip (G-11.1-15) |
 | `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
-| `e2e-stack` | Rust + Bun + Chromium → `make test-bun-poc-browser`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
-| `bun-test-poc` | Issue #37: unit + lib integration dual-run, bench, stack HTTP + WebView (merge gate); uploads `var/bun-test-poc/` + `var/e2e/` on failure |
+| `e2e-stack` | Rust + Bun + Chromium → `make test-bun-browser`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
+| `bun-test` | Issue #37: unit + lib integration dual-run, bench, stack HTTP + WebView (merge gate); uploads `var/bun-test/` + `var/e2e/` on failure |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` (config-only; does not build/bring-up) |
 | `compose-smoke` | Matrix `postgres` / `sqlite` / `mysql`: `./scripts/ci-compose-smoke.sh` → `make smoke` / `smoke-sqlite` / `smoke-mysql` (**D-CI-01…04**); fail-closed under `CI` / `SMOKE_REQUIRE_STACK`; image proof via `compose up --build` (**D-CI-06**); uploads `/tmp/octanest-smoke*.json` on failure. Complements config-only `compose` and stays separate from `smoke-protocol` (**D-CI-05**) |

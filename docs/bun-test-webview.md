@@ -12,12 +12,11 @@ Agents and contributors: see also [TESTING.md](./TESTING.md), [AGENTS.md](../AGE
 ```bash
 make test-bun-unit          # dual-run all web unit under bun:test
 make test-bun-integration   # dual-run lib happy-dom integration (theme)
-make test-bun-poc           # thin unit PoC files
-make bench-bun-poc          # median wall-time Vitest vs bun:test (3 unit files)
-make test-bun-poc-browser   # live stack: e2e HTTP dual-run + WebView browser PoC
+make test-bun-browser       # live stack: e2e HTTP dual-run + WebView browser
+make bench-bun-unit         # median wall-time Vitest vs bun:test
 ```
 
-Artifacts: `var/bun-test-poc/` (bench JSON; gitignored). Local scratch: `tmp/bun-test-poc/`.
+Artifacts: `var/bun-test/` (bench JSON; gitignored). Local scratch: `tmp/bun-test/`.
 
 ## What to write where
 
@@ -35,7 +34,7 @@ Artifacts: `var/bun-test-poc/` (bench JSON; gitignored). Local scratch: `tmp/bun
 |-------|---------------|------------------------|
 | A — unit | `make test-bun-unit` (`src/**/*.unit.test.ts` + gates) | none for pure TS |
 | B — integration | `make test-bun-integration` (`src/lib/theme.integration.test.ts`) | route/component `.tsrx` suites; `session-cache.integration` (needs `QueryClientProvider.tsrx`) |
-| C — e2e HTTP | `scripts/run-bun-e2e-stack.sh` inside `test-bun-poc-browser` | none for `e2e/stack/*.stack.test.ts` |
+| C — e2e HTTP | `scripts/run-bun-e2e-stack.sh` inside `test-bun-browser` | none for `e2e/stack/*.stack.test.ts` |
 | D — browser | `apps/web/bun-test/browser/*.stack.browser.test.ts` | remaining Playwright-only forge flows (admin, issues/releases, packages/SSH/orgs, profile avatar, …) until ported |
 
 Package `@octanejs/tanstack-query` ships `.tsrx` entrypoints Bun cannot load without the Vite Octane plugin. That blocks happy-dom dual-run of anything that renders real `useQuery` / `QueryClientProvider`. Live Chromium via `Bun.WebView` still covers those flows end-to-end.
@@ -46,11 +45,11 @@ Package `@octanejs/tanstack-query` ships `.tsrx` entrypoints Bun cannot load wit
 |------|--------|
 | Ephemeral profile | `dataStore: "ephemeral"` — never commit Chrome user-data dirs |
 | Spawn mode | `backend: { type: "chrome", url: false }` — no desktop DevTools attach |
-| Process-per-file | Browser files run via `scripts/run-bun-webview-poc.sh` (one Bun process each) |
+| Process-per-file | Browser files run via `scripts/run-bun-webview.sh` (parallel isolated processes) |
 | Page errors | CDP `Runtime.exceptionThrown` + `DOM_RACE_RE` (Playwright `pageerror` parity). Octane DOM races (`insertBefore` / hierarchy) are the important signal — not console prop warnings. |
 | Teardown | `await using` / `close()` then assert; `Bun.WebView.closeAll()` in preload `afterAll` |
 
-The web UI is **Octane** (`.tsrx`), not React. PoC helpers use CSS / `data-testid` / trusted `click`+`type` against Octane `onInput` fields. Do not port React Testing Library patterns here.
+The web UI is **Octane** (`.tsrx`), not React. Test helpers use CSS / `data-testid` / trusted `click`+`type` against Octane `onInput` fields. Do not port React Testing Library patterns here.
 
 ## Results (local WSL, 2026-09-23)
 
@@ -59,11 +58,11 @@ The web UI is **Octane** (`.tsrx`), not React. PoC helpers use CSS / `data-testi
 | Runner | median (ms) | min | max |
 |--------|-------------|-----|-----|
 | Vitest `--project unit` | 561 | 554 | 935 |
-| bun:test PoC | 13 | 12 | 13 |
+| bun:test | 13 | 12 | 13 |
 
 Roughly **40×** faster cold wall time for this slice (startup dominates Vitest).
 
-### Browser PoC (live stack)
+### Browser (live stack)
 
 | Flow | Result | Notes |
 |------|--------|-------|
@@ -85,7 +84,7 @@ Stack bring-up still dominates (API build + Docker stubs + Vite). Runner swap do
 
 ### Stability
 
-Multiple consecutive green stack runs after harness fixes (console.warn filtering, cookie-before-nav, auth.taken race) and complete P0/P1 WebView port coverage. Continue collecting CI stability data — need N≥5 green `bun-test-poc` runs before a gate flip.
+Multiple consecutive green stack runs after harness fixes (console.warn filtering, cookie-before-nav, auth.taken race) and complete P0/P1 WebView port coverage. Continue collecting CI stability data — need N≥5 green `bun-test` runs before a gate flip.
 
 ## Go / no-go (later cutover)
 
@@ -93,7 +92,7 @@ Flip a slice only when:
 
 1. Median wall time ≤ Vitest (+ Playwright for browser) for the same flows
 2. Playwright browser download optional without flake regression
-3. Zero isolation cross-talk across N sequential process-per-file runs
+3. Zero isolation cross-talk across N parallel process-per-file runs
 4. `Bun.WebView` stable on the pinned Bun version
 
 **Current recommendation:** keep Vitest as merge gate; **author all new tests for bun:test dual-run** and expand WebView coverage. Unit slice is the strongest speed win.

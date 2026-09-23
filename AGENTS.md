@@ -62,9 +62,9 @@ make rpc-gen                 # regenerate @octanest/api-client
 make test                    # Rust nextest + Vitest (CI merge gate)
 make test-bun-unit           # preferred local web unit (bun:test dual-run)
 make test-bun-integration    # lib happy-dom under bun:test
-make test-bun-poc-browser    # stack HTTP + Bun.WebView (preferred browser e2e path)
+make test-bun-unit-browser    # stack HTTP + Bun.WebView (preferred browser e2e path)
 make test-e2e-stack          # Vitest + Playwright stack e2e (merge gate)
-make bench-bun-poc           # Vitest vs bun:test timings
+make bench-bun-unit           # Vitest vs bun:test timings
 make up / make smoke         # Compose + health
 make rpc-sync-check          # CI gate for client drift
 make web-lint                # oxlint type-aware (apps/web; @tsrx/oxc) + octane DOM-race heuristic

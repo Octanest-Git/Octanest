@@ -158,14 +158,14 @@ test-bun-unit:
 test-bun-integration:
 	./scripts/run-bun-integration.sh
 
-test-bun-poc:
-	./scripts/run-bun-test-poc-unit.sh
+test-bun-unit:
+	./scripts/run-bun-unit.sh
 
-test-bun-poc-browser:
-	./scripts/dev-auth/run-bun-webview-poc-stack.sh
+test-bun-browser:
+	./scripts/dev-auth/run-bun-webview-stack.sh
 
-bench-bun-poc:
-	./scripts/bench-bun-test-poc.sh
+bench-bun-unit:
+	./scripts/bench-bun-test-unit.sh
 
 logs:
 	$(COMPOSE) -f $(COMPOSE_FILE) logs -f

@@ -16,11 +16,21 @@ if [[ ${#files[@]} -eq 0 ]]; then
   echo "error: no dual-run lib integration tests found" >&2
   exit 1
 fi
-failed=0
+
+# Run tests in parallel, each in its own process for isolation
+pids=()
 for f in "${files[@]}"; do
-  echo "==> bun test (integration lib): $f"
-  if ! bun test --conditions=octanest-bun-test --preload ./bun-test/preload-web.ts "$f"; then
+  echo "==> bun test (parallel integration lib): $f"
+  bun test --conditions=octanest-bun-test --preload ./bun-test/preload-web.ts "$f" &
+  pids+=($!)
+done
+
+# Wait for all tests and collect exit codes
+failed=0
+for pid in "${pids[@]}"; do
+  if ! wait "$pid"; then
     failed=1
   fi
 done
+
 exit "$failed"

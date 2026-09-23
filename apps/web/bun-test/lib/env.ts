@@ -1,4 +1,4 @@
-/** Env helpers for bun:test PoC (mirrors e2e/stack/env.ts). */
+/** Env helpers for bun:test (mirrors e2e/stack/env.ts). */
 
 function envGet(key: string): string | undefined {
   const v = process.env[key];
@@ -9,7 +9,7 @@ function envGet(key: string): string | undefined {
 export function requireStack(): void {
   if (envGet("E2E_STACK") !== "1") {
     throw new Error(
-      "Stack e2e requires E2E_STACK=1 (use `make test-bun-poc-browser` / run-stack-e2e with BUN_TEST_POC=1)",
+      "Stack e2e requires E2E_STACK=1 (use `make test-bun-browser` / run-stack-e2e with BUN_TEST=1)",
     );
   }
 }

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Benchmark Vitest unit slice vs bun:test PoC unit suite (issue #37).
-# Writes JSON under var/bun-test-poc/ (gitignored). Prints a markdown table to stdout.
+# Writes JSON under var/bun-test/ (gitignored). Prints a markdown table to stdout.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-OUT="$ROOT/var/bun-test-poc"
+OUT="$ROOT/var/bun-test"
 mkdir -p "$OUT"
 N="${BENCH_RUNS:-3}"
 
@@ -46,7 +46,7 @@ done
 echo "==> bench: bun:test PoC unit ×$N"
 bun_ms=()
 for i in $(seq 1 "$N"); do
-  ms=$(run_timed buntest bash "$ROOT/scripts/run-bun-test-poc-unit.sh")
+  ms=$(run_timed buntest bash "$ROOT/scripts/run-bun-test-unit.sh")
   bun_ms+=("$ms")
   echo "  bun:test run $i: ${ms}ms"
 done

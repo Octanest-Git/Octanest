@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/apps/web"
 if [[ "${E2E_STACK:-}" != "1" ]]; then
-  echo "error: E2E_STACK=1 required (use make test-bun-poc-browser / stack harness)" >&2
+  echo "error: E2E_STACK=1 required (use make test-bun-unit-browser / stack harness)" >&2
   exit 1
 fi
 mapfile -t files < <(find e2e/stack -type f -name '*.stack.test.ts' | sort)

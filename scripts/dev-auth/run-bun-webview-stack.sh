@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Bring up the same stack as run-stack-e2e.sh, then run bun.webview PoC browser tests.
-# Does not replace Vitest e2e — additive PoC path (issue #37).
+# Bring up the same stack as run-stack-e2e.sh, then run bun.webview browser tests.
+# Primary browser test path (issue #37).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-export BUN_TEST_POC=1
+export BUN_TEST=1
 export OCTANEST_E2E_KEEP_STUBS="${OCTANEST_E2E_KEEP_STUBS:-0}"
 
 # Reuse stack bring-up by wrapping: run harness with a custom test command.
@@ -45,7 +45,7 @@ need_cmd cargo
 need_cmd bun
 need_cmd docker
 
-mkdir -p "$(dirname "$DB_PATH")" "$ROOT/var/bun-test-poc"
+mkdir -p "$(dirname "$DB_PATH")" "$ROOT/var/bun-test"
 rm -f "$DB_PATH"
 
 echo "==> starting dev-auth stubs"
@@ -134,7 +134,7 @@ export OCTANEST_E2E_DB_PATH="$DB_PATH"
 echo "==> running bun:test e2e/stack HTTP dual-run"
 bash "$ROOT/scripts/run-bun-e2e-stack.sh"
 
-echo "==> running bun.webview PoC browser suite"
-bash "$ROOT/scripts/run-bun-webview-poc.sh"
+echo "==> running bun.webview browser suite"
+bash "$ROOT/scripts/run-bun-webview.sh"
 
-echo "==> bun:test stack PoC (HTTP + WebView) passed"
+echo "==> bun:test stack (HTTP + WebView) passed"

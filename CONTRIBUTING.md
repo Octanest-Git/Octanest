@@ -33,7 +33,7 @@ make rpc-gen               # after RPC / DTO changes
 make test-bun-unit         # preferred local web unit (bun:test)
 make test-bun-integration  # lib happy-dom under bun:test
 make test                  # Rust + Vitest (CI merge gate)
-make test-bun-poc-browser  # preferred stack browser path (Bun.WebView)
+make test-bun-unit-browser  # preferred stack browser path (Bun.WebView)
 make test-e2e-stack        # Vitest + Playwright stack e2e (merge gate)
 make web-lint              # oxlint type-aware (apps/web)
 make web-format-check      # oxfmt --check (apps/web)

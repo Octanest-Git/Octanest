@@ -150,7 +150,7 @@ jobs:
             if [[ -x "$p" ]]; then export BUN_CHROME_PATH="$p"; break; fi
           done
           echo "BUN_CHROME_PATH=${BUN_CHROME_PATH:-auto}"
-          make test-bun-poc-browser
+          make test-bun-browser
       - name: upload e2e logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -160,8 +160,8 @@ jobs:
           if-no-files-found: ignore
 
   # Issue #37 — bun:test + Bun.WebView (now merge gate for unit + browser).
-  bun-test-poc:
-    name: bun-test-poc
+  bun-test:
+    name: bun-test
     needs: [makefile-lint]
     runs-on: ubuntu-latest
     steps:
@@ -175,10 +175,10 @@ jobs:
         run: make test-bun-unit
       - name: bun:test lib integration dual-run
         run: make test-bun-integration
-      - name: bun:test unit PoC + bench
+      - name: bun:test unit + bench
         run: |
-          make test-bun-poc
-          make bench-bun-poc
+          make test-bun-unit
+          make bench-bun-unit
       - name: install Chromium for WebView
         run: |
           sudo apt-get update -qq
@@ -187,20 +187,20 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: install protoc
         run: sudo apt-get install -y -qq protobuf-compiler
-      - name: bun:test stack HTTP + WebView PoC
+      - name: bun:test stack HTTP + WebView
         run: |
           for p in /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/google-chrome-stable; do
             if [[ -x "$p" ]]; then export BUN_CHROME_PATH="$p"; break; fi
           done
           echo "BUN_CHROME_PATH=${BUN_CHROME_PATH:-auto}"
-          make test-bun-poc-browser
-      - name: upload bun-test-poc artifacts on failure
+          make test-bun-browser
+      - name: upload bun-test artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: bun-test-poc-logs
+          name: bun-test-logs
           path: |
-            var/bun-test-poc/
+            var/bun-test/
             var/e2e/
           if-no-files-found: ignore
 
