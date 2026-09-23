@@ -30,8 +30,11 @@ make rpc-gen
 ```bash
 make help                  # all targets
 make rpc-gen               # after RPC / DTO changes
-make test                  # Rust + Vitest
-make test-e2e-stack        # API + Mailpit/OIDC stubs + browser
+make test-bun-unit         # preferred local web unit (bun:test)
+make test-bun-integration  # lib happy-dom under bun:test
+make test                  # Rust + Vitest (CI merge gate)
+make test-bun-poc-browser  # preferred stack browser path (Bun.WebView)
+make test-e2e-stack        # Vitest + Playwright stack e2e (merge gate)
 make web-lint              # oxlint type-aware (apps/web)
 make web-format-check      # oxfmt --check (apps/web)
 make up && make smoke      # Compose stack
@@ -44,7 +47,7 @@ Auth stubs without cloud secrets: [docs/dev-auth.md](docs/dev-auth.md).
 ## Pull requests
 
 1. Prefer small, focused PRs that match an existing roadmap phase or a clear bugfix.
-2. Include tests for behavior changes (see [docs/TESTING.md](docs/TESTING.md)).
+2. Include tests for behavior changes. **Author new JS/TS tests for `bun:test`** (shared `@octanest/*/test-runner` imports; browser flows under `apps/web/bun-test/` with `Bun.WebView`). Vitest + Playwright stay the CI merge gate during dual-run — see [docs/TESTING.md](docs/TESTING.md).
 3. After changing RPC procedures or shared types: run `make rpc-gen` and commit `@octanest/api-client` updates together.
 4. Do not commit secrets (`.env`, tokens, private keys). Use examples under `docs/` and `.env.example`.
 5. Keep UI in `.tsrx` Octane style; do not introduce a parallel React app or alias React to Octane.

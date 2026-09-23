@@ -56,10 +56,13 @@ Full skill: [`.agents/skills/octane/SKILL.md`](../.agents/skills/octane/SKILL.md
 
 | Change type | Minimum |
 |-------------|---------|
-| Pure helper | Unit test |
-| UI + Query / session | Integration test (`renderWithQueryClient` where applicable) |
+| Pure helper | Unit test under `bun:test` dual-run (`@octanest/web/test-runner`) |
+| UI + Query / session | Integration test (`renderWithQueryClient` where applicable); prefer suites that dual-run under `make test-bun-integration` |
 | Auth / RPC contract | Rust integration test and/or stack e2e |
+| Live browser / DOM race | `Bun.WebView` flow under `apps/web/bun-test/` (not a new Playwright-only suite) |
 | RPC schema | `make rpc-sync-check` clean |
+
+**Authoring standard:** write new JS/TS tests for **`bun:test`** (shared test-runner exports). Vitest + Playwright remain the CI merge gate while dual-run is in progress — see [TESTING.md](TESTING.md) and [bun-test-webview-poc.md](bun-test-webview-poc.md).
 
 Details: [TESTING.md](TESTING.md).
 

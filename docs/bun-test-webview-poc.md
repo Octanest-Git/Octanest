@@ -1,19 +1,33 @@
-# Experimental bun:test + Bun.WebView PoC (issue #37)
+# bun:test + Bun.WebView (issue #37)
 
-Proof of concept for running Octanest web tests on **`bun:test`**, with **`Bun.WebView`**
-(`backend: "chrome"`) for stack-browser flows. Vitest + Playwright remain the merge gate.
+Authoring standard for Octanest web / api-client tests: **`bun:test`**, with **`Bun.WebView`**
+(`backend: "chrome"`) for live-browser stack flows. Vitest + Playwright remain the **CI merge gate**
+while dual-run coverage expands; do not add a third runner.
+
+Agents and contributors: see also [TESTING.md](./TESTING.md), [AGENTS.md](../AGENTS.md), and
+[CODE_PRACTICES.md](./CODE_PRACTICES.md).
 
 ## Commands
 
 ```bash
 make test-bun-unit          # dual-run all web unit under bun:test
 make test-bun-integration   # dual-run lib happy-dom integration (theme)
-make test-bun-poc           # unit dual-run + thin unit PoC files
+make test-bun-poc           # thin unit PoC files
 make bench-bun-poc          # median wall-time Vitest vs bun:test (3 unit files)
 make test-bun-poc-browser   # live stack: e2e HTTP dual-run + WebView browser PoC
 ```
 
 Artifacts: `var/bun-test-poc/` (bench JSON; gitignored). Local scratch: `tmp/bun-test-poc/`.
+
+## What to write where
+
+| New work | Put it here | Avoid |
+|----------|-------------|--------|
+| Unit / gate / pure helper | `src/**/*.unit.test.ts` importing `@octanest/web/test-runner` | `from "vitest"` for `describe`/`it`/`expect` |
+| Lib DOM helpers | `src/lib/*.integration.test.ts` (dual-run under `preload-web`) | assuming happy-dom cookie APIs without the jar polyfill |
+| Route/component `.tsrx` mounts | Vitest happy-dom until Bun has an Octane loader | claiming bun dual-run for suites that import `.tsrx` |
+| Stack HTTP | `e2e/stack/*.stack.test.ts` + test-runner import | runner-specific APIs that break Vitest dual-run |
+| Stack browser | `apps/web/bun-test/browser/*.stack.browser.test.ts` + `lib/flows.ts` | new Playwright-only `vitest/browser` command suites as the primary path |
 
 ## Dual-run coverage
 
@@ -76,7 +90,7 @@ Flip a slice only when:
 3. Zero isolation cross-talk across N sequential process-per-file runs
 4. `Bun.WebView` stable on the pinned Bun version
 
-**Current recommendation:** keep Vitest as gate; expand the PoC suite and dual-run in CI. Unit slice is the strongest speed win.
+**Current recommendation:** keep Vitest as merge gate; **author all new tests for bun:test dual-run** and expand WebView coverage. Unit slice is the strongest speed win.
 
 ## Layout
 

@@ -144,12 +144,15 @@ octanest/
 |---------|-------------|
 | `bun run --filter @octanest/web dev` | Vite dev server for the web app |
 | `bun run --filter @octanest/web build` | `vite build` |
-| `bun run --filter @octanest/web test` | Vitest (unit / integration / e2e projects) |
-| `bun run --filter @octanest/web test:e2e:stack` | Stack e2e Vitest projects |
+| `bun run --filter @octanest/web test` | Vitest merge-gate projects (unit / integration / e2e) |
+| `bun run --filter @octanest/web test:bun-unit` | Preferred local unit dual-run (`bun:test`) |
+| `bun run --filter @octanest/web test:bun-integration` | Lib happy-dom dual-run (`bun:test`) |
+| `bun run --filter @octanest/web test:e2e:stack` | Stack e2e Vitest + Playwright (merge gate) |
 | `bun run --filter @octanest/web lint` | `oxlint --type-aware --deny-warnings` via `@tsrx/oxc` + `oxlint-tsgolint` |
 | `bun run --filter @octanest/web format` | `oxfmt --write` |
 | `bun run --filter @octanest/web format:check` | `oxfmt --check` |
-| `bun run --filter @octanest/api-client test` | api-client Vitest |
+| `bun run --filter @octanest/api-client test` | api-client Vitest (merge gate) |
+| `bun run --filter @octanest/api-client test:bun` | api-client `bun:test` dual-run |
 
 ### Make targets (preferred day-to-day)
 

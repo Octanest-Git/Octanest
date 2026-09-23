@@ -36,6 +36,7 @@ Before editing UI under `apps/web`:
 - Dialect SQL lives in `crates/octanest-db` only; API must not branch on DB dialect.
 - No production secrets in repo, CI, or docs examples. Use `.env.example` / `docs/dev-auth.env.example`.
 - Prefer extending existing patterns over new frameworks, state libraries, or UI kits.
+- **JS/TS tests: author for `bun:test`**, not new Vitest-only or Playwright-only suites. Import `@octanest/web/test-runner` (or `@octanest/api-client/test-runner`). Browser stack flows go under `apps/web/bun-test/` with `Bun.WebView` — see [docs/TESTING.md](docs/TESTING.md) and [docs/bun-test-webview-poc.md](docs/bun-test-webview-poc.md). Vitest + Playwright remain the CI merge gate during dual-run; do not add a third runner.
 - **No AI attribution** on commits or PRs: never add `Co-authored-by` / `Generated with` / `Made-with` (or similar) for Cursor, Claude, Copilot, or any AI/tool unless the user explicitly asks in the current turn. See [`.cursor/rules/no-ai-attribution.mdc`](.cursor/rules/no-ai-attribution.mdc).
 
 ## AI watermarks / provenance hygiene
@@ -58,12 +59,11 @@ prose-only passes (no service).
 ```bash
 make help
 make rpc-gen                 # regenerate @octanest/api-client
-make test                    # Rust nextest + Vitest
-make test-e2e-stack          # full auth stack e2e
-make test-bun-poc            # issue #37 bun:test unit dual-run + thin PoC
-make test-bun-unit           # dual-run web unit under bun:test
-make test-bun-integration    # dual-run lib happy-dom under bun:test
-make test-bun-poc-browser    # bun:test stack HTTP + WebView PoC
+make test                    # Rust nextest + Vitest (CI merge gate)
+make test-bun-unit           # preferred local web unit (bun:test dual-run)
+make test-bun-integration    # lib happy-dom under bun:test
+make test-bun-poc-browser    # stack HTTP + Bun.WebView (preferred browser e2e path)
+make test-e2e-stack          # Vitest + Playwright stack e2e (merge gate)
 make bench-bun-poc           # Vitest vs bun:test timings
 make up / make smoke         # Compose + health
 make rpc-sync-check          # CI gate for client drift

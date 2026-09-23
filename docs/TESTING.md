@@ -3,19 +3,22 @@
 
 ## Test framework and setup
 
-Octanest uses two test stacks:
+Octanest uses two test stacks for product code, plus a dual-run authoring path for JS/TS:
 
 | Layer | Framework | Config |
 |-------|-----------|--------|
 | Rust (`crates/*`) | [cargo-nextest](https://nexte.st/) (falls back to `cargo test`) | `.config/nextest.toml` |
-| JS / TS (`apps/web`, `packages/api-client`) | Vitest `^5` (merge gate) | `apps/web/vitest.config.ts`, `packages/api-client/vitest.config.ts` |
-| Experimental PoC | `bun:test` + `Bun.WebView` | [bun-test-webview-poc.md](./bun-test-webview-poc.md) — `make test-bun-unit` / `test-bun-integration` / `test-bun-poc-browser` |
+| JS / TS — **author here** | **`bun:test`** + **`Bun.WebView`** (Chrome) | [bun-test-webview-poc.md](./bun-test-webview-poc.md); `make test-bun-unit` / `test-bun-integration` / `test-bun-poc-browser` |
+| JS / TS — **CI merge gate** | Vitest `^5` (+ Playwright for stack-browser) | `apps/web/vitest.config.ts`, `packages/api-client/vitest.config.ts` |
+
+**Authoring rule (agents + contributors):** new web / api-client tests must dual-run under `bun:test` via `@octanest/web/test-runner` or `@octanest/api-client/test-runner`. New live-browser stack flows belong in `apps/web/bun-test/` (`Bun.WebView`), not as Playwright-only additions. Do not invent a third runner. Vitest + Playwright remain the merge gate until a documented cutover.
 
 **Prerequisites**
 
 - Rust toolchain + `cargo-nextest` recommended (`cargo install cargo-nextest --locked`). Without it, `make test` falls back to `cargo test --workspace`.
 - Bun `1.4.0` (workspace package manager) and `bun install`.
-- For `apps/web` browser projects: Playwright Chromium (`bunx playwright install --with-deps chromium`).
+- For `apps/web` Vitest browser projects (merge gate): Playwright Chromium (`bunx playwright install --with-deps chromium`).
+- For `Bun.WebView` browser dual-run: system Chrome/Chromium (`BUN_CHROME_PATH` optional).
 - For full stack e2e: Docker (Mailpit, OIDC mock, Resend/WorkOS HTTP stubs via `docker-compose.dev-auth.yml`).
 
 Root `bun run test` runs Turbo (`turbo run test`), which executes each package’s `test` script (`@octanest/web` and `@octanest/api-client`).
@@ -79,9 +82,9 @@ bun run test:unit
 bun run test:integration
 ```
 
-### Experimental bun:test + Bun.WebView PoC
+### bun:test dual-run (authoring standard)
 
-See [bun-test-webview-poc.md](./bun-test-webview-poc.md). Additive only — Vitest remains CI merge gate.
+See [bun-test-webview-poc.md](./bun-test-webview-poc.md). Prefer these for day-to-day verification of web/api-client changes. Vitest remains the CI merge gate.
 
 ```bash
 make test-bun-unit
@@ -119,21 +122,33 @@ cargo test -p octanest-db --test dialect_probe -- --nocapture
 
 ## Writing new tests
 
-### Web (`apps/web`)
+### Web (`apps/web`) — author for `bun:test`
 
-| Kind | Naming | Location |
-|------|--------|----------|
-| Unit | `*.unit.test.ts` | under `src/` |
-| Integration | `*.integration.test.ts(x)` | under `src/` |
-| Stack HTTP e2e | `*.stack.test.ts` | `e2e/stack/` |
-| Stack browser e2e | `*.stack.browser.test.ts(x)` | `e2e/stack-browser/` |
+| Kind | Naming | Location | Runner |
+|------|--------|----------|--------|
+| Unit | `*.unit.test.ts` | under `src/` | `make test-bun-unit` (dual-run) + Vitest `unit` |
+| Integration (lib / dual-runable) | `*.integration.test.ts` | `src/lib/` when possible | `make test-bun-integration` + Vitest `integration` |
+| Integration (`.tsrx` render) | `*.integration.test.ts` | `src/routes/`, `src/components/` | Vitest `integration` until Bun loads Octane `.tsrx` |
+| Stack HTTP e2e | `*.stack.test.ts` | `e2e/stack/` | `scripts/run-bun-e2e-stack.sh` + Vitest `e2e-stack` |
+| Stack browser e2e (**new flows**) | `*.stack.browser.test.ts` | **`apps/web/bun-test/browser/`** + helpers in `bun-test/lib/flows.ts` | `Bun.WebView` via `make test-bun-poc-browser` |
+| Stack browser e2e (legacy merge gate) | `*.stack.browser.test.ts(x)` | `e2e/stack-browser/` | Vitest + Playwright until cutover |
 
 Shared setup:
 
-- Integration: `src/test/setup-integration.ts`
+- bun unit: `apps/web/bun-test/preload-unit.ts`
+- bun lib integration: `apps/web/bun-test/preload-web.ts`
+- Vitest integration: `src/test/setup-integration.ts`
 - Stack: `e2e/stack/setup.ts`, `e2e/stack-browser/setup.ts`
 
-Import from `vitest` explicitly (`globals: false` in the web Vitest config).
+**Imports (required for dual-run):**
+
+```ts
+import { describe, expect, it } from "@octanest/web/test-runner";
+// Only when vi.mock hoisting needs the Vitest `vi` binding:
+import { vi } from "vitest";
+```
+
+Do **not** import `describe` / `it` / `expect` from `"vitest"` in new files. Do **not** add new Playwright `vitest/browser` command suites as the primary browser path — port or mirror flows into `bun-test/lib/flows.ts` and a process-per-file WebView test under `bun-test/browser/`.
 
 **Forge stack-browser matrix (D-QH-03)** — extend `apps/web/e2e/stack-browser/` only (do not revive removed `e2e/component`). Suites under `make test-e2e-stack`:
 
@@ -163,13 +178,13 @@ login / verify / profile also have happy-dom `*.integration.test.ts` export/rend
 1. Add the `.tsrx` under `apps/web/src/routes/`.
 2. Append a row to `routeCoverageManifest` with at least one of:
    - `{ kind: "happy-dom", test: "apps/web/src/routes/….integration.test.ts" }` (file must exist and should **mount** the page — not raw-source-only)
-   - `{ kind: "stack-browser", test: "apps/web/e2e/stack-browser/….stack.browser.test.tsx" }`
+   - `{ kind: "stack-browser", test: "apps/web/e2e/stack-browser/….stack.browser.test.tsx" }` (merge-gate Playwright) **and/or** document the matching `apps/web/bun-test/browser/….stack.browser.test.ts` WebView dual-run
    - `{ kind: "skip", rationale: "…" }` (temporary; prefer real coverage)
 3. Run `make route-coverage-check` before pushing.
 
 ### API client
 
-Add `*.test.ts` beside the module under `packages/api-client/src/` (Vitest picks them up with the package default config).
+Add `*.test.ts` beside the module under `packages/api-client/src/`. Import from `@octanest/api-client/test-runner`. Dual-run with `bun run --filter @octanest/api-client test:bun` (and Vitest `test` for the merge gate).
 
 ### Rust
 
