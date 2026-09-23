@@ -12,6 +12,8 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:e2e:stack": "vitest run --project e2e-stack && vitest run --project e2e-stack-browser",
+    "test:bun-poc": "bun test --cwd bun-test ./unit",
+    "test:bun-poc:browser": "bash ../../scripts/run-bun-webview-poc.sh",
     "test:coverage": "vitest run --coverage --project unit --project integration",
     "test:coverage:unit": "vitest run --coverage --project unit --coverage.reportsDirectory=coverage/unit",
     "test:coverage:integration": "vitest run --coverage --project integration --coverage.reportsDirectory=coverage/integration",

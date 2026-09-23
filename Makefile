@@ -11,6 +11,7 @@
 .PHONY: cloud-plan cloud-docs cloud-production-autodeploy-check
 .PHONY: up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite
 .PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack
+.PHONY: test-bun-poc test-bun-poc-browser bench-bun-poc
 .PHONY: db-migrate db-switch-dialect db-matrix
 .PHONY: coverage-web coverage-rust coverage-weighted coverage-contract
 .PHONY: route-coverage-check
@@ -33,6 +34,7 @@ help:
 	@echo "  make up-dev-auth    - Mailpit + OIDC mock + Resend/WorkOS stubs (docs/dev-auth.md)"
 	@echo "  make up-with-dev-auth - make up + attach API to stubs (SMTP→Mailpit)"
 	@echo "  make test-e2e-stack - full Vitest e2e vs API + Mailpit/OIDC/stubs"
+	@echo "  make test-bun-poc / test-bun-poc-browser / bench-bun-poc - issue #37 bun:test PoC"
 	@echo "  make down           - docker compose down"
 	@echo "  make down-mysql     - docker compose down (mysql overlay)"
 	@echo "  make down-sqlite    - docker compose down (sqlite overlay)"
@@ -65,10 +67,7 @@ help:
 	@echo "  make db-switch-dialect - migrate an EMPTY target DB to a new dialect"
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
 	@echo ""
-	@echo "Sample DATABASE_URLs:"
-	@echo "  postgres://octanest:octanest@localhost:5432/octanest"
-	@echo "  mysql://octanest:octanest@127.0.0.1:3306/octanest"
-	@echo "  sqlite:./var/octanest.db"
+	@echo "Sample DATABASE_URLs: postgres://… mysql://… sqlite:./var/octanest.db (see docs/CONFIGURATION.md)"
 
 dev:
 	@echo "Starting API + web (rpc-gen once)..."
@@ -150,6 +149,16 @@ down-with-dev-auth:
 
 test-e2e-stack:
 	./scripts/dev-auth/run-stack-e2e.sh
+
+# Issue #37 — bun:test + Bun.WebView PoC (additive; Vitest remains the merge gate).
+test-bun-poc:
+	./scripts/run-bun-test-poc-unit.sh
+
+test-bun-poc-browser:
+	./scripts/dev-auth/run-bun-webview-poc-stack.sh
+
+bench-bun-poc:
+	./scripts/bench-bun-test-poc.sh
 
 logs:
 	$(COMPOSE) -f $(COMPOSE_FILE) logs -f

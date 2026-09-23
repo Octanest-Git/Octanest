@@ -7,6 +7,7 @@ Local and agent scratch space. **Do not commit contents** — everything under t
 - Screenshots, HAR dumps, and Playwright traces
 - One-off scripts, patches, and export dumps
 - Debug logs and intermediate build artifacts
+- Bun.WebView PoC scratch (`tmp/bun-test-poc/`) — prefer `var/bun-test-poc/` for CI-uploadable bench JSON
 - Any file that should not land in the repo root or source trees
 
 ## Do not use for

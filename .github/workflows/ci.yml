@@ -156,6 +156,48 @@ jobs:
           path: var/e2e/
           if-no-files-found: ignore
 
+  # Issue #37 — bun:test + Bun.WebView PoC (informational; Vitest remains merge gate).
+  bun-test-poc:
+    name: bun-test-poc
+    needs: [makefile-lint]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - name: bun install
+        run: bun install --frozen-lockfile
+      - name: bun:test unit PoC
+        run: make test-bun-poc
+      - name: bench unit Vitest vs bun:test
+        run: make bench-bun-poc
+      - name: install Chromium for WebView
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium || sudo apt-get install -y -qq chromium-browser
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: install protoc
+        run: sudo apt-get install -y -qq protobuf-compiler
+      - name: bun.webview browser PoC (stack)
+        run: |
+          for p in /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/google-chrome-stable; do
+            if [[ -x "$p" ]]; then export BUN_CHROME_PATH="$p"; break; fi
+          done
+          echo "BUN_CHROME_PATH=${BUN_CHROME_PATH:-auto}"
+          make test-bun-poc-browser
+      - name: upload bun-test-poc artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bun-test-poc-logs
+          path: |
+            var/bun-test-poc/
+            var/e2e/
+          if-no-files-found: ignore
+
   rpc-sync:
     name: rpc-sync
     needs: [makefile-lint]

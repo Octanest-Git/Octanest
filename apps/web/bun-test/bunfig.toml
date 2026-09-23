@@ -1,0 +1,9 @@
+# PoC bun:test config for apps/web (issue #37).
+# Run via: bun test --cwd apps/web/bun-test  or Make targets test-bun-poc / bench-bun-poc.
+# Do not write Chrome profiles or screenshots under this tree — use var/bun-test-poc/.
+
+[test]
+# Unit tests only by default; browser files are opt-in via scripts/run-bun-webview-poc.sh
+# (process-per-file) so Chrome is not shared across files.
+root = "."
+preload = ["./preload.ts"]

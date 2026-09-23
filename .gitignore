@@ -14,6 +14,21 @@ test-results/
 playwright-report/
 .playwright-mcp/
 .vitest/
+
+# Competing JS package managers at repo root — Bun is the monorepo PM (issue #37)
+/yarn.lock
+/package-lock.json
+/pnpm-lock.yaml
+.yarn/
+.pnp.*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+npm-debug.log*
+
+# Bun.WebView / Chrome scratch if a path escapes var/
+**/.bun-webview/
+**/chrome-user-data/
 .env.sqlite
 dev-dist/
 
