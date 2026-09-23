@@ -1,30 +1,12 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { octane } from "@octanejs/vite-plugin";
-import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import {
   fixTypeOnlyImports,
   RECHARTS_TYPE_ONLY_IMPORT_FIX,
 } from "./vite-plugins/fix-type-only-imports.ts";
-import {
-  ensureAuthSettings,
-  expectAdminLfsQuotasFlow,
-  expectAuthMeDedupedOnHome,
-  expectChromeCreateAndAccountMenusFlow,
-  expectForgeIssuesCrudFlow,
-  expectForgeReleasesCrudFlow,
-  expectForgeRepoPackagesFlow,
-  expectForgeSshAndOrgMembersFlow,
-  expectMirrorAuthToggleFlow,
-  expectNewRepoTemplatePickerFlow,
-  expectSettingsProfileAvatarFlow,
-  expectStatusHealthy,
-  expectWorkosCta,
-  loginThroughOidc,
-  restoreLocalAuthCommand,
-  signupThroughUi,
-} from "./e2e/stack-browser/commands.ts";
+// Browser commands moved to Bun.WebView — see apps/web/bun-test/lib/flows.ts
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const stackEnabled = process.env.E2E_STACK === "1";
@@ -135,41 +117,7 @@ export default defineConfig({
                 testTimeout: 60_000,
               },
             },
-            {
-              extends: true as const,
-              define: stackEnvDefine,
-              test: {
-                name: "e2e-stack-browser",
-                include: ["e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}"],
-                setupFiles: ["./e2e/stack-browser/setup.ts"],
-                fileParallelism: false,
-                testTimeout: 60_000,
-                browser: {
-                  enabled: true,
-                  provider: playwright(),
-                  headless: true,
-                  instances: [{ browser: "chromium" as const }],
-                  commands: {
-                    ensureAuthSettings,
-                    restoreLocalAuthCommand,
-                    signupThroughUi,
-                    expectWorkosCta,
-                    loginThroughOidc,
-                    expectStatusHealthy,
-                    expectAuthMeDedupedOnHome,
-                    expectForgeRepoPackagesFlow,
-                    expectForgeIssuesCrudFlow,
-                    expectForgeReleasesCrudFlow,
-                    expectForgeSshAndOrgMembersFlow,
-                    expectAdminLfsQuotasFlow,
-                    expectChromeCreateAndAccountMenusFlow,
-                    expectNewRepoTemplatePickerFlow,
-                    expectSettingsProfileAvatarFlow,
-                    expectMirrorAuthToggleFlow,
-                  },
-                },
-              },
-            },
+            // Browser e2e moved to Bun.WebView — see apps/web/bun-test/browser/
           ]
         : []),
     ],

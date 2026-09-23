@@ -24,11 +24,15 @@ export type RouteCoverageEntry = {
   coverage: RouteCoverageEvidence[];
 };
 
-const AUTH_UI = "apps/web/e2e/stack-browser/auth-ui.stack.browser.test.tsx";
-const FORGE_REPO = "apps/web/e2e/stack-browser/forge-repo.stack.browser.test.tsx";
-const FORGE_ISSUES = "apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx";
-const FORGE_SSH_ORGS = "apps/web/e2e/stack-browser/forge-packages-ssh-orgs.stack.browser.test.tsx";
-const FORGE_ADMIN = "apps/web/e2e/stack-browser/forge-admin.stack.browser.test.tsx";
+const AUTH_UI = "apps/web/bun-test/browser/sso.stack.browser.test.ts";
+const FORGE_REPO = "apps/web/bun-test/browser/forge-repo-packages.stack.browser.test.ts";
+const FORGE_ISSUES = "apps/web/bun-test/browser/forge-issues.stack.browser.test.ts";
+const FORGE_RELEASES = "apps/web/bun-test/browser/forge-releases.stack.browser.test.ts";
+const FORGE_SSH_ORGS = "apps/web/bun-test/browser/forge-packages-ssh-orgs.stack.browser.test.ts";
+const FORGE_ADMIN = "apps/web/bun-test/browser/forge-admin.stack.browser.test.ts";
+const SETTINGS_PROFILE = "apps/web/bun-test/browser/settings-profile-avatar.stack.browser.test.ts";
+const NEW_REPO_TEMPLATE = "apps/web/bun-test/browser/new-repo-template.stack.browser.test.ts";
+const MIRROR_AUTH = "apps/web/bun-test/browser/mirror-auth.stack.browser.test.ts";
 
 export const routeCoverageManifest: RouteCoverageEntry[] = [
   // --- shells / Outlet-only layouts (excluded from required set) ---
@@ -117,6 +121,7 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
         kind: "happy-dom",
         test: "apps/web/src/routes/settings/profile.integration.test.ts",
       },
+      { kind: "stack-browser", test: SETTINGS_PROFILE },
     ],
   },
   {
@@ -184,7 +189,7 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       { kind: "happy-dom", test: "apps/web/src/routes/new.integration.test.ts" },
       {
         kind: "stack-browser",
-        test: "apps/web/e2e/stack-browser/new-repo-template.stack.browser.test.tsx",
+        test: NEW_REPO_TEMPLATE,
       },
     ],
   },
@@ -403,7 +408,7 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
       },
       {
         kind: "stack-browser",
-        test: "apps/web/e2e/stack-browser/forge-mirror.stack.browser.test.tsx",
+        test: MIRROR_AUTH,
       },
     ],
   },
@@ -545,16 +550,16 @@ export const routeCoverageManifest: RouteCoverageEntry[] = [
         kind: "happy-dom",
         test: "apps/web/src/routes/$owner.$repo.releases.integration.test.ts",
       },
-      { kind: "stack-browser", test: FORGE_ISSUES },
+      { kind: "stack-browser", test: FORGE_RELEASES },
     ],
   },
   {
     route: "$owner.$repo.releases.new.tsrx",
-    coverage: [{ kind: "stack-browser", test: FORGE_ISSUES }],
+    coverage: [{ kind: "stack-browser", test: FORGE_RELEASES }],
   },
   {
     route: "$owner.$repo.releases.$tag.tsrx",
-    coverage: [{ kind: "stack-browser", test: FORGE_ISSUES }],
+    coverage: [{ kind: "stack-browser", test: FORGE_RELEASES }],
   },
 
   // --- owner / org ---

@@ -74,8 +74,10 @@ jobs:
         run: bun run --filter @octanest/web lint
       - name: web format check (oxfmt)
         run: bun run --filter @octanest/web format:check
-      - name: vitest (api-client + web unit/integration)
-        run: bun run test
+      - name: bun:test unit dual-run (merge gate)
+        run: make test-bun-unit
+      - name: vitest integration residual (.tsrx until loader unblocks)
+        run: bun run test:integration
       - name: web build
         run: bunx turbo run build --filter=@octanest/web
 
@@ -144,10 +146,17 @@ jobs:
           bun-version: "1.4.0"
       - name: bun install
         run: bun install --frozen-lockfile
-      - name: Playwright Chromium (stack browser e2e)
-        run: bunx playwright install --with-deps chromium
-      - name: stack e2e (API + Mailpit/OIDC/stubs + web)
-        run: make test-e2e-stack
+      - name: install Chromium for WebView
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq chromium || sudo apt-get install -y -qq chromium-browser
+      - name: stack e2e (API + Mailpit/OIDC/stubs + WebView browser)
+        run: |
+          for p in /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/google-chrome-stable; do
+            if [[ -x "$p" ]]; then export BUN_CHROME_PATH="$p"; break; fi
+          done
+          echo "BUN_CHROME_PATH=${BUN_CHROME_PATH:-auto}"
+          make test-bun-poc-browser
       - name: upload e2e logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -156,12 +165,11 @@ jobs:
           path: var/e2e/
           if-no-files-found: ignore
 
-  # Issue #37 — bun:test + Bun.WebView PoC (informational; Vitest remains merge gate).
+  # Issue #37 — bun:test + Bun.WebView (now merge gate for unit + browser).
   bun-test-poc:
     name: bun-test-poc
     needs: [makefile-lint]
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2

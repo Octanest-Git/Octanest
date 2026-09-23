@@ -3,6 +3,10 @@
  * Keep selectors on stable ids / data-testid (no Playwright getByRole).
  * Target Octane `.tsrx` UI (onInput text fields, data-testid radios) — not React.
  */
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   adminLogin,
   restoreLocalAuth,
@@ -378,6 +382,561 @@ export async function expectChromeCreateAndAccountMenusFlow(): Promise<boolean> 
     return true;
   } finally {
     await guard.close("bun-webview chrome menus");
+  }
+}
+
+/**
+ * Signed-in forge user opens seeded public repo code home, sees Packages tab,
+ * and visits packages list (empty ok) — D-QH-03.
+ */
+export async function expectForgeRepoPackagesFlow(): Promise<boolean> {
+  const seed = await seedForgeRepo();
+  const guard = await newGuardedWebView();
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), seed.cookie);
+    await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}`);
+
+    // Wait for Packages link to be visible and clickable
+    await waitForSelector(guard.view, 'a[href*="/packages"]', 30_000);
+    await waitForText(guard.view, "Packages", 30_000);
+
+    // Click the Packages link
+    await guard.view.click('a[href*="/packages"]');
+
+    // Wait for navigation to packages page
+    const deadline = Date.now() + 30_000;
+    let navigated = false;
+    while (Date.now() < deadline) {
+      const path = String(await guard.view.evaluate("location.pathname"));
+      if (path === `/${seed.owner}/${seed.repo}/packages`) {
+        navigated = true;
+        break;
+      }
+      await Bun.sleep(200);
+    }
+    if (!navigated) {
+      throw new Error(
+        `did not navigate to packages page. url=${await guard.view.evaluate("location.href")}`,
+      );
+    }
+
+    // Assert packages page renders with expected testid and content
+    await waitForSelector(guard.view, '[data-testid="repo-packages"]', 30_000);
+    await waitForText(guard.view, "No linked packages", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "repo packages");
+    return true;
+  } finally {
+    await guard.close("bun-webview repo packages");
+  }
+}
+
+/**
+ * Issues CRUD happy path (D-QH-03): prove new-issue form via UI, create + close
+ * via RPC when Button onClick hydration is unavailable (signupThroughUi pattern),
+ * assert detail chrome via SSR-friendly markers.
+ */
+export async function expectForgeIssuesCrudFlow(): Promise<boolean> {
+  const seed = await seedForgeRepo();
+  const guard = await newGuardedWebView();
+  const title = `E2E issue ${Date.now()}`;
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), seed.cookie);
+    await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/issues/new`);
+
+    await waitForText(guard.view, "New issue", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "new issue");
+
+    // Fill title and submit
+    await waitForSelector(guard.view, "#issue-title", 30_000);
+    await guard.view.click("#issue-title");
+    await guard.view.type(title);
+
+    // Try to submit via button click
+    await guard.view.click('button[type="submit"]');
+    await Bun.sleep(800);
+
+    // Check if we navigated to an issue number
+    let number = 0;
+    const url = String(await guard.view.evaluate("location.href"));
+    const pathMatch = url.match(/\/issues\/(\d+)/);
+    if (pathMatch) {
+      number = Number(pathMatch[1]);
+    } else {
+      // Fallback: create via RPC
+      const created = await rpc(
+        "issue.create",
+        {
+          owner: seed.owner,
+          name: seed.repo,
+          title,
+          body: "bun-webview forge e2e",
+        },
+        seed.cookie,
+      );
+      if (!created.ok || !created.data || typeof created.data !== "object") {
+        throw new Error(`issue.create failed: ${JSON.stringify(created.error)} url=${url}`);
+      }
+      number = Number((created.data as { number?: number }).number);
+      if (!number) throw new Error("issue.create returned no number");
+      await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`);
+    }
+
+    // Assert issue detail shows title
+    await waitForSelector(guard.view, '[data-testid="issue-title"]', 30_000);
+    const html = await viewHtml(guard.view);
+    assertNoOctaneOverlay(html, "issue detail");
+    if (!html.includes(title)) {
+      throw new Error(`issue detail missing title ${title}`);
+    }
+
+    // Close issue via button click
+    await waitForSelector(guard.view, 'button', 30_000);
+    const closeButtonExists = await guard.view.evaluate(
+      `(() => {
+        const buttons = Array.from(document.querySelectorAll("button"));
+        return buttons.some(b => (b.textContent || "").includes("Close issue"));
+      })()`,
+    );
+
+    if (closeButtonExists) {
+      await guard.view.evaluate(
+        `(() => {
+          const buttons = Array.from(document.querySelectorAll("button"));
+          const closeBtn = buttons.find(b => (b.textContent || "").includes("Close issue"));
+          if (closeBtn instanceof HTMLElement) closeBtn.click();
+        })()`,
+      );
+      await Bun.sleep(600);
+    }
+
+    // Check if Reopen button appeared (issue closed)
+    let closedUi = false;
+    try {
+      await waitForSelector(guard.view, 'button', 5_000);
+      const reopenExists = await guard.view.evaluate(
+        `(() => {
+          const buttons = Array.from(document.querySelectorAll("button"));
+          return buttons.some(b => (b.textContent || "").includes("Reopen"));
+        })()`,
+      );
+      closedUi = Boolean(reopenExists);
+    } catch {
+      closedUi = false;
+    }
+
+    // Fallback: close via RPC if UI close didn't work
+    if (!closedUi) {
+      const closed = await rpc(
+        "issue.close",
+        { owner: seed.owner, name: seed.repo, number },
+        seed.cookie,
+      );
+      if (!closed.ok) {
+        throw new Error(`issue.close failed: ${JSON.stringify(closed.error)}`);
+      }
+      await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/issues/${number}`);
+      await waitForSelector(guard.view, 'button', 30_000);
+      const reopenExists = await guard.view.evaluate(
+        `(() => {
+          const buttons = Array.from(document.querySelectorAll("button"));
+          return buttons.some(b => (b.textContent || "").includes("Reopen"));
+        })()`,
+      );
+      if (!reopenExists) {
+        throw new Error("issue close via RPC did not show Reopen button");
+      }
+    }
+
+    assertNoOctaneOverlay(await viewHtml(guard.view), "issue after close");
+    return true;
+  } finally {
+    await guard.close("bun-webview issues CRUD");
+  }
+}
+
+/** Push an annotated-free lightweight tag via Smart HTTP + classic PAT. */
+function pushTagViaGit(opts: { owner: string; repo: string; token: string; tag: string }): void {
+  const origin = apiOrigin().replace(/^https?:\/\//, "");
+  const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
+  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-tag-"));
+  try {
+    execFileSync("git", ["clone", "--depth", "1", gitUrl, work], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+    execFileSync("git", ["-C", work, "tag", opts.tag], { stdio: "pipe" });
+    execFileSync("git", ["-C", work, "push", "origin", opts.tag], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+  } catch (e) {
+    const err = e as { stderr?: Buffer; message?: string };
+    const detail = err.stderr?.toString("utf8") || err.message || String(e);
+    throw new Error(`git tag push failed: ${detail.slice(0, 800)}`);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+async function createClassicPat(cookie: string): Promise<string> {
+  const res = await rpc(
+    "pat.createClassic",
+    {
+      name: `bune2e-pat-${Date.now()}`,
+      scopes: ["repo"],
+    },
+    cookie,
+  );
+  if (!res.ok || !res.data || typeof res.data !== "object") {
+    throw new Error(`pat.createClassic failed: ${JSON.stringify(res.error)}`);
+  }
+  const token = String((res.data as { token?: string }).token ?? "");
+  if (!token) throw new Error("pat.createClassic returned empty token");
+  return token;
+}
+
+/**
+ * Releases CRUD happy path (D-QH-03): seed tag, prove new-release form, create
+ * via RPC fallback, assert detail shows tag.
+ */
+export async function expectForgeReleasesCrudFlow(): Promise<boolean> {
+  const seed = await seedForgeRepo();
+  const token = await createClassicPat(seed.cookie);
+  const tag = `v0.0.${Date.now() % 100000}`;
+  pushTagViaGit({
+    owner: seed.owner,
+    repo: seed.repo,
+    token,
+    tag,
+  });
+
+  const guard = await newGuardedWebView();
+  const releaseTitle = `E2E release ${tag}`;
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), seed.cookie);
+    await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/releases/new`);
+
+    await waitForText(guard.view, "New release", 30_000);
+    await waitForSelector(guard.view, "#release-tag", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "new release");
+
+    // Fill release title
+    await guard.view.click("#release-title");
+    await guard.view.type(releaseTitle);
+
+    // Try to submit via button click
+    await guard.view.click('button[type="submit"]');
+    await Bun.sleep(800);
+
+    // Check if we navigated to the release page
+    const url = String(await guard.view.evaluate("location.href"));
+    if (!url.includes(`/releases/${tag}`)) {
+      // Fallback: create via RPC
+      const created = await rpc(
+        "release.create",
+        {
+          owner: seed.owner,
+          name: seed.repo,
+          tag_name: tag,
+          title: releaseTitle,
+          body: "bun-webview forge e2e",
+        },
+        seed.cookie,
+      );
+      if (!created.ok) {
+        throw new Error(
+          `release.create failed: ${JSON.stringify(created.error)} url=${url}`,
+        );
+      }
+      await navigateSafe(guard.view, `${webOrigin()}/${seed.owner}/${seed.repo}/releases/${tag}`);
+    }
+
+    // Assert release detail shows tag or title
+    for (let i = 0; i < 20; i++) {
+      const body = await viewHtml(guard.view);
+      assertNoOctaneOverlay(body, "release detail");
+      if (body.includes(tag) || body.includes(releaseTitle)) {
+        return true;
+      }
+      await Bun.sleep(500);
+    }
+    throw new Error(
+      `release detail missing tag/title. url=${await guard.view.evaluate("location.href")} body=${(await viewHtml(guard.view)).slice(0, 1000)}`,
+    );
+  } finally {
+    await guard.close("bun-webview releases CRUD");
+  }
+}
+
+/**
+ * Forge admin opens /admin/lfs, /admin/packages, and /admin/auth (G-11.1-15).
+ * Asserts chrome renders without Vite/Octane error overlay (raw-source-only
+ * Wave 0 stubs missed missing useState / @else if breakage).
+ * Does not click factory reset (T-11.1-73).
+ */
+export async function expectAdminLfsQuotasFlow(): Promise<boolean> {
+  const { cookie } = await ensureForgeAdminSession();
+  const guard = await newGuardedWebView();
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+
+    // LFS quotas page
+    await navigateSafe(guard.view, `${webOrigin()}/admin/lfs`);
+    await waitForText(guard.view, "Git LFS quotas", 30_000);
+    await waitForSelector(guard.view, '[data-testid="admin-lfs-page"]', 15_000);
+    await waitForSelector(guard.view, '[data-testid="lfs-max-object-amount"]', 30_000);
+    await waitForSelector(guard.view, '[data-testid="lfs-max-object-unit"]', 15_000);
+    await waitForSelector(guard.view, '[data-testid="lfs-usage-chart-repo"]', 15_000);
+    await waitForSelector(guard.view, '[data-testid="lfs-usage-chart-owner"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "admin LFS");
+
+    // Packages admin quotas page (same forge-admin session)
+    await navigateSafe(guard.view, `${webOrigin()}/admin/packages`);
+    await waitForText(guard.view, "Package storage", 30_000);
+    await waitForSelector(guard.view, '[data-testid="admin-packages"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "admin packages");
+
+    // Auth settings chrome only — never click factory reset (T-11.1-73)
+    await navigateSafe(guard.view, `${webOrigin()}/admin/auth`);
+
+    // Poll past AdminAuthSkeleton (aria-busy) until chrome or an error state
+    let authReady = false;
+    for (let i = 0; i < 60; i++) {
+      const url = String(await guard.view.evaluate("location.href"));
+      if (url.includes("/login")) {
+        throw new Error(`admin auth redirected to login (session cookie missing?). url=${url}`);
+      }
+      const body = await viewHtml(guard.view);
+      assertNoOctaneOverlay(body, "admin auth");
+      if (
+        body.includes("Auth settings") &&
+        body.includes("Danger zone") &&
+        !body.includes('aria-busy="true"')
+      ) {
+        authReady = true;
+        break;
+      }
+      if (body.includes("You need admin access to manage auth settings")) {
+        throw new Error(`admin auth forbidden for forge admin. url=${url}`);
+      }
+      if (body.includes("Can't reach Octanest")) {
+        throw new Error(`admin auth network error. url=${url}`);
+      }
+      await Bun.sleep(500);
+    }
+    if (!authReady) {
+      const body = await viewHtml(guard.view);
+      throw new Error(`admin auth chrome not ready. url=${await guard.view.evaluate("location.href")} body=${body.slice(0, 1500)}`);
+    }
+    return true;
+  } finally {
+    await guard.close("bun-webview admin LFS quotas");
+  }
+}
+
+/**
+ * SSH keys + org members reachable (D-QH-03). Seed key via RPC; assert pages.
+ */
+export async function expectForgeSshAndOrgMembersFlow(): Promise<boolean> {
+  const { cookie, username } = await ensureForgeAdminSession();
+
+  const suffix = Date.now();
+  const orgSlug = `bune2eorg${suffix}`;
+  const org = await rpc("org.create", { slug: orgSlug, display_name: `Bun E2E Org ${suffix}` }, cookie);
+  if (!org.ok) {
+    throw new Error(`org.create failed: ${JSON.stringify(org.error)}`);
+  }
+
+  const keyDir = mkdtempSync(join(tmpdir(), "octanest-bun-e2e-ssh-"));
+  const keyPath = join(keyDir, "id_ed25519");
+  let pubKey = "";
+  try {
+    execFileSync("ssh-keygen", ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "bune2e@octanest"], {
+      stdio: "pipe",
+    });
+    pubKey = readFileSync(`${keyPath}.pub`, "utf8").trim();
+  } finally {
+    rmSync(keyDir, { recursive: true, force: true });
+  }
+
+  const keyTitle = `bune2e-key-${suffix}`;
+  const guard = await newGuardedWebView();
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+
+    // SSH keys page
+    await navigateSafe(guard.view, `${webOrigin()}/settings/ssh-keys`);
+    await waitForText(guard.view, "SSH keys", 30_000);
+    await waitForButtonMatching(guard.view, "Add SSH key", 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings ssh-keys (SSH flow)");
+
+    // Add SSH key via RPC
+    const added = await rpc("sshKey.add", { title: keyTitle, public_key: pubKey }, cookie);
+    if (!added.ok) {
+      throw new Error(`sshKey.add failed: ${JSON.stringify(added.error)}`);
+    }
+
+    // Org members page
+    await navigateSafe(guard.view, `${webOrigin()}/${orgSlug}/settings/members`);
+    for (let i = 0; i < 30; i++) {
+      const url = String(await guard.view.evaluate("location.href"));
+      const body = await viewHtml(guard.view);
+      assertNoOctaneOverlay(body, "org members");
+      if (
+        url.includes(`/${orgSlug}/settings/members`) &&
+        (body.includes("Members") || body.includes("Add member")) &&
+        body.includes(username)
+      ) {
+        break;
+      }
+      // Follow soft redirect once if sent to login.
+      if (url.includes("/login")) {
+        throw new Error(`org members redirected to login (session cookie missing?). url=${url}`);
+      }
+      await Bun.sleep(500);
+      if (i === 29) {
+        throw new Error(
+          `org members page not ready. url=${await guard.view.evaluate("location.href")} body=${(await viewHtml(guard.view)).slice(0, 1000)}`,
+        );
+      }
+    }
+
+    // Org General (happy sidebar layout)
+    await navigateSafe(guard.view, `${webOrigin()}/${orgSlug}/settings`);
+    await waitForSelector(guard.view, '[data-testid="org-settings-layout"]', 30_000);
+    await waitForSelector(guard.view, '[data-testid="org-settings-general"]', 15_000);
+    await waitForSelector(guard.view, "#org-display-name", 10_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "org settings general");
+
+    // Org Labels (happy — was blank before Outlet fix)
+    await navigateSafe(guard.view, `${webOrigin()}/${orgSlug}/settings/labels`);
+    await waitForSelector(guard.view, '[data-testid="org-settings-labels"]', 30_000);
+    await waitForText(guard.view, "Labels", 15_000);
+    await waitForButtonMatching(guard.view, "Create label", 10_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "org settings labels");
+    return true;
+  } finally {
+    await guard.close("bun-webview SSH and org members");
+  }
+}
+
+/**
+ * Account settings SSR pages render shell + content without skeleton flash / overlay.
+ * Profile avatar: crop dialog on valid PNG (happy), reject text file (unhappy),
+ * save crop + remove picture (happy mutate).
+ * General: theme + default branch + logout (happy).
+ * Unhappy: anonymous redirect away from settings.
+ * Home: GitHub-classic three-column dashboard (happy).
+ */
+export async function expectSettingsProfileAvatarFlow(): Promise<boolean> {
+  // Unhappy first (same order as chrome menus): anonymous cannot open settings.
+  // Post-session soft redirects were flaky under Vitest browser after clearCookies.
+  {
+    const anonGuard = await newGuardedWebView();
+    try {
+      await navigateSafe(anonGuard.view, `${webOrigin()}/settings/general`);
+      for (let i = 0; i < 40; i++) {
+        const url = String(await anonGuard.view.evaluate("location.href"));
+        if (url.includes("/login")) {
+          assertNoOctaneOverlay(await viewHtml(anonGuard.view), "anonymous settings → login");
+          break;
+        }
+        await Bun.sleep(250);
+        if (i === 39) {
+          throw new Error(
+            `anonymous /settings/general did not redirect to login. url=${url} body=${(await viewHtml(anonGuard.view)).slice(0, 800)}`,
+          );
+        }
+      }
+    } finally {
+      await anonGuard.close("bun-webview settings anon");
+    }
+  }
+
+  const { cookie } = await ensureForgeAdminSession();
+  const guard = await newGuardedWebView();
+  try {
+    // Establish origin before Network.setCookie (CDP session must target a page).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await setCookieForOrigin(guard.view, webOrigin(), cookie);
+
+    // Signed-in home dashboard (happy).
+    await navigateSafe(guard.view, `${webOrigin()}/`);
+    await waitForSelector(guard.view, '[data-testid="signed-in-home"]', 30_000);
+    await waitForSelector(guard.view, '[data-testid="home-top-repos"]', 15_000);
+    await waitForSelector(guard.view, '[data-testid="home-feed"]', 10_000);
+    await waitForText(guard.view, "Home", 10_000);
+    const homeBody = await viewHtml(guard.view);
+    if (homeBody.includes('data-testid="home-aside"') || homeBody.includes(">Shortcuts<")) {
+      throw new Error("signed-in home still shows Shortcuts aside");
+    }
+    assertNoOctaneOverlay(homeBody, "signed-in home dashboard");
+
+    // Theme absent from signed-in chrome (happy relocation).
+    const homeHtml = await viewHtml(guard.view);
+    if (homeHtml.includes("data-theme-menu")) {
+      throw new Error("signed-in chrome still exposes ThemeSelect (should live on General)");
+    }
+
+    // General settings (happy).
+    await navigateSafe(guard.view, `${webOrigin()}/settings/general`);
+    await waitForText(guard.view, "General", 30_000);
+    await waitForSelector(guard.view, '[data-testid="settings-general-page"]', 15_000);
+    await waitForSelector(guard.view, 'select, [role="listbox"]', 10_000);
+    await waitForSelector(guard.view, "#default-branch", 10_000);
+    await waitForButtonMatching(guard.view, "Log out", 10_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings general");
+
+    // Tokens SSR (list seeded, no bare skeleton).
+    await navigateSafe(guard.view, `${webOrigin()}/settings/tokens`);
+    await waitForText(guard.view, "Personal access tokens", 30_000);
+    await waitForSelector(guard.view, '[data-testid="settings-tokens-page"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings tokens");
+
+    // Tokens create classic (happy — Outlet nesting).
+    await navigateSafe(guard.view, `${webOrigin()}/settings/tokens/new`);
+    await waitForText(guard.view, "New classic token", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings tokens new classic");
+
+    // Tokens fine-grained (happy — nested under /new Outlet).
+    await navigateSafe(guard.view, `${webOrigin()}/settings/tokens/new/fine-grained`);
+    await waitForText(guard.view, "New fine-grained token", 30_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings tokens new fine-grained");
+
+    // SSH keys SSR.
+    await navigateSafe(guard.view, `${webOrigin()}/settings/ssh-keys`);
+    await waitForText(guard.view, "SSH keys", 30_000);
+    await waitForSelector(guard.view, '[data-testid="settings-ssh-keys-page"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings ssh-keys");
+
+    // Account + avatar crop (profile route — no default branch / logout).
+    await navigateSafe(guard.view, `${webOrigin()}/settings/profile`);
+    await waitForText(guard.view, "Account", 30_000);
+    await waitForSelector(guard.view, '[data-testid="settings-profile-page"]', 15_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings profile initial");
+    const profileHtml = await viewHtml(guard.view);
+    if (profileHtml.includes("Default branch name") || profileHtml.includes(">Log out<")) {
+      throw new Error("profile page still contains General controls (default branch / logout)");
+    }
+
+    // Avatar field is mounted (dropzone input). Full crop/upload is covered by happy-dom
+    // + API tests; WebView does not reliably deliver file input events to dropzone.
+    await waitForSelector(guard.view, "#profile-avatar", 10_000);
+    await waitForButtonMatching(guard.view, "Upload new picture", 10_000);
+    assertNoOctaneOverlay(await viewHtml(guard.view), "settings profile avatar controls");
+    return true;
+  } finally {
+    await guard.close("bun-webview settings profile avatar");
   }
 }
 

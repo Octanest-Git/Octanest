@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Interim E2E layer score for D-QH-02 (until stack-browser % coverage exists).
+# Interim E2E layer score for D-QH-02 (WebView stack-browser + protocol smokes).
 # Score = present checklist items / total. Expand when Phase 11.1-03 forge matrix lands.
 set -euo pipefail
 
@@ -10,8 +10,13 @@ score_only=0
 # Interim checklist (auth + protocol smokes + stack HTTP e2e presence).
 # Forge-matrix + admin quota/auth suites (11.1-04 / 11.1-07 / 11.1-08).
 ITEMS=(
-  "apps/web/e2e/stack-browser/auth-ui.stack.browser.test.tsx"
-  "apps/web/e2e/stack-browser/forge-admin.stack.browser.test.tsx"
+  "apps/web/bun-test/browser/sso.stack.browser.test.ts"
+  "apps/web/bun-test/browser/forge-admin.stack.browser.test.ts"
+  "apps/web/bun-test/browser/forge-issues.stack.browser.test.ts"
+  "apps/web/bun-test/browser/forge-releases.stack.browser.test.ts"
+  "apps/web/bun-test/browser/forge-packages-ssh-orgs.stack.browser.test.ts"
+  "apps/web/bun-test/browser/forge-repo-packages.stack.browser.test.ts"
+  "apps/web/bun-test/browser/settings-profile-avatar.stack.browser.test.ts"
   "apps/web/e2e/stack/smtp.stack.test.ts"
   "apps/web/e2e/stack/oidc.stack.test.ts"
   "scripts/smoke-git-https.sh"

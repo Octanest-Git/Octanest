@@ -163,11 +163,15 @@ octanest/
 | `make rpc-gen` / `make rpc-sync-check` | Regenerate / verify `@octanest/api-client` |
 | `make up` / `make down` / `make logs` | Default Compose stack |
 | `make up-mysql` / `up-sqlite` / `up-dev-auth` | Dialect and auth overlays |
-| `make test` | `cargo nextest` (or `cargo test`) + `bun run test` |
+| `make test` | `cargo nextest` (or `cargo test`) + `bun run test` (Vitest merge gate) |
+| `make test-bun-unit` / `test-bun-integration` | Preferred local JS dual-run (`bun:test`) |
+| `make test-bun-poc-browser` | Stack HTTP + `Bun.WebView` (preferred browser authoring path) |
 | `make web-lint` / `make web-format-check` | Web oxlint (type-aware) / oxfmt check |
-| `make test-e2e-stack` | `./scripts/dev-auth/run-stack-e2e.sh` |
+| `make test-e2e-stack` | Vitest + Playwright stack e2e (merge gate) |
 | `make smoke` / `smoke-mysql` / `smoke-sqlite` | Compose bring-up smoke |
 | `make db-migrate` / `db-switch-dialect` / `db-matrix` | Migrations and dialect probe |
+
+New JS/TS tests: author for `bun:test` (see [TESTING.md](./TESTING.md)). Vitest remains CI merge gate during dual-run.
 
 Turbo task graph: `turbo.json` (`build`, `dev`, `test`, `lint`).
 

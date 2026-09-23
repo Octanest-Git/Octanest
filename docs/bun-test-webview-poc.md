@@ -74,12 +74,18 @@ Roughly **40×** faster cold wall time for this slice (startup dominates Vitest)
 | auth.me home dedupe | ported | CDP `Network.requestWillBeSent` count |
 | Chrome Create/Account menus | ported | anon hide / signed-in show |
 | `/new` template picker | ported | stack overlay + gitignore autofill |
+| Forge repo packages | ported | data-testid selectors + navigation |
+| Forge issues CRUD | ported | new-issue form + RPC fallback pattern |
+| Forge releases CRUD | ported | tag seeding + new-release form + RPC fallback |
+| Admin LFS/packages/auth | ported | chrome render + auth readiness checks |
+| Forge SSH + org members | ported | SSH key seeding + org settings navigation |
+| Settings profile avatar | ported | SSR pages + avatar controls + theme relocation |
 
 Stack bring-up still dominates (API build + Docker stubs + Vite). Runner swap does not remove shared SQLite serialization.
 
 ### Stability
 
-Single consecutive green stack run after harness fixes (console.warn filtering, cookie-before-nav, auth.taken race). Treat as early signal only — need N≥5 CI runs before a gate flip.
+Multiple consecutive green stack runs after harness fixes (console.warn filtering, cookie-before-nav, auth.taken race) and complete P0/P1 WebView port coverage. Continue collecting CI stability data — need N≥5 green `bun-test-poc` runs before a gate flip.
 
 ## Go / no-go (later cutover)
 

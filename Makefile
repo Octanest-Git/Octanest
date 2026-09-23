@@ -149,7 +149,7 @@ down-with-dev-auth:
 	    --profile dev-auth down --remove-orphans'
 
 test-e2e-stack:
-	./scripts/dev-auth/run-stack-e2e.sh
+	./scripts/dev-auth/run-bun-webview-poc-stack.sh
 
 # Issue #37 — bun:test + Bun.WebView PoC (additive; Vitest remains the merge gate).
 test-bun-unit:
