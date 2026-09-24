@@ -110,7 +110,7 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   }
 
   <div className="mb-8">
-    <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div data-testid="repo-header-row" className="mb-4 flex flex-wrap items-center gap-3">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold tracking-tight leading-[1.2] text-foreground">
         <a href={"/" + owner} className="text-primary no-underline hover:underline">
           {owner as string}

@@ -1430,7 +1430,9 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "repo packages visual");
     await assertVisualBaseline(page, "packages-repo-empty", {
       mask: [
-        // Repo name embeds a timestamp; relative-time text is volatile.
+        // Repo name embeds a timestamp — its width shifts the visibility
+        // badge, so mask the whole header row; relative-time is volatile.
+        page.getByTestId("repo-header-row"),
         page.locator(`text=${seed.repo}`),
         ...relativeTimeMasks(page),
       ],
@@ -1465,7 +1467,9 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
     assertNoOctaneOverlay(await page.content(), "repo packages list visual");
     await assertVisualBaseline(page, "packages-repo-list", {
       mask: [
-        // Repo + package names embed timestamps; mask so baselines stay stable.
+        // Repo + package names embed timestamps; the repo-name width shifts
+        // the header badge, so mask the whole row; package rows stay masked.
+        page.getByTestId("repo-header-row"),
         page.locator(`text=${seed.repo}`),
         page.locator(`text=${pkgName}`),
         ...relativeTimeMasks(page),
