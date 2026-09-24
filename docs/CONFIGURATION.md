@@ -65,6 +65,7 @@ Related docs: [database.md](database.md), [dev-auth.md](dev-auth.md).
 | `OCTANEST_SSH_PORT` | Optional | `2222` | **Listen and advertise** port (single knob). Compose publishes host `2222:2222`. When ≠ 22, clients need `~/.ssh/config` `Port` (CloneBox shows a Port hint; primary URL stays scp-style). |
 | `OCTANEST_SSH_HOST` | Optional | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | Advertised hostname for CloneBox / smoke scp-style URLs `git@{host}:{owner}/{repo}.git`. |
 | `OCTANEST_SSH_HOST_KEY_DIR` | Optional | `var/ssh` (Compose `/var/ssh`) | Persist Ed25519 host keys across restarts (TOFU). Also stores the instance **web-flow** SSH signing key (`web-flow` / `web-flow.pub`) used to sign template seed commits. Compose uses a named volume. |
+| `OCTANEST_WEB_FLOW_PRIVATE_KEY` | Optional | unset | Provisioned web-flow commit-signing key as an OpenSSH private key (PEM, or single-line base64-encoded PEM; unencrypted). When set, the API materializes `web-flow` / `web-flow.pub` under `OCTANEST_SSH_HOST_KEY_DIR` — deterministic identity across fresh volumes and the required provisioning path for `production`/`cloud` (auto-generation is disabled there). Never commit a real key. |
 | `OCTANEST_ORPHAN_RECONCILE_INTERVAL_SECS` | Optional | `86400` (24h) | In-process orphan reconcile interval. Removes bare dirs with no DB row and purges soft-deleted repos past retention. Set `0` to disable. |
 | `OCTANEST_SOFT_DELETE_RETENTION_DAYS` | Optional | `14` | Days to keep soft-deleted repository rows/files before orphan reconcile hard-deletes them. |
 | `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` | Optional | `90` | Days to keep `repository_redirects` after rename/transfer so old `/{owner}/{repo}` and Smart HTTP/SSH paths keep resolving. Expired rows are purged by orphan reconcile. |
@@ -178,8 +179,9 @@ Phase 9 adds Git **clone/fetch/push over SSH** beside Smart HTTP. Keys are regis
 | `OCTANEST_SSH_PORT` | Listen **and** advertise port (Compose default **2222**) |
 | `OCTANEST_SSH_HOST` | Advertised hostname for CloneBox / smoke |
 | `OCTANEST_SSH_HOST_KEY_DIR` | Persist host keys (Compose volume `/var/ssh`) and the web-flow commit-signing key pair |
+| `OCTANEST_WEB_FLOW_PRIVATE_KEY` | Optional provisioned web-flow signing key (PEM or base64 PEM); materialized to `web-flow`/`web-flow.pub` when set |
 
-**Web-flow signing key:** Under `OCTANEST_SSH_HOST_KEY_DIR`, Octanest keeps an Ed25519 key pair named `web-flow` / `web-flow.pub` (comment `octanest-web-flow`). New repositories seeded from the UI are authored as the creating user and **SSH-signed** with this key (`gpg.format=ssh`). In development the API generates the key on first use; in production/cloud the key must already exist (fail closed). Persist the directory across restarts so signatures keep verifying.
+**Web-flow signing key:** Under `OCTANEST_SSH_HOST_KEY_DIR`, Octanest keeps an Ed25519 key pair named `web-flow` / `web-flow.pub` (comment `octanest-web-flow`). New repositories seeded from the UI are authored as the creating user and **SSH-signed** with this key (`gpg.format=ssh`). Resolution order: `OCTANEST_WEB_FLOW_PRIVATE_KEY` (env var wins — files are refreshed from it, so rotation is a variable change), then existing `web-flow`/`web-flow.pub` files, then auto-generation via `ssh-keygen` on first use. Auto-generation applies everywhere **except** `production`/`cloud`, which fail closed until the key is provisioned via the env var or keypair files on the volume. Persist the directory across restarts so signatures keep verifying.
 
 **User GPG keys:** Uploading and verifying OpenPGP commit signatures requires the `gpg` binary on the API host (`PATH`). The API Docker image installs `gnupg`. Local `cargo run` needs system GnuPG the same way.
 
