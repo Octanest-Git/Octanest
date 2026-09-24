@@ -8,6 +8,7 @@ import { MarkdownBody } from "@/components/repo/markdown-body";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
+import { formatRelative } from "@/lib/relative-time";
 
 export type IssueCommentsProps = {
   owner: string;
@@ -84,8 +85,13 @@ function CommentHistoryDisclosure(props: {
               <ul className="flex flex-col gap-2">
                 @for (const rev of revisions; key rev.id) {
                   <li className="rounded-md border border-border px-2 py-1 text-[12px]">
-                    <p className="text-muted-foreground">
-                      {`@${rev.editor_username} · ${rev.created_at}` as string}
+                    <p
+                      className="text-muted-foreground"
+                      title={rev.created_at as string}
+                    >
+                      {
+                        `@${rev.editor_username} edited ${formatRelative(rev.created_at)}` as string
+                      }
                     </p>
                     <pre className="mt-1 whitespace-pre-wrap font-sans text-foreground">
                       {rev.body as string}
@@ -172,7 +178,16 @@ function CommentItem(props: {
   <li className="rounded-md border border-border px-4 py-3" data-testid="issue-comment">
     <div className="flex flex-wrap items-start justify-between gap-2">
       <p className="text-[13px] text-muted-foreground">
-        {`@${comment.author_username} · ${comment.created_at}` as string}
+        <a
+          href={`/${comment.author_username}` as string}
+          className="font-semibold text-foreground no-underline hover:text-primary"
+        >
+          {`@${comment.author_username}` as string}
+        </a>
+        {` commented ` as string}
+        <span title={comment.created_at as string}>
+          {formatRelative(comment.created_at) as string}
+        </span>
       </p>
       <div className="flex gap-2">
         @if (canEdit && !editing) {
@@ -399,6 +414,14 @@ export function IssueComments(props: IssueCommentsProps) @{
           </Button>
         </div>
       </form>;
+    }
+    @if (!props.currentUserId && !props.canWrite) {
+      <p className="rounded-md border border-border bg-muted/30 px-4 py-3 text-[13px] text-muted-foreground">
+        <a href="/login" className="font-medium text-primary no-underline hover:underline">
+          Sign in
+        </a>
+        {" to join this conversation." as string}
+      </p>;
     }
   </section>;
 }

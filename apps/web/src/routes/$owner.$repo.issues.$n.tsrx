@@ -2,6 +2,7 @@ import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanej
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { IssuePublic, RepoPublic } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
+import { CircleCheck, CircleDot } from "@octanejs/lucide";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { IssueAssigneesPanel } from "@/components/repo/issue-assignees-panel";
 import { IssueComments } from "@/components/repo/issue-comments";
@@ -13,11 +14,13 @@ import { IssueReactionsBar } from "@/components/repo/issue-reactions";
 import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { renderGfm } from "@/lib/markdown";
+import { formatRelative } from "@/lib/relative-time";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { fetchIssueGet, fetchRepoGet } from "@/lib/ssr-repo";
@@ -308,11 +311,8 @@ export function IssueDetailPage() @{
             }
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] text-muted-foreground">
-                  {`#${issue!.number} · ${issue!.state}` as string}
-                </p>
                 @if (editing) {
-                  <div className="mt-2 flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="issue-edit-title">Title</Label>
                     <Input
                       id="issue-edit-title"
@@ -324,14 +324,35 @@ export function IssueDetailPage() @{
                 } @else {
                   <h1
                     data-testid="issue-title"
-                    className="mt-1 text-[24px] font-semibold text-foreground"
+                    className="text-[24px] font-semibold text-foreground"
                   >
                     {issue!.title as string}
+                    <span className="ml-2 font-light text-muted-foreground">
+                      {`#${issue!.number}` as string}
+                    </span>
                   </h1>;
                 }
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  {`opened by @${issue!.author_username}` as string}
-                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  @if (issue!.state === "open") {
+                    <Badge variant="open">
+                      <CircleDot aria-hidden size={12} />
+                      Open
+                    </Badge>;
+                  } @else {
+                    <Badge variant="merged">
+                      <CircleCheck aria-hidden size={12} />
+                      Closed
+                    </Badge>;
+                  }
+                  <p className="text-[14px] text-muted-foreground">
+                    {
+                      `@${issue!.author_username} opened this issue ${formatRelative(issue!.created_at)}` as string
+                    }
+                    {
+                      ` · ${issue!.comment_count ?? 0} comment${(issue!.comment_count ?? 0) === 1 ? "" : "s"}` as string
+                    }
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 @if (canEdit && !editing) {
