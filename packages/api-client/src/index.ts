@@ -334,6 +334,20 @@ export type RepoUpdateMetadataRequest = {
   topics?: string[] | null;
 };
 
+export type RepoTopicsSuggestRequest = {
+  q: string;
+  limit?: number | null;
+};
+
+export type RepoTopicSuggestion = {
+  name: string;
+  repo_count: number;
+};
+
+export type RepoTopicsSuggestResponse = {
+  topics: RepoTopicSuggestion[];
+};
+
 export type ListStarredRequest = {
   offset?: number | null;
   limit?: number | null;
@@ -2362,6 +2376,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoForksListResponse>(opts, "repo.forks.list", input),
       updateMetadata: (input: RepoUpdateMetadataRequest) =>
         rpcCall<RepoPublic>(opts, "repo.updateMetadata", input),
+      topicsSuggest: (input: RepoTopicsSuggestRequest) =>
+        rpcCall<RepoTopicsSuggestResponse>(opts, "repo.topicsSuggest", input),
       explore: (input: RepoExploreRequest) =>
         rpcCall<RepoListMineResponse>(opts, "repo.explore", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
@@ -2978,6 +2994,20 @@ export function repoGetQueryOptions(
     queryKey: ["repo", "get", input.owner, input.name] as const,
     queryFn: async () => {
       const res = await client.repo.get(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function repoTopicsSuggestQueryOptions(
+  client: OctanestClient,
+  input: RepoTopicsSuggestRequest,
+) {
+  return {
+    queryKey: ["repo", "topicsSuggest", input.q, input.limit] as const,
+    queryFn: async () => {
+      const res = await client.repo.topicsSuggest(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

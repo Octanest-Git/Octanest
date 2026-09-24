@@ -386,6 +386,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.topicsSuggest" => match repo::topics_suggest(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.explore" => match repo::explore(ctx, req.input).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),

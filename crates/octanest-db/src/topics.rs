@@ -131,6 +131,108 @@ async fn upsert_topic_id(pool: &DbPool, name: &str) -> Result<String, String> {
     }
 }
 
+/// Topic suggestions matching a name prefix, most-used first. Returns
+/// `(name, linked_repo_count)` rows for the topics editor autocomplete.
+/// Prefix is normalized like a topic slug so LIKE needs no escaping.
+pub async fn suggest_topics(
+    pool: &DbPool,
+    prefix: &str,
+    limit: i64,
+) -> Result<Vec<(String, i64)>, String> {
+    let slug: String = prefix
+        .trim()
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == '-')
+        .take(50)
+        .collect();
+    let limit = limit.clamp(1, 20);
+    if slug.is_empty() {
+        return match pool {
+            DbPool::Postgres(p) => sqlx::query_as::<_, (String, i64)>(
+                "SELECT t.name, COUNT(rt.repository_id) AS repo_count
+                 FROM topics t
+                 LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+                 GROUP BY t.id, t.name
+                 ORDER BY repo_count DESC, t.name ASC
+                 LIMIT $1",
+            )
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("suggest_topics: {e}")),
+            DbPool::MySql(p) => sqlx::query_as::<_, (String, i64)>(
+                "SELECT t.name, CAST(COUNT(rt.repository_id) AS SIGNED) AS repo_count
+                 FROM topics t
+                 LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+                 GROUP BY t.id, t.name
+                 ORDER BY repo_count DESC, t.name ASC
+                 LIMIT ?",
+            )
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("suggest_topics: {e}")),
+            DbPool::Sqlite(p) => sqlx::query_as::<_, (String, i64)>(
+                "SELECT t.name, COUNT(rt.repository_id) AS repo_count
+                 FROM topics t
+                 LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+                 GROUP BY t.id, t.name
+                 ORDER BY repo_count DESC, t.name ASC
+                 LIMIT ?1",
+            )
+            .bind(limit)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("suggest_topics: {e}")),
+        };
+    }
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_as::<_, (String, i64)>(
+            "SELECT t.name, COUNT(rt.repository_id) AS repo_count
+             FROM topics t
+             LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+             WHERE t.name LIKE $1 || '%'
+             GROUP BY t.id, t.name
+             ORDER BY repo_count DESC, t.name ASC
+             LIMIT $2",
+        )
+        .bind(&slug)
+        .bind(limit)
+        .fetch_all(p)
+        .await
+        .map_err(|e| format!("suggest_topics: {e}")),
+        DbPool::MySql(p) => sqlx::query_as::<_, (String, i64)>(
+            "SELECT t.name, CAST(COUNT(rt.repository_id) AS SIGNED) AS repo_count
+             FROM topics t
+             LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+             WHERE t.name LIKE CONCAT(?, '%')
+             GROUP BY t.id, t.name
+             ORDER BY repo_count DESC, t.name ASC
+             LIMIT ?",
+        )
+        .bind(&slug)
+        .bind(limit)
+        .fetch_all(p)
+        .await
+        .map_err(|e| format!("suggest_topics: {e}")),
+        DbPool::Sqlite(p) => sqlx::query_as::<_, (String, i64)>(
+            "SELECT t.name, COUNT(rt.repository_id) AS repo_count
+             FROM topics t
+             LEFT JOIN repository_topics rt ON rt.topic_id = t.id
+             WHERE t.name LIKE ?1 || '%'
+             GROUP BY t.id, t.name
+             ORDER BY repo_count DESC, t.name ASC
+             LIMIT ?2",
+        )
+        .bind(&slug)
+        .bind(limit)
+        .fetch_all(p)
+        .await
+        .map_err(|e| format!("suggest_topics: {e}")),
+    }
+}
+
 /// Replace all topic links for a repository. Returns the normalized topic list.
 pub async fn set_repo_topics(
     pool: &DbPool,

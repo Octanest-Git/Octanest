@@ -327,6 +327,28 @@ pub struct RepoUpdateMetadataRequest {
     pub topics: Option<Vec<String>>,
 }
 
+/// `repo.topicsSuggest` — topic autocomplete for the About/settings chips
+/// editor. Anonymous OK — topic names are public metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicsSuggestRequest {
+    /// Prefix to match (normalized to a topic slug server-side).
+    pub q: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicSuggestion {
+    pub name: String,
+    /// Number of repositories linked to the topic.
+    pub repo_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicsSuggestResponse {
+    pub topics: Vec<RepoTopicSuggestion>,
+}
+
 /// `repo.pathLastCommits` — last commit per tree entry name (issue #23).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoPathLastCommitsRequest {

@@ -572,6 +572,15 @@ impl Database {
         topics::set_repo_topics(self.require_pool()?, repository_id, topic_names).await
     }
 
+    /// Topic autocomplete: `(name, linked_repo_count)` most-used first.
+    pub async fn suggest_topics(
+        &self,
+        prefix: &str,
+        limit: i64,
+    ) -> Result<Vec<(String, i64)>, String> {
+        topics::suggest_topics(self.require_pool()?, prefix, limit).await
+    }
+
     pub async fn get_repo_fork_count(&self, repository_id: &str) -> Result<i64, String> {
         repositories::get_fork_count(self.require_pool()?, repository_id).await
     }

@@ -549,6 +549,30 @@ pub async fn update_metadata(
     enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
 }
 
+/// `repo.topicsSuggest` — topic autocomplete for the chips editor.
+/// Anonymous OK — topic names are public metadata (like `repo.explore`).
+pub async fn topics_suggest(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoTopicsSuggestResponse, AppError> {
+    let req: octanest_core::RepoTopicsSuggestRequest = serde_json::from_value(input)
+        .unwrap_or(octanest_core::RepoTopicsSuggestRequest {
+            q: String::new(),
+            limit: None,
+        });
+    let rows = ctx
+        .db
+        .suggest_topics(&req.q, req.limit.unwrap_or(10))
+        .await
+        .map_err(db_err)?;
+    Ok(octanest_core::RepoTopicsSuggestResponse {
+        topics: rows
+            .into_iter()
+            .map(|(name, repo_count)| octanest_core::RepoTopicSuggestion { name, repo_count })
+            .collect(),
+    })
+}
+
 async fn resolve_visibility(
     ctx: &RpcCtx,
     requested: Option<RepoVisibility>,
