@@ -284,6 +284,47 @@ pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<UserRow>, Stri
     }
 }
 
+/// Batch `find_by_id` — one `IN (...)` round trip instead of N (list enrichment).
+pub async fn find_many_by_id(pool: &DbPool, ids: &[String]) -> Result<Vec<UserRow>, String> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!("{USER_SELECT_PG} WHERE id = ANY($1)"))
+                .bind(ids)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("find users by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_user!(r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, ids.len());
+            let q_str = format!("{USER_SELECT_MYSQL} WHERE id IN ({in_list})");
+            let q = sqlx::query(&q_str);
+            let q = ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("find users by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_user!(r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::Sqlite, 1, ids.len());
+            let q_str = format!("{USER_SELECT_SQLITE} WHERE id IN ({in_list})");
+            let q = sqlx::query(&q_str);
+            let q = ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("find users by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_user!(r))).collect()
+        }
+    }
+}
+
 pub async fn update_profile(
     pool: &DbPool,
     id: &str,

@@ -143,3 +143,191 @@ async fn dialect_pulls_migrate_0016_schema_presence() {
         "PULL_COLS_PG must cast created_at for sqlx String decode"
     );
 }
+
+/// Batch pull-list helpers: assignees, label filter, and reviews must cover a
+/// whole page in one round trip each (N+1 regression guard).
+#[tokio::test]
+async fn dialect_pulls_batch_enrichment() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("pulls_batch.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let author = db
+        .create_user(
+            "u-pbatch-author",
+            "pbatchauthor@example.com",
+            "pbatchauthor",
+            Some("hash"),
+            "P Batch Author",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create author");
+    let reviewer = db
+        .create_user(
+            "u-pbatch-rev",
+            "pbatchrev@example.com",
+            "pbatchrev",
+            Some("hash"),
+            "P Batch Rev",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create reviewer");
+
+    let repo = db
+        .insert_repository(
+            "r-pbatch-1",
+            &author.id,
+            "user",
+            "pbatch-demo",
+            "private",
+            "",
+            "main",
+        )
+        .await
+        .expect("insert repo");
+
+    let p1 = db
+        .insert_pull(
+            "pb-1",
+            &repo.id,
+            db.allocate_next_issue_number(&repo.id).await.expect("n1"),
+            "PR one",
+            "b1",
+            &author.id,
+            "main",
+            "abc",
+            &repo.id,
+            "f1",
+            "def",
+            false,
+        )
+        .await
+        .expect("pull 1");
+    let p2 = db
+        .insert_pull(
+            "pb-2",
+            &repo.id,
+            db.allocate_next_issue_number(&repo.id).await.expect("n2"),
+            "PR two",
+            "b2",
+            &reviewer.id,
+            "main",
+            "abc",
+            &repo.id,
+            "f2",
+            "ghi",
+            false,
+        )
+        .await
+        .expect("pull 2");
+
+    // pull_assignees / pull_labels have no facade writers yet — insert directly.
+    let pool = sqlx::SqlitePool::connect(&url).await.expect("raw pool");
+    sqlx::query("INSERT INTO pull_assignees (pull_id, user_id) VALUES (?1, ?2)")
+        .bind(&p1.id)
+        .bind(&author.id)
+        .execute(&pool)
+        .await
+        .expect("assignee p1");
+    sqlx::query("INSERT INTO pull_assignees (pull_id, user_id) VALUES (?1, ?2)")
+        .bind(&p2.id)
+        .bind(&reviewer.id)
+        .execute(&pool)
+        .await
+        .expect("assignee p2");
+
+    let label = db
+        .insert_label("plb-1", "bug", "d73a4a", "A bug", None, Some(&repo.id))
+        .await
+        .expect("insert label");
+    sqlx::query("INSERT INTO pull_labels (pull_id, label_id) VALUES (?1, ?2)")
+        .bind(&p1.id)
+        .bind(&label.id)
+        .execute(&pool)
+        .await
+        .expect("label p1");
+
+    db.insert_pull_review("pr-1", &p1.id, &reviewer.id, "approved", "lgtm", None)
+        .await
+        .expect("review p1");
+    pool.close().await;
+
+    let pull_ids = vec![p1.id.clone(), p2.id.clone()];
+
+    let assignee_pairs = db
+        .list_pull_assignees_for_pulls(&pull_ids)
+        .await
+        .expect("batch assignees");
+    assert_eq!(assignee_pairs.len(), 2);
+    for (pull_id, want_user) in [(&p1.id, &author.id), (&p2.id, &reviewer.id)] {
+        let row = assignee_pairs
+            .iter()
+            .find(|(pid, _)| pid == pull_id)
+            .expect("pair present");
+        assert_eq!(row.1.user_id, *want_user);
+        assert!(!row.1.username.is_empty());
+    }
+
+    // Label filter — name or id, case-insensitive name.
+    for needle in [label.id.as_str(), "BUG", "bug"] {
+        let hit = db
+            .pull_ids_with_label(&pull_ids, needle)
+            .await
+            .expect("label filter");
+        assert_eq!(hit, vec![p1.id.clone()], "needle {needle}");
+    }
+    assert!(
+        db.pull_ids_with_label(&pull_ids, "missing")
+            .await
+            .expect("no match")
+            .is_empty()
+    );
+
+    // Reviews batch.
+    let reviews = db
+        .list_reviews_for_pulls(&pull_ids)
+        .await
+        .expect("batch reviews");
+    assert_eq!(reviews.len(), 1);
+    assert_eq!(reviews[0].pull_id, p1.id);
+    assert_eq!(reviews[0].state, "approved");
+
+    // Batch repo/user lookups used by pull list enrichment.
+    let repos = db
+        .find_repositories_by_ids(&[repo.id.clone()])
+        .await
+        .expect("batch repos");
+    assert_eq!(repos.len(), 1);
+    let users = db
+        .find_users_by_ids(&[author.id.clone(), reviewer.id.clone()])
+        .await
+        .expect("batch users");
+    assert_eq!(users.len(), 2);
+
+    // Empty inputs must not error.
+    assert!(
+        db.list_pull_assignees_for_pulls(&[])
+            .await
+            .expect("empty assignees")
+            .is_empty()
+    );
+    assert!(
+        db.list_reviews_for_pulls(&[])
+            .await
+            .expect("empty reviews")
+            .is_empty()
+    );
+    assert!(
+        db.pull_ids_with_label(&[], "bug")
+            .await
+            .expect("empty labels")
+            .is_empty()
+    );
+}

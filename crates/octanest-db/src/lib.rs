@@ -178,6 +178,14 @@ impl Database {
         organizations::find_by_id(self.require_pool()?, id).await
     }
 
+    /// Batch variant — one `IN (...)` round trip.
+    pub async fn find_organizations_by_ids(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<OrganizationRow>, String> {
+        organizations::find_many_by_id(self.require_pool()?, ids).await
+    }
+
     pub async fn find_organization_by_slug(
         &self,
         slug: &str,
@@ -623,6 +631,14 @@ impl Database {
         repositories::find_by_id(self.require_pool()?, id).await
     }
 
+    /// Batch variant — one `IN (...)` round trip.
+    pub async fn find_repositories_by_ids(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<RepositoryRow>, String> {
+        repositories::find_many_by_id(self.require_pool()?, ids).await
+    }
+
     pub async fn list_repositories_by_owner(
         &self,
         owner_id: &str,
@@ -884,6 +900,31 @@ impl Database {
         pull_id: &str,
     ) -> Result<Vec<pulls::PullAssigneeRow>, String> {
         pulls::list_pull_assignees(self.require_pool()?, pull_id).await
+    }
+
+    /// Batch variant — `(pull_id, assignee)` pairs in one `IN (...)` round trip.
+    pub async fn list_pull_assignees_for_pulls(
+        &self,
+        pull_ids: &[String],
+    ) -> Result<Vec<(String, pulls::PullAssigneeRow)>, String> {
+        pulls::list_pull_assignees_for_pulls(self.require_pool()?, pull_ids).await
+    }
+
+    /// Subset of `pull_ids` carrying a label matching `label` (id or name).
+    pub async fn pull_ids_with_label(
+        &self,
+        pull_ids: &[String],
+        label: &str,
+    ) -> Result<Vec<String>, String> {
+        pulls::pull_ids_with_label(self.require_pool()?, pull_ids, label).await
+    }
+
+    /// Batch `list_pull_reviews` — one `IN (...)` round trip for many pulls.
+    pub async fn list_reviews_for_pulls(
+        &self,
+        pull_ids: &[String],
+    ) -> Result<Vec<PullReviewRow>, String> {
+        pulls::list_reviews_for_pulls(self.require_pool()?, pull_ids).await
     }
 
     pub async fn insert_pull_review(
@@ -1373,11 +1414,27 @@ impl Database {
         issue_labels::list_labels_for_issue(self.require_pool()?, issue_id).await
     }
 
+    /// Batch variant — `(issue_id, label)` pairs in one `IN (...)` round trip.
+    pub async fn list_labels_for_issues(
+        &self,
+        issue_ids: &[String],
+    ) -> Result<Vec<(String, LabelRow)>, String> {
+        issue_labels::list_labels_for_issues(self.require_pool()?, issue_ids).await
+    }
+
     pub async fn list_issue_assignees(
         &self,
         issue_id: &str,
     ) -> Result<Vec<issue_labels::IssueAssigneeRow>, String> {
         issue_labels::list_issue_assignees(self.require_pool()?, issue_id).await
+    }
+
+    /// Batch variant — `(issue_id, assignee)` pairs in one `IN (...)` round trip.
+    pub async fn list_assignees_for_issues(
+        &self,
+        issue_ids: &[String],
+    ) -> Result<Vec<(String, issue_labels::IssueAssigneeRow)>, String> {
+        issue_labels::list_assignees_for_issues(self.require_pool()?, issue_ids).await
     }
 
     pub async fn set_issue_labels(
@@ -1404,6 +1461,20 @@ impl Database {
         issues::list_issue_reaction_groups(self.require_pool()?, issue_id, viewer_user_id).await
     }
 
+    /// Batch variant — `(issue_id, group)` pairs in one `IN (...)` round trip.
+    pub async fn list_issue_reaction_groups_for_issues(
+        &self,
+        issue_ids: &[String],
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<(String, issues::ReactionGroupRow)>, String> {
+        issues::list_issue_reaction_groups_for_issues(
+            self.require_pool()?,
+            issue_ids,
+            viewer_user_id,
+        )
+        .await
+    }
+
     pub async fn list_comment_reaction_groups(
         &self,
         comment_id: &str,
@@ -1411,6 +1482,20 @@ impl Database {
     ) -> Result<Vec<issues::ReactionGroupRow>, String> {
         issues::list_comment_reaction_groups(self.require_pool()?, comment_id, viewer_user_id)
             .await
+    }
+
+    /// Batch variant — `(comment_id, group)` pairs in one `IN (...)` round trip.
+    pub async fn list_comment_reaction_groups_for_comments(
+        &self,
+        comment_ids: &[String],
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<(String, issues::ReactionGroupRow)>, String> {
+        issues::list_comment_reaction_groups_for_comments(
+            self.require_pool()?,
+            comment_ids,
+            viewer_user_id,
+        )
+        .await
     }
 
     /// Returns `true` if the reaction is now present (inserted), `false` if removed.
@@ -1533,6 +1618,11 @@ impl Database {
 
     pub async fn find_user_by_id(&self, id: &str) -> Result<Option<UserRow>, String> {
         users::find_by_id(self.require_pool()?, id).await
+    }
+
+    /// Batch variant — one `IN (...)` round trip (list enrichment).
+    pub async fn find_users_by_ids(&self, ids: &[String]) -> Result<Vec<UserRow>, String> {
+        users::find_many_by_id(self.require_pool()?, ids).await
     }
 
     pub async fn update_user_profile(

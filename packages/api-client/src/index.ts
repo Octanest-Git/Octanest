@@ -1918,6 +1918,7 @@ export type IssuePublic = {
   labels?: LabelPublic[];
   assignees?: IssueAssigneePublic[];
   reactions?: ReactionGroupPublic[];
+  comment_count?: number;
 };
 
 export type CreateIssueRequest = {

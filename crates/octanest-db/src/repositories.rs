@@ -639,6 +639,51 @@ pub async fn find_by_id(pool: &DbPool, id: &str) -> Result<Option<RepositoryRow>
     }
 }
 
+/// Batch `find_by_id` — one `IN (...)` round trip (pull list head-repo enrichment).
+pub async fn find_many_by_id(pool: &DbPool, ids: &[String]) -> Result<Vec<RepositoryRow>, String> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "{REPO_SELECT_PG} WHERE id = ANY($1) AND deleted_at IS NULL"
+            ))
+            .bind(ids)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("find repositories by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, ids.len());
+            let q_str =
+                format!("{REPO_SELECT_MYSQL} WHERE id IN ({in_list}) AND deleted_at IS NULL");
+            let q = sqlx::query(&q_str);
+            let q = ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("find repositories by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::Sqlite, 1, ids.len());
+            let q_str =
+                format!("{REPO_SELECT_SQLITE} WHERE id IN ({in_list}) AND deleted_at IS NULL");
+            let q = sqlx::query(&q_str);
+            let q = ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("find repositories by ids failed: {e}"))?;
+            rows.iter().map(|r| Ok(map_repo!(r))).collect()
+        }
+    }
+}
+
 /// Homepage URL / text (issue #23) — separate get to avoid rewriting REPO_SELECT.
 pub async fn get_homepage(pool: &DbPool, id: &str) -> Result<String, String> {
     match pool {
