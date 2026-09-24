@@ -14,12 +14,16 @@ RUN cargo build --release -p octanest-runner --bin octanest-runner
 
 FROM debian:bookworm-slim
 # git: actions/checkout clones over smart HTTP; ca-certificates: TLS origins.
+# curl: fetch the docker CLI static binary below.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates git \
+  && apt-get install -y --no-install-recommends ca-certificates curl git \
   && rm -rf /var/lib/apt/lists/*
 # docker CLI only (no daemon) — enables `label:docker://image` execution when
-# /var/run/docker.sock is mounted. Host-mode labels need no Docker.
-COPY --from=docker:27-cli /usr/local/bin/docker /usr/local/bin/docker
+# /var/run/docker.sock is mounted. Host-mode labels need no Docker. Fetched as
+# a static binary: Railway's builder rejects `COPY --from=<external image>`.
+ARG DOCKER_CLI_VERSION=28.5.2
+RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_CLI_VERSION}.tgz" \
+    | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
 COPY --from=builder /app/target/release/octanest-runner /usr/local/bin/octanest-runner
 
 LABEL org.opencontainers.image.title="octanest-runner" \
