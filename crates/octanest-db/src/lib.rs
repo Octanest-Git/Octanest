@@ -2111,6 +2111,10 @@ impl Database {
         packages::delete_version(self.require_pool()?, version_id).await
     }
 
+    pub async fn delete_package(&self, package_id: &str) -> Result<(), String> {
+        packages::delete_package(self.require_pool()?, package_id).await
+    }
+
 
 
 

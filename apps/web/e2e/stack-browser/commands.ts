@@ -6,6 +6,7 @@ import type { BrowserCommand } from "vitest/node";
 import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client.ts";
 import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env.ts";
 import { newGuardedPage } from "./dom-race-guard.ts";
+import { assertVisualBaseline, relativeTimeMasks } from "./visual.ts";
 
 type AuthPatch = {
   provider_mode: "local" | "workos" | "oidc";
@@ -528,12 +529,12 @@ function pushTagViaGit(opts: { owner: string; repo: string; token: string; tag: 
   }
 }
 
-async function createClassicPat(cookie: string): Promise<string> {
+async function createClassicPat(cookie: string, scopes: string[] = ["repo"]): Promise<string> {
   const res = await rpc(
     "pat.createClassic",
     {
       name: `e2e-pat-${Date.now()}`,
-      scopes: ["repo"],
+      scopes,
     },
     cookie,
   );
@@ -1331,6 +1332,129 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       timeout: 10_000,
     });
     assertNoOctaneOverlay(await page.content(), "settings profile avatar controls");
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/**
+ * Upload a small generic package via the registry API (basic auth PAT).
+ * Returns the package name so callers can assert it renders.
+ */
+async function seedGenericPackage(opts: {
+  cookie: string;
+  owner: string;
+  username: string;
+  name: string;
+  version: string;
+}): Promise<void> {
+  const token = await createClassicPat(opts.cookie, ["repo", "package:write"]);
+  const basic = Buffer.from(`${opts.username}:${token}`, "utf8").toString("base64");
+  const url =
+    `${apiOrigin()}/generic/${encodeURIComponent(opts.owner)}` +
+    `/${encodeURIComponent(opts.name)}/${encodeURIComponent(opts.version)}` +
+    `/artifact.tar.gz`;
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      authorization: `Basic ${basic}`,
+      "content-type": "application/octet-stream",
+    },
+    body: Buffer.from(`e2e-${opts.name}-${opts.version}`),
+  });
+  if (!res.ok) {
+    throw new Error(`generic package upload failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+/**
+ * Visual baselines for the packages surfaces (repo-scoped empty state and
+ * owner-scoped list row). Screenshots mask relative-time text; baselines live
+ * in e2e/visual-baselines/ and update via OCTANEST_E2E_UPDATE_VISUAL=1.
+ */
+export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  // Deterministic single row: drop any e2e-pkg-* left by earlier runs.
+  const listed = await rpc("packages.list", { owner: seed.owner }, seed.cookie);
+  if (listed.ok && listed.data && typeof listed.data === "object") {
+    const pkgs = (listed.data as { packages?: unknown[] }).packages ?? [];
+    for (const p of pkgs) {
+      const pkg = p as { id?: string; name?: string; versions?: Array<{ version?: string }> };
+      if (!pkg.id || !pkg.name?.startsWith("e2e-pkg-")) continue;
+      for (const v of pkg.versions ?? []) {
+        if (!v.version) continue;
+        await rpc(
+          "packages.deleteVersion",
+          {
+            package_id: pkg.id,
+            version: v.version,
+            confirm: `${pkg.name}@${v.version}`,
+          },
+          seed.cookie,
+        );
+      }
+    }
+  }
+
+  const pkgName = `e2e-pkg-${Date.now()}`;
+  await seedGenericPackage({
+    cookie: seed.cookie,
+    owner: seed.owner,
+    username: seed.username,
+    name: pkgName,
+    version: "1.0.0",
+  });
+  // Second version so the row shows a count > 1.
+  await seedGenericPackage({
+    cookie: seed.cookie,
+    owner: seed.owner,
+    username: seed.username,
+    name: pkgName,
+    version: "1.1.0",
+  });
+
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  try {
+    // Repo-scoped packages page — generic packages have no repository_id link,
+    // so this repo still shows the GitHub-shaped empty state + quickstart.
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByText(/No packages published yet/i)
+      .waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "repo packages visual");
+    await assertVisualBaseline(page, "packages-repo-empty", {
+      mask: [
+        // Repo name embeds a timestamp; relative-time text is volatile.
+        page.locator(`text=${seed.repo}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
+
+    // Owner packages page — seeded generic package row with two versions.
+    await page.goto(`${webOrigin()}/${seed.owner}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("owner-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText(pkgName, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "owner packages visual");
+    await assertVisualBaseline(page, "packages-owner-list", {
+      mask: [
+        // Package names embed a timestamp; mask rows so baselines stay stable.
+        page.locator(`text=${pkgName}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
     return true;
   } finally {
     await pageGuard.close("stack-browser");
