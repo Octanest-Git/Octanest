@@ -409,6 +409,8 @@ export type RepoBlobResponse = {
 export type RepoRefEntry = {
   name: string;
   oid: string;
+  tip_author_name?: string | null;
+  tip_committed_at?: string | null;
 };
 
 export type RepoRefsResponse = {

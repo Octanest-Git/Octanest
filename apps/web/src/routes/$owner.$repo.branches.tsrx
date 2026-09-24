@@ -1,5 +1,4 @@
 import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
 import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
 import { useEffect, useState } from "octane";
 import { GitBranch, Plus } from "@octanejs/lucide";
@@ -32,8 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { isBranchRef, shortOid, shortRefName, treeHref } from "@/lib/repo-browse";
-import { authSessionQueryOptions } from "@/lib/session-queries";
-import { useRepoStore } from "@/lib/repo-store";
+import { formatRelative } from "@/lib/relative-time";
 import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
 
 export type BranchesLoaderData =
@@ -117,9 +115,6 @@ export function RepoBranchesPage() @{
   const loaderData = useLoaderData({ from: "/$owner/$repo/branches" }) as
     | BranchesLoaderData
     | undefined;
-  const storeMe = useRepoStore((s) => s.me);
-  const me = useQuery(authSessionQueryOptions());
-  const sessionUser = me.isSuccess ? me.data : storeMe;
 
   const [phase, setPhase] = useState<Phase>(() => loaderData ?? { kind: "loading" });
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -149,8 +144,7 @@ export function RepoBranchesPage() @{
     };
   }, [owner, repoName, loaderData]);
 
-  const isOwner =
-    phase.kind === "ready" && sessionUser != null && sessionUser.id === phase.repo.owner_id;
+  const canWrite = phase.kind === "ready" && !!phase.repo.can_write;
 
   function openCreate() {
     if (phase.kind !== "ready") return;
@@ -300,7 +294,7 @@ export function RepoBranchesPage() @{
         icon={<GitBranch aria-hidden size={22} />}
         title="Branches"
         actions={
-          isOwner ? (
+          canWrite ? (
             <Button type="button" onClick={() => openCreate()}>
               <Plus aria-hidden size={15} />
               New branch
@@ -324,7 +318,7 @@ export function RepoBranchesPage() @{
               repo={repoName}
               branch={b}
               defaultBranch={phase.repo.default_branch}
-              isOwner={isOwner}
+              canWrite={canWrite}
               onRename={(name) => openRename(name)}
               onDelete={(name) => openDelete(name)}
             />;
@@ -460,7 +454,7 @@ function BranchRow({
   repo,
   branch,
   defaultBranch,
-  isOwner,
+  canWrite,
   onRename,
   onDelete,
 }: {
@@ -468,7 +462,7 @@ function BranchRow({
   repo: string;
   branch: RepoRefEntry;
   defaultBranch: string;
-  isOwner: boolean;
+  canWrite: boolean;
   onRename: (name: string) => void;
   onDelete: (name: string) => void;
 }) @{
@@ -492,15 +486,30 @@ function BranchRow({
           <Badge variant="primary">default</Badge>;
         }
       </div>
-      <p
-        className="mt-0.5 font-mono text-[12px] text-muted-foreground"
-        title={branch.oid as string}
-      >
-        {tip as string}
+      <p className="mt-0.5 text-[12px] text-muted-foreground">
+        @if (branch.tip_committed_at) {
+          <>
+            {
+              `Updated ${formatRelative(branch.tip_committed_at)}${branch.tip_author_name ? ` by ${branch.tip_author_name}` : ""}` as string
+            }
+            <span className="mx-1.5">·</span>
+          </>;
+        }
+        <span className="font-mono" title={branch.oid as string}>
+          {tip as string}
+        </span>
       </p>
     </div>
-    @if (isOwner) {
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      @if (canWrite && !isDefault) {
+        <a
+          href={`/${owner}/${repo}/pulls/new?head=${encodeURIComponent(name)}` as string}
+          className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-transparent px-3 text-[13px] font-medium text-foreground no-underline hover:bg-muted"
+        >
+          New pull request
+        </a>;
+      }
+      @if (canWrite) {
         <Button
           type="button"
           variant="outline"
@@ -512,7 +521,9 @@ function BranchRow({
           }}
         >
           Rename
-        </Button>
+        </Button>;
+      }
+      @if (canWrite) {
         <Button
           type="button"
           variant="destructive"
@@ -524,8 +535,8 @@ function BranchRow({
           }}
         >
           Delete
-        </Button>
-      </div>;
-    }
+        </Button>;
+      }
+    </div>
   </ListRow>;
 }

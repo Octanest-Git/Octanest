@@ -910,6 +910,8 @@ pub async fn refs(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoRefsResp
             .map(|r| RepoRefEntry {
                 name: r.name,
                 oid: r.oid,
+                tip_author_name: r.tip_author_name,
+                tip_committed_at: r.tip_committed_at,
             })
             .collect(),
     })

@@ -951,7 +951,7 @@ impl GitBackend for CliGitBackend {
                 "-C",
                 repo_str,
                 "for-each-ref",
-                "--format=%(objectname) %(refname)",
+                "--format=%(objectname) %(refname) %(committerdate:iso-strict) %(authorname)",
                 "refs/heads",
                 "refs/tags",
             ])
@@ -981,12 +981,19 @@ impl GitBackend for CliGitBackend {
             if line.is_empty() {
                 continue;
             }
-            let Some((oid, name)) = line.split_once(' ') else {
+            // oid, refname and iso-strict date are space-free; author name may
+            // contain spaces so it stays the remainder of the line.
+            let mut parts = line.splitn(4, ' ');
+            let (Some(oid), Some(name)) = (parts.next(), parts.next()) else {
                 continue;
             };
+            let date = parts.next().unwrap_or_default().trim();
+            let author = parts.next().unwrap_or_default().trim();
             refs.push(GitRef {
                 name: name.to_string(),
                 oid: oid.to_string(),
+                tip_committed_at: (!date.is_empty()).then(|| date.to_string()),
+                tip_author_name: (!author.is_empty()).then(|| author.to_string()),
             });
         }
         Ok(refs)
@@ -1959,7 +1966,12 @@ impl GitBackend for CliGitBackend {
             if name.ends_with("^{}") {
                 continue;
             }
-            out.push(GitRef { name, oid });
+            out.push(GitRef {
+                name,
+                oid,
+                tip_author_name: None,
+                tip_committed_at: None,
+            });
         }
         Ok(out)
     }

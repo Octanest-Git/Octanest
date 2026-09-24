@@ -580,6 +580,12 @@ pub struct RepoBlobResponse {
 pub struct RepoRefEntry {
     pub name: String,
     pub oid: String,
+    /// Tip commit author name when the backend could resolve it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tip_author_name: Option<String>,
+    /// Tip commit committer date (ISO-8601) when resolvable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tip_committed_at: Option<String>,
 }
 
 /// `repo.refs` response.

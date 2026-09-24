@@ -165,6 +165,10 @@ pub struct TreeEntry {
 pub struct GitRef {
     pub name: String,
     pub oid: String,
+    /// Tip commit author name (`%(authorname)`); absent for annotated tag objects.
+    pub tip_author_name: Option<String>,
+    /// Tip commit committer date, ISO-strict (`%(committerdate:iso-strict)`).
+    pub tip_committed_at: Option<String>,
 }
 
 /// One commit from `git log` (paged history).

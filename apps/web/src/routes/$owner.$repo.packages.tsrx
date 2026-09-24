@@ -1,8 +1,15 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import { packagesListQueryOptions } from "@octanest/api-client";
+import { Package } from "@octanejs/lucide";
 import { apiClient } from "@/lib/api-client";
+import { formatRelative } from "@/lib/relative-time";
 import { useRepoStore } from "@/lib/repo-store";
+import { PublishQuickstart } from "@/components/packages/publish-quickstart";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
 
@@ -64,20 +71,56 @@ export function RepoPackagesPage() @{
       </h2>
       <p className="mt-1 text-muted-foreground">Packages linked to this repository.</p>
       @if (loading) {
-        <p className="mt-8 text-muted-foreground">Loading packages…</p>;
-      } @else {
-        <ul className="mt-8 space-y-3">
-          @for (const pkg of packages; key pkg.id) {
-            <li className="flex items-center gap-2">
-              <span>{pkg.name as string}</span>
-              <span className="text-[12px] uppercase text-muted-foreground">
-                {pkg.format as string}
-              </span>
-            </li>;
-          } @empty {
-            <li className="text-muted-foreground">No linked packages.</li>;
+        <List className="mt-6">
+          @for (const i of [0, 1, 2]; key i) {
+            <ListRow>
+              <Skeleton className="size-4 rounded-full" />
+              <div className="flex flex-1 flex-col gap-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </ListRow>;
           }
-        </ul>;
+        </List>;
+      } @else {
+        @if (packages.length === 0) {
+          <>
+            <EmptyState
+              className="mt-6"
+              icon={<Package aria-hidden size={22} />}
+              title="No packages published yet"
+              description="Publish a package with your favorite package client, then link it to this repository."
+            />
+            <PublishQuickstart owner={owner} className="mt-6" />
+          </>;
+        } @else {
+          <List className="mt-6">
+            @for (const pkg of packages; key pkg.id) {
+              <ListRow className="items-center gap-3 py-3">
+                <Package
+                  aria-hidden
+                  size={16}
+                  className="shrink-0 text-muted-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[15px] font-semibold text-foreground">
+                      {pkg.name as string}
+                    </span>
+                    <Badge variant="outline" className="uppercase">
+                      {pkg.format as string}
+                    </Badge>
+                  </div>
+                  <p className="mt-0.5 text-[12px] text-muted-foreground">
+                    {
+                      `${pkg.versions.length} version${pkg.versions.length === 1 ? "" : "s"}${pkg.versions[0] ? ` · updated ${formatRelative(pkg.versions[0].created_at)}` : ""}` as string
+                    }
+                  </p>
+                </div>
+              </ListRow>;
+            }
+          </List>;
+        }
       }
     </div>;
     };

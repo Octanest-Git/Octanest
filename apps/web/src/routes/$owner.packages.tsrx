@@ -1,13 +1,19 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
+import { Package } from "@octanejs/lucide";
 import {
   packagesDeleteVersionMutationOptions,
   packagesListQueryOptions,
   type PackagePublic,
 } from "@octanest/api-client";
 import { apiClient } from "@/lib/api-client";
+import { formatRelative } from "@/lib/relative-time";
+import { PublishQuickstart } from "@/components/packages/publish-quickstart";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { List, ListRow } from "@/components/ui/list";
 import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";
 
 export const Route = createFileRoute("/$owner/packages")({
@@ -52,47 +58,74 @@ export function OwnerPackagesPage() @{
       @if (listQ.isPending) {
         <p className="mt-8 text-muted-foreground">Loading packages…</p>;
       } @else {
-        <ul className="mt-8 space-y-4">
-          @for (const pkg of packages; key pkg.id) {
-            <li className="border-b border-border pb-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium text-foreground">
-                  {pkg.name as string}
-                </span>
-                <span
-                  className="rounded border border-border px-2 py-0.5 text-[12px] uppercase text-muted-foreground"
-                  data-format={pkg.format as string}
-                >
-                  {pkg.format as string}
-                </span>
-              </div>
-              <ul className="mt-2 space-y-1 text-[14px]">
-                @for (const v of pkg.versions; key v.version) {
-                  <li className="flex items-center gap-3">
-                    <a
-                      className="text-foreground underline-offset-4 hover:underline"
-                      href={`/${owner}/packages#${pkg.name}@${v.version}`}
+        @if (packages.length === 0) {
+          <>
+            <EmptyState
+              className="mt-8"
+              icon={<Package aria-hidden size={22} />}
+              title="No packages published yet"
+              description="Publish your first package with a package client, then it shows up here."
+            />
+            <div className="mx-auto max-w-2xl">
+              <PublishQuickstart owner={owner} />
+            </div>
+          </>;
+        } @else {
+          <List className="mt-8">
+            @for (const pkg of packages; key pkg.id) {
+              <ListRow className="items-start gap-3 py-3">
+                <Package
+                  aria-hidden
+                  size={16}
+                  className="mt-0.5 shrink-0 text-muted-foreground"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[15px] font-semibold text-foreground">
+                      {pkg.name as string}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="uppercase"
+                      data-format={pkg.format as string}
                     >
-                      {(pkg.name + "@" + v.version) as string}
-                    </a>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-8 text-[13px]"
-                      onClick={() =>
-                        setPendingDelete({ pkg, version: v.version })
-                      }
-                    >
-                      Delete
-                    </Button>
-                  </li>;
-                }
-              </ul>
-            </li>;
-          } @empty {
-            <li className="text-muted-foreground">No packages yet.</li>;
-          }
-        </ul>;
+                      {pkg.format as string}
+                    </Badge>
+                    <Badge variant="outline">{pkg.visibility as string}</Badge>
+                  </div>
+                  <ul className="mt-2 space-y-1 text-[14px]">
+                    @for (const v of pkg.versions; key v.version) {
+                      <li className="flex items-center gap-3">
+                        <a
+                          className="text-foreground underline-offset-4 hover:underline"
+                          href={`/${owner}/packages#${pkg.name}@${v.version}`}
+                        >
+                          {(pkg.name + "@" + v.version) as string}
+                        </a>
+                        <span
+                          className="text-[12px] text-muted-foreground"
+                          title={v.created_at as string}
+                        >
+                          {formatRelative(v.created_at) as string}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-8 text-[13px]"
+                          onClick={() =>
+                            setPendingDelete({ pkg, version: v.version })
+                          }
+                        >
+                          Delete
+                        </Button>
+                      </li>;
+                    }
+                  </ul>
+                </div>
+              </ListRow>;
+            }
+          </List>;
+        }
       }
       @if (pendingDelete) {
         <DeleteVersionDialog
