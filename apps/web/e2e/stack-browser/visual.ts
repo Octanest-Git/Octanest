@@ -30,6 +30,8 @@ export type ScreenshotPage = {
     caret?: "hide" | "initial";
     fullPage?: boolean;
   }) => Promise<Uint8Array>;
+  /** Optional Playwright `evaluate` — used to wait for webfonts before capture. */
+  evaluate?: (fn: () => unknown) => Promise<unknown>;
 };
 
 export type VisualBaselineOptions = {
@@ -69,6 +71,15 @@ export async function assertVisualBaseline(
 ): Promise<void> {
   const file = `${safeName(name)}.png`;
   const baselinePath = path.join(baselineDir, file);
+  // SSR renders text before webfonts finish loading — wait or the screenshot
+  // races the font swap and every text row ghosts vs the baseline.
+  if (page.evaluate) {
+    try {
+      await page.evaluate(() => document.fonts.ready.then(() => undefined));
+    } catch {
+      // Non-Playwright page implementations may not support evaluate.
+    }
+  }
   const shot = await page.screenshot({
     mask: opts.mask,
     animations: "disabled",

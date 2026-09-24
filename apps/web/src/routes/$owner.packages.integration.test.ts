@@ -23,6 +23,7 @@ vi.mock("@octanejs/tanstack-router", async (importOriginal) => {
   return {
     ...actual,
     useParams: () => ({ owner: "acme" }),
+    useLoaderData: () => undefined,
   };
 });
 
