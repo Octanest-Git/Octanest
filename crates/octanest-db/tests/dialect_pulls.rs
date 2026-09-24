@@ -299,6 +299,48 @@ async fn dialect_pulls_batch_enrichment() {
     assert_eq!(reviews[0].pull_id, p1.id);
     assert_eq!(reviews[0].state, "approved");
 
+    // comment_count is carried on every pull row via PULL_COLS subquery.
+    assert_eq!(p1.comment_count, 0);
+    db.insert_pull_comment(
+        "pc-1",
+        &p1.id,
+        &reviewer.id,
+        "looks good",
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("insert pull comment");
+    let reloaded = db
+        .find_pull_by_repo_number(&repo.id, p1.number)
+        .await
+        .expect("find")
+        .expect("present");
+    assert_eq!(reloaded.comment_count, 1);
+    let (listed, _) = db
+        .list_pulls_for_repo(&repo.id, Some("open"), 0, 20)
+        .await
+        .expect("list");
+    assert_eq!(
+        listed
+            .iter()
+            .find(|r| r.id == p1.id)
+            .expect("row")
+            .comment_count,
+        1
+    );
+    assert_eq!(
+        listed
+            .iter()
+            .find(|r| r.id == p2.id)
+            .expect("row")
+            .comment_count,
+        0
+    );
+
     // Batch repo/user lookups used by pull list enrichment.
     let repos = db
         .find_repositories_by_ids(&[repo.id.clone()])

@@ -574,6 +574,7 @@ fn pull_row_to_public(row: &PullRow, enr: &PullEnrichment) -> Result<PullPublic,
         closed_by: row.closed_by.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
+        comment_count: row.comment_count,
         assignees,
     })
 }

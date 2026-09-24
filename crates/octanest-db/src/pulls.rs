@@ -27,6 +27,8 @@ pub struct PullRow {
     pub closed_by: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    /// Derived `pull_comments` count carried by every `PULL_COLS` select.
+    pub comment_count: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -87,20 +89,35 @@ macro_rules! map_pull {
             updated_at: row
                 .try_get("updated_at")
                 .map_err(|e| format!("pull row: {e}"))?,
+            comment_count: {
+                let v: i64 = row
+                    .try_get("comment_count")
+                    .or_else(|_| row.try_get::<i32, _>("comment_count").map(|v| i64::from(v)))
+                    .map_err(|e| format!("pull row comment_count: {e}"))?;
+                v
+            },
         }
     }};
 }
 
-const PULL_COLS: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, merged_at, merged_by, merge_commit_sha, merge_method, closed_at, closed_by, created_at, updated_at";
+const PULL_COLS: &str = concat!(
+    "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, ",
+    "head_repo_id, head_ref, head_sha, merged_at, merged_by, merge_commit_sha, merge_method, ",
+    "closed_at, closed_by, created_at, updated_at, ",
+    "(SELECT COUNT(*) FROM pull_comments pc WHERE pc.pull_id = pull_requests.id) AS comment_count"
+);
 
 /// Postgres stores timestamps as TIMESTAMPTZ; map_pull expects String / Option<String>.
-const PULL_COLS_PG: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, \
-to_char(merged_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS merged_at, \
-merged_by, merge_commit_sha, merge_method, \
-to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS closed_at, \
-closed_by, \
-to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, \
-to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at";
+const PULL_COLS_PG: &str = concat!(
+    "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, ",
+    "to_char(merged_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS merged_at, ",
+    "merged_by, merge_commit_sha, merge_method, ",
+    "to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS closed_at, ",
+    "closed_by, ",
+    "to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, ",
+    "to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at, ",
+    "(SELECT COUNT(*)::bigint FROM pull_comments pc WHERE pc.pull_id = pull_requests.id) AS comment_count"
+);
 
 pub async fn insert_pull(
     pool: &DbPool,

@@ -1556,6 +1556,7 @@ export type PullPublic = {
   closed_by?: string | null;
   created_at: string;
   updated_at: string;
+  comment_count?: number;
   assignees?: IssueAssigneePublic[];
 };
 

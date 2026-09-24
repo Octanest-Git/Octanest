@@ -120,6 +120,8 @@ pub struct PullPublic {
     pub created_at: String,
     pub updated_at: String,
     #[serde(default)]
+    pub comment_count: i64,
+    #[serde(default)]
     pub assignees: Vec<crate::IssueAssigneePublic>,
 }
 
