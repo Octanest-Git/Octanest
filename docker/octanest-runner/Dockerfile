@@ -26,10 +26,6 @@ RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${
     | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
 COPY --from=builder /app/target/release/octanest-runner /usr/local/bin/octanest-runner
 
-LABEL org.opencontainers.image.title="octanest-runner" \
-      org.opencontainers.image.description="Official Octanest Actions runner" \
-      org.opencontainers.image.source="https://github.com/octanest/octanest"
-
 # Default labels: host execution so jobs run without a Docker daemon.
 # Add `name:docker://image` labels for containerized steps (requires the
 # Docker socket mount).
@@ -37,5 +33,4 @@ ENV OCTANEST_RUNNER_LABELS="ubuntu-latest,self-hosted" \
     OCTANEST_RUNNER_STATE=/data/runner.json \
     OCTANEST_RUNNER_WORK_DIR=/data/work
 
-VOLUME /data
-ENTRYPOINT ["/usr/local/bin/octanest-runner"]
+CMD ["octanest-runner"]
