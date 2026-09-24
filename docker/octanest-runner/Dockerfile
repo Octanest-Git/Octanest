@@ -26,6 +26,11 @@ RUN curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${
     | tar -xz --strip-components=1 -C /usr/local/bin docker/docker
 COPY --from=builder /app/target/release/octanest-runner /usr/local/bin/octanest-runner
 
+# Keep this file to the instruction subset Railway's Railpack validator
+# accepts: no LABEL, no VOLUME (volumes attach via service config), no
+# ENTRYPOINT (use CMD) — otherwise the build dies pre-flight with
+# "The Dockerfile failed validation".
+
 # Default labels: host execution so jobs run without a Docker daemon.
 # Add `name:docker://image` labels for containerized steps (requires the
 # Docker socket mount).
