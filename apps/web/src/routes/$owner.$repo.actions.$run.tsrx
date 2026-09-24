@@ -1,14 +1,22 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
+import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
-import { ArrowLeft, Workflow } from "@octanejs/lucide";
+import { ArrowLeft, Ban, RotateCcw, Workflow } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRepoStore } from "@/lib/repo-store";
+import { formatRelative } from "@/lib/relative-time";
 import { cn } from "@/lib/utils";
-import { actionsJobLogQuery, actionsRunDetailQuery } from "@/lib/actions-queries";
+import {
+  actionsCancelRunMutation,
+  actionsJobLogQuery,
+  actionsRerunRunMutation,
+  actionsRunDetailQuery,
+} from "@/lib/actions-queries";
 
 /** Map a workflow run/job status to a status Badge variant. */
 function runStatusVariant(status: string): "success" | "destructive" | "primary" | "default" {
@@ -17,6 +25,19 @@ function runStatusVariant(status: string): "success" | "destructive" | "primary"
   if (s === "failure" || s === "failed" || s === "error" || s === "cancelled") return "destructive";
   if (s === "in_progress" || s === "running" || s === "queued" || s === "pending") return "primary";
   return "default";
+}
+
+/** Short human duration between two ISO timestamps ("1m 5s"). */
+function jobDuration(started?: string, finished?: string): string {
+  if (!started) return "";
+  const start = Date.parse(started);
+  const end = finished ? Date.parse(finished) : Date.now();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return "";
+  const secs = Math.floor((end - start) / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ${secs % 60}s`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 export const Route = createFileRoute("/$owner/$repo/actions/$run")({
@@ -43,6 +64,8 @@ export function RepoActionsRunPage() @{
   const owner = String(params.owner ?? "");
   const repoName = String(params.repo ?? "");
   const runId = String(params.run ?? "");
+  const repo = useRepoStore((s) => s.repo);
+  const canWrite = !!repo?.can_write;
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   const detailQ = useQuery(actionsRunDetailQuery(owner, repoName, runId));
@@ -54,7 +77,40 @@ export function RepoActionsRunPage() @{
     enabled: !!jobId,
   });
   const logText = logQ.data?.content || (logQ.isPending ? "Loading log…" : "(empty log)");
-  const runDescription = run ? `${run.event} · ${run.head_sha.slice(0, 7)}` : "";
+
+  const qc = useQueryClient();
+  const rerunM = useMutation({
+    ...actionsRerunRunMutation(),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["repo", "actions"] });
+    },
+  });
+  const cancelM = useMutation({
+    ...actionsCancelRunMutation(),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["repo", "actions"] });
+    },
+  });
+  const mutationErr =
+    rerunM.isError || cancelM.isError
+      ? String(rerunM.error?.message ?? cancelM.error?.message ?? "Action failed")
+      : "";
+
+  const runActive = run
+    ? ["queued", "in_progress", "pending", "running"].includes(run.status)
+    : false;
+  const runDescription = run
+    ? [
+        run.workflow_name,
+        run.event,
+        run.head_ref,
+        run.head_sha.slice(0, 7),
+        run.actor ? `by ${run.actor}` : "",
+        formatRelative(run.created_at),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   @{
     <div data-testid="repo-actions-run">
@@ -89,9 +145,42 @@ export function RepoActionsRunPage() @{
               title={run.title}
               description={runDescription}
               actions={
-                <Badge variant={runStatusVariant(run.status)}>{run.status as string}</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant={runStatusVariant(run.status)}>{run.status as string}</Badge>
+                  {canWrite && runActive ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      data-testid="actions-cancel-run"
+                      disabled={cancelM.isPending}
+                      onClick={() => cancelM.mutate({ owner, name: repoName, run_id: runId })}
+                    >
+                      <Ban aria-hidden size={14} />
+                      Cancel run
+                    </Button>
+                  ) : undefined}
+                  {canWrite && !runActive ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      data-testid="actions-rerun-run"
+                      disabled={rerunM.isPending}
+                      onClick={() => rerunM.mutate({ owner, name: repoName, run_id: runId })}
+                    >
+                      <RotateCcw aria-hidden size={14} />
+                      Re-run jobs
+                    </Button>
+                  ) : undefined}
+                </div>
               }
             />
+            @if (mutationErr) {
+              <p className="mt-2 text-[13px] text-destructive" role="alert">
+                {mutationErr as string}
+              </p>;
+            }
             <div className="mt-8 grid gap-6 md:grid-cols-[16rem_1fr]">
               <List data-testid="repo-actions-jobs" className="self-start">
                 @for (const job of jobs; key job.id) {
@@ -106,7 +195,21 @@ export function RepoActionsRunPage() @{
                       )}
                       onClick={() => setSelectedJobId(job.id)}
                     >
-                      <span className="min-w-0 truncate">{job.name as string}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate">{job.name as string}</span>
+                        @if (
+                          jobDuration(job.started_at, job.finished_at)
+                        ) {
+                          <span className="block text-[11px] text-muted-foreground">
+                            {
+                              jobDuration(
+                                job.started_at,
+                                job.finished_at,
+                              ) as string
+                            }
+                          </span>;
+                        }
+                      </span>
                       <Badge variant={runStatusVariant(job.status)}>
                         {job.status as string}
                       </Badge>

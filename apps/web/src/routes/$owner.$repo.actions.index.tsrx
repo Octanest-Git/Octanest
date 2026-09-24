@@ -1,12 +1,32 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
-import { useQuery } from "@octanejs/tanstack-query";
-import { Workflow } from "@octanejs/lucide";
+import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
+import { useState } from "octane";
+import { CheckCircle2, Circle, Loader2, Play, Workflow, XCircle } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
-import { actionsRunsQuery } from "@/lib/actions-queries";
+import { useRepoStore } from "@/lib/repo-store";
+import { formatRelative } from "@/lib/relative-time";
+import {
+  ACTIONS_RUNS_PER_PAGE,
+  actionsDispatchWorkflowMutation,
+  actionsRunsQuery,
+  actionsWorkflowsQuery,
+} from "@/lib/actions-queries";
+import { cn } from "@/lib/utils";
 
 /** Map a workflow run status to a status Badge variant. */
 function runStatusVariant(status: string): "success" | "destructive" | "primary" | "default" {
@@ -15,6 +35,21 @@ function runStatusVariant(status: string): "success" | "destructive" | "primary"
   if (s === "failure" || s === "failed" || s === "error" || s === "cancelled") return "destructive";
   if (s === "in_progress" || s === "running" || s === "queued" || s === "pending") return "primary";
   return "default";
+}
+
+/** GitHub-style leading status glyph for a run row. */
+function RunStatusIcon({ status }: { status: string }) {
+  const v = runStatusVariant(status);
+  if (v === "success") {
+    return <CheckCircle2 aria-hidden size={18} className="shrink-0 text-green-600" />;
+  }
+  if (v === "destructive") {
+    return <XCircle aria-hidden size={18} className="shrink-0 text-destructive" />;
+  }
+  if (v === "primary") {
+    return <Loader2 aria-hidden size={18} className="shrink-0 animate-spin text-amber-500" />;
+  }
+  return <Circle aria-hidden size={18} className="shrink-0 text-muted-foreground" />;
 }
 
 export const Route = createFileRoute("/$owner/$repo/actions/")({
@@ -39,10 +74,58 @@ export function RepoActionsPage() @{
   };
   const owner = String(params.owner ?? "");
   const repoName = String(params.repo ?? "");
-  const listQ = useQuery(actionsRunsQuery(owner, repoName));
+  const repo = useRepoStore((s) => s.repo);
+  const canWrite = !!repo?.can_write;
+  const [page, setPage] = useState(1);
+  const [dispatchOpen, setDispatchOpen] = useState(false);
+  const [dispatchWorkflow, setDispatchWorkflow] = useState("");
+  const [dispatchRef, setDispatchRef] = useState("");
+  const [dispatchError, setDispatchError] = useState("");
+
+  const listQ = useQuery(actionsRunsQuery(owner, repoName, page));
   const runs = listQ.data?.runs ?? [];
+  const total = listQ.data?.total_count ?? 0;
   const loading = listQ.isPending;
   const err = listQ.isError ? String(listQ.error?.message ?? "Failed to load runs") : null;
+  const canPrev = page > 1;
+  const canNext = page * ACTIONS_RUNS_PER_PAGE < total;
+
+  const workflowsQ = useQuery({
+    ...actionsWorkflowsQuery(owner, repoName),
+    enabled: canWrite,
+  });
+  const dispatchable = (workflowsQ.data?.workflows ?? []).filter((w) => w.supports_dispatch);
+
+  const qc = useQueryClient();
+  const dispatchM = useMutation({
+    ...actionsDispatchWorkflowMutation(),
+    onSuccess: async () => {
+      setDispatchOpen(false);
+      setPage(1);
+      await qc.invalidateQueries({ queryKey: ["repo", "actions", "listRuns"] });
+    },
+    onError: (e) => {
+      setDispatchError(e instanceof Error ? e.message : "Could not dispatch workflow.");
+    },
+  });
+
+  function openDispatch() {
+    setDispatchError("");
+    setDispatchRef(repo?.default_branch || "main");
+    setDispatchWorkflow(dispatchable[0]?.path ?? "");
+    setDispatchOpen(true);
+  }
+
+  function submitDispatch() {
+    if (!dispatchWorkflow || !dispatchRef.trim()) return;
+    setDispatchError("");
+    dispatchM.mutate({
+      owner,
+      name: repoName,
+      workflow_id: dispatchWorkflow,
+      git_ref: dispatchRef.trim(),
+    });
+  }
 
   @{
     <div data-testid="repo-actions">
@@ -50,6 +133,19 @@ export function RepoActionsPage() @{
         icon={<Workflow aria-hidden size={22} />}
         title="Actions"
         description="Workflow runs for this repository."
+        actions={
+          canWrite && dispatchable.length > 0 ? (
+            <Button
+              type="button"
+              size="sm"
+              data-testid="actions-run-workflow"
+              onClick={openDispatch}
+            >
+              <Play aria-hidden size={14} />
+              Run workflow
+            </Button>
+          ) : undefined
+        }
       />
       @if (err) {
         <p className="mt-8 text-destructive" role="alert">
@@ -74,30 +170,136 @@ export function RepoActionsPage() @{
               description="Runs triggered by pushes and other events will appear here."
             />;
           } @else {
-            <List className="mt-6" data-testid="repo-actions-run-list">
-              @for (const run of runs; key run.id) {
-                <ListRow className="flex-wrap gap-3">
-                  <a
-                    href={`/${owner}/${repoName}/actions/${run.id}` as string}
-                    className="min-w-0 flex-1 truncate font-medium text-foreground no-underline hover:text-primary hover:underline"
-                  >
-                    {run.title as string}
-                  </a>
-                  <Badge variant={runStatusVariant(run.status)}>
-                    {run.status as string}
-                  </Badge>
-                  <span className="text-[12px] text-muted-foreground">
-                    {run.event as string}
+            <>
+              <List className="mt-6" data-testid="repo-actions-run-list">
+                @for (const run of runs; key run.id) {
+                  <ListRow className="gap-3">
+                    <RunStatusIcon status={run.status} />
+                    <div className="min-w-0 flex-1">
+                      <a
+                        href={`/${owner}/${repoName}/actions/${run.id}` as string}
+                        className="block truncate font-medium text-foreground no-underline hover:text-primary hover:underline"
+                      >
+                        {run.title as string}
+                      </a>
+                      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted-foreground">
+                        <span>{run.workflow_name as string}</span>
+                        <span aria-hidden>·</span>
+                        <span>{run.head_ref as string}</span>
+                        <span aria-hidden>·</span>
+                        <span className="font-mono">
+                          {run.head_sha.slice(0, 7) as string}
+                        </span>
+                        <span aria-hidden>·</span>
+                        <span>{run.event as string}</span>
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Badge variant={runStatusVariant(run.status)}>
+                        {run.status as string}
+                      </Badge>
+                      <span className="text-[12px] text-muted-foreground">
+                        {
+                          ((run.actor ? run.actor + " · " : "") +
+                            formatRelative(run.created_at)) as string
+                        }
+                      </span>
+                    </div>
+                  </ListRow>;
+                }
+              </List>
+              @if (canPrev || canNext) {
+                <div className="mt-4 flex items-center justify-between text-[13px]">
+                  <span className="text-muted-foreground">
+                    {"Page " + page + " · " + total + " run" + (total === 1 ? "" : "s")}
                   </span>
-                  <span className="font-mono text-[12px] text-muted-foreground">
-                    {run.head_sha.slice(0, 7) as string}
-                  </span>
-                </ListRow>;
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!canPrev}
+                      onClick={() => setPage(page - 1)}
+                    >
+                      Newer
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!canNext}
+                      onClick={() => setPage(page + 1)}
+                    >
+                      Older
+                    </Button>
+                  </div>
+                </div>;
               }
-            </List>;
+            </>;
           }
         }
       }
+      <Dialog open={dispatchOpen} onOpenChange={setDispatchOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Run workflow</DialogTitle>
+            <DialogDescription>
+              Manually run a workflow that declares the workflow_dispatch trigger.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-2">
+              <Label>Workflow</Label>
+              <div className="flex flex-col gap-1" role="radiogroup">
+                @for (const w of dispatchable; key w.path) {
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={dispatchWorkflow === w.path}
+                    className={cn(
+                      "rounded-md border px-3 py-2 text-left text-[14px] transition-colors",
+                      dispatchWorkflow === w.path
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/40",
+                    )}
+                    onClick={() => setDispatchWorkflow(w.path)}
+                  >
+                    <span className="block font-medium text-foreground">
+                      {w.name as string}
+                    </span>
+                    <span className="block font-mono text-[12px] text-muted-foreground">
+                      {w.path as string}
+                    </span>
+                  </button>;
+                }
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="actions-dispatch-ref">Branch or tag</Label>
+              <Input
+                id="actions-dispatch-ref"
+                value={dispatchRef}
+                onInput={(e) => setDispatchRef((e.target as HTMLInputElement).value)}
+                placeholder="main"
+              />
+            </div>
+            @if (dispatchError) {
+              <p className="text-[13px] text-destructive" role="alert">
+                {dispatchError as string}
+              </p>;
+            }
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              disabled={!dispatchWorkflow || !dispatchRef.trim() || dispatchM.isPending}
+              onClick={submitDispatch}
+            >
+              {dispatchM.isPending ? "Running…" : "Run workflow"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
     };
 }
