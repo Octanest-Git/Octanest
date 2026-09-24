@@ -215,7 +215,7 @@ pub async fn insert_run(
 pub async fn find_run_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionRunRow>, String> {
     match pool {
         DbPool::Postgres(p) => {
-            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE id = $1")
+            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, finished_at::text AS finished_at FROM action_runs WHERE id = $1")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionRunRow {
                 id: r.get("id"),
@@ -230,11 +230,11 @@ pub async fn find_run_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionRunR
                 triggered_by: r.get("triggered_by"),
                 created_at: String::new(),
                 updated_at: String::new(),
-                finished_at: None,
+                finished_at: r.get("finished_at"),
             }))
         }
         DbPool::MySql(p) => {
-            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE id = ?")
+            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, CAST(finished_at AS CHAR) AS finished_at FROM action_runs WHERE id = ?")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionRunRow {
                 id: r.get("id"),
@@ -249,11 +249,11 @@ pub async fn find_run_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionRunR
                 triggered_by: r.get("triggered_by"),
                 created_at: String::new(),
                 updated_at: String::new(),
-                finished_at: None,
+                finished_at: r.get("finished_at"),
             }))
         }
         DbPool::Sqlite(p) => {
-            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE id = ?")
+            let row = sqlx::query("SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, finished_at FROM action_runs WHERE id = ?")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionRunRow {
                 id: r.get("id"),
@@ -268,7 +268,7 @@ pub async fn find_run_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionRunR
                 triggered_by: r.get("triggered_by"),
                 created_at: String::new(),
                 updated_at: String::new(),
-                finished_at: None,
+                finished_at: r.get("finished_at"),
             }))
         }
     }
@@ -304,7 +304,7 @@ pub async fn insert_job(
 pub async fn find_job_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionJobRow>, String> {
     match pool {
         DbPool::Postgres(p) => {
-            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE id = $1")
+            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, started_at::text AS started_at, finished_at::text AS finished_at FROM action_jobs WHERE id = $1")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionJobRow {
                 id: r.get("id"),
@@ -314,14 +314,14 @@ pub async fn find_job_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionJobR
                 runs_on_json: r.get("runs_on_json"),
                 status: r.get("status"),
                 runner_id: r.get("runner_id"),
-                started_at: None,
-                finished_at: None,
+                started_at: r.get("started_at"),
+                finished_at: r.get("finished_at"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
         }
         DbPool::MySql(p) => {
-            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE id = ?")
+            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, CAST(started_at AS CHAR) AS started_at, CAST(finished_at AS CHAR) AS finished_at FROM action_jobs WHERE id = ?")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionJobRow {
                 id: r.get("id"),
@@ -331,14 +331,14 @@ pub async fn find_job_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionJobR
                 runs_on_json: r.get("runs_on_json"),
                 status: r.get("status"),
                 runner_id: r.get("runner_id"),
-                started_at: None,
-                finished_at: None,
+                started_at: r.get("started_at"),
+                finished_at: r.get("finished_at"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
         }
         DbPool::Sqlite(p) => {
-            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE id = ?")
+            let row = sqlx::query("SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, started_at, finished_at FROM action_jobs WHERE id = ?")
                 .bind(id).fetch_optional(p).await.map_err(|e| e.to_string())?;
             Ok(row.map(|r| ActionJobRow {
                 id: r.get("id"),
@@ -348,8 +348,8 @@ pub async fn find_job_by_id(pool: &DbPool, id: &str) -> Result<Option<ActionJobR
                 runs_on_json: r.get("runs_on_json"),
                 status: r.get("status"),
                 runner_id: r.get("runner_id"),
-                started_at: None,
-                finished_at: None,
+                started_at: r.get("started_at"),
+                finished_at: r.get("finished_at"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
@@ -762,7 +762,7 @@ pub async fn find_runner_by_token_hash(
     match pool {
         DbPool::Sqlite(p) => {
             let row = sqlx::query(
-                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral FROM action_runners WHERE token_hash = ?",
+                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral, strftime('%Y-%m-%dT%H:%M:%SZ', last_online) AS last_online FROM action_runners WHERE token_hash = ?",
             )
             .bind(token_hash)
             .fetch_optional(p)
@@ -777,14 +777,14 @@ pub async fn find_runner_by_token_hash(
                 owner_id: r.get("owner_id"),
                 repository_id: r.get("repository_id"),
                 ephemeral: r.try_get::<i64, _>("ephemeral").map(|i| i != 0).unwrap_or(false),
-                last_online: None,
+                last_online: r.get("last_online"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
         }
         DbPool::Postgres(p) => {
             let row = sqlx::query(
-                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral FROM action_runners WHERE token_hash = $1",
+                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral, to_char(last_online AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS last_online FROM action_runners WHERE token_hash = $1",
             )
             .bind(token_hash)
             .fetch_optional(p)
@@ -799,14 +799,14 @@ pub async fn find_runner_by_token_hash(
                 owner_id: r.get("owner_id"),
                 repository_id: r.get("repository_id"),
                 ephemeral: r.get("ephemeral"),
-                last_online: None,
+                last_online: r.get("last_online"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
         }
         DbPool::MySql(p) => {
             let row = sqlx::query(
-                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral FROM action_runners WHERE token_hash = ?",
+                "SELECT id, name, token_hash, labels_json, owner_type, owner_id, repository_id, ephemeral, DATE_FORMAT(last_online, '%Y-%m-%dT%H:%i:%sZ') AS last_online FROM action_runners WHERE token_hash = ?",
             )
             .bind(token_hash)
             .fetch_optional(p)
@@ -821,7 +821,7 @@ pub async fn find_runner_by_token_hash(
                 owner_id: r.get("owner_id"),
                 repository_id: r.get("repository_id"),
                 ephemeral: r.try_get::<i8, _>("ephemeral").map(|i| i != 0).unwrap_or(false),
-                last_online: None,
+                last_online: r.get("last_online"),
                 created_at: String::new(),
                 updated_at: String::new(),
             }))
@@ -939,7 +939,7 @@ async fn assign_job_runner(pool: &DbPool, job_id: &str, runner_id: &str) -> Resu
     match pool {
         DbPool::Sqlite(p) => {
             let res = sqlx::query(
-                "UPDATE action_jobs SET status = 'in_progress', runner_id = ? WHERE id = ? AND status = 'queued'",
+                "UPDATE action_jobs SET status = 'in_progress', runner_id = ?, started_at = COALESCE(started_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'queued'",
             )
             .bind(runner_id)
             .bind(job_id)
@@ -950,7 +950,7 @@ async fn assign_job_runner(pool: &DbPool, job_id: &str, runner_id: &str) -> Resu
         }
         DbPool::Postgres(p) => {
             let res = sqlx::query(
-                "UPDATE action_jobs SET status = 'in_progress', runner_id = $1 WHERE id = $2 AND status = 'queued'",
+                "UPDATE action_jobs SET status = 'in_progress', runner_id = $1, started_at = COALESCE(started_at, now()), updated_at = now() WHERE id = $2 AND status = 'queued'",
             )
             .bind(runner_id)
             .bind(job_id)
@@ -961,7 +961,7 @@ async fn assign_job_runner(pool: &DbPool, job_id: &str, runner_id: &str) -> Resu
         }
         DbPool::MySql(p) => {
             let res = sqlx::query(
-                "UPDATE action_jobs SET status = 'in_progress', runner_id = ? WHERE id = ? AND status = 'queued'",
+                "UPDATE action_jobs SET status = 'in_progress', runner_id = ?, started_at = COALESCE(started_at, CURRENT_TIMESTAMP), updated_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'queued'",
             )
             .bind(runner_id)
             .bind(job_id)
@@ -1156,22 +1156,96 @@ pub async fn update_job_status(
     job_id: &str,
     status: &str,
 ) -> Result<(), String> {
+    let in_progress = status == "in_progress";
+    let terminal = matches!(status, "success" | "failure" | "cancelled");
     match pool {
         DbPool::Sqlite(p) => {
-            sqlx::query("UPDATE action_jobs SET status = ? WHERE id = ?")
-                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query("UPDATE action_jobs SET status = ?, started_at = CASE WHEN ? AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END, finished_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE finished_at END, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(status).bind(in_progress).bind(terminal).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
         }
         DbPool::Postgres(p) => {
-            sqlx::query("UPDATE action_jobs SET status = $1 WHERE id = $2")
-                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query("UPDATE action_jobs SET status = $1, started_at = CASE WHEN $2 AND started_at IS NULL THEN now() ELSE started_at END, finished_at = CASE WHEN $3 THEN now() ELSE finished_at END, updated_at = now() WHERE id = $4")
+                .bind(status).bind(in_progress).bind(terminal).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
         }
         DbPool::MySql(p) => {
-            sqlx::query("UPDATE action_jobs SET status = ? WHERE id = ?")
-                .bind(status).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query("UPDATE action_jobs SET status = ?, started_at = CASE WHEN ? AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END, finished_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE finished_at END, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(status).bind(in_progress).bind(terminal).bind(job_id).execute(p).await.map_err(|e| e.to_string())?;
         }
     }
     Ok(())
 }
+/// Recompute a run's status from its jobs.
+///
+/// - any job `in_progress` → run `in_progress`
+/// - all jobs terminal → `failure` if any job failed, else `cancelled` if
+///   any job cancelled, else `success`
+/// - otherwise → keep current status (jobs still queued/claimed)
+/// `finished_at` is set exactly when the run first reaches a terminal status.
+pub async fn recompute_run_status(pool: &DbPool, run_id: &str) -> Result<(), String> {
+    const ROLLUP: &str = "UPDATE action_runs SET \
+        status = CASE \
+          WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'in_progress') THEN 'in_progress' \
+          WHEN NOT EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status NOT IN ('success','failure','cancelled')) THEN \
+            CASE \
+              WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'failure') THEN 'failure' \
+              WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'cancelled') THEN 'cancelled' \
+              ELSE 'success' \
+            END \
+          ELSE status END, \
+        finished_at = CASE \
+          WHEN finished_at IS NULL AND NOT EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status NOT IN ('success','failure','cancelled')) THEN CURRENT_TIMESTAMP \
+          ELSE finished_at END, \
+        updated_at = CURRENT_TIMESTAMP \
+        WHERE id = ?";
+    const ROLLUP_PG: &str = "UPDATE action_runs SET \
+        status = CASE \
+          WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'in_progress') THEN 'in_progress' \
+          WHEN NOT EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status NOT IN ('success','failure','cancelled')) THEN \
+            CASE \
+              WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'failure') THEN 'failure' \
+              WHEN EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status = 'cancelled') THEN 'cancelled' \
+              ELSE 'success' \
+            END \
+          ELSE status END, \
+        finished_at = CASE \
+          WHEN finished_at IS NULL AND NOT EXISTS (SELECT 1 FROM action_jobs j WHERE j.run_id = action_runs.id AND j.status NOT IN ('success','failure','cancelled')) THEN now() \
+          ELSE finished_at END, \
+        updated_at = now() \
+        WHERE id = $1";
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(ROLLUP).bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(ROLLUP_PG).bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(ROLLUP).bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Runner liveness heartbeat — bumps `last_online`/`updated_at`. Best-effort;
+/// callers should log, not fail, on error.
+pub async fn touch_runner_online(pool: &DbPool, runner_id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("UPDATE action_runners SET last_online = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("UPDATE action_runners SET last_online = now(), updated_at = now() WHERE id = $1")
+                .bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("UPDATE action_runners SET last_online = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
+                .bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 
 pub async fn update_runner_labels(
     pool: &DbPool,

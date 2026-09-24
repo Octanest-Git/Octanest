@@ -37,6 +37,9 @@ message FetchTaskResponse {
   string steps_json = 9;
   // JSON object of decrypted secret name → value (never logged).
   string secrets_json = 10;
+  // Repository coordinates so runners can clone {origin}/{owner}/{repo}.git.
+  string repository_owner = 11;
+  string repository_name = 12;
 }
 
 message UpdateTaskRequest {

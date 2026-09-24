@@ -2385,6 +2385,14 @@ impl Database {
         actions::update_job_status(self.require_pool()?, job_id, status).await
     }
 
+    pub async fn recompute_action_run_status(&self, run_id: &str) -> Result<(), String> {
+        actions::recompute_run_status(self.require_pool()?, run_id).await
+    }
+
+    pub async fn touch_action_runner_online(&self, runner_id: &str) -> Result<(), String> {
+        actions::touch_runner_online(self.require_pool()?, runner_id).await
+    }
+
     pub async fn update_action_runner_labels(
         &self,
         runner_id: &str,

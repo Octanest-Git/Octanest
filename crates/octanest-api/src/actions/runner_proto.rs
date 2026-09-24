@@ -47,12 +47,17 @@ async fn runner_from_headers(
         .or_else(|| body_token.map(str::to_string))
         .ok_or(StatusCode::UNAUTHORIZED)?;
     let hash = hash_token(&raw);
-    state
+    let runner = state
         .db
         .find_action_runner_by_token_hash(&hash)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .ok_or(StatusCode::UNAUTHORIZED)
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+    // Liveness heartbeat — never fail the request on a bookkeeping error.
+    if let Err(e) = state.db.touch_action_runner_online(&runner.id).await {
+        tracing::warn!(error = %e, runner_id = %runner.id, "failed to bump runner last_online");
+    }
+    Ok(runner)
 }
 
 #[derive(Debug, Deserialize)]
@@ -144,6 +149,9 @@ struct FetchTaskResponse {
     /// Step objects for the claimed job (re-read from workflow YAML at head_sha).
     steps: Option<serde_json::Value>,
     secrets: Option<std::collections::HashMap<String, String>>,
+    /// Repository coordinates — runners clone {origin}/{owner}/{repo}.git.
+    repository_owner: Option<String>,
+    repository_name: Option<String>,
 }
 
 async fn fetch_task(
@@ -161,6 +169,9 @@ async fn fetch_task(
     Ok(Json(match job {
         Some(j) => {
             let runs_on: Vec<String> = serde_json::from_str(&j.runs_on_json).unwrap_or_default();
+            if let Err(e) = state.db.recompute_action_run_status(&j.run_id).await {
+                tracing::warn!("action run rollup after claim failed: {e}");
+            }
             let run = state
                 .db
                 .find_action_run_by_id(&j.run_id)
@@ -171,11 +182,20 @@ async fn fetch_task(
                 crate::actions::secrets::decrypted_secrets_for_repo(&state.db, &run.repository_id)
                     .await
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-            let (steps, workflow_name) =
-                job_steps_at_head(&state, &run, &j.job_key).await.unwrap_or((
-                    serde_json::Value::Array(vec![]),
-                    run.workflow_name.clone(),
-                ));
+            let (steps, workflow_name) = job_steps_at_head(&state, &run, &j.job_key)
+                .await
+                .unwrap_or((serde_json::Value::Array(vec![]), run.workflow_name.clone()));
+            let repo = state
+                .db
+                .find_repository_by_id(&run.repository_id)
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+            let owner_slug = crate::repo::owner_ref_for_repo(&state.db, &repo)
+                .await
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+                .map(|o| o.slug().to_string())
+                .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
             // Keep prost types linked when regenerating.
             let _ = pb::FetchTaskResponse {
                 job_id: j.id.clone(),
@@ -188,6 +208,8 @@ async fn fetch_task(
                 head_ref: run.head_ref.clone(),
                 steps_json: steps.to_string(),
                 secrets_json: serde_json::to_string(&secrets).unwrap_or_else(|_| "{}".into()),
+                repository_owner: owner_slug.clone(),
+                repository_name: repo.name.clone(),
             };
             FetchTaskResponse {
                 job_id: Some(j.id),
@@ -200,6 +222,8 @@ async fn fetch_task(
                 head_ref: Some(run.head_ref),
                 steps: Some(steps),
                 secrets: Some(secrets),
+                repository_owner: Some(owner_slug),
+                repository_name: Some(repo.name),
             }
         }
         None => FetchTaskResponse {
@@ -213,6 +237,8 @@ async fn fetch_task(
             head_ref: None,
             steps: None,
             secrets: None,
+            repository_owner: None,
+            repository_name: None,
         },
     }))
 }
@@ -285,6 +311,9 @@ async fn update_task(
         .update_action_job_status(&job.id, status)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if let Err(e) = state.db.recompute_action_run_status(&job.run_id).await {
+        tracing::warn!(error = %e, run_id = %job.run_id, "failed to roll up run status");
+    }
     let origin = std::env::var("OCTANEST_PUBLIC_ORIGIN").ok();
     if let Err(e) = crate::actions::statuses::publish_from_job_update(
         &state.db,
