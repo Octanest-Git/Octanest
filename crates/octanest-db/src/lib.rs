@@ -2337,8 +2337,22 @@ impl Database {
     pub async fn list_action_runs_for_repo(
         &self,
         repository_id: &str,
+        limit: i64,
+        offset: i64,
     ) -> Result<Vec<actions::ActionRunRow>, String> {
-        actions::list_runs_for_repo(self.require_pool()?, repository_id).await
+        actions::list_runs_for_repo(self.require_pool()?, repository_id, limit, offset).await
+    }
+
+    pub async fn count_action_runs_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        actions::count_runs_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn requeue_action_run(&self, run_id: &str) -> Result<(), String> {
+        actions::requeue_run(self.require_pool()?, run_id).await
+    }
+
+    pub async fn cancel_action_run(&self, run_id: &str) -> Result<(), String> {
+        actions::cancel_run(self.require_pool()?, run_id).await
     }
 
     pub async fn list_action_jobs_for_run(

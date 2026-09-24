@@ -600,6 +600,26 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.actions.listWorkflows" => {
+            match crate::actions::rpc::list_workflows(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.dispatchWorkflow" => {
+            match crate::actions::rpc::dispatch_workflow(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.rerunRun" => match crate::actions::rpc::rerun_run(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.cancelRun" => match crate::actions::rpc::cancel_run(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.actions.secrets.list" => {
             match crate::actions::rpc::list_secrets(ctx, req.input).await {
                 Ok(v) => RpcResponse::ok(v),

@@ -1095,6 +1095,10 @@ export type ActionRunPublic = {
   head_ref: string;
   status: string;
   title: string;
+  actor?: string;
+  created_at?: string;
+  updated_at?: string;
+  finished_at?: string;
 };
 
 export type ActionJobPublic = {
@@ -1104,15 +1108,22 @@ export type ActionJobPublic = {
   name: string;
   status: string;
   runs_on: string[];
+  started_at?: string;
+  finished_at?: string;
 };
 
 export type ActionRunsListRequest = {
   owner: string;
   name: string;
+  page?: number;
+  per_page?: number;
 };
 
 export type ActionRunsListResponse = {
   runs: ActionRunPublic[];
+  total_count?: number;
+  page?: number;
+  per_page?: number;
 };
 
 export type ActionRunGetRequest = {
@@ -1135,6 +1146,45 @@ export type ActionJobLogRequest = {
 
 export type ActionJobLogResponse = {
   content: string;
+};
+
+export type ActionWorkflowsListRequest = {
+  owner: string;
+  name: string;
+  git_ref?: string;
+};
+
+export type ActionWorkflowPublic = {
+  path: string;
+  name: string;
+  supports_dispatch: boolean;
+};
+
+export type ActionWorkflowsListResponse = {
+  workflows: ActionWorkflowPublic[];
+  git_ref: string;
+};
+
+export type ActionDispatchRequest = {
+  owner: string;
+  name: string;
+  workflow_id: string;
+  git_ref: string;
+};
+
+export type ActionDispatchResponse = {
+  ok: boolean;
+  run_id?: string;
+};
+
+export type ActionRunMutationRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+};
+
+export type ActionRunMutationResponse = {
+  run: ActionRunPublic;
 };
 
 export type ActionSecretMetaPublic = {
@@ -2422,6 +2472,14 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
         getJobLog: (input: ActionJobLogRequest) =>
           rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+        listWorkflows: (input: ActionWorkflowsListRequest) =>
+          rpcCall<ActionWorkflowsListResponse>(opts, "repo.actions.listWorkflows", input),
+        dispatchWorkflow: (input: ActionDispatchRequest) =>
+          rpcCall<ActionDispatchResponse>(opts, "repo.actions.dispatchWorkflow", input),
+        rerunRun: (input: ActionRunMutationRequest) =>
+          rpcCall<ActionRunMutationResponse>(opts, "repo.actions.rerunRun", input),
+        cancelRun: (input: ActionRunMutationRequest) =>
+          rpcCall<ActionRunMutationResponse>(opts, "repo.actions.cancelRun", input),
         secrets: {
           list: (input: ActionSecretsListRequest) =>
             rpcCall<ActionSecretsListResponse>(opts, "repo.actions.secrets.list", input),
@@ -3140,6 +3198,60 @@ export function actionsGetJobLogQueryOptions(
     ] as const,
     queryFn: async () => {
       const res = await client.repo.actions.getJobLog(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsListWorkflowsQueryOptions(
+  client: OctanestClient,
+  input: ActionWorkflowsListRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "actions",
+      "listWorkflows",
+      input.owner,
+      input.name,
+      input.git_ref ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.listWorkflows(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsDispatchWorkflowMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "dispatchWorkflow"] as const,
+    mutationFn: async (input: ActionDispatchRequest) => {
+      const res = await client.repo.actions.dispatchWorkflow(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsRerunRunMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "rerunRun"] as const,
+    mutationFn: async (input: ActionRunMutationRequest) => {
+      const res = await client.repo.actions.rerunRun(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsCancelRunMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "cancelRun"] as const,
+    mutationFn: async (input: ActionRunMutationRequest) => {
+      const res = await client.repo.actions.cancelRun(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

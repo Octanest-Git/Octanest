@@ -973,13 +973,20 @@ async fn assign_job_runner(pool: &DbPool, job_id: &str, runner_id: &str) -> Resu
     }
 }
 
-pub async fn list_runs_for_repo(pool: &DbPool, repository_id: &str) -> Result<Vec<ActionRunRow>, String> {
+pub async fn list_runs_for_repo(
+    pool: &DbPool,
+    repository_id: &str,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<ActionRunRow>, String> {
     match pool {
         DbPool::Sqlite(p) => {
             let rows = sqlx::query(
-                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE repository_id = ? ORDER BY created_at DESC",
+                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, created_at, updated_at, finished_at FROM action_runs WHERE repository_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
             )
             .bind(repository_id)
+            .bind(limit)
+            .bind(offset)
             .fetch_all(p)
             .await
             .map_err(|e| e.to_string())?;
@@ -996,17 +1003,19 @@ pub async fn list_runs_for_repo(pool: &DbPool, repository_id: &str) -> Result<Ve
                     status: r.get("status"),
                     title: r.get("title"),
                     triggered_by: r.get("triggered_by"),
-                    created_at: String::new(),
-                    updated_at: String::new(),
-                    finished_at: None,
+                    created_at: r.get("created_at"),
+                    updated_at: r.get("updated_at"),
+                    finished_at: r.get("finished_at"),
                 })
                 .collect())
         }
         DbPool::Postgres(p) => {
             let rows = sqlx::query(
-                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE repository_id = $1 ORDER BY created_at DESC",
+                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, created_at::text AS created_at, updated_at::text AS updated_at, finished_at::text AS finished_at FROM action_runs WHERE repository_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
             )
             .bind(repository_id)
+            .bind(limit)
+            .bind(offset)
             .fetch_all(p)
             .await
             .map_err(|e| e.to_string())?;
@@ -1023,17 +1032,19 @@ pub async fn list_runs_for_repo(pool: &DbPool, repository_id: &str) -> Result<Ve
                     status: r.get("status"),
                     title: r.get("title"),
                     triggered_by: r.get("triggered_by"),
-                    created_at: String::new(),
-                    updated_at: String::new(),
-                    finished_at: None,
+                    created_at: r.get("created_at"),
+                    updated_at: r.get("updated_at"),
+                    finished_at: r.get("finished_at"),
                 })
                 .collect())
         }
         DbPool::MySql(p) => {
             let rows = sqlx::query(
-                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by FROM action_runs WHERE repository_id = ? ORDER BY created_at DESC",
+                "SELECT id, repository_id, workflow_path, workflow_name, event, head_sha, head_ref, status, title, triggered_by, CAST(created_at AS CHAR) AS created_at, CAST(updated_at AS CHAR) AS updated_at, CAST(finished_at AS CHAR) AS finished_at FROM action_runs WHERE repository_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
             )
             .bind(repository_id)
+            .bind(limit)
+            .bind(offset)
             .fetch_all(p)
             .await
             .map_err(|e| e.to_string())?;
@@ -1050,9 +1061,9 @@ pub async fn list_runs_for_repo(pool: &DbPool, repository_id: &str) -> Result<Ve
                     status: r.get("status"),
                     title: r.get("title"),
                     triggered_by: r.get("triggered_by"),
-                    created_at: String::new(),
-                    updated_at: String::new(),
-                    finished_at: None,
+                    created_at: r.get("created_at"),
+                    updated_at: r.get("updated_at"),
+                    finished_at: r.get("finished_at"),
                 })
                 .collect())
         }
@@ -1063,7 +1074,7 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
     match pool {
         DbPool::Sqlite(p) => {
             let rows = sqlx::query(
-                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE run_id = ?",
+                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, started_at, finished_at FROM action_jobs WHERE run_id = ?",
             )
             .bind(run_id)
             .fetch_all(p)
@@ -1079,8 +1090,8 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
                     runs_on_json: r.get("runs_on_json"),
                     status: r.get("status"),
                     runner_id: r.get("runner_id"),
-                    started_at: None,
-                    finished_at: None,
+                    started_at: r.get("started_at"),
+                    finished_at: r.get("finished_at"),
                     created_at: String::new(),
                     updated_at: String::new(),
                 })
@@ -1088,7 +1099,7 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
         }
         DbPool::Postgres(p) => {
             let rows = sqlx::query(
-                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE run_id = $1",
+                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, started_at::text AS started_at, finished_at::text AS finished_at FROM action_jobs WHERE run_id = $1",
             )
             .bind(run_id)
             .fetch_all(p)
@@ -1104,8 +1115,8 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
                     runs_on_json: r.get("runs_on_json"),
                     status: r.get("status"),
                     runner_id: r.get("runner_id"),
-                    started_at: None,
-                    finished_at: None,
+                    started_at: r.get("started_at"),
+                    finished_at: r.get("finished_at"),
                     created_at: String::new(),
                     updated_at: String::new(),
                 })
@@ -1113,7 +1124,7 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
         }
         DbPool::MySql(p) => {
             let rows = sqlx::query(
-                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id FROM action_jobs WHERE run_id = ?",
+                "SELECT id, run_id, job_key, name, runs_on_json, status, runner_id, CAST(started_at AS CHAR) AS started_at, CAST(finished_at AS CHAR) AS finished_at FROM action_jobs WHERE run_id = ?",
             )
             .bind(run_id)
             .fetch_all(p)
@@ -1129,8 +1140,8 @@ pub async fn list_jobs_for_run(pool: &DbPool, run_id: &str) -> Result<Vec<Action
                     runs_on_json: r.get("runs_on_json"),
                     status: r.get("status"),
                     runner_id: r.get("runner_id"),
-                    started_at: None,
-                    finished_at: None,
+                    started_at: r.get("started_at"),
+                    finished_at: r.get("finished_at"),
                     created_at: String::new(),
                     updated_at: String::new(),
                 })
@@ -1179,6 +1190,118 @@ pub async fn update_runner_labels(
         DbPool::MySql(p) => {
             sqlx::query("UPDATE action_runners SET labels_json = ? WHERE id = ?")
                 .bind(labels_json).bind(runner_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Total run count for a repository (pagination companion to [`list_runs_for_repo`]).
+pub async fn count_runs_for_repo(pool: &DbPool, repository_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM action_runs WHERE repository_id = ?",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(n)
+        }
+        DbPool::Postgres(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM action_runs WHERE repository_id = $1",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(n)
+        }
+        DbPool::MySql(p) => {
+            let n: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM action_runs WHERE repository_id = ?",
+            )
+            .bind(repository_id)
+            .fetch_one(p)
+            .await
+            .map_err(|e| e.to_string())?;
+            Ok(n)
+        }
+    }
+}
+
+/// Requeue a run for re-run: reset run + all jobs to queued and clear
+/// runner/timing fields so a runner can claim the jobs again.
+pub async fn requeue_run(pool: &DbPool, run_id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'queued', finished_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'queued', runner_id = NULL, started_at = NULL, finished_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE run_id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'queued', finished_at = NULL, updated_at = now() WHERE id = $1",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'queued', runner_id = NULL, started_at = NULL, finished_at = NULL, updated_at = now() WHERE run_id = $1",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'queued', finished_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'queued', runner_id = NULL, started_at = NULL, finished_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE run_id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Cancel a run and any unfinished jobs (queued/in_progress). Finished jobs
+/// keep their conclusion, matching GitHub's per-job cancellation semantics.
+pub async fn cancel_run(pool: &DbPool, run_id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'cancelled', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'cancelled', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE run_id = ? AND status IN ('queued', 'in_progress')",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'cancelled', finished_at = now(), updated_at = now() WHERE id = $1",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'cancelled', finished_at = now(), updated_at = now() WHERE run_id = $1 AND status IN ('queued', 'in_progress')",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query(
+                "UPDATE action_runs SET status = 'cancelled', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
+            sqlx::query(
+                "UPDATE action_jobs SET status = 'cancelled', finished_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE run_id = ? AND status IN ('queued', 'in_progress')",
+            )
+            .bind(run_id).execute(p).await.map_err(|e| e.to_string())?;
         }
     }
     Ok(())
