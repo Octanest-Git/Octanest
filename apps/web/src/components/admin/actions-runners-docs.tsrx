@@ -51,11 +51,11 @@ export function ActionsRunnersDocs({
       <li>
         <span className="font-medium text-foreground">Start the official runner image</span>
         {" — "}
-        Use{" "}
+        Use the{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
-          docker/octanest-runner
+          octanest-runner
         </code>{" "}
-        (act_runner lineage) with your public forge origin — not{" "}
+        image with your public forge origin — not{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
           localhost
         </code>{" "}

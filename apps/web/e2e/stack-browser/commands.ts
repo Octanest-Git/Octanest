@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
@@ -1570,6 +1570,145 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
         ...relativeTimeMasks(page),
       ],
     });
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/** Push a workflow file that triggers a queued Actions run on push. */
+function pushActionsWorkflow(opts: {
+  owner: string;
+  repo: string;
+  token: string;
+  marker: string;
+}): void {
+  const origin = apiOrigin().replace(/^https?:\/\//, "");
+  const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
+  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-actions-"));
+  try {
+    execFileSync("git", ["clone", gitUrl, work], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+    mkdirSync(join(work, ".github/workflows"), { recursive: true });
+    writeFileSync(
+      join(work, ".github/workflows/ci.yml"),
+      `name: ci
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: marker
+        run: |
+          echo "${opts.marker}"
+          echo "checkout ok at $(pwd)"
+`,
+    );
+    execFileSync("git", ["-C", work, "add", "-A"], { stdio: "pipe" });
+    execFileSync(
+      "git",
+      [
+        "-C",
+        work,
+        "-c",
+        "user.email=e2e@octanest.local",
+        "-c",
+        "user.name=e2e",
+        "commit",
+        "-qm",
+        `e2e: ci workflow ${Date.now()}`,
+      ],
+      { stdio: "pipe" },
+    );
+    execFileSync("git", ["-C", work, "push", "origin", "HEAD:main"], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+  } catch (e) {
+    const err = e as { stderr?: Buffer; message?: string };
+    const detail = err.stderr?.toString("utf8") || err.message || String(e);
+    throw new Error(`workflow push failed: ${detail.slice(0, 800)}`);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+type ActionRunRow = { id: string; status: string; workflow_name?: string };
+
+async function pollRunTerminal(cookie: string, owner: string, repo: string): Promise<ActionRunRow> {
+  const deadline = Date.now() + 150_000;
+  for (;;) {
+    const res = await rpc("repo.actions.listRuns", { owner, name: repo, per_page: 5 }, cookie);
+    if (!res.ok) {
+      throw new Error(`repo.actions.listRuns failed: ${JSON.stringify(res.error)}`);
+    }
+    const runs = ((res.data as { runs?: ActionRunRow[] }).runs ?? []) as ActionRunRow[];
+    const run = runs[0];
+    if (run && !["queued", "in_progress", "pending", "running"].includes(run.status)) {
+      return run;
+    }
+    if (Date.now() > deadline) {
+      throw new Error(
+        `run did not reach a terminal state in 150s (last: ${run?.status ?? "none"})`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
+/**
+ * End-to-end Actions pipeline in the real UI: seed repo → push workflow →
+ * bundled octanest-runner claims it (host exec) → run goes green → run detail
+ * shows the streamed job log marker.
+ */
+export const expectActionsPipelineFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const marker = `octanest-stack-hello-${Date.now()}`;
+  const token = await createClassicPat(seed.cookie, ["repo"]);
+  pushActionsWorkflow({ owner: seed.owner, repo: seed.repo, token, marker });
+
+  // Wait for the runner to drive the run terminal before opening the UI.
+  const run = await pollRunTerminal(seed.cookie, seed.owner, seed.repo);
+  if (run.status !== "success") {
+    throw new Error(`pipeline run finished ${run.status} (expected success)`);
+  }
+
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/actions`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-actions").waitFor({ state: "visible", timeout: 30_000 });
+    const runList = page.getByTestId("repo-actions-run-list");
+    await runList.waitFor({ state: "visible", timeout: 30_000 });
+    await runList.locator("text=success").waitFor({ state: "visible", timeout: 30_000 });
+
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/actions/${run.id}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    const runDetail = page.locator('[data-testid="repo-actions-run"]');
+    await runDetail.waitFor({ state: "visible", timeout: 30_000 });
+    const detailText = (await runDetail.innerText?.()) ?? "";
+    if (!detailText.includes("success")) {
+      throw new Error(`run detail missing success badge: ${detailText.slice(0, 400)}`);
+    }
+    const log = page.locator('[data-testid="repo-actions-job-log"]');
+    await log.waitFor({ state: "visible", timeout: 30_000 });
+    const logText = (await log.innerText?.()) ?? "";
+    if (!logText.includes(marker)) {
+      throw new Error(`job log missing marker ${marker}: ${logText.slice(0, 500)}`);
+    }
+    assertNoOctaneOverlay(await page.content(), "actions run detail");
     return true;
   } finally {
     await pageGuard.close("stack-browser");

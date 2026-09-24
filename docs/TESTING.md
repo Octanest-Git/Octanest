@@ -262,6 +262,8 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 
 `e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI, WorkOS CTA, and the D-QH-03 forge matrix (repo/packages, issues/releases, SSH keys, org members) against the live web/API in Chromium.
 
+The e2e stack script also builds and attaches a native `octanest-runner` (host execution, labels `ubuntu-latest,self-hosted`) to the API via the `OCTANEST_RUNNER_REGISTRATION_TOKEN` bootstrap. `forge-actions-pipeline.stack.browser.test.tsx` pushes a real `.github/workflows/ci.yml` over Smart HTTP, waits for the runner to drive the run green, and asserts the run detail page streams the job log marker in Chromium.
+
 
 ## Actions phase gate (Phase 19)
 
@@ -270,8 +272,20 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 make smoke-actions
 # or: bash scripts/smoke-actions.sh
 
+# Full API + native runner pipeline (no Docker required): builds
+# octanest-api + octanest-runner, registers, pushes a workflow, and asserts a
+# green run with the streamed log marker.
+make test-e2e-actions
+# or: bash scripts/e2e-actions-pipeline.sh
+
+# Seed only (works against any origin incl. preview/staging):
+#   OCTANEST_ORIGIN=https://<gateway> OCTANEST_SEED_USER=… OCTANEST_SEED_PASSWORD=… \
+#     make seed-actions-demo
+
 # Targeted API coverage
 cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
+# Runner unit tests
+cargo nextest run -p octanest-runner
 
 make rpc-sync-check
 make web-lint && make web-format-check   # after apps/web Actions UI changes

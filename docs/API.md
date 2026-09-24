@@ -628,7 +628,7 @@ Example register body (placeholders only):
 
 Runner protocol ignores session cookies (D-ACT-18).
 
-**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]` (Gitea/act_runner parity), e.g. `ubuntu-latest:docker://node:20-bookworm`. Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
+**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm` (bare labels run on the runner host; `docker://` runs in a container when the socket is mounted). Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
 
 Session RPC (Read+/Admin as noted):
 
@@ -659,7 +659,7 @@ Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Ta
 
 ### Official runner image (ACT-04 / ACT-05)
 
-Operators attach compute via `docker/octanest-runner` (act_runner lineage). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
+Operators attach compute via `octanest-runner` (`crates/octanest-runner`, image from `docker/octanest-runner`). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
 
 ## Regenerating the TypeScript client
 

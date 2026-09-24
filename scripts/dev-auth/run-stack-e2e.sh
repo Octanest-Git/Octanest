@@ -11,12 +11,17 @@ WEB_PORT="${OCTANEST_E2E_WEB_PORT:-13000}"
 DB_PATH="${OCTANEST_E2E_DB_PATH:-$ROOT/var/e2e/octanest.db}"
 API_PID=""
 WEB_PID=""
+RUNNER_PID=""
 STUBS_ONLY="${OCTANEST_E2E_STUBS_ONLY:-0}"
 
 cleanup() {
   if [[ -n "${WEB_PID}" ]] && kill -0 "$WEB_PID" 2>/dev/null; then
     kill "$WEB_PID" 2>/dev/null || true
     wait "$WEB_PID" 2>/dev/null || true
+  fi
+  if [[ -n "${RUNNER_PID}" ]] && kill -0 "$RUNNER_PID" 2>/dev/null; then
+    kill "$RUNNER_PID" 2>/dev/null || true
+    wait "$RUNNER_PID" 2>/dev/null || true
   fi
   if [[ -n "${API_PID}" ]] && kill -0 "$API_PID" 2>/dev/null; then
     kill "$API_PID" 2>/dev/null || true
@@ -48,6 +53,7 @@ fi
 
 mkdir -p "$(dirname "$DB_PATH")"
 rm -f "$DB_PATH"
+mkdir -p "$ROOT/var/e2e/repos" "$ROOT/var/e2e/actions-logs"
 
 echo "==> starting dev-auth stubs (Mailpit, OIDC mock, HTTP stubs)"
 $COMPOSE -f docker-compose.dev-auth.yml --profile dev-auth up --build -d
@@ -106,11 +112,33 @@ export OCTANEST_OIDC_CLIENT_ID="octanest-dev"
 export OCTANEST_OIDC_CLIENT_SECRET="octanest-dev"
 export OCTANEST_ADMIN_EMAIL="admin@octanest.local"
 export OCTANEST_ADMIN_PASSWORD="password1"
+# Absolute paths — the protection hook + runner helpers inherit these and run
+# with a different cwd, so relative paths resolve against the wrong directory.
+export OCTANEST_REPOS_DIR="$ROOT/var/e2e/repos"
+export OCTANEST_ACTIONS_LOG_DIR="$ROOT/var/e2e/actions-logs"
+# Bootstrap runner registration so the bundled octanest-runner can self-register.
+export OCTANEST_RUNNER_REGISTRATION_TOKEN="e2e-runner-registration-token"
 export RUST_LOG="${RUST_LOG:-info,octanest=debug}"
 
 cargo run -q -p octanest-api --bin octanest-api >"$ROOT/var/e2e/api.log" 2>&1 &
 API_PID=$!
 wait_http "http://127.0.0.1:${API_PORT}/health" "octanest-api" 90
+
+echo "==> building octanest-runner"
+cargo build -q -p octanest-runner --bin octanest-runner
+
+echo "==> starting octanest-runner (host exec, labels: ubuntu-latest,self-hosted)"
+rm -rf "$ROOT/var/e2e/runner-work" "$ROOT/var/e2e/runner-state.json"
+mkdir -p "$ROOT/var/e2e/runner-work"
+# Runner targets the API directly — it serves both /api/actions and smart HTTP.
+OCTANEST_PUBLIC_ORIGIN="http://127.0.0.1:${API_PORT}" \
+OCTANEST_RUNNER_REGISTRATION_TOKEN="$OCTANEST_RUNNER_REGISTRATION_TOKEN" \
+OCTANEST_RUNNER_NAME="e2e-runner" \
+OCTANEST_RUNNER_LABELS="ubuntu-latest,self-hosted" \
+OCTANEST_RUNNER_STATE="$ROOT/var/e2e/runner-state.json" \
+OCTANEST_RUNNER_WORK_DIR="$ROOT/var/e2e/runner-work" \
+  cargo run -q -p octanest-runner --bin octanest-runner >"$ROOT/var/e2e/runner.log" 2>&1 &
+RUNNER_PID=$!
 
 echo "==> starting Vite web on :$WEB_PORT (proxies /api → API)"
 (

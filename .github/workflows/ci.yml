@@ -156,6 +156,29 @@ jobs:
           path: var/e2e/
           if-no-files-found: ignore
 
+  # Actions pipeline e2e: API (sqlite) + native octanest-runner (host mode,
+  # no Docker) + seeded push-triggered workflow → green run with log marker.
+  actions-e2e:
+    name: actions-e2e
+    needs: [makefile-lint]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: free disk for Rust link
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /usr/local/share/boost /usr/share/swift || true
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: install protoc + mold
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq protobuf-compiler mold jq
+      - name: pipeline e2e
+        env:
+          CARGO_BUILD_JOBS: "2"
+          CARGO_INCREMENTAL: "0"
+          RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+        run: ./scripts/e2e-actions-pipeline.sh
+
   rpc-sync:
     name: rpc-sync
     needs: [makefile-lint]
@@ -204,6 +227,8 @@ jobs:
           df -h /
       - name: build api + web images
         run: docker compose -f docker-compose.yml build api web
+      - name: build runner image (compile gate)
+        run: docker compose -f docker-compose.yml --profile actions build runner
       - name: export images tarball
         run: |
           docker save octanest-api:ci octanest-web:ci | gzip -1 > /tmp/octanest-ci-images.tgz

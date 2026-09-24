@@ -9,6 +9,7 @@ import {
 } from "./vite-plugins/fix-type-only-imports.ts";
 import {
   ensureAuthSettings,
+  expectActionsPipelineFlow,
   expectAdminLfsQuotasFlow,
   expectAuthMeDedupedOnHome,
   expectBranchDialogsFlow,
@@ -167,6 +168,7 @@ export default defineConfig({
                     expectMirrorAuthToggleFlow,
                     expectPackagesVisualFlow,
                     expectBranchDialogsFlow,
+                    expectActionsPipelineFlow,
                   },
                 },
               },

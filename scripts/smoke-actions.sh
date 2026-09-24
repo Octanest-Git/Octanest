@@ -24,8 +24,8 @@ if [[ ! -f docker/octanest-runner/Dockerfile ]]; then
   echo "missing docker/octanest-runner/Dockerfile" >&2
   exit 1
 fi
-if ! grep -q 'act_runner' docker/octanest-runner/Dockerfile; then
-  echo "Dockerfile must reference act_runner base" >&2
+if ! grep -q 'octanest-runner' docker/octanest-runner/Dockerfile; then
+  echo "Dockerfile must build/install the octanest-runner binary" >&2
   exit 1
 fi
 if ! grep -qE 'register|ORIGIN|token|label' docker/octanest-runner/README.md; then
@@ -41,8 +41,8 @@ echo "OK: runner image + compose profile present"
 smoke_require_docker
 
 if docker info >/dev/null 2>&1; then
-  echo "==> docker build octanest-runner (best-effort)"
-  if ! docker build -q -t octanest-runner:smoke -f docker/octanest-runner/Dockerfile docker/octanest-runner; then
+  echo "==> docker build octanest-runner (best-effort, repo-root context)"
+  if ! docker build -q -t octanest-runner:smoke -f docker/octanest-runner/Dockerfile .; then
     smoke_require_or_skip "docker build octanest-runner failed; skipping further Actions smoke"
   fi
 else

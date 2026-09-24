@@ -2,7 +2,7 @@
 //! Docker, log streaming with secret masking.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Stdio;
 use std::time::Duration;
 
@@ -215,7 +215,7 @@ async fn checkout(
     let mut args: Vec<String> = Vec::new();
     if let Some(token) = &config.git_token {
         let creds =
-            base64::engine::general_purpose::STANDARD.encode(format!("x-access-token:{token}"));
+            base64::engine::general_purpose::STANDARD.encode(format!("oauth2:{token}"));
         args.push("-c".into());
         args.push(format!("http.extraHeader=Authorization: Basic {creds}"));
     }
@@ -440,6 +440,7 @@ fn truncate(s: &str, max: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     fn cfg(labels: &str) -> Config {
         Config {

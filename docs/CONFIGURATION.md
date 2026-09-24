@@ -330,7 +330,10 @@ Octanest Actions evaluates workflows from `.github/workflows/*.{yml,yaml}` on **
 | `OCTANEST_ACTIONS_ENABLED` | Instance-wide gate (default `true`). When off, no workflows are evaluated. |
 | `OCTANEST_ACTIONS_LOG_DIR` | Job log blobs (`{run_id}/{job_id}.log`); distinct from repos/LFS/packages volumes. |
 | `OCTANEST_RUNNER_REGISTRATION_TOKEN` | Bootstrap registration token for Compose profile `actions` only — **reusable while set**; never leave on a public API. Prefer Admin-minted one-time tokens. **Never commit real values**. |
-| `OCTANEST_RUNNER_NAME` / `OCTANEST_RUNNER_LABELS` | Default runner display name and labels (`label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm`). |
+| `OCTANEST_RUNNER_NAME` / `OCTANEST_RUNNER_LABELS` | Default runner display name and labels (`label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm`). Bare labels execute on the runner host; `docker://` labels execute in a container (requires the Docker socket). |
+| `OCTANEST_RUNNER_GIT_TOKEN` | Optional PAT (`repo` scope) the runner uses to clone **private** repositories; public repos clone anonymously. |
+| `OCTANEST_RUNNER_STATE` / `OCTANEST_RUNNER_WORK_DIR` | Runner registration-state file (default `/data/runner.json`) and per-job workspace root (default `<state dir>/work`). Mount a volume at `/data` in the official image. |
+| `OCTANEST_RUNNER_POLL_MS` / `OCTANEST_RUNNER_JOB_TIMEOUT_SECS` | `fetch_task` poll interval (default `2000`) and hard job timeout (default `3600`). |
 | `OCTANEST_ACTIONS_SECRETS_KEY` | AES-256-GCM key for repo Actions secrets at rest (D-ACT-17). Required (or `OCTANEST_SESSION_SECRET`); encrypt fails closed if unset. Compose/`make up` defaults to a local-only value — **set a unique key in production**. Prefer a dedicated secret. |
 
 **Registration tokens:** instance admins mint via `admin.actions.createRegistrationToken` (one-time plaintext `reg_…`) or env bootstrap above. **Runner tokens** (`ort_…`) are returned once at register and used as Bearer on `/api/actions/*` — session cookies are ignored (D-ACT-18).
