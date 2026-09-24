@@ -130,6 +130,10 @@ async fn package_rpc_list_by_repo_link() {
     )
     .await
     .unwrap();
+    let vid = Uuid::new_v4().to_string();
+    db.insert_package_version(&vid, &id, "1.0.0", None, "{}", Some(&uid))
+        .await
+        .unwrap();
     let res = app
         .clone()
         .oneshot(rpc(

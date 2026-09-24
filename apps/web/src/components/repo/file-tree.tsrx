@@ -105,29 +105,35 @@ export function FileTree({
           }
         </div>
         @if (last) {
-          <a
-            href={`/${owner}/${repo}/commit/${last.sha}` as string}
-            className="hidden min-w-0 truncate text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline md:block"
-            title={last.subject as string}
-          >
-            {last.subject as string}
-          </a>;
-          <time
-            dateTime={last.authored_at as string}
-            className="text-[12px] text-muted-foreground md:text-right"
-          >
-            {relativeCommitTime(last.authored_at) as string}
-          </time>;
+          <>
+            <a
+              href={`/${owner}/${repo}/commit/${last.sha}` as string}
+              className="hidden min-w-0 truncate text-[13px] text-muted-foreground no-underline hover:text-foreground hover:underline md:block"
+              title={last.subject as string}
+            >
+              {last.subject as string}
+            </a>
+            <time
+              dateTime={last.authored_at as string}
+              className="text-[12px] text-muted-foreground md:text-right"
+            >
+              {relativeCommitTime(last.authored_at) as string}
+            </time>
+          </>;
         } @else {
-          @if (hasHistory) {
-            <span className="hidden md:block" />;
-            <span className="hidden md:block" />;
-          }
-          @if (isLink) {
-            <span className="hidden shrink-0 font-mono text-[12px] text-muted-foreground md:block md:text-right">
-              {entry.oid.slice(0, 7) as string}
-            </span>;
-          }
+          <>
+            @if (hasHistory) {
+              <>
+                <span className="hidden md:block" />
+                <span className="hidden md:block" />
+              </>;
+            }
+            @if (isLink) {
+              <span className="hidden shrink-0 font-mono text-[12px] text-muted-foreground md:block md:text-right">
+                {entry.oid.slice(0, 7) as string}
+              </span>;
+            }
+          </>;
         }
       </li>;
     } @empty {

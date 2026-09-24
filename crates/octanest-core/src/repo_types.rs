@@ -141,6 +141,12 @@ pub struct RepoPublic {
     /// Denormalized star counter (D-SOC-02 / D-SOC-03).
     #[serde(default)]
     pub star_count: i64,
+    /// Open issue count for the Issues tab badge (populated by repo.get).
+    #[serde(default)]
+    pub open_issue_count: i64,
+    /// Open pull-request count for the Pulls tab badge (populated by repo.get).
+    #[serde(default)]
+    pub open_pull_count: i64,
     /// Whether the authenticated viewer has starred this repo.
     #[serde(default)]
     pub viewer_has_starred: bool,
@@ -319,6 +325,28 @@ pub struct RepoUpdateMetadataRequest {
     pub homepage: Option<String>,
     #[serde(default)]
     pub topics: Option<Vec<String>>,
+}
+
+/// `repo.topicsSuggest` — topic autocomplete for the About/settings chips
+/// editor. Anonymous OK — topic names are public metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicsSuggestRequest {
+    /// Prefix to match (normalized to a topic slug server-side).
+    pub q: String,
+    #[serde(default)]
+    pub limit: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicSuggestion {
+    pub name: String,
+    /// Number of repositories linked to the topic.
+    pub repo_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoTopicsSuggestResponse {
+    pub topics: Vec<RepoTopicSuggestion>,
 }
 
 /// `repo.pathLastCommits` — last commit per tree entry name (issue #23).
@@ -580,6 +608,12 @@ pub struct RepoBlobResponse {
 pub struct RepoRefEntry {
     pub name: String,
     pub oid: String,
+    /// Tip commit author name when the backend could resolve it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tip_author_name: Option<String>,
+    /// Tip commit committer date (ISO-8601) when resolvable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tip_committed_at: Option<String>,
 }
 
 /// `repo.refs` response.

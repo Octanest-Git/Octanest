@@ -118,58 +118,61 @@ export function PullMergePanel(props: PullMergePanelProps) @{
       @if (settingsQ.isPending) {
         <p className="text-sm text-muted-foreground">Loading merge options…</p>;
       } @else {
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Merge method">
-          @if (!settings || settings.allow_merge_commit) {
-            <button
-              type="button"
-              className={
-                (method === "merge"
-                  ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
-                  : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
-              }
-              onClick={() => setMethod("merge")}
-            >
-              Create a merge commit
-            </button>;
-          }
-          @if (!settings || settings.allow_squash_merge) {
-            <button
-              type="button"
-              className={
-                (method === "squash"
-                  ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
-                  : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
-              }
-              onClick={() => setMethod("squash")}
-            >
-              Squash and merge
-            </button>;
-          }
-          @if (!settings || settings.allow_rebase_merge) {
-            <button
-              type="button"
-              className={
-                (method === "rebase"
-                  ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
-                  : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
-              }
-              onClick={() => setMethod("rebase")}
-            >
-              Rebase and merge
-            </button>;
-          }
-        </div>;
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={deleteBranch}
-            onChange={(e) => setDeleteBranch((e.target as HTMLInputElement).checked)}
-          />
-          Delete head branch after merge
-        </label>;
-        <Button type="button" disabled={busy} onClick={() => void merge()}>
-          Merge pull request
-        </Button>;
+        <>
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Merge method">
+            @if (!settings || settings.allow_merge_commit) {
+              <button
+                type="button"
+                className={
+                  (method === "merge"
+                    ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
+                    : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
+                }
+                onClick={() => setMethod("merge")}
+              >
+                Create a merge commit
+              </button>;
+            }
+            @if (!settings || settings.allow_squash_merge) {
+              <button
+                type="button"
+                className={
+                  (method === "squash"
+                    ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
+                    : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
+                }
+                onClick={() => setMethod("squash")}
+              >
+                Squash and merge
+              </button>;
+            }
+            @if (!settings || settings.allow_rebase_merge) {
+              <button
+                type="button"
+                className={
+                  (method === "rebase"
+                    ? "rounded-md bg-muted px-2 py-1 text-sm font-medium"
+                    : "rounded-md px-2 py-1 text-sm text-muted-foreground") as string
+                }
+                onClick={() => setMethod("rebase")}
+              >
+                Rebase and merge
+              </button>;
+            }
+          </div>
+          ;
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={deleteBranch}
+              onChange={(e) => setDeleteBranch((e.target as HTMLInputElement).checked)}
+            />
+            Delete head branch after merge
+          </label>
+          <Button type="button" disabled={busy} onClick={() => void merge()}>
+            Merge pull request
+          </Button>
+        </>;
       }
       @if (error) {
         <p className="text-sm text-destructive">{error as string}</p>;

@@ -73,6 +73,10 @@ services:
       # Local-only default so repo Actions secrets work out of the box (D-ACT-17).
       # Production must set a unique OCTANEST_ACTIONS_SECRETS_KEY — never reuse this value.
       OCTANEST_ACTIONS_SECRETS_KEY: ${OCTANEST_ACTIONS_SECRETS_KEY:-compose-dev-actions-secrets-key-not-for-production}
+      # Reusable runner registration token for the compose actions profile.
+      # The value below is a LOCAL-ONLY default — production must set a unique
+      # token or leave unset (runners then register via per-runner DB tokens).
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
       OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
       OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
@@ -129,20 +133,28 @@ services:
     networks:
       - octanest
 
-  # Official Actions runner sidecar (ACT-04 / ACT-05 / D-ACT-14).
+  # Official Actions runner sidecar — native octanest-runner binary.
   # Opt-in: docker compose --profile actions up -d runner
-  # Requires OCTANEST_RUNNER_REGISTRATION_TOKEN; never commit real tokens.
+  # Registration: the api accepts the same OCTANEST_RUNNER_REGISTRATION_TOKEN
+  # (dev default below is local-only — production must set a unique value or
+  # disable the env-token path; mint per-runner DB tokens instead).
   runner:
     profiles: ["actions"]
     build:
-      context: ./docker/octanest-runner
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/octanest-runner/Dockerfile
     environment:
-      # Must be reachable from job containers — prefer published hostname, not 127.0.0.1.
-      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
-      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-}
+      # Runner-side API origin — the compose-internal api address also serves
+      # smart HTTP clone URLs for actions/checkout.
+      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_RUNNER_ORIGIN:-http://api:8080}
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
       OCTANEST_RUNNER_NAME: ${OCTANEST_RUNNER_NAME:-compose-runner}
-      OCTANEST_RUNNER_LABELS: ${OCTANEST_RUNNER_LABELS:-ubuntu-latest:docker://node:20-bookworm,self-hosted}
+      # Host execution by default (no Docker daemon required). Add
+      # `name:docker://image` labels to run steps inside containers — needs
+      # the docker.sock mount below.
+      OCTANEST_RUNNER_LABELS: ${OCTANEST_RUNNER_LABELS:-ubuntu-latest,self-hosted}
+      # Optional PAT for cloning private repositories.
+      OCTANEST_RUNNER_GIT_TOKEN: ${OCTANEST_RUNNER_GIT_TOKEN:-}
     volumes:
       - runner_data:/data
       - /var/run/docker.sock:/var/run/docker.sock

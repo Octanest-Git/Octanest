@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
+import { formatRelative } from "@/lib/relative-time";
 
 export type IssueHistoryPanelProps = {
   owner: string;
@@ -44,29 +45,38 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
           Could not load edit history.
         </p>;
       } @else {
-        @if (showEmpty) {
-          <EmptyState
-            compact
-            icon={<History aria-hidden size={20} />}
-            title="No prior edits"
-            description="Edits to the title or body will be tracked here."
-          />;
-        }
-        @if (showList) {
-          <List>
-            @for (const rev of revisions; key rev.id) {
-              <ListRow className="flex-col items-start gap-1 text-[13px]">
-                <p className="text-muted-foreground">
-                  {`@${rev.editor_username} · ${rev.created_at}` as string}
-                </p>
-                <p className="font-medium text-foreground">{rev.title as string}</p>
-                <pre className="whitespace-pre-wrap font-sans text-muted-foreground">
-                  {rev.body as string}
-                </pre>
-              </ListRow>;
-            }
-          </List>;
-        }
+        <>
+          @if (showEmpty) {
+            <EmptyState
+              compact
+              icon={<History aria-hidden size={20} />}
+              title="No prior edits"
+              description="Edits to the title or body will be tracked here."
+            />;
+          }
+          @if (showList) {
+            <List>
+              @for (const rev of revisions; key rev.id) {
+                <ListRow className="flex-col items-start gap-1 text-[13px]">
+                  <p
+                    className="text-muted-foreground"
+                    title={rev.created_at as string}
+                  >
+                    {
+                      `@${rev.editor_username} edited ${formatRelative(rev.created_at)}` as string
+                    }
+                  </p>
+                  <p className="font-medium text-foreground">
+                    {rev.title as string}
+                  </p>
+                  <pre className="whitespace-pre-wrap font-sans text-muted-foreground">
+                    {rev.body as string}
+                  </pre>
+                </ListRow>;
+              }
+            </List>;
+          }
+        </>;
       }
     }
   </section>;

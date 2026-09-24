@@ -1,11 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BrowserCommand } from "vitest/node";
 import { adminLogin, restoreLocalAuth, rpc, updateAuthSettings } from "../stack/client.ts";
 import { apiOrigin, e2eDbPath, webOrigin } from "../stack/env.ts";
 import { newGuardedPage } from "./dom-race-guard.ts";
+import { assertVisualBaseline, relativeTimeMasks } from "./visual.ts";
 
 type AuthPatch = {
   provider_mode: "local" | "workos" | "oidc";
@@ -528,12 +529,12 @@ function pushTagViaGit(opts: { owner: string; repo: string; token: string; tag: 
   }
 }
 
-async function createClassicPat(cookie: string): Promise<string> {
+async function createClassicPat(cookie: string, scopes: string[] = ["repo"]): Promise<string> {
   const res = await rpc(
     "pat.createClassic",
     {
       name: `e2e-pat-${Date.now()}`,
-      scopes: ["repo"],
+      scopes,
     },
     cookie,
   );
@@ -578,6 +579,85 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
       .getByText(/No linked packages|Packages linked to this repository/i)
       .waitFor({ state: "visible", timeout: 30_000 });
     assertNoOctaneOverlay(await page.content(), "repo packages");
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/**
+ * Branches page dialogs: open New branch → submit → open Delete confirm,
+ * under the pageerror guard. Root cause was Base UI Dialog/AlertDialog
+ * `Portal` changing root-node count mid reconciliation — fixed via
+ * `keepMounted` on the shared portal wrappers (insertBefore DOM race).
+ * happy-dom does not throw this race; this flow is the Chromium gate.
+ */
+export const expectBranchDialogsFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const branchName = `e2e-branch-${Date.now()}`;
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  const pageErrors = pageGuard.pageErrors;
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/branches`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByRole("button", { name: "New branch" }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    // onClick needs client hydration — retry-click until the dialog opens
+    // (same settle+retry pattern as expectNewRepoTemplatePickerFlow).
+    await new Promise((r) => setTimeout(r, 1500));
+    const newBranchBtn = page.getByRole("button", { name: "New branch" });
+    let dialogOpen = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      await newBranchBtn.click({ force: true });
+      try {
+        await page.getByRole("dialog").waitFor({ state: "visible", timeout: 2_000 });
+        dialogOpen = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+    if (!dialogOpen) {
+      throw new Error(
+        `New branch dialog did not open (hydration?). pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    await page.getByRole("textbox", { name: "Branch name" }).fill(branchName);
+    await page.getByRole("button", { name: "Create branch" }).click();
+    // Row renders once the create mutation + refetch settle.
+    await page
+      .getByRole("link", { name: branchName, exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+
+    // Delete confirm dialog (AlertDialog portal). The default branch's
+    // Delete is disabled, so pick the enabled one (the branch just made).
+    const deleteBtn = page.locator('button:has-text("Delete"):not([disabled])');
+    let alertOpen = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      await deleteBtn.click({ force: true });
+      try {
+        await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 2_000 });
+        alertOpen = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+    if (!alertOpen) {
+      throw new Error(
+        `Delete branch confirm did not open. pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    assertNoOctaneOverlay(await page.content(), "branches dialogs");
     return true;
   } finally {
     await pageGuard.close("stack-browser");
@@ -1331,6 +1411,304 @@ export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) =
       timeout: 10_000,
     });
     assertNoOctaneOverlay(await page.content(), "settings profile avatar controls");
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/**
+ * Upload a small generic package via the registry API (basic auth PAT).
+ * Returns the package name so callers can assert it renders.
+ */
+async function seedGenericPackage(opts: {
+  cookie: string;
+  owner: string;
+  username: string;
+  name: string;
+  version: string;
+  repositoryId?: string;
+}): Promise<void> {
+  const token = await createClassicPat(opts.cookie, ["repo", "package:write"]);
+  const basic = Buffer.from(`${opts.username}:${token}`, "utf8").toString("base64");
+  const url =
+    `${apiOrigin()}/generic/${encodeURIComponent(opts.owner)}` +
+    `/${encodeURIComponent(opts.name)}/${encodeURIComponent(opts.version)}` +
+    `/artifact.tar.gz` +
+    (opts.repositoryId ? `?repository_id=${encodeURIComponent(opts.repositoryId)}` : "");
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      authorization: `Basic ${basic}`,
+      "content-type": "application/octet-stream",
+    },
+    body: Buffer.from(`e2e-${opts.name}-${opts.version}`),
+  });
+  if (!res.ok) {
+    throw new Error(`generic package upload failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+/**
+ * Visual baselines for the packages surfaces (repo-scoped empty state,
+ * repo-scoped linked list, owner-scoped list row). Screenshots mask
+ * relative-time text; baselines live in e2e/visual-baselines/ and update via
+ * OCTANEST_E2E_UPDATE_VISUAL=1.
+ */
+export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  // Deterministic single row: drop any e2e-pkg-* left by earlier runs.
+  const listed = await rpc("packages.list", { owner: seed.owner }, seed.cookie);
+  if (listed.ok && listed.data && typeof listed.data === "object") {
+    const pkgs = (listed.data as { packages?: unknown[] }).packages ?? [];
+    for (const p of pkgs) {
+      const pkg = p as { id?: string; name?: string; versions?: Array<{ version?: string }> };
+      if (!pkg.id || !pkg.name?.startsWith("e2e-pkg-")) continue;
+      for (const v of pkg.versions ?? []) {
+        if (!v.version) continue;
+        await rpc(
+          "packages.deleteVersion",
+          {
+            package_id: pkg.id,
+            version: v.version,
+            confirm: `${pkg.name}@${v.version}`,
+          },
+          seed.cookie,
+        );
+      }
+    }
+  }
+
+  const repoGet = await rpc("repo.get", { owner: seed.owner, name: seed.repo }, seed.cookie);
+  const repoId =
+    repoGet.ok && repoGet.data && typeof repoGet.data === "object"
+      ? String((repoGet.data as { id?: string }).id ?? "")
+      : "";
+  if (!repoId) {
+    throw new Error(`repo.get missing id: ${JSON.stringify(repoGet.data ?? repoGet)}`);
+  }
+
+  const pkgName = `e2e-pkg-${Date.now()}`;
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  try {
+    // Repo-scoped packages page before publishing — GitHub-shaped empty state
+    // + quickstart.
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page
+      .getByText(/No packages published yet/i)
+      .waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "repo packages visual");
+    await assertVisualBaseline(page, "packages-repo-empty", {
+      mask: [
+        // Repo name embeds a timestamp — its width shifts the visibility
+        // badge, so mask the whole header row; relative-time is volatile.
+        page.getByTestId("repo-header-row"),
+        page.locator(`text=${seed.repo}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
+
+    // Publish two versions linked to the repo (repository_id, D-PKG-11) so the
+    // repo packages page shows a populated row too.
+    await seedGenericPackage({
+      cookie: seed.cookie,
+      owner: seed.owner,
+      username: seed.username,
+      name: pkgName,
+      version: "1.0.0",
+      repositoryId: repoId,
+    });
+    await seedGenericPackage({
+      cookie: seed.cookie,
+      owner: seed.owner,
+      username: seed.username,
+      name: pkgName,
+      version: "1.1.0",
+      repositoryId: repoId,
+    });
+
+    // Repo-scoped packages page — populated list with the linked package.
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText(pkgName, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "repo packages list visual");
+    await assertVisualBaseline(page, "packages-repo-list", {
+      mask: [
+        // Repo + package names embed timestamps; the repo-name width shifts
+        // the header badge, so mask the whole row; package rows stay masked.
+        page.getByTestId("repo-header-row"),
+        page.locator(`text=${seed.repo}`),
+        page.locator(`text=${pkgName}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
+
+    // Owner packages page — seeded generic package row with two versions.
+    await page.goto(`${webOrigin()}/${seed.owner}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("owner-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText(pkgName, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "owner packages visual");
+    await assertVisualBaseline(page, "packages-owner-list", {
+      mask: [
+        // Package names embed a timestamp; mask rows so baselines stay stable.
+        page.locator(`text=${pkgName}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/** Push a workflow file that triggers a queued Actions run on push. */
+function pushActionsWorkflow(opts: {
+  owner: string;
+  repo: string;
+  token: string;
+  marker: string;
+}): void {
+  const origin = apiOrigin().replace(/^https?:\/\//, "");
+  const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
+  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-actions-"));
+  try {
+    execFileSync("git", ["clone", gitUrl, work], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+    mkdirSync(join(work, ".github/workflows"), { recursive: true });
+    writeFileSync(
+      join(work, ".github/workflows/ci.yml"),
+      `name: ci
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: marker
+        run: |
+          echo "${opts.marker}"
+          echo "checkout ok at $(pwd)"
+`,
+    );
+    execFileSync("git", ["-C", work, "add", "-A"], { stdio: "pipe" });
+    execFileSync(
+      "git",
+      [
+        "-C",
+        work,
+        "-c",
+        "user.email=e2e@octanest.local",
+        "-c",
+        "user.name=e2e",
+        "commit",
+        "-qm",
+        `e2e: ci workflow ${Date.now()}`,
+      ],
+      { stdio: "pipe" },
+    );
+    execFileSync("git", ["-C", work, "push", "origin", "HEAD:main"], {
+      stdio: "pipe",
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0" },
+    });
+  } catch (e) {
+    const err = e as { stderr?: Buffer; message?: string };
+    const detail = err.stderr?.toString("utf8") || err.message || String(e);
+    throw new Error(`workflow push failed: ${detail.slice(0, 800)}`);
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
+}
+
+type ActionRunRow = { id: string; status: string; workflow_name?: string };
+
+async function pollRunTerminal(cookie: string, owner: string, repo: string): Promise<ActionRunRow> {
+  const deadline = Date.now() + 150_000;
+  for (;;) {
+    const res = await rpc("repo.actions.listRuns", { owner, name: repo, per_page: 5 }, cookie);
+    if (!res.ok) {
+      throw new Error(`repo.actions.listRuns failed: ${JSON.stringify(res.error)}`);
+    }
+    const runs = ((res.data as { runs?: ActionRunRow[] }).runs ?? []) as ActionRunRow[];
+    const run = runs[0];
+    if (run && !["queued", "in_progress", "pending", "running"].includes(run.status)) {
+      return run;
+    }
+    if (Date.now() > deadline) {
+      throw new Error(
+        `run did not reach a terminal state in 150s (last: ${run?.status ?? "none"})`,
+      );
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+}
+
+/**
+ * End-to-end Actions pipeline in the real UI: seed repo → push workflow →
+ * bundled octanest-runner claims it (host exec) → run goes green → run detail
+ * shows the streamed job log marker.
+ */
+export const expectActionsPipelineFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const marker = `octanest-stack-hello-${Date.now()}`;
+  const token = await createClassicPat(seed.cookie, ["repo"]);
+  pushActionsWorkflow({ owner: seed.owner, repo: seed.repo, token, marker });
+
+  // Wait for the runner to drive the run terminal before opening the UI.
+  const run = await pollRunTerminal(seed.cookie, seed.owner, seed.repo);
+  if (run.status !== "success") {
+    throw new Error(`pipeline run finished ${run.status} (expected success)`);
+  }
+
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/actions`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-actions").waitFor({ state: "visible", timeout: 30_000 });
+    const runList = page.getByTestId("repo-actions-run-list");
+    await runList.waitFor({ state: "visible", timeout: 30_000 });
+    await runList.locator("text=success").waitFor({ state: "visible", timeout: 30_000 });
+
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/actions/${run.id}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    const runDetail = page.locator('[data-testid="repo-actions-run"]');
+    await runDetail.waitFor({ state: "visible", timeout: 30_000 });
+    const detailText = (await runDetail.innerText?.()) ?? "";
+    if (!detailText.includes("success")) {
+      throw new Error(`run detail missing success badge: ${detailText.slice(0, 400)}`);
+    }
+    const log = page.locator('[data-testid="repo-actions-job-log"]');
+    await log.waitFor({ state: "visible", timeout: 30_000 });
+    const logText = (await log.innerText?.()) ?? "";
+    if (!logText.includes(marker)) {
+      throw new Error(`job log missing marker ${marker}: ${logText.slice(0, 500)}`);
+    }
+    assertNoOctaneOverlay(await page.content(), "actions run detail");
     return true;
   } finally {
     await pageGuard.close("stack-browser");

@@ -1,5 +1,5 @@
-// Octanest Actions runner protocol (Gitea Actions–compatible surface subset).
-// Pinned for Phase 19; wire shape stable for act_runner-class clients (D-ACT-07).
+// Octanest Actions runner protocol — custom JSON surface consumed by
+// crates/octanest-runner (see /api/actions/* routes).
 syntax = "proto3";
 package octanest.actions.v1;
 
@@ -33,10 +33,13 @@ message FetchTaskResponse {
   string workflow_name = 6;
   string head_sha = 7;
   string head_ref = 8;
-  // JSON array of step objects (name/uses/run/shell/…) for act_runner-class clients.
+  // JSON array of step objects (name/uses/run/shell/…) for runner clients.
   string steps_json = 9;
   // JSON object of decrypted secret name → value (never logged).
   string secrets_json = 10;
+  // Repository coordinates so runners can clone {origin}/{owner}/{repo}.git.
+  string repository_owner = 11;
+  string repository_name = 12;
 }
 
 message UpdateTaskRequest {

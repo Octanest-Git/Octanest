@@ -44,7 +44,7 @@ async fn actions_rpc_list_runs() {
     )
     .await
     .unwrap();
-    let runs = db.list_action_runs_for_repo(&repo.id).await.unwrap();
+    let runs = db.list_action_runs_for_repo(&repo.id, 100, 0).await.unwrap();
     assert_eq!(runs.len(), 1);
     assert_eq!(runs[0].id, "run-rpc");
 }

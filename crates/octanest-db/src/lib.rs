@@ -178,6 +178,14 @@ impl Database {
         organizations::find_by_id(self.require_pool()?, id).await
     }
 
+    /// Batch variant — one `IN (...)` round trip.
+    pub async fn find_organizations_by_ids(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<OrganizationRow>, String> {
+        organizations::find_many_by_id(self.require_pool()?, ids).await
+    }
+
     pub async fn find_organization_by_slug(
         &self,
         slug: &str,
@@ -465,6 +473,16 @@ impl Database {
         watches::get_watch_count(self.require_pool()?, repository_id).await
     }
 
+    /// Open-issue count for repo chrome tab badges.
+    pub async fn count_open_issues_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        issues::count_open_issues_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    /// Open-PR count for repo chrome tab badges.
+    pub async fn count_open_pulls_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        pulls::count_open_pulls_for_repo(self.require_pool()?, repository_id).await
+    }
+
     pub async fn has_watched_repo(
         &self,
         user_id: &str,
@@ -554,6 +572,15 @@ impl Database {
         topics::set_repo_topics(self.require_pool()?, repository_id, topic_names).await
     }
 
+    /// Topic autocomplete: `(name, linked_repo_count)` most-used first.
+    pub async fn suggest_topics(
+        &self,
+        prefix: &str,
+        limit: i64,
+    ) -> Result<Vec<(String, i64)>, String> {
+        topics::suggest_topics(self.require_pool()?, prefix, limit).await
+    }
+
     pub async fn get_repo_fork_count(&self, repository_id: &str) -> Result<i64, String> {
         repositories::get_fork_count(self.require_pool()?, repository_id).await
     }
@@ -621,6 +648,14 @@ impl Database {
 
     pub async fn find_repository_by_id(&self, id: &str) -> Result<Option<RepositoryRow>, String> {
         repositories::find_by_id(self.require_pool()?, id).await
+    }
+
+    /// Batch variant — one `IN (...)` round trip.
+    pub async fn find_repositories_by_ids(
+        &self,
+        ids: &[String],
+    ) -> Result<Vec<RepositoryRow>, String> {
+        repositories::find_many_by_id(self.require_pool()?, ids).await
     }
 
     pub async fn list_repositories_by_owner(
@@ -884,6 +919,31 @@ impl Database {
         pull_id: &str,
     ) -> Result<Vec<pulls::PullAssigneeRow>, String> {
         pulls::list_pull_assignees(self.require_pool()?, pull_id).await
+    }
+
+    /// Batch variant — `(pull_id, assignee)` pairs in one `IN (...)` round trip.
+    pub async fn list_pull_assignees_for_pulls(
+        &self,
+        pull_ids: &[String],
+    ) -> Result<Vec<(String, pulls::PullAssigneeRow)>, String> {
+        pulls::list_pull_assignees_for_pulls(self.require_pool()?, pull_ids).await
+    }
+
+    /// Subset of `pull_ids` carrying a label matching `label` (id or name).
+    pub async fn pull_ids_with_label(
+        &self,
+        pull_ids: &[String],
+        label: &str,
+    ) -> Result<Vec<String>, String> {
+        pulls::pull_ids_with_label(self.require_pool()?, pull_ids, label).await
+    }
+
+    /// Batch `list_pull_reviews` — one `IN (...)` round trip for many pulls.
+    pub async fn list_reviews_for_pulls(
+        &self,
+        pull_ids: &[String],
+    ) -> Result<Vec<PullReviewRow>, String> {
+        pulls::list_reviews_for_pulls(self.require_pool()?, pull_ids).await
     }
 
     pub async fn insert_pull_review(
@@ -1373,11 +1433,27 @@ impl Database {
         issue_labels::list_labels_for_issue(self.require_pool()?, issue_id).await
     }
 
+    /// Batch variant — `(issue_id, label)` pairs in one `IN (...)` round trip.
+    pub async fn list_labels_for_issues(
+        &self,
+        issue_ids: &[String],
+    ) -> Result<Vec<(String, LabelRow)>, String> {
+        issue_labels::list_labels_for_issues(self.require_pool()?, issue_ids).await
+    }
+
     pub async fn list_issue_assignees(
         &self,
         issue_id: &str,
     ) -> Result<Vec<issue_labels::IssueAssigneeRow>, String> {
         issue_labels::list_issue_assignees(self.require_pool()?, issue_id).await
+    }
+
+    /// Batch variant — `(issue_id, assignee)` pairs in one `IN (...)` round trip.
+    pub async fn list_assignees_for_issues(
+        &self,
+        issue_ids: &[String],
+    ) -> Result<Vec<(String, issue_labels::IssueAssigneeRow)>, String> {
+        issue_labels::list_assignees_for_issues(self.require_pool()?, issue_ids).await
     }
 
     pub async fn set_issue_labels(
@@ -1404,6 +1480,20 @@ impl Database {
         issues::list_issue_reaction_groups(self.require_pool()?, issue_id, viewer_user_id).await
     }
 
+    /// Batch variant — `(issue_id, group)` pairs in one `IN (...)` round trip.
+    pub async fn list_issue_reaction_groups_for_issues(
+        &self,
+        issue_ids: &[String],
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<(String, issues::ReactionGroupRow)>, String> {
+        issues::list_issue_reaction_groups_for_issues(
+            self.require_pool()?,
+            issue_ids,
+            viewer_user_id,
+        )
+        .await
+    }
+
     pub async fn list_comment_reaction_groups(
         &self,
         comment_id: &str,
@@ -1411,6 +1501,20 @@ impl Database {
     ) -> Result<Vec<issues::ReactionGroupRow>, String> {
         issues::list_comment_reaction_groups(self.require_pool()?, comment_id, viewer_user_id)
             .await
+    }
+
+    /// Batch variant — `(comment_id, group)` pairs in one `IN (...)` round trip.
+    pub async fn list_comment_reaction_groups_for_comments(
+        &self,
+        comment_ids: &[String],
+        viewer_user_id: Option<&str>,
+    ) -> Result<Vec<(String, issues::ReactionGroupRow)>, String> {
+        issues::list_comment_reaction_groups_for_comments(
+            self.require_pool()?,
+            comment_ids,
+            viewer_user_id,
+        )
+        .await
     }
 
     /// Returns `true` if the reaction is now present (inserted), `false` if removed.
@@ -1533,6 +1637,11 @@ impl Database {
 
     pub async fn find_user_by_id(&self, id: &str) -> Result<Option<UserRow>, String> {
         users::find_by_id(self.require_pool()?, id).await
+    }
+
+    /// Batch variant — one `IN (...)` round trip (list enrichment).
+    pub async fn find_users_by_ids(&self, ids: &[String]) -> Result<Vec<UserRow>, String> {
+        users::find_many_by_id(self.require_pool()?, ids).await
     }
 
     pub async fn update_user_profile(
@@ -2021,6 +2130,10 @@ impl Database {
         packages::delete_version(self.require_pool()?, version_id).await
     }
 
+    pub async fn delete_package(&self, package_id: &str) -> Result<(), String> {
+        packages::delete_package(self.require_pool()?, package_id).await
+    }
+
 
 
 
@@ -2243,8 +2356,22 @@ impl Database {
     pub async fn list_action_runs_for_repo(
         &self,
         repository_id: &str,
+        limit: i64,
+        offset: i64,
     ) -> Result<Vec<actions::ActionRunRow>, String> {
-        actions::list_runs_for_repo(self.require_pool()?, repository_id).await
+        actions::list_runs_for_repo(self.require_pool()?, repository_id, limit, offset).await
+    }
+
+    pub async fn count_action_runs_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        actions::count_runs_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    pub async fn requeue_action_run(&self, run_id: &str) -> Result<(), String> {
+        actions::requeue_run(self.require_pool()?, run_id).await
+    }
+
+    pub async fn cancel_action_run(&self, run_id: &str) -> Result<(), String> {
+        actions::cancel_run(self.require_pool()?, run_id).await
     }
 
     pub async fn list_action_jobs_for_run(
@@ -2256,6 +2383,14 @@ impl Database {
 
     pub async fn update_action_job_status(&self, job_id: &str, status: &str) -> Result<(), String> {
         actions::update_job_status(self.require_pool()?, job_id, status).await
+    }
+
+    pub async fn recompute_action_run_status(&self, run_id: &str) -> Result<(), String> {
+        actions::recompute_run_status(self.require_pool()?, run_id).await
+    }
+
+    pub async fn touch_action_runner_online(&self, runner_id: &str) -> Result<(), String> {
+        actions::touch_runner_online(self.require_pool()?, runner_id).await
     }
 
     pub async fn update_action_runner_labels(

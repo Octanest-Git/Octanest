@@ -86,41 +86,96 @@ fn reaction_groups_to_public(
         .collect()
 }
 
-async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError> {
+struct IssueEnrichment {
+    usernames: std::collections::HashMap<String, String>,
+    labels: std::collections::HashMap<String, Vec<octanest_db::LabelRow>>,
+    assignees: std::collections::HashMap<String, Vec<octanest_db::issue_labels::IssueAssigneeRow>>,
+    reactions: std::collections::HashMap<String, Vec<octanest_db::issues::ReactionGroupRow>>,
+}
+
+async fn load_enrichment(ctx: &RpcCtx, rows: &[IssueRow]) -> Result<IssueEnrichment, AppError> {
+    use std::collections::HashMap;
+    let issue_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+    let author_ids: Vec<String> = {
+        let mut v: Vec<String> = rows.iter().map(|r| r.author_id.clone()).collect();
+        v.sort();
+        v.dedup();
+        v
+    };
+    if issue_ids.is_empty() {
+        return Ok(IssueEnrichment {
+            usernames: HashMap::new(),
+            labels: HashMap::new(),
+            assignees: HashMap::new(),
+            reactions: HashMap::new(),
+        });
+    }
+    let (users, label_pairs, assignee_pairs, reaction_pairs) = tokio::try_join!(
+        ctx.db.find_users_by_ids(&author_ids),
+        ctx.db.list_labels_for_issues(&issue_ids),
+        ctx.db.list_assignees_for_issues(&issue_ids),
+        ctx.db
+            .list_issue_reaction_groups_for_issues(&issue_ids, viewer_id(ctx)),
+    )
+    .map_err(db_err)?;
+    let mut labels: HashMap<String, Vec<octanest_db::LabelRow>> = HashMap::new();
+    for (issue_id, label) in label_pairs {
+        labels.entry(issue_id).or_default().push(label);
+    }
+    let mut assignees: HashMap<String, Vec<octanest_db::issue_labels::IssueAssigneeRow>> =
+        HashMap::new();
+    for (issue_id, a) in assignee_pairs {
+        assignees.entry(issue_id).or_default().push(a);
+    }
+    let mut reactions: HashMap<String, Vec<octanest_db::issues::ReactionGroupRow>> = HashMap::new();
+    for (issue_id, g) in reaction_pairs {
+        reactions.entry(issue_id).or_default().push(g);
+    }
+    Ok(IssueEnrichment {
+        usernames: users.into_iter().map(|u| (u.id, u.username)).collect(),
+        labels,
+        assignees,
+        reactions,
+    })
+}
+
+fn issue_to_public(row: &IssueRow, enrichment: &IssueEnrichment) -> Result<IssuePublic, AppError> {
     let state = IssueState::parse(&row.state).map_err(|e| {
         tracing::error!(error = %e, "invalid issue state in db");
         AppError::new("issue.internal", "issue operation failed")
     })?;
-    let author_username = match ctx.db.find_user_by_id(&row.author_id).await {
-        Ok(Some(u)) => u.username,
-        Ok(None) => String::new(),
-        Err(e) => return Err(db_err(e)),
-    };
-    let label_rows = ctx
-        .db
-        .list_labels_for_issue(&row.id)
-        .await
-        .map_err(db_err)?;
-    let labels = crate::label::label_rows_to_public(&label_rows);
-    let assignee_rows = ctx
-        .db
-        .list_issue_assignees(&row.id)
-        .await
-        .map_err(db_err)?;
-    let assignees = assignee_rows
-        .into_iter()
+    let author_username = enrichment
+        .usernames
+        .get(&row.author_id)
+        .cloned()
+        .unwrap_or_default();
+    let labels = crate::label::label_rows_to_public(
+        enrichment
+            .labels
+            .get(&row.id)
+            .map(Vec::as_slice)
+            .unwrap_or(&[]),
+    );
+    let assignees = enrichment
+        .assignees
+        .get(&row.id)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
+        .iter()
         .map(|a| IssueAssigneePublic {
-            user_id: a.user_id,
-            username: a.username,
-            display_name: a.display_name,
+            user_id: a.user_id.clone(),
+            username: a.username.clone(),
+            display_name: a.display_name.clone(),
         })
         .collect();
-    let reaction_rows = ctx
-        .db
-        .list_issue_reaction_groups(&row.id, viewer_id(ctx))
-        .await
-        .map_err(db_err)?;
-    let reactions = reaction_groups_to_public(reaction_rows);
+    let reactions = reaction_groups_to_public(
+        enrichment
+            .reactions
+            .get(&row.id)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            .to_vec(),
+    );
     Ok(IssuePublic {
         id: row.id.clone(),
         repo_id: row.repo_id.clone(),
@@ -137,7 +192,21 @@ async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError
         labels,
         assignees,
         reactions,
+        comment_count: row.comment_count,
     })
+}
+
+async fn to_public(ctx: &RpcCtx, row: &IssueRow) -> Result<IssuePublic, AppError> {
+    let rows = std::slice::from_ref(row);
+    let enrichment = load_enrichment(ctx, rows).await?;
+    issue_to_public(row, &enrichment)
+}
+
+async fn to_public_many(ctx: &RpcCtx, rows: &[IssueRow]) -> Result<Vec<IssuePublic>, AppError> {
+    let enrichment = load_enrichment(ctx, rows).await?;
+    rows.iter()
+        .map(|row| issue_to_public(row, &enrichment))
+        .collect()
 }
 
 async fn load_issue_in_repo(
@@ -267,10 +336,7 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<IssueListRes
         .list_issues_for_repo(&accessible.row.id, filters)
         .await
         .map_err(db_err)?;
-    let mut issues = Vec::with_capacity(rows.len());
-    for row in &rows {
-        issues.push(to_public(ctx, row).await?);
-    }
+    let issues = to_public_many(ctx, &rows).await?;
     Ok(IssueListResponse { issues, total })
 }
 
@@ -437,13 +503,23 @@ pub async fn history(
         .list_issue_revisions(&row.id)
         .await
         .map_err(db_err)?;
+    let editor_ids: Vec<String> = {
+        let mut v: Vec<String> = revs.iter().map(|r| r.editor_id.clone()).collect();
+        v.sort();
+        v.dedup();
+        v
+    };
+    let editors: std::collections::HashMap<String, String> = ctx
+        .db
+        .find_users_by_ids(&editor_ids)
+        .await
+        .map_err(db_err)?
+        .into_iter()
+        .map(|u| (u.id, u.username))
+        .collect();
     let mut revisions = Vec::with_capacity(revs.len());
     for rev in &revs {
-        let editor_username = match ctx.db.find_user_by_id(&rev.editor_id).await {
-            Ok(Some(u)) => u.username,
-            Ok(None) => String::new(),
-            Err(e) => return Err(db_err(e)),
-        };
+        let editor_username = editors.get(&rev.editor_id).cloned().unwrap_or_default();
         revisions.push(IssueRevisionPublic {
             id: rev.id.clone(),
             issue_id: rev.issue_id.clone(),
@@ -485,31 +561,80 @@ fn comment_not_found() -> AppError {
     AppError::new("issue.comment_not_found", "Comment not found")
 }
 
-async fn comment_to_public(
+struct CommentEnrichment {
+    usernames: std::collections::HashMap<String, String>,
+    reactions: std::collections::HashMap<String, Vec<octanest_db::issues::ReactionGroupRow>>,
+}
+
+async fn load_comment_enrichment(
     ctx: &RpcCtx,
-    row: &IssueCommentRow,
-) -> Result<IssueCommentPublic, AppError> {
-    let author_username = match ctx.db.find_user_by_id(&row.author_id).await {
-        Ok(Some(u)) => u.username,
-        Ok(None) => String::new(),
-        Err(e) => return Err(db_err(e)),
+    rows: &[IssueCommentRow],
+) -> Result<CommentEnrichment, AppError> {
+    use std::collections::HashMap;
+    let comment_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+    let author_ids: Vec<String> = {
+        let mut v: Vec<String> = rows.iter().map(|r| r.author_id.clone()).collect();
+        v.sort();
+        v.dedup();
+        v
     };
-    let reaction_rows = ctx
-        .db
-        .list_comment_reaction_groups(&row.id, viewer_id(ctx))
-        .await
-        .map_err(db_err)?;
-    let reactions = reaction_groups_to_public(reaction_rows);
-    Ok(IssueCommentPublic {
+    if comment_ids.is_empty() {
+        return Ok(CommentEnrichment {
+            usernames: HashMap::new(),
+            reactions: HashMap::new(),
+        });
+    }
+    let (users, reaction_pairs) = tokio::try_join!(
+        ctx.db.find_users_by_ids(&author_ids),
+        ctx.db
+            .list_comment_reaction_groups_for_comments(&comment_ids, viewer_id(ctx)),
+    )
+    .map_err(db_err)?;
+    let mut reactions: HashMap<String, Vec<octanest_db::issues::ReactionGroupRow>> = HashMap::new();
+    for (comment_id, g) in reaction_pairs {
+        reactions.entry(comment_id).or_default().push(g);
+    }
+    Ok(CommentEnrichment {
+        usernames: users.into_iter().map(|u| (u.id, u.username)).collect(),
+        reactions,
+    })
+}
+
+fn comment_row_to_public(
+    row: &IssueCommentRow,
+    enrichment: &CommentEnrichment,
+) -> IssueCommentPublic {
+    let reactions = reaction_groups_to_public(
+        enrichment
+            .reactions
+            .get(&row.id)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+            .to_vec(),
+    );
+    IssueCommentPublic {
         id: row.id.clone(),
         issue_id: row.issue_id.clone(),
         author_id: row.author_id.clone(),
-        author_username,
+        author_username: enrichment
+            .usernames
+            .get(&row.author_id)
+            .cloned()
+            .unwrap_or_default(),
         body: row.body.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
         reactions,
-    })
+    }
+}
+
+async fn comment_to_public(
+    ctx: &RpcCtx,
+    row: &IssueCommentRow,
+) -> Result<IssueCommentPublic, AppError> {
+    let rows = std::slice::from_ref(row);
+    let enrichment = load_comment_enrichment(ctx, rows).await?;
+    Ok(comment_row_to_public(row, &enrichment))
 }
 
 async fn load_comment_in_issue(
@@ -547,10 +672,11 @@ pub async fn comments_list(
         .list_issue_comments(&issue.id)
         .await
         .map_err(db_err)?;
-    let mut comments = Vec::with_capacity(rows.len());
-    for row in &rows {
-        comments.push(comment_to_public(ctx, row).await?);
-    }
+    let enrichment = load_comment_enrichment(ctx, &rows).await?;
+    let comments = rows
+        .iter()
+        .map(|row| comment_row_to_public(row, &enrichment))
+        .collect();
     Ok(IssueCommentsListResponse { comments })
 }
 

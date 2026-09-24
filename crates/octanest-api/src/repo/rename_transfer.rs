@@ -59,6 +59,8 @@ fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         can_admin: meets(repo.capability, Capability::Admin),
         can_write: meets(repo.capability, Capability::Write),
         star_count: 0,
+        open_issue_count: 0,
+        open_pull_count: 0,
         viewer_has_starred: false,
         is_fork: false,
         is_template: false,

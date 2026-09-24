@@ -1,13 +1,24 @@
 import {
+  actionsCancelRunMutationOptions,
+  actionsDispatchWorkflowMutationOptions,
   actionsGetJobLogQueryOptions,
   actionsGetRunQueryOptions,
   actionsListRunsQueryOptions,
+  actionsListWorkflowsQueryOptions,
+  actionsRerunRunMutationOptions,
 } from "@octanest/api-client";
 import { apiClient } from "@/lib/api-client";
 
-export function actionsRunsQuery(owner: string, name: string) {
+export const ACTIONS_RUNS_PER_PAGE = 25;
+
+export function actionsRunsQuery(owner: string, name: string, page = 1) {
   return {
-    ...actionsListRunsQueryOptions(apiClient, { owner, name }),
+    ...actionsListRunsQueryOptions(apiClient, {
+      owner,
+      name,
+      page,
+      per_page: ACTIONS_RUNS_PER_PAGE,
+    }),
     refetchInterval: 10_000,
   };
 }
@@ -29,4 +40,20 @@ export function actionsJobLogQuery(owner: string, name: string, runId: string, j
     }),
     refetchInterval: 5_000,
   };
+}
+
+export function actionsWorkflowsQuery(owner: string, name: string, gitRef?: string) {
+  return actionsListWorkflowsQueryOptions(apiClient, { owner, name, git_ref: gitRef });
+}
+
+export function actionsDispatchWorkflowMutation() {
+  return actionsDispatchWorkflowMutationOptions(apiClient);
+}
+
+export function actionsRerunRunMutation() {
+  return actionsRerunRunMutationOptions(apiClient);
+}
+
+export function actionsCancelRunMutation() {
+  return actionsCancelRunMutationOptions(apiClient);
 }

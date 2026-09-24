@@ -110,7 +110,7 @@ make logs          # follow default compose logs
 
 ### Actions runner (optional)
 
-Octanest does **not** run CI jobs inside the API. Operators attach compute via the official runner image (`docker/octanest-runner`, act_runner lineage).
+Octanest does **not** run CI jobs inside the API. Operators attach compute via the official runner — `octanest-runner` (Rust, `crates/octanest-runner`), packaged by `docker/octanest-runner`. The runner executes `run:` steps on the host or inside `docker://` job containers when the Docker socket is mounted, and implements `actions/checkout` as a git clone of the head SHA.
 
 ```bash
 # Instance / Admin registration token — never commit real values

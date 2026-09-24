@@ -110,7 +110,7 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   }
 
   <div className="mb-8">
-    <div className="mb-4 flex flex-wrap items-center gap-3">
+    <div data-testid="repo-header-row" className="mb-4 flex flex-wrap items-center gap-3">
       <h1 className="font-[family-name:var(--font-display)] text-[24px] font-semibold tracking-tight leading-[1.2] text-foreground">
         <a href={"/" + owner} className="text-primary no-underline hover:underline">
           {owner as string}
@@ -127,34 +127,40 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <RepoSearchEntry owner={owner as string} repo={name as string} />
         @if (signedIn) {
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-8 gap-1.5 px-2.5 text-[13px]"
-            disabled={watchBusy}
-            aria-pressed={watching}
-            onClick={() => void toggleWatch()}
-          >
-            <Eye aria-hidden size={14} className={watching ? "text-secondary" : undefined} />
-            <span>{(watching ? "Watching" : "Watch") as string}</span>
-            <span className="text-muted-foreground">{String(watchCount)}</span>
-          </Button>;
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-8 gap-1.5 px-2.5 text-[13px]"
-            disabled={starBusy}
-            aria-pressed={starred}
-            onClick={() => void toggleStar()}
-          >
-            <Star
-              aria-hidden
-              size={14}
-              className={starred ? "fill-current text-secondary" : undefined}
-            />
-            <span>{(starred ? "Starred" : "Star") as string}</span>
-            <span className="text-muted-foreground">{String(starCount)}</span>
-          </Button>;
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 gap-1.5 px-2.5 text-[13px]"
+              disabled={watchBusy}
+              aria-pressed={watching}
+              onClick={() => void toggleWatch()}
+            >
+              <Eye
+                aria-hidden
+                size={14}
+                className={watching ? "text-secondary" : undefined}
+              />
+              <span>{(watching ? "Watching" : "Watch") as string}</span>
+              <span className="text-muted-foreground">{String(watchCount)}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 gap-1.5 px-2.5 text-[13px]"
+              disabled={starBusy}
+              aria-pressed={starred}
+              onClick={() => void toggleStar()}
+            >
+              <Star
+                aria-hidden
+                size={14}
+                className={starred ? "fill-current text-secondary" : undefined}
+              />
+              <span>{(starred ? "Starred" : "Star") as string}</span>
+              <span className="text-muted-foreground">{String(starCount)}</span>
+            </Button>
+          </>;
         } @else {
           <>
             <a
@@ -243,6 +249,11 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         aria-current={active === "issues" ? "page" : undefined}
       >
         Issues
+        @if ((live.open_issue_count ?? 0) > 0) {
+          <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {String(live.open_issue_count)}
+          </span>;
+        }
       </a>
       <a
         href={pullsHref as string}
@@ -250,6 +261,11 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         aria-current={active === "pulls" ? "page" : undefined}
       >
         Pulls
+        @if ((live.open_pull_count ?? 0) > 0) {
+          <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {String(live.open_pull_count)}
+          </span>;
+        }
       </a>
       <a
         href={releasesHref as string}

@@ -13,6 +13,14 @@ pub struct ActionRunPublic {
     pub head_ref: String,
     pub status: String,
     pub title: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub actor: Option<String>,
+    #[serde(default)]
+    pub created_at: String,
+    #[serde(default)]
+    pub updated_at: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finished_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -23,17 +31,31 @@ pub struct ActionJobPublic {
     pub name: String,
     pub status: String,
     pub runs_on: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finished_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActionRunsListRequest {
     pub owner: String,
     pub name: String,
+    #[serde(default)]
+    pub page: Option<u32>,
+    #[serde(default)]
+    pub per_page: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActionRunsListResponse {
     pub runs: Vec<ActionRunPublic>,
+    #[serde(default)]
+    pub total_count: i64,
+    #[serde(default)]
+    pub page: u32,
+    #[serde(default)]
+    pub per_page: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,6 +82,63 @@ pub struct ActionJobLogRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActionJobLogResponse {
     pub content: String,
+}
+
+/// `repo.actions.listWorkflows` — discovered workflow files at a ref.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionWorkflowsListRequest {
+    pub owner: String,
+    pub name: String,
+    /// Optional branch/tag/SHA; defaults to the repo's default branch.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub git_ref: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionWorkflowPublic {
+    /// Repo-relative path, e.g. `.github/workflows/ci.yml`.
+    pub path: String,
+    pub name: String,
+    pub supports_dispatch: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionWorkflowsListResponse {
+    pub workflows: Vec<ActionWorkflowPublic>,
+    /// Resolved ref the discovery ran against.
+    pub git_ref: String,
+}
+
+/// `repo.actions.dispatchWorkflow` — Write+; `workflow_dispatch` trigger.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionDispatchRequest {
+    pub owner: String,
+    pub name: String,
+    /// Workflow path (`.github/workflows/x.yml`) or workflow name.
+    pub workflow_id: String,
+    /// Branch/tag/SHA to run against.
+    pub git_ref: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionDispatchResponse {
+    pub ok: bool,
+    /// Run id when a run was enqueued.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run_id: Option<String>,
+}
+
+/// `repo.actions.rerunRun` / `repo.actions.cancelRun` — Write+.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionRunMutationRequest {
+    pub owner: String,
+    pub name: String,
+    pub run_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionRunMutationResponse {
+    pub run: ActionRunPublic,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

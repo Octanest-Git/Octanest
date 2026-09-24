@@ -69,6 +69,24 @@ pub fn resolve_dialect_from_env(url: &str) -> Result<Dialect, String> {
     resolve_dialect(url, declared_ref)
 }
 
+/// `IN (...)` placeholder list for positional bind params (batch lookups).
+/// `start` is the 1-based bind index of the first id (Postgres `$n` / SQLite `?n`).
+pub fn in_placeholders(dialect: Dialect, start: usize, count: usize) -> String {
+    match dialect {
+        Dialect::Postgres => (start..start + count)
+            .map(|i| format!("${i}"))
+            .collect::<Vec<_>>()
+            .join(", "),
+        Dialect::MySql => std::iter::repeat_n("?", count)
+            .collect::<Vec<_>>()
+            .join(", "),
+        Dialect::Sqlite => (start..start + count)
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(", "),
+    }
+}
+
 /// Strip password between `://user:` and `@` (T-02-01).
 pub fn redact_url(url: &str) -> String {
     let Some(scheme_end) = url.find("://") else {

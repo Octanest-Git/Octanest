@@ -124,36 +124,38 @@ export function SignedInHome({ user, repos, reposError = null }: SignedInHomePro
         } @else if (filtered.length === 0) {
           <p className="px-1 text-[14px] text-muted-foreground">No repositories match.</p>;
         } @else {
-          <ul className="flex flex-col gap-0.5">
-            @for (const repo of visibleRepos; key repo.id) {
-              <li>
-                <a
-                  href={"/" + repo.owner_username + "/" + repo.name}
-                  className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-[14px] text-foreground no-underline transition-colors hover:bg-muted"
-                >
-                  <span className="min-w-0 flex-1 truncate font-medium group-hover:text-primary">
-                    {repo.owner_username + "/" + repo.name}
-                  </span>
-                  @if (repo.visibility === "private") {
-                    <Lock
-                      aria-hidden
-                      size={12}
-                      className="shrink-0 text-muted-foreground"
-                    />;
-                  }
-                </a>
-              </li>;
+          <>
+            <ul className="flex flex-col gap-0.5">
+              @for (const repo of visibleRepos; key repo.id) {
+                <li>
+                  <a
+                    href={"/" + repo.owner_username + "/" + repo.name}
+                    className="group flex items-center gap-2 rounded-md px-2 py-1.5 text-[14px] text-foreground no-underline transition-colors hover:bg-muted"
+                  >
+                    <span className="min-w-0 flex-1 truncate font-medium group-hover:text-primary">
+                      {repo.owner_username + "/" + repo.name}
+                    </span>
+                    @if (repo.visibility === "private") {
+                      <Lock
+                        aria-hidden
+                        size={12}
+                        className="shrink-0 text-muted-foreground"
+                      />;
+                    }
+                  </a>
+                </li>;
+              }
+            </ul>
+            @if (hasMore) {
+              <button
+                type="button"
+                className="mt-2 px-2 text-[13px] font-medium text-primary hover:underline"
+                onClick={() => setShowAllRepos(true)}
+              >
+                Show more
+              </button>;
             }
-          </ul>;
-          @if (hasMore) {
-            <button
-              type="button"
-              className="mt-2 px-2 text-[13px] font-medium text-primary hover:underline"
-              onClick={() => setShowAllRepos(true)}
-            >
-              Show more
-            </button>;
-          }
+          </>;
         }
       </aside>
 

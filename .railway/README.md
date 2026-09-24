@@ -17,6 +17,7 @@ TypeScript Infrastructure as Code for **Octanest Cloud** on Railway (PLAT-02 / D
 |---------|---------|------------|
 | `api` | `DOCKERFILE` | `crates/octanest-api/Dockerfile` (repo-root context) |
 | `web` | `DOCKERFILE` | `apps/web/Dockerfile` (repo-root context) |
+| `runner` | `DOCKERFILE` | `docker/octanest-runner/Dockerfile` (repo-root context) |
 | `gateway` | `DOCKERFILE` | `deploy/cloud/Dockerfile` (Caddy file proxy) |
 
 Cloud default database is **managed Postgres** (`postgres()` helper). MySQL/SQLite remain self-host/CI dialects only (D-CLOUD-02).
@@ -41,6 +42,7 @@ Ephemeral PR environments clone `preview` (services, networking, variables) when
 |---------|-------------|
 | `api` | `crates/octanest-api/**`, `crates/octanest-core/**`, `crates/octanest-db/**`, `packages/api-client/**` |
 | `web` | `apps/web/**`, `packages/**` |
+| `runner` | `docker/octanest-runner/**`, `crates/octanest-runner/**`, `Cargo.lock` |
 | `gateway` | `deploy/cloud/**` |
 
 **Volume size:** `forge-data` is **20480 MB** (20 GB) in IaC.
@@ -90,6 +92,22 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
 Scripts: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh), [`scripts/railway-production-autodeploy-check.sh`](../scripts/railway-production-autodeploy-check.sh) (`make cloud-production-autodeploy-check`). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 
 **GitHub Environment `Octanest / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
+
+## Actions runner service
+
+The `runner` service runs `octanest-runner` (native Rust, `crates/octanest-runner`) against the api over the private network. **Host execution only** — Railway exposes no Docker socket, so `docker://` labels are unsupported; the declared labels (`ubuntu-latest,self-hosted`) run steps on the runner host. `actions/checkout` is implemented as a git clone of `OCTANEST_PUBLIC_ORIGIN` (the api's private domain) — no public egress needed.
+
+State (runner token, workspaces) persists on the `runner-data` volume at `/data`.
+
+**One-time token setup (per environment):** `OCTANEST_RUNNER_REGISTRATION_TOKEN` must hold the **same value** on the `api` and `runner` services — `preserve()` cannot share a variable across services. In each environment's dashboard:
+
+1. Generate once: `openssl rand -hex 32`
+2. Set it on `api` → `OCTANEST_RUNNER_REGISTRATION_TOKEN` **and** `runner` → `OCTANEST_RUNNER_REGISTRATION_TOKEN`
+3. Redeploy `runner` — it self-registers on boot (or reuses the persisted token on `runner-data`)
+
+The env bootstrap token is reusable while set — acceptable for preview/staging/PR Environments. On **production** prefer Admin-minted one-time tokens (`admin.actions.createRegistrationToken`) and leave the api-side env unset; set `OCTANEST_RUNNER_REGISTRATION_TOKEN` on `runner` to the minted `reg_…` value instead.
+
+Optional: `OCTANEST_RUNNER_GIT_TOKEN` (a PAT with `repo` scope) on `runner` enables cloning **private** repositories — public repos clone anonymously.
 
 ## Related
 

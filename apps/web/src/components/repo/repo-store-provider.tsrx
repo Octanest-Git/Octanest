@@ -45,5 +45,5 @@ export function RepoStoreProvider({
     }),
   );
 
-  <RepoStoreContext.Provider value={store}>{children}</RepoStoreContext.Provider>;
+  <RepoStoreContext value={store}>{children}</RepoStoreContext>;
 }

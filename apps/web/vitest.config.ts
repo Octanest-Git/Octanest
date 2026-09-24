@@ -9,8 +9,10 @@ import {
 } from "./vite-plugins/fix-type-only-imports.ts";
 import {
   ensureAuthSettings,
+  expectActionsPipelineFlow,
   expectAdminLfsQuotasFlow,
   expectAuthMeDedupedOnHome,
+  expectBranchDialogsFlow,
   expectChromeCreateAndAccountMenusFlow,
   expectForgeIssuesCrudFlow,
   expectForgeReleasesCrudFlow,
@@ -18,6 +20,7 @@ import {
   expectForgeSshAndOrgMembersFlow,
   expectMirrorAuthToggleFlow,
   expectNewRepoTemplatePickerFlow,
+  expectPackagesVisualFlow,
   expectSettingsProfileAvatarFlow,
   expectStatusHealthy,
   expectWorkosCta,
@@ -163,6 +166,9 @@ export default defineConfig({
                     expectNewRepoTemplatePickerFlow,
                     expectSettingsProfileAvatarFlow,
                     expectMirrorAuthToggleFlow,
+                    expectPackagesVisualFlow,
+                    expectBranchDialogsFlow,
+                    expectActionsPipelineFlow,
                   },
                 },
               },

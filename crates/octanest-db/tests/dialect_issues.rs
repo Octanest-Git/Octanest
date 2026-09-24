@@ -144,6 +144,217 @@ async fn dialect_issues_migrate_0011_schema_presence() {
         .expect("assign assignee");
 }
 
+/// Batch enrichment: the `*_for_issues` / `*_for_comments` / `find_many`
+/// helpers must return the same rows as their single-item counterparts in one
+/// round trip, and issue rows must carry `comment_count` (N+1 regression guard).
+#[tokio::test]
+async fn dialect_issues_batch_enrichment() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let url = format!("sqlite:{}", dir.path().join("issues_batch.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+
+    let author = db
+        .create_user(
+            "u-batch-author",
+            "batchauthor@example.com",
+            "batchauthor",
+            Some("hash"),
+            "Batch Author",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create author");
+    let other = db
+        .create_user(
+            "u-batch-other",
+            "batchother@example.com",
+            "batchother",
+            Some("hash"),
+            "Batch Other",
+            "",
+            None,
+            Role::User,
+        )
+        .await
+        .expect("create other user");
+
+    let repo = db
+        .insert_repository(
+            "r-batch-1",
+            &author.id,
+            "user",
+            "batch-demo",
+            "private",
+            "",
+            "main",
+        )
+        .await
+        .expect("insert repo");
+
+    let i1 = db
+        .insert_issue("ib-1", &repo.id, &author.id, "One", "b1")
+        .await
+        .expect("issue 1");
+    let i2 = db
+        .insert_issue("ib-2", &repo.id, &other.id, "Two", "b2")
+        .await
+        .expect("issue 2");
+    let i3 = db
+        .insert_issue("ib-3", &repo.id, &author.id, "Three", "b3")
+        .await
+        .expect("issue 3");
+
+    let c1 = db
+        .insert_issue_comment("ic-1", &i1.id, &author.id, "comment one")
+        .await
+        .expect("comment 1");
+    let c2 = db
+        .insert_issue_comment("ic-2", &i1.id, &other.id, "comment two")
+        .await
+        .expect("comment 2");
+    let c3 = db
+        .insert_issue_comment("ic-3", &i2.id, &author.id, "comment three")
+        .await
+        .expect("comment 3");
+
+    let label = db
+        .insert_label("lb-bug", "bug", "d73a4a", "A bug", None, Some(&repo.id))
+        .await
+        .expect("insert label");
+    db.set_issue_labels(&i1.id, &[label.id.clone()])
+        .await
+        .expect("labels i1");
+    db.set_issue_labels(&i3.id, &[label.id.clone()])
+        .await
+        .expect("labels i3");
+    db.set_issue_assignees(&i1.id, &[author.id.clone(), other.id.clone()])
+        .await
+        .expect("assignees i1");
+    db.set_issue_assignees(&i2.id, &[other.id.clone()])
+        .await
+        .expect("assignees i2");
+
+    db.toggle_issue_reaction(&i1.id, &author.id, "+1")
+        .await
+        .expect("issue reaction");
+    db.toggle_issue_reaction(&i1.id, &other.id, "+1")
+        .await
+        .expect("issue reaction 2");
+    db.toggle_comment_reaction(&c1.id, &other.id, "heart")
+        .await
+        .expect("comment reaction");
+
+    // comment_count rides along on every issue row — no extra queries needed.
+    let (rows, _total) = db
+        .list_issues_for_repo(&repo.id, octanest_db::issues::IssueListFilters {
+            state: "all",
+            author_id: None,
+            label_id: None,
+            assignee_id: None,
+            q: None,
+            offset: 0,
+            limit: 50,
+        })
+        .await
+        .expect("list issues");
+    assert_eq!(rows.len(), 3);
+    let count_of = |id: &str| rows.iter().find(|r| r.id == id).unwrap().comment_count;
+    assert_eq!(count_of(&i1.id), 2, "i1 has two comments");
+    assert_eq!(count_of(&i2.id), 1, "i2 has one comment");
+    assert_eq!(count_of(&i3.id), 0, "i3 has none");
+
+    let issue_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+
+    // Labels — batch equals the per-issue lookup.
+    let label_pairs = db
+        .list_labels_for_issues(&issue_ids)
+        .await
+        .expect("batch labels");
+    for id in &issue_ids {
+        let single = db.list_labels_for_issue(id).await.expect("single labels");
+        let batched: Vec<&octanest_db::LabelRow> = label_pairs
+            .iter()
+            .filter(|(iid, _)| iid == id)
+            .map(|(_, l)| l)
+            .collect();
+        assert_eq!(
+            single.len(),
+            batched.len(),
+            "label count mismatch for {id}"
+        );
+        for l in &single {
+            assert!(batched.iter().any(|b| b.id == l.id));
+        }
+    }
+
+    // Assignees.
+    let assignee_pairs = db
+        .list_assignees_for_issues(&issue_ids)
+        .await
+        .expect("batch assignees");
+    assert_eq!(assignee_pairs.len(), 3, "2 on i1 + 1 on i2");
+
+    // Issue reactions — viewer flag must survive the batch path.
+    let reaction_pairs = db
+        .list_issue_reaction_groups_for_issues(&issue_ids, Some(&author.id))
+        .await
+        .expect("batch reactions");
+    let i1_groups: Vec<_> = reaction_pairs
+        .iter()
+        .filter(|(iid, _)| iid == &i1.id)
+        .map(|(_, g)| g)
+        .collect();
+    assert_eq!(i1_groups.len(), 1);
+    assert_eq!(i1_groups[0].content, "+1");
+    assert_eq!(i1_groups[0].count, 2);
+    assert!(i1_groups[0].viewer_has_reacted);
+
+    // Comment reactions.
+    let comment_ids = vec![c1.id.clone(), c2.id.clone(), c3.id.clone()];
+    let cr_pairs = db
+        .list_comment_reaction_groups_for_comments(&comment_ids, Some(&other.id))
+        .await
+        .expect("batch comment reactions");
+    assert_eq!(cr_pairs.len(), 1);
+    assert_eq!(cr_pairs[0].0, c1.id);
+    assert_eq!(cr_pairs[0].1.content, "heart");
+    assert!(cr_pairs[0].1.viewer_has_reacted);
+
+    // find_many lookups return the same rows as find_by_id.
+    let users = db
+        .find_users_by_ids(&[author.id.clone(), other.id.clone()])
+        .await
+        .expect("batch users");
+    assert_eq!(users.len(), 2);
+    for u in [&author, &other] {
+        assert!(users.iter().any(|x| x.id == u.id && x.username == u.username));
+    }
+    let repos = db
+        .find_repositories_by_ids(&[repo.id.clone()])
+        .await
+        .expect("batch repos");
+    assert_eq!(repos.len(), 1);
+    assert_eq!(repos[0].name, "batch-demo");
+
+    // Empty inputs must not error.
+    assert!(db.find_users_by_ids(&[]).await.expect("empty users").is_empty());
+    assert!(
+        db.list_labels_for_issues(&[])
+            .await
+            .expect("empty labels")
+            .is_empty()
+    );
+    assert!(
+        db.list_issue_reaction_groups_for_issues(&[], None)
+            .await
+            .expect("empty reactions")
+            .is_empty()
+    );
+}
+
 /// Tri-dialect parity: postgres and mysql siblings must exist alongside sqlite.
 #[test]
 fn dialect_issues_tri_dialect_files() {

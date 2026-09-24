@@ -17,6 +17,8 @@ pub struct IssueRow {
     pub closed_by: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    /// Derived `issue_comments` count carried by every `ISSUE_SELECT_*` query.
+    pub comment_count: i64,
 }
 
 macro_rules! map_issue {
@@ -52,32 +54,42 @@ macro_rules! map_issue {
             updated_at: row
                 .try_get("updated_at")
                 .map_err(|e| format!("issue row: {e}"))?,
+            comment_count: {
+                let c: i64 = row
+                    .try_get("comment_count")
+                    .or_else(|_| row.try_get::<i32, _>("comment_count").map(|v| i64::from(v)))
+                    .map_err(|e| format!("issue row: {e}"))?;
+                c
+            },
         }
     }};
 }
 
-const ISSUE_SELECT_PG: &str = "SELECT id, repo_id, number, title, body, state, author_id,
-       CASE WHEN closed_at IS NULL THEN NULL
-            ELSE to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS closed_at,
-       closed_by,
-       to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
-       to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at
+const ISSUE_SELECT_PG: &str = "SELECT issues.id, issues.repo_id, issues.number, issues.title, issues.body, issues.state, issues.author_id,
+       CASE WHEN issues.closed_at IS NULL THEN NULL
+            ELSE to_char(issues.closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') END AS closed_at,
+       issues.closed_by,
+       to_char(issues.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at,
+       to_char(issues.updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at,
+       (SELECT COUNT(*)::bigint FROM issue_comments c WHERE c.issue_id = issues.id) AS comment_count
 FROM issues";
 
-const ISSUE_SELECT_MYSQL: &str = "SELECT id, repo_id, number, title, body, state, author_id,
-       CASE WHEN closed_at IS NULL THEN NULL
-            ELSE DATE_FORMAT(closed_at, '%Y-%m-%dT%H:%i:%sZ') END AS closed_at,
-       closed_by,
-       DATE_FORMAT(created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
-       DATE_FORMAT(updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at
+const ISSUE_SELECT_MYSQL: &str = "SELECT issues.id, issues.repo_id, issues.number, issues.title, issues.body, issues.state, issues.author_id,
+       CASE WHEN issues.closed_at IS NULL THEN NULL
+            ELSE DATE_FORMAT(issues.closed_at, '%Y-%m-%dT%H:%i:%sZ') END AS closed_at,
+       issues.closed_by,
+       DATE_FORMAT(issues.created_at, '%Y-%m-%dT%H:%i:%sZ') AS created_at,
+       DATE_FORMAT(issues.updated_at, '%Y-%m-%dT%H:%i:%sZ') AS updated_at,
+       (SELECT COUNT(*) FROM issue_comments c WHERE c.issue_id = issues.id) AS comment_count
 FROM issues";
 
-const ISSUE_SELECT_SQLITE: &str = "SELECT id, repo_id, number, title, body, state, author_id,
-       CASE WHEN closed_at IS NULL THEN NULL
-            ELSE strftime('%Y-%m-%dT%H:%M:%SZ', closed_at) END AS closed_at,
-       closed_by,
-       strftime('%Y-%m-%dT%H:%M:%SZ', created_at) AS created_at,
-       strftime('%Y-%m-%dT%H:%M:%SZ', updated_at) AS updated_at
+const ISSUE_SELECT_SQLITE: &str = "SELECT issues.id, issues.repo_id, issues.number, issues.title, issues.body, issues.state, issues.author_id,
+       CASE WHEN issues.closed_at IS NULL THEN NULL
+            ELSE strftime('%Y-%m-%dT%H:%M:%SZ', issues.closed_at) END AS closed_at,
+       issues.closed_by,
+       strftime('%Y-%m-%dT%H:%M:%SZ', issues.created_at) AS created_at,
+       strftime('%Y-%m-%dT%H:%M:%SZ', issues.updated_at) AS updated_at,
+       (SELECT COUNT(*) FROM issue_comments c WHERE c.issue_id = issues.id) AS comment_count
 FROM issues";
 
 /// Allocate the next per-repo issue number (monotonic; never reclaims).
@@ -620,6 +632,33 @@ LIMIT ?7 OFFSET ?8"#
             }
             Ok((out, total))
         }
+    }
+}
+
+/// Open-issue count for repo chrome badges (cheap COUNT, no filters).
+pub async fn count_open_issues_for_repo(pool: &DbPool, repo_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COUNT(*)::bigint FROM issues WHERE repo_id = $1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM issues WHERE repo_id = ? AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM issues WHERE repo_id = ?1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
     }
 }
 
@@ -1474,6 +1513,96 @@ pub async fn list_issue_reaction_groups(
     }
 }
 
+/// Batch `list_issue_reaction_groups` — one `IN (...)` round trip; `(issue_id, group)` pairs.
+pub async fn list_issue_reaction_groups_for_issues(
+    pool: &DbPool,
+    issue_ids: &[String],
+    viewer_user_id: Option<&str>,
+) -> Result<Vec<(String, ReactionGroupRow)>, String> {
+    if issue_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let viewer = viewer_user_id.unwrap_or("");
+    macro_rules! map_pair {
+        ($rows:expr) => {
+            $rows
+                .into_iter()
+                .map(|r| {
+                    Ok::<(String, ReactionGroupRow), String>((
+                        r.try_get("issue_id")
+                            .map_err(|e| format!("reaction group: {e}"))?,
+                        map_reaction_group_any!(&r),
+                    ))
+                })
+                .collect::<Result<Vec<_>, String>>()
+        };
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT issue_id, content,
+                          COUNT(*)::bigint AS count,
+                          COALESCE(SUM(CASE WHEN user_id = $2 THEN 1 ELSE 0 END), 0)::bigint AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id = ANY($1)
+                   GROUP BY issue_id, content
+                   ORDER BY issue_id, content ASC"#,
+            )
+            .bind(issue_ids)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 2, issue_ids.len());
+            let q_str = format!(
+                r#"SELECT issue_id, content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id IN ({in_list})
+                   GROUP BY issue_id, content
+                   ORDER BY issue_id, content ASC"#
+            );
+            let q = sqlx::query(&q_str);
+            let q = q.bind(viewer);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list = crate::dialect::in_placeholders(
+                crate::dialect::Dialect::Sqlite,
+                2,
+                issue_ids.len(),
+            );
+            let q_str = format!(
+                r#"SELECT issue_id, content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ?1 THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM issue_reactions
+                   WHERE issue_id IN ({in_list})
+                   GROUP BY issue_id, content
+                   ORDER BY issue_id, content ASC"#
+            );
+            let q = sqlx::query(&q_str);
+            let q = q.bind(viewer);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue reactions failed: {e}"))?;
+            map_pair!(rows)
+        }
+    }
+}
+
 /// List aggregated reaction groups for a comment.
 pub async fn list_comment_reaction_groups(
     pool: &DbPool,
@@ -1544,6 +1673,99 @@ pub async fn list_comment_reaction_groups(
                 out.push(map_reaction_group_any!(&r));
             }
             Ok(out)
+        }
+    }
+}
+
+/// Batch `list_comment_reaction_groups` — one `IN (...)` round trip; `(comment_id, group)` pairs.
+pub async fn list_comment_reaction_groups_for_comments(
+    pool: &DbPool,
+    comment_ids: &[String],
+    viewer_user_id: Option<&str>,
+) -> Result<Vec<(String, ReactionGroupRow)>, String> {
+    if comment_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let viewer = viewer_user_id.unwrap_or("");
+    macro_rules! map_pair {
+        ($rows:expr) => {
+            $rows
+                .into_iter()
+                .map(|r| {
+                    Ok::<(String, ReactionGroupRow), String>((
+                        r.try_get("comment_id")
+                            .map_err(|e| format!("reaction group: {e}"))?,
+                        map_reaction_group_any!(&r),
+                    ))
+                })
+                .collect::<Result<Vec<_>, String>>()
+        };
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                r#"SELECT comment_id, content,
+                          COUNT(*)::bigint AS count,
+                          COALESCE(SUM(CASE WHEN user_id = $2 THEN 1 ELSE 0 END), 0)::bigint AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id = ANY($1)
+                   GROUP BY comment_id, content
+                   ORDER BY comment_id, content ASC"#,
+            )
+            .bind(comment_ids)
+            .bind(viewer)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list = crate::dialect::in_placeholders(
+                crate::dialect::Dialect::MySql,
+                2,
+                comment_ids.len(),
+            );
+            let q_str = format!(
+                r#"SELECT comment_id, content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id IN ({in_list})
+                   GROUP BY comment_id, content
+                   ORDER BY comment_id, content ASC"#
+            );
+            let q = sqlx::query(&q_str);
+            let q = q.bind(viewer);
+            let q = comment_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list = crate::dialect::in_placeholders(
+                crate::dialect::Dialect::Sqlite,
+                2,
+                comment_ids.len(),
+            );
+            let q_str = format!(
+                r#"SELECT comment_id, content,
+                          COUNT(*) AS count,
+                          COALESCE(SUM(CASE WHEN user_id = ?1 THEN 1 ELSE 0 END), 0) AS viewer_hit
+                   FROM comment_reactions
+                   WHERE comment_id IN ({in_list})
+                   GROUP BY comment_id, content
+                   ORDER BY comment_id, content ASC"#
+            );
+            let q = sqlx::query(&q_str);
+            let q = q.bind(viewer);
+            let q = comment_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list comment reactions failed: {e}"))?;
+            map_pair!(rows)
         }
     }
 }

@@ -10,7 +10,7 @@
 .PHONY: smoke-protocol-ci smoke-compose-ci
 .PHONY: cloud-plan cloud-docs cloud-production-autodeploy-check
 .PHONY: up-mysql up-sqlite down-mysql down-sqlite smoke-mysql smoke-sqlite
-.PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack
+.PHONY: up-dev-auth down-dev-auth up-with-dev-auth down-with-dev-auth test-e2e-stack seed-actions-demo test-e2e-actions
 .PHONY: db-migrate db-switch-dialect db-matrix
 .PHONY: coverage-web coverage-rust coverage-weighted coverage-contract
 .PHONY: route-coverage-check
@@ -129,12 +129,13 @@ up-with-dev-auth:
 	  $(COMPOSE) -f docker-compose.yml \
 	    -f docker-compose.dev-auth.yml \
 	    -f docker-compose.dev-auth-attach.yml \
-	    --profile dev-auth up --build -d'
+	    --profile dev-auth --profile actions up --build -d'
 	@./scripts/dev-auth/promote-smtp-settings.sh
 	@echo "==> App        http://localhost"
 	@echo "==> Mailpit UI http://127.0.0.1:8025"
 	@echo "==> OIDC mock  http://127.0.0.1:9090/default"
 	@echo "==> HTTP stubs http://127.0.0.1:9092"
+	@echo "==> Runner     actions profile (host-exec, label ubuntu-latest)"
 	@echo "==> Optional env: docs/dev-auth.env.compose.example"
 	@echo "==> Docs: docs/dev-auth.md"
 
@@ -146,10 +147,20 @@ down-with-dev-auth:
 	  $(COMPOSE) -f docker-compose.yml \
 	    -f docker-compose.dev-auth.yml \
 	    -f docker-compose.dev-auth-attach.yml \
-	    --profile dev-auth down --remove-orphans'
+	    --profile dev-auth --profile actions down --remove-orphans'
 
 test-e2e-stack:
 	./scripts/dev-auth/run-stack-e2e.sh
+
+# Seed the ci-demo repo + workflow and poll the Actions run to green.
+# Works against local compose (default http://localhost) or any origin:
+#   OCTANEST_ORIGIN=https://... OCTANEST_SEED_USER=... OCTANEST_SEED_PASSWORD=... make seed-actions-demo
+seed-actions-demo:
+	./scripts/dev-auth/seed-actions-demo.sh
+
+# Full pipeline e2e: API (sqlite) + host runner + seed — no Docker required.
+test-e2e-actions:
+	./scripts/e2e-actions-pipeline.sh
 
 logs:
 	$(COMPOSE) -f $(COMPOSE_FILE) logs -f

@@ -1,26 +1,35 @@
 //! `repo.actions.*` session RPC (ACT-03 / D-ACT-12 / D-ACT-13 / D-ACT-18 / ACT-06).
 
+use std::collections::HashMap;
+
 use uuid::Uuid;
 
 use octanest_core::{
-    ActionEnabledRequest, ActionEnabledResponse, ActionJobLogRequest, ActionJobLogResponse,
-    ActionJobPublic, ActionListRunnersResponse, ActionRegistrationTokenResponse,
-    ActionRunGetRequest, ActionRunGetResponse, ActionRunPublic, ActionRunnerPublic,
+    ActionDispatchRequest, ActionDispatchResponse, ActionEnabledRequest, ActionEnabledResponse,
+    ActionJobLogRequest, ActionJobLogResponse, ActionJobPublic, ActionListRunnersResponse,
+    ActionRegistrationTokenResponse, ActionRunGetRequest, ActionRunGetResponse,
+    ActionRunMutationRequest, ActionRunMutationResponse, ActionRunPublic, ActionRunnerPublic,
     ActionRunsListRequest, ActionRunsListResponse, ActionSecretDeleteRequest,
     ActionSecretMetaPublic, ActionSecretPutRequest, ActionSecretsListRequest,
-    ActionSecretsListResponse, ActionSetEnabledRequest, AppError,
+    ActionSecretsListResponse, ActionSetEnabledRequest, ActionWorkflowPublic,
+    ActionWorkflowsListRequest, ActionWorkflowsListResponse, AppError,
 };
 use octanest_db::{ActionJobRow, ActionRunRow, ActionRunnerRow};
 
+use crate::actions::dispatch::{bare_repo_path, enqueue_run};
 use crate::actions::logs::read_job_log;
 use crate::actions::secrets::{encrypt_secret, validate_secret_name};
 use crate::actions::tokens::mint_registration_token;
+use crate::actions::discover_workflows;
 use crate::auth::admin::require_admin as require_sys_admin;
 use crate::auth::gate::require_verified;
 use crate::repo::{
     meets, not_found, resolve_repo_for_admin, resolve_repo_for_read, Capability,
 };
 use crate::rpc::RpcCtx;
+
+const RUNS_DEFAULT_PER_PAGE: u32 = 25;
+const RUNS_MAX_PER_PAGE: u32 = 100;
 
 fn db_err(e: String) -> AppError {
     if e == "database not configured" {
@@ -34,7 +43,7 @@ fn db_err(e: String) -> AppError {
     }
 }
 
-fn run_public(r: &ActionRunRow) -> ActionRunPublic {
+fn run_public(r: &ActionRunRow, actors: &HashMap<String, String>) -> ActionRunPublic {
     ActionRunPublic {
         id: r.id.clone(),
         repository_id: r.repository_id.clone(),
@@ -45,7 +54,41 @@ fn run_public(r: &ActionRunRow) -> ActionRunPublic {
         head_ref: r.head_ref.clone(),
         status: r.status.clone(),
         title: r.title.clone(),
+        actor: r
+            .triggered_by
+            .as_ref()
+            .and_then(|id| actors.get(id).cloned()),
+        created_at: r.created_at.clone(),
+        updated_at: r.updated_at.clone(),
+        finished_at: r.finished_at.clone(),
     }
+}
+
+/// Batch-resolve `triggered_by` user ids to usernames for run serialization.
+async fn actors_for_runs(
+    ctx: &RpcCtx,
+    runs: &[ActionRunRow],
+) -> Result<HashMap<String, String>, AppError> {
+    let ids: Vec<String> = runs
+        .iter()
+        .filter_map(|r| r.triggered_by.clone())
+        .collect();
+    let mut out = HashMap::new();
+    if ids.is_empty() {
+        return Ok(out);
+    }
+    let mut unique = ids;
+    unique.sort();
+    unique.dedup();
+    for u in ctx
+        .db
+        .find_users_by_ids(&unique)
+        .await
+        .map_err(db_err)?
+    {
+        out.insert(u.id, u.username);
+    }
+    Ok(out)
 }
 
 fn job_public(j: &ActionJobRow) -> ActionJobPublic {
@@ -57,6 +100,8 @@ fn job_public(j: &ActionJobRow) -> ActionJobPublic {
         name: j.name.clone(),
         status: j.status.clone(),
         runs_on,
+        started_at: j.started_at.clone(),
+        finished_at: j.finished_at.clone(),
     }
 }
 
@@ -73,12 +118,11 @@ fn runner_public(r: &ActionRunnerRow) -> ActionRunnerPublic {
     }
 }
 
-/// `repo.actions.listRuns` — Read+.
+/// `repo.actions.listRuns` — Read+ (anonymous OK on public repos).
 pub async fn list_runs(
     ctx: &RpcCtx,
     input: serde_json::Value,
 ) -> Result<ActionRunsListResponse, AppError> {
-    let _ = require_verified(ctx).await?;
     let req: ActionRunsListRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -89,22 +133,35 @@ pub async fn list_runs(
     if !meets(accessible.capability, Capability::Read) {
         return Err(not_found());
     }
-    let rows = ctx
-        .db
-        .list_action_runs_for_repo(&accessible.row.id)
-        .await
-        .map_err(db_err)?;
+    let page = req.page.unwrap_or(1).max(1);
+    let per_page = req
+        .per_page
+        .unwrap_or(RUNS_DEFAULT_PER_PAGE)
+        .clamp(1, RUNS_MAX_PER_PAGE);
+    let offset = i64::from((page - 1) * per_page);
+    let (rows, total_count) = tokio::try_join!(
+        async {
+            ctx.db
+                .list_action_runs_for_repo(&accessible.row.id, i64::from(per_page), offset)
+                .await
+        },
+        async { ctx.db.count_action_runs_for_repo(&accessible.row.id).await },
+    )
+    .map_err(db_err)?;
+    let actors = actors_for_runs(ctx, &rows).await?;
     Ok(ActionRunsListResponse {
-        runs: rows.iter().map(run_public).collect(),
+        runs: rows.iter().map(|r| run_public(r, &actors)).collect(),
+        total_count,
+        page,
+        per_page,
     })
 }
 
-/// `repo.actions.getRun` — Read+.
+/// `repo.actions.getRun` — Read+ (anonymous OK on public repos).
 pub async fn get_run(
     ctx: &RpcCtx,
     input: serde_json::Value,
 ) -> Result<ActionRunGetResponse, AppError> {
-    let _ = require_verified(ctx).await?;
     let req: ActionRunGetRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -129,18 +186,18 @@ pub async fn get_run(
         .list_action_jobs_for_run(&run.id)
         .await
         .map_err(db_err)?;
+    let actors = actors_for_runs(ctx, std::slice::from_ref(&run)).await?;
     Ok(ActionRunGetResponse {
-        run: run_public(&run),
+        run: run_public(&run, &actors),
         jobs: jobs.iter().map(job_public).collect(),
     })
 }
 
-/// `repo.actions.getJobLog` — Read+.
+/// `repo.actions.getJobLog` — Read+ (anonymous OK on public repos).
 pub async fn get_job_log(
     ctx: &RpcCtx,
     input: serde_json::Value,
 ) -> Result<ActionJobLogResponse, AppError> {
-    let _ = require_verified(ctx).await?;
     let req: ActionJobLogRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -269,12 +326,11 @@ pub async fn delete_secret(
     Ok(serde_json::json!({ "ok": ok }))
 }
 
-/// `repo.actions.getEnabled` — Read+.
+/// `repo.actions.getEnabled` — Read+ (anonymous OK on public repos).
 pub async fn get_enabled(
     ctx: &RpcCtx,
     input: serde_json::Value,
 ) -> Result<ActionEnabledResponse, AppError> {
-    let _ = require_verified(ctx).await?;
     let req: ActionEnabledRequest = serde_json::from_value(input).map_err(|e| {
         AppError::new(
             "rpc.bad_input",
@@ -340,4 +396,218 @@ pub async fn admin_list_runners(
     Ok(ActionListRunnersResponse {
         runners: rows.iter().map(runner_public).collect(),
     })
+}
+
+/// `repo.actions.listWorkflows` — Read+ (anonymous OK on public repos).
+/// Discovers `.github/workflows/*.{yml,yaml}` at the given ref (default branch
+/// when omitted) so the UI can offer GitHub's "Run workflow" dispatch picker.
+pub async fn list_workflows(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<ActionWorkflowsListResponse, AppError> {
+    let req: ActionWorkflowsListRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.actions.listWorkflows input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    if !meets(accessible.capability, Capability::Read) {
+        return Err(not_found());
+    }
+    let bare = bare_repo_path(&ctx.repos_dir, &req.owner, &req.name);
+    let treeish = resolve_treeish(ctx, &accessible.row.default_branch, req.git_ref.as_deref(), &bare)
+        .await?;
+    let discovered = discover_workflows(ctx.git.as_ref(), &bare, &treeish)
+        .await
+        .map_err(|e| {
+            tracing::warn!(error = %e, "workflow discovery failed");
+            AppError::new("repo.actions.discovery_failed", "failed to read workflows")
+        })?;
+    Ok(ActionWorkflowsListResponse {
+        workflows: discovered
+            .iter()
+            .map(|w| ActionWorkflowPublic {
+                path: w.path.clone(),
+                name: w.document.name.clone(),
+                supports_dispatch: w.document.triggers.workflow_dispatch,
+            })
+            .collect(),
+        git_ref: req.git_ref.unwrap_or_else(|| accessible.row.default_branch.clone()),
+    })
+}
+
+/// `repo.actions.dispatchWorkflow` — Write+; enqueues a `workflow_dispatch` run.
+pub async fn dispatch_workflow(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<ActionDispatchResponse, AppError> {
+    let user = require_verified(ctx).await?;
+    let req: ActionDispatchRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.actions.dispatchWorkflow input: {e}"),
+        )
+    })?;
+    if req.git_ref.trim().is_empty() || req.workflow_id.trim().is_empty() {
+        return Err(AppError::new(
+            "rpc.bad_input",
+            "workflow_id and ref are required",
+        ));
+    }
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    if !meets(accessible.capability, Capability::Write) {
+        return Err(not_found());
+    }
+    if !ctx
+        .db
+        .get_repo_actions_enabled(&accessible.row.id)
+        .await
+        .map_err(db_err)?
+    {
+        return Err(AppError::new(
+            "repo.actions.disabled",
+            "actions are disabled for this repository",
+        ));
+    }
+    let bare = bare_repo_path(&ctx.repos_dir, &req.owner, &req.name);
+    let treeish = resolve_treeish(
+        ctx,
+        &accessible.row.default_branch,
+        Some(req.git_ref.as_str()),
+        &bare,
+    )
+    .await?;
+    let discovered = discover_workflows(ctx.git.as_ref(), &bare, &treeish)
+        .await
+        .map_err(|e| {
+            tracing::warn!(error = %e, "workflow discovery failed");
+            AppError::new("repo.actions.discovery_failed", "failed to read workflows")
+        })?;
+    let wanted = req.workflow_id.trim();
+    let wf = discovered
+        .iter()
+        .find(|w| w.path == wanted || w.document.name == wanted)
+        .ok_or_else(|| AppError::new("repo.actions.workflow_not_found", "workflow not found"))?;
+    if !wf.document.triggers.workflow_dispatch {
+        return Err(AppError::new(
+            "repo.actions.dispatch_unsupported",
+            "workflow does not declare the workflow_dispatch trigger",
+        ));
+    }
+    let head_ref = ref_display(&req.git_ref, &accessible.row.default_branch);
+    let (run_id, _jobs) = enqueue_run(
+        &ctx.db,
+        &accessible.row.id,
+        &wf.path,
+        &wf.document,
+        "workflow_dispatch",
+        &treeish,
+        &head_ref,
+        Some(&user.id),
+    )
+    .await
+    .map_err(db_err)?;
+    Ok(ActionDispatchResponse {
+        ok: true,
+        run_id: Some(run_id),
+    })
+}
+
+/// `repo.actions.rerunRun` — Write+; requeues the run and all its jobs.
+pub async fn rerun_run(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<ActionRunMutationResponse, AppError> {
+    let (req, accessible) = run_mutation_target(ctx, input, "rerunRun").await?;
+    ctx.db.requeue_action_run(&req.run_id).await.map_err(db_err)?;
+    run_mutation_response(ctx, &accessible.row.id, &req.run_id).await
+}
+
+/// `repo.actions.cancelRun` — Write+; cancels run + unfinished jobs.
+pub async fn cancel_run(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<ActionRunMutationResponse, AppError> {
+    let (req, accessible) = run_mutation_target(ctx, input, "cancelRun").await?;
+    ctx.db.cancel_action_run(&req.run_id).await.map_err(db_err)?;
+    run_mutation_response(ctx, &accessible.row.id, &req.run_id).await
+}
+
+async fn run_mutation_target(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+    proc: &str,
+) -> Result<(ActionRunMutationRequest, crate::repo::AccessibleRepo), AppError> {
+    let _ = require_verified(ctx).await?;
+    let req: ActionRunMutationRequest = serde_json::from_value(input).map_err(|e| {
+        AppError::new(
+            "rpc.bad_input",
+            format!("invalid repo.actions.{proc} input: {e}"),
+        )
+    })?;
+    let accessible = resolve_repo_for_read(ctx, &req.owner, &req.name).await?;
+    if !meets(accessible.capability, Capability::Write) {
+        return Err(not_found());
+    }
+    let run = ctx
+        .db
+        .find_action_run_by_id(&req.run_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(not_found)?;
+    if run.repository_id != accessible.row.id {
+        return Err(not_found());
+    }
+    Ok((req, accessible))
+}
+
+async fn run_mutation_response(
+    ctx: &RpcCtx,
+    repository_id: &str,
+    run_id: &str,
+) -> Result<ActionRunMutationResponse, AppError> {
+    let run = ctx
+        .db
+        .find_action_run_by_id(run_id)
+        .await
+        .map_err(db_err)?
+        .ok_or_else(not_found)?;
+    debug_assert_eq!(run.repository_id, repository_id);
+    let actors = actors_for_runs(ctx, std::slice::from_ref(&run)).await?;
+    Ok(ActionRunMutationResponse {
+        run: run_public(&run, &actors),
+    })
+}
+
+/// Resolve a user-supplied ref (branch/tag/SHA) or the default branch to a SHA.
+async fn resolve_treeish(
+    ctx: &RpcCtx,
+    default_branch: &str,
+    git_ref: Option<&str>,
+    bare: &std::path::Path,
+) -> Result<String, AppError> {
+    let candidate = git_ref
+        .map(str::trim)
+        .filter(|r| !r.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| format!("refs/heads/{default_branch}"));
+    ctx.git
+        .rev_parse(bare, &candidate)
+        .await
+        .map_err(|e| {
+            tracing::warn!(error = %e, ref_ = %candidate, "ref resolution failed");
+            AppError::new("repo.actions.ref_not_found", "ref not found")
+        })
+}
+
+/// Pretty ref for run rows: `main` for branch names, raw value otherwise.
+fn ref_display(git_ref: &str, default_branch: &str) -> String {
+    let r = git_ref.trim();
+    let stripped = r.strip_prefix("refs/heads/").unwrap_or(r);
+    if stripped.is_empty() {
+        default_branch.to_string()
+    } else {
+        stripped.to_string()
+    }
 }

@@ -315,6 +315,8 @@ pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         can_admin: meets(repo.capability, Capability::Admin),
         can_write: meets(repo.capability, Capability::Write),
         star_count: 0,
+        open_issue_count: 0,
+        open_pull_count: 0,
         viewer_has_starred: false,
         is_fork: false,
         is_template: false,
@@ -337,6 +339,16 @@ pub async fn enrich_social(
     public.star_count = ctx
         .db
         .get_repo_star_count(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.open_issue_count = ctx
+        .db
+        .count_open_issues_for_repo(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.open_pull_count = ctx
+        .db
+        .count_open_pulls_for_repo(&public.id)
         .await
         .map_err(db_err)?;
     if let Some(uid) = viewer_user_id {
@@ -537,6 +549,30 @@ pub async fn update_metadata(
     enrich_social(ctx, to_public(&accessible), Some(&user.id)).await
 }
 
+/// `repo.topicsSuggest` — topic autocomplete for the chips editor.
+/// Anonymous OK — topic names are public metadata (like `repo.explore`).
+pub async fn topics_suggest(
+    ctx: &RpcCtx,
+    input: serde_json::Value,
+) -> Result<octanest_core::RepoTopicsSuggestResponse, AppError> {
+    let req: octanest_core::RepoTopicsSuggestRequest = serde_json::from_value(input)
+        .unwrap_or(octanest_core::RepoTopicsSuggestRequest {
+            q: String::new(),
+            limit: None,
+        });
+    let rows = ctx
+        .db
+        .suggest_topics(&req.q, req.limit.unwrap_or(10))
+        .await
+        .map_err(db_err)?;
+    Ok(octanest_core::RepoTopicsSuggestResponse {
+        topics: rows
+            .into_iter()
+            .map(|(name, repo_count)| octanest_core::RepoTopicSuggestion { name, repo_count })
+            .collect(),
+    })
+}
+
 async fn resolve_visibility(
     ctx: &RpcCtx,
     requested: Option<RepoVisibility>,
@@ -667,6 +703,8 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 can_admin: true,
                 can_write: true,
                 star_count: 0,
+                open_issue_count: 0,
+                open_pull_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,
@@ -910,6 +948,8 @@ pub async fn refs(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoRefsResp
             .map(|r| RepoRefEntry {
                 name: r.name,
                 oid: r.oid,
+                tip_author_name: r.tip_author_name,
+                tip_committed_at: r.tip_committed_at,
             })
             .collect(),
     })
@@ -2113,6 +2153,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         can_admin: true,
         can_write: true,
                 star_count: 0,
+                open_issue_count: 0,
+                open_pull_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,

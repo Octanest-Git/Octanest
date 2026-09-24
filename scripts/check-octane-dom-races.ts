@@ -1,18 +1,29 @@
 #!/usr/bin/env bun
 /**
- * Heuristic scan: after </RadioGroup>, flag nearby @if … @else sibling swaps.
- * Those pairs often race Base UI DOM updates (insertBefore / HierarchyRequestError).
+ * Heuristic scan for Octane/Base UI DOM races (insertBefore /
+ * HierarchyRequestError "Something went wrong!" overlays):
+ *
+ * 1. After </RadioGroup>, flag nearby @if … @else sibling swaps.
+ * 2. Flag `createPortal(` — app code must not portal manually.
+ * 3. Flag `<*Portal>` JSX (DialogPortal, AlertDialogPortal, SelectPortal,
+ *    MenuPrimitive.Portal, Toast.Portal, FloatingPortal, …) whose opening tag
+ *    lacks `keepMounted` — unmounted portals change root-node count mid
+ *    reconciliation and race sibling updates.
  *
  * Prefer keeping both panels mounted (`hidden` class) — see .agents/skills/octane/SKILL.md.
  *
  * Opt out a site with: // octane-dom-race-ok
- * on the same line as the `@else` (or the preceding `@if`).
+ * on the flagged line, the line above, or inside the portal's opening tag —
+ * e.g. anchor-scoped popups that cannot keepMount and were reviewed.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dir, "..", "apps", "web", "src");
 const WINDOW = 50;
+const OPT_OUT = /octane-dom-race-ok/;
+// `<FooPortal>` / `<Foo.Portal>` opening tags (not closing `</…Portal>`).
+const PORTAL_TAG = /<[A-Z][A-Za-z0-9.]*Portal(?=[\s>/])|<Portal(?=[\s>/])/;
 
 type Hit = { file: string; line: number; detail: string };
 
@@ -67,15 +78,54 @@ function scan(file: string): Hit[] {
   return hits;
 }
 
+function scanPortals(file: string): Hit[] {
+  const rel = relative(join(import.meta.dir, ".."), file);
+  const lines = readFileSync(file, "utf8").split(/\r?\n/);
+  const hits: Hit[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!;
+    // Opt-out comments may sit up to 3 lines above the portal tag (multi-line
+    // `//` or `{/* */}` blocks) or on the same/next line inside the tag.
+    const window =
+      `${lines[i - 3] ?? ""}\n${lines[i - 2] ?? ""}\n${lines[i - 1] ?? ""}\n` +
+      `${line}\n${lines[i + 1] ?? ""}`;
+
+    if (line.includes("createPortal(") && !OPT_OUT.test(window)) {
+      hits.push({
+        file: rel,
+        line: i + 1,
+        detail:
+          "`createPortal(` in app code — portals change root-node count mid " +
+          "reconciliation; render in-tree or // octane-dom-race-ok",
+      });
+      continue;
+    }
+
+    if (!PORTAL_TAG.test(line)) continue;
+    // Opening tag may span two lines — accept keepMounted in the tag window.
+    if (/keepMounted/.test(`${line}\n${lines[i + 1] ?? ""}`)) continue;
+    if (OPT_OUT.test(window)) continue;
+    hits.push({
+      file: rel,
+      line: i + 1,
+      detail:
+        "portal JSX without `keepMounted` — unmounted portals race Octane " +
+        "sibling reconciliation (insertBefore); add keepMounted or // octane-dom-race-ok",
+    });
+  }
+  return hits;
+}
+
 const files = walk(ROOT);
-const hits = files.flatMap(scan);
+const hits = files.flatMap((f) => [...scan(f), ...scanPortals(f)]);
 
 if (hits.length === 0) {
   console.log("check-octane-dom-races: ok");
   process.exit(0);
 }
 
-console.error("check-octane-dom-races: potential RadioGroup + @if/@else sibling swaps:\n");
+console.error("check-octane-dom-races: potential Octane/Base UI DOM races:\n");
 for (const h of hits) {
   console.error(`  ${h.file}:${h.line}: ${h.detail}`);
 }

@@ -18,18 +18,32 @@ fn comment_not_found() -> AppError {
     AppError::new("pull.comment_not_found", "Comment not found")
 }
 
-async fn comment_to_public(
+async fn load_comment_usernames(
     ctx: &RpcCtx,
-    row: &PullCommentRow,
-) -> Result<PullCommentPublic, AppError> {
-    let author_username = ctx
+    rows: &[PullCommentRow],
+) -> Result<std::collections::HashMap<String, String>, AppError> {
+    let mut ids: Vec<String> = rows.iter().map(|r| r.author_id.clone()).collect();
+    ids.sort();
+    ids.dedup();
+    Ok(ctx
         .db
-        .find_user_by_id(&row.author_id)
+        .find_users_by_ids(&ids)
         .await
         .map_err(db_err)?
-        .map(|u| u.username)
+        .into_iter()
+        .map(|u| (u.id, u.username))
+        .collect())
+}
+
+fn comment_row_to_public(
+    row: &PullCommentRow,
+    usernames: &std::collections::HashMap<String, String>,
+) -> PullCommentPublic {
+    let author_username = usernames
+        .get(&row.author_id)
+        .cloned()
         .unwrap_or_else(|| "unknown".into());
-    Ok(PullCommentPublic {
+    PullCommentPublic {
         id: row.id.clone(),
         pull_id: row.pull_id.clone(),
         author_id: row.author_id.clone(),
@@ -44,7 +58,15 @@ async fn comment_to_public(
         resolved: row.resolved,
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
-    })
+    }
+}
+
+async fn comment_to_public(
+    ctx: &RpcCtx,
+    row: &PullCommentRow,
+) -> Result<PullCommentPublic, AppError> {
+    let usernames = load_comment_usernames(ctx, std::slice::from_ref(row)).await?;
+    Ok(comment_row_to_public(row, &usernames))
 }
 
 /// `pull.comments.list` — Read+.
@@ -60,15 +82,12 @@ pub async fn comments_list(
     })?;
     let accessible = acl::resolve_for_read(ctx, &req.owner, &req.name).await?;
     let pull = load_pull_in_repo(ctx, &accessible.row.id, req.number).await?;
-    let rows = ctx
-        .db
-        .list_pull_comments(&pull.id)
-        .await
-        .map_err(db_err)?;
-    let mut comments = Vec::with_capacity(rows.len());
-    for row in &rows {
-        comments.push(comment_to_public(ctx, row).await?);
-    }
+    let rows = ctx.db.list_pull_comments(&pull.id).await.map_err(db_err)?;
+    let usernames = load_comment_usernames(ctx, &rows).await?;
+    let comments = rows
+        .iter()
+        .map(|row| comment_row_to_public(row, &usernames))
+        .collect();
     Ok(PullCommentsListResponse { comments })
 }
 

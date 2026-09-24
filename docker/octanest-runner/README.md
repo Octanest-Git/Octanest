@@ -1,55 +1,76 @@
 # Octanest official Actions runner
 
-Image wrapping [Gitea `act_runner`](https://gitea.com/gitea/act_runner) so operators supply compute without Octanest-managed minutes (ACT-04 / ACT-05 / ACT-07).
+Runs the native `octanest-runner` binary (`crates/octanest-runner`) against
+Octanest's JSON runner protocol (`/api/actions/{register,declare,fetch_task,update_task,update_log}`).
+Operators supply compute; the API stays a control plane and never executes
+workflow steps in-process.
 
-**Base image:** `gitea/act_runner:0.2.11` (pinned in `Dockerfile` — bump deliberately).
+**Published image:** `ghcr.io/<owner>/octanest-runner` via
+`.github/workflows/publish-runner.yml` (main + semver tags).
 
-## Register
+## What the runner executes
 
-Never register with a loopback URL if job containers need to checkout from the forge (Gitea “Connection 2” lesson). Use the published hostname:
+- `run:` steps — host mode (default) or inside a container for
+  `docker://` labels.
+- `uses: actions/checkout[@ref]` — built-in; clones
+  `{OCTANEST_PUBLIC_ORIGIN}/{owner}/{repo}.git` and detaches at the run's
+  head sha.
+- Any other `uses:` action fails the job loudly (not silently skipped).
 
-```bash
-export OCTANEST_PUBLIC_ORIGIN=https://git.example.com
-export OCTANEST_RUNNER_REGISTRATION_TOKEN=...   # Admin / instance bootstrap; never commit
-export OCTANEST_RUNNER_NAME=runner-1
-export OCTANEST_RUNNER_LABELS='ubuntu-latest:docker://node:20-bookworm,self-hosted'
-```
-
-### Standalone
-
-```bash
-docker build -t octanest-runner -f docker/octanest-runner/Dockerfile docker/octanest-runner
-
-docker run --rm -it \
-  -e OCTANEST_PUBLIC_ORIGIN \
-  -e OCTANEST_RUNNER_REGISTRATION_TOKEN \
-  -e OCTANEST_RUNNER_NAME \
-  -e OCTANEST_RUNNER_LABELS \
-  -v octanest-runner-data:/data \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  octanest-runner
-```
-
-Docker socket is required for `label:docker://…` jobs; isolate the runner host from the API process (T-19-18).
-
-### Compose profile `actions`
-
-```bash
-export OCTANEST_RUNNER_REGISTRATION_TOKEN=...
-docker compose --profile actions up -d runner
-```
-
-See root `docker-compose.yml` service `runner` and [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md).
+Secrets from the task payload are injected as step env vars and masked out
+of uploaded log chunks.
 
 ## Labels
 
-Default labels include `ubuntu-latest:docker://node:20-bookworm` so workflows with `runs-on: ubuntu-latest` match (D-ACT-09). Customize via `OCTANEST_RUNNER_LABELS`.
+`OCTANEST_RUNNER_LABELS` is a comma-separated list:
 
-## Protocol
+- `ubuntu-latest` → host execution (no Docker needed)
+- `ubuntu-latest:host` → explicit host execution
+- `ubuntu-latest:docker://node:20-bookworm` → steps run in `docker run` with
+  that image (requires the Docker socket mount)
 
-Octanest exposes JSON runner endpoints under `/api/actions` (`Register`, `Declare`, `FetchTask`, `UpdateTask`, `UpdateLog`). Registration tokens and runner bearer tokens only — session cookies are ignored (D-ACT-18).
+## Environment
 
-## Secrets
+| Var | Default | Purpose |
+|-----|---------|---------|
+| `OCTANEST_PUBLIC_ORIGIN` | — (required) | Base URL for the API **and** clone URLs. Must be reachable from the runner; for docker:// jobs the clone happens runner-side. |
+| `OCTANEST_RUNNER_REGISTRATION_TOKEN` | — | One-shot bootstrap token. Required until first register persists state. Matches the API's `OCTANEST_RUNNER_REGISTRATION_TOKEN` env or a minted DB token. |
+| `OCTANEST_RUNNER_NAME` | `$HOSTNAME` | Runner display name. |
+| `OCTANEST_RUNNER_LABELS` | `ubuntu-latest,self-hosted` | See above. |
+| `OCTANEST_RUNNER_STATE` | `/data/runner.json` | Persisted registration (runner id + bearer token). |
+| `OCTANEST_RUNNER_WORK_DIR` | `/data/work` | Per-job workspaces (cleaned per job). |
+| `OCTANEST_RUNNER_POLL_MS` | `2000` | fetch_task poll interval. |
+| `OCTANEST_RUNNER_GIT_TOKEN` | — | PAT for cloning **private** repos (sent via `http.extraHeader`, never in URLs). |
+| `OCTANEST_RUNNER_JOB_TIMEOUT_SECS` | `3600` | Per-step timeout. |
 
-- Pass `OCTANEST_RUNNER_REGISTRATION_TOKEN` via env or secret file — **never** commit real tokens.
-- Rotate tokens from Admin when compromised (D-ACT-08).
+## Run
+
+```bash
+docker build -t octanest-runner -f docker/octanest-runner/Dockerfile .
+
+docker run --rm -it \
+  -e OCTANEST_PUBLIC_ORIGIN=https://git.example.com \
+  -e OCTANEST_RUNNER_REGISTRATION_TOKEN=... \
+  -v octanest-runner-data:/data \
+  octanest-runner
+```
+
+Add `-v /var/run/docker.sock:/var/run/docker.sock` for `docker://` labels —
+that socket is root-equivalent on the host; isolate the runner from the API
+process (see `docs/ARCHITECTURE.md`).
+
+### Compose profile `actions`
+
+The main stack ships a dev registration token so this works out of the box
+locally (never reuse that default in production):
+
+```bash
+docker compose --profile actions up -d runner
+# or everything incl. auth stubs:
+make up-with-dev-auth
+```
+
+## Manual pipeline verification
+
+`make seed-actions-demo` pushes a `ci-demo` repo + workflow and polls the
+run to green — see `scripts/dev-auth/seed-actions-demo.sh`.

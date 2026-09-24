@@ -9,6 +9,7 @@ import { LfsSettingsPanel } from "@/components/repo/lfs-settings-panel";
 import { TemplateRepoSettingsPanel } from "@/components/repo/template-repo-settings-panel";
 import { MergeSettingsPanel } from "@/components/repo/merge-settings-panel";
 import { OwnerLookup } from "@/components/repo/owner-lookup";
+import { TopicChipsInput } from "@/components/repo/topics-input";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { WebhooksPanel } from "@/components/repo/webhooks-panel";
 import { MirrorSettingsPanel } from "@/components/repo/mirror-settings-panel";
@@ -62,7 +63,7 @@ export function RepoSettingsPage() @{
   const [visPending, setVisPending] = useState(false);
   const [description, setDescription] = useState(() => repo?.description ?? "");
   const [homepage, setHomepage] = useState(() => repo?.homepage ?? "");
-  const [topicsText, setTopicsText] = useState(() => (repo?.topics ?? []).join(", "));
+  const [editTopics, setEditTopics] = useState<string[]>(() => repo?.topics ?? []);
   const [metaPending, setMetaPending] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
@@ -107,16 +108,12 @@ export function RepoSettingsPage() @{
     if (!repo) return;
     setMetaPending(true);
     try {
-      const topics = topicsText
-        .split(/[,\s]+/)
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
       const res = await apiClient.repo.updateMetadata({
         owner,
         name: repoName,
         description,
         homepage: homepage.trim(),
-        topics,
+        topics: editTopics,
       });
       if (!res.ok) {
         toastError(res.error.message || "Could not update repository details.");
@@ -125,7 +122,7 @@ export function RepoSettingsPage() @{
       }
       setDescription(res.data.description ?? "");
       setHomepage(res.data.homepage ?? "");
-      setTopicsText((res.data.topics ?? []).join(", "));
+      setEditTopics(res.data.topics ?? []);
       setRepo(res.data);
       toastSuccess("Repository details updated.");
       setMetaPending(false);
@@ -264,16 +261,15 @@ export function RepoSettingsPage() @{
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="repo-topics">Topics</Label>
-            <Input
+            <TopicChipsInput
               id="repo-topics"
-              value={topicsText}
-              onInput={(e) => setTopicsText((e.currentTarget as HTMLInputElement).value)}
+              topics={editTopics}
+              onTopicsChange={setEditTopics}
               disabled={metaPending}
-              placeholder="rust, forge, self-hosted"
-              autoComplete="off"
+              placeholder="Add topics…"
             />
             <p className="text-[13px] text-muted-foreground">
-              Comma-separated lowercase slugs (letters, digits, hyphens).
+              Lowercase slugs (letters, digits, hyphens) — comma or Enter adds a topic.
             </p>
           </div>
           <Button

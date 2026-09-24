@@ -43,6 +43,29 @@ async fn migrate_and_probe_round_trip() {
     );
 }
 
+/// `package_blobs.refcount` is INT4 on Postgres/MySQL — exercises the decode
+/// path that must read it as i32 and widen (regression: i64 read panicked on PG).
+#[tokio::test]
+async fn package_blob_refcount_round_trip() {
+    let Some(url) = database_url() else {
+        eprintln!("skipping: DATABASE_URL unset");
+        return;
+    };
+    let _guard = SERIAL.lock().await;
+
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    let digest = format!("sha256:dialect-probe-{}", std::process::id());
+    db.upsert_package_blob(&digest, 42)
+        .await
+        .expect("upsert blob");
+    let v = db
+        .adjust_package_blob_refcount(&digest, 3)
+        .await
+        .expect("adjust refcount");
+    assert_eq!(v, 3);
+}
+
 #[tokio::test]
 async fn migrate_is_idempotent() {
     let Some(url) = database_url() else {

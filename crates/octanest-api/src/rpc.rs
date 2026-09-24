@@ -386,6 +386,10 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Ok(repo) => RpcResponse::ok(repo),
             Err(e) => RpcResponse::err(e),
         },
+        "repo.topicsSuggest" => match repo::topics_suggest(ctx, req.input).await {
+            Ok(list) => RpcResponse::ok(list),
+            Err(e) => RpcResponse::err(e),
+        },
         "repo.explore" => match repo::explore(ctx, req.input).await {
             Ok(list) => RpcResponse::ok(list),
             Err(e) => RpcResponse::err(e),
@@ -597,6 +601,26 @@ pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {
             Err(e) => RpcResponse::err(e),
         },
         "repo.actions.getJobLog" => match crate::actions::rpc::get_job_log(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.listWorkflows" => {
+            match crate::actions::rpc::list_workflows(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.dispatchWorkflow" => {
+            match crate::actions::rpc::dispatch_workflow(ctx, req.input).await {
+                Ok(v) => RpcResponse::ok(v),
+                Err(e) => RpcResponse::err(e),
+            }
+        }
+        "repo.actions.rerunRun" => match crate::actions::rpc::rerun_run(ctx, req.input).await {
+            Ok(v) => RpcResponse::ok(v),
+            Err(e) => RpcResponse::err(e),
+        },
+        "repo.actions.cancelRun" => match crate::actions::rpc::cancel_run(ctx, req.input).await {
             Ok(v) => RpcResponse::ok(v),
             Err(e) => RpcResponse::err(e),
         },

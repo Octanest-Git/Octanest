@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
+import { TopicChipsInput } from "@/components/repo/topics-input";
 import { blobHref, activityHref } from "@/lib/repo-browse";
 import { languagePercent } from "@/lib/language-bar";
 import { useRepoStore } from "@/lib/repo-store";
@@ -90,7 +91,7 @@ export function RepoAboutSidebar({
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState(live.description ?? "");
   const [homepage, setHomepage] = useState(live.homepage ?? "");
-  const [topicsText, setTopicsText] = useState(() => (live.topics ?? []).join(", "));
+  const [editTopics, setEditTopics] = useState<string[]>(() => live.topics ?? []);
   const [pending, setPending] = useState(false);
 
   const topics = live.topics ?? [];
@@ -109,16 +110,12 @@ export function RepoAboutSidebar({
   async function saveAbout() {
     setPending(true);
     try {
-      const nextTopics = topicsText
-        .split(/[,\s]+/)
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean);
       const res = await apiClient.repo.updateMetadata({
         owner,
         name,
         description,
         homepage: homepage.trim(),
-        topics: nextTopics,
+        topics: editTopics,
       });
       if (!res.ok) {
         toastError(res.error.message || "Could not update About.");
@@ -128,7 +125,7 @@ export function RepoAboutSidebar({
       setRepo(res.data);
       setDescription(res.data.description ?? "");
       setHomepage(res.data.homepage ?? "");
-      setTopicsText((res.data.topics ?? []).join(", "));
+      setEditTopics(res.data.topics ?? []);
       setEditing(false);
       toastSuccess("About updated.");
       setPending(false);
@@ -141,7 +138,7 @@ export function RepoAboutSidebar({
   function beginEdit() {
     setDescription(live.description ?? "");
     setHomepage(live.homepage ?? "");
-    setTopicsText((live.topics ?? []).join(", "));
+    setEditTopics(live.topics ?? []);
     setEditing(true);
   }
 
@@ -185,13 +182,13 @@ export function RepoAboutSidebar({
             aria-label="Homepage"
             autoComplete="off"
           />
-          <Input
-            value={topicsText}
-            onInput={(e) => setTopicsText((e.currentTarget as HTMLInputElement).value)}
+          <TopicChipsInput
+            id="about-topics"
+            topics={editTopics}
+            onTopicsChange={setEditTopics}
             disabled={pending}
-            placeholder="topics, comma-separated"
-            aria-label="Topics"
-            autoComplete="off"
+            placeholder="Add topics…"
+            ariaLabel="Topics"
           />
           <div className="flex flex-wrap gap-2">
             <Button type="button" disabled={pending} onClick={() => void saveAbout()}>
@@ -204,7 +201,7 @@ export function RepoAboutSidebar({
               onClick={() => {
                 setDescription(live.description ?? "");
                 setHomepage(live.homepage ?? "");
-                setTopicsText((live.topics ?? []).join(", "));
+                setEditTopics(live.topics ?? []);
                 setEditing(false);
               }}
             >

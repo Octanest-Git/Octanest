@@ -171,20 +171,22 @@ export function PullReviews(props: PullReviewsProps) @{
         />
         <div className="flex flex-wrap gap-2">
           @if (!props.isAuthor) {
-            <Button
-              type="button"
-              disabled={busy}
-              onClick={() => void submit("approved")}
-            >
-              Approve
-            </Button>;
-            <Button
-              type="button"
-              disabled={busy}
-              onClick={() => void submit("changes_requested")}
-            >
-              Request changes
-            </Button>;
+            <>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => void submit("approved")}
+              >
+                Approve
+              </Button>
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() => void submit("changes_requested")}
+              >
+                Request changes
+              </Button>
+            </>;
           }
           <Button type="button" disabled={busy} onClick={() => void submit("commented")}>
             Comment

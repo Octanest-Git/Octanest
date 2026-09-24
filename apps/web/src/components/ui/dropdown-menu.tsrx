@@ -22,7 +22,7 @@ export function DropdownMenuContent({
     ComponentProps<typeof MenuPrimitive.Positioner>,
     "align" | "alignOffset" | "side" | "sideOffset"
   >) @{
-  <MenuPrimitive.Portal>
+  <MenuPrimitive.Portal keepMounted>
     <MenuPrimitive.Positioner
       className="isolate z-50 outline-none"
       align={align}

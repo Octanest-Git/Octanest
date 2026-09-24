@@ -262,3 +262,57 @@ async fn repo_about_fork_bumps_fork_count() {
     assert_eq!(source["ok"], true, "{source}");
     assert_eq!(source["data"]["fork_count"], 1);
 }
+
+#[tokio::test]
+async fn repo_topics_suggest_prefix_and_counts() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let repos = dir.path().join("repos");
+    let url = format!("sqlite:{}", dir.path().join("topics_suggest.db").display());
+    let db = Database::connect(&url).await.expect("connect");
+    db.migrate().await.expect("migrate");
+    support::unlock_signup(&db).await;
+    let app = test_app(db.clone(), repos).await;
+
+    let (cookie, v) = signup_and_login(&app, "top@ex.com", "topown").await;
+    verify_user(&db, v["data"]["id"].as_str().unwrap()).await;
+    create_repo(&app, &cookie, "one", "public").await;
+    create_repo(&app, &cookie, "two", "public").await;
+
+    // Seed topics across two repos: rust(2) > rustfmt(1), plus cli on one.
+    for (repo, topics) in [
+        ("one", r#"["rust","cli","rustfmt"]"#),
+        ("two", r#"["rust"]"#),
+    ] {
+        let body = format!(
+            r#"{{"procedure":"repo.updateMetadata","input":{{"owner":"topown","name":"{repo}","topics":{topics}}}}}"#
+        );
+        let res = rpc_json(&app, Some(&cookie), &body).await;
+        assert_eq!(res["ok"], true, "seed topics {repo} — {res}");
+    }
+
+    // Anonymous call — suggestions are public metadata.
+    let sugg = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.topicsSuggest","input":{"q":"ru"}}"#,
+    )
+    .await;
+    assert_eq!(sugg["ok"], true, "{sugg}");
+    let topics = sugg["data"]["topics"].as_array().unwrap();
+    assert_eq!(topics.len(), 2, "{sugg}");
+    // Most-linked first: rust (2 repos) before rustfmt (1 repo).
+    assert_eq!(topics[0]["name"], "rust");
+    assert_eq!(topics[0]["repo_count"], 2);
+    assert_eq!(topics[1]["name"], "rustfmt");
+    assert_eq!(topics[1]["repo_count"], 1);
+
+    // Prefix that matches nothing → empty list (not an error).
+    let none = rpc_json(
+        &app,
+        None,
+        r#"{"procedure":"repo.topicsSuggest","input":{"q":"zzz"}}"#,
+    )
+    .await;
+    assert_eq!(none["ok"], true, "{none}");
+    assert_eq!(none["data"]["topics"].as_array().unwrap().len(), 0);
+}

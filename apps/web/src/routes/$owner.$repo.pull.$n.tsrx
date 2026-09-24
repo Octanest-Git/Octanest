@@ -2,6 +2,12 @@ import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import type { PullPublic, RepoPublic } from "@octanest/api-client";
 import { useState } from "octane";
+import {
+  GitMerge,
+  GitPullRequest,
+  GitPullRequestClosed,
+  GitPullRequestDraft,
+} from "@octanejs/lucide";
 import { PullCommits } from "@/components/repo/pull-commits";
 import { PullConversation } from "@/components/repo/pull-conversation";
 import { PullFiles } from "@/components/repo/pull-files";
@@ -140,18 +146,41 @@ export function PullDetailPage() @{
               </h2>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 @if (pull.state === "merged") {
-                  <Badge variant="merged">Merged</Badge>;
+                  <Badge variant="merged">
+                    <GitMerge aria-hidden size={12} />
+                    Merged
+                  </Badge>;
                 } @else if (pull.state === "closed") {
-                  <Badge variant="destructive">Closed</Badge>;
+                  <Badge variant="closed">
+                    <GitPullRequestClosed aria-hidden size={12} />
+                    Closed
+                  </Badge>;
                 } @else {
-                  <Badge variant="success">Open</Badge>;
+                  @if (pull.draft) {
+                    <Badge variant="draft">
+                      <GitPullRequestDraft aria-hidden size={12} />
+                      Draft
+                    </Badge>;
+                  } @else {
+                    <Badge variant="open">
+                      <GitPullRequest aria-hidden size={12} />
+                      Open
+                    </Badge>;
+                  }
                 }
                 <span>
                   <span className="font-medium text-foreground">
                     {pull.author_username as string}
                   </span>{" "}
-                  wants to merge <span className="font-mono">{pull.head_ref as string}</span> into{" "}
-                  <span className="font-mono">{pull.base_ref as string}</span>
+                  wants to merge{" "}
+                  <span className="font-mono">
+                    {
+                      (pull.head_owner === owner && pull.head_name === repoName
+                        ? pull.head_ref
+                        : `${pull.head_owner}:${pull.head_ref}`) as string
+                    }
+                  </span>{" "}
+                  into <span className="font-mono">{pull.base_ref as string}</span>
                 </span>
               </div>
             </div>

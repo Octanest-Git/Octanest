@@ -144,64 +144,66 @@ export function NotificationsPage() @{
             }
           />;
         } @else {
-          <List>
-            @for (const n of rows; key n.id) {
-              <ListRow className="p-0">
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full items-start gap-3 px-4 py-3 text-left outline-none",
-                    "transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
-                  )}
-                  aria-label={`${n.actor_username} ${reasonLabel(n.reason)} ${n.owner}/${n.repo} #${n.subject_number}`}
-                  onClick={() => void activateRow(n)}
-                >
-                  <span
-                    aria-hidden
+          <>
+            <List>
+              @for (const n of rows; key n.id) {
+                <ListRow className="p-0">
+                  <button
+                    type="button"
                     className={cn(
-                      "mt-1.5 size-2 shrink-0 rounded-full",
-                      n.read_at ? "bg-transparent" : "bg-primary",
+                      "flex w-full items-start gap-3 px-4 py-3 text-left outline-none",
+                      "transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
                     )}
-                  />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    aria-label={`${n.actor_username} ${reasonLabel(n.reason)} ${n.owner}/${n.repo} #${n.subject_number}`}
+                    onClick={() => void activateRow(n)}
+                  >
                     <span
+                      aria-hidden
                       className={cn(
-                        "text-[14px]",
-                        n.read_at
-                          ? "text-muted-foreground"
-                          : "font-medium text-foreground",
+                        "mt-1.5 size-2 shrink-0 rounded-full",
+                        n.read_at ? "bg-transparent" : "bg-primary",
                       )}
-                    >
-                      <span className="font-semibold text-foreground">
-                        {n.actor_username as string}
-                      </span>{" "}
-                      {reasonLabel(n.reason) as string}{" "}
-                      <span className="text-foreground">
-                        {n.owner as string}/{n.repo as string}#
-                        {String(n.subject_number) as string}
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span
+                        className={cn(
+                          "text-[14px]",
+                          n.read_at
+                            ? "text-muted-foreground"
+                            : "font-medium text-foreground",
+                        )}
+                      >
+                        <span className="font-semibold text-foreground">
+                          {n.actor_username as string}
+                        </span>{" "}
+                        {reasonLabel(n.reason) as string}{" "}
+                        <span className="text-foreground">
+                          {n.owner as string}/{n.repo as string}#
+                          {String(n.subject_number) as string}
+                        </span>
+                      </span>
+                      <span className="truncate text-[13px] text-muted-foreground">
+                        {n.subject_title as string}
+                        {" · "}
+                        {n.created_at as string}
                       </span>
                     </span>
-                    <span className="truncate text-[13px] text-muted-foreground">
-                      {n.subject_title as string}
-                      {" · "}
-                      {n.created_at as string}
-                    </span>
-                  </span>
-                </button>
-              </ListRow>;
+                  </button>
+                </ListRow>;
+              }
+            </List>
+            @if (offset + rows.length < total) {
+              <div className="mt-4 flex justify-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOffset(offset + limit)}
+                >
+                  Load older
+                </Button>
+              </div>;
             }
-          </List>;
-          @if (offset + rows.length < total) {
-            <div className="mt-4 flex justify-center">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOffset(offset + limit)}
-              >
-                Load older
-              </Button>
-            </div>;
-          }
+          </>;
         }
       }
     </div>

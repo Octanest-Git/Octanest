@@ -138,6 +138,9 @@ pub struct IssuePublic {
     /// Aggregated reaction counts (D-ISS-11).
     #[serde(default)]
     pub reactions: Vec<ReactionGroupPublic>,
+    /// Number of comments on the issue (list rows show this like GitHub).
+    #[serde(default)]
+    pub comment_count: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

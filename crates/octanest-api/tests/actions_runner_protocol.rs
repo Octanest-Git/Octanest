@@ -8,8 +8,8 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use http_body_util::BodyExt;
 use octanest_api::actions::dispatch::{dispatch_push_for_sha, enqueue_run};
-use octanest_api::actions::parse_workflow_yaml;
 use octanest_api::actions::mint_registration_token;
+use octanest_api::actions::parse_workflow_yaml;
 use octanest_api::email::{EmailSender, LogSink};
 use octanest_api::{build_cors, router_with_state, AppState};
 use octanest_core::Role;
@@ -19,12 +19,9 @@ use tower::ServiceExt;
 
 async fn app_db() -> (axum::Router, Database, tempfile::TempDir) {
     let dir = tempfile::tempdir().unwrap();
-    let db = Database::connect(&format!(
-        "sqlite:{}",
-        dir.path().join("r.db").display()
-    ))
-    .await
-    .unwrap();
+    let db = Database::connect(&format!("sqlite:{}", dir.path().join("r.db").display()))
+        .await
+        .unwrap();
     db.migrate().await.unwrap();
     support::unlock_signup(&db).await;
     let state = AppState::new(
@@ -261,11 +258,13 @@ async fn actions_runner_protocol_ignores_session_cookie() {
     let _ = db;
 }
 
-
 #[tokio::test]
 async fn actions_runner_protocol_env_bootstrap_token() {
     let (app, _db, _dir) = app_db().await;
-    std::env::set_var("OCTANEST_RUNNER_REGISTRATION_TOKEN", "bootstrap-secret-token");
+    std::env::set_var(
+        "OCTANEST_RUNNER_REGISTRATION_TOKEN",
+        "bootstrap-secret-token",
+    );
     let res = app
         .oneshot(
             Request::builder()
@@ -294,12 +293,9 @@ async fn actions_runner_protocol_update_task_and_log() {
     let dir = tempfile::tempdir().unwrap();
     let log_dir = dir.path().join("actions-logs");
     std::fs::create_dir_all(&log_dir).unwrap();
-    let db = Database::connect(&format!(
-        "sqlite:{}",
-        dir.path().join("r.db").display()
-    ))
-    .await
-    .unwrap();
+    let db = Database::connect(&format!("sqlite:{}", dir.path().join("r.db").display()))
+        .await
+        .unwrap();
     db.migrate().await.unwrap();
     support::unlock_signup(&db).await;
     let state = AppState::new(
@@ -395,6 +391,31 @@ jobs:
         serde_json::from_slice(&fetch.into_body().collect().await.unwrap().to_bytes()).unwrap();
     let job_id = fetch_v["job_id"].as_str().expect("claimed job_id");
     let run_id = fetch_v["run_id"].as_str().expect("claimed run_id");
+    // Runner needs repo coordinates to clone for checkout steps.
+    assert_eq!(fetch_v["repository_owner"].as_str().unwrap(), "upd");
+    assert_eq!(fetch_v["repository_name"].as_str().unwrap(), "upd");
+
+    let start = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/actions/update_task")
+                .header("content-type", "application/json")
+                .header("authorization", format!("Bearer {runner_token}"))
+                .body(Body::from(
+                    serde_json::json!({ "job_id": job_id, "state": "in_progress" }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(start.status(), StatusCode::OK);
+    let job = db.find_action_job_by_id(job_id).await.unwrap().unwrap();
+    assert_eq!(job.status, "in_progress");
+    assert!(job.started_at.is_some(), "in_progress sets started_at");
+    let run = db.find_action_run_by_id(run_id).await.unwrap().unwrap();
+    assert_eq!(run.status, "in_progress", "run rolls up to in_progress");
 
     let log_res = app
         .clone()
@@ -440,6 +461,24 @@ jobs:
 
     let job = db.find_action_job_by_id(job_id).await.unwrap().unwrap();
     assert_eq!(job.status, "success");
+    assert!(
+        job.finished_at.is_some(),
+        "terminal status sets finished_at"
+    );
+
+    let run = db.find_action_run_by_id(run_id).await.unwrap().unwrap();
+    assert_eq!(run.status, "success", "run rolls up to success");
+    assert!(run.finished_at.is_some(), "terminal run sets finished_at");
+
+    let runner = db
+        .find_action_runner_by_token_hash(&octanest_api::actions::tokens::hash_token(runner_token))
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        runner.last_online.is_some(),
+        "protocol calls bump runner last_online"
+    );
 
     let log_path = log_dir.join(run_id).join(format!("{job_id}.log"));
     let log_bytes = std::fs::read(&log_path).expect("log file written by update_log");
@@ -447,4 +486,11 @@ jobs:
         String::from_utf8_lossy(&log_bytes).contains("hello from runner"),
         "update_log chunk must persist under ACTIONS_LOG_DIR"
     );
+
+    let statuses = db.list_commit_statuses(&repo.id, "cafebabe").await.unwrap();
+    let st = statuses
+        .iter()
+        .find(|s| s.context.contains("build"))
+        .expect("commit status published for job");
+    assert_eq!(st.state, "success");
 }

@@ -85,6 +85,11 @@ export default defineRailway((ctx) => {
       // AES-256-GCM for Actions secrets, mirror credentials, webhook secrets (D-ACT-17).
       // Required — set a unique value per environment in the dashboard (never commit).
       OCTANEST_ACTIONS_SECRETS_KEY: preserve(),
+      // Reusable runner registration token — must equal the `runner` service's
+      // OCTANEST_RUNNER_REGISTRATION_TOKEN so the bundled runner can register.
+      // Set per environment in the dashboard (never commit); production should
+      // prefer per-runner DB tokens over this env path.
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: preserve(),
       // Optional deterministic web-flow commit-signing key (OpenSSH PEM or
       // base64 PEM). PR Environments inherit preview's vars; unset envs
       // auto-generate on first seeded repo create (production|cloud fail closed).
@@ -125,6 +130,39 @@ export default defineRailway((ctx) => {
     },
   });
 
+  // Actions runner — native octanest-runner against the JSON protocol.
+  // Host execution only: Railway has no Docker socket, so labels are
+  // host-mode. Registration state + workspaces persist on runner-data.
+  const runnerData = volume("runner-data", { sizeMB: 5120 });
+  const runner = service("runner", {
+    source: github(REPO, { checkSuites: stagingWaitForCi || null }),
+    build: {
+      builder: "DOCKERFILE",
+      dockerfilePath: "docker/octanest-runner/Dockerfile",
+      watchPatterns: [
+        "docker/octanest-runner/**",
+        "crates/octanest-runner/**",
+        "Cargo.lock",
+      ],
+    },
+    volumeMounts: {
+      "/data": runnerData,
+    },
+    env: {
+      // Runner → API over the private network; clone URLs also resolve here
+      // (api serves smart HTTP on :8080).
+      OCTANEST_PUBLIC_ORIGIN: "http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080",
+      // Must equal the api service's OCTANEST_RUNNER_REGISTRATION_TOKEN —
+      // set per environment in the dashboard.
+      OCTANEST_RUNNER_REGISTRATION_TOKEN: preserve(),
+      OCTANEST_RUNNER_NAME: "railway-runner",
+      // Host execution only — Railway has no docker.sock for docker:// jobs.
+      OCTANEST_RUNNER_LABELS: "ubuntu-latest,self-hosted",
+      // Optional PAT for cloning private repositories (http.extraHeader auth).
+      OCTANEST_RUNNER_GIT_TOKEN: preserve(),
+    },
+  });
+
   const gateway = service("gateway", {
     source: github(REPO, { checkSuites: stagingWaitForCi || null }),
     build: {
@@ -141,7 +179,7 @@ export default defineRailway((ctx) => {
     },
   });
 
-  const forge = group("Octanest Cloud", [db, forgeData, api, web, gateway]);
+  const forge = group("Octanest Cloud", [db, forgeData, api, web, runner, gateway]);
 
   return project("octanest-cloud", {
     resources: [forge],

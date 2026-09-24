@@ -436,7 +436,68 @@ async fn resolve_ref_sha(
         .ok_or_else(|| AppError::new("pull.ref_not_found", format!("ref not found: {refname}")))
 }
 
-async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> {
+struct PullEnrichment {
+    usernames: std::collections::HashMap<String, String>,
+    head_repos: std::collections::HashMap<String, octanest_db::RepositoryRow>,
+    org_slugs: std::collections::HashMap<String, String>,
+    assignees: std::collections::HashMap<String, Vec<octanest_db::pulls::PullAssigneeRow>>,
+}
+
+async fn load_pull_enrichment(ctx: &RpcCtx, rows: &[PullRow]) -> Result<PullEnrichment, AppError> {
+    use std::collections::HashMap;
+    if rows.is_empty() {
+        return Ok(PullEnrichment {
+            usernames: HashMap::new(),
+            head_repos: HashMap::new(),
+            org_slugs: HashMap::new(),
+            assignees: HashMap::new(),
+        });
+    }
+    let pull_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+    let head_repo_ids: Vec<String> = {
+        let mut v: Vec<String> = rows.iter().map(|r| r.head_repo_id.clone()).collect();
+        v.sort();
+        v.dedup();
+        v
+    };
+    let (head_repos, assignee_pairs) = tokio::try_join!(
+        ctx.db.find_repositories_by_ids(&head_repo_ids),
+        ctx.db.list_pull_assignees_for_pulls(&pull_ids),
+    )
+    .map_err(db_err)?;
+
+    // Authors + user-type head owners share one users lookup; org owners get their own.
+    let mut user_ids: Vec<String> = rows.iter().map(|r| r.author_id.clone()).collect();
+    let mut org_ids: Vec<String> = Vec::new();
+    for repo in &head_repos {
+        match repo.owner_type.as_str() {
+            "org" => org_ids.push(repo.owner_id.clone()),
+            _ => user_ids.push(repo.owner_id.clone()),
+        }
+    }
+    user_ids.sort();
+    user_ids.dedup();
+    org_ids.sort();
+    org_ids.dedup();
+    let (users, orgs) = tokio::try_join!(
+        ctx.db.find_users_by_ids(&user_ids),
+        ctx.db.find_organizations_by_ids(&org_ids),
+    )
+    .map_err(db_err)?;
+
+    let mut assignees: HashMap<String, Vec<octanest_db::pulls::PullAssigneeRow>> = HashMap::new();
+    for (pull_id, a) in assignee_pairs {
+        assignees.entry(pull_id).or_default().push(a);
+    }
+    Ok(PullEnrichment {
+        usernames: users.into_iter().map(|u| (u.id, u.username)).collect(),
+        head_repos: head_repos.into_iter().map(|r| (r.id.clone(), r)).collect(),
+        org_slugs: orgs.into_iter().map(|o| (o.id, o.slug)).collect(),
+        assignees,
+    })
+}
+
+fn pull_row_to_public(row: &PullRow, enr: &PullEnrichment) -> Result<PullPublic, AppError> {
     let state = PullState::parse(&row.state).map_err(|e| {
         tracing::error!(error = %e, "invalid pull state in db");
         AppError::new("pull.internal", "pull operation failed")
@@ -448,54 +509,43 @@ async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> 
         })?),
         None => None,
     };
-    let author_username = match ctx.db.find_user_by_id(&row.author_id).await {
-        Ok(Some(u)) => u.username,
-        Ok(None) => String::new(),
-        Err(e) => return Err(db_err(e)),
-    };
+    let author_username = enr
+        .usernames
+        .get(&row.author_id)
+        .cloned()
+        .unwrap_or_default();
 
-    let head_repo = ctx
-        .db
-        .find_repository_by_id(&row.head_repo_id)
-        .await
-        .map_err(db_err)?
+    let head_repo = enr
+        .head_repos
+        .get(&row.head_repo_id)
         .ok_or_else(|| AppError::new("pull.internal", "head repository missing"))?;
     let (head_owner, head_name) = match head_repo.owner_type.as_str() {
-        "org" => {
-            let org = ctx
-                .db
-                .find_organization_by_id(&head_repo.owner_id)
-                .await
-                .map_err(db_err)?;
-            (
-                org.map(|o| o.slug).unwrap_or_default(),
-                head_repo.name.clone(),
-            )
-        }
-        _ => {
-            let user = ctx
-                .db
-                .find_user_by_id(&head_repo.owner_id)
-                .await
-                .map_err(db_err)?;
-            (
-                user.map(|u| u.username).unwrap_or_default(),
-                head_repo.name.clone(),
-            )
-        }
+        "org" => (
+            enr.org_slugs
+                .get(&head_repo.owner_id)
+                .cloned()
+                .unwrap_or_default(),
+            head_repo.name.clone(),
+        ),
+        _ => (
+            enr.usernames
+                .get(&head_repo.owner_id)
+                .cloned()
+                .unwrap_or_default(),
+            head_repo.name.clone(),
+        ),
     };
 
-    let assignee_rows = ctx
-        .db
-        .list_pull_assignees(&row.id)
-        .await
-        .map_err(db_err)?;
-    let assignees = assignee_rows
-        .into_iter()
+    let assignees = enr
+        .assignees
+        .get(&row.id)
+        .map(Vec::as_slice)
+        .unwrap_or(&[])
+        .iter()
         .map(|a| IssueAssigneePublic {
-            user_id: a.user_id,
-            username: a.username,
-            display_name: a.display_name,
+            user_id: a.user_id.clone(),
+            username: a.username.clone(),
+            display_name: a.display_name.clone(),
         })
         .collect();
 
@@ -524,8 +574,22 @@ async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> 
         closed_by: row.closed_by.clone(),
         created_at: row.created_at.clone(),
         updated_at: row.updated_at.clone(),
+        comment_count: row.comment_count,
         assignees,
     })
+}
+
+async fn to_public(ctx: &RpcCtx, row: &PullRow) -> Result<PullPublic, AppError> {
+    let rows = std::slice::from_ref(row);
+    let enrichment = load_pull_enrichment(ctx, rows).await?;
+    pull_row_to_public(row, &enrichment)
+}
+
+async fn to_public_many(ctx: &RpcCtx, rows: &[PullRow]) -> Result<Vec<PullPublic>, AppError> {
+    let enrichment = load_pull_enrichment(ctx, rows).await?;
+    rows.iter()
+        .map(|row| pull_row_to_public(row, &enrichment))
+        .collect()
 }
 
 async fn load_pull_in_repo(
@@ -797,31 +861,38 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
             filtered.retain(|r| r.state == "merged");
         }
         if let Some(ref lid) = label_filter {
-            let mut keep = Vec::new();
-            for row in filtered {
-                if pull_matches_label(ctx, &row.id, lid).await? {
-                    keep.push(row);
-                }
-            }
-            filtered = keep;
+            let ids: Vec<String> = filtered.iter().map(|r| r.id.clone()).collect();
+            let matching: std::collections::HashSet<String> = ctx
+                .db
+                .pull_ids_with_label(&ids, lid)
+                .await
+                .map_err(db_err)?
+                .into_iter()
+                .collect();
+            filtered.retain(|r| matching.contains(&r.id));
         }
         if let Some(ref aid) = assignee_id {
-            let mut keep = Vec::new();
-            for row in filtered {
-                if pull_matches_assignee(ctx, &row.id, aid).await? {
-                    keep.push(row);
-                }
-            }
-            filtered = keep;
+            let ids: Vec<String> = filtered.iter().map(|r| r.id.clone()).collect();
+            let matching: std::collections::HashSet<String> = ctx
+                .db
+                .list_pull_assignees_for_pulls(&ids)
+                .await
+                .map_err(db_err)?
+                .into_iter()
+                .filter(|(_, a)| &a.user_id == aid)
+                .map(|(pull_id, _)| pull_id)
+                .collect();
+            filtered.retain(|r| matching.contains(&r.id));
         }
         if let Some(ref rs) = review_state {
-            let mut keep = Vec::new();
-            for row in filtered {
-                if pull_matches_review_state(ctx, &row.id, rs).await? {
-                    keep.push(row);
-                }
+            let ids: Vec<String> = filtered.iter().map(|r| r.id.clone()).collect();
+            let reviews = ctx.db.list_reviews_for_pulls(&ids).await.map_err(db_err)?;
+            let mut by_pull: std::collections::HashMap<&str, Vec<&octanest_db::PullReviewRow>> =
+                std::collections::HashMap::new();
+            for r in &reviews {
+                by_pull.entry(r.pull_id.as_str()).or_default().push(r);
             }
-            filtered = keep;
+            filtered.retain(|row| pull_review_state_matches(by_pull.get(row.id.as_str()), rs));
         }
         let total = filtered.len() as i64;
         let page: Vec<_> = if needs_post_filter {
@@ -841,10 +912,7 @@ pub async fn list(ctx: &RpcCtx, input: serde_json::Value) -> Result<PullListResp
             .map_err(db_err)?
     };
 
-    let mut pulls = Vec::with_capacity(rows.len());
-    for row in rows {
-        pulls.push(to_public(ctx, &row).await?);
-    }
+    let pulls = to_public_many(ctx, &rows).await?;
     Ok(PullListResponse {
         pulls,
         total,
@@ -869,37 +937,20 @@ async fn resolve_username_filter(
     Ok(user.map(|u| u.id))
 }
 
-async fn pull_matches_label(ctx: &RpcCtx, pull_id: &str, label: &str) -> Result<bool, AppError> {
-    ctx.db
-        .pull_has_label(pull_id, label)
-        .await
-        .map_err(db_err)
-}
-
-async fn pull_matches_assignee(
-    ctx: &RpcCtx,
-    pull_id: &str,
-    user_id: &str,
-) -> Result<bool, AppError> {
-    ctx.db
-        .pull_has_assignee(pull_id, user_id)
-        .await
-        .map_err(db_err)
-}
-
-async fn pull_matches_review_state(
-    ctx: &RpcCtx,
-    pull_id: &str,
+/// Aggregate a pull's review state from its (already-fetched) reviews and
+/// compare against the wanted filter value. Latest review per author wins;
+/// `changes_requested` dominates `approved`; no reviews → `review_required`.
+fn pull_review_state_matches(
+    reviews: Option<&Vec<&octanest_db::PullReviewRow>>,
     want: &str,
-) -> Result<bool, AppError> {
-    let reviews = ctx.db.list_pull_reviews(pull_id).await.map_err(db_err)?;
-    let mut latest: std::collections::BTreeMap<String, &octanest_db::PullReviewRow> =
+) -> bool {
+    let mut latest: std::collections::BTreeMap<&str, &octanest_db::PullReviewRow> =
         std::collections::BTreeMap::new();
-    for r in &reviews {
-        match latest.get(&r.author_id) {
+    for r in reviews.into_iter().flatten() {
+        match latest.get(r.author_id.as_str()) {
             Some(prev) if prev.submitted_at >= r.submitted_at => {}
             _ => {
-                latest.insert(r.author_id.clone(), r);
+                latest.insert(r.author_id.as_str(), r);
             }
         }
     }
@@ -912,7 +963,7 @@ async fn pull_matches_review_state(
     } else {
         "review_required"
     };
-    Ok(actual == want)
+    actual == want
 }
 
 /// `pull.close` — Write+; open → closed (PR-06).

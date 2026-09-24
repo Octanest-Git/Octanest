@@ -254,6 +254,6 @@ Actions lives in `crates/octanest-api/src/actions/`:
 | `statuses` | Commit status publish for Phase 13 |
 | `rpc` / UI | Session RPC + Octane routes under `/$owner/$repo/actions` |
 
-**Registered runners only:** jobs stay `queued` until a compatible runner `fetch_task`s them. Custom `runs-on` labels match declared runner labels (`label[:schema[:args]]`, D-ACT-09). Official image: `docker/octanest-runner` (act_runner lineage). Compose profile `actions` — see [DEPLOYMENT.md](DEPLOYMENT.md). Operators bring compute; Octanest does not sell managed minutes (ACT-07 / D-ACT-10).
+**Registered runners only:** jobs stay `queued` until a compatible runner `fetch_task`s them. Custom `runs-on` labels match declared runner labels (`label[:schema[:args]]`, D-ACT-09). Official runner: `octanest-runner` (Rust, `crates/octanest-runner`) speaking the `/api/actions/*` JSON protocol; image built from `docker/octanest-runner`. Compose profile `actions` — see [DEPLOYMENT.md](DEPLOYMENT.md). Operators bring compute; Octanest does not sell managed minutes (ACT-07 / D-ACT-10).
 
 Commit status contexts for Phase 13 required checks: `{workflow_name} / {job_key}` (YAML job id), published on job state transitions and queryable via `repo.commitStatus.list` (D-ACT-15 / D-ACT-16).

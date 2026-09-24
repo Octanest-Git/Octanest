@@ -525,6 +525,80 @@ ORDER BY lower(labels.name)"
     }
 }
 
+/// Batch `list_labels_for_issue` — one `IN (...)` round trip; `(issue_id, label)` pairs.
+pub async fn list_labels_for_issues(
+    pool: &DbPool,
+    issue_ids: &[String],
+) -> Result<Vec<(String, LabelRow)>, String> {
+    if issue_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    macro_rules! map_pair {
+        ($row:expr) => {{
+            let row = $row;
+            let issue_id: String = row
+                .try_get("issue_id")
+                .map_err(|e| format!("issue label row: {e}"))?;
+            Ok((issue_id, map_label!(row)))
+        }};
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(&format!(
+                "SELECT il.issue_id, labels.*
+FROM ({LABEL_SELECT_PG}) labels
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id = ANY($1)
+ORDER BY lower(labels.name)"
+            ))
+            .bind(issue_ids)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue labels failed: {e}"))?;
+            rows.iter().map(|r| map_pair!(r)).collect()
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, issue_ids.len());
+            let q_str = format!(
+                "SELECT il.issue_id, labels.*
+FROM ({LABEL_SELECT_MYSQL}) labels
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id IN ({in_list})
+ORDER BY LOWER(labels.name)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue labels failed: {e}"))?;
+            rows.iter().map(|r| map_pair!(r)).collect()
+        }
+        DbPool::Sqlite(p) => {
+            let in_list = crate::dialect::in_placeholders(
+                crate::dialect::Dialect::Sqlite,
+                1,
+                issue_ids.len(),
+            );
+            let q_str = format!(
+                "SELECT il.issue_id, labels.*
+FROM ({LABEL_SELECT_SQLITE}) labels
+INNER JOIN issue_labels il ON il.label_id = labels.id
+WHERE il.issue_id IN ({in_list})
+ORDER BY lower(labels.name)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue labels failed: {e}"))?;
+            rows.iter().map(|r| map_pair!(r)).collect()
+        }
+    }
+}
+
 /// Replace the label set on an issue (M:N via `issue_labels`).
 pub async fn set_issue_labels(
     pool: &DbPool,
@@ -705,6 +779,95 @@ ORDER BY lower(u.username)",
                     })
                 })
                 .collect()
+        }
+    }
+}
+
+/// Batch `list_issue_assignees` — one `IN (...)` round trip; `(issue_id, assignee)` pairs.
+pub async fn list_assignees_for_issues(
+    pool: &DbPool,
+    issue_ids: &[String],
+) -> Result<Vec<(String, IssueAssigneeRow)>, String> {
+    if issue_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    macro_rules! map_pair {
+        ($rows:expr) => {
+            $rows
+                .into_iter()
+                .map(|row| {
+                    Ok((
+                        row.try_get("issue_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        IssueAssigneeRow {
+                            user_id: row
+                                .try_get("user_id")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                            username: row
+                                .try_get("username")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                            display_name: row
+                                .try_get("display_name")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                        },
+                    ))
+                })
+                .collect::<Result<Vec<_>, String>>()
+        };
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT a.issue_id, a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id = ANY($1)
+ORDER BY lower(u.username)",
+            )
+            .bind(issue_ids)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, issue_ids.len());
+            let q_str = format!(
+                "SELECT a.issue_id, a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id IN ({in_list})
+ORDER BY LOWER(u.username)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list = crate::dialect::in_placeholders(
+                crate::dialect::Dialect::Sqlite,
+                1,
+                issue_ids.len(),
+            );
+            let q_str = format!(
+                "SELECT a.issue_id, a.user_id, u.username, u.display_name
+FROM issue_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.issue_id IN ({in_list})
+ORDER BY lower(u.username)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = issue_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list issue assignees failed: {e}"))?;
+            map_pair!(rows)
         }
     }
 }

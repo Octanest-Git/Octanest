@@ -236,6 +236,8 @@ export type RepoPublic = {
   can_admin?: boolean;
   can_write?: boolean;
   star_count?: number;
+  open_issue_count?: number;
+  open_pull_count?: number;
   viewer_has_starred?: boolean;
   is_fork?: boolean;
   is_template?: boolean;
@@ -342,6 +344,20 @@ export type RepoUpdateMetadataRequest = {
   topics?: string[] | null;
 };
 
+export type RepoTopicsSuggestRequest = {
+  q: string;
+  limit?: number | null;
+};
+
+export type RepoTopicSuggestion = {
+  name: string;
+  repo_count: number;
+};
+
+export type RepoTopicsSuggestResponse = {
+  topics: RepoTopicSuggestion[];
+};
+
 export type ListStarredRequest = {
   offset?: number | null;
   limit?: number | null;
@@ -419,6 +435,8 @@ export type RepoBlobResponse = {
 export type RepoRefEntry = {
   name: string;
   oid: string;
+  tip_author_name?: string | null;
+  tip_committed_at?: string | null;
 };
 
 export type RepoRefsResponse = {
@@ -1103,6 +1121,10 @@ export type ActionRunPublic = {
   head_ref: string;
   status: string;
   title: string;
+  actor?: string;
+  created_at?: string;
+  updated_at?: string;
+  finished_at?: string;
 };
 
 export type ActionJobPublic = {
@@ -1112,15 +1134,22 @@ export type ActionJobPublic = {
   name: string;
   status: string;
   runs_on: string[];
+  started_at?: string;
+  finished_at?: string;
 };
 
 export type ActionRunsListRequest = {
   owner: string;
   name: string;
+  page?: number;
+  per_page?: number;
 };
 
 export type ActionRunsListResponse = {
   runs: ActionRunPublic[];
+  total_count?: number;
+  page?: number;
+  per_page?: number;
 };
 
 export type ActionRunGetRequest = {
@@ -1143,6 +1172,45 @@ export type ActionJobLogRequest = {
 
 export type ActionJobLogResponse = {
   content: string;
+};
+
+export type ActionWorkflowsListRequest = {
+  owner: string;
+  name: string;
+  git_ref?: string;
+};
+
+export type ActionWorkflowPublic = {
+  path: string;
+  name: string;
+  supports_dispatch: boolean;
+};
+
+export type ActionWorkflowsListResponse = {
+  workflows: ActionWorkflowPublic[];
+  git_ref: string;
+};
+
+export type ActionDispatchRequest = {
+  owner: string;
+  name: string;
+  workflow_id: string;
+  git_ref: string;
+};
+
+export type ActionDispatchResponse = {
+  ok: boolean;
+  run_id?: string;
+};
+
+export type ActionRunMutationRequest = {
+  owner: string;
+  name: string;
+  run_id: string;
+};
+
+export type ActionRunMutationResponse = {
+  run: ActionRunPublic;
 };
 
 export type ActionSecretMetaPublic = {
@@ -1556,6 +1624,7 @@ export type PullPublic = {
   closed_by?: string | null;
   created_at: string;
   updated_at: string;
+  comment_count?: number;
   assignees?: IssueAssigneePublic[];
 };
 
@@ -1928,6 +1997,7 @@ export type IssuePublic = {
   labels?: LabelPublic[];
   assignees?: IssueAssigneePublic[];
   reactions?: ReactionGroupPublic[];
+  comment_count?: number;
 };
 
 export type CreateIssueRequest = {
@@ -2316,6 +2386,8 @@ export function createClient(opts: CreateClientOptions) {
         rpcCall<RepoForksListResponse>(opts, "repo.forks.list", input),
       updateMetadata: (input: RepoUpdateMetadataRequest) =>
         rpcCall<RepoPublic>(opts, "repo.updateMetadata", input),
+      topicsSuggest: (input: RepoTopicsSuggestRequest) =>
+        rpcCall<RepoTopicsSuggestResponse>(opts, "repo.topicsSuggest", input),
       explore: (input: RepoExploreRequest) =>
         rpcCall<RepoListMineResponse>(opts, "repo.explore", input),
       get: (input: RepoGetRequest) => rpcCall<RepoPublic>(opts, "repo.get", input),
@@ -2428,6 +2500,14 @@ export function createClient(opts: CreateClientOptions) {
           rpcCall<ActionRunGetResponse>(opts, "repo.actions.getRun", input),
         getJobLog: (input: ActionJobLogRequest) =>
           rpcCall<ActionJobLogResponse>(opts, "repo.actions.getJobLog", input),
+        listWorkflows: (input: ActionWorkflowsListRequest) =>
+          rpcCall<ActionWorkflowsListResponse>(opts, "repo.actions.listWorkflows", input),
+        dispatchWorkflow: (input: ActionDispatchRequest) =>
+          rpcCall<ActionDispatchResponse>(opts, "repo.actions.dispatchWorkflow", input),
+        rerunRun: (input: ActionRunMutationRequest) =>
+          rpcCall<ActionRunMutationResponse>(opts, "repo.actions.rerunRun", input),
+        cancelRun: (input: ActionRunMutationRequest) =>
+          rpcCall<ActionRunMutationResponse>(opts, "repo.actions.cancelRun", input),
         secrets: {
           list: (input: ActionSecretsListRequest) =>
             rpcCall<ActionSecretsListResponse>(opts, "repo.actions.secrets.list", input),
@@ -2930,6 +3010,20 @@ export function repoGetQueryOptions(
   };
 }
 
+export function repoTopicsSuggestQueryOptions(
+  client: OctanestClient,
+  input: RepoTopicsSuggestRequest,
+) {
+  return {
+    queryKey: ["repo", "topicsSuggest", input.q, input.limit] as const,
+    queryFn: async () => {
+      const res = await client.repo.topicsSuggest(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
 export function repoTreeQueryOptions(
   client: OctanestClient,
   input: RepoTreeRequest,
@@ -3146,6 +3240,60 @@ export function actionsGetJobLogQueryOptions(
     ] as const,
     queryFn: async () => {
       const res = await client.repo.actions.getJobLog(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsListWorkflowsQueryOptions(
+  client: OctanestClient,
+  input: ActionWorkflowsListRequest,
+) {
+  return {
+    queryKey: [
+      "repo",
+      "actions",
+      "listWorkflows",
+      input.owner,
+      input.name,
+      input.git_ref ?? "",
+    ] as const,
+    queryFn: async () => {
+      const res = await client.repo.actions.listWorkflows(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsDispatchWorkflowMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "dispatchWorkflow"] as const,
+    mutationFn: async (input: ActionDispatchRequest) => {
+      const res = await client.repo.actions.dispatchWorkflow(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsRerunRunMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "rerunRun"] as const,
+    mutationFn: async (input: ActionRunMutationRequest) => {
+      const res = await client.repo.actions.rerunRun(input);
+      if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
+      return res.data;
+    },
+  };
+}
+
+export function actionsCancelRunMutationOptions(client: OctanestClient) {
+  return {
+    mutationKey: ["repo", "actions", "cancelRun"] as const,
+    mutationFn: async (input: ActionRunMutationRequest) => {
+      const res = await client.repo.actions.cancelRun(input);
       if (!res.ok) throw new Error(`${res.error.code}: ${res.error.message}`);
       return res.data;
     },

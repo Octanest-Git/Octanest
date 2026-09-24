@@ -30,6 +30,7 @@ pub struct WorkflowDocument {
 pub struct WorkflowTriggers {
     pub push: bool,
     pub pull_request: bool,
+    pub workflow_dispatch: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -133,6 +134,7 @@ fn apply_event(t: &mut WorkflowTriggers, name: &str) {
     match name.trim() {
         "push" => t.push = true,
         "pull_request" => t.pull_request = true,
+        "workflow_dispatch" => t.workflow_dispatch = true,
         _ => {
             // Unsupported triggers ignored for matching; jobs still parse.
         }

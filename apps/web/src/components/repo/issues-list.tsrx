@@ -1,12 +1,13 @@
 import { useForm } from "@octanejs/tanstack-form";
-import { CircleCheck, CircleDot } from "@octanejs/lucide";
+import { CircleCheck, CircleDot, MessageSquare } from "@octanejs/lucide";
 import type { IssuePublic, LabelPublic, RepoPublic } from "@octanest/api-client";
 import { MemberLookup } from "@/components/org/member-lookup";
-import { Badge } from "@/components/ui/badge";
+import { LabelChip } from "@/components/repo/label-chip";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatRelative } from "@/lib/relative-time";
 import {
   repoListApplyClass,
   repoListFilterFieldClass,
@@ -271,21 +272,23 @@ export function IssuesList({
                   />;
                 }
                 <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <a
                       href={`${base}/issues/${issue.number}` as string}
                       className="text-[15px] font-semibold text-foreground no-underline hover:text-primary"
                     >
                       {issue.title as string}
                     </a>
-                    @if (issue.state === "open") {
-                      <Badge variant="success">Open</Badge>;
-                    } @else {
-                      <Badge variant="merged">Closed</Badge>;
+                    @for (const lab of issue.labels ?? []; key lab.id) {
+                      <LabelChip label={lab} />;
                     }
                   </div>
                   <p className="mt-1 text-[12px] text-muted-foreground">
-                    {`#${issue.number} · opened by @${issue.author_username}` as string}
+                    {
+                      (issue.state === "open"
+                        ? `#${issue.number} opened ${formatRelative(issue.created_at)} by @${issue.author_username}`
+                        : `#${issue.number} closed ${formatRelative(issue.closed_at ?? issue.updated_at)} by @${issue.closed_by ?? issue.author_username}`) as string
+                    }
                     @if (
                       issue.assignees &&
                       issue.assignees.length > 0
@@ -301,6 +304,18 @@ export function IssuesList({
                     }
                   </p>
                 </div>
+                @if ((issue.comment_count ?? 0) > 0) {
+                  <a
+                    href={`${base}/issues/${issue.number}` as string}
+                    className="mt-0.5 flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground no-underline hover:text-primary"
+                    aria-label={
+                      `${issue.comment_count} comment${issue.comment_count === 1 ? "" : "s"}` as string
+                    }
+                  >
+                    <MessageSquare aria-hidden size={14} />
+                    {issue.comment_count as number}
+                  </a>;
+                }
               </ListRow>;
             }
           </List>

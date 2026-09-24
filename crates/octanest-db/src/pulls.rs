@@ -27,6 +27,8 @@ pub struct PullRow {
     pub closed_by: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    /// Derived `pull_comments` count carried by every `PULL_COLS` select.
+    pub comment_count: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -87,20 +89,35 @@ macro_rules! map_pull {
             updated_at: row
                 .try_get("updated_at")
                 .map_err(|e| format!("pull row: {e}"))?,
+            comment_count: {
+                let v: i64 = row
+                    .try_get("comment_count")
+                    .or_else(|_| row.try_get::<i32, _>("comment_count").map(|v| i64::from(v)))
+                    .map_err(|e| format!("pull row comment_count: {e}"))?;
+                v
+            },
         }
     }};
 }
 
-const PULL_COLS: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, merged_at, merged_by, merge_commit_sha, merge_method, closed_at, closed_by, created_at, updated_at";
+const PULL_COLS: &str = concat!(
+    "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, ",
+    "head_repo_id, head_ref, head_sha, merged_at, merged_by, merge_commit_sha, merge_method, ",
+    "closed_at, closed_by, created_at, updated_at, ",
+    "(SELECT COUNT(*) FROM pull_comments pc WHERE pc.pull_id = pull_requests.id) AS comment_count"
+);
 
 /// Postgres stores timestamps as TIMESTAMPTZ; map_pull expects String / Option<String>.
-const PULL_COLS_PG: &str = "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, \
-to_char(merged_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS merged_at, \
-merged_by, merge_commit_sha, merge_method, \
-to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS closed_at, \
-closed_by, \
-to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, \
-to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at";
+const PULL_COLS_PG: &str = concat!(
+    "id, repo_id, number, title, body, state, draft, author_id, base_ref, base_sha, head_repo_id, head_ref, head_sha, ",
+    "to_char(merged_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS merged_at, ",
+    "merged_by, merge_commit_sha, merge_method, ",
+    "to_char(closed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS closed_at, ",
+    "closed_by, ",
+    "to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS created_at, ",
+    "to_char(updated_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS updated_at, ",
+    "(SELECT COUNT(*)::bigint FROM pull_comments pc WHERE pc.pull_id = pull_requests.id) AS comment_count"
+);
 
 pub async fn insert_pull(
     pool: &DbPool,
@@ -410,6 +427,33 @@ pub struct PullSearchFilters<'a> {
 
 fn pull_like_pattern(q: &str) -> String {
     format!("%{q}%")
+}
+
+/// Open-PR count for repo chrome badges (cheap COUNT, no filters).
+pub async fn count_open_pulls_for_repo(pool: &DbPool, repo_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = ? AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = ?1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+    }
 }
 
 fn normalize_pull_search_state(state: &str) -> Option<&'static str> {
@@ -1501,6 +1545,66 @@ pub async fn list_pull_reviews(
     }
 }
 
+/// Batch `list_pull_reviews` — one `IN (...)` round trip for many pulls.
+pub async fn list_reviews_for_pulls(
+    pool: &DbPool,
+    pull_ids: &[String],
+) -> Result<Vec<PullReviewRow>, String> {
+    if pull_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    macro_rules! run {
+        ($rows:expr) => {{
+            let mut out = Vec::with_capacity($rows.len());
+            for r in $rows {
+                out.push(map_pull_review!(&r));
+            }
+            Ok(out)
+        }};
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let q = format!(
+                "{PRV_SELECT_PG} WHERE pull_id = ANY($1) ORDER BY submitted_at ASC, id ASC"
+            );
+            let rows = sqlx::query(&q)
+                .bind(pull_ids)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list reviews for pulls failed: {e}"))?;
+            run!(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, pull_ids.len());
+            let q_str = format!(
+                "{PRV_SELECT_MYSQL} WHERE pull_id IN ({in_list}) ORDER BY submitted_at ASC, id ASC"
+            );
+            let q = sqlx::query(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list reviews for pulls failed: {e}"))?;
+            run!(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::Sqlite, 1, pull_ids.len());
+            let q_str = format!(
+                "{PRV_SELECT_SQLITE} WHERE pull_id IN ({in_list}) ORDER BY submitted_at ASC, id ASC"
+            );
+            let q = sqlx::query(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list reviews for pulls failed: {e}"))?;
+            run!(rows)
+        }
+    }
+}
+
 pub async fn dismiss_pull_review(
     pool: &DbPool,
     id: &str,
@@ -1718,6 +1822,69 @@ WHERE pl.pull_id = ?1 AND (pl.label_id = ?2 OR lower(l.name) = lower(?2))"#,
     }
 }
 
+/// Batch `pull_has_label` — returns the subset of `pull_ids` carrying a label
+/// matching `label` by id or name (case-insensitive name).
+pub async fn pull_ids_with_label(
+    pool: &DbPool,
+    pull_ids: &[String],
+    label: &str,
+) -> Result<Vec<String>, String> {
+    if pull_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query_scalar::<_, String>(
+                r#"SELECT DISTINCT pl.pull_id FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id = ANY($1) AND (pl.label_id = $2 OR lower(l.name) = lower($2))"#,
+            )
+            .bind(pull_ids)
+            .bind(label)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("pull_ids_with_label: {e}"))?;
+            Ok(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, pull_ids.len());
+            let q_str = format!(
+                r#"SELECT DISTINCT pl.pull_id FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id IN ({in_list}) AND (pl.label_id = ? OR LOWER(l.name) = LOWER(?))"#
+            );
+            let q = sqlx::query_scalar::<_, String>(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .bind(label)
+                .bind(label)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("pull_ids_with_label: {e}"))?;
+            Ok(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::Sqlite, 1, pull_ids.len());
+            let label_pos = pull_ids.len() + 1;
+            let q_str = format!(
+                r#"SELECT DISTINCT pl.pull_id FROM pull_labels pl
+JOIN labels l ON l.id = pl.label_id
+WHERE pl.pull_id IN ({in_list}) AND (pl.label_id = ?{label_pos} OR lower(l.name) = lower(?{label_pos}))"#
+            );
+            let q = sqlx::query_scalar::<_, String>(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .bind(label)
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("pull_ids_with_label: {e}"))?;
+            Ok(rows)
+        }
+    }
+}
+
 /// Whether `user_id` is assigned to the pull.
 pub async fn pull_has_assignee(pool: &DbPool, pull_id: &str, user_id: &str) -> Result<bool, String> {
     match pool {
@@ -1763,6 +1930,92 @@ pub struct PullAssigneeRow {
     pub user_id: String,
     pub username: String,
     pub display_name: String,
+}
+
+/// Batch `list_pull_assignees` — one `IN (...)` round trip; `(pull_id, assignee)` pairs.
+pub async fn list_pull_assignees_for_pulls(
+    pool: &DbPool,
+    pull_ids: &[String],
+) -> Result<Vec<(String, PullAssigneeRow)>, String> {
+    if pull_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    macro_rules! map_pair {
+        ($rows:expr) => {
+            $rows
+                .into_iter()
+                .map(|row| {
+                    Ok((
+                        row.try_get("pull_id")
+                            .map_err(|e| format!("assignee row: {e}"))?,
+                        PullAssigneeRow {
+                            user_id: row
+                                .try_get("user_id")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                            username: row
+                                .try_get("username")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                            display_name: row
+                                .try_get("display_name")
+                                .map_err(|e| format!("assignee row: {e}"))?,
+                        },
+                    ))
+                })
+                .collect::<Result<Vec<_>, String>>()
+        };
+    }
+    match pool {
+        DbPool::Postgres(p) => {
+            let rows = sqlx::query(
+                "SELECT a.pull_id, a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id = ANY($1)
+ORDER BY lower(u.username)",
+            )
+            .bind(pull_ids)
+            .fetch_all(p)
+            .await
+            .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::MySql(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::MySql, 1, pull_ids.len());
+            let q_str = format!(
+                "SELECT a.pull_id, a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id IN ({in_list})
+ORDER BY LOWER(u.username)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            map_pair!(rows)
+        }
+        DbPool::Sqlite(p) => {
+            let in_list =
+                crate::dialect::in_placeholders(crate::dialect::Dialect::Sqlite, 1, pull_ids.len());
+            let q_str = format!(
+                "SELECT a.pull_id, a.user_id, u.username, u.display_name
+FROM pull_assignees a
+JOIN users u ON u.id = a.user_id
+WHERE a.pull_id IN ({in_list})
+ORDER BY lower(u.username)"
+            );
+            let q = sqlx::query(&q_str);
+            let q = pull_ids.iter().fold(q, |q, id| q.bind(id));
+            let rows = q
+                .fetch_all(p)
+                .await
+                .map_err(|e| format!("list pull assignees failed: {e}"))?;
+            map_pair!(rows)
+        }
+    }
 }
 
 /// List assignees for a pull (username ascending).

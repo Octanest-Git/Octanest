@@ -113,7 +113,7 @@ pub async fn adjust_blob_refcount(
             .fetch_optional(p)
             .await
             .map_err(|e| e.to_string())?;
-            row.map(|r| r.get::<i64, _>("refcount"))
+            row.map(|r| i64::from(r.get::<i32, _>("refcount")))
                 .ok_or_else(|| format!("blob not found: {digest}"))
         }
         DbPool::MySql(p) => {
@@ -123,12 +123,14 @@ pub async fn adjust_blob_refcount(
                 .execute(p)
                 .await
                 .map_err(|e| e.to_string())?;
-            let v: Option<i64> =
-                sqlx::query_scalar("SELECT refcount FROM package_blobs WHERE digest = ?")
-                    .bind(digest)
-                    .fetch_optional(p)
-                    .await
-                    .map_err(|e| e.to_string())?;
+            let v: Option<i64> = sqlx::query_scalar::<sqlx::MySql, i32>(
+                "SELECT refcount FROM package_blobs WHERE digest = ?",
+            )
+            .bind(digest)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?
+            .map(i64::from);
             v.ok_or_else(|| format!("blob not found: {digest}"))
         }
         DbPool::Sqlite(p) => {
@@ -580,6 +582,34 @@ pub async fn delete_version(pool: &DbPool, version_id: &str) -> Result<(), Strin
     Ok(())
 }
 
+/// Delete a package row; versions + blob refs cascade (FK ON DELETE CASCADE).
+pub async fn delete_package(pool: &DbPool, package_id: &str) -> Result<(), String> {
+    match pool {
+        DbPool::Sqlite(p) => {
+            sqlx::query("DELETE FROM packages WHERE id = ?")
+                .bind(package_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::MySql(p) => {
+            sqlx::query("DELETE FROM packages WHERE id = ?")
+                .bind(package_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+        DbPool::Postgres(p) => {
+            sqlx::query("DELETE FROM packages WHERE id = $1")
+                .bind(package_id)
+                .execute(p)
+                .await
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 pub async fn list_versions_for_package(
     pool: &DbPool,
     package_id: &str,
@@ -733,7 +763,9 @@ pub async fn list_packages_by_repository(
             let rows = sqlx::query(
                 r#"SELECT id, owner_type, owner_id, name, format, visibility,
                           repository_id, description, created_at, updated_at
-                   FROM packages WHERE repository_id = ? ORDER BY name"#,
+                   FROM packages WHERE repository_id = ?
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(repository_id)
             .fetch_all(p)
@@ -746,7 +778,9 @@ pub async fn list_packages_by_repository(
                 r#"SELECT id, owner_type, owner_id, name, format, visibility,
                           repository_id, description,
                           created_at::text AS created_at, updated_at::text AS updated_at
-                   FROM packages WHERE repository_id = $1 ORDER BY name"#,
+                   FROM packages WHERE repository_id = $1
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(repository_id)
             .fetch_all(p)
@@ -771,7 +805,9 @@ pub async fn list_packages_by_repository(
                           repository_id, description,
                           CAST(created_at AS CHAR) AS created_at,
                           CAST(updated_at AS CHAR) AS updated_at
-                   FROM packages WHERE repository_id = ? ORDER BY name"#,
+                   FROM packages WHERE repository_id = ?
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(repository_id)
             .fetch_all(p)
@@ -803,7 +839,9 @@ pub async fn list_packages_by_owner(
             let rows = sqlx::query(
                 r#"SELECT id, owner_type, owner_id, name, format, visibility,
                           repository_id, description, created_at, updated_at
-                   FROM packages WHERE owner_type = ? AND owner_id = ? ORDER BY name"#,
+                   FROM packages WHERE owner_type = ? AND owner_id = ?
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(owner_type)
             .bind(owner_id)
@@ -817,7 +855,9 @@ pub async fn list_packages_by_owner(
                 r#"SELECT id, owner_type, owner_id, name, format, visibility,
                           repository_id, description,
                           created_at::text AS created_at, updated_at::text AS updated_at
-                   FROM packages WHERE owner_type = $1 AND owner_id = $2 ORDER BY name"#,
+                   FROM packages WHERE owner_type = $1 AND owner_id = $2
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(owner_type)
             .bind(owner_id)
@@ -846,7 +886,9 @@ pub async fn list_packages_by_owner(
                           repository_id, description,
                           CAST(created_at AS CHAR) AS created_at,
                           CAST(updated_at AS CHAR) AS updated_at
-                   FROM packages WHERE owner_type = ? AND owner_id = ? ORDER BY name"#,
+                   FROM packages WHERE owner_type = ? AND owner_id = ?
+                   AND EXISTS (SELECT 1 FROM package_versions pv WHERE pv.package_id = packages.id)
+                   ORDER BY name"#,
             )
             .bind(owner_type)
             .bind(owner_id)

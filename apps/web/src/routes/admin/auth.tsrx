@@ -179,6 +179,8 @@ function ModeSelect<T extends string>({
           <ChevronDown aria-hidden size={16} />
         </SelectIcon>
       </SelectTrigger>
+      {/* octane-dom-race-ok: Base UI SelectPortal has no keepMounted escape
+          hatch; popup is anchor-scoped under the Select root. */}
       <SelectPortal>
         <SelectPositioner sideOffset={4}>
           <SelectPopup>

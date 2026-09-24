@@ -96,28 +96,42 @@ function SplitDiff(props: { path: string; status: string; patch: string }) @{
           >
             <div className="flex border-r border-border/50 px-2 py-0.5 text-muted-foreground">
               @if (line.kind !== "add") {
-                @if (line.prefix) {
-                  <span className="shrink-0 select-none" aria-hidden="true">
-                    {line.prefix as string}
-                  </span>;
-                }
-                <span
-                  className="min-w-0 grow"
-                  dangerouslySetInnerHTML={{ __html: line.contentHtml as string }}
-                />;
+                <>
+                  @if (line.prefix) {
+                    <span
+                      className="shrink-0 select-none"
+                      aria-hidden="true"
+                    >
+                      {line.prefix as string}
+                    </span>;
+                  }
+                  <span
+                    className="min-w-0 grow"
+                    dangerouslySetInnerHTML={{
+                      __html: line.contentHtml as string,
+                    }}
+                  />
+                </>;
               }
             </div>
             <div className="flex px-2 py-0.5">
               @if (line.kind !== "del") {
-                @if (line.prefix) {
-                  <span className="shrink-0 select-none" aria-hidden="true">
-                    {line.prefix as string}
-                  </span>;
-                }
-                <span
-                  className="min-w-0 grow"
-                  dangerouslySetInnerHTML={{ __html: line.contentHtml as string }}
-                />;
+                <>
+                  @if (line.prefix) {
+                    <span
+                      className="shrink-0 select-none"
+                      aria-hidden="true"
+                    >
+                      {line.prefix as string}
+                    </span>;
+                  }
+                  <span
+                    className="min-w-0 grow"
+                    dangerouslySetInnerHTML={{
+                      __html: line.contentHtml as string,
+                    }}
+                  />
+                </>;
               }
             </div>
           </div>;
