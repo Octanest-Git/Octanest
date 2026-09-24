@@ -635,6 +635,33 @@ LIMIT ?7 OFFSET ?8"#
     }
 }
 
+/// Open-issue count for repo chrome badges (cheap COUNT, no filters).
+pub async fn count_open_issues_for_repo(pool: &DbPool, repo_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COUNT(*)::bigint FROM issues WHERE repo_id = $1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM issues WHERE repo_id = ? AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM issues WHERE repo_id = ?1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open issues failed: {e}")),
+    }
+}
+
 /// Hard-delete an issue. Does **not** decrement `issue_counters` (D-ISS-01 / D-ISS-02).
 pub async fn delete_issue(pool: &DbPool, id: &str) -> Result<(), String> {
     match pool {

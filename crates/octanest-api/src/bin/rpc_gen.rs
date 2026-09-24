@@ -236,6 +236,8 @@ export type RepoPublic = {
   can_admin?: boolean;
   can_write?: boolean;
   star_count?: number;
+  open_issue_count?: number;
+  open_pull_count?: number;
   viewer_has_starred?: boolean;
   is_fork?: boolean;
   is_template?: boolean;

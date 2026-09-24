@@ -17,6 +17,7 @@ import {
   treeHref,
 } from "@/lib/repo-browse";
 import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
+import { formatRelative } from "@/lib/relative-time";
 
 export type TagsLoaderData =
   | { kind: "not_found" }
@@ -188,6 +189,14 @@ function TagRow({
       <p className="mt-0.5 font-mono text-[12px] text-muted-foreground" title={tag.oid as string}>
         {tip as string}
       </p>
+      @if (tag.tip_committed_at) {
+        <p className="mt-0.5 text-[12px] text-muted-foreground">
+          {
+            (formatRelative(tag.tip_committed_at) +
+              (tag.tip_author_name ? ` by ${tag.tip_author_name}` : "")) as string
+          }
+        </p>;
+      }
     </div>
     <div className="flex flex-wrap gap-2">
       <Button

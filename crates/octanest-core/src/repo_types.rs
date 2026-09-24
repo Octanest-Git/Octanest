@@ -141,6 +141,12 @@ pub struct RepoPublic {
     /// Denormalized star counter (D-SOC-02 / D-SOC-03).
     #[serde(default)]
     pub star_count: i64,
+    /// Open issue count for the Issues tab badge (populated by repo.get).
+    #[serde(default)]
+    pub open_issue_count: i64,
+    /// Open pull-request count for the Pulls tab badge (populated by repo.get).
+    #[serde(default)]
+    pub open_pull_count: i64,
     /// Whether the authenticated viewer has starred this repo.
     #[serde(default)]
     pub viewer_has_starred: bool,

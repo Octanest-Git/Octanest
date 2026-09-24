@@ -473,6 +473,16 @@ impl Database {
         watches::get_watch_count(self.require_pool()?, repository_id).await
     }
 
+    /// Open-issue count for repo chrome tab badges.
+    pub async fn count_open_issues_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        issues::count_open_issues_for_repo(self.require_pool()?, repository_id).await
+    }
+
+    /// Open-PR count for repo chrome tab badges.
+    pub async fn count_open_pulls_for_repo(&self, repository_id: &str) -> Result<i64, String> {
+        pulls::count_open_pulls_for_repo(self.require_pool()?, repository_id).await
+    }
+
     pub async fn has_watched_repo(
         &self,
         user_id: &str,

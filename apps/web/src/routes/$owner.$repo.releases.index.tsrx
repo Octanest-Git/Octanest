@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
+import { formatRelative } from "@/lib/relative-time";
 import type { RepoLayoutLoaderData } from "@/lib/repo-store";
 import { fetchReleaseList, fetchRepoGet } from "@/lib/ssr-repo";
 
@@ -183,6 +184,11 @@ export function RepoReleasesPage() @{
                   <span className="font-mono">{rel.tag_name as string}</span>
                   @if (rel.author_username) {
                     <span>{("· by " + rel.author_username) as string}</span>;
+                  }
+                  @if (rel.created_at) {
+                    <span>
+                      {("· " + formatRelative(rel.created_at)) as string}
+                    </span>;
                   }
                 </div>
               </div>

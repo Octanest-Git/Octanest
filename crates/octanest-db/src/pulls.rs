@@ -429,6 +429,33 @@ fn pull_like_pattern(q: &str) -> String {
     format!("%{q}%")
 }
 
+/// Open-PR count for repo chrome badges (cheap COUNT, no filters).
+pub async fn count_open_pulls_for_repo(pool: &DbPool, repo_id: &str) -> Result<i64, String> {
+    match pool {
+        DbPool::Postgres(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = $1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+        DbPool::MySql(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = ? AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+        DbPool::Sqlite(p) => sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pull_requests WHERE repo_id = ?1 AND state = 'open'",
+        )
+        .bind(repo_id)
+        .fetch_one(p)
+        .await
+        .map_err(|e| format!("count open pulls failed: {e}")),
+    }
+}
+
 fn normalize_pull_search_state(state: &str) -> Option<&'static str> {
     match state.trim() {
         "open" => Some("open"),

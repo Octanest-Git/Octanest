@@ -4,14 +4,6 @@ import { useState } from "octane";
 import { CheckCircle2, Circle, Loader2, Play, Workflow, XCircle } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -185,7 +177,9 @@ export function RepoActionsPage() @{
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted-foreground">
                         <span>{run.workflow_name as string}</span>
                         <span aria-hidden>·</span>
-                        <span>{run.head_ref as string}</span>
+                        <span>
+                          {run.head_ref.replace(/^refs\/heads\//, "") as string}
+                        </span>
                         <span aria-hidden>·</span>
                         <span className="font-mono">
                           {run.head_sha.slice(0, 7) as string}
@@ -239,17 +233,42 @@ export function RepoActionsPage() @{
           }
         }
       }
-      <Dialog open={dispatchOpen} onOpenChange={setDispatchOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Run workflow</DialogTitle>
-            <DialogDescription>
-              Manually run a workflow that declares the workflow_dispatch trigger.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-2">
+      @if (dispatchOpen) {
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="presentation"
+          data-testid="actions-dispatch-dialog"
+        >
+          <button
+            type="button"
+            aria-label="Dismiss"
+            className="absolute inset-0 bg-black/40 supports-backdrop-filter:backdrop-blur-[2px]"
+            disabled={dispatchM.isPending}
+            onClick={() => {
+              if (!dispatchM.isPending) setDispatchOpen(false);
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="actions-dispatch-title"
+            className="relative z-10 grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-md border border-border bg-popover p-4 text-[14px] text-popover-foreground shadow-lg outline-none sm:max-w-md"
+          >
             <div className="flex flex-col gap-2">
-              <Label>Workflow</Label>
+              <h2
+                id="actions-dispatch-title"
+                className="font-[family-name:var(--font-display)] text-[18px] font-semibold leading-none text-foreground"
+              >
+                Run workflow
+              </h2>
+              <p className="text-[14px] text-muted-foreground">
+                Manually run a workflow that declares the workflow_dispatch trigger.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-[14px] font-normal leading-[1.4] text-foreground">
+                Workflow
+              </span>
               <div className="flex flex-col gap-1" role="radiogroup">
                 @for (const w of dispatchable; key w.path) {
                   <button
@@ -283,23 +302,36 @@ export function RepoActionsPage() @{
                 placeholder="main"
               />
             </div>
-            @if (dispatchError) {
-              <p className="text-[13px] text-destructive" role="alert">
-                {dispatchError as string}
-              </p>;
-            }
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              disabled={!dispatchWorkflow || !dispatchRef.trim() || dispatchM.isPending}
-              onClick={submitDispatch}
+            <p
+              role="alert"
+              className={
+                dispatchError
+                  ? "text-[14px] text-destructive"
+                  : "invisible h-0 overflow-hidden text-[14px]"
+              }
             >
-              {dispatchM.isPending ? "Running…" : "Run workflow"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              {(dispatchError || "\u00a0") as string}
+            </p>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={dispatchM.isPending}
+                onClick={() => setDispatchOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={!dispatchWorkflow || !dispatchRef.trim() || dispatchM.isPending}
+                onClick={submitDispatch}
+              >
+                {(dispatchM.isPending ? "Running…" : "Run workflow") as string}
+              </Button>
+            </div>
+          </div>
+        </div>;
+      }
     </div>;
     };
 }

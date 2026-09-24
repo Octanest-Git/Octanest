@@ -103,7 +103,7 @@ export function RepoActionsRunPage() @{
     ? [
         run.workflow_name,
         run.event,
-        run.head_ref,
+        run.head_ref.replace(/^refs\/heads\//, ""),
         run.head_sha.slice(0, 7),
         run.actor ? `by ${run.actor}` : "",
         formatRelative(run.created_at),

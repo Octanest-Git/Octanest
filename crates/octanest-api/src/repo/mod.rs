@@ -315,6 +315,8 @@ pub(crate) fn to_public(repo: &AccessibleRepo) -> RepoPublic {
         can_admin: meets(repo.capability, Capability::Admin),
         can_write: meets(repo.capability, Capability::Write),
         star_count: 0,
+        open_issue_count: 0,
+        open_pull_count: 0,
         viewer_has_starred: false,
         is_fork: false,
         is_template: false,
@@ -337,6 +339,16 @@ pub async fn enrich_social(
     public.star_count = ctx
         .db
         .get_repo_star_count(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.open_issue_count = ctx
+        .db
+        .count_open_issues_for_repo(&public.id)
+        .await
+        .map_err(db_err)?;
+    public.open_pull_count = ctx
+        .db
+        .count_open_pulls_for_repo(&public.id)
         .await
         .map_err(db_err)?;
     if let Some(uid) = viewer_user_id {
@@ -667,6 +679,8 @@ pub async fn list_mine(ctx: &RpcCtx) -> Result<RepoListMineResponse, AppError> {
                 can_admin: true,
                 can_write: true,
                 star_count: 0,
+                open_issue_count: 0,
+                open_pull_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,
@@ -2115,6 +2129,8 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
         can_admin: true,
         can_write: true,
                 star_count: 0,
+                open_issue_count: 0,
+                open_pull_count: 0,
                 viewer_has_starred: false,
                 is_fork: false,
                 is_template: false,

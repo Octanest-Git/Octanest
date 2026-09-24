@@ -249,6 +249,11 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         aria-current={active === "issues" ? "page" : undefined}
       >
         Issues
+        @if ((live.open_issue_count ?? 0) > 0) {
+          <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {String(live.open_issue_count)}
+          </span>;
+        }
       </a>
       <a
         href={pullsHref as string}
@@ -256,6 +261,11 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
         aria-current={active === "pulls" ? "page" : undefined}
       >
         Pulls
+        @if ((live.open_pull_count ?? 0) > 0) {
+          <span className="ml-1 inline-flex min-w-5 items-center justify-center rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+            {String(live.open_pull_count)}
+          </span>;
+        }
       </a>
       <a
         href={releasesHref as string}
