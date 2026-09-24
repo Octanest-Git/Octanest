@@ -1348,13 +1348,15 @@ async function seedGenericPackage(opts: {
   username: string;
   name: string;
   version: string;
+  repositoryId?: string;
 }): Promise<void> {
   const token = await createClassicPat(opts.cookie, ["repo", "package:write"]);
   const basic = Buffer.from(`${opts.username}:${token}`, "utf8").toString("base64");
   const url =
     `${apiOrigin()}/generic/${encodeURIComponent(opts.owner)}` +
     `/${encodeURIComponent(opts.name)}/${encodeURIComponent(opts.version)}` +
-    `/artifact.tar.gz`;
+    `/artifact.tar.gz` +
+    (opts.repositoryId ? `?repository_id=${encodeURIComponent(opts.repositoryId)}` : "");
   const res = await fetch(url, {
     method: "PUT",
     headers: {
@@ -1369,9 +1371,10 @@ async function seedGenericPackage(opts: {
 }
 
 /**
- * Visual baselines for the packages surfaces (repo-scoped empty state and
- * owner-scoped list row). Screenshots mask relative-time text; baselines live
- * in e2e/visual-baselines/ and update via OCTANEST_E2E_UPDATE_VISUAL=1.
+ * Visual baselines for the packages surfaces (repo-scoped empty state,
+ * repo-scoped linked list, owner-scoped list row). Screenshots mask
+ * relative-time text; baselines live in e2e/visual-baselines/ and update via
+ * OCTANEST_E2E_UPDATE_VISUAL=1.
  */
 export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
@@ -1401,28 +1404,21 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
     }
   }
 
-  const pkgName = `e2e-pkg-${Date.now()}`;
-  await seedGenericPackage({
-    cookie: seed.cookie,
-    owner: seed.owner,
-    username: seed.username,
-    name: pkgName,
-    version: "1.0.0",
-  });
-  // Second version so the row shows a count > 1.
-  await seedGenericPackage({
-    cookie: seed.cookie,
-    owner: seed.owner,
-    username: seed.username,
-    name: pkgName,
-    version: "1.1.0",
-  });
+  const repoGet = await rpc("repo.get", { owner: seed.owner, name: seed.repo }, seed.cookie);
+  const repoId =
+    repoGet.ok && repoGet.data && typeof repoGet.data === "object"
+      ? String((repoGet.data as { id?: string }).id ?? "")
+      : "";
+  if (!repoId) {
+    throw new Error(`repo.get missing id: ${JSON.stringify(repoGet.data ?? repoGet)}`);
+  }
 
+  const pkgName = `e2e-pkg-${Date.now()}`;
   const pageGuard = await newGuardedPage(context);
   const page = pageGuard.page;
   try {
-    // Repo-scoped packages page — generic packages have no repository_id link,
-    // so this repo still shows the GitHub-shaped empty state + quickstart.
+    // Repo-scoped packages page before publishing — GitHub-shaped empty state
+    // + quickstart.
     await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
@@ -1436,6 +1432,42 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
       mask: [
         // Repo name embeds a timestamp; relative-time text is volatile.
         page.locator(`text=${seed.repo}`),
+        ...relativeTimeMasks(page),
+      ],
+    });
+
+    // Publish two versions linked to the repo (repository_id, D-PKG-11) so the
+    // repo packages page shows a populated row too.
+    await seedGenericPackage({
+      cookie: seed.cookie,
+      owner: seed.owner,
+      username: seed.username,
+      name: pkgName,
+      version: "1.0.0",
+      repositoryId: repoId,
+    });
+    await seedGenericPackage({
+      cookie: seed.cookie,
+      owner: seed.owner,
+      username: seed.username,
+      name: pkgName,
+      version: "1.1.0",
+      repositoryId: repoId,
+    });
+
+    // Repo-scoped packages page — populated list with the linked package.
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByTestId("repo-packages").waitFor({ state: "visible", timeout: 30_000 });
+    await page.getByText(pkgName, { exact: true }).waitFor({ state: "visible", timeout: 30_000 });
+    assertNoOctaneOverlay(await page.content(), "repo packages list visual");
+    await assertVisualBaseline(page, "packages-repo-list", {
+      mask: [
+        // Repo + package names embed timestamps; mask so baselines stay stable.
+        page.locator(`text=${seed.repo}`),
+        page.locator(`text=${pkgName}`),
         ...relativeTimeMasks(page),
       ],
     });
