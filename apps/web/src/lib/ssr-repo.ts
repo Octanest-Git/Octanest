@@ -220,6 +220,88 @@ export const fetchPackagesForRepo = createServerFn({ method: "GET" })
     return client.packages.list({ repository_id: data.repository_id });
   });
 
+/** SSR: `packages.list` by owner and/or repository_id (packages pages). */
+export const fetchPackagesList = createServerFn({ method: "GET" })
+  .validator((data: { owner?: string; repository_id?: string }) => ({
+    owner: data?.owner ? String(data.owner) : null,
+    repository_id: data?.repository_id ? String(data.repository_id) : null,
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.packages.list({
+      owner: data.owner,
+      repository_id: data.repository_id,
+    });
+  });
+
+/** SSR: `repo.actions.listRuns` with Cookie forward (anonymous reads on public repos). */
+export const fetchActionsListRuns = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { page?: number; per_page?: number }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    page: typeof data?.page === "number" ? data.page : 1,
+    per_page: typeof data?.per_page === "number" ? data.per_page : 25,
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.actions.listRuns({
+      owner: data.owner,
+      name: data.name,
+      page: data.page,
+      per_page: data.per_page,
+    });
+  });
+
+/** SSR: `repo.actions.listWorkflows` with Cookie forward. */
+export const fetchActionsListWorkflows = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { git_ref?: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    git_ref: data?.git_ref ? String(data.git_ref) : undefined,
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.actions.listWorkflows({
+      owner: data.owner,
+      name: data.name,
+      git_ref: data.git_ref,
+    });
+  });
+
+/** SSR: `repo.actions.getRun` with Cookie forward. */
+export const fetchActionsGetRun = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { run_id: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    run_id: String(data?.run_id ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.actions.getRun({
+      owner: data.owner,
+      name: data.name,
+      run_id: data.run_id,
+    });
+  });
+
+/** SSR: `repo.actions.getJobLog` with Cookie forward. */
+export const fetchActionsGetJobLog = createServerFn({ method: "GET" })
+  .validator((data: OwnerName & { run_id: string; job_id: string }) => ({
+    owner: String(data?.owner ?? ""),
+    name: String(data?.name ?? ""),
+    run_id: String(data?.run_id ?? ""),
+    job_id: String(data?.job_id ?? ""),
+  }))
+  .handler(async ({ data }) => {
+    const client = createSsrClient(incomingCookie());
+    return client.repo.actions.getJobLog({
+      owner: data.owner,
+      name: data.name,
+      run_id: data.run_id,
+      job_id: data.job_id,
+    });
+  });
+
 /** SSR: `repo.stargazers.list` (Write+ gated). */
 export const fetchRepoStargazers = createServerFn({ method: "GET" })
   .validator((data: OwnerName & { q?: string; offset?: number; limit?: number }) => ({

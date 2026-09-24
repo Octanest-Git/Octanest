@@ -1,6 +1,7 @@
-import { createFileRoute, useParams } from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
+import type { ActionRunsListResponse, ActionWorkflowPublic } from "@octanest/api-client";
 import { CheckCircle2, Circle, Loader2, Play, Workflow, XCircle } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRepoStore } from "@/lib/repo-store";
 import { formatRelative } from "@/lib/relative-time";
+import { fetchActionsListRuns, fetchActionsListWorkflows, fetchRepoGet } from "@/lib/ssr-repo";
 import {
   ACTIONS_RUNS_PER_PAGE,
   actionsDispatchWorkflowMutation,
@@ -44,6 +46,53 @@ function RunStatusIcon({ status }: { status: string }) {
   return <Circle aria-hidden size={18} className="shrink-0 text-muted-foreground" />;
 }
 
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+
+export type ActionsIndexLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      runs: ActionRunsListResponse;
+      workflows: ActionWorkflowPublic[] | null;
+    };
+
+async function loadActionsIndexPage(
+  owner: string,
+  repoName: string,
+): Promise<ActionsIndexLoaderData> {
+  const got = await fetchRepoGet({ data: { owner, name: repoName } });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load repository.",
+    };
+  }
+
+  const canWrite = !!got.data.can_write;
+  const [runsRes, workflowsRes] = await Promise.all([
+    fetchActionsListRuns({
+      data: { owner, name: repoName, page: 1, per_page: ACTIONS_RUNS_PER_PAGE },
+    }),
+    canWrite
+      ? fetchActionsListWorkflows({ data: { owner, name: repoName } })
+      : Promise.resolve(null),
+  ]);
+  if (!runsRes.ok) {
+    if (runsRes.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: runsRes.error.message || "Could not load workflow runs.",
+    };
+  }
+  return {
+    kind: "ready",
+    runs: runsRes.data,
+    workflows: workflowsRes?.ok ? workflowsRes.data.workflows : null,
+  };
+}
+
 export const Route = createFileRoute("/$owner/$repo/actions/")({
   component: RepoActionsPage,
   head: ({ params }) => {
@@ -56,6 +105,15 @@ export const Route = createFileRoute("/$owner/$repo/actions/")({
       ],
     };
   },
+  loader: async ({ params }): Promise<ActionsIndexLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    try {
+      return await loadActionsIndexPage(owner, repoName);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
+  },
 });
 
 /** Workflow runs list (ACT-03 / D-ACT-12). Chrome from parent layout (D-QH-01). */
@@ -66,6 +124,9 @@ export function RepoActionsPage() @{
   };
   const owner = String(params.owner ?? "");
   const repoName = String(params.repo ?? "");
+  const routeLoader = useLoaderData({ from: "/$owner/$repo/actions/" }) as
+    | ActionsIndexLoaderData
+    | undefined;
   const repo = useRepoStore((s) => s.repo);
   const canWrite = !!repo?.can_write;
   const [page, setPage] = useState(1);
@@ -74,19 +135,35 @@ export function RepoActionsPage() @{
   const [dispatchRef, setDispatchRef] = useState("");
   const [dispatchError, setDispatchError] = useState("");
 
-  const listQ = useQuery(actionsRunsQuery(owner, repoName, page));
-  const runs = listQ.data?.runs ?? [];
-  const total = listQ.data?.total_count ?? 0;
+  const ssrRuns = routeLoader?.kind === "ready" && page === 1 ? routeLoader.runs : undefined;
+  const listQ = useQuery({
+    ...actionsRunsQuery(owner, repoName, page),
+    initialData: ssrRuns,
+  });
+  const runs = listQ.data?.runs ?? ssrRuns?.runs ?? [];
+  const total = listQ.data?.total_count ?? ssrRuns?.total_count ?? 0;
   const loading = listQ.isPending;
-  const err = listQ.isError ? String(listQ.error?.message ?? "Failed to load runs") : null;
+  const err =
+    routeLoader?.kind === "error"
+      ? routeLoader.message
+      : listQ.isError
+        ? String(listQ.error?.message ?? "Failed to load runs")
+        : null;
   const canPrev = page > 1;
   const canNext = page * ACTIONS_RUNS_PER_PAGE < total;
 
   const workflowsQ = useQuery({
     ...actionsWorkflowsQuery(owner, repoName),
     enabled: canWrite,
+    initialData:
+      canWrite && routeLoader?.kind === "ready" && routeLoader.workflows
+        ? { workflows: routeLoader.workflows, git_ref: "" }
+        : undefined,
   });
-  const dispatchable = (workflowsQ.data?.workflows ?? []).filter((w) => w.supports_dispatch);
+  const dispatchable = (
+    workflowsQ.data?.workflows ??
+    (routeLoader?.kind === "ready" ? (routeLoader.workflows ?? []) : [])
+  ).filter((w) => w.supports_dispatch);
 
   const qc = useQueryClient();
   const dispatchM = useMutation({

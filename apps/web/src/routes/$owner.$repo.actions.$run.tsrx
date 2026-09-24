@@ -1,6 +1,7 @@
-import { createFileRoute, useParams } from "@octanejs/tanstack-router";
+import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
+import type { ActionRunGetResponse } from "@octanest/api-client";
 import { ArrowLeft, Ban, RotateCcw, Workflow } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRepoStore } from "@/lib/repo-store";
 import { formatRelative } from "@/lib/relative-time";
+import { fetchActionsGetJobLog, fetchActionsGetRun } from "@/lib/ssr-repo";
 import { cn } from "@/lib/utils";
 import {
   actionsCancelRunMutation,
@@ -40,6 +42,43 @@ function jobDuration(started?: string, finished?: string): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
+const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+
+export type ActionsRunLoaderData =
+  | { kind: "not_found" }
+  | { kind: "error"; message: string }
+  | {
+      kind: "ready";
+      detail: ActionRunGetResponse;
+      firstJobLog: string | null;
+    };
+
+async function loadActionsRunPage(
+  owner: string,
+  repoName: string,
+  runId: string,
+): Promise<ActionsRunLoaderData> {
+  const got = await fetchActionsGetRun({
+    data: { owner, name: repoName, run_id: runId },
+  });
+  if (!got.ok) {
+    if (got.error.code === "repo.not_found") return { kind: "not_found" };
+    return {
+      kind: "error",
+      message: got.error.message || "Could not load workflow run.",
+    };
+  }
+  const firstJob = got.data.jobs[0];
+  let firstJobLog: string | null = null;
+  if (firstJob) {
+    const log = await fetchActionsGetJobLog({
+      data: { owner, name: repoName, run_id: runId, job_id: firstJob.id },
+    });
+    firstJobLog = log.ok ? log.data.content : "";
+  }
+  return { kind: "ready", detail: got.data, firstJobLog };
+}
+
 export const Route = createFileRoute("/$owner/$repo/actions/$run")({
   component: RepoActionsRunPage,
   head: ({ params }) => {
@@ -51,6 +90,16 @@ export const Route = createFileRoute("/$owner/$repo/actions/$run")({
         },
       ],
     };
+  },
+  loader: async ({ params }): Promise<ActionsRunLoaderData> => {
+    const owner = String((params as { owner?: string }).owner ?? "");
+    const repoName = String((params as { repo?: string }).repo ?? "");
+    const runId = String((params as { run?: string }).run ?? "");
+    try {
+      return await loadActionsRunPage(owner, repoName, runId);
+    } catch {
+      return { kind: "error", message: NETWORK_ERROR };
+    }
   },
 });
 
@@ -64,19 +113,34 @@ export function RepoActionsRunPage() @{
   const owner = String(params.owner ?? "");
   const repoName = String(params.repo ?? "");
   const runId = String(params.run ?? "");
+  const routeLoader = useLoaderData({ from: "/$owner/$repo/actions/$run" }) as
+    | ActionsRunLoaderData
+    | undefined;
   const repo = useRepoStore((s) => s.repo);
   const canWrite = !!repo?.can_write;
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
-  const detailQ = useQuery(actionsRunDetailQuery(owner, repoName, runId));
-  const jobs = detailQ.data?.jobs ?? [];
-  const run = detailQ.data?.run;
+  const ssrDetail = routeLoader?.kind === "ready" ? routeLoader.detail : undefined;
+  const detailQ = useQuery({
+    ...actionsRunDetailQuery(owner, repoName, runId),
+    initialData: ssrDetail,
+  });
+  const jobs = detailQ.data?.jobs ?? ssrDetail?.jobs ?? [];
+  const run = detailQ.data?.run ?? ssrDetail?.run;
   const jobId = selectedJobId ?? jobs[0]?.id ?? "";
+  const ssrFirstJobLog =
+    routeLoader?.kind === "ready" &&
+    routeLoader.firstJobLog !== null &&
+    jobId === routeLoader.detail.jobs[0]?.id
+      ? routeLoader.firstJobLog
+      : undefined;
   const logQ = useQuery({
     ...actionsJobLogQuery(owner, repoName, runId, jobId),
     enabled: !!jobId,
+    initialData: ssrFirstJobLog !== undefined ? { content: ssrFirstJobLog } : undefined,
   });
-  const logText = logQ.data?.content || (logQ.isPending ? "Loading log…" : "(empty log)");
+  const logText =
+    logQ.data?.content ?? ssrFirstJobLog ?? (logQ.isPending ? "Loading log…" : "(empty log)");
 
   const qc = useQueryClient();
   const rerunM = useMutation({
@@ -123,7 +187,7 @@ export function RepoActionsRunPage() @{
           Actions
         </a>
       </p>
-      @if (detailQ.isPending) {
+      @if (detailQ.isPending && routeLoader?.kind !== "not_found") {
         <>
           <div className="flex flex-col gap-2 border-b border-border pb-4">
             <Skeleton className="h-6 w-1/2" />
