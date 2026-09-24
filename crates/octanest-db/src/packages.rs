@@ -113,7 +113,7 @@ pub async fn adjust_blob_refcount(
             .fetch_optional(p)
             .await
             .map_err(|e| e.to_string())?;
-            row.map(|r| r.get::<i64, _>("refcount"))
+            row.map(|r| i64::from(r.get::<i32, _>("refcount")))
                 .ok_or_else(|| format!("blob not found: {digest}"))
         }
         DbPool::MySql(p) => {
@@ -123,12 +123,14 @@ pub async fn adjust_blob_refcount(
                 .execute(p)
                 .await
                 .map_err(|e| e.to_string())?;
-            let v: Option<i64> =
-                sqlx::query_scalar("SELECT refcount FROM package_blobs WHERE digest = ?")
-                    .bind(digest)
-                    .fetch_optional(p)
-                    .await
-                    .map_err(|e| e.to_string())?;
+            let v: Option<i64> = sqlx::query_scalar::<sqlx::MySql, i32>(
+                "SELECT refcount FROM package_blobs WHERE digest = ?",
+            )
+            .bind(digest)
+            .fetch_optional(p)
+            .await
+            .map_err(|e| e.to_string())?
+            .map(i64::from);
             v.ok_or_else(|| format!("blob not found: {digest}"))
         }
         DbPool::Sqlite(p) => {
