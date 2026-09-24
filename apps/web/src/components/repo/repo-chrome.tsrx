@@ -127,34 +127,40 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <RepoSearchEntry owner={owner as string} repo={name as string} />
         @if (signedIn) {
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-8 gap-1.5 px-2.5 text-[13px]"
-            disabled={watchBusy}
-            aria-pressed={watching}
-            onClick={() => void toggleWatch()}
-          >
-            <Eye aria-hidden size={14} className={watching ? "text-secondary" : undefined} />
-            <span>{(watching ? "Watching" : "Watch") as string}</span>
-            <span className="text-muted-foreground">{String(watchCount)}</span>
-          </Button>;
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-8 gap-1.5 px-2.5 text-[13px]"
-            disabled={starBusy}
-            aria-pressed={starred}
-            onClick={() => void toggleStar()}
-          >
-            <Star
-              aria-hidden
-              size={14}
-              className={starred ? "fill-current text-secondary" : undefined}
-            />
-            <span>{(starred ? "Starred" : "Star") as string}</span>
-            <span className="text-muted-foreground">{String(starCount)}</span>
-          </Button>;
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 gap-1.5 px-2.5 text-[13px]"
+              disabled={watchBusy}
+              aria-pressed={watching}
+              onClick={() => void toggleWatch()}
+            >
+              <Eye
+                aria-hidden
+                size={14}
+                className={watching ? "text-secondary" : undefined}
+              />
+              <span>{(watching ? "Watching" : "Watch") as string}</span>
+              <span className="text-muted-foreground">{String(watchCount)}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-8 gap-1.5 px-2.5 text-[13px]"
+              disabled={starBusy}
+              aria-pressed={starred}
+              onClick={() => void toggleStar()}
+            >
+              <Star
+                aria-hidden
+                size={14}
+                className={starred ? "fill-current text-secondary" : undefined}
+              />
+              <span>{(starred ? "Starred" : "Star") as string}</span>
+              <span className="text-muted-foreground">{String(starCount)}</span>
+            </Button>
+          </>;
         } @else {
           <>
             <a

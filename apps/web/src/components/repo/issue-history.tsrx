@@ -44,29 +44,33 @@ export function IssueHistoryPanel(props: IssueHistoryPanelProps) @{
           Could not load edit history.
         </p>;
       } @else {
-        @if (showEmpty) {
-          <EmptyState
-            compact
-            icon={<History aria-hidden size={20} />}
-            title="No prior edits"
-            description="Edits to the title or body will be tracked here."
-          />;
-        }
-        @if (showList) {
-          <List>
-            @for (const rev of revisions; key rev.id) {
-              <ListRow className="flex-col items-start gap-1 text-[13px]">
-                <p className="text-muted-foreground">
-                  {`@${rev.editor_username} · ${rev.created_at}` as string}
-                </p>
-                <p className="font-medium text-foreground">{rev.title as string}</p>
-                <pre className="whitespace-pre-wrap font-sans text-muted-foreground">
-                  {rev.body as string}
-                </pre>
-              </ListRow>;
-            }
-          </List>;
-        }
+        <>
+          @if (showEmpty) {
+            <EmptyState
+              compact
+              icon={<History aria-hidden size={20} />}
+              title="No prior edits"
+              description="Edits to the title or body will be tracked here."
+            />;
+          }
+          @if (showList) {
+            <List>
+              @for (const rev of revisions; key rev.id) {
+                <ListRow className="flex-col items-start gap-1 text-[13px]">
+                  <p className="text-muted-foreground">
+                    {`@${rev.editor_username} · ${rev.created_at}` as string}
+                  </p>
+                  <p className="font-medium text-foreground">
+                    {rev.title as string}
+                  </p>
+                  <pre className="whitespace-pre-wrap font-sans text-muted-foreground">
+                    {rev.body as string}
+                  </pre>
+                </ListRow>;
+              }
+            </List>;
+          }
+        </>;
       }
     }
   </section>;

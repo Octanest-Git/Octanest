@@ -189,148 +189,172 @@ export function GlobalSearch({ className }: GlobalSearchProps) @{
         @if (loading && !suggest) {
           <p className="px-3 py-3 text-[13px] text-muted-foreground">Searching…</p>;
         } @else {
-          @if (suggest && suggest.repositories.length > 0) {
-            <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Repositories
-            </p>;
-            @for (const r of suggest.repositories; key r.id) {
-              const idx = items.findIndex((i) => i.key === `repo:${r.id}`);
-              const active = idx === activeIndex;
-              <a
-                id={`global-search-opt-repo:${r.id}`}
-                role="option"
-                aria-selected={active}
-                href={r.href as string}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-foreground hover:bg-muted/80",
-                )}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {(r.owner + "/" + r.name) as string}
-                </span>
-                @if (r.visibility === "private") {
-                  <Lock
-                    aria-hidden
-                    size={12}
-                    className="shrink-0 text-muted-foreground"
-                  />;
+          <>
+            @if (
+              suggest &&
+              suggest.repositories.length > 0
+            ) {
+              <>
+                <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Repositories
+                </p>
+                @for (const r of suggest.repositories; key r.id) {
+                  const idx = items.findIndex(
+                    (i) => i.key === `repo:${r.id}`,
+                  );
+                  const active = idx === activeIndex;
+                  <a
+                    id={`global-search-opt-repo:${r.id}`}
+                    role="option"
+                    aria-selected={active}
+                    href={r.href as string}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground hover:bg-muted/80",
+                    )}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                  >
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {(r.owner + "/" + r.name) as string}
+                    </span>
+                    @if (
+                      r.visibility === "private"
+                    ) {
+                      <Lock
+                        aria-hidden
+                        size={12}
+                        className="shrink-0 text-muted-foreground"
+                      />;
+                    }
+                  </a>;
                 }
-              </a>;
+              </>;
             }
-          }
 
-          @if (suggest && suggest.users.length > 0) {
-            <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Users
-            </p>;
-            @for (const u of suggest.users; key u.username) {
-              const idx = items.findIndex((i) => i.key === `user:${u.username}`);
-              const active = idx === activeIndex;
-              <a
-                id={`global-search-opt-user:${u.username}`}
-                role="option"
-                aria-selected={active}
-                href={u.href as string}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-foreground hover:bg-muted/80",
-                )}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                <Users
-                  aria-hidden
-                  size={14}
-                  className="shrink-0 text-muted-foreground"
-                />
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {"@" + (u.username as string)}
-                </span>
-                @if (u.display_name) {
-                  <span className="truncate text-muted-foreground">
-                    {u.display_name as string}
-                  </span>;
+            @if (suggest && suggest.users.length > 0) {
+              <>
+                <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Users
+                </p>
+                @for (const u of suggest.users; key u.username) {
+                  const idx = items.findIndex(
+                    (i) => i.key === `user:${u.username}`,
+                  );
+                  const active = idx === activeIndex;
+                  <a
+                    id={`global-search-opt-user:${u.username}`}
+                    role="option"
+                    aria-selected={active}
+                    href={u.href as string}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground hover:bg-muted/80",
+                    )}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                  >
+                    <Users
+                      aria-hidden
+                      size={14}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {`@${u.username}` as string}
+                    </span>
+                    @if (u.display_name) {
+                      <span className="truncate text-muted-foreground">
+                        {u.display_name as string}
+                      </span>;
+                    }
+                  </a>;
                 }
-              </a>;
+              </>;
             }
-          }
 
-          @if (suggest && suggest.organizations.length > 0) {
-            <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Organizations
-            </p>;
-            @for (const o of suggest.organizations; key o.slug) {
-              const idx = items.findIndex((i) => i.key === `org:${o.slug}`);
-              const active = idx === activeIndex;
-              <a
-                id={`global-search-opt-org:${o.slug}`}
-                role="option"
-                aria-selected={active}
-                href={o.href as string}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
-                  active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-foreground hover:bg-muted/80",
-                )}
-                onMouseEnter={() => setActiveIndex(idx)}
-              >
-                <Building2
-                  aria-hidden
-                  size={14}
-                  className="shrink-0 text-muted-foreground"
-                />
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {o.slug as string}
-                </span>
-              </a>;
+            @if (
+              suggest &&
+              suggest.organizations.length > 0
+            ) {
+              <>
+                <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Organizations
+                </p>
+                @for (const o of suggest.organizations; key o.slug) {
+                  const idx = items.findIndex(
+                    (i) => i.key === `org:${o.slug}`,
+                  );
+                  const active = idx === activeIndex;
+                  <a
+                    id={`global-search-opt-org:${o.slug}`}
+                    role="option"
+                    aria-selected={active}
+                    href={o.href as string}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-foreground hover:bg-muted/80",
+                    )}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                  >
+                    <Building2
+                      aria-hidden
+                      size={14}
+                      className="shrink-0 text-muted-foreground"
+                    />
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {o.slug as string}
+                    </span>
+                  </a>;
+                }
+              </>;
             }
-          }
 
-          @if (suggest && suggest.actions.length > 0) {
-            <div className="mt-1 border-t border-border pt-1">
-              @for (const a of suggest.actions; key a.type) {
-                const idx = items.findIndex((i) => i.key === `action:${a.type}`);
-                const active = idx === activeIndex;
-                const Icon = actionIcon(a.type);
-                <a
-                  id={`global-search-opt-action:${a.type}`}
-                  role="option"
-                  aria-selected={active}
-                  href={a.href as string}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
-                  )}
-                  onMouseEnter={() => setActiveIndex(idx)}
-                >
-                  <Icon aria-hidden size={14} className="shrink-0" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {a.label as string}
-                  </span>
-                </a>;
-              }
-            </div>;
-          }
+            @if (suggest && suggest.actions.length > 0) {
+              <div className="mt-1 border-t border-border pt-1">
+                @for (const a of suggest.actions; key a.type) {
+                  const idx = items.findIndex(
+                    (i) => i.key === `action:${a.type}`,
+                  );
+                  const active = idx === activeIndex;
+                  const Icon = actionIcon(a.type);
+                  <a
+                    id={`global-search-opt-action:${a.type}`}
+                    role="option"
+                    aria-selected={active}
+                    href={a.href as string}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 text-[13px] no-underline",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
+                    )}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                  >
+                    <Icon aria-hidden size={14} className="shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">
+                      {a.label as string}
+                    </span>
+                  </a>;
+                }
+              </div>;
+            }
 
-          @if (
-            suggest &&
-            suggest.repositories.length === 0 &&
-            suggest.users.length === 0 &&
-            suggest.organizations.length === 0 &&
-            !loading
-          ) {
-            <p className="px-3 py-2 text-[13px] text-muted-foreground">
-              No direct matches — choose a search below.
-            </p>;
-          }
+            @if (
+              suggest &&
+              suggest.repositories.length === 0 &&
+              suggest.users.length === 0 &&
+              suggest.organizations.length === 0 &&
+              !loading
+            ) {
+              <p className="px-3 py-2 text-[13px] text-muted-foreground">
+                No direct matches — choose a search below.
+              </p>;
+            }
+          </>;
         }
       </div>;
     }

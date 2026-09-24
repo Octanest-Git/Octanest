@@ -378,50 +378,54 @@ export function AccountEmailsSection(props: AccountEmailsSectionProps) @{
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   @if (!item.verified) {
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={resend.isPending}
-                      onClick={() => openVerifyPanel(item.id)}
-                    >
-                      Enter code
-                    </Button>;
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={resend.isPending}
-                      onClick={() => resend.mutate({ id: item.id })}
-                    >
-                      Resend verify
-                    </Button>;
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={resend.isPending}
+                        onClick={() => openVerifyPanel(item.id)}
+                      >
+                        Enter code
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={resend.isPending}
+                        onClick={() => resend.mutate({ id: item.id })}
+                      >
+                        Resend verify
+                      </Button>
+                    </>;
                   }
                   @if (item.is_primary) {
                     <span className="text-[13px] text-muted-foreground">
                       Primary address
                     </span>;
                   } @else {
-                    @if (item.verified) {
+                    <>
+                      @if (item.verified) {
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={setPrimary.isPending}
+                          onClick={() => setPrimary.mutate({ id: item.id })}
+                        >
+                          Make primary
+                        </Button>;
+                      }
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={setPrimary.isPending}
-                        onClick={() => setPrimary.mutate({ id: item.id })}
+                        className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setRemoveTarget(item)}
                       >
-                        Make primary
-                      </Button>;
-                    }
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setRemoveTarget(item)}
-                    >
-                      Remove
-                    </Button>;
+                        Remove
+                      </Button>
+                    </>;
                   }
                 </div>
               </ListRow>;
