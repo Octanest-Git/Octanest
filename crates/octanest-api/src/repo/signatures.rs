@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use octanest_db::Database;
+use octanest_git::FORGE_NOREPLY_EMAIL;
 use tokio::io::AsyncWriteExt;
 
 use super::author_resolve;
@@ -143,6 +144,15 @@ pub async fn apply_verified_policy(
         return "unknown".into();
     }
 
+    // Forge-authored commits (seed/web-flow) sign under the instance identity,
+    // which backs no user account. `allowedSignersFile` binds that principal
+    // only to the web-flow key, so a crypto-valid SSH signature is already the
+    // instance vouching for the commit — skip user resolution (mirrors GitHub
+    // marking web-flow commits Verified via its own key).
+    if signature_kind == "ssh" && email.eq_ignore_ascii_case(FORGE_NOREPLY_EMAIL) {
+        return "valid".into();
+    }
+
     let resolved = author_resolve::resolve_author_email(db, email).await;
     let Some(user_id) = resolved.user_id.as_deref() else {
         return "unknown".into();
@@ -236,5 +246,42 @@ mod tests {
         let status =
             apply_verified_policy(&db, "sec@ex.com", "sec@ex.com", "valid", "ssh").await;
         assert_eq!(status, "valid");
+    }
+
+    #[tokio::test]
+    async fn verified_policy_accepts_forge_web_flow_identity() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let url = format!("sqlite:{}", dir.path().join("policy-forge.db").display());
+        let db = Database::connect(&url).await.expect("connect");
+        db.migrate().await.expect("migrate");
+        std::mem::forget(dir);
+
+        // Forge committer resolves to no user — a crypto-valid SSH signature
+        // under the web-flow principal still reports verified.
+        let status = apply_verified_policy(
+            &db,
+            FORGE_NOREPLY_EMAIL,
+            "someone@ex.com",
+            "valid",
+            "ssh",
+        )
+        .await;
+        assert_eq!(status, "valid");
+
+        // Empty committer falls back to the author address — same forge case.
+        let status =
+            apply_verified_policy(&db, "", FORGE_NOREPLY_EMAIL, "valid", "ssh").await;
+        assert_eq!(status, "valid");
+
+        // GPG under the forge identity still requires user resolution.
+        let status = apply_verified_policy(
+            &db,
+            FORGE_NOREPLY_EMAIL,
+            FORGE_NOREPLY_EMAIL,
+            "valid",
+            "gpg",
+        )
+        .await;
+        assert_eq!(status, "unknown");
     }
 }

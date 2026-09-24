@@ -9,7 +9,7 @@ use crate::backend::{
     validate_remote_url, ArchiveFormat, BlameFile, BlameLine, CommitDetail, CommitSummary,
     ContributorSummary, DiffFile, DiffResult, GitBackend, GitError, GitRef, GrepHit, GrepResult,
     RemoteAuthKind, RemoteCredentials, SizedBlobEntry, TreeEntry, TreeEntryKind, ARCHIVE_TIMEOUT,
-    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES,
+    BLAME_SOFT_MAX_LINES, DIFF_SOFT_MAX_BYTES, FORGE_NOREPLY_EMAIL,
 };
 
 /// System `git` CLI adapter (D-32). Only backend registered in Phase 7.
@@ -115,9 +115,9 @@ async fn run_git_stdout_env(args: &[&str], extra_env: &[(&str, &str)]) -> Result
     let mut cmd = Command::new("git");
     cmd.args(args)
         .env("GIT_AUTHOR_NAME", "Octanest")
-        .env("GIT_AUTHOR_EMAIL", "noreply@octanest.local")
+        .env("GIT_AUTHOR_EMAIL", FORGE_NOREPLY_EMAIL)
         .env("GIT_COMMITTER_NAME", "Octanest")
-        .env("GIT_COMMITTER_EMAIL", "noreply@octanest.local")
+        .env("GIT_COMMITTER_EMAIL", FORGE_NOREPLY_EMAIL)
         // Never prompt interactively for credentials during mirror ops.
         .env("GIT_TERMINAL_PROMPT", "0")
         .stdin(Stdio::null())
@@ -707,7 +707,7 @@ impl GitBackend for CliGitBackend {
             message,
             files,
             "Octanest",
-            "noreply@octanest.local",
+            FORGE_NOREPLY_EMAIL,
             None,
         )
         .await
@@ -783,7 +783,7 @@ impl GitBackend for CliGitBackend {
             work_str,
             "config",
             "user.email",
-            "noreply@octanest.local",
+            FORGE_NOREPLY_EMAIL,
         ])
         .await?;
         run_git(&["-C", work_str, "config", "user.name", "Octanest"]).await?;
@@ -793,7 +793,7 @@ impl GitBackend for CliGitBackend {
             ("GIT_AUTHOR_NAME", author_name.to_string()),
             ("GIT_AUTHOR_EMAIL", author_email.to_string()),
             ("GIT_COMMITTER_NAME", "Octanest".into()),
-            ("GIT_COMMITTER_EMAIL", "noreply@octanest.local".into()),
+            ("GIT_COMMITTER_EMAIL", FORGE_NOREPLY_EMAIL.into()),
         ];
         let mut commit_args: Vec<String> = vec!["-C".into(), work_str.into()];
         if let Some(key) = signing_key_path {
@@ -2314,7 +2314,7 @@ async fn merge_via_worktree(
         .ok_or_else(|| GitError::InvalidArg("non-utf8 temp worktree".into()))?;
 
     run_git(&["clone", bare_s, work_s]).await?;
-    run_git(&["-C", work_s, "config", "user.email", "noreply@octanest.local"]).await?;
+    run_git(&["-C", work_s, "config", "user.email", FORGE_NOREPLY_EMAIL]).await?;
     run_git(&["-C", work_s, "config", "user.name", "Octanest"]).await?;
     if run_git(&[
         "-C",
@@ -3457,7 +3457,7 @@ mod tests {
         // Principal must match the committer email used by seed_commit_authored.
         std::fs::write(
             &allowed,
-            format!("noreply@octanest.local namespaces=\"git\" {key_type} {key_b64}\n"),
+            format!("{FORGE_NOREPLY_EMAIL} namespaces=\"git\" {key_type} {key_b64}\n"),
         )
         .unwrap();
 

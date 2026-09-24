@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::Write;
 
 use octanest_db::{Database, UserRow};
+use octanest_git::FORGE_NOREPLY_EMAIL;
 
 use crate::public_origin::{origin_hostname, resolve_public_origin};
 
@@ -178,11 +179,11 @@ pub async fn build_allowed_signers_file(
     if let Ok(Some(pub_line)) = crate::git::web_flow::public_key_line().await {
         if let Some((key_type, key)) = openssh_key_material(&pub_line) {
             lines.push(format!(
-                "noreply@octanest.local namespaces=\"git\" {key_type} {key}"
+                "{FORGE_NOREPLY_EMAIL} namespaces=\"git\" {key_type} {key}"
             ));
             for email in author_emails {
                 let e = email.trim();
-                if !e.is_empty() && e != "noreply@octanest.local" {
+                if !e.is_empty() && e != FORGE_NOREPLY_EMAIL {
                     lines.push(format!("{e} namespaces=\"git\" {key_type} {key}"));
                 }
             }

@@ -286,6 +286,11 @@ pub const BLAME_SOFT_MAX_LINES: usize = 10_000;
 /// Soft timeout for `git archive` (T-07-22).
 pub const ARCHIVE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
 
+/// Forge web-flow identity used as committer (and default author) on
+/// forge-authored seed commits. It is not a registered account address — the
+/// instance signs these commits with the web-flow SSH key under this principal.
+pub const FORGE_NOREPLY_EMAIL: &str = "noreply@octanest.local";
+
 /// Source archive format for [`GitBackend::archive`] (GIT-07 / D-29).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArchiveFormat {
