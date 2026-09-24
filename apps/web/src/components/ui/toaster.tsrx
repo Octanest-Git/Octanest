@@ -53,6 +53,8 @@ function toastVariantFromType(type: string | undefined): ToastVariant {
 function ToastList() @{
   const { toasts } = Toast.useToastManager();
 
+  // octane-dom-race-ok: app-root singleton — mounts once at boot and never
+  // unmounts; toast items inside change but the portal node itself is stable.
   <Toast.Portal>
     <Toast.Viewport
       className={cn(

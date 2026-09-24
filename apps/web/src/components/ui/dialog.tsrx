@@ -13,6 +13,8 @@ export function DialogTrigger(props: ComponentProps<typeof DialogPrimitive.Trigg
 }
 
 export function DialogPortal(props: ComponentProps<typeof DialogPrimitive.Portal>) @{
+  // octane-dom-race-ok: definition site — keepMounted flows through props;
+  // DialogContent sets it so every consumer stays mounted.
   <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
@@ -42,7 +44,7 @@ export function DialogContent({
 }: ComponentProps<typeof DialogPrimitive.Popup> & {
   showCloseButton?: boolean;
 }) @{
-  <DialogPortal>
+  <DialogPortal keepMounted>
     <DialogOverlay />
     <DialogPrimitive.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <DialogPrimitive.Popup

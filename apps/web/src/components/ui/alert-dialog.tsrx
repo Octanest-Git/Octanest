@@ -16,6 +16,8 @@ export function AlertDialogTrigger(
 export function AlertDialogPortal(
   props: ComponentProps<typeof AlertDialogPrimitive.Portal>,
 ) @{
+  // octane-dom-race-ok: definition site — keepMounted flows through props;
+  // AlertDialogContent sets it so every consumer stays mounted.
   <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />;
 }
 
@@ -37,7 +39,7 @@ export function AlertDialogContent({
   className,
   ...props
 }: ComponentProps<typeof AlertDialogPrimitive.Popup>) @{
-  <AlertDialogPortal>
+  <AlertDialogPortal keepMounted>
     <AlertDialogOverlay />
     <AlertDialogPrimitive.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <AlertDialogPrimitive.Popup

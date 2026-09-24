@@ -586,6 +586,85 @@ export const expectForgeRepoPackagesFlow: BrowserCommand<[]> = async (ctx) => {
 };
 
 /**
+ * Branches page dialogs: open New branch → submit → open Delete confirm,
+ * under the pageerror guard. Root cause was Base UI Dialog/AlertDialog
+ * `Portal` changing root-node count mid reconciliation — fixed via
+ * `keepMounted` on the shared portal wrappers (insertBefore DOM race).
+ * happy-dom does not throw this race; this flow is the Chromium gate.
+ */
+export const expectBranchDialogsFlow: BrowserCommand<[]> = async (ctx) => {
+  const { context } = asPlaywright(ctx);
+  await context.clearCookies();
+  const seed = await seedForgeRepo();
+  await injectSessionCookie(context, seed.cookie);
+
+  const branchName = `e2e-branch-${Date.now()}`;
+  const pageGuard = await newGuardedPage(context);
+  const page = pageGuard.page;
+  const pageErrors = pageGuard.pageErrors;
+  try {
+    await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/branches`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60_000,
+    });
+    await page.getByRole("button", { name: "New branch" }).waitFor({
+      state: "visible",
+      timeout: 30_000,
+    });
+    // onClick needs client hydration — retry-click until the dialog opens
+    // (same settle+retry pattern as expectNewRepoTemplatePickerFlow).
+    await new Promise((r) => setTimeout(r, 1500));
+    const newBranchBtn = page.getByRole("button", { name: "New branch" });
+    let dialogOpen = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      await newBranchBtn.click({ force: true });
+      try {
+        await page.getByRole("dialog").waitFor({ state: "visible", timeout: 2_000 });
+        dialogOpen = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+    if (!dialogOpen) {
+      throw new Error(
+        `New branch dialog did not open (hydration?). pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    await page.getByRole("textbox", { name: "Branch name" }).fill(branchName);
+    await page.getByRole("button", { name: "Create branch" }).click();
+    // Row renders once the create mutation + refetch settle.
+    await page
+      .getByRole("link", { name: branchName, exact: true })
+      .waitFor({ state: "visible", timeout: 30_000 });
+
+    // Delete confirm dialog (AlertDialog portal). The default branch's
+    // Delete is disabled, so pick the enabled one (the branch just made).
+    const deleteBtn = page.locator('button:has-text("Delete"):not([disabled])');
+    let alertOpen = false;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      await deleteBtn.click({ force: true });
+      try {
+        await page.getByRole("alertdialog").waitFor({ state: "visible", timeout: 2_000 });
+        alertOpen = true;
+        break;
+      } catch {
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    }
+    if (!alertOpen) {
+      throw new Error(
+        `Delete branch confirm did not open. pageerrors=${pageErrors.join(" | ") || "none"}`,
+      );
+    }
+    assertNoOctaneOverlay(await page.content(), "branches dialogs");
+    return true;
+  } finally {
+    await pageGuard.close("stack-browser");
+  }
+};
+
+/**
  * Repo settings mirror panel: toggle HTTPS → SSH auth without Chromium
  * insertBefore / HierarchyRequestError. Root cause was Base UI Radio.Indicator
  * mount (keepMounted=false) racing Octane sibling panel updates — fixed via
