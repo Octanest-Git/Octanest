@@ -60,7 +60,7 @@ railway config plan
 railway config apply
 ```
 
-Secrets (`OCTANEST_ENV`, `OCTANEST_VITE_ALLOWED_HOSTS`, `OCTANEST_ACTIONS_SECRETS_KEY`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git. Set a unique `OCTANEST_ACTIONS_SECRETS_KEY` on each environment’s **api** service (`openssl rand -base64 32`); without it, mirror credentials and Actions secrets cannot be saved.
+Secrets (`OCTANEST_ENV`, `OCTANEST_VITE_ALLOWED_HOSTS`, `OCTANEST_ACTIONS_SECRETS_KEY`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git. Set a unique `OCTANEST_ACTIONS_SECRETS_KEY` on each environment’s **api** service (`openssl rand -base64 32`); without it, mirror credentials and Actions secrets cannot be saved. `OCTANEST_WEB_FLOW_PRIVATE_KEY` (optional, **api**) pins the web-flow commit-signing key — required on `production`/`cloud` where auto-generation fails closed; preview/staging/PR Environments auto-generate on first use when unset.
 
 IaC sets public browser/SSH advertise vars from the **gateway** domain (not `preserve()`):
 

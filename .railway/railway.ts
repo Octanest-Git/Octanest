@@ -85,6 +85,10 @@ export default defineRailway((ctx) => {
       // AES-256-GCM for Actions secrets, mirror credentials, webhook secrets (D-ACT-17).
       // Required — set a unique value per environment in the dashboard (never commit).
       OCTANEST_ACTIONS_SECRETS_KEY: preserve(),
+      // Optional deterministic web-flow commit-signing key (OpenSSH PEM or
+      // base64 PEM). PR Environments inherit preview's vars; unset envs
+      // auto-generate on first seeded repo create (production|cloud fail closed).
+      OCTANEST_WEB_FLOW_PRIVATE_KEY: preserve(),
       OCTANEST_SSH_HOST: "${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       WORKOS_API_KEY: preserve(),
       WORKOS_CLIENT_ID: preserve(),
