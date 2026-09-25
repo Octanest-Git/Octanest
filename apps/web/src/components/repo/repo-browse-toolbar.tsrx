@@ -17,7 +17,7 @@ type RepoBrowseToolbarProps = {
 
 /**
  * Shared Code / tree toolbar — ref select, optional path crumbs, clone/download
- * (GitHub/Gitea-style; matches repo home layout).
+ * (matches repo home layout).
  */
 export function RepoBrowseToolbar({
   owner,

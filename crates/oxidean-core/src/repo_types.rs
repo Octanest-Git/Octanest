@@ -256,7 +256,7 @@ pub struct RepoWatchersListResponse {
     pub total: i64,
 }
 
-/// Sort keys for `repo.forks.list` (GitHub-parity subset we can support with stored data).
+/// Sort keys for `repo.forks.list` (subset we can support with stored data).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum RepoForksSort {
@@ -464,7 +464,7 @@ pub struct RepoActivityItem {
     pub pusher: RepoActivityActor,
 }
 
-/// `repo.activity.list` — GitHub-shaped repo activity feed (Read+).
+/// `repo.activity.list` — repo activity feed (Read+).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RepoActivityListRequest {
     pub owner: String,
@@ -1190,7 +1190,7 @@ pub struct RepoCollaboratorsRemoveRequest {
     pub user_id: String,
 }
 
-/// Org profile meta-repos (Oxidean-first, GitHub-compatible). Leading `.` is otherwise rejected.
+/// Org profile meta-repos (Oxidean-first; `.github` kept for compatibility). Leading `.` is otherwise rejected.
 const ALLOWED_DOT_REPO_NAMES: &[&str] = &[".oxidean", ".github"];
 
 fn is_allowed_dot_repo_name(name: &str) -> bool {
@@ -1200,7 +1200,7 @@ fn is_allowed_dot_repo_name(name: &str) -> bool {
         .any(|allowed| *allowed == lower.as_str())
 }
 
-/// GitHub-ish repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
+/// Repo name rules (D-06): 1–100 chars, ascii letters/digits/hyphen/underscore/period;
 /// no leading/trailing `.` or `-`; not `.` / `..`; not a reserved path segment.
 /// Exception: `.oxidean` and `.github` (org profile README special repos).
 pub fn validate_repo_name(raw: &str) -> Result<(), String> {

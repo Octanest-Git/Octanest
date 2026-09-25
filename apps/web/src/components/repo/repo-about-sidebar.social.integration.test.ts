@@ -16,7 +16,7 @@ describe("repo about sidebar social links", () => {
     expect(src).not.toMatch(/base \+ "\/fork"/);
   });
 
-  it("ships GitHub-shaped meta list + Languages section (not i18n)", () => {
+  it("ships meta list + Languages section (not i18n)", () => {
     const src = readFileSync(join(dir, "repo-about-sidebar.tsrx"), "utf8");
     expect(src).toMatch(/Settings/);
     expect(src).toMatch(/BookOpen/);
@@ -35,7 +35,7 @@ describe("repo about sidebar social links", () => {
     // Stars/watching/forks share the flat meta-row style (not a button strip).
     expect(src).toMatch(/META_ROW/);
     expect(src).not.toMatch(/i18n|locale|translation/i);
-    // No dead GitHub-enterprise rows without product surfaces.
+    // No dead rows for features without product surfaces.
     expect(src).not.toMatch(/Custom properties|Audit log|Report repository/);
     // Homepage links must go through safeExternalHttpUrl (no raw javascript: href).
     expect(src).toMatch(/safeExternalHttpUrl/);

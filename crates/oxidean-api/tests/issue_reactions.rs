@@ -1,4 +1,4 @@
-//! D-ISS-11: GitHub eight reaction content values on issue and comment.
+//! D-ISS-11: Eight reaction content values on issue and comment.
 //!
 //! Write+ may react (D-ISS-20). Unknown content → rpc.bad_input. Toggle is
 //! idempotent per user/content (on → off).
@@ -15,7 +15,7 @@ use oxidean_api::{build_cors, router_with_state, AppState};
 use oxidean_db::Database;
 use tower::ServiceExt;
 
-const GITHUB_EIGHT: &[&str] = &[
+const EIGHT_CONTENTS: &[&str] = &[
     "+1", "-1", "laugh", "confused", "heart", "hooray", "rocket", "eyes",
 ];
 
@@ -167,7 +167,7 @@ fn viewer_reacted(reactions: &serde_json::Value, content: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// GitHub eight content values toggle on an issue (D-ISS-11).
+/// Eight content values toggle on an issue (D-ISS-11).
 #[tokio::test]
 async fn issue_reactions_eight_content_on_issue() {
     let dir = tempfile::tempdir().expect("tempdir");
@@ -183,7 +183,7 @@ async fn issue_reactions_eight_content_on_issue() {
 
     let (owner_cookie, reader_cookie) = setup_react_fixture(&app, &db).await;
 
-    for content in GITHUB_EIGHT {
+    for content in EIGHT_CONTENTS {
         let toggle = rpc_json(
             &app,
             &owner_cookie,
@@ -214,7 +214,7 @@ async fn issue_reactions_eight_content_on_issue() {
     )
     .await;
     assert_eq!(got["ok"], true, "issue.get — {got}");
-    for content in GITHUB_EIGHT {
+    for content in EIGHT_CONTENTS {
         assert_eq!(
             group_count(&got["data"]["reactions"], content),
             1,
@@ -269,7 +269,7 @@ async fn issue_reactions_eight_content_on_comment() {
     assert_eq!(created["ok"], true, "create comment — {created}");
     let comment_id = created["data"]["id"].as_str().expect("comment id");
 
-    for content in GITHUB_EIGHT {
+    for content in EIGHT_CONTENTS {
         let toggle = rpc_json(
             &app,
             &owner_cookie,
@@ -297,7 +297,7 @@ async fn issue_reactions_eight_content_on_comment() {
     assert_eq!(listed["ok"], true, "comments.list — {listed}");
     let comments = listed["data"]["comments"].as_array().expect("comments");
     assert_eq!(comments.len(), 1);
-    for content in GITHUB_EIGHT {
+    for content in EIGHT_CONTENTS {
         assert_eq!(
             group_count(&comments[0]["reactions"], content),
             1,

@@ -143,7 +143,7 @@ describe("resolveAboutRootFiles", () => {
 });
 
 describe("activityHref / blobHref About links", () => {
-  it("builds GitHub-shaped activity and license blob URLs", () => {
+  it("builds activity and license blob URLs", () => {
     expect(activityHref("oxidean", "forge")).toBe("/oxidean/forge/activity");
     expect(blobHref("oxidean", "forge", "main", "LICENSE")).toBe(
       "/oxidean/forge/blob/main/LICENSE",
@@ -155,7 +155,7 @@ describe("activityHref / blobHref About links", () => {
 });
 
 describe("languagePercent", () => {
-  it("formats GitHub-style one-decimal percentages", () => {
+  it("formats one-decimal percentages", () => {
     expect(languagePercent(950, 1000)).toBe("95.0%");
     expect(languagePercent(1, 10000)).toBe("<0.1%");
     expect(languagePercent(0, 100)).toBe("0%");

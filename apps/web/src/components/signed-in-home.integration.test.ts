@@ -82,7 +82,7 @@ describe("SignedInHome New repository CTA", () => {
   });
 });
 
-describe("SignedInHome dashboard IA (GitHub-classic)", () => {
+describe("SignedInHome dashboard IA (classic)", () => {
   it("empty list shows hero + feed placeholder + shortcuts", () => {
     render(SignedInHome, {
       props: { user: user({ email_verified: true }), repos: [] },

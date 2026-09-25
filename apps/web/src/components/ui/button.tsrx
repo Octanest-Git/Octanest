@@ -11,7 +11,7 @@ export const buttonVariants = cva(
           "bg-primary font-semibold text-primary-foreground shadow-sm hover:brightness-110 disabled:bg-muted disabled:text-muted-foreground disabled:hover:brightness-100 disabled:shadow-none",
         primary:
           "bg-primary font-semibold text-primary-foreground shadow-sm hover:brightness-110 disabled:bg-muted disabled:text-muted-foreground disabled:hover:brightness-100 disabled:shadow-none",
-        // Neutral bordered button (GitHub default) — for secondary actions.
+        // Neutral bordered button — for secondary actions.
         outline:
           "border border-border bg-card font-medium text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground disabled:bg-muted/40 disabled:text-muted-foreground disabled:shadow-none",
         secondary:

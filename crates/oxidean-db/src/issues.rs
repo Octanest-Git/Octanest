@@ -416,7 +416,7 @@ pub struct IssueListFilters<'a> {
     pub author_id: Option<&'a str>,
     pub label_id: Option<&'a str>,
     pub assignee_id: Option<&'a str>,
-    /// Simple substring match on title/body (dialect LIKE/ILIKE — not GitHub search grammar).
+    /// Simple substring match on title/body (dialect LIKE/ILIKE — not the `key:value` qualifier grammar).
     pub q: Option<&'a str>,
     pub offset: i64,
     pub limit: i64,

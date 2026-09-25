@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api-client";
 
 const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
-/** GitHub eight reaction contents (D-ISS-11). */
+/** The eight reaction contents (D-ISS-11). */
 export const REACTION_CONTENTS: {
   content: ReactionContent;
   emoji: string;

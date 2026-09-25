@@ -12,13 +12,13 @@
 
 ## What it is
 
-A self-hostable GitHub-style forge — git hosting, issues, organizations, and package registries — that runs as **one product** for Oxidean Cloud and on your own machines.
+Oxidean is a self-hostable code forge: git hosting, pull requests, issues, CI actions, and package registries in **one product**. The same codebase runs Oxidean Cloud and installs on your own machines.
 
-## Who it’s for
+## Who it's for
 
-- **Operators** who want a Compose-based forge they control
-- **Teams** that need a GitHub-shaped workflow without splitting cloud vs self-host into different products
-- **Contributors** improving the same codebase that powers both deployments
+- **Operators** who want a Compose-deployed forge under their own control
+- **Teams** that want the full repository workflow without splitting cloud and self-host into different products
+- **Contributors** improving the single codebase behind both deployments
 
 ## Cloud vs self-host
 
@@ -26,7 +26,7 @@ A self-hostable GitHub-style forge — git hosting, issues, organizations, and p
 
 ## Quick start
 
-Prerequisites: Docker Engine with Compose v2, and a free host port **80** (Traefik). Git-over-SSH also publishes host port **2222** by default.
+Prerequisites: Docker Engine with Compose v2, and a free host port **80** (Traefik). Git over SSH also publishes host port **2222** by default.
 
 ```bash
 cp .env.example .env
@@ -34,23 +34,36 @@ make up
 make smoke
 ```
 
-Open [http://localhost](http://localhost). Tear down with `make down`.
+Open [http://localhost](http://localhost). On a fresh install, `/setup` walks you through creating the admin account and choosing auth providers. Tear down with `make down`.
+
+Other database dialects:
+
+```bash
+make up-mysql && make smoke-mysql
+make up-sqlite && make smoke-sqlite
+```
 
 Full walkthrough (including host-side development): [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md).  
 Production-oriented Compose notes: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-## What’s included
+## What's included
 
 Shipped on the current mainline:
 
-- Git hosting over **HTTPS** (Smart HTTP + PATs) and **SSH**
-- **Organizations**, collaborators, and repository visibility / ACL
-- **Issues** (comments, labels, assignees)
-- **Git LFS**, **releases** with assets, repo rename / transfer
-- **Package registries** (OCI, npm, generic/raw)
-- Multi-database support: **Postgres**, **MySQL**, **SQLite**
-
-Coming later (not shipped yet): full pull-request review/merge, branch protection, search, notifications, webhooks, Actions, and social explore.
+- **Git hosting** over HTTPS (Smart HTTP + PATs) and SSH, with commit signature verification (SSH and GPG) and author recognition
+- **Code browsing**: tree, blob, blame, commits, compare, branches, tags, and a repo activity feed
+- **Pull requests** with merge controls, plus **branch protection** rules
+- **Issues** with comments, labels, and assignees
+- **CI actions**: workflow runs and logs, with self-hosted runners (`oxidean-runner`)
+- **Package registries** for OCI, npm, and generic/raw artifacts
+- **Git LFS** with quotas, **releases** with assets, repo rename and transfer
+- **Notifications**, repo **webhooks**, and repository **forks**
+- **Search** across repos, code, issues, users, and orgs, plus an **explore** feed with stars, watchers, and social lists
+- **Organizations**, collaborators, invites, and repository visibility / ACL
+- **Repository mirroring** (push, pull, and two-way) and **stack presets** on `/new`
+- **Auth**: local accounts plus SSO via OIDC or WorkOS AuthKit; fine-grained PATs and SSH keys in user settings
+- **Admin console**: auth providers, LFS, packages, runners, and repo templates, with a first-run setup wizard and factory reset
+- **Multi-database** support: Postgres, MySQL, SQLite
 
 ## Docs
 
@@ -78,7 +91,7 @@ Canonical docs live under [`docs/`](docs/).
 
 ## Contributing
 
-Want to change the code? Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md). Agents: [AGENTS.md](AGENTS.md) (Octane ≠ React).
+Bugs and feature requests go through the issue templates on this repository. To change the code, start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/CODE_PRACTICES.md](docs/CODE_PRACTICES.md); agents also read [AGENTS.md](AGENTS.md) (Octane ≠ React). Security reports follow [SECURITY.md](SECURITY.md), not public issues.
 
 ## License
 

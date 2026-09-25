@@ -144,7 +144,7 @@ function actionRows(q: string): SearchActionSuggestion[] {
 
 /**
  * Omnibar suggestions: private + public repos you can access, users, orgs,
- * plus GitHub-style “Search … for q” action rows.
+ * plus “Search … for q” action rows.
  */
 export async function fetchSearchSuggestions(
   qRaw: string,

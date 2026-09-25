@@ -77,7 +77,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Surfaces: GitHub-adjacent neutrals on a bright-white (light) / deep charcoal
+  Surfaces: quiet neutrals on a bright-white (light) / deep charcoal
   (dark) canvas with WCAG-friendlier muted text. Accents are Oxidean brand:
   primary = burnt oxide orange (#D75F00 family), secondary = charcoal (light)
   / muted steel (dark) neutral. `success` stays a yellow-green kept visually
@@ -330,7 +330,7 @@
   }
 
   /*
-    GitHub-flavored markdown body (issues, PRs, releases, README, blob preview).
+    Rendered markdown body (issues, PRs, releases, README, blob preview).
     Do not rely on @tailwindcss/typography — `prose` is unused in this app.
   */
   .prose-oxidean {

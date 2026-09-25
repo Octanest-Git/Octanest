@@ -39,7 +39,7 @@ type RepoAboutSidebarProps = {
   hasReadme?: boolean;
   /** Ref used for License / Contributing blob links. */
   refName?: string;
-  /** Detected root LICENSE path + GitHub-shaped label (e.g. "MIT license"). */
+  /** Detected root LICENSE path + sidebar label (e.g. "MIT license"). */
   license?: { path: string; label: string } | null;
   /** Detected root CONTRIBUTING path. */
   contributingPath?: string | null;

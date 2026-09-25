@@ -63,7 +63,7 @@ async fn dialect_packages_schema_presence() {
 }
 
 /// Deleting a package cascades versions; empty packages are hidden from owner
-/// and repository listings (GitHub parity — last-version delete removes the
+/// and repository listings (last-version delete removes the
 /// package, and orphan rows never render).
 #[tokio::test]
 async fn dialect_packages_delete_and_empty_listing() {

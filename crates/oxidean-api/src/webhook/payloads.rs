@@ -1,4 +1,4 @@
-//! GitHub-shaped webhook payload builders (D-HOOK-07 / D-HOOK-09 / D-HOOK-10).
+//! GitHub-compatible webhook payload builders (D-HOOK-07 / D-HOOK-09 / D-HOOK-10).
 
 use serde_json::{json, Value};
 

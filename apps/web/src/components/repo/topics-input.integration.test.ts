@@ -1,5 +1,5 @@
 /**
- * TopicChipsInput: GitHub-style chips editor — freeform text commits on
+ * TopicChipsInput: chips editor — freeform text commits on
  * comma / Enter / autocomplete pick; Backspace pops the last chip.
  * Suggestions come from `repo.topicsSuggest` (mocked).
  */

@@ -1056,7 +1056,7 @@ pub async fn assignee_candidates(
     Ok(AssigneeCandidatesResponse { users })
 }
 
-/// `issue.reactions.toggle` — Write+; GitHub eight contents on issue|comment (D-ISS-11 / D-ISS-20).
+/// `issue.reactions.toggle` — Write+; the eight contents on issue|comment (D-ISS-11 / D-ISS-20).
 pub async fn reactions_toggle(
     ctx: &RpcCtx,
     input: serde_json::Value,

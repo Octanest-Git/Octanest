@@ -310,7 +310,7 @@ async fn get_run_anonymous_includes_jobs_and_timestamps() {
     let job = &res["data"]["jobs"][0];
     assert_eq!(job["id"], "job-1");
     assert_eq!(job["status"], "queued");
-    // Queued jobs carry no timestamps yet — keys are omitted like GitHub's API.
+    // Queued jobs carry no timestamps yet — keys are omitted until a run starts.
     assert!(job.get("started_at").is_none() || job["started_at"].is_null());
 }
 

@@ -400,7 +400,7 @@ pub async fn admin_list_runners(
 
 /// `repo.actions.listWorkflows` — Read+ (anonymous OK on public repos).
 /// Discovers `.github/workflows/*.{yml,yaml}` at the given ref (default branch
-/// when omitted) so the UI can offer GitHub's "Run workflow" dispatch picker.
+/// when omitted) so the UI can offer the "Run workflow" dispatch picker.
 pub async fn list_workflows(
     ctx: &RpcCtx,
     input: serde_json::Value,

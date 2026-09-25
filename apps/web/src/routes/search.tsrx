@@ -244,7 +244,7 @@ export function SearchPage() @{
           </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
             {scopedLabel as string} are searched inside a repository. Open a repository below,
-            then use its Search page — same pattern as GitHub scoped search.
+            then use its Search page — same scoped-search pattern.
           </p>
           @if (repos.length === 0) {
             <p className="mt-4 text-[14px] text-muted-foreground">

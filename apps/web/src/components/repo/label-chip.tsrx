@@ -16,7 +16,7 @@ function chipStyle(color: string): ChipStyle | null {
   }
 }
 
-/** GitHub-style colored label pill used on issue/pull rows and detail sidebars. */
+/** Colored label pill used on issue/pull rows and detail sidebars. */
 export function LabelChip(props: { label: LabelPublic; className?: string }) @{
   const style = chipStyle(props.label.color);
   <span

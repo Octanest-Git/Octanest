@@ -17,7 +17,7 @@ type SignedInHomeProps = {
 
 const TOP_REPOS_INITIAL = 7;
 
-/** Signed-in home — GitHub-classic two-column dashboard (repos + feed). */
+/** Signed-in home — classic two-column dashboard (repos + feed). */
 export function SignedInHome({ user, repos, reposError = null }: SignedInHomeProps) @{
   const [repoFilter, setRepoFilter] = useState("");
   const [showAllRepos, setShowAllRepos] = useState(false);

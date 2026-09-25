@@ -179,7 +179,7 @@ export const fetchRepoLanguages = createServerFn({ method: "GET" })
     });
   });
 
-/** SSR: `repo.activity.list` — GitHub-shaped push activity feed. */
+/** SSR: `repo.activity.list` — push activity feed. */
 export const fetchRepoActivity = createServerFn({ method: "GET" })
   .validator(
     (

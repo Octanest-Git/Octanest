@@ -1344,7 +1344,7 @@ pub async fn requeue_run(pool: &DbPool, run_id: &str) -> Result<(), String> {
 }
 
 /// Cancel a run and any unfinished jobs (queued/in_progress). Finished jobs
-/// keep their conclusion, matching GitHub's per-job cancellation semantics.
+/// keep their conclusion, matching per-job cancellation semantics.
 pub async fn cancel_run(pool: &DbPool, run_id: &str) -> Result<(), String> {
     match pool {
         DbPool::Sqlite(p) => {

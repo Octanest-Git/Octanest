@@ -311,7 +311,7 @@ pub fn is_reserved_username(u: &str) -> bool {
     RESERVED_USERNAMES.iter().any(|r| *r == lower.as_str())
 }
 
-/// GitHub-like username rules (D-03): 1–39 chars, ascii alphanumeric + hyphen,
+/// Username rules (D-03): 1–39 chars, ascii alphanumeric + hyphen,
 /// no leading/trailing hyphen, not reserved.
 pub fn validate_username(raw: &str) -> Result<(), String> {
     let u = raw.trim();

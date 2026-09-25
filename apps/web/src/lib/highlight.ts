@@ -63,7 +63,7 @@ const rippleLang = {
 let highlighterPromise: Promise<Highlighter> | null = null;
 
 /**
- * Singleton Shiki highlighter with GitHub-class langs + in-repo tsrx/ripple grammars (D-19).
+ * Singleton Shiki highlighter with common langs + in-repo tsrx/ripple grammars (D-19).
  * Custom langs are full TextMate grammars — not TypeScript/JavaScript aliases.
  * JS regex engine (forgiving) matches official TSRX demo for large TM grammars.
  */

@@ -13,7 +13,7 @@ import {
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 import { cn } from "@/lib/utils";
 
-/** Header omnibar — multi-entity suggest + full /search results (GitHub-style). */
+/** Header omnibar — multi-entity suggest + full /search results. */
 export const GLOBAL_SEARCH_LABEL = "Search Oxidean";
 
 export const GLOBAL_SEARCH_PLACEHOLDER = "Search repositories, users, orgs…";

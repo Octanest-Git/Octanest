@@ -59,7 +59,7 @@ pub struct MergeEvalInput {
     pub status_by_context: std::collections::BTreeMap<String, String>,
 }
 
-/// GitHub-style `*` / `?` branch pattern match (D-02). No `/` special-casing beyond literal.
+/// Glob-style `*` / `?` branch pattern match (D-02). No `/` special-casing beyond literal.
 pub fn pattern_matches(pattern: &str, branch: &str) -> bool {
     let pat = pattern.trim();
     let name = branch.trim();
@@ -179,7 +179,7 @@ pub fn union_rules(rules: &[BranchProtectionRuleRow], branch: &str) -> Effective
     eff.matched = true;
     eff.required_approving_review_count = max_reviews;
     // If no matching rule set allow flags explicitly false, defaults are false when matched
-    // and any rule matches — GitHub defaults allow_force_pushes/deletions to false.
+    // and any rule matches — allow_force_pushes/deletions default to false.
     // Our row defaults are false; union starts true then AND-false. If no rule touched
     // allow_force_pushes (all true), keep true — but schema default is false so OR of
     // "any false" is correct. If all rules have allow_force_pushes=false, result false.

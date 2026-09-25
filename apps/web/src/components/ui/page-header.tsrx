@@ -8,7 +8,7 @@ type PageHeaderProps = {
   /** Right-aligned actions (buttons, menus). */
   actions?: unknown;
   className?: string;
-  /** Renders a bottom divider (GitHub subheader rule). Default true. */
+  /** Renders a bottom divider (subheader rule). Default true. */
   divider?: boolean;
 };
 
