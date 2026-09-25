@@ -8,7 +8,7 @@ requires:
     provides: "0007 repositories schema + validate_repo_name + proceed_locked (07-02); Wave 0 RED stubs (07-00)"
 provides:
   - "GitBackend trait + CliGitBackend init_bare (argv-only)"
-  - "repo.create RPC with require_verified + bare path under OCTANEST_REPOS_DIR"
+  - "repo.create RPC with require_verified + bare path under OXIDEAN_REPOS_DIR"
   - "AppState Arc<dyn GitBackend> + repos_dir (default var/repos)"
 affects:
   - 07-03-create-ux
@@ -29,16 +29,16 @@ tech-stack:
     - "repos_dir mirrors uploads_dir AppState pattern"
 key-files:
   created:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-api/src/git/mod.rs
-    - crates/octanest-api/src/repo/mod.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-api/src/git/mod.rs
+    - crates/oxidean-api/src/repo/mod.rs
   modified:
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/tests/repo_create.rs
-    - crates/octanest-api/tests/repo_fs_layout.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/tests/repo_create.rs
+    - crates/oxidean-api/tests/repo_fs_layout.rs
+    - crates/oxidean-core/src/repo_types.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "Duplicate create returns stable repo.name_taken for inline /new UI (D-12)"
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_verified_happy_path"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_verified_happy_path"
         status: pass
     human_judgment: false
   - id: D2
@@ -62,7 +62,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_unverified_email_unverified"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_unverified_email_unverified"
         status: pass
     human_judgment: false
   - id: D3
@@ -70,7 +70,7 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_fs_layout.rs#repo_fs_layout_bare_path_under_repos_dir"
+        ref: "crates/oxidean-api/tests/repo_fs_layout.rs#repo_fs_layout_bare_path_under_repos_dir"
         status: pass
     human_judgment: false
   - id: D4
@@ -78,7 +78,7 @@ coverage:
     requirement: GIT-10
     verification:
       - kind: other
-        ref: "rg trait GitBackend crates/octanest-git/src/backend.rs + CliGitBackend in app.rs"
+        ref: "rg trait GitBackend crates/oxidean-git/src/backend.rs + CliGitBackend in app.rs"
         status: pass
     human_judgment: false
 duration: 4min
@@ -88,7 +88,7 @@ status: complete
 
 # Phase 07 Plan 12: Create Tracer (GitBackend CLI) Summary
 
-**Verified `repo.create` greens end-to-end: DB row + bare git under `OCTANEST_REPOS_DIR` via `CliGitBackend` argv-only init.**
+**Verified `repo.create` greens end-to-end: DB row + bare git under `OXIDEAN_REPOS_DIR` via `CliGitBackend` argv-only init.**
 
 ## Performance
 
@@ -101,7 +101,7 @@ status: complete
 ## Accomplishments
 
 - Landed `GitBackend` + `CliGitBackend::init_bare` (`git init --bare` + `symbolic-ref HEAD`)
-- Wired `repos_dir` / `OCTANEST_REPOS_DIR` and `Arc<dyn GitBackend>` on `AppState` / `RpcCtx`
+- Wired `repos_dir` / `OXIDEAN_REPOS_DIR` and `Arc<dyn GitBackend>` on `AppState` / `RpcCtx`
 - Implemented `repo.create` with `require_verified`, name validation, optional description/visibility, `repo.name_taken`
 - Greened `repo_create` (happy / unverified / duplicate) and `repo_fs_layout` HEAD checks
 
@@ -113,12 +113,12 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-git/src/backend.rs` — `GitBackend` + `GitError`
-- `crates/octanest-git/src/cli.rs` — `CliGitBackend::init_bare`
-- `crates/octanest-api/src/git/mod.rs` — `bare_repo_path` layout helper
-- `crates/octanest-api/src/repo/mod.rs` — `repo.create` handler
-- `crates/octanest-api/src/app.rs` / `rpc.rs` — state + RPC registration
-- `crates/octanest-api/tests/repo_create.rs` / `repo_fs_layout.rs` — integration greens
+- `crates/oxidean-git/src/backend.rs` — `GitBackend` + `GitError`
+- `crates/oxidean-git/src/cli.rs` — `CliGitBackend::init_bare`
+- `crates/oxidean-api/src/git/mod.rs` — `bare_repo_path` layout helper
+- `crates/oxidean-api/src/repo/mod.rs` — `repo.create` handler
+- `crates/oxidean-api/src/app.rs` / `rpc.rs` — state + RPC registration
+- `crates/oxidean-api/tests/repo_create.rs` / `repo_fs_layout.rs` — integration greens
 - `packages/api-client/src/index.ts` — `repo.create` + DTOs via rpc-gen
 
 ## Decisions Made
@@ -133,15 +133,15 @@ status: complete
 
 **1. [Rule 3 - Blocking] AuthSettingsRow test missing `default_visibility`**
 - **Found during:** Task 1 (compile for nextest)
-- **Issue:** 07-02 added `default_visibility` to `AuthSettingsRow` but admin unit test initializer omitted the field, blocking `octanest-api` lib-test compile
+- **Issue:** 07-02 added `default_visibility` to `AuthSettingsRow` but admin unit test initializer omitted the field, blocking `oxidean-api` lib-test compile
 - **Fix:** Set `default_visibility: "public"` in the test fixture
-- **Files modified:** `crates/octanest-api/src/auth/admin.rs`
+- **Files modified:** `crates/oxidean-api/src/auth/admin.rs`
 - **Commit:** `f10d98b`
 
 ## Tracer Feedback Gate
 
 - Mode: `HUMAN_VERIFY_MODE=end-of-phase` + automated-only `<verify>`
-- Re-ran `cargo nextest run -p octanest-api -E 'test(repo_create) | test(repo_fs)'` — **4 passed**
+- Re-ran `cargo nextest run -p oxidean-api -E 'test(repo_create) | test(repo_fs)'` — **4 passed**
 - ⚡ Tracer verified end-to-end — no expansion tasks in this plan
 
 ## Known Stubs
@@ -150,8 +150,8 @@ None that block this plan's goal. Wave 0 stubs remain for later plans (`repo.get
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-git/src/backend.rs`
-- FOUND: `crates/octanest-git/src/cli.rs`
-- FOUND: `crates/octanest-api/src/repo/mod.rs`
-- FOUND: `crates/octanest-api/src/git/mod.rs`
+- FOUND: `crates/oxidean-git/src/backend.rs`
+- FOUND: `crates/oxidean-git/src/cli.rs`
+- FOUND: `crates/oxidean-api/src/repo/mod.rs`
+- FOUND: `crates/oxidean-api/src/git/mod.rs`
 - FOUND: commit `f10d98b`

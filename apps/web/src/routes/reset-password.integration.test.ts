@@ -71,7 +71,7 @@ describe("ResetPasswordPage AUTH-12 UI", () => {
     fireEvent.submit(email.closest("form")!);
 
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent(/Can't reach Octanest/);
+    expect(alert).toHaveTextContent(/Can't reach Oxidean/);
     expect(alert).not.toHaveTextContent(/not found/i);
     expect(screen.queryByText(SUCCESS_HEADING)).not.toBeInTheDocument();
   });

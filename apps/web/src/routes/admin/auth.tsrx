@@ -7,7 +7,7 @@ import type {
   ProviderMode,
   RepoVisibility,
   UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
@@ -59,12 +59,12 @@ export type AdminAuthLoaderData =
       settings: AuthSettingsPublic;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need admin access to manage auth settings.";
 
 export const Route = createFileRoute("/admin/auth")({
   component: AdminAuthPage,
-  head: () => ({ meta: [{ title: "Auth settings · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Auth settings · Oxidean" }] }),
   loader: async (): Promise<AdminAuthLoaderData> => {
     try {
       const meRes = await fetchSessionMe();
@@ -494,7 +494,7 @@ export function AdminAuthPage() @{
                             !flags.oidc_client_secret_configured
                           ) {
                             <p className="text-[14px] text-muted-foreground">
-                              Not set — configure OCTANEST_OIDC_CLIENT_SECRET in the
+                              Not set — configure OXIDEAN_OIDC_CLIENT_SECRET in the
                               environment.
                             </p>;
                           }
@@ -522,7 +522,7 @@ export function AdminAuthPage() @{
                               (e.currentTarget as HTMLInputElement).value,
                             )
                           }
-                          placeholder="Octanest <noreply@example.com>"
+                          placeholder="Oxidean <noreply@example.com>"
                           autoComplete="off"
                         />
                       </div>
@@ -532,7 +532,7 @@ export function AdminAuthPage() @{
                           <EnvBadge show={flags.smtp_configured} />
                           @if (!flags.smtp_configured) {
                             <p className="text-[14px] text-muted-foreground">
-                              Not set — configure OCTANEST_SMTP_URL in the environment.
+                              Not set — configure OXIDEAN_SMTP_URL in the environment.
                             </p>;
                           }
                         </div>;
@@ -543,7 +543,7 @@ export function AdminAuthPage() @{
                           <EnvBadge show={flags.resend_configured} />
                           @if (!flags.resend_configured) {
                             <p className="text-[14px] text-muted-foreground">
-                              Not set — configure OCTANEST_RESEND_API_KEY in the
+                              Not set — configure OXIDEAN_RESEND_API_KEY in the
                               environment.
                             </p>;
                           }

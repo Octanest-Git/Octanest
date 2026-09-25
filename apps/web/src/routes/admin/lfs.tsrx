@@ -4,7 +4,7 @@ import type {
   AdminLfsSettingsPublic,
   AdminLfsUsageResponse,
   UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useEffect, useState } from "octane";
 import { ByteQuotaField } from "@/components/admin/byte-quota-field";
@@ -36,7 +36,7 @@ export type AdminLfsLoaderData =
       usage: AdminLfsUsageResponse;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need admin access to manage LFS quotas.";
 
 const settingsQueryKey = ["admin", "lfs", "settings"] as const;
@@ -67,7 +67,7 @@ function settingsToFormValues(settings: AdminLfsSettingsPublic): QuotaFormValues
 
 export const Route = createFileRoute("/admin/lfs")({
   component: AdminLfsPage,
-  head: () => ({ meta: [{ title: "LFS quotas · Octanest" }] }),
+  head: () => ({ meta: [{ title: "LFS quotas · Oxidean" }] }),
   loader: async (): Promise<AdminLfsLoaderData> => {
     try {
       const meRes = await fetchSessionMe();

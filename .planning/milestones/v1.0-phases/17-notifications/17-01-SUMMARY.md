@@ -22,15 +22,15 @@ tech-stack:
   patterns: [soft-fail notify fanout after domain write, own-rows-only notification RPC]
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0017_notifications.sql
-    - crates/octanest-db/src/notifications.rs
-    - crates/octanest-core/src/notification_types.rs
-    - crates/octanest-api/src/notification/mod.rs
-    - crates/octanest-api/src/notify/mod.rs
+    - crates/oxidean-db/migrations/postgres/0017_notifications.sql
+    - crates/oxidean-db/src/notifications.rs
+    - crates/oxidean-core/src/notification_types.rs
+    - crates/oxidean-api/src/notification/mod.rs
+    - crates/oxidean-api/src/notify/mod.rs
   modified:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - docs/API.md
 key-decisions:
@@ -46,7 +46,7 @@ coverage:
     requirement: NOTF-01
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/notification_rpc.rs#notification_issue_comment_creates_unread_for_author
+        ref: crates/oxidean-api/tests/notification_rpc.rs#notification_issue_comment_creates_unread_for_author
         status: pass
     human_judgment: false
   - id: D2
@@ -54,7 +54,7 @@ coverage:
     requirement: NOTF-02
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/notification_rpc.rs#notification_cannot_mark_another_users_notification
+        ref: crates/oxidean-api/tests/notification_rpc.rs#notification_cannot_mark_another_users_notification
         status: pass
     human_judgment: false
 duration: 25min
@@ -78,7 +78,7 @@ commits: 2
 - Dialect-identical `0017_notifications` with `read_at` null = unread
 - Session-bound `notification.list` / `unreadCount` / `markRead` / `markAllRead`
 - Soft-fail `notify::fanout` wired from `issue.comments.create` (author only for tracer)
-- Regenerated `@octanest/api-client`; `make rpc-sync-check` clean
+- Regenerated `@oxidean/api-client`; `make rpc-sync-check` clean
 
 ## Task Commits
 

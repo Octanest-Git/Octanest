@@ -24,19 +24,19 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/oci_registry.rs
-    - crates/octanest-api/tests/npm_registry.rs
-    - crates/octanest-api/tests/generic_registry.rs
-    - crates/octanest-api/tests/package_acl.rs
-    - crates/octanest-api/tests/package_rpc.rs
-    - crates/octanest-db/tests/dialect_packages.rs
+    - crates/oxidean-api/tests/oci_registry.rs
+    - crates/oxidean-api/tests/npm_registry.rs
+    - crates/oxidean-api/tests/generic_registry.rs
+    - crates/oxidean-api/tests/package_acl.rs
+    - crates/oxidean-api/tests/package_rpc.rs
+    - crates/oxidean-db/tests/dialect_packages.rs
   modified: []
 
 key-decisions:
   - "Used assert!(false) without #[ignore] so nextest list discovers stubs without --run-ignored (matches plan verify)"
 
 patterns-established:
-  - "Phase 20 registry protocol tests live under crates/octanest-api/tests/{oci,npm,generic}_registry.rs and package_*"
+  - "Phase 20 registry protocol tests live under crates/oxidean-api/tests/{oci,npm,generic}_registry.rs and package_*"
 
 requirements-completed: [PKG-01, PKG-02, PKG-03, PKG-04, PKG-05]
 
@@ -46,7 +46,7 @@ coverage:
     requirement: PKG-01
     verification:
       - kind: integration
-        ref: cargo nextest list -p octanest-api -E 'test(oci_registry)|test(npm_registry)|test(generic_registry)|test(package_acl)|test(package_rpc)'
+        ref: cargo nextest list -p oxidean-api -E 'test(oci_registry)|test(npm_registry)|test(generic_registry)|test(package_acl)|test(package_rpc)'
         status: pass
     human_judgment: false
   - id: D2
@@ -54,7 +54,7 @@ coverage:
     requirement: PKG-04
     verification:
       - kind: integration
-        ref: cargo nextest list -p octanest-db -E 'test(dialect_packages)'
+        ref: cargo nextest list -p oxidean-db -E 'test(dialect_packages)'
         status: pass
     human_judgment: false
 
@@ -87,12 +87,12 @@ status: complete
 2. **Task 2: dialect_packages Wave 0 stub** - `817dab5` (test)
 
 ## Files Created/Modified
-- `crates/octanest-api/tests/oci_registry.rs` — OCI Distribution Spec stubs
-- `crates/octanest-api/tests/npm_registry.rs` — npm registry API stubs
-- `crates/octanest-api/tests/generic_registry.rs` — generic/raw stubs
-- `crates/octanest-api/tests/package_acl.rs` — hybrid ACL∩PAT stubs
-- `crates/octanest-api/tests/package_rpc.rs` — list/delete RPC stubs
-- `crates/octanest-db/tests/dialect_packages.rs` — migration parity stub
+- `crates/oxidean-api/tests/oci_registry.rs` — OCI Distribution Spec stubs
+- `crates/oxidean-api/tests/npm_registry.rs` — npm registry API stubs
+- `crates/oxidean-api/tests/generic_registry.rs` — generic/raw stubs
+- `crates/oxidean-api/tests/package_acl.rs` — hybrid ACL∩PAT stubs
+- `crates/oxidean-api/tests/package_rpc.rs` — list/delete RPC stubs
+- `crates/oxidean-db/tests/dialect_packages.rs` — migration parity stub
 
 ## Decisions Made
 - Non-ignored `assert!(false)` stubs so plan verify `nextest list` (without `--run-ignored`) finds them
@@ -110,11 +110,11 @@ status: complete
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/oci_registry.rs
-- FOUND: crates/octanest-api/tests/npm_registry.rs
-- FOUND: crates/octanest-api/tests/generic_registry.rs
-- FOUND: crates/octanest-api/tests/package_acl.rs
-- FOUND: crates/octanest-api/tests/package_rpc.rs
-- FOUND: crates/octanest-db/tests/dialect_packages.rs
+- FOUND: crates/oxidean-api/tests/oci_registry.rs
+- FOUND: crates/oxidean-api/tests/npm_registry.rs
+- FOUND: crates/oxidean-api/tests/generic_registry.rs
+- FOUND: crates/oxidean-api/tests/package_acl.rs
+- FOUND: crates/oxidean-api/tests/package_rpc.rs
+- FOUND: crates/oxidean-db/tests/dialect_packages.rs
 - FOUND: c8ff537
 - FOUND: 817dab5

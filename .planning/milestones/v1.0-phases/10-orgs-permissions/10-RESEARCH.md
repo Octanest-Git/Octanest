@@ -56,9 +56,9 @@
 
 ## Summary
 
-Phase 10 replaces the Phase 7 **owner-only private ACL stub** with a real forge permission model: organizations (shared slug namespace with users), org membership roles, per-repo collaborators, and a single capability evaluator in `crates/octanest-api/src/repo/acl.rs`. Today every read/mutate/git path still assumes `repositories.owner_id → users(id)` and `find_user_by_username` for `/{owner}/{repo}` resolution. Smart HTTP and PAT fine-grained minting additionally require `pat.user_id == owner_id` for push / FG selection — that must become “PAT subject has capability via ACL,” not “is the personal owner.”
+Phase 10 replaces the Phase 7 **owner-only private ACL stub** with a real forge permission model: organizations (shared slug namespace with users), org membership roles, per-repo collaborators, and a single capability evaluator in `crates/oxidean-api/src/repo/acl.rs`. Today every read/mutate/git path still assumes `repositories.owner_id → users(id)` and `find_user_by_username` for `/{owner}/{repo}` resolution. Smart HTTP and PAT fine-grained minting additionally require `pat.user_id == owner_id` for push / FG selection — that must become “PAT subject has capability via ACL,” not “is the personal owner.”
 
-GitHub’s documented org **base permissions** apply to members (not outside collaborators) and are overridden by higher explicit grants; Octanest locks the Member default to **`none`** (stricter than GitHub’s common Read default for public org repos) and keeps Collaborator as a **per-repo** grant on personal and org-owned repos. Teams/units (Gitea-style) stay deferred.
+GitHub’s documented org **base permissions** apply to members (not outside collaborators) and are overridden by higher explicit grants; Oxidean locks the Member default to **`none`** (stricter than GitHub’s common Read default for public org repos) and keeps Collaborator as a **per-repo** grant on personal and org-owned repos. Teams/units (Gitea-style) stay deferred.
 
 **Primary recommendation:** Ship migration `0009_*` with `organizations` + members + invites + `repository_collaborators`, polymorphic `repositories.owner_type`/`owner_id`, shared slug uniqueness checks, and rewrite `acl.rs` to return `read|write|admin` used by all consumers — no new crates/npm packages.
 
@@ -83,9 +83,9 @@ GitHub’s documented org **base permissions** apply to members (not outside col
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| Existing `octanest-api` / Axum RPC | in-tree | Org/collaborator procedures + ACL | Product already uses typed JSON RPC |
-| Existing `octanest-db` + sqlx migrations | in-tree | Dialect SQL for orgs/ACL tables | Dialect branching must stay in `octanest-db` |
-| Existing `octanest-core` DTOs + specta | in-tree | Shared types / error codes | `make rpc-gen` source of truth |
+| Existing `oxidean-api` / Axum RPC | in-tree | Org/collaborator procedures + ACL | Product already uses typed JSON RPC |
+| Existing `oxidean-db` + sqlx migrations | in-tree | Dialect SQL for orgs/ACL tables | Dialect branching must stay in `oxidean-db` |
+| Existing `oxidean-core` DTOs + specta | in-tree | Shared types / error codes | `make rpc-gen` source of truth |
 | Existing `EmailSender` / lettre / Resend | in-tree | Invite emails | Reuse Phase 4–5 outbound email |
 | Existing session auth + `require_verified` | in-tree | Privileged mutates | Same gates as `repo.create` / PAT create |
 | System `git` CLI + Smart HTTP | in-tree | Fetch/push enforcement consumer | Phase 7–8 already wire git; ACL is the missing piece |
@@ -100,7 +100,7 @@ GitHub’s documented org **base permissions** apply to members (not outside col
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| `owner_type` + `owner_id` on repos | Merge orgs into `users` with `type` flag (Gitea-like) | Faster slug uniqueness; conflates auth principals with orgs — worse fit for Octanest users table |
+| `owner_type` + `owner_id` on repos | Merge orgs into `users` with `type` flag (Gitea-like) | Faster slug uniqueness; conflates auth principals with orgs — worse fit for Oxidean users table |
 | Separate `owners` table | `owner_type`+`owner_id` | Extra join for little gain at this scale |
 | Casbin / OSO policy engine | Hand-written capability enum in `acl.rs` | Overkill; locked to central `acl.rs` |
 | Gitea team/units ACL | Member base + collaborators | Teams deferred (D-ORG-07) |
@@ -157,15 +157,15 @@ make test
 
 ### Recommended Project Structure
 ```
-crates/octanest-db/migrations/{postgres,mysql,sqlite}/0009_orgs_acl.sql
-crates/octanest-db/src/organizations.rs
-crates/octanest-db/src/org_members.rs
-crates/octanest-db/src/org_invites.rs
-crates/octanest-db/src/repo_collaborators.rs
-crates/octanest-core/src/org_types.rs          # DTOs + role enums
-crates/octanest-api/src/org/mod.rs             # org RPC handlers
-crates/octanest-api/src/repo/acl.rs            # REPLACE stub
-crates/octanest-api/src/repo/collaborators.rs  # collaborator RPC
+crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0009_orgs_acl.sql
+crates/oxidean-db/src/organizations.rs
+crates/oxidean-db/src/org_members.rs
+crates/oxidean-db/src/org_invites.rs
+crates/oxidean-db/src/repo_collaborators.rs
+crates/oxidean-core/src/org_types.rs          # DTOs + role enums
+crates/oxidean-api/src/org/mod.rs             # org RPC handlers
+crates/oxidean-api/src/repo/acl.rs            # REPLACE stub
+crates/oxidean-api/src/repo/collaborators.rs  # collaborator RPC
 apps/web/src/routes/orgs.new.tsrx
 apps/web/src/routes/$owner.settings*.tsrx      # org settings/members (minimal)
 apps/web/src/routes/$owner.$repo.settings.tsrx # Collaborators section
@@ -178,7 +178,7 @@ apps/web/src/routes/invites.$token.tsrx       # email invite accept
 **When to use:** Every read/mutate/git/PAT gate after Phase 10.  
 **Example:**
 ```rust
-// Source: in-repo rewrite of crates/octanest-api/src/repo/acl.rs (recommended)
+// Source: in-repo rewrite of crates/oxidean-api/src/repo/acl.rs (recommended)
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Capability {
     Read = 1,
@@ -242,7 +242,7 @@ pub fn coalesce(
 -- DROP FK repositories.owner_id -> users; keep owner_id as TEXT referencing user OR org by type
 ```
 
-**Slug uniqueness:** On user signup/rename and org create/rename, reject if slug collides with `users.username` **or** `organizations.slug` (case-insensitive, same `validate_username` rules). Reuse reserved list — already includes `"org"` / `"orgs"`. `[VERIFIED: crates/octanest-core/src/auth_types.rs:244-245]` quote: `"orgs",` / `"org",`
+**Slug uniqueness:** On user signup/rename and org create/rename, reject if slug collides with `users.username` **or** `organizations.slug` (case-insensitive, same `validate_username` rules). Reuse reserved list — already includes `"org"` / `"orgs"`. `[VERIFIED: crates/oxidean-core/src/auth_types.rs:244-245]` quote: `"orgs",` / `"org",`
 
 ### Pattern 3: Owner slug resolution
 **What:** Replace user-only lookup in `resolve_repo_for_read` / Smart HTTP `resolve_repo`.  
@@ -261,15 +261,15 @@ enum OwnerRef {
 ```
 
 ### Pattern 4: Mutate gates by capability (not `session.user_id == owner_id`)
-**What:** Today `resolve_repo_for_owner_mutate` compares session to `row.owner_id`. `[VERIFIED: crates/octanest-api/src/repo/mod.rs:480-492]`  
+**What:** Today `resolve_repo_for_owner_mutate` compares session to `row.owner_id`. `[VERIFIED: crates/oxidean-api/src/repo/mod.rs:480-492]`  
 **When to use:** Branch CRUD, visibility, soft-delete, collaborators admin.  
 **Replace with:**
 - Need **write** for branch create/rename/delete (and git push)
 - Need **admin** for visibility, soft-delete, collaborator management, org-destructive actions
 
 ### Anti-Patterns to Avoid
-- **Leaving `can_read_as_owner` as the git gate:** Smart HTTP still calls it for private + push. `[VERIFIED: crates/octanest-api/src/routes/git_smart_http.rs:417-426]`
-- **PAT still requiring personal ownership:** Classic push and FG `All` / Selected ownership checks. `[VERIFIED: crates/octanest-api/src/routes/git_smart_http.rs:287-315]` and `[VERIFIED: crates/octanest-api/src/pat/mod.rs:232-237]`
+- **Leaving `can_read_as_owner` as the git gate:** Smart HTTP still calls it for private + push. `[VERIFIED: crates/oxidean-api/src/routes/git_smart_http.rs:417-426]`
+- **PAT still requiring personal ownership:** Classic push and FG `All` / Selected ownership checks. `[VERIFIED: crates/oxidean-api/src/routes/git_smart_http.rs:287-315]` and `[VERIFIED: crates/oxidean-api/src/pat/mod.rs:232-237]`
 - **First-match ACL that lets Collaborator lower Owner/Admin:** use highest-wins
 - **Teams / unit permissions:** deferred (D-ORG-07); do not invent Gitea units
 - **Hand-editing `packages/api-client`:** change Rust + `make rpc-gen`
@@ -300,8 +300,8 @@ enum OwnerRef {
 | Live service config | None specific to orgs (no graph/n8n) | None |
 | OS-registered state | None | None — verified by absence of org systemd/pm2 units in product |
 | Secrets/env vars | No org-specific env today; email provider settings already in DB/ENV | Invite mail uses existing email config; no new secret names required |
-| Build artifacts | Generated `@octanest/api-client` after RPC add | Regenerate via `make rpc-gen`; CI `rpc-sync-check` |
-| Factory reset | `factory_reset_instance` deletes email_tokens/sessions/identities/users only | Must also wipe orgs/members/invites/collaborators (and org-owned repos) — today user DELETE cascades user-owned repos + PATs, **not** future org rows `[VERIFIED: crates/octanest-db/src/lib.rs:509-617]` |
+| Build artifacts | Generated `@oxidean/api-client` after RPC add | Regenerate via `make rpc-gen`; CI `rpc-sync-check` |
+| Factory reset | `factory_reset_instance` deletes email_tokens/sessions/identities/users only | Must also wipe orgs/members/invites/collaborators (and org-owned repos) — today user DELETE cascades user-owned repos + PATs, **not** future org rows `[VERIFIED: crates/oxidean-db/src/lib.rs:509-617]` |
 | Disk | `var/repos/{username}/` | Org repos create `{org_slug}/`; org slug rename must move dir like user rename |
 
 **Nothing found in category:** Live service config / OS-registered state — none for orgs.
@@ -310,7 +310,7 @@ enum OwnerRef {
 
 ### Pitfall 1: User-only owner resolution after orgs exist
 **What goes wrong:** `/{org}/{repo}` 404s even for public org repos.  
-**Why it happens:** `resolve_repo_for_read` only `find_user_by_username`. `[VERIFIED: crates/octanest-api/src/repo/acl.rs:44-51]`  
+**Why it happens:** `resolve_repo_for_read` only `find_user_by_username`. `[VERIFIED: crates/oxidean-api/src/repo/acl.rs:44-51]`  
 **How to avoid:** Shared owner resolver used by RPC, raw/archive, Smart HTTP, SSH.  
 **Warning signs:** Tests only create user-owned fixtures.
 
@@ -352,7 +352,7 @@ enum OwnerRef {
 
 ### Pitfall 8: `/new` still hard-locks owner to current user
 **What goes wrong:** Cannot create org-owned repos.  
-**Why it happens:** `CreateRepoRequest` has no owner field; create uses `user.id` / `user.username`. `[VERIFIED: crates/octanest-core/src/repo_types.rs:34-50]` `[VERIFIED: crates/octanest-api/src/repo/mod.rs:666-720]`  
+**Why it happens:** `CreateRepoRequest` has no owner field; create uses `user.id` / `user.username`. `[VERIFIED: crates/oxidean-core/src/repo_types.rs:34-50]` `[VERIFIED: crates/oxidean-api/src/repo/mod.rs:666-720]`  
 **How to avoid:** Add optional `owner` slug (default self); require org create permission (Owner/Admin — recommend).  
 **Warning signs:** UI picker cosmetic only.
 
@@ -360,7 +360,7 @@ enum OwnerRef {
 
 ### Current stub to replace
 ```rust
-// Source: crates/octanest-api/src/repo/acl.rs:21-24
+// Source: crates/oxidean-api/src/repo/acl.rs:21-24
 /// Owner-only private read until Phase 10 collaborators.
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
     caller_user_id == Some(owner_id)
@@ -369,7 +369,7 @@ pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
 
 ### Web anti-enumeration (preserve)
 ```rust
-// Source: crates/octanest-api/src/repo/acl.rs:11-14
+// Source: crates/oxidean-api/src/repo/acl.rs:11-14
 /// Identical error for missing repos and unauthorized private access (anti-enumeration).
 pub fn not_found() -> AppError {
     AppError::new("repo.not_found", "Repository not found")
@@ -419,7 +419,7 @@ repo.listMine — extend or add listAccessible for home + PAT picker
 | Private = personal owner only | Org roles + collaborators + member_base | Phase 10 | Real multi-user forge |
 | `owner_id → users` only | Polymorphic owner_type + id | Phase 10 | Org-owned repos + shared URLs |
 | PAT push iff personal owner | PAT ∩ ACL capability | Phase 10 | Collaborators can use personal PATs |
-| GitHub Triage/Maintain roles | Octanest `read\|write\|admin` only | Locked D-ORG-02c | Simpler matrix until later |
+| GitHub Triage/Maintain roles | Oxidean `read\|write\|admin` only | Locked D-ORG-02c | Simpler matrix until later |
 | Gitea teams/units | Deferred | D-ORG-07 | Avoid premature IA |
 
 **Deprecated/outdated:**
@@ -470,13 +470,13 @@ Step 2.6: External tools required only as above (no new services).
 |----------|-------|
 | Framework | cargo nextest (Rust) + Vitest (web) |
 | Config file | workspace Cargo / `apps/web/vitest.config.ts` |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(repo_private) or test(acl) or test(org)'` (adjust filter as tests land) |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(repo_private) or test(acl) or test(org)'` (adjust filter as tests land) |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| ORG-01 | Create org; add member by username; email invite accept | API integration | `cargo nextest run -p octanest-api -E 'test(org_)'` | ❌ Wave 0 |
+| ORG-01 | Create org; add member by username; email invite accept | API integration | `cargo nextest run -p oxidean-api -E 'test(org_)'` | ❌ Wave 0 |
 | ORG-02 | Owner/Admin admin; Member respects member_base none/read/write | unit + API | colocated `acl` unit tests + org ACL integration | ❌ Wave 0 |
 | ORG-03 | Collaborator CRUD on personal + org repos; visibility admin-gated | API + Vitest | extend `repo_settings_*` + settings UI test | ❌ Wave 0 (extend existing) |
 | ORG-04 | Private non-grantee → web `repo.not_found`; git → 401; push denied without write | API | extend `repo_private_404.rs`, `git_smart_http.rs` | ✅ stubs exist — must extend |
@@ -490,9 +490,9 @@ Step 2.6: External tools required only as above (no new services).
 - **Phase gate:** Full suite green before `/gsd-verify-work`; include dialect migration smoke if 0009 touches MySQL quirks
 
 ### Wave 0 Gaps
-- [ ] `crates/octanest-api/tests/org_create_members.rs` — ORG-01/02
-- [ ] `crates/octanest-api/tests/org_invites.rs` — email invite + closed signup
-- [ ] `crates/octanest-api/tests/repo_collaborators_acl.rs` — ORG-03/04 matrix
+- [ ] `crates/oxidean-api/tests/org_create_members.rs` — ORG-01/02
+- [ ] `crates/oxidean-api/tests/org_invites.rs` — email invite + closed signup
+- [ ] `crates/oxidean-api/tests/repo_collaborators_acl.rs` — ORG-03/04 matrix
 - [ ] Extend `repo_private_404.rs` + `git_smart_http.rs` for collaborator/org Member cases
 - [ ] Extend PAT authorize tests for non-owner collaborator
 - [ ] `apps/web` integration tests for `/orgs/new`, owner picker, collaborators panel
@@ -531,7 +531,7 @@ Step 2.6: External tools required only as above (no new services).
 
 | Rule | Directive for Phase 10 |
 |------|------------------------|
-| `octanest-core.mdc` | One product; Bun + Cargo; Octane `.tsrx`; RPC via Rust→`make rpc-gen`; dialect SQL only in `octanest-db`; no secrets; extend existing ACL/auth patterns |
+| `oxidean-core.mdc` | One product; Bun + Cargo; Octane `.tsrx`; RPC via Rust→`make rpc-gen`; dialect SQL only in `oxidean-db`; no secrets; extend existing ACL/auth patterns |
 | `rust-crates.mdc` | No dialect branching in API; `Result`+structured errors; preserve `require_verified`/admin gates; tests colocated + `crates/*/tests` |
 | `rpc-codegen.mdc` | Do not hand-patch api-client; `make rpc-sync-check` clean |
 | `octane-ui.mdc` | `.tsrx` + `@if`/`@else`/`@for`; Query for server state; `onInput` for text; no react→octane alias |
@@ -542,19 +542,19 @@ Skills to honor during planning/execution: `.agents/skills/octane/SKILL.md`, `ru
 
 ### Primary (HIGH confidence)
 - `.planning/phases/10-orgs-permissions/10-CONTEXT.md` — locked D-ORG-*
-- `crates/octanest-api/src/repo/acl.rs` — owner-only stub
-- `crates/octanest-api/src/repo/mod.rs` — owner mutate + create
-- `crates/octanest-api/src/routes/git_smart_http.rs` — PAT∩owner gates
-- `crates/octanest-api/src/pat/mod.rs` — FG ownership check
-- `crates/octanest-db/migrations/*/0007_repositories.sql` — user-only FK
-- `crates/octanest-core/src/auth_types.rs` — reserved `org`/`orgs`
-- `crates/octanest-db/src/lib.rs` — factory_reset wipe list
+- `crates/oxidean-api/src/repo/acl.rs` — owner-only stub
+- `crates/oxidean-api/src/repo/mod.rs` — owner mutate + create
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — PAT∩owner gates
+- `crates/oxidean-api/src/pat/mod.rs` — FG ownership check
+- `crates/oxidean-db/migrations/*/0007_repositories.sql` — user-only FK
+- `crates/oxidean-core/src/auth_types.rs` — reserved `org`/`orgs`
+- `crates/oxidean-db/src/lib.rs` — factory_reset wipe list
 - Prior CONTEXT 07/08/09 — D-23–26, PAT owner-centric, D-SSH-04
 - `.planning/config.json` — nyquist + security_enforcement
 
 ### Secondary (MEDIUM confidence)
 - [GitHub: Setting base permissions for an organization](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization) — base perms apply to members not outside collaborators; higher grants override `[CITED: docs.github.com/.../setting-base-permissions-for-an-organization]`
-- [GitHub: Repository roles for an organization](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization) — role ladder context (Octanest subset read/write/admin)
+- [GitHub: Repository roles for an organization](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization) — role ladder context (Oxidean subset read/write/admin)
 - [Gitea permissions docs](https://docs.gitea.com/usage/access-control/permissions) — team/unit model explicitly **not** chosen (D-ORG-07)
 
 ### Tertiary (LOW confidence)

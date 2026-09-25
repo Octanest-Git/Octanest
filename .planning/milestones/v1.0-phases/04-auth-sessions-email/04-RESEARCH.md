@@ -6,11 +6,11 @@
 
 ## Summary
 
-Phase 4 adds the first real identity surface on top of the existing Axum RPC + multi-dialect `octanest-db` stack. Auth must live in **`octanest-api` / Rust domain code**, not Better Auth. Sessions are **opaque HttpOnly cookies** backed by a **first-class `sessions` table** (so logout-this-device and logout-all-devices are trivial SQL). Email is a small **`EmailSender` trait** with log-sink / SMTP (`lettre`) / Resend (`reqwest`) adapters; local signup sends a welcome message to prove the path. WorkOS and generic OIDC are first-class provider adapters that, after callback, **mint the same Octanest session** as local password login.
+Phase 4 adds the first real identity surface on top of the existing Axum RPC + multi-dialect `oxidean-db` stack. Auth must live in **`oxidean-api` / Rust domain code**, not Better Auth. Sessions are **opaque HttpOnly cookies** backed by a **first-class `sessions` table** (so logout-this-device and logout-all-devices are trivial SQL). Email is a small **`EmailSender` trait** with log-sink / SMTP (`lettre`) / Resend (`reqwest`) adapters; local signup sends a welcome message to prove the path. WorkOS and generic OIDC are first-class provider adapters that, after callback, **mint the same Oxidean session** as local password login.
 
-The codebase already has CORS `allow_credentials(true)`, API client `credentials: "include"`, dotted `system.*` RPC + `rpc-gen`, per-dialect sqlx migrations with parity tests, Vite `/api` proxy, Traefik same-host Compose, and an assets-only SW that bypasses `/api/*`. Phase 4 should extend those patterns — not introduce a second auth stack or a dialect-specific session middleware that bypasses `octanest-db`.
+The codebase already has CORS `allow_credentials(true)`, API client `credentials: "include"`, dotted `system.*` RPC + `rpc-gen`, per-dialect sqlx migrations with parity tests, Vite `/api` proxy, Traefik same-host Compose, and an assets-only SW that bypasses `/api/*`. Phase 4 should extend those patterns — not introduce a second auth stack or a dialect-specific session middleware that bypasses `oxidean-db`.
 
-**Primary recommendation:** Build `auth.*` / `user.*` / `admin.auth.*` RPC + thin HTTP callback/upload routes; store users/sessions/identities/settings in `octanest-db` migrations on all three dialects; use Argon2id, lettre, WorkOS official crate, and `openidconnect` — **do not** adopt `tower-sessions-sqlx-store` (breaks uniform DB boundary and weakens logout-all).
+**Primary recommendation:** Build `auth.*` / `user.*` / `admin.auth.*` RPC + thin HTTP callback/upload routes; store users/sessions/identities/settings in `oxidean-db` migrations on all three dialects; use Argon2id, lettre, WorkOS official crate, and `openidconnect` — **do not** adopt `tower-sessions-sqlx-store` (breaks uniform DB boundary and weakens logout-all).
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -26,7 +26,7 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 - **D-04:** **Rust-native auth core** in the API (not Better Auth in the web layer)
 - **D-05:** Uniform **provider adapter** interface; modes: **`local` | `workos` | `oidc`** (generic OIDC)
 - **D-06:** Provider naming: use **`local`** (not “in-house”)
-- **D-07:** **WorkOS** integrated via the **official WorkOS Rust SDK** (`workos` crate) — AuthKit/SSO start + callback on the API; after callback, mint the **same Octanest session** as local
+- **D-07:** **WorkOS** integrated via the **official WorkOS Rust SDK** (`workos` crate) — AuthKit/SSO start + callback on the API; after callback, mint the **same Oxidean session** as local
 - **D-08:** **Generic OIDC** supported alongside local and WorkOS (Auth0/Keycloak/Okta-class IdPs)
 - **D-09:** Provider configuration: **ENV/image bootstrap defaults** + **system-admin dashboard** can **override and persist** instance auth settings
 - **D-10:** Rejected: Better Auth + `@octanejs/better-auth` as the session owner (client bindings alone don’t solve Rust forge identity; WorkOS AuthKit is not a Better Auth plugin)
@@ -39,7 +39,7 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 #### D — Auth UI
 - **D-14:** Dedicated routes: **`/login`** and **`/signup`**
 - **D-15:** Post-auth redirect: **`returnTo` previous page if it wasn’t the homepage; otherwise `/dashboard`** (thin signed-in shell acceptable until a richer home exists)
-- **D-16:** Mode-exclusive UI on those routes: **`local`** → Octanest custom email/password (+ username on signup) forms; **`workos`** → WorkOS AuthKit/SSO flow driven from Rust (redirect/PKCE + callback; Octanest chrome around CTA); **`oidc`** → standard OIDC redirect/callback with Octanest chrome
+- **D-16:** Mode-exclusive UI on those routes: **`local`** → Oxidean custom email/password (+ username on signup) forms; **`workos`** → WorkOS AuthKit/SSO flow driven from Rust (redirect/PKCE + callback; Oxidean chrome around CTA); **`oidc`** → standard OIDC redirect/callback with Oxidean chrome
 - **D-17:** Enable header **Sign in / Sign up** (and landing Get started as appropriate) to these routes; signed-in chrome shows account menu (profile, log out)
 
 #### E — Profile
@@ -100,7 +100,7 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 | Profile edit + avatar upload | Browser + API | Database / Storage | JSON RPC for fields; multipart HTTP for file; volume for bytes |
 | Email send | API / Backend | External (SMTP/Resend) | Trait in API; log sink is no-op network |
 | Instance auth settings (admin) | API / Backend | Browser | Persisted settings + ENV bootstrap; admin UI reads/writes via RPC |
-| Migration of users/sessions | Database / Storage | API | Per-dialect sqlx migrations via `octanest-db` only |
+| Migration of users/sessions | Database / Storage | API | Per-dialect sqlx migrations via `oxidean-db` only |
 
 ## Standard Stack
 
@@ -108,8 +108,8 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| `axum` | 0.8.x (repo: `0.8`) | HTTP/WS RPC host + auth callback/upload routes | Already in `octanest-api` [VERIFIED: crates/octanest-api/Cargo.toml] |
-| `sqlx` | 0.8 | Multi-dialect persistence | Already in `octanest-db` [VERIFIED: crates/octanest-db/Cargo.toml] |
+| `axum` | 0.8.x (repo: `0.8`) | HTTP/WS RPC host + auth callback/upload routes | Already in `oxidean-api` [VERIFIED: crates/oxidean-api/Cargo.toml] |
+| `sqlx` | 0.8 | Multi-dialect persistence | Already in `oxidean-db` [VERIFIED: crates/oxidean-db/Cargo.toml] |
 | `argon2` | **0.6.0** | Argon2id password hashing (PHC strings) | RustCrypto standard; `PasswordHasher`/`PasswordVerifier` [VERIFIED: crates.io 2026-08-27] |
 | `password-hash` | **0.6.1** | PHC parse/verify traits (pulled with argon2) | Required companion API [VERIFIED: crates.io] |
 | `workos` | **3.4.0** | Official WorkOS AuthKit/SSO + `authenticate_with_code` | Locked D-07; MSRV 1.88 [VERIFIED: crates.io + workos.com/docs/sdks/rust] |
@@ -119,7 +119,7 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 | `cookie` / `tower-cookies` or `axum-extra` (cookie) | cookie **0.18.2** / tower-cookies **0.11.0** / axum-extra **0.12.6** | Parse/set HttpOnly cookies on RPC responses | Don’t hand-roll Set-Cookie formatting [VERIFIED: crates.io] |
 | `uuid` | **1.26.0** | User/session IDs | Standard [VERIFIED: crates.io] |
 | `rand` | **0.9/0.10** (pin what argon2/`OsRng` expects) | Session token entropy | CSPRNG for opaque SIDs [VERIFIED: crates.io] |
-| `chrono` | **0.4.45** (already sqlx feature) | Expiry timestamps | Matches sqlx chrono feature [VERIFIED: crates/octanest-db/Cargo.toml] |
+| `chrono` | **0.4.45** (already sqlx feature) | Expiry timestamps | Matches sqlx chrono feature [VERIFIED: crates/oxidean-db/Cargo.toml] |
 | `image` | **0.25.10** | Optional avatar decode/resize | Safe bounds on uploads [VERIFIED: crates.io] |
 | `sha2` | latest 0.10.x | Hash session tokens at rest | Store only hash of cookie value [ASSUMED: pin at plan time via `cargo search`] |
 
@@ -137,21 +137,21 @@ The codebase already has CORS `allow_credentials(true)`, API client `credentials
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| Custom `sessions` table + opaque cookie | `tower-sessions` + `tower-sessions-sqlx-store` | Official middleware, but dialect-specific pools + MessagePack blob fight `octanest-db` D-08 and make “logout all” awkward; **reject for Phase 4** |
+| Custom `sessions` table + opaque cookie | `tower-sessions` + `tower-sessions-sqlx-store` | Official middleware, but dialect-specific pools + MessagePack blob fight `oxidean-db` D-08 and make “logout all” awkward; **reject for Phase 4** |
 | Cookie-only encrypted sessions (`tower-sessions-cookie-store`) | — | Violates D-11 server-side store; cannot revoke all devices |
 | Better Auth / Node session owner | — | Explicitly rejected D-10 |
 | `lettre` FileTransport as “log sink” | tracing LogSink | FileTransport writes `.eml`; log sink is enough for AUTH-09 and simpler in Compose |
 | Official Resend Rust SDK | raw `reqwest` | No first-party Resend Rust SDK in common use; HTTP API is stable and small [CITED: resend.com/docs/api-reference] |
-| WorkOS sealed session cookies | Octanest sessions | D-07: after WorkOS callback, mint **Octanest** session — ignore WorkOS cookie helpers for app session |
+| WorkOS sealed session cookies | Oxidean sessions | D-07: after WorkOS callback, mint **Oxidean** session — ignore WorkOS cookie helpers for app session |
 
-**Installation (Cargo — add to workspace/`octanest-api` + `octanest-db` as appropriate):**
+**Installation (Cargo — add to workspace/`oxidean-api` + `oxidean-db` as appropriate):**
 
 ```bash
-cargo add -p octanest-api argon2 password-hash uuid rand chrono thiserror cookie tower-cookies sha2 image reqwest --features reqwest/rustls-tls
-cargo add -p octanest-api workos
-cargo add -p octanest-api openidconnect
-cargo add -p octanest-api lettre --features tokio1,tokio1-rustls,smtp-transport,builder,hostname
-# Enable axum multipart in octanest-api Cargo.toml: axum = { version = "0.8", features = ["ws", "multipart"] }
+cargo add -p oxidean-api argon2 password-hash uuid rand chrono thiserror cookie tower-cookies sha2 image reqwest --features reqwest/rustls-tls
+cargo add -p oxidean-api workos
+cargo add -p oxidean-api openidconnect
+cargo add -p oxidean-api lettre --features tokio1,tokio1-rustls,smtp-transport,builder,hostname
+# Enable axum multipart in oxidean-api Cargo.toml: axum = { version = "0.8", features = ["ws", "multipart"] }
 ```
 
 **Version verification:** crates.io queried 2026-09-10 for `workos@3.4.0`, `argon2@0.6.0`, `lettre@0.11.23`, `openidconnect@4.0.1`, `axum@0.8.9`, `tower-sessions-sqlx-store@0.15.0` (rejected). [VERIFIED: crates.io]
@@ -162,16 +162,16 @@ cargo add -p octanest-api lettre --features tokio1,tokio1-rustls,smtp-transport,
 |------|----------------|
 | Default session TTL | **24h** idle (`Expiry::OnInactivity`-style: refresh `expires_at` on authenticated RPC) |
 | Remember-me TTL | **30d** from login (absolute max); still refresh last_seen |
-| Cookie name | `octanest_session` |
-| Cookie flags | `HttpOnly; Path=/; SameSite=Lax; Secure` when `OCTANEST_ENV` ∉ `{development,dev}` (Secure off only for local HTTP) |
+| Cookie name | `oxidean_session` |
+| Cookie flags | `HttpOnly; Path=/; SameSite=Lax; Secure` when `OXIDEAN_ENV` ∉ `{development,dev}` (Secure off only for local HTTP) |
 | CSRF | **SameSite=Lax + same-site Traefik/Vite** is sufficient for Phase 4; no double-submit token yet |
 | Session token storage | 32+ byte random → cookie plaintext; **SHA-256 hash** in DB |
-| Reserved usernames | `admin`, `api`, `settings`, `login`, `signup`, `logout`, `status`, `dashboard`, `explore`, `orgs`, `org`, `help`, `support`, `www`, `root`, `system`, `null`, `undefined`, `octanest`, `assets`, `static`, `uploads`, `health`, `rpc`, `auth`, `account`, `profile`, `admin`, `robots`, `favicon` |
+| Reserved usernames | `admin`, `api`, `settings`, `login`, `signup`, `logout`, `status`, `dashboard`, `explore`, `orgs`, `org`, `help`, `support`, `www`, `root`, `system`, `null`, `undefined`, `oxidean`, `assets`, `static`, `uploads`, `health`, `rpc`, `auth`, `account`, `profile`, `admin`, `robots`, `favicon` |
 | Avatar limits | ≤ **2 MiB**; `image/jpeg`, `image/png`, `image/webp`; resize longest edge to **512px**; store `var/uploads/avatars/{user_id}.{ext}` |
 | `/dashboard` | Thin signed-in shell: greeting + links to Profile + Status; no forge widgets |
 | `auth_identities` | See schema below |
 | Admin UI path | `/admin/auth` |
-| First admin in Phase 4 | If `OCTANEST_ADMIN_EMAIL` + `OCTANEST_ADMIN_PASSWORD` set at boot and no users exist, create `is_admin=true` user (thin preview of AUTH-06); document that full wizard is Phase 6 |
+| First admin in Phase 4 | If `OXIDEAN_ADMIN_EMAIL` + `OXIDEAN_ADMIN_PASSWORD` set at boot and no users exist, create `is_admin=true` user (thin preview of AUTH-06); document that full wizard is Phase 6 |
 | WorkOS first slice | **AuthKit**: authorization URL with `provider=authkit` + PKCE; callback → `user_management().authenticate_with_code`; map WorkOS user id → `auth_identities` |
 
 ## Architecture Patterns
@@ -184,7 +184,7 @@ Browser (Octane web)
   │  /login|/signup|/dashboard|/settings/profile|/admin/auth
   ▼
 Vite proxy OR Traefik (same site)
-  ├─ POST /api/rpc  ──► octanest-api rpc_http
+  ├─ POST /api/rpc  ──► oxidean-api rpc_http
   │                       │ read Cookie → resolve session
   │                       │ dispatch auth.* / user.* / admin.auth.* / system.*
   │                       │ maybe Set-Cookie on login/logout
@@ -194,7 +194,7 @@ Vite proxy OR Traefik (same site)
   │                       ├─ WorkOsProvider (start URL + code exchange)
   │                       └─ OidcProvider (discover + PKCE + code exchange)
   │                       ▼
-  │                    SessionService ──► sessions table (octanest-db)
+  │                    SessionService ──► sessions table (oxidean-db)
   │                    UserService    ──► users + auth_identities
   │                    EmailService   ──► LogSink | Smtp | Resend
   │
@@ -209,15 +209,15 @@ External: WorkOS API | OIDC IdP | SMTP host | api.resend.com
 ### Recommended Project Structure
 
 ```text
-crates/octanest-core/src/
+crates/oxidean-core/src/
   auth_types.rs          # UserPublic, SessionInfo, ProviderMode, AuthSettings DTOs (serde)
-crates/octanest-db/src/
+crates/oxidean-db/src/
   users.rs               # CRUD via DbPool match (only dialect branch here)
   sessions.rs
   auth_identities.rs
   auth_settings.rs
   migrations/{postgres,mysql,sqlite}/0002_auth.sql
-crates/octanest-api/src/
+crates/oxidean-api/src/
   auth/
     mod.rs               # AuthFacade
     local.rs
@@ -317,14 +317,14 @@ pub struct OutboundEmail {
 }
 ```
 
-- No provider configured → `LogSink` (`tracing::info!(target: "octanest.mail", ...)`).
+- No provider configured → `LogSink` (`tracing::info!(target: "oxidean.mail", ...)`).
 - SMTP configured → `lettre` async SMTP.
 - Resend configured → HTTP JSON to Resend.
 - **Only** `local` signup triggers welcome email in Phase 4 (D-20). WorkOS/OIDC users get no welcome here.
 
 ### Pattern 4: Multi-dialect migrations
 
-**What:** Add `0002_auth.sql` (or next free number) to **all three** `migrations/{postgres,mysql,sqlite}/` with parity enforced by existing `migration_parity` test. [VERIFIED: crates/octanest-db/src/migrate.rs]
+**What:** Add `0002_auth.sql` (or next free number) to **all three** `migrations/{postgres,mysql,sqlite}/` with parity enforced by existing `migration_parity` test. [VERIFIED: crates/oxidean-db/src/migrate.rs]
 
 Suggested tables (logical):
 
@@ -375,11 +375,11 @@ Dialect notes: MySQL lacks CITEXT — use `VARCHAR` + unique + app-normalized lo
 - **Better Auth / Node as session owner** — rejected; forge identity is Rust.
 - **JWT-as-only-session in localStorage** — conflicts with D-11; XSS-exposable.
 - **Cookie-backed session blob without DB** — cannot logout-all (D-13).
-- **Dialect branching in `octanest-api`** — violates Phase 2 D-08; keep in `octanest-db`.
+- **Dialect branching in `oxidean-api`** — violates Phase 2 D-08; keep in `oxidean-db`.
 - **Putting avatar bytes in JSON RPC** — use multipart route.
 - **Implementing verify/reset email flows** — Phase 5 only.
 - **Caching `/api/*` in SW** — already forbidden; keep bypass when adding `/api/auth/*` and `/api/user/avatar`.
-- **Using WorkOS sealed cookies as Octanest session** — mint local sessions after callback.
+- **Using WorkOS sealed cookies as Oxidean session** — mint local sessions after callback.
 - **`tower-sessions-sqlx-store.migrate()` beside sqlx migrator** — dual migration ownership; avoid.
 
 ## Don't Hand-Roll
@@ -394,7 +394,7 @@ Dialect notes: MySQL lacks CITEXT — use `VARCHAR` + unique + app-normalized lo
 | Cookie header encoding | String concat | `cookie` / `tower-cookies` | Expires, SameSite, Secure edge cases |
 | Image codecs | Manual JPEG parsing | `image` crate | Malformed upload safety |
 
-**Key insight:** Hand-roll the **domain** (users/sessions/provider facade over `octanest-db`); never hand-roll **crypto, mail protocols, or OIDC**.
+**Key insight:** Hand-roll the **domain** (users/sessions/provider facade over `oxidean-db`); never hand-roll **crypto, mail protocols, or OIDC**.
 
 ## Common Pitfalls
 
@@ -408,7 +408,7 @@ Dialect notes: MySQL lacks CITEXT — use `VARCHAR` + unique + app-normalized lo
 ### Pitfall 2: Traefik / Compose CORS allowlist omits credentials origin
 
 **What goes wrong:** Browser blocks credentialed RPC in Compose.  
-**Why:** `OCTANEST_CORS_ORIGINS` must list the public origin (`http://localhost`) and CORS already uses `allow_credentials(true)`. [VERIFIED: cors.rs, .env.example]  
+**Why:** `OXIDEAN_CORS_ORIGINS` must list the public origin (`http://localhost`) and CORS already uses `allow_credentials(true)`. [VERIFIED: cors.rs, .env.example]  
 **How to avoid:** Do not switch to `AllowOrigin::any()` with credentials (illegal); keep allowlist.
 
 ### Pitfall 3: Logout-all without indexed `user_id` on sessions
@@ -432,12 +432,12 @@ Dialect notes: MySQL lacks CITEXT — use `VARCHAR` + unique + app-normalized lo
 
 **What goes wrong:** Resend adapter “broken” in tests.  
 **Why:** Missing `User-Agent` header → error 1010. [CITED: resend.com/docs/api-reference/introduction]  
-**How to avoid:** Set `User-Agent: octanest-api/0.1` (or package version) on every Resend request.
+**How to avoid:** Set `User-Agent: oxidean-api/0.1` (or package version) on every Resend request.
 
 ### Pitfall 7: rpc-gen drift
 
 **What goes wrong:** UI calls procedures that TS client lacks.  
-**Why:** `rpc_gen.rs` is a hand-maintained string template today — not specta reflection. [VERIFIED: crates/octanest-api/src/bin/rpc_gen.rs]  
+**Why:** `rpc_gen.rs` is a hand-maintained string template today — not specta reflection. [VERIFIED: crates/oxidean-api/src/bin/rpc_gen.rs]  
 **How to avoid:** Every new procedure updates `rpc.rs` **and** `rpc_gen.rs` (+ CI sync check from Phase 1).
 
 ### Pitfall 8: Avatar path traversal / unbounded decode
@@ -485,7 +485,7 @@ use lettre::{message::header::ContentType, AsyncSmtpTransport, AsyncTransport, M
 
 async fn send_smtp(smtp_url: &str, to: &str, subject: &str, body: &str) -> Result<(), Box<dyn std::error::Error>> {
     let email = Message::builder()
-        .from("Octanest <noreply@example.com>".parse()?)
+        .from("Oxidean <noreply@example.com>".parse()?)
         .to(to.parse()?)
         .subject(subject)
         .header(ContentType::TEXT_PLAIN)
@@ -505,7 +505,7 @@ async fn send_resend(api_key: &str, from: &str, to: &str, subject: &str, html: &
     let res = client
         .post("https://api.resend.com/emails")
         .header("Authorization", format!("Bearer {api_key}"))
-        .header("User-Agent", "octanest-api/0.1")
+        .header("User-Agent", "oxidean-api/0.1")
         .json(&serde_json::json!({
             "from": from,
             "to": [to],
@@ -578,7 +578,7 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| Better Auth in Node for SaaS apps | Rust-native forge auth | Octanest Phase 4 lock | Sessions owned by API |
+| Better Auth in Node for SaaS apps | Rust-native forge auth | Oxidean Phase 4 lock | Sessions owned by API |
 | Cookie-only sessions | Opaque cookie + server table | ASVS / forge multi-device | Enables logout-all |
 | Sync SMTP libs | `lettre` async tokio | lettre 0.11 | Fits Axum/tokio |
 | Unofficial WorkOS crates | Official `workos` 3.x | 2025–2026 | AuthKit helpers from Rust |
@@ -595,7 +595,7 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
 | A2 | Prefer app-normalized lowercase email over Postgres CITEXT for dialect parity | Schema | Minor migration tweak |
 | A3 | Axum 0.8 enables uploads via `multipart` feature | Stack | Use `axum-extra` multipart if feature name differs |
 | A4 | SameSite=Lax without CSRF token is enough for Phase 4 same-site deploy | Sessions | May need synchronizer token if future cross-site UI |
-| A5 | Early `OCTANEST_ADMIN_*` seed is acceptable before Phase 6 wizard | Admin | Document clearly to avoid double-implementing wizard |
+| A5 | Early `OXIDEAN_ADMIN_*` seed is acceptable before Phase 6 wizard | Admin | Document clearly to avoid double-implementing wizard |
 | A6 | `sha2` for token hashing is appropriate (vs HMAC with server key) | Sessions | If threat model requires keyed MAC, switch to HMAC-SHA256 |
 | A7 | WorkOS AuthKit (`provider=authkit`) is the first vertical slice vs connection-scoped SSO only | WorkOS | Planner follows discretion; SSO-by-connection still supported later |
 
@@ -608,7 +608,7 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
    - **Decision (plan 04-06):** Public hashed avatar URLs — serve `/uploads/avatars/{user_id}-{hash}.webp` (or equivalent) as publicly readable; no auth gate on avatar bytes for Phase 4.
 
 3. **Where do SMTP/Resend secrets live — ENV only vs DB?** — **RESOLVED**
-   - **Decision (plan 04-06):** ENV-only secrets for Phase 4 (`OCTANEST_SMTP_URL`, `OCTANEST_RESEND_API_KEY`, `WORKOS_API_KEY`, OIDC client secret); admin UI persists provider mode + non-secret fields only and surfaces “configured via ENV” for secrets.
+   - **Decision (plan 04-06):** ENV-only secrets for Phase 4 (`OXIDEAN_SMTP_URL`, `OXIDEAN_RESEND_API_KEY`, `WORKOS_API_KEY`, OIDC client secret); admin UI persists provider mode + non-secret fields only and surfaces “configured via ENV” for secrets.
 
 ## Environment Availability
 
@@ -635,41 +635,41 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
 
 | Property | Value |
 |----------|-------|
-| Framework | Rust: `cargo test` (workspace); TS: Vitest `^5` in `@octanest/api-client` |
+| Framework | Rust: `cargo test` (workspace); TS: Vitest `^5` in `@oxidean/api-client` |
 | Config file | crates’ `[[test]]` / `packages/api-client/vitest.config.ts` |
-| Quick run command | `cargo test -p octanest-api --lib && cargo test -p octanest-db --lib` |
-| Full suite command | `make test` (= `cargo test --workspace`) + `bun run --filter @octanest/api-client test` + dialect probe `make db-matrix` |
+| Quick run command | `cargo test -p oxidean-api --lib && cargo test -p oxidean-db --lib` |
+| Full suite command | `make test` (= `cargo test --workspace`) + `bun run --filter @oxidean/api-client test` + dialect probe `make db-matrix` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| AUTH-01 | Signup creates user + password hash + welcome via LogSink | integration | `cargo test -p octanest-api --test auth_signup` | ❌ Wave 0 |
-| AUTH-02 | Login sets cookie; subsequent RPC with cookie → `auth.me` | integration (http) | `cargo test -p octanest-api --test auth_session` | ❌ Wave 0 |
+| AUTH-01 | Signup creates user + password hash + welcome via LogSink | integration | `cargo test -p oxidean-api --test auth_signup` | ❌ Wave 0 |
+| AUTH-02 | Login sets cookie; subsequent RPC with cookie → `auth.me` | integration (http) | `cargo test -p oxidean-api --test auth_session` | ❌ Wave 0 |
 | AUTH-03 | Logout clears cookie + deletes session row | integration | same `auth_session` | ❌ Wave 0 |
-| AUTH-03+ | Logout-all deletes all sessions for user | unit/integration | `cargo test -p octanest-db sessions::logout_all` | ❌ Wave 0 |
-| AUTH-08 | Profile update + avatar multipart round-trip | integration | `cargo test -p octanest-api --test profile_avatar` | ❌ Wave 0 |
-| AUTH-09 | Default email path logs, no network | unit | `cargo test -p octanest-api email::log_sink` | ❌ Wave 0 |
-| AUTH-10 | SMTP adapter builds message / mock transport | unit | `cargo test -p octanest-api email::smtp` | ❌ Wave 0 |
-| AUTH-11 | Resend adapter JSON + User-Agent (wiremock) | unit | `cargo test -p octanest-api email::resend` | ❌ Wave 0 |
-| Multi-DB | migrations apply; signup works on pg/mysql/sqlite | integration | `cargo test -p octanest-db --test dialect_auth` | ❌ Wave 0 |
-| Providers | local rejected when mode=workos; oidc/workos start URL shape | unit | `cargo test -p octanest-api auth::providers` | ❌ Wave 0 |
+| AUTH-03+ | Logout-all deletes all sessions for user | unit/integration | `cargo test -p oxidean-db sessions::logout_all` | ❌ Wave 0 |
+| AUTH-08 | Profile update + avatar multipart round-trip | integration | `cargo test -p oxidean-api --test profile_avatar` | ❌ Wave 0 |
+| AUTH-09 | Default email path logs, no network | unit | `cargo test -p oxidean-api email::log_sink` | ❌ Wave 0 |
+| AUTH-10 | SMTP adapter builds message / mock transport | unit | `cargo test -p oxidean-api email::smtp` | ❌ Wave 0 |
+| AUTH-11 | Resend adapter JSON + User-Agent (wiremock) | unit | `cargo test -p oxidean-api email::resend` | ❌ Wave 0 |
+| Multi-DB | migrations apply; signup works on pg/mysql/sqlite | integration | `cargo test -p oxidean-db --test dialect_auth` | ❌ Wave 0 |
+| Providers | local rejected when mode=workos; oidc/workos start URL shape | unit | `cargo test -p oxidean-api auth::providers` | ❌ Wave 0 |
 | UI smoke | `/login` `/signup` render (optional) | manual / later e2e | browser UAT | Phase verify-work |
 
 ### Sampling Rate
 
-- **Per task commit:** `cargo test -p octanest-api --lib` + targeted `--test` for touched area (<30s goal)
+- **Per task commit:** `cargo test -p oxidean-api --lib` + targeted `--test` for touched area (<30s goal)
 - **Per wave merge:** `make test` + `make db-matrix` (with DATABASE_URL) + api-client vitest if client changed
 - **Phase gate:** Full suite green + Compose smoke signup/login on default Postgres + human UAT of success criteria
 
 ### Wave 0 Gaps
 
-- [ ] `crates/octanest-api/tests/auth_signup.rs` — AUTH-01 + welcome LogSink
-- [ ] `crates/octanest-api/tests/auth_session.rs` — AUTH-02/03 cookie jar via `tower`/`oneshot`
-- [ ] `crates/octanest-api/tests/profile_avatar.rs` — AUTH-08
-- [ ] `crates/octanest-api/src/email/*` unit tests — AUTH-09/10/11 (smtp/resend with mock)
-- [ ] `crates/octanest-db/migrations/*/0002_auth.sql` + extend `migration_parity`
-- [ ] `crates/octanest-db/tests/dialect_auth.rs` — signup/session on each dialect (or extend `dialect_probe`)
+- [ ] `crates/oxidean-api/tests/auth_signup.rs` — AUTH-01 + welcome LogSink
+- [ ] `crates/oxidean-api/tests/auth_session.rs` — AUTH-02/03 cookie jar via `tower`/`oneshot`
+- [ ] `crates/oxidean-api/tests/profile_avatar.rs` — AUTH-08
+- [ ] `crates/oxidean-api/src/email/*` unit tests — AUTH-09/10/11 (smtp/resend with mock)
+- [ ] `crates/oxidean-db/migrations/*/0002_auth.sql` + extend `migration_parity`
+- [ ] `crates/oxidean-db/tests/dialect_auth.rs` — signup/session on each dialect (or extend `dialect_probe`)
 - [ ] Shared test helpers: cookie-aware RPC client in api tests
 - [ ] Optional: `wiremock` or `httpmock` dev-dep for Resend/WorkOS HTTP
 
@@ -706,7 +706,7 @@ fn validate_username(raw: &str) -> Result<(), AppError> {
 
 ### Primary (HIGH confidence)
 
-- Workspace: `crates/octanest-api` (rpc, cors, app), `octanest-db` (pool, migrate), `packages/api-client`, `apps/web` (chrome, vite proxy, sw.js), `docker-compose.yml`, `.env.example`
+- Workspace: `crates/oxidean-api` (rpc, cors, app), `oxidean-db` (pool, migrate), `packages/api-client`, `apps/web` (chrome, vite proxy, sw.js), `docker-compose.yml`, `.env.example`
 - CONTEXT: `.planning/phases/04-auth-sessions-email/04-CONTEXT.md`
 - crates.io versions queried 2026-09-10: workos, argon2, lettre, openidconnect, axum, tower-sessions-sqlx-store
 - https://workos.com/docs/sdks/rust — WorkOS Rust SDK install, MSRV 1.88, AuthKit helpers

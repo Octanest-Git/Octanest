@@ -20,8 +20,8 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/protection/mod.rs
-    - crates/octanest-api/tests/branch_protection_rpc.rs
+    - crates/oxidean-api/src/protection/mod.rs
+    - crates/oxidean-api/tests/branch_protection_rpc.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "Wildcard * does not cross / path segments"
@@ -32,7 +32,7 @@ coverage:
     requirement: ORG-05
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(branch_protection_rpc)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(branch_protection_rpc)'"
         status: pass
     human_judgment: false
 duration: 5min

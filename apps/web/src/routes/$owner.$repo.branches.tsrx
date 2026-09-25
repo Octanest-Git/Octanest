@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
-import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import type { RepoPublic, RepoRefEntry } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { GitBranch, Plus } from "@octanejs/lucide";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -48,7 +48,7 @@ type DialogState =
   | { kind: "delete"; branch: string };
 
 const DEFAULT_SOFT_PROTECT_TITLE = "Default branch can’t be renamed or deleted here.";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function sortBranches(refs: RepoRefEntry[]): RepoRefEntry[] {
   return refs
@@ -89,7 +89,7 @@ export const Route = createFileRoute("/$owner/$repo/branches")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Branches · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Branches · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

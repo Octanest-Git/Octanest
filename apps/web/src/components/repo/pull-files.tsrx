@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { PullDiffFile } from "@octanest/api-client";
+import type { PullDiffFile } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { DiffPatch } from "@/components/repo/diff-patch";
 import { apiClient } from "@/lib/api-client";
@@ -20,7 +20,7 @@ export type PullFilesProps = {
   canWrite: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function splitLineClass(kind: string): string {
   if (kind === "add") return "bg-[var(--diff-add-bg)]";

@@ -8,7 +8,7 @@ requires:
     provides: ssh_public_keys CRUD + fingerprint uniqueness
 provides:
   - sshKey.add/list/revoke session RPC (require_verified)
-  - In-process russh listener (OCTANEST_SSH_ENABLED)
+  - In-process russh listener (OXIDEAN_SSH_ENABLED)
   - git-upload-pack bridge for public repos as user git
 affects: [09-04-acl, 09-05-compose, 09-06-rpc-gen, 09-07-ui]
 actuals:
@@ -19,22 +19,22 @@ plan_head_before: "1d87d0de2c1fe2481ebc9928e45a8c6e48b9d17c"
 tech-stack:
   added: [russh 0.63.3, ssh-key 0.7.0-rc.11]
   patterns:
-    - "OCTANEST_SSH_ENABLED gates listener; host keys under OCTANEST_SSH_HOST_KEY_DIR"
+    - "OXIDEAN_SSH_ENABLED gates listener; host keys under OXIDEAN_SSH_HOST_KEY_DIR"
     - "SSH identity is fingerprint only; username must be git"
 key-files:
   created:
-    - crates/octanest-api/src/ssh_keys/mod.rs
-    - crates/octanest-api/src/ssh/mod.rs
-    - crates/octanest-api/src/ssh/server.rs
-    - crates/octanest-api/src/ssh/auth.rs
-    - crates/octanest-api/src/ssh/pack.rs
-    - crates/octanest-api/src/ssh/host_keys.rs
+    - crates/oxidean-api/src/ssh_keys/mod.rs
+    - crates/oxidean-api/src/ssh/mod.rs
+    - crates/oxidean-api/src/ssh/server.rs
+    - crates/oxidean-api/src/ssh/auth.rs
+    - crates/oxidean-api/src/ssh/pack.rs
+    - crates/oxidean-api/src/ssh/host_keys.rs
   modified:
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-api/tests/ssh_key_rpc.rs
-    - crates/octanest-api/tests/git_ssh.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-api/tests/ssh_key_rpc.rs
+    - crates/oxidean-api/tests/git_ssh.rs
 key-decisions:
   - "Tracer allows upload-pack for any authenticated key; private ACL + receive-pack in 09-04"
   - "Pinned russh 0.63 + ssh-key 0.7.0-rc.11 per RESEARCH"
@@ -45,7 +45,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(ssh_key)'
+        ref: cargo nextest run -p oxidean-api -E 'test(ssh_key)'
         status: pass
     human_judgment: false
   - id: D2
@@ -53,7 +53,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(git_ssh) & !test(ignored)'
+        ref: cargo nextest run -p oxidean-api -E 'test(git_ssh) & !test(ignored)'
         status: pass
     human_judgment: false
 duration: 25min
@@ -74,7 +74,7 @@ status: complete
 ## Accomplishments
 
 - Implemented `sshKey.add` / `list` / `revoke` with `require_verified`, title required, SHA256 fingerprints, max 25, unique fingerprint.
-- Added russh 0.63 listener gated by `OCTANEST_SSH_ENABLED`; host key load/generate; force username `git`.
+- Added russh 0.63 listener gated by `OXIDEAN_SSH_ENABLED`; host key load/generate; force username `git`.
 - Bridged `git-upload-pack` via argv (no shell); reject shell/pty/subsystem; receive-pack deferred to 09-04.
 
 ## Task Commits
@@ -90,11 +90,11 @@ status: complete
 - **Found during:** Task 2
 - **Issue:** Plan allows remaining RED until 09-04 for ACL/rate-limit cases.
 - **Fix:** Marked those tests `#[ignore]` with 09-04 notes; tracer subset green.
-- **Files modified:** `crates/octanest-api/tests/git_ssh.rs`
+- **Files modified:** `crates/oxidean-api/tests/git_ssh.rs`
 - **Commit:** `e08ded0`
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/ssh/server.rs
-- FOUND: crates/octanest-api/src/ssh_keys/mod.rs
+- FOUND: crates/oxidean-api/src/ssh/server.rs
+- FOUND: crates/oxidean-api/src/ssh_keys/mod.rs
 - FOUND: 9c04b0a, e08ded0

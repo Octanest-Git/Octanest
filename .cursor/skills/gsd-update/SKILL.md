@@ -40,7 +40,7 @@ Routes to the update workflow which handles:
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/update.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/update.md
 </execution_context>
 
 <flags>
@@ -59,6 +59,6 @@ Parse the first token of {{GSD_ARGS}}:
 </process>
 
 <execution_context_extended>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/sync-skills.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/reapply-patches.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/sync-skills.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/reapply-patches.md
 </execution_context_extended>

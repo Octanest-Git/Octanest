@@ -23,7 +23,7 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - "Avatar upload via multipart fetch('/api/user/avatar') credentials include; preview uses octanest-squircle"
+    - "Avatar upload via multipart fetch('/api/user/avatar') credentials include; preview uses oxidean-squircle"
     - "Admin auth UI shows ENV configured badges only — never password-style secret fields (D-09, T-04-26)"
     - "Non-admin /admin/auth shows forbidden Body copy; API remains the security boundary (T-04-25)"
 
@@ -105,9 +105,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `apps/web/src/routes/settings/profile.tsx` — Profile · Octanest settings (AUTH-08, D-13, D-18)
+- `apps/web/src/routes/settings/profile.tsx` — Profile · Oxidean settings (AUTH-08, D-13, D-18)
 - `apps/web/src/components/avatar-preview.tsx` — 64×64 squircle avatar preview
-- `apps/web/src/routes/admin/auth.tsx` — Auth settings · Octanest (D-09, T-04-25/26)
+- `apps/web/src/routes/admin/auth.tsx` — Auth settings · Oxidean (D-09, T-04-25/26)
 - `apps/web/src/routeTree.gen.ts` — Generated profile + admin/auth routes
 - `apps/web/vite.config.ts` — Dev proxies for `/api/user` and `/uploads`
 

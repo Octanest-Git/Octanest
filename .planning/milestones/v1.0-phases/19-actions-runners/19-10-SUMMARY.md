@@ -25,19 +25,19 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/actions/secrets.rs
-    - crates/octanest-api/tests/actions_secrets.rs
+    - crates/oxidean-api/src/actions/secrets.rs
+    - crates/oxidean-api/tests/actions_secrets.rs
     - apps/web/src/routes/admin/runners.tsrx
     - apps/web/src/components/repo/actions-settings-panel.tsrx
     - apps/web/src/routes/$owner.$repo.settings.actions.tsrx
   modified:
-    - crates/octanest-api/src/actions/rpc.rs
-    - crates/octanest-api/src/actions/runner_proto.rs
+    - crates/oxidean-api/src/actions/rpc.rs
+    - crates/oxidean-api/src/actions/runner_proto.rs
     - packages/api-client/src/index.ts
     - docs/CONFIGURATION.md
 
 key-decisions:
-  - "Secrets stored as hex(nonce||ciphertext) with OCTANEST_ACTIONS_SECRETS_KEY fallback chain"
+  - "Secrets stored as hex(nonce||ciphertext) with OXIDEAN_ACTIONS_SECRETS_KEY fallback chain"
   - "List secrets returns names only; values injected only via FetchTask to assigned runner"
   - "No managed CI minutes — copy in Admin + Settings states registered-runners-only (ACT-07)"
 

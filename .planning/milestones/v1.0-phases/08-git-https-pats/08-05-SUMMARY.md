@@ -2,7 +2,7 @@
 phase: 08-git-https-pats
 plan: "05"
 subsystem: api
-tags: [pat, fine-grained, createFineGrained, octanest_fg, git-11]
+tags: [pat, fine-grained, createFineGrained, oxidean_fg, git-11]
 
 requires:
   - phase: 08-git-https-pats
@@ -10,7 +10,7 @@ requires:
 provides:
   - "pat.createFineGrained with selected|all + contents read|write"
   - "FG ownership check on repository_ids (T-08-06)"
-  - "octanest_fg_ one-time mint + join rows for selected"
+  - "oxidean_fg_ one-time mint + join rows for selected"
 affects:
   - 08-06 FG/classic scope enforcement on Smart HTTP
   - 08-08 rpc-gen for createFineGrained client
@@ -33,11 +33,11 @@ key-files:
   created:
     - .planning/phases/08-git-https-pats/08-05-SUMMARY.md
   modified:
-    - crates/octanest-api/src/pat/mod.rs
-    - crates/octanest-api/tests/pat_rpc.rs
+    - crates/oxidean-api/src/pat/mod.rs
+    - crates/oxidean-api/tests/pat_rpc.rs
 
 key-decisions:
-  - "D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_"
+  - "D-08 mint uses FINE_GRAINED_PAT_PREFIX (oxidean_fg_), not plan-prose ona_fg_"
   - "Selected empty or non-owned repo ids → pat.invalid_scope; all ignores repository_ids"
 
 patterns-established:
@@ -48,11 +48,11 @@ requirements-completed: [GIT-11]
 
 coverage:
   - id: D1
-    description: "Verified createFineGrained all + write returns one-time octanest_fg_ token; no join rows"
+    description: "Verified createFineGrained all + write returns one-time oxidean_fg_ token; no join rows"
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_fine_grained_all_returns_fg_token"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_fine_grained_all_returns_fg_token"
         status: pass
     human_judgment: false
   - id: D2
@@ -60,7 +60,7 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_fine_grained_selected_persists_repos"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_fine_grained_selected_persists_repos"
         status: pass
     human_judgment: false
   - id: D3
@@ -68,10 +68,10 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_fine_grained_selected_empty_rejected"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_fine_grained_selected_empty_rejected"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_fine_grained_foreign_repo_rejected"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_fine_grained_foreign_repo_rejected"
         status: pass
     human_judgment: false
   - id: D4
@@ -79,7 +79,7 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_fine_grained_unverified_email_unverified"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_fine_grained_unverified_email_unverified"
         status: pass
     human_judgment: false
 
@@ -90,7 +90,7 @@ status: complete
 
 # Phase 08 Plan 05: Fine-grained PAT create Summary
 
-**`pat.createFineGrained` mints `octanest_fg_` tokens with selected/all repo access and contents read/write, enforcing owner-only selected bindings**
+**`pat.createFineGrained` mints `oxidean_fg_` tokens with selected/all repo access and contents read/write, enforcing owner-only selected bindings**
 
 ## Performance
 
@@ -123,23 +123,23 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/pat/mod.rs` — `create_fine_grained` implementation
-- `crates/octanest-api/tests/pat_rpc.rs` — FG create/list validation tests
-- `crates/octanest-db/src/pats.rs` / `rpc.rs` — no code changes required (helpers + RPC arm already present from 08-03/08-04)
+- `crates/oxidean-api/src/pat/mod.rs` — `create_fine_grained` implementation
+- `crates/oxidean-api/tests/pat_rpc.rs` — FG create/list validation tests
+- `crates/oxidean-db/src/pats.rs` / `rpc.rs` — no code changes required (helpers + RPC arm already present from 08-03/08-04)
 
 ## Decisions Made
 
-- Locked D-08 prefix `octanest_fg_` via `FINE_GRAINED_PAT_PREFIX` despite plan prose `ona_fg_`
+- Locked D-08 prefix `oxidean_fg_` via `FINE_GRAINED_PAT_PREFIX` despite plan prose `ona_fg_`
 - Cross-user selected binding rejected with same `pat.invalid_scope` as empty selected (T-08-06)
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-**1. [Rule 2 - Critical] Plan prose `ona_fg_` → `octanest_fg_`**
+**1. [Rule 2 - Critical] Plan prose `ona_fg_` → `oxidean_fg_`**
 - **Found during:** Task 1 (critical_deviation lock / D-08)
 - **Issue:** Plan must_haves / verify still named `ona_fg_`
-- **Fix:** Mint and assert `FINE_GRAINED_PAT_PREFIX` (`octanest_fg_`) only
+- **Fix:** Mint and assert `FINE_GRAINED_PAT_PREFIX` (`oxidean_fg_`) only
 - **Files modified:** `pat/mod.rs`, `pat_rpc.rs`
 - **Committed in:** `4a49518`, `5b0f405`
 
@@ -164,8 +164,8 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/pat/mod.rs`
-- FOUND: `crates/octanest-api/tests/pat_rpc.rs`
+- FOUND: `crates/oxidean-api/src/pat/mod.rs`
+- FOUND: `crates/oxidean-api/tests/pat_rpc.rs`
 - FOUND: `4a49518`, `5b0f405`
 
 ---

@@ -22,11 +22,11 @@ tech-stack:
   patterns: ["notify_push after receive; payloads.rs GitHub-shaped builders"]
 key-files:
   created:
-    - crates/octanest-api/src/webhook/payloads.rs
+    - crates/oxidean-api/src/webhook/payloads.rs
   modified:
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-api/src/ssh/server.rs
-    - crates/octanest-api/src/pull/mod.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/ssh/server.rs
+    - crates/oxidean-api/src/pull/mod.rs
 key-decisions:
   - "HTTPS emit only when pkt-line ref updates present; SSH emits generic push on exit 0"
 requirements-completed: [HOOK-02]
@@ -36,7 +36,7 @@ coverage:
     requirement: HOOK-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_push)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_push)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -44,7 +44,7 @@ coverage:
     requirement: HOOK-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_pull_request)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_pull_request)'"
         status: pass
     human_judgment: false
 duration: 15min
@@ -81,5 +81,5 @@ None material.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/webhook/payloads.rs
+- FOUND: crates/oxidean-api/src/webhook/payloads.rs
 - FOUND: 6a9a754

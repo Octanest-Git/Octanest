@@ -2,13 +2,13 @@
 phase: 09-git-ssh
 plan: "02"
 subsystem: database
-tags: [ssh, migrations, fingerprint, sqlx, octanest-db]
+tags: [ssh, migrations, fingerprint, sqlx, oxidean-db]
 requires:
   - phase: 09-00
     provides: dialect_ssh_keys Wave 0 stubs + migration parity expectation
 provides:
   - Tri-dialect 0009_ssh_keys (ssh_public_keys, UNIQUE fingerprint)
-  - octanest-core ssh_key_types (SshKeyListItem, AddSshKeyRequest)
+  - oxidean-core ssh_key_types (SshKeyListItem, AddSshKeyRequest)
   - Database create/list/find_by_fingerprint/touch_last_used/revoke (hard-delete)
 affects: [09-03-tracer, 09-04-rpc, 09-07-ui]
 actuals:
@@ -20,20 +20,20 @@ tech-stack:
   added: []
   patterns:
     - "SSH keys mirror PAT dialect CRUD without soft-revoke column"
-    - "D-SSH-02 proceed: scp-style clone URL + single OCTANEST_SSH_PORT"
+    - "D-SSH-02 proceed: scp-style clone URL + single OXIDEAN_SSH_PORT"
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0009_ssh_keys.sql
-    - crates/octanest-db/migrations/mysql/0009_ssh_keys.sql
-    - crates/octanest-db/migrations/sqlite/0009_ssh_keys.sql
-    - crates/octanest-db/src/ssh_keys.rs
-    - crates/octanest-core/src/ssh_key_types.rs
+    - crates/oxidean-db/migrations/postgres/0009_ssh_keys.sql
+    - crates/oxidean-db/migrations/mysql/0009_ssh_keys.sql
+    - crates/oxidean-db/migrations/sqlite/0009_ssh_keys.sql
+    - crates/oxidean-db/src/ssh_keys.rs
+    - crates/oxidean-core/src/ssh_key_types.rs
   modified:
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/tests/dialect_ssh_keys.rs
-    - crates/octanest-core/src/lib.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/tests/dialect_ssh_keys.rs
+    - crates/oxidean-core/src/lib.rs
 key-decisions:
-  - "D-SSH-02 proceed: scp-style git@host:owner/repo.git + single OCTANEST_SSH_PORT for listen/advertise"
+  - "D-SSH-02 proceed: scp-style git@host:owner/repo.git + single OXIDEAN_SSH_PORT for listen/advertise"
   - "Hard-delete on revoke (no revoked_at) per RESEARCH A3"
 requirements-completed: [GIT-04]
 coverage:
@@ -42,10 +42,10 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: unit
-        ref: cargo test -p octanest-db --lib migration_parity
+        ref: cargo test -p oxidean-db --lib migration_parity
         status: pass
       - kind: unit
-        ref: cargo test -p octanest-db --test dialect_ssh_keys
+        ref: cargo test -p oxidean-db --test dialect_ssh_keys
         status: pass
     human_judgment: false
   - id: D2
@@ -53,7 +53,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: unit
-        ref: cargo test -p octanest-core --lib ssh_key
+        ref: cargo test -p oxidean-core --lib ssh_key
         status: pass
       - kind: unit
         ref: dialect_ssh_keys_migrate_0009_schema_presence
@@ -66,7 +66,7 @@ status: complete
 
 # Phase 09 Plan 02: SSH Key Schema + DB CRUD Summary
 
-**Tri-dialect `0009_ssh_keys` + fingerprint CRUD landed after D-SSH-02 `proceed` (scp-style URL, single `OCTANEST_SSH_PORT`).**
+**Tri-dialect `0009_ssh_keys` + fingerprint CRUD landed after D-SSH-02 `proceed` (scp-style URL, single `OXIDEAN_SSH_PORT`).**
 
 ## Performance
 
@@ -94,7 +94,7 @@ None - plan executed exactly as written after checkpoint resolution.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-db/migrations/postgres/0009_ssh_keys.sql
-- FOUND: crates/octanest-db/src/ssh_keys.rs
-- FOUND: crates/octanest-core/src/ssh_key_types.rs
+- FOUND: crates/oxidean-db/migrations/postgres/0009_ssh_keys.sql
+- FOUND: crates/oxidean-db/src/ssh_keys.rs
+- FOUND: crates/oxidean-core/src/ssh_key_types.rs
 - FOUND: ff7fe9e

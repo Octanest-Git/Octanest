@@ -33,17 +33,17 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/sqlite/0006_bootstrap_flags.sql
-    - crates/octanest-db/migrations/postgres/0006_bootstrap_flags.sql
-    - crates/octanest-db/migrations/mysql/0006_bootstrap_flags.sql
+    - crates/oxidean-db/migrations/sqlite/0006_bootstrap_flags.sql
+    - crates/oxidean-db/migrations/postgres/0006_bootstrap_flags.sql
+    - crates/oxidean-db/migrations/mysql/0006_bootstrap_flags.sql
   modified:
-    - crates/octanest-db/src/auth_settings.rs
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/tests/dialect_auth.rs
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/src/auth/local.rs
+    - crates/oxidean-db/src/auth_settings.rs
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/tests/dialect_auth.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/src/auth/local.rs
 
 key-decisions:
   - "BootstrapSetupRequest.allow_signup and UpdateAuthSettingsRequest.allow_signup use serde default false (fail closed)"
@@ -62,10 +62,10 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-db --lib migration_parity"
+        ref: "cargo test -p oxidean-db --lib migration_parity"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-db --test dialect_auth migrate_0006_bootstrap_flags_columns"
+        ref: "cargo test -p oxidean-db --test dialect_auth migrate_0006_bootstrap_flags_columns"
         status: pass
     human_judgment: false
   - id: D2
@@ -73,7 +73,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-core --lib"
+        ref: "cargo test -p oxidean-core --lib"
         status: pass
     human_judgment: false
 
@@ -110,13 +110,13 @@ _Note: TDD task produced RED then GREEN commits; no REFACTOR needed._
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/*/0006_bootstrap_flags.sql` — dialect-parity columns
-- `crates/octanest-db/src/auth_settings.rs` — `allow_signup` on row/select/update
-- `crates/octanest-db/src/users.rs` — `must_change_credentials` + email/flag helpers
-- `crates/octanest-db/src/lib.rs` — Database facades
-- `crates/octanest-db/tests/dialect_auth.rs` — migrate + round-trip GREEN
-- `crates/octanest-core/src/auth_types.rs` — DTO fields + reserved username
-- `crates/octanest-api/src/auth/admin.rs` / `local.rs` — map new fields (Rule 3 compile fix)
+- `crates/oxidean-db/migrations/*/0006_bootstrap_flags.sql` — dialect-parity columns
+- `crates/oxidean-db/src/auth_settings.rs` — `allow_signup` on row/select/update
+- `crates/oxidean-db/src/users.rs` — `must_change_credentials` + email/flag helpers
+- `crates/oxidean-db/src/lib.rs` — Database facades
+- `crates/oxidean-db/tests/dialect_auth.rs` — migrate + round-trip GREEN
+- `crates/oxidean-core/src/auth_types.rs` — DTO fields + reserved username
+- `crates/oxidean-api/src/auth/admin.rs` / `local.rs` — map new fields (Rule 3 compile fix)
 
 ## Decisions Made
 
@@ -130,9 +130,9 @@ _Note: TDD task produced RED then GREEN commits; no REFACTOR needed._
 
 **1. [Rule 3 - Blocking] Updated API mappers for new row/DTO fields**
 - **Found during:** Task 1 / Task 2
-- **Issue:** `update_auth_settings` signature and `AuthSettingsRow`/`UserPublic`/`ProviderConfigPublic` field adds broke `octanest-api` constructors
+- **Issue:** `update_auth_settings` signature and `AuthSettingsRow`/`UserPublic`/`ProviderConfigPublic` field adds broke `oxidean-api` constructors
 - **Fix:** Wired `admin.rs` / `local.rs` to preserve then persist `allow_signup` and map `must_change_credentials`
-- **Files modified:** `crates/octanest-api/src/auth/admin.rs`, `crates/octanest-api/src/auth/local.rs`
+- **Files modified:** `crates/oxidean-api/src/auth/admin.rs`, `crates/oxidean-api/src/auth/local.rs`
 - **Commit:** `c540de7`, `eedd5c0`
 
 ## TDD Gate Compliance
@@ -151,7 +151,7 @@ None beyond plan register (T-06-01/T-06-02 mitigated by DEFAULT false + fail-clo
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-db/migrations/sqlite/0006_bootstrap_flags.sql`
-- FOUND: `crates/octanest-db/migrations/postgres/0006_bootstrap_flags.sql`
-- FOUND: `crates/octanest-db/migrations/mysql/0006_bootstrap_flags.sql`
+- FOUND: `crates/oxidean-db/migrations/sqlite/0006_bootstrap_flags.sql`
+- FOUND: `crates/oxidean-db/migrations/postgres/0006_bootstrap_flags.sql`
+- FOUND: `crates/oxidean-db/migrations/mysql/0006_bootstrap_flags.sql`
 - FOUND: commits `c540de7`, `ca39ed4`, `eedd5c0`

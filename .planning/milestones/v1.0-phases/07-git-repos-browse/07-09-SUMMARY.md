@@ -29,16 +29,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/repo_settings_visibility_delete.rs
+    - crates/oxidean-api/tests/repo_settings_visibility_delete.rs
     - apps/web/src/routes/$owner.$repo.settings.tsrx
     - .planning/phases/07-git-repos-browse/.tdd/07-09-red-evidence.json
   modified:
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-db/src/repositories.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-db/src/repositories.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - apps/web/src/components/repo/repo-chrome.tsrx
     - apps/web/src/routeTree.gen.ts
@@ -59,7 +59,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_settings_visibility_delete.rs#repo_settings_owner_toggles_visibility"
+        ref: "crates/oxidean-api/tests/repo_settings_visibility_delete.rs#repo_settings_owner_toggles_visibility"
         status: pass
     human_judgment: false
   - id: D2
@@ -67,7 +67,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_settings_visibility_delete.rs#repo_settings_non_owner_update_visibility_not_found"
+        ref: "crates/oxidean-api/tests/repo_settings_visibility_delete.rs#repo_settings_non_owner_update_visibility_not_found"
         status: pass
     human_judgment: false
   - id: D3
@@ -75,7 +75,7 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_settings_visibility_delete.rs#repo_settings_soft_delete_hides_row_keeps_disk"
+        ref: "crates/oxidean-api/tests/repo_settings_visibility_delete.rs#repo_settings_soft_delete_hides_row_keeps_disk"
         status: pass
     human_judgment: false
   - id: D4
@@ -129,9 +129,9 @@ RED evidence: `.planning/phases/07-git-repos-browse/.tdd/07-09-red-evidence.json
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/repo_settings_visibility_delete.rs` — visibility + soft-delete integration tests
-- `crates/octanest-db/src/repositories.rs` — `update_visibility` / `soft_delete`
-- `crates/octanest-api/src/repo/mod.rs` — RPC handlers
+- `crates/oxidean-api/tests/repo_settings_visibility_delete.rs` — visibility + soft-delete integration tests
+- `crates/oxidean-db/src/repositories.rs` — `update_visibility` / `soft_delete`
+- `crates/oxidean-api/src/repo/mod.rs` — RPC handlers
 - `apps/web/src/routes/$owner.$repo.settings.tsrx` — owner settings surface
 - `packages/api-client/src/index.ts` — generated client methods
 
@@ -177,7 +177,7 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 - FOUND: `apps/web/src/routes/$owner.$repo.settings.tsrx`
-- FOUND: `crates/octanest-api/tests/repo_settings_visibility_delete.rs`
+- FOUND: `crates/oxidean-api/tests/repo_settings_visibility_delete.rs`
 - FOUND: commits `8640f07`, `0d8f671`, `4f3cfbb`
 
 ---

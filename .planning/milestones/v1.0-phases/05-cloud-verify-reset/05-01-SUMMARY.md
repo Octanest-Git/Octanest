@@ -31,22 +31,22 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0003_email_tokens.sql
-    - crates/octanest-db/migrations/mysql/0003_email_tokens.sql
-    - crates/octanest-db/migrations/sqlite/0003_email_tokens.sql
-    - crates/octanest-db/src/email_tokens.rs
+    - crates/oxidean-db/migrations/postgres/0003_email_tokens.sql
+    - crates/oxidean-db/migrations/mysql/0003_email_tokens.sql
+    - crates/oxidean-db/migrations/sqlite/0003_email_tokens.sql
+    - crates/oxidean-db/src/email_tokens.rs
   modified:
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-db/tests/dialect_auth.rs
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-db/tests/dialect_auth.rs
 
 key-decisions:
   - "Upsert re-fetches by (user_id, purpose) after ON CONFLICT for stable row return"
   - "UserPublic.email_verified field added without wiring user_to_public (deferred to 05-02)"
 
 patterns-established:
-  - "Email token CRUD stays in octanest-db; API never embeds raw SQL"
+  - "Email token CRUD stays in oxidean-db; API never embeds raw SQL"
   - "Dialect_auth DATABASE_URL gate covers token + verified helpers per dialect leg"
 
 requirements-completed: [AUTH-04]
@@ -57,7 +57,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: unit
-        ref: "crates/octanest-db/src/migrate.rs#migration_parity"
+        ref: "crates/oxidean-db/src/migrate.rs#migration_parity"
         status: pass
     human_judgment: false
   - id: D2
@@ -65,7 +65,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-db/tests/dialect_auth.rs#migrate_email_token_and_verified_helpers"
+        ref: "crates/oxidean-db/tests/dialect_auth.rs#migrate_email_token_and_verified_helpers"
         status: pass
     human_judgment: false
   - id: D3
@@ -73,7 +73,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: other
-        ref: "grep email_verified crates/octanest-core/src/auth_types.rs"
+        ref: "grep email_verified crates/oxidean-core/src/auth_types.rs"
         status: pass
     human_judgment: false
 
@@ -121,14 +121,14 @@ _Note: TDD Task 2 produced RED + GREEN commits; no REFACTOR needed._
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/postgres/0003_email_tokens.sql` — dialect-parity token table
-- `crates/octanest-db/migrations/mysql/0003_email_tokens.sql` — dialect-parity token table
-- `crates/octanest-db/migrations/sqlite/0003_email_tokens.sql` — dialect-parity token table
-- `crates/octanest-db/src/email_tokens.rs` — hash-at-rest token CRUD
-- `crates/octanest-db/src/users.rs` — set/clear email_verified_at
-- `crates/octanest-db/src/lib.rs` — Database facades
-- `crates/octanest-core/src/auth_types.rs` — UserPublic.email_verified
-- `crates/octanest-db/tests/dialect_auth.rs` — token + verified helper integration
+- `crates/oxidean-db/migrations/postgres/0003_email_tokens.sql` — dialect-parity token table
+- `crates/oxidean-db/migrations/mysql/0003_email_tokens.sql` — dialect-parity token table
+- `crates/oxidean-db/migrations/sqlite/0003_email_tokens.sql` — dialect-parity token table
+- `crates/oxidean-db/src/email_tokens.rs` — hash-at-rest token CRUD
+- `crates/oxidean-db/src/users.rs` — set/clear email_verified_at
+- `crates/oxidean-db/src/lib.rs` — Database facades
+- `crates/oxidean-core/src/auth_types.rs` — UserPublic.email_verified
+- `crates/oxidean-db/tests/dialect_auth.rs` — token + verified helper integration
 
 ## Decisions Made
 

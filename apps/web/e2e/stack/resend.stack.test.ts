@@ -17,7 +17,7 @@ describe("stack e2e: Resend → HTTP stub", () => {
       await stubsReset();
 
       const suffix = Date.now();
-      const email = `resend.user.${suffix}@octanest.local`;
+      const email = `resend.user.${suffix}@oxidean.local`;
       const username = `resenduser${suffix}`;
 
       const signup = await rpc("auth.signup", {

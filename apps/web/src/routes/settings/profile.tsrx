@@ -1,7 +1,7 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
-import type { EmailListItem, UserPublic } from "@octanest/api-client";
+import type { EmailListItem, UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AccountEmailsSection } from "@/components/settings/account-emails-section";
 import { ProfileAvatarField } from "@/components/settings/profile-avatar-field";
@@ -20,12 +20,12 @@ export type ProfileLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic; emails: EmailListItem[] };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const BIO_MAX = 160;
 
 export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
-  head: () => ({ meta: [{ title: "Account · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Account · Oxidean" }] }),
   loader: async (): Promise<ProfileLoaderData> => {
     try {
       const res = await fetchUserGetProfile();

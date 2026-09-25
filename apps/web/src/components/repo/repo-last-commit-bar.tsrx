@@ -1,4 +1,4 @@
-import type { RepoCommitSummary } from "@octanest/api-client";
+import type { RepoCommitSummary } from "@oxidean/api-client";
 import { CommitAuthorLink } from "@/components/repo/commit-author-link";
 import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { formatRelativeUpdated } from "@/lib/relative-time";

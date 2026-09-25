@@ -1,5 +1,5 @@
 import { GitMerge, GitPullRequest, GitPullRequestClosed, MessageSquare } from "@octanejs/lucide";
-import type { IssueAssigneePublic, PullListResponse, PullPublic } from "@octanest/api-client";
+import type { IssueAssigneePublic, PullListResponse, PullPublic } from "@oxidean/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";

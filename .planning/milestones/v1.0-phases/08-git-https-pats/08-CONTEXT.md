@@ -35,7 +35,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 - **D-05:** **Two separate create flows** — Classic PAT and Fine-grained PAT (not a single wizard)
 - **D-06:** Fine-grained tokens support **selected repos** and **all current + future repositories** (GitHub-style)
 - **D-07:** **Optional expiry** — user may set an expiration date or choose no expiration
-- **D-08:** **Prefixed opaque** token strings — classic `octanest_pat_`, fine-grained `octanest_fg_`, then CSPRNG hex (32+ bytes); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks *(08-02 locked option `octanest_prefixes`; CONTEXT/RESEARCH had recommended shorter `ona_pat_` / `ona_fg_`)*
+- **D-08:** **Prefixed opaque** token strings — classic `oxidean_pat_`, fine-grained `oxidean_fg_`, then CSPRNG hex (32+ bytes); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks *(08-02 locked option `oxidean_prefixes`; CONTEXT/RESEARCH had recommended shorter `ona_pat_` / `ona_fg_`)*
 - **D-09:** Token list shows **last-used timestamp** and **last-used IP**
 
 ### B — HTTPS credential contract
@@ -52,7 +52,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 
 ### D — Smart HTTP surface
 - **D-18:** Clone URL shape **`https://{host}/{owner}/{repo}.git`** on the same public origin — **Reversibility:** one-way — public git URL scheme *(08-02 locked option `owner_repo_git`)*
-- **D-19:** Clone URL host comes from **`OCTANEST_PUBLIC_ORIGIN`** (operator config), not the request Host header
+- **D-19:** Clone URL host comes from **`OXIDEAN_PUBLIC_ORIGIN`** (operator config), not the request Host header
 - **D-20:** **Anonymous clone/fetch** of **public** repos; **push always requires a PAT**
 - **D-21:** Unauthenticated access to **private** / no-access over git → **401 + WWW-Authenticate** (not the web UI’s 404 anti-enumeration) — **Reversibility:** costly — git vs web error contracts differ by design *(08-02 locked option `git_401_pat_https_only` with D-01)*
 - **D-22:** Smart HTTP is served **only** on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` remains the web UI *(08-02 confirmed with D-18)*
@@ -91,10 +91,10 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 
 ### Existing implementation (extend)
 - `apps/web/src/components/repo/clone-box.tsrx` — HTTPS clone UI (extend with how-to panel)
-- `crates/octanest-api/src/auth/gate.rs` — `require_verified`
-- `crates/octanest-api/src/auth/session.rs` — opaque cookies (must not authenticate Smart HTTP)
-- `crates/octanest-api/src/routes/repo_raw.rs` — existing non-Smart-HTTP git-ish HTTP
-- `crates/octanest-git/` — `CliGitBackend` / version gate
+- `crates/oxidean-api/src/auth/gate.rs` — `require_verified`
+- `crates/oxidean-api/src/auth/session.rs` — opaque cookies (must not authenticate Smart HTTP)
+- `crates/oxidean-api/src/routes/repo_raw.rs` — existing non-Smart-HTTP git-ish HTTP
+- `crates/oxidean-git/` — `CliGitBackend` / version gate
 - `docker-compose.yml` / Traefik — routing for `.git` Smart HTTP
 
 ### UI authoring
@@ -110,17 +110,17 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 - `require_verified` + verify wall / banner patterns from Phase 5–7
 - Settings routes under `apps/web/src/routes/settings/` — add tokens sibling to profile
 - Session cookie + Argon2 password hashing — do **not** reuse password check for git; reject with hint (D-11)
-- `OCTANEST_PUBLIC_ORIGIN` already used for SSR/public URLs in Compose
+- `OXIDEAN_PUBLIC_ORIGIN` already used for SSR/public URLs in Compose
 
 ### Established Patterns
 - Opaque session tokens hashed at rest — PAT plaintext shown once; store hash only after create
-- Dialect SQL only in `octanest-db`; new PAT tables follow that rule
+- Dialect SQL only in `oxidean-db`; new PAT tables follow that rule
 - RPC via specta + `make rpc-gen` for token CRUD procedures
 - Private web browse → 404; git Smart HTTP private → 401 (D-21) — intentional split
 
 ### Integration Points
 - Traefik / Axum must route `/{owner}/{repo}.git/info/refs` and upload-pack/receive-pack without stealing web `/{owner}/{repo}`
-- Bare repo path `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (Phase 7 D-30)
+- Bare repo path `{OXIDEAN_REPOS_DIR}/{owner}/{name}.git` (Phase 7 D-30)
 - ACL: owner-only private until Phase 10; public anonymous read for git fetch
 
 </code_context>
@@ -129,7 +129,7 @@ Users authenticate git over **HTTPS** with **personal access tokens** (never acc
 ## Specific Ideas
 
 - Match **GitHub and other forge alternatives** for: dual HTTPS/SSH remotes (SSH later), username+PAT-as-password, classic + fine-grained with separate create flows, all-repos FG option, optional expiry, last-used + IP
-- Token prefixes must be **Octanest-branded only** — never imply GitHub in the string
+- Token prefixes must be **Oxidean-branded only** — never imply GitHub in the string
 
 </specifics>
 

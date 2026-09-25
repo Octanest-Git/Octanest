@@ -29,13 +29,13 @@ key-files:
   created:
     - apps/web/src/components/repo/issue-reactions.tsrx
   modified:
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/tests/issue_reactions.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/tests/issue_reactions.rs
     - packages/api-client/src/index.ts
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
     - apps/web/src/components/repo/issue-comments.tsrx
@@ -58,7 +58,7 @@ coverage:
     requirement: ISS-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_reactions)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_reactions)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -104,9 +104,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/issue_reactions.rs` — integration coverage for eight contents, bad_input, Read deny, toggle-off
-- `crates/octanest-db/src/issues.rs` — dialect toggle + aggregate list for issue/comment reactions
-- `crates/octanest-api/src/issue/mod.rs` — `reactions_toggle` + reaction embedding in public mappers
+- `crates/oxidean-api/tests/issue_reactions.rs` — integration coverage for eight contents, bad_input, Read deny, toggle-off
+- `crates/oxidean-db/src/issues.rs` — dialect toggle + aggregate list for issue/comment reactions
+- `crates/oxidean-api/src/issue/mod.rs` — `reactions_toggle` + reaction embedding in public mappers
 - `apps/web/src/components/repo/issue-reactions.tsrx` — Octane toolbar / Write+ chips
 - `apps/web/src/routes/$owner.$repo.issues.$n.tsrx` — issue-level bar under body
 - `apps/web/src/components/repo/issue-comments.tsrx` — per-comment bar
@@ -147,12 +147,12 @@ None.
 ## Verification
 
 - `make rpc-gen && make rpc-sync-check` — ok
-- `cargo nextest run -p octanest-api -E 'test(issue_reactions)'` — 3 passed
+- `cargo nextest run -p oxidean-api -E 'test(issue_reactions)'` — 3 passed
 - `bun run build` (apps/web) — ok
 - `bunx vitest run 'src/routes/$owner.$repo.issues.integration.test.ts'` — 12 passed
 
 ## Self-Check: PASSED
 
 - FOUND: `apps/web/src/components/repo/issue-reactions.tsrx`
-- FOUND: `crates/octanest-api/tests/issue_reactions.rs`
+- FOUND: `crates/oxidean-api/tests/issue_reactions.rs`
 - FOUND: commits `e9d646e`, `6529187`, `c209f0e`

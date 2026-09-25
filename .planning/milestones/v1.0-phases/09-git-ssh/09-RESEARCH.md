@@ -8,9 +8,9 @@
 ## User Constraints (from CONTEXT.md)
 
 ### Locked Decisions
-- **D-SSH-01:** Serve git-over-SSH via a **Rust SSH service/module** (e.g. russh) that authenticates registered public keys against Octanest DB/ACL and spawns system `git-upload-pack` / `git-receive-pack` on the shared `OCTANEST_REPOS_DIR` volume. **Not** OpenSSH/`git-shell`. No interactive shell/SFTP/port-forward — **git pack commands only**
-- **D-SSH-02:** Public clone URL is always scp-style **`git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`**. Compose/dev default listen port **2222**; when advertised port ≠ 22, document `~/.ssh/config` Port or Host alias (do **not** make `ssh://` the primary CloneBox string). Production/cloud prefer port **22** when the platform allows; `OCTANEST_SSH_HOST` + `OCTANEST_SSH_PORT` (listen/advertise) configurable. Host fallback: hostname of public origin
-- **D-SSH-03:** Force SSH login user **`git` only**. Account identity is derived solely from the registered public key fingerprint; the SSH username is not an Octanest account name
+- **D-SSH-01:** Serve git-over-SSH via a **Rust SSH service/module** (e.g. russh) that authenticates registered public keys against Oxidean DB/ACL and spawns system `git-upload-pack` / `git-receive-pack` on the shared `OXIDEAN_REPOS_DIR` volume. **Not** OpenSSH/`git-shell`. No interactive shell/SFTP/port-forward — **git pack commands only**
+- **D-SSH-02:** Public clone URL is always scp-style **`git@{OXIDEAN_SSH_HOST}:{owner}/{repo}.git`**. Compose/dev default listen port **2222**; when advertised port ≠ 22, document `~/.ssh/config` Port or Host alias (do **not** make `ssh://` the primary CloneBox string). Production/cloud prefer port **22** when the platform allows; `OXIDEAN_SSH_HOST` + `OXIDEAN_SSH_PORT` (listen/advertise) configurable. Host fallback: hostname of public origin
+- **D-SSH-03:** Force SSH login user **`git` only**. Account identity is derived solely from the registered public key fingerprint; the SSH username is not an Oxidean account name
 - **D-SSH-04:** Key maps to the **account** (no PAT scopes). Public fetch OK when authenticated; private = **owner-only** until Phase 10 collaborators; **push requires verified email** (same as Smart HTTP). Deny private non-owner with a clear **git error** (not HTTP 401/404)
 - **D-SSH-05:** Required **title/note**; store full public key + **fingerprint** (unique); accept **ed25519** + **rsa-sha2**; max ~**25** keys per user; add/list/revoke over session RPC; **`require_verified`** to add; **confirm** on revoke (no one-time secret reveal — public keys)
 - **D-SSH-06:** Manage keys at **`/settings/ssh-keys`** as SettingsNav sibling to tokens; replace CloneBox SSH placeholder with copyable SSH URL + compact “add a key” CTA (PatHowTo-style)
@@ -20,7 +20,7 @@
 - Exact Rust SSH crate/version (russh vs alternatives) and process layout (in-api module vs sibling binary/service)
 - Exact host-key storage/rotation and failure log fields
 - Exact rate-limit N/window (within D-SSH-07)
-- Whether advertised port is a separate env from listen port or one `OCTANEST_SSH_PORT` with docs
+- Whether advertised port is a separate env from listen port or one `OXIDEAN_SSH_PORT` with docs
 
 ### Deferred Ideas (OUT OF SCOPE)
 - SSH CA / certificate auth
@@ -38,11 +38,11 @@
 
 ## Summary
 
-Phase 9 adds forge-shaped Git SSH on top of the Phase 7 bare-repo layout and Phase 8 ACL/auth gates. The locked approach is a **Rust-native SSH listener (russh)** inside the API process (recommended), not OpenSSH/`git-shell`. Clients connect as user `git`, authenticate with a registered public key, and may only `exec` `git-upload-pack` / `git-receive-pack` against `{OCTANEST_REPOS_DIR}/{owner}/{name}.git`. Identity is **fingerprint → user**, never the SSH username. ACL must call the same owner-only helpers Smart HTTP uses today (`can_read_as_owner` / `is_private_visibility`), with **git stderr errors** instead of HTTP 401/404, and **verified email required on push**. Key CRUD mirrors PAT settings (session RPC + `require_verified` + confirm revoke) without a one-time secret reveal.
+Phase 9 adds forge-shaped Git SSH on top of the Phase 7 bare-repo layout and Phase 8 ACL/auth gates. The locked approach is a **Rust-native SSH listener (russh)** inside the API process (recommended), not OpenSSH/`git-shell`. Clients connect as user `git`, authenticate with a registered public key, and may only `exec` `git-upload-pack` / `git-receive-pack` against `{OXIDEAN_REPOS_DIR}/{owner}/{name}.git`. Identity is **fingerprint → user**, never the SSH username. ACL must call the same owner-only helpers Smart HTTP uses today (`can_read_as_owner` / `is_private_visibility`), with **git stderr errors** instead of HTTP 401/404, and **verified email required on push**. Key CRUD mirrors PAT settings (session RPC + `require_verified` + confirm revoke) without a one-time secret reveal.
 
 Ops differ from HTTPS: SSH is **raw TCP** (Compose publish `2222:2222`), never Traefik HTTP. CloneBox shows scp-style `git@host:owner/repo.git` and documents non-22 ports via `~/.ssh/config`. Smoke follows `scripts/smoke-git-https.sh` patterns.
 
-**Primary recommendation:** Ship `russh 0.63` as an in-process Tokio task in `octanest-api`, table `ssh_public_keys` (migration `0009`), RPC under `ssh.*`, UI at `/settings/ssh-keys`, TCP publish in Compose, and `make smoke-git-ssh`.
+**Primary recommendation:** Ship `russh 0.63` as an in-process Tokio task in `oxidean-api`, table `ssh_public_keys` (migration `0009`), RPC under `ssh.*`, UI at `/settings/ssh-keys`, TCP publish in Compose, and `make smoke-git-ssh`.
 
 ## Architectural Responsibility Map
 
@@ -53,17 +53,17 @@ Ops differ from HTTPS: SSH is **raw TCP** (Compose publish `2222:2222`), never T
 | SSH transport + pubkey auth | API / Backend | — | russh listener; not Traefik/web |
 | Pack protocol (upload/receive) | API / Backend | Database / Storage | Spawn system git-*pack on bare path |
 | Repo ACL (private/owner/push/verify) | API / Backend | — | Shared `repo/acl` decisions; Phase 10 extends |
-| Clone URL display | Browser / Client | Frontend Server (SSR) | CloneBox + `OCTANEST_SSH_HOST`/`PORT` |
+| Clone URL display | Browser / Client | Frontend Server (SSR) | CloneBox + `OXIDEAN_SSH_HOST`/`PORT` |
 | TCP publish / host keys | CDN/Static ops → Compose | API / Backend | Host port map + persisted host key volume |
 | Rate-limit failed auth | API / Backend | — | In-process limiter (mirror PAT) |
 
 ## Project Constraints (from .cursor/rules/)
 
-- One product (cloud + self-host); Bun workspaces + Cargo crates — no parallel app structure. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- One product (cloud + self-host); Bun workspaces + Cargo crates — no parallel app structure. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 - Web UI is **Octane** (`.tsrx`); load `.agents/skills/octane/SKILL.md` before UI edits; no JSX/`return (` mixed with Rivet. [VERIFIED: `.cursor/rules/octane-ui.mdc`]
 - RPC: change Rust → `make rpc-gen`; never hand-edit `packages/api-client` as source of truth. [VERIFIED: `.cursor/rules/rpc-codegen.mdc`]
-- Dialect SQL only in `crates/octanest-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
-- Prefer extending existing patterns (auth gates, Make targets, Query session helpers). [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- Dialect SQL only in `crates/oxidean-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
+- Prefer extending existing patterns (auth gates, Make targets, Query session helpers). [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 - Prefer `Result` + structured errors; no `unwrap`/`expect` outside tests. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
 - Preserve `require_verified` / destructive confirmations. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
 
@@ -81,7 +81,7 @@ Ops differ from HTTPS: SSH is **raw TCP** (Compose publish `2222:2222`), never T
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| Existing `tokio` (workspace) | workspace | Spawn SSH listener + pack processes | Already in `octanest-api` |
+| Existing `tokio` (workspace) | workspace | Spawn SSH listener + pack processes | Already in `oxidean-api` |
 | Existing `FailedAuthLimiter` pattern | in-tree | Failed pubkey rate limits | Extend or clone for IP + fingerprint buckets |
 | Octane + existing settings UI | in-tree | `/settings/ssh-keys`, SettingsNav, CloneBox | Mirror tokens routes |
 
@@ -89,32 +89,32 @@ Ops differ from HTTPS: SSH is **raw TCP** (Compose publish `2222:2222`), never T
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| russh in-process | Sibling `octanest-ssh` binary | Cleaner crash isolation; worse for shared `AppState`/DB in v1 — defer |
+| russh in-process | Sibling `oxidean-ssh` binary | Cleaner crash isolation; worse for shared `AppState`/DB in v1 — defer |
 | russh | OpenSSH + `AuthorizedKeysCommand` | Forbidden by D-SSH-01 |
 | russh | `thrussh` | Predecessor; **SUS** low downloads — do not use [VERIFIED: package-legitimacy] |
 
 **Installation:**
 
 ```toml
-# crates/octanest-api/Cargo.toml
+# crates/oxidean-api/Cargo.toml
 russh = { version = "0.63", features = ["aws-lc-rs"] }  # default crypto; RSA via default features
 ssh-key = { version = "=0.7.0-rc.11", features = ["std"] }  # match russh pin exactly
 ```
 
 **Version verification:** `cargo info russh` → **0.63.3** (2026-09-14). `russh` pins `ssh-key =0.7.0-rc.11`. Prefer matching that pin over max-stable `0.6.7` to share types with auth callbacks. [VERIFIED: crates.io]
 
-**Discretion — process layout:** **In-process module** (`crates/octanest-api/src/ssh/`) started from `main.rs` via `tokio::spawn` when `OCTANEST_SSH_ENABLED` is true/1 (Compose sets it). Shares `AppState` (db, repos_dir, limiter). Sibling binary deferred.
+**Discretion — process layout:** **In-process module** (`crates/oxidean-api/src/ssh/`) started from `main.rs` via `tokio::spawn` when `OXIDEAN_SSH_ENABLED` is true/1 (Compose sets it). Shares `AppState` (db, repos_dir, limiter). Sibling binary deferred.
 
 **Discretion — env ports:**
 
 | Env | Role | Compose default | Prod preference |
 |-----|------|-----------------|-----------------|
-| `OCTANEST_SSH_ENABLED` | Start listener | `true` | operator |
-| `OCTANEST_SSH_HOST` | Advertised hostname for CloneBox | hostname of `OCTANEST_PUBLIC_ORIGIN` (fallback `localhost`) | public DNS |
-| `OCTANEST_SSH_PORT` | **Both** listen bind port **and** advertised port | `2222` | `22` when platform allows |
-| `OCTANEST_SSH_HOST_KEY_DIR` | Persist host keys | `/var/ssh` (volume) | same |
+| `OXIDEAN_SSH_ENABLED` | Start listener | `true` | operator |
+| `OXIDEAN_SSH_HOST` | Advertised hostname for CloneBox | hostname of `OXIDEAN_PUBLIC_ORIGIN` (fallback `localhost`) | public DNS |
+| `OXIDEAN_SSH_PORT` | **Both** listen bind port **and** advertised port | `2222` | `22` when platform allows |
+| `OXIDEAN_SSH_HOST_KEY_DIR` | Persist host keys | `/var/ssh` (volume) | same |
 
-Document: if host publishes a different external port than container listen, operators must set `Port` in `~/.ssh/config` (CloneBox still shows scp-style without `ssh://`). Single `OCTANEST_SSH_PORT` keeps operator surface small (discretion choice).
+Document: if host publishes a different external port than container listen, operators must set `Port` in `~/.ssh/config` (CloneBox still shows scp-style without `ssh://`). Single `OXIDEAN_SSH_PORT` keeps operator surface small (discretion choice).
 
 ## Package Legitimacy Audit
 
@@ -135,7 +135,7 @@ Document: if host publishes a different external port than container listen, ope
 git client
    │  ssh -p PORT git@HOST  (scp: git@HOST:owner/repo.git)
    ▼
-TCP :OCTANEST_SSH_PORT  ──►  russh Server (in octanest-api)
+TCP :OXIDEAN_SSH_PORT  ──►  russh Server (in oxidean-api)
                                │
                                ├─ auth: user must be "git"
                                ├─ auth_publickey → fingerprint lookup → user_id
@@ -151,8 +151,8 @@ TCP :OCTANEST_SSH_PORT  ──►  russh Server (in octanest-api)
                                          ├─ touch last_used
                                          └─ spawn git-*pack ↔ channel I/O
 
-Browser ──session RPC──► ssh.keys.* ──► ssh_public_keys (octanest-db)
-Browser CloneBox ── reads OCTANEST_SSH_HOST/PORT ──► scp-style URL
+Browser ──session RPC──► ssh.keys.* ──► ssh_public_keys (oxidean-db)
+Browser CloneBox ── reads OXIDEAN_SSH_HOST/PORT ──► scp-style URL
 
 Traefik HTTP ── (unchanged) Smart HTTP / web / API
 SSH ── NOT via Traefik ── host port publish only
@@ -161,16 +161,16 @@ SSH ── NOT via Traefik ── host port publish only
 ### Recommended Project Structure
 
 ```text
-crates/octanest-db/migrations/{sqlite,postgres,mysql}/0009_ssh_keys.sql
-crates/octanest-api/src/ssh/
+crates/oxidean-db/migrations/{sqlite,postgres,mysql}/0009_ssh_keys.sql
+crates/oxidean-api/src/ssh/
   mod.rs              # enable/listen bootstrap
   server.rs           # russh Server + Handler
   auth.rs             # fingerprint → user; force user git
   pack.rs             # parse exec; spawn upload/receive-pack
   rate_limit.rs       # or reuse/extend pat::rate_limit
   host_keys.rs        # load/generate host key under HOST_KEY_DIR
-crates/octanest-api/src/ssh_keys/   # RPC CRUD (mirror pat/)
-crates/octanest-core/src/ssh_types.rs
+crates/oxidean-api/src/ssh_keys/   # RPC CRUD (mirror pat/)
+crates/oxidean-core/src/ssh_types.rs
 apps/web/src/routes/settings/ssh-keys.tsrx
 apps/web/src/components/repo/ssh-how-to.tsrx
 scripts/smoke-git-ssh.sh
@@ -180,7 +180,7 @@ scripts/smoke-git-ssh.sh
 
 **What:** Reject any SSH username ≠ `git` (case-sensitive forge convention). Map `PublicKey` → `SHA256:…` fingerprint → `ssh_public_keys` row → `users`.  
 **When to use:** Every connection (D-SSH-03).  
-**Note:** `"git"` is already reserved for accounts. [VERIFIED: `crates/octanest-core/src/auth_types.rs:278-281` — `"git",` `"token",` `"oauth2",`]
+**Note:** `"git"` is already reserved for accounts. [VERIFIED: `crates/oxidean-core/src/auth_types.rs:278-281` — `"git",` `"token",` `"oauth2",`]
 
 ### Pattern 2: Allowlisted pack exec + path safety
 
@@ -222,10 +222,10 @@ Fingerprint storage: OpenSSH display form `SHA256:…` (no trailing `=`). [CITED
 - **OpenSSH/`git-shell` AuthorizedKeysCommand:** Violates D-SSH-01; harder DB identity.
 - **Routing SSH through Traefik HTTP:** Violates D-SSH-07; use host TCP publish.
 - **Primary CloneBox `ssh://git@host:2222/...`:** Violates D-SSH-02.
-- **Using SSH username as Octanest account:** Violates D-SSH-03.
+- **Using SSH username as Oxidean account:** Violates D-SSH-03.
 - **Applying PAT fine-grained scopes to SSH:** Violates D-SSH-04.
 - **Hand-editing api-client:** Use `make rpc-gen`.
-- **Dialect SQL in api crate:** Migrations + CRUD in `octanest-db` only.
+- **Dialect SQL in api crate:** Migrations + CRUD in `oxidean-db` only.
 - **Accepting shell/pty/subsystem/tcpip_forward:** Attack surface; always `channel_failure`.
 
 ## Don't Hand-Roll
@@ -239,7 +239,7 @@ Fingerprint storage: OpenSSH display form `SHA256:…` (no trailing `=`). [CITED
 | Failed-auth flooding | Ad-hoc sleeps only | Sliding-window limiter (mirror PAT) | Consistent ops story |
 | Settings CRUD UI kit | New design system | Existing tokens/AlertDialog patterns | Brand + Octane consistency |
 
-**Key insight:** Authentication and ACL belong in Octanest; pack bytes belong to system git. russh is only the transport gate.
+**Key insight:** Authentication and ACL belong in Oxidean; pack bytes belong to system git. russh is only the transport gate.
 
 ## Common Pitfalls
 
@@ -261,12 +261,12 @@ Fingerprint storage: OpenSSH display form `SHA256:…` (no trailing `=`). [CITED
 
 ### Pitfall 4: Compose port 2222 vs advertised URL
 **What goes wrong:** Clone works in docs as port 22 but Compose listens 2222.  
-**How to avoid:** Advertise `OCTANEST_SSH_PORT`; document `Host`/`Port` in CloneBox how-to when ≠ 22.  
+**How to avoid:** Advertise `OXIDEAN_SSH_PORT`; document `Host`/`Port` in CloneBox how-to when ≠ 22.  
 **Warning signs:** Smoke passes with `-p 2222` but UI omits Port hint.
 
 ### Pitfall 5: Host key regeneration every boot
 **What goes wrong:** Clients get TOFU warnings continuously.  
-**How to avoid:** Persist host key under volume-backed `OCTANEST_SSH_HOST_KEY_DIR`; generate once if missing.  
+**How to avoid:** Persist host key under volume-backed `OXIDEAN_SSH_HOST_KEY_DIR`; generate once if missing.  
 **Warning signs:** `REMOTE HOST IDENTIFICATION HAS CHANGED` in smoke.
 
 ### Pitfall 6: Rate-limit counting `auth_publickey_offered`
@@ -275,7 +275,7 @@ Fingerprint storage: OpenSSH display form `SHA256:…` (no trailing `=`). [CITED
 
 ### Pitfall 7: Enabling SSH on every `make dev`
 **What goes wrong:** Port conflicts / unexpected listener.  
-**How to avoid:** D-SSH-07 — Compose-first; gate with `OCTANEST_SSH_ENABLED`.
+**How to avoid:** D-SSH-07 — Compose-first; gate with `OXIDEAN_SSH_ENABLED`.
 
 ## Code Examples
 
@@ -323,7 +323,7 @@ async fn auth_publickey(
 ### Smart HTTP ACL helpers to call
 
 ```rust
-// Source: crates/octanest-api/src/repo/acl.rs
+// Source: crates/oxidean-api/src/repo/acl.rs
 pub fn is_private_visibility(visibility: &str) -> bool { /* … */ }
 pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool { /* … */ }
 ```
@@ -331,7 +331,7 @@ pub fn can_read_as_owner(caller_user_id: Option<&str>, owner_id: &str) -> bool {
 ### Rate-limit constants to mirror (discretion)
 
 ```rust
-// Source: crates/octanest-api/src/pat/rate_limit.rs:9-11
+// Source: crates/oxidean-api/src/pat/rate_limit.rs:9-11
 const WINDOW: Duration = Duration::from_secs(15 * 60);
 const IP_LIMIT: usize = 20;
 const USER_LIMIT: usize = 10; // for SSH: fingerprint bucket replaces user id
@@ -367,7 +367,7 @@ const USER_LIMIT: usize = 10; // for SSH: fingerprint bucket replaces user id
 
 1. **Anonymous public SSH?** — **RESOLVED:** Require registered key for all SSH; document HTTPS for anonymous public clone (D-SSH-04: public fetch OK when authenticated).
 
-2. **Separate advertise vs listen port?** — **RESOLVED:** single `OCTANEST_SSH_PORT` + docs (D-SSH-02). Revisit only if Railway/cloud forces different publish mapping in Phase 22.
+2. **Separate advertise vs listen port?** — **RESOLVED:** single `OXIDEAN_SSH_PORT` + docs (D-SSH-02). Revisit only if Railway/cloud forces different publish mapping in Phase 22.
 
 3. **RPC naming** — **RESOLVED:** Locked at plan time as **`sshKey.add` / `sshKey.list` / `sshKey.revoke`** (session cookie; not PAT). RESEARCH earlier draft `ssh.listKeys`/`addKey`/`revokeKey` is superseded.
 
@@ -396,7 +396,7 @@ const USER_LIMIT: usize = 10; // for SSH: fingerprint bucket replaces user id
 |----------|-------|
 | Framework | cargo nextest (Rust) + Vitest (web) |
 | Config file | workspace Cargo / `apps/web/vitest.config.ts` |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(ssh) or test(git_ssh)'` + `bunx vitest run src/routes/settings/ssh-keys.integration.test.ts src/components/repo/clone-box.integration.test.ts` (cwd `apps/web`) |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(ssh) or test(git_ssh)'` + `bunx vitest run src/routes/settings/ssh-keys.integration.test.ts src/components/repo/clone-box.integration.test.ts` (cwd `apps/web`) |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
@@ -420,8 +420,8 @@ const USER_LIMIT: usize = 10; // for SSH: fingerprint bucket replaces user id
 
 ### Wave 0 Gaps
 
-- [ ] `crates/octanest-api/tests/git_ssh.rs` (or colocated) — RED: auth user, ACL, pack allowlist, rate-limit stubs  
-- [ ] `crates/octanest-db` dialect tests for `0009_ssh_keys`  
+- [ ] `crates/oxidean-api/tests/git_ssh.rs` (or colocated) — RED: auth user, ACL, pack allowlist, rate-limit stubs  
+- [ ] `crates/oxidean-db` dialect tests for `0009_ssh_keys`  
 - [ ] `apps/web/src/routes/settings/ssh-keys.integration.test.ts` — RED route stubs  
 - [ ] `scripts/smoke-git-ssh.sh` + Makefile target  
 - [ ] Update `clone-box.integration.test.ts` expectations once SSH live  

@@ -1,4 +1,4 @@
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { cn } from "@/lib/utils";
 
 function initialsFor(user: Pick<UserPublic, "display_name" | "username">): string {
@@ -29,7 +29,7 @@ export function AvatarPreview(props: AvatarPreviewProps) @{
 
   <div
     className={cn(
-      "octanest-squircle relative block shrink-0 overflow-hidden bg-muted",
+      "oxidean-squircle relative block shrink-0 overflow-hidden bg-muted",
       props.className,
     )}
     style={{ width: dim, height: dim, minWidth: dim, minHeight: dim }}

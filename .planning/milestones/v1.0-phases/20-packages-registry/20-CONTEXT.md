@@ -41,7 +41,7 @@ Instance hosts a multi-format package registry (OCI, npm, generic/raw) with the 
 - **D-PKG-06:** **Write+** on owning repo/org may **publish**; **Admin** may **delete** — **Reversibility:** reversible
 
 ### C — Storage
-- **D-PKG-07:** Separate **`OCTANEST_PACKAGES_DIR`** volume (not LFS, not release-assets) — **Reversibility:** costly — ops/backup split
+- **D-PKG-07:** Separate **`OXIDEAN_PACKAGES_DIR`** volume (not LFS, not release-assets) — **Reversibility:** costly — ops/backup split
 - **D-PKG-08:** **Content-addressed** blob store with **cross-package dedup** (especially OCI layers) — **Reversibility:** costly — GC/refcount
 - **D-PKG-09:** **Max blob size + per-owner quotas** via env defaults + Admin UI; **reject** over-limit uploads — **Reversibility:** reversible
 
@@ -80,8 +80,8 @@ Instance hosts a multi-format package registry (OCI, npm, generic/raw) with the 
 - `.planning/phases/15-releases-transfer/15-CONTEXT.md` — release-assets volume stays separate; transfer ownership implications
 
 ### Code / ops mirrors
-- `crates/octanest-api/src/routes/git_smart_http.rs` — PAT Basic patterns
-- `crates/octanest-api/src/repo/acl.rs` — capability checks to mirror for package owner
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — PAT Basic patterns
+- `crates/oxidean-api/src/repo/acl.rs` — capability checks to mirror for package owner
 - `docker-compose.yml` — volume + Traefik path routing for `/v2`, `/npm`, `/generic`
 - `docs/CONFIGURATION.md` / `docs/API.md` — document registry endpoints and env
 

@@ -8,22 +8,22 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql` | migration | CRUD | `crates/octanest-db/migrations/sqlite/0002_auth.sql` (sessions table) | exact |
-| `crates/octanest-db/src/email_tokens.rs` | model | CRUD | `crates/octanest-db/src/sessions.rs` | exact |
-| `crates/octanest-db/src/lib.rs` | model | CRUD | same file — `create_session` / `find_session_by_token_hash` facade | exact |
-| `crates/octanest-db/src/users.rs` | model | CRUD | same file — `update_profile` / `UserRow.email_verified_at` | exact |
-| `crates/octanest-api/src/auth/verify_reset.rs` | service | request-response | `crates/octanest-api/src/auth/session.rs` + `local.rs` (issue/send) | exact |
-| `crates/octanest-api/src/auth/gate.rs` | utility | request-response | `crates/octanest-api/src/auth/admin.rs` (`require_admin`) | exact |
-| `crates/octanest-api/src/auth/local.rs` | service | request-response | same file — `signup` / `me` / `logout_all` / `user_to_public` | exact |
-| `crates/octanest-api/src/auth/external.rs` | service | request-response | same file — `ExternalIdentity` + `link_or_create_user` | exact |
-| `crates/octanest-api/src/auth/workos.rs` | service | request-response | same file — `finish` → `ExternalIdentity` | exact |
-| `crates/octanest-api/src/auth/oidc.rs` | service | request-response | same file — `finish` → `ExternalIdentity` | exact |
-| `crates/octanest-api/src/auth/mod.rs` | config | — | same file — module re-exports | exact |
-| `crates/octanest-api/src/rpc.rs` | route | request-response | same file — `auth.*` match arms | exact |
-| `crates/octanest-api/src/app.rs` | middleware | request-response | same file — `rpc_status` | exact |
-| `crates/octanest-api/src/main.rs` | config | CRUD | same file — `maybe_seed_admin` | exact |
-| `crates/octanest-core/src/auth_types.rs` | model | transform | same file — `UserPublic` + `RESERVED_USERNAMES` | exact |
-| `crates/octanest-api/src/bin/rpc_gen.rs` | config | transform | same file — generated `UserPublic` + `auth.*` client | exact |
+| `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql` | migration | CRUD | `crates/oxidean-db/migrations/sqlite/0002_auth.sql` (sessions table) | exact |
+| `crates/oxidean-db/src/email_tokens.rs` | model | CRUD | `crates/oxidean-db/src/sessions.rs` | exact |
+| `crates/oxidean-db/src/lib.rs` | model | CRUD | same file — `create_session` / `find_session_by_token_hash` facade | exact |
+| `crates/oxidean-db/src/users.rs` | model | CRUD | same file — `update_profile` / `UserRow.email_verified_at` | exact |
+| `crates/oxidean-api/src/auth/verify_reset.rs` | service | request-response | `crates/oxidean-api/src/auth/session.rs` + `local.rs` (issue/send) | exact |
+| `crates/oxidean-api/src/auth/gate.rs` | utility | request-response | `crates/oxidean-api/src/auth/admin.rs` (`require_admin`) | exact |
+| `crates/oxidean-api/src/auth/local.rs` | service | request-response | same file — `signup` / `me` / `logout_all` / `user_to_public` | exact |
+| `crates/oxidean-api/src/auth/external.rs` | service | request-response | same file — `ExternalIdentity` + `link_or_create_user` | exact |
+| `crates/oxidean-api/src/auth/workos.rs` | service | request-response | same file — `finish` → `ExternalIdentity` | exact |
+| `crates/oxidean-api/src/auth/oidc.rs` | service | request-response | same file — `finish` → `ExternalIdentity` | exact |
+| `crates/oxidean-api/src/auth/mod.rs` | config | — | same file — module re-exports | exact |
+| `crates/oxidean-api/src/rpc.rs` | route | request-response | same file — `auth.*` match arms | exact |
+| `crates/oxidean-api/src/app.rs` | middleware | request-response | same file — `rpc_status` | exact |
+| `crates/oxidean-api/src/main.rs` | config | CRUD | same file — `maybe_seed_admin` | exact |
+| `crates/oxidean-core/src/auth_types.rs` | model | transform | same file — `UserPublic` + `RESERVED_USERNAMES` | exact |
+| `crates/oxidean-api/src/bin/rpc_gen.rs` | config | transform | same file — generated `UserPublic` + `auth.*` client | exact |
 | `packages/api-client/src/index.ts` | config | request-response | same file (via rpc-gen; do not hand-edit) | exact |
 | `apps/web/src/components/ui/input-otp.tsx` | component | transform | `apps/web/src/components/ui/input.tsx` | role-match |
 | `apps/web/src/components/verify-banner.tsx` | component | request-response | `apps/web/src/routes/dashboard.tsx` (profile-incomplete banner) | exact |
@@ -33,15 +33,15 @@
 | `apps/web/src/routes/__root.tsx` | route | event-driven | same file — `SiteHeader` / `<main>` stacking | exact |
 | `apps/web/src/routes/dashboard.tsx` | route | request-response | same file — link row + incomplete banner | exact |
 | `apps/web/src/components/chrome.tsx` | component | request-response | same file — `AccountActions` `auth.me` load | role-match |
-| `crates/octanest-api/tests/auth_verify_reset.rs` | test | request-response | `crates/octanest-api/tests/auth_session.rs` | exact |
-| `crates/octanest-api/tests/auth_verify_gate.rs` | test | request-response | `crates/octanest-api/tests/admin_auth_settings.rs` + `auth_session.rs` | exact |
-| `crates/octanest-db/tests/dialect_auth.rs` | test | CRUD | same file — migrate + session round-trip | exact |
+| `crates/oxidean-api/tests/auth_verify_reset.rs` | test | request-response | `crates/oxidean-api/tests/auth_session.rs` | exact |
+| `crates/oxidean-api/tests/auth_verify_gate.rs` | test | request-response | `crates/oxidean-api/tests/admin_auth_settings.rs` + `auth_session.rs` | exact |
+| `crates/oxidean-db/tests/dialect_auth.rs` | test | CRUD | same file — migrate + session round-trip | exact |
 
 ## Pattern Assignments
 
-### `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql` (migration, CRUD)
+### `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql` (migration, CRUD)
 
-**Analog:** `crates/octanest-db/migrations/sqlite/0002_auth.sql` (mirror postgres/mysql siblings)
+**Analog:** `crates/oxidean-db/migrations/sqlite/0002_auth.sql` (mirror postgres/mysql siblings)
 
 **Core pattern** (sessions hash-at-rest + FK + index — lines 16–26):
 ```sql
@@ -62,9 +62,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
 ---
 
-### `crates/octanest-db/src/email_tokens.rs` (model, CRUD)
+### `crates/oxidean-db/src/email_tokens.rs` (model, CRUD)
 
-**Analog:** `crates/octanest-db/src/sessions.rs`
+**Analog:** `crates/oxidean-db/src/sessions.rs`
 
 **Imports / row shape** (lines 1–16):
 ```rust
@@ -107,7 +107,7 @@ pub async fn create(
 
 ---
 
-### `crates/octanest-db/src/lib.rs` (model, CRUD)
+### `crates/oxidean-db/src/lib.rs` (model, CRUD)
 
 **Analog:** same file — sessions/users facades (lines 97–167)
 
@@ -129,7 +129,7 @@ pub async fn create_session(
 
 ---
 
-### `crates/octanest-db/src/users.rs` (model, CRUD)
+### `crates/oxidean-db/src/users.rs` (model, CRUD)
 
 **Analog:** same file — `UserRow.email_verified_at` already selected (lines 7–80)
 
@@ -145,9 +145,9 @@ pub struct UserRow {
 
 ---
 
-### `crates/octanest-api/src/auth/verify_reset.rs` (service, request-response)
+### `crates/oxidean-api/src/auth/verify_reset.rs` (service, request-response)
 
-**Analog:** `crates/octanest-api/src/auth/session.rs` (hash-at-rest CSPRNG) + `local.rs` (email send + session mint)
+**Analog:** `crates/oxidean-api/src/auth/session.rs` (hash-at-rest CSPRNG) + `local.rs` (email send + session mint)
 
 **Imports / hash-at-rest core** (`session.rs` lines 1–13, 72–106, 194–206):
 ```rust
@@ -173,7 +173,7 @@ fn sha256_hex(data: &[u8]) -> String {
 ```rust
 let welcome = OutboundEmail {
     to: email.clone(),
-    subject: "Welcome to Octanest".into(),
+    subject: "Welcome to Oxidean".into(),
     text: format!(...),
     html: None,
 };
@@ -196,17 +196,17 @@ pub async fn logout_all(ctx: &mut RpcCtx) -> Result<(), AppError> {
 }
 ```
 
-**Password hash on reset** — reuse `crates/octanest-api/src/auth/password.rs` lines 13–31 (`MIN_PASSWORD_LEN = 8`, `hash_password_str`).
+**Password hash on reset** — reuse `crates/oxidean-api/src/auth/password.rs` lines 13–31 (`MIN_PASSWORD_LEN = 8`, `hash_password_str`).
 
-**Magic-link base URL** — copy `public_origin` from `crates/octanest-api/src/routes/auth_callbacks.rs` lines 25–42 (`OCTANEST_PUBLIC_ORIGIN`, strip trailing slash; never build from untrusted Host alone for email bodies).
+**Magic-link base URL** — copy `public_origin` from `crates/oxidean-api/src/routes/auth_callbacks.rs` lines 25–42 (`OXIDEAN_PUBLIC_ORIGIN`, strip trailing slash; never build from untrusted Host alone for email bodies).
 
 **Error handling:** Map failures to stable `auth.*` codes via `AppError::new` like `local.rs` (`auth.rate_limited`, invalid/expired, SSO-only). Anti-enumeration: always `Ok` on `request_password_reset` after email normalize (`local.rs` `normalize_email` lines 49–55).
 
 ---
 
-### `crates/octanest-api/src/auth/gate.rs` (utility, request-response)
+### `crates/oxidean-api/src/auth/gate.rs` (utility, request-response)
 
-**Analog:** `crates/octanest-api/src/auth/admin.rs` (`require_admin`)
+**Analog:** `crates/oxidean-api/src/auth/admin.rs` (`require_admin`)
 
 **Auth/guard pattern** (lines 71–90):
 ```rust
@@ -237,7 +237,7 @@ async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
 
 ---
 
-### `crates/octanest-api/src/auth/local.rs` (service, request-response)
+### `crates/oxidean-api/src/auth/local.rs` (service, request-response)
 
 **Analog:** same file
 
@@ -258,7 +258,7 @@ pub fn user_to_public(row: &UserRow) -> UserPublic {
 
 ---
 
-### `crates/octanest-api/src/auth/external.rs` + `workos.rs` + `oidc.rs` (service, request-response)
+### `crates/oxidean-api/src/auth/external.rs` + `workos.rs` + `oidc.rs` (service, request-response)
 
 **Analog:** `ExternalIdentity` (external.rs lines 8–15) and finish constructors:
 
@@ -279,7 +279,7 @@ pub struct ExternalIdentity {
 
 ---
 
-### `crates/octanest-api/src/rpc.rs` (route, request-response)
+### `crates/oxidean-api/src/rpc.rs` (route, request-response)
 
 **Analog:** same file — auth dispatch (lines 94–117)
 
@@ -302,7 +302,7 @@ other => RpcResponse::err(AppError::new(
 
 ---
 
-### `crates/octanest-api/src/app.rs` (middleware, request-response)
+### `crates/oxidean-api/src/app.rs` (middleware, request-response)
 
 **Analog:** `rpc_status` (lines 156–169)
 
@@ -328,7 +328,7 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
 
 ---
 
-### `crates/octanest-api/src/main.rs` (config, CRUD)
+### `crates/oxidean-api/src/main.rs` (config, CRUD)
 
 **Analog:** `maybe_seed_admin` (lines 9–47)
 
@@ -350,7 +350,7 @@ db.create_user(
 
 ---
 
-### `crates/octanest-core/src/auth_types.rs` (model, transform)
+### `crates/oxidean-core/src/auth_types.rs` (model, transform)
 
 **Analog:** same file — `UserPublic` (lines 23–36) + `RESERVED_USERNAMES` (lines 95–126)
 
@@ -371,7 +371,7 @@ pub struct UserPublic {
 
 ---
 
-### `crates/octanest-api/src/bin/rpc_gen.rs` → `packages/api-client/src/index.ts` (config, transform)
+### `crates/oxidean-api/src/bin/rpc_gen.rs` → `packages/api-client/src/index.ts` (config, transform)
 
 **Analog:** rpc_gen template `UserPublic` + auth client (rpc_gen.rs lines 46–55; api-client lines 36–45, 128–133)
 
@@ -389,7 +389,7 @@ export type UserPublic = {
 // auth.me / signup / login return UserPublic
 ```
 
-**Copy for Phase 5:** Extend generated type + add client methods for verify/reset/ping; run `cargo run -p octanest-api --bin rpc-gen` — do not hand-edit api-client.
+**Copy for Phase 5:** Extend generated type + add client methods for verify/reset/ping; run `cargo run -p oxidean-api --bin rpc-gen` — do not hand-edit api-client.
 
 ---
 
@@ -448,7 +448,7 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
 ```tsx
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  head: () => ({ meta: [{ title: "Sign in · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Sign in · Oxidean" }] }),
 });
 
 return (
@@ -473,7 +473,7 @@ return (
 
 ```tsx
 <p className="text-[14px] text-muted-foreground">
-  New to Octanest?{" "}
+  New to Oxidean?{" "}
   <a href={signupHref} className="font-normal text-foreground underline-offset-4 hover:underline">
     Create an account
   </a>
@@ -493,7 +493,7 @@ function RootComponent() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <main className="octanest-main flex-1">
+      <main className="oxidean-main flex-1">
         <Outlet />
       </main>
       <SiteFooter />
@@ -523,9 +523,9 @@ function RootComponent() {
 
 ---
 
-### `crates/octanest-api/tests/auth_verify_reset.rs` + `auth_verify_gate.rs` (test, request-response)
+### `crates/oxidean-api/tests/auth_verify_reset.rs` + `auth_verify_gate.rs` (test, request-response)
 
-**Analog:** `crates/octanest-api/tests/auth_session.rs` (lines 1–65 harness)
+**Analog:** `crates/oxidean-api/tests/auth_session.rs` (lines 1–65 harness)
 
 ```rust
 async fn test_app(db: Database) -> axum::Router {
@@ -534,7 +534,7 @@ async fn test_app(db: Database) -> axum::Router {
     router_with_state(state, cors)
 }
 
-fn rpc_req(body: &str) -> Request<Body> { /* POST /api/rpc + Octanest-RPC-Version */ }
+fn rpc_req(body: &str) -> Request<Body> { /* POST /api/rpc + Oxidean-RPC-Version */ }
 fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> { /* + cookie */ }
 fn session_cookie_from_response(res: &...) -> String { /* parse Set-Cookie */ }
 ```
@@ -543,7 +543,7 @@ fn session_cookie_from_response(res: &...) -> String { /* parse Set-Cookie */ }
 
 ---
 
-### `crates/octanest-db/tests/dialect_auth.rs` (test, CRUD)
+### `crates/oxidean-db/tests/dialect_auth.rs` (test, CRUD)
 
 **Analog:** same file (lines 15–76)
 
@@ -564,7 +564,7 @@ async fn migrate_auth_and_user_round_trip() {
 ## Shared Patterns
 
 ### Authentication / session cookie
-**Source:** `crates/octanest-api/src/auth/session.rs`, `local.rs`
+**Source:** `crates/oxidean-api/src/auth/session.rs`, `local.rs`
 **Apply to:** verify consume (session must match token user), reset success (mint + revoke others), privileged ping
 ```rust
 // Require session
@@ -577,7 +577,7 @@ ctx.set_cookie = Some(CookieChange::Set(cookie));
 ```
 
 ### Privileged gate (admin → verified)
-**Source:** `crates/octanest-api/src/auth/admin.rs` `require_admin`
+**Source:** `crates/oxidean-api/src/auth/admin.rs` `require_admin`
 **Apply to:** `gate.rs`, `auth.dev.privileged_ping`, future `repo.create`
 ```rust
 // Deny with stable code + short message; map HTTP via rpc_status
@@ -585,7 +585,7 @@ AppError::new("auth.email_unverified", "verify your email to continue")
 ```
 
 ### Error handling / RPC codes
-**Source:** `crates/octanest-api/src/auth/local.rs`, `app.rs` `rpc_status`
+**Source:** `crates/oxidean-api/src/auth/local.rs`, `app.rs` `rpc_status`
 **Apply to:** all new auth RPCs
 - Unauthenticated → `auth.unauthenticated` (401)
 - Forbidden gate → `auth.email_unverified` (403) — extend `rpc_status`
@@ -594,7 +594,7 @@ AppError::new("auth.email_unverified", "verify your email to continue")
 - Unknown env-gated ping → `rpc.unknown_procedure` (404)
 
 ### Email outbound
-**Source:** `crates/octanest-api/src/email/mod.rs` + `local.rs` welcome send
+**Source:** `crates/oxidean-api/src/email/mod.rs` + `local.rs` welcome send
 **Apply to:** verify/reset templates
 ```rust
 pub struct OutboundEmail {
@@ -617,7 +617,7 @@ pub struct OutboundEmail {
 ### Frontend auth chrome
 **Source:** `AuthShell` / `AuthErrorBanner`, `apiClient` with credentials
 **Apply to:** `/verify`, `/reset-password`, banner, forgot link
-- Titles: `Page · Octanest`
+- Titles: `Page · Oxidean`
 - Pending: disabled + `Working…`
 - Cross-links: Label-size underline links
 
@@ -633,7 +633,7 @@ pub struct OutboundEmail {
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-{api,db,core}`, `apps/web/src/{routes,components,lib}`, `packages/api-client`, `crates/octanest-{api,db}/tests`, `crates/octanest-db/migrations`
+**Analog search scope:** `crates/oxidean-{api,db,core}`, `apps/web/src/{routes,components,lib}`, `packages/api-client`, `crates/oxidean-{api,db}/tests`, `crates/oxidean-db/migrations`
 **Files scanned:** ~87 Rust/TS/SQL sources under crates + apps/web + packages
 **Tracked-source gate:** All named analogs verified via `git ls-files` (non-empty)
 **Pattern extraction date:** 2026-09-10

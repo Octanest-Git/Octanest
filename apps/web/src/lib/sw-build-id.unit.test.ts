@@ -28,8 +28,8 @@ describe("sw-build-id", () => {
   });
 
   it("stamps CACHE_NAME placeholder", () => {
-    const src = `const CACHE_NAME = "octanest-shell-${SW_BUILD_PLACEHOLDER}";\n`;
-    expect(stampSwSource(src, "abc123")).toContain('const CACHE_NAME = "octanest-shell-abc123";');
+    const src = `const CACHE_NAME = "oxidean-shell-${SW_BUILD_PLACEHOLDER}";\n`;
+    expect(stampSwSource(src, "abc123")).toContain('const CACHE_NAME = "oxidean-shell-abc123";');
     expect(stampSwSource(src, "abc123")).not.toContain(SW_BUILD_PLACEHOLDER);
   });
 });

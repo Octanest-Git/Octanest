@@ -1,4 +1,4 @@
-import type { LabelPublic } from "@octanest/api-client";
+import type { LabelPublic } from "@oxidean/api-client";
 import { contrastRatio } from "@/lib/contrast";
 import { cn } from "@/lib/utils";
 

@@ -8,7 +8,7 @@
 - Conversation-tab review panel UI
 
 ## Verification
-- `cargo nextest run -p octanest-api -E 'test(pull_reviews)'`
+- `cargo nextest run -p oxidean-api -E 'test(pull_reviews)'`
 - `make web-lint` / `make web-format-check`
 - Vitest pulls integration (reviews stub green)
 

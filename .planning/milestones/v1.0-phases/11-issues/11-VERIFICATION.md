@@ -53,26 +53,26 @@ covered_files:
   - apps/web/src/routes/$owner.$repo.issues.new.tsrx
   - apps/web/src/routes/$owner.$repo.issues.tsrx
   - apps/web/src/routes/$owner.settings.labels.tsrx
-  - crates/octanest-api/src/issue/acl.rs
-  - crates/octanest-api/src/issue/mod.rs
-  - crates/octanest-api/src/label/mod.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/issue_assignees.rs
-  - crates/octanest-api/tests/issue_comments.rs
-  - crates/octanest-api/tests/issue_delete.rs
-  - crates/octanest-api/tests/issue_labels.rs
-  - crates/octanest-api/tests/issue_lifecycle.rs
-  - crates/octanest-api/tests/issue_links.rs
-  - crates/octanest-api/tests/issue_reactions.rs
-  - crates/octanest-api/tests/repo_private_404.rs
-  - crates/octanest-core/src/issue_types.rs
-  - crates/octanest-db/migrations/mysql/0011_issues.sql
-  - crates/octanest-db/migrations/postgres/0011_issues.sql
-  - crates/octanest-db/migrations/sqlite/0011_issues.sql
-  - crates/octanest-db/src/issue_labels.rs
-  - crates/octanest-db/src/issues.rs
-  - crates/octanest-db/tests/dialect_issues.rs
-  - crates/octanest-db/tests/factory_reset_issues.rs
+  - crates/oxidean-api/src/issue/acl.rs
+  - crates/oxidean-api/src/issue/mod.rs
+  - crates/oxidean-api/src/label/mod.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/issue_assignees.rs
+  - crates/oxidean-api/tests/issue_comments.rs
+  - crates/oxidean-api/tests/issue_delete.rs
+  - crates/oxidean-api/tests/issue_labels.rs
+  - crates/oxidean-api/tests/issue_lifecycle.rs
+  - crates/oxidean-api/tests/issue_links.rs
+  - crates/oxidean-api/tests/issue_reactions.rs
+  - crates/oxidean-api/tests/repo_private_404.rs
+  - crates/oxidean-core/src/issue_types.rs
+  - crates/oxidean-db/migrations/mysql/0011_issues.sql
+  - crates/oxidean-db/migrations/postgres/0011_issues.sql
+  - crates/oxidean-db/migrations/sqlite/0011_issues.sql
+  - crates/oxidean-db/src/issue_labels.rs
+  - crates/oxidean-db/src/issues.rs
+  - crates/oxidean-db/tests/dialect_issues.rs
+  - crates/oxidean-db/tests/factory_reset_issues.rs
   - docs/API.md
   - packages/api-client/src/index.ts
 covered_digest: "v1:sha256:e3550907e1546aba3f42c9f74febe847131baa7dedc6599bcffe317fc4fe8031"
@@ -120,12 +120,12 @@ human_verification: "[{'test': 'Create issue #1; edit title/body; close and reop
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-api/src/issue/mod.rs` | issue.* RPC surface | ✓ VERIFIED | create→links_remove + comments/labels/assignees/reactions |
-| `crates/octanest-api/src/issue/acl.rs` | Capability ACL helpers | ✓ VERIFIED | re-exports `resolve_repo_for_read` / `meets` |
-| `crates/octanest-api/src/label/mod.rs` | label.* defs | ✓ VERIFIED | list/create/update/delete + effective set |
-| `crates/octanest-db/migrations/*/0011_issues.sql` | Tri-dialect schema | ✓ VERIFIED | postgres/mysql/sqlite present |
-| `crates/octanest-db/src/issues.rs` | Counter + insert helpers | ✓ VERIFIED | `allocate_next_number` / insert-in-txn |
-| `crates/octanest-core/src/issue_types.rs` | DTOs | ✓ VERIFIED | substantive types |
+| `crates/oxidean-api/src/issue/mod.rs` | issue.* RPC surface | ✓ VERIFIED | create→links_remove + comments/labels/assignees/reactions |
+| `crates/oxidean-api/src/issue/acl.rs` | Capability ACL helpers | ✓ VERIFIED | re-exports `resolve_repo_for_read` / `meets` |
+| `crates/oxidean-api/src/label/mod.rs` | label.* defs | ✓ VERIFIED | list/create/update/delete + effective set |
+| `crates/oxidean-db/migrations/*/0011_issues.sql` | Tri-dialect schema | ✓ VERIFIED | postgres/mysql/sqlite present |
+| `crates/oxidean-db/src/issues.rs` | Counter + insert helpers | ✓ VERIFIED | `allocate_next_number` / insert-in-txn |
+| `crates/oxidean-core/src/issue_types.rs` | DTOs | ✓ VERIFIED | substantive types |
 | `apps/web/src/routes/$owner.$repo.issues*.tsrx` | List/new/detail/labels | ✓ VERIFIED | wired to `apiClient.issue.*` / `label.*` |
 | `apps/web/src/components/repo/issue-*.tsrx` | Collaboration UI | ✓ VERIFIED | comments, labels, assignees, reactions, links, history, delete |
 | `apps/web/src/lib/markdown.ts` | Autolink + sanitize | ✓ VERIFIED | `remark-github` + `rehype-sanitize` last |
@@ -165,13 +165,13 @@ Automated `verify.key-links` fails on TS↔Rust path string matches; **manual wi
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Edit title/body | `cargo nextest run -p octanest-api -E 'test(=issue_lifecycle_edit_title_body)'` | PASS | ✓ PASS |
+| Edit title/body | `cargo nextest run -p oxidean-api -E 'test(=issue_lifecycle_edit_title_body)'` | PASS | ✓ PASS |
 | Comment create | `… test(=issue_comments_create)` | PASS | ✓ PASS |
 | Link stub add | `… test(=issue_links_manual_add_stub)` | PASS | ✓ PASS |
 | History trail | `… test(=issue_history_full_title_body_trail)` | PASS | ✓ PASS |
 | Assignee eligibility | `… test(=issue_assignees_reject_without_read_access)` | PASS | ✓ PASS |
 | Delete no reclaim | `… test(=issue_delete_number_not_reused_after_hard_delete)` | PASS | ✓ PASS |
-| Dialect + factory reset | `cargo nextest run -p octanest-db -E 'test(dialect_issues)|test(=factory_reset_issues_wipes_issue_domain_tables)'` | 3 PASS | ✓ PASS |
+| Dialect + factory reset | `cargo nextest run -p oxidean-db -E 'test(dialect_issues)|test(=factory_reset_issues_wipes_issue_domain_tables)'` | 3 PASS | ✓ PASS |
 | Markdown autolink | `bunx vitest run src/lib/markdown.issues.test.ts` | 5/5 PASS | ✓ PASS |
 | Issues UI integration | `bunx vitest run 'src/routes/$owner.$repo.issues.integration.test.ts'` | 15/15 PASS | ✓ PASS |
 
@@ -259,12 +259,12 @@ Phase 11 must-have truths are present, wired, data-flowing, and backed by passin
 
 ## Known stubs / residual gaps
 
-Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/issues/3) quality audit. These do **not** flip Phase 11 verification to failed — they were intentional Phase 11 scope boundaries (or out-of-phase test depth). Phase 12 must not invent “real PRs / auto-close / full forge e2e” from a green Phase 11 VERIFICATION alone.
+Honesty annotations from [issue #3](https://github.com/oxidean/oxidean/issues/3) quality audit. These do **not** flip Phase 11 verification to failed — they were intentional Phase 11 scope boundaries (or out-of-phase test depth). Phase 12 must not invent “real PRs / auto-close / full forge e2e” from a green Phase 11 VERIFICATION alone.
 
 | Stub / gap | What shipped | What is *not* done | Pointers |
 | ---------- | ------------ | ------------------ | -------- |
-| **`pr_stub` / `IssueLinkKind::PrStub`** | Manual `issue.links.*` CRUD; Linked PRs sidebar lists stub rows | Real pull-request domain objects, PR routes, or PR↔issue linking as first-class PRs (Phase 12) | `IssueLinkKind::PrStub` in `crates/octanest-core/src/issue_types.rs`; UI copy `PR stub #N` in `apps/web/src/components/repo/issue-linked-prs.tsrx`; API note in `docs/API.md` (Linked PRs); tests `crates/octanest-api/tests/issue_links.rs` |
-| **Closing keywords (D-ISS-15)** | Negative test proves `fixes` / `closes` `#N` in comments do **not** auto-close or auto-link | Auto-close / auto-link on merge or keyword comments — deferred to Phase 12 | Decision `D-ISS-15` in `11-CONTEXT.md`; `issue_links_no_closing_keyword_enforcement` in `crates/octanest-api/tests/issue_links.rs`; truth #11 above is “not enforced,” not “keywords work” |
+| **`pr_stub` / `IssueLinkKind::PrStub`** | Manual `issue.links.*` CRUD; Linked PRs sidebar lists stub rows | Real pull-request domain objects, PR routes, or PR↔issue linking as first-class PRs (Phase 12) | `IssueLinkKind::PrStub` in `crates/oxidean-core/src/issue_types.rs`; UI copy `PR stub #N` in `apps/web/src/components/repo/issue-linked-prs.tsrx`; API note in `docs/API.md` (Linked PRs); tests `crates/oxidean-api/tests/issue_links.rs` |
+| **Closing keywords (D-ISS-15)** | Negative test proves `fixes` / `closes` `#N` in comments do **not** auto-close or auto-link | Auto-close / auto-link on merge or keyword comments — deferred to Phase 12 | Decision `D-ISS-15` in `11-CONTEXT.md`; `issue_links_no_closing_keyword_enforcement` in `crates/oxidean-api/tests/issue_links.rs`; truth #11 above is “not enforced,” not “keywords work” |
 | **Stack-browser e2e for issues** | API nextest (`issue_*`), Vitest DOM integration, **plus** Phase 11.1-04 Chromium create→close (`forge-issues-releases.stack.browser.test.tsx`) | Full list filters / soft-404 / comments / labels in stack-browser remain thinner than API/Vitest | `apps/web/e2e/stack-browser/forge-issues-releases.stack.browser.test.tsx` (**closed** for core CRUD; expand filters later) |
 
 **Footnotes for planners**

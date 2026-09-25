@@ -7,7 +7,7 @@ import {
   type OrgMineEntry,
   type RepoPublic,
   type UserLookupHit,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { Building2, BookMarked, Search, Users } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 
 function ssrApiOrigin(): string {
   return (
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080"
   );
 }
@@ -131,7 +131,7 @@ export const Route = createFileRoute("/search")({
   head: ({ loaderData }) => {
     const q = (loaderData as SearchLoaderData | undefined)?.q?.trim();
     return {
-      meta: [{ title: q ? `Search · ${q} · Octanest` : "Search · Octanest" }],
+      meta: [{ title: q ? `Search · ${q} · Oxidean` : "Search · Oxidean" }],
     };
   },
   loader: async ({ location }): Promise<SearchLoaderData> => {
@@ -202,7 +202,7 @@ export function SearchPage() @{
           name="q"
           value={q as string}
           onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)}
-          placeholder="Search Octanest…"
+          placeholder="Search Oxidean…"
           className="pl-8"
           aria-label="Search query"
           data-testid="search-page-input"

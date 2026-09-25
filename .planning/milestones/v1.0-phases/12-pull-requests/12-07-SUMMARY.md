@@ -9,8 +9,8 @@
 - factory_reset_pulls CASCADE wipe; API/ARCHITECTURE/VALIDATION updated
 
 ## Verification
-- `cargo nextest run -p octanest-api -E 'test(pull_lifecycle)'`
-- `cargo nextest run -p octanest-db -E 'test(factory_reset_pulls)'`
+- `cargo nextest run -p oxidean-api -E 'test(pull_lifecycle)'`
+- `cargo nextest run -p oxidean-db -E 'test(factory_reset_pulls)'`
 - `make web-lint` / `make web-format-check`
 - Vitest pulls integration (11 pass)
 

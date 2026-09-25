@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { PullPublic, RepoPublic } from "@octanest/api-client";
+import type { PullPublic, RepoPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import {
   GitMerge,
@@ -20,7 +20,7 @@ import { apiClient } from "@/lib/api-client";
 import { fetchPullGet, fetchRepoGet } from "@/lib/ssr-repo";
 import { useChromeAccountState } from "@/lib/use-chrome-account";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 type PullDetailLoaderData =
   | { kind: "not_found" }
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/$owner/$repo/pull/$n")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Pull #${(params as { n: string }).n} · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Pull #${(params as { n: string }).n} · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

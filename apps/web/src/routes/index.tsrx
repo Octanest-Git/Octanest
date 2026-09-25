@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useLoaderData } from "@octanejs/tanstack-router";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { buttonVariants } from "@/components/ui/button";
-import { OctanestMark } from "@/components/octanest-mark";
+import { OxideanMark } from "@/components/oxidean-mark";
 import { SignedInHomeSkeleton } from "@/components/page-skeletons";
 import { SignedInHome } from "@/components/signed-in-home";
 import { fetchProviderConfig, fetchRepoListMine, fetchSessionMe } from "@/lib/ssr-auth";
@@ -28,7 +28,7 @@ export type HomeLoaderData = {
   allowSignup: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -37,8 +37,8 @@ export const Route = createFileRoute("/")({
       {
         title:
           (loaderData as HomeLoaderData | undefined)?.tree === "signed-in"
-            ? "Repositories · Octanest"
-            : "Octanest",
+            ? "Repositories · Oxidean"
+            : "Oxidean",
       },
     ],
   }),
@@ -165,7 +165,7 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
       />
       <div className="relative mx-auto flex min-h-[32rem] max-w-6xl flex-col justify-center px-4 py-14 sm:py-16 md:min-h-[36rem] lg:min-h-[40rem]">
         <div className="oct-rise" style={{ animationDelay: "0ms" }}>
-          <OctanestMark size={96} />
+          <OxideanMark size={96} />
         </div>
         <h1
           className="oct-rise mt-6 max-w-3xl font-[family-name:var(--font-display)] text-[clamp(1.75rem,5vw,2.5rem)] font-semibold leading-[1.15] text-foreground"
@@ -175,8 +175,8 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
         </h1>
         <div className="oct-rise" style={{ animationDelay: "160ms" }}>
           <p className="mt-4 max-w-2xl text-[16px] text-muted-foreground">
-            Social coding forge: host git, collaborate, and ship — one product for Octanest Cloud
-            and self-host
+            Social coding forge: host git, collaborate, and ship — one product for Oxidean Cloud and
+            self-host
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             @if (allowSignup) {
@@ -200,7 +200,7 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
       <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-2">
         <div className="border-l-[3px] border-primary pl-6">
           <h2 className="font-[family-name:var(--font-display)] text-[24px] font-semibold leading-[1.2] text-foreground">
-            Octanest Cloud
+            Oxidean Cloud
           </h2>
           <p className="mt-4 text-[16px] text-muted-foreground">
             Hosted forge with the same product you run yourself — one release train.
@@ -211,7 +211,7 @@ function AnonLanding({ allowSignup }: { allowSignup: boolean }) @{
             Self-host
           </h2>
           <p className="mt-4 text-[16px] text-muted-foreground">
-            Run Octanest on your machines with Docker Compose — your data, your network.
+            Run Oxidean on your machines with Docker Compose — your data, your network.
           </p>
         </div>
       </div>

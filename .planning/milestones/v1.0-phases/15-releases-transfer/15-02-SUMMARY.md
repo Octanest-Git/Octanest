@@ -21,9 +21,9 @@ tech-stack:
   patterns: ["Opaque asset_id filesystem + multipart replace-by-filename"]
 key-files:
   created:
-    - crates/octanest-api/src/routes/release_assets.rs
+    - crates/oxidean-api/src/routes/release_assets.rs
   modified:
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-api/src/app.rs
     - apps/web/src/routes/$owner.$repo.releases.$tag.tsrx
     - docker-compose.yml
 requirements-completed: [GIT-14, GIT-15]
@@ -33,7 +33,7 @@ coverage:
     requirement: GIT-15
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(release_asset)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(release_asset)'"
         status: pass
     human_judgment: false
 duration: 20min
@@ -43,7 +43,7 @@ status: complete
 
 # Phase 15 Plan 02: Release Assets Summary
 
-**Release assets store on `OCTANEST_RELEASE_ASSETS_DIR` by opaque id with multipart upload, size limits, ACL'd download, and detail UI controls (GIT-14/15).**
+**Release assets store on `OXIDEAN_RELEASE_ASSETS_DIR` by opaque id with multipart upload, size limits, ACL'd download, and detail UI controls (GIT-14/15).**
 
 ## Task Commits
 

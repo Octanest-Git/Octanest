@@ -6,9 +6,9 @@ tags: [sqlx, migrations, sessions, users, argon2-ready, multi-dialect]
 
 requires:
   - phase: 02-multi-db-storage
-    provides: "octanest-db DbPool, per-dialect migrator, migration_parity"
+    provides: "oxidean-db DbPool, per-dialect migrator, migration_parity"
 provides:
-  - "Auth DTOs (ProviderMode, UserPublic, AuthSettingsPublic) in octanest-core"
+  - "Auth DTOs (ProviderMode, UserPublic, AuthSettingsPublic) in oxidean-core"
   - "0002_auth migrations on postgres/mysql/sqlite (users, sessions, auth_identities, instance_auth_settings)"
   - "Dialect-branched CRUD for users/sessions/identities/settings"
   - "dialect_auth integration test scaffold"
@@ -22,24 +22,24 @@ affects:
 tech-stack:
   added: []
   patterns:
-    - "DbPool match-only dialect branching in octanest-db CRUD modules"
+    - "DbPool match-only dialect branching in oxidean-db CRUD modules"
     - "Hash-only columns for password_hash and sessions.token_hash"
     - "App-normalized lowercase email (no CITEXT) for dialect parity"
 
 key-files:
   created:
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-db/migrations/postgres/0002_auth.sql
-    - crates/octanest-db/migrations/mysql/0002_auth.sql
-    - crates/octanest-db/migrations/sqlite/0002_auth.sql
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/sessions.rs
-    - crates/octanest-db/src/auth_identities.rs
-    - crates/octanest-db/src/auth_settings.rs
-    - crates/octanest-db/tests/dialect_auth.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-db/migrations/postgres/0002_auth.sql
+    - crates/oxidean-db/migrations/mysql/0002_auth.sql
+    - crates/oxidean-db/migrations/sqlite/0002_auth.sql
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/sessions.rs
+    - crates/oxidean-db/src/auth_identities.rs
+    - crates/oxidean-db/src/auth_settings.rs
+    - crates/oxidean-db/tests/dialect_auth.rs
   modified:
-    - crates/octanest-core/src/lib.rs
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-core/src/lib.rs
+    - crates/oxidean-db/src/lib.rs
 
 key-decisions:
   - "Session create takes explicit session id + RFC3339 expires_at strings for multi-dialect binds"
@@ -58,7 +58,7 @@ completed: 2026-09-09
 
 # Phase 4 Plan 01: Auth Schema, DTOs & DB CRUD Summary
 
-**Multi-dialect `0002_auth` schema plus octanest-core auth DTOs and octanest-db CRUD for users, sessions, identities, and instance settings**
+**Multi-dialect `0002_auth` schema plus oxidean-core auth DTOs and oxidean-db CRUD for users, sessions, identities, and instance settings**
 
 ## Performance
 
@@ -78,7 +78,7 @@ completed: 2026-09-09
 
 Each task was committed atomically:
 
-1. **Task 1: Auth DTOs in octanest-core** - `383a93c` (feat)
+1. **Task 1: Auth DTOs in oxidean-core** - `383a93c` (feat)
 2. **Task 2: 0002_auth migrations on all three dialects** - `d63c6bd` (feat)
 3. **Task 3: DB CRUD modules + dialect_auth test scaffold** - `c628482` (feat)
 
@@ -88,15 +88,15 @@ _Note: requirements AUTH-01/02/08 are foundation-only here (persistence primitiv
 
 ## Files Created/Modified
 
-- `crates/octanest-core/src/auth_types.rs` — Auth DTOs + `validate_username` / `is_reserved_username`
-- `crates/octanest-core/src/lib.rs` — `pub mod auth_types` + re-exports
-- `crates/octanest-db/migrations/*/0002_auth.sql` — users, sessions, auth_identities, instance_auth_settings
-- `crates/octanest-db/src/users.rs` — insert/find/update_profile/count
-- `crates/octanest-db/src/sessions.rs` — create/find/touch/delete/delete_all_for_user
-- `crates/octanest-db/src/auth_identities.rs` — upsert/find by provider subject
-- `crates/octanest-db/src/auth_settings.rs` — get/update singleton settings
-- `crates/octanest-db/src/lib.rs` — modules + `Database` auth methods
-- `crates/octanest-db/tests/dialect_auth.rs` — `migrate_auth_and_user_round_trip`
+- `crates/oxidean-core/src/auth_types.rs` — Auth DTOs + `validate_username` / `is_reserved_username`
+- `crates/oxidean-core/src/lib.rs` — `pub mod auth_types` + re-exports
+- `crates/oxidean-db/migrations/*/0002_auth.sql` — users, sessions, auth_identities, instance_auth_settings
+- `crates/oxidean-db/src/users.rs` — insert/find/update_profile/count
+- `crates/oxidean-db/src/sessions.rs` — create/find/touch/delete/delete_all_for_user
+- `crates/oxidean-db/src/auth_identities.rs` — upsert/find by provider subject
+- `crates/oxidean-db/src/auth_settings.rs` — get/update singleton settings
+- `crates/oxidean-db/src/lib.rs` — modules + `Database` auth methods
+- `crates/oxidean-db/tests/dialect_auth.rs` — `migrate_auth_and_user_round_trip`
 
 ## Decisions Made
 
@@ -112,7 +112,7 @@ _Note: requirements AUTH-01/02/08 are foundation-only here (persistence primitiv
 - **Found during:** Task 3 (sessions CRUD)
 - **Issue:** Plan interface omitted session PK; table requires TEXT/CHAR PK
 - **Fix:** `sessions::create` and `Database::create_session` take `id: &str`
-- **Files modified:** `crates/octanest-db/src/sessions.rs`, `crates/octanest-db/src/lib.rs`
+- **Files modified:** `crates/oxidean-db/src/sessions.rs`, `crates/oxidean-db/src/lib.rs`
 - **Verification:** dialect_auth round-trip on SQLite
 - **Committed in:** `c628482` (Task 3)
 
@@ -132,15 +132,15 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 - Persistence foundation ready for 04-02 (email) and 04-03 (Argon2id + cookie sessions)
-- No dialect branching leaked outside `octanest-db`
+- No dialect branching leaked outside `oxidean-db`
 
 ## Self-Check: PASSED
 
 - Created files exist on disk
 - Commits `383a93c`, `d63c6bd`, `c628482` present in git log
-- `cargo test -p octanest-core --lib` green
-- `cargo test -p octanest-db --lib migration_parity` green
-- `cargo test -p octanest-db --test dialect_auth` green (skip/pass)
+- `cargo test -p oxidean-core --lib` green
+- `cargo test -p oxidean-db --lib migration_parity` green
+- `cargo test -p oxidean-db --test dialect_auth` green (skip/pass)
 - No `sqlx::query!` in new auth modules
 
 ---

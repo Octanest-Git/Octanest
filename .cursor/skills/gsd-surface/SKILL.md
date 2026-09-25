@@ -28,9 +28,9 @@ When the workflow needs to spawn a subagent:
 </cursor_skill_adapter>
 
 <objective>
-Manage the runtime skill surface without reinstall. Reads/writes `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/.gsd-surface.json`
-(sibling to `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/.gsd-profile`) and re-stages the active skills directory in place.
-Skill dirs live at `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/skills/gsd-*/`.
+Manage the runtime skill surface without reinstall. Reads/writes `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/.gsd-surface.json`
+(sibling to `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/.gsd-profile`) and re-stages the active skills directory in place.
+Skill dirs live at `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/skills/gsd-*/`.
 
 Sub-commands: list · status · profile · disable · enable · reset
 </objective>
@@ -151,16 +151,16 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 ## runtimeConfigDir resolution
 
 The `runtimeConfigDir` for `applySurface` is the **base Claude config directory**
-(`/home/jesse/wsl-projects/personal/typescript/octanest/.cursor`), NOT the skills sub-directory (`/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/skills`).
+(`/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor`), NOT the skills sub-directory (`/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/skills`).
 
 This matches `installRuntimeArtifacts` and `uninstallRuntimeArtifacts`, which also
-receive `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor` as `configDir`. The skill dirs themselves live at
-`/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/skills/gsd-*/` because the `claude global` layout has `destSubpath =
+receive `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor` as `configDir`. The skill dirs themselves live at
+`/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/skills/gsd-*/` because the `claude global` layout has `destSubpath =
 'skills'` — they are derived from `configDir`, not the root for it.
 
 ```bash
 # Cursor — global install
-RUNTIME_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-/home/jesse/wsl-projects/personal/typescript/octanest/.cursor}"
+RUNTIME_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor}"
 SCOPE="global"
 
 # Artifact destinations are derived from runtime layout
@@ -169,7 +169,7 @@ SCOPE="global"
 ```
 
 Surface state is stored at `${RUNTIME_CONFIG_DIR}/.gsd-surface.json`
-(i.e. `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/.gsd-surface.json`).
+(i.e. `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/.gsd-surface.json`).
 
 All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 
@@ -182,9 +182,9 @@ All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 - Missing `surface.cjs` → prompt: "Run `npm i -g @opengsd/gsd-core` to reinstall GSD."
 
 <execution_context>
-Surface state file: `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/.gsd-surface.json`
-Install profile marker: `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/.gsd-profile`
-Skill dirs: `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/skills/gsd-*/`
-Engine module: `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/bin/lib/surface.cjs`
-Cluster definitions: `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/bin/lib/clusters.cjs`
+Surface state file: `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/.gsd-surface.json`
+Install profile marker: `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/.gsd-profile`
+Skill dirs: `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/skills/gsd-*/`
+Engine module: `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/bin/lib/surface.cjs`
+Cluster definitions: `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/bin/lib/clusters.cjs`
 </execution_context>

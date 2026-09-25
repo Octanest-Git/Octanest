@@ -65,7 +65,7 @@ coverage:
     requirement: PLAT-02
     verification:
       - kind: other
-        ref: "rg Octanest Cloud docs/DEPLOYMENT.md"
+        ref: "rg Oxidean Cloud docs/DEPLOYMENT.md"
         status: pass
     human_judgment: false
   - id: D3
@@ -83,7 +83,7 @@ status: complete
 
 # Phase 22 Plan 02: Railway Cloud Deploy Path Summary
 
-**Octanest Cloud IaC deploys the same api/web Dockerfiles behind a Caddy file gateway with managed Postgres — no Docker-socket Traefik, no secrets in git.**
+**Oxidean Cloud IaC deploys the same api/web Dockerfiles behind a Caddy file gateway with managed Postgres — no Docker-socket Traefik, no secrets in git.**
 
 ## Performance
 
@@ -118,7 +118,7 @@ status: complete
 
 - Pin `caddy:2.11.4-alpine` (approved Official Image)
 - Single `forge-data` volume at `/var` instead of six separate mounts (Railway-friendly; same Compose paths)
-- No `octanest-api --migrate` preDeploy (binary lacks migrate CLI) — document temporary `OCTANEST_AUTO_MIGRATE=true` for first boot
+- No `oxidean-api --migrate` preDeploy (binary lacks migrate CLI) — document temporary `OXIDEAN_AUTO_MIGRATE=true` for first boot
 
 ## Deviations from Plan
 

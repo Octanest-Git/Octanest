@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Oxidean mark: faceted oxide crystal shard. Transparent ground;
+       squircle clip + charcoal flatten applied downstream (scripts/gen-icons.sh). -->
+  <g stroke="rgba(0,0,0,0.22)" stroke-width="6" stroke-linejoin="round">
+    <!-- upper-left facet -->
+    <polygon points="512,120 324,500 512,540" fill="#ffab74"/>
+    <!-- upper-right facet -->
+    <polygon points="512,120 700,500 512,540" fill="#f07c33"/>
+    <!-- lower-left facet -->
+    <polygon points="324,500 512,904 512,540" fill="#c95408"/>
+    <!-- lower-right facet -->
+    <polygon points="700,500 512,904 512,540" fill="#8f3c04"/>
+  </g>
+  <!-- specular sliver on the crown -->
+  <polygon points="468,236 428,398 482,352" fill="rgba(255,205,170,0.85)"/>
+</svg>

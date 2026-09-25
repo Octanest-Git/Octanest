@@ -1,6 +1,6 @@
 import { createFileRoute } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { ProviderMode } from "@octanest/api-client";
+import type { ProviderMode } from "@oxidean/api-client";
 import { useEffect, useRef, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { AuthFormSkeleton } from "@/components/page-skeletons";
@@ -29,7 +29,7 @@ import { readReturnToFromLocation, safeReturnTo } from "@/lib/return-to";
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
-    meta: [{ title: "Reset password · Octanest" }, { name: "referrer", content: "no-referrer" }],
+    meta: [{ title: "Reset password · Oxidean" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 

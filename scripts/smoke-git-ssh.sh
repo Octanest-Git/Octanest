@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Compose Git-over-SSH smoke (GIT-03 / D-SSH-02 / D-SSH-07).
-# Asserts TCP SSH on OCTANEST_SSH_PORT, then optionally git ls-remote / push
+# Asserts TCP SSH on OXIDEAN_SSH_PORT, then optionally git ls-remote / push
 # over scp-style git@host:owner/repo.git (not ssh:// primary).
 #
 # Prerequisites:
-#   - Docker Compose stack up (`make up`) with OCTANEST_SSH_ENABLED on api
+#   - Docker Compose stack up (`make up`) with OXIDEAN_SSH_ENABLED on api
 #   - `git` + `ssh` + `ssh-keygen` on PATH
 #   - Public repo SMOKE_GIT_OWNER/SMOKE_GIT_REPO (same as HTTPS smoke)
 #   - SSH public key registered for that owner:
@@ -12,12 +12,12 @@
 #       * SMOKE_SSH_IDENTITY — path to private key whose pubkey is already registered
 #
 # Env knobs:
-#   OCTANEST_SMOKE_URL     default http://localhost (health check via Traefik)
-#   OCTANEST_SSH_HOST      default localhost
-#   OCTANEST_SSH_PORT      default 2222
+#   OXIDEAN_SMOKE_URL     default http://localhost (health check via Traefik)
+#   OXIDEAN_SSH_HOST      default localhost
+#   OXIDEAN_SSH_PORT      default 2222
 #   SMOKE_GIT_OWNER        default smokeowner
 #   SMOKE_GIT_REPO          default smokerepo
-#   SMOKE_SESSION_COOKIE   session cookie (e.g. octanest_session=…) for sshKey.add
+#   SMOKE_SESSION_COOKIE   session cookie (e.g. oxidean_session=…) for sshKey.add
 #   SMOKE_SSH_IDENTITY     private key path (skips keygen + register)
 #   SMOKE_SKIP_LS_REMOTE   if 1, only assert TCP listen (no git client).
 #                          Also skips the SSH denial branch in compose-smoke-protection.sh
@@ -35,9 +35,9 @@ cd "$ROOT"
 source "${ROOT}/scripts/smoke-lib.sh"
 SMOKE_NAME="smoke-git-ssh"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
-SSH_HOST="${OCTANEST_SSH_HOST:-localhost}"
-SSH_PORT="${OCTANEST_SSH_PORT:-2222}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
+SSH_HOST="${OXIDEAN_SSH_HOST:-localhost}"
+SSH_PORT="${OXIDEAN_SSH_PORT:-2222}"
 OWNER="${SMOKE_GIT_OWNER:-smokeowner}"
 REPO="${SMOKE_GIT_REPO:-smokerepo}"
 # scp-style (D-SSH-02); Port via GIT_SSH_COMMAND -p when ≠ 22
@@ -76,7 +76,7 @@ elif command -v nc >/dev/null 2>&1 && nc -z -w 3 "${SSH_HOST}" "${SSH_PORT}" 2>/
   tcp_ok=1
 fi
 if [[ "$tcp_ok" -ne 1 ]]; then
-  echo "FAIL: nothing listening on ${SSH_HOST}:${SSH_PORT} — is OCTANEST_SSH_ENABLED set and ports published?" >&2
+  echo "FAIL: nothing listening on ${SSH_HOST}:${SSH_PORT} — is OXIDEAN_SSH_ENABLED set and ports published?" >&2
   exit 1
 fi
 echo "==> TCP ${SSH_PORT} reachable"
@@ -104,7 +104,7 @@ else
     exit 1
   fi
   identity="${workdir}/id_ed25519"
-  ssh-keygen -t ed25519 -N "" -f "$identity" -C "smoke-git-ssh@octanest" -q
+  ssh-keygen -t ed25519 -N "" -f "$identity" -C "smoke-git-ssh@oxidean" -q
   pub="$(cat "${identity}.pub")"
   if [[ -z "${SMOKE_SESSION_COOKIE:-}" ]]; then
     echo "No SMOKE_SESSION_COOKIE — cannot register ephemeral key via sshKey.add." >&2
@@ -121,7 +121,7 @@ else
   http_code="$(
     curl -sS -o "$rpc_out" -w "%{http_code}" \
       -H "content-type: application/json" \
-      -H "Octanest-RPC-Version: 1" \
+      -H "Oxidean-RPC-Version: 1" \
       -H "Cookie: ${SMOKE_SESSION_COOKIE}" \
       -d "$rpc_body" \
       "${BASE_URL}/api/rpc" || true

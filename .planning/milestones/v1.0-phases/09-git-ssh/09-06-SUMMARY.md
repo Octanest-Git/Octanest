@@ -7,7 +7,7 @@ requires:
   - phase: 09-03
     provides: sshKey.add/list/revoke RPC handlers
 provides:
-  - Generated @octanest/api-client sshKey.* + Query helpers
+  - Generated @oxidean/api-client sshKey.* + Query helpers
   - docs/API.md SSH key + Git-over-SSH sections
 affects: [09-07-ui, 09-08-clonebox]
 actuals:
@@ -22,7 +22,7 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - docs/API.md
 key-decisions:
@@ -44,7 +44,7 @@ status: complete
 
 # Phase 09 Plan 06: sshKey api-client + API.md Summary
 
-**`@octanest/api-client` now exposes `sshKey.add` / `list` / `revoke` with Query helpers, and API.md documents keys as full account identity for Git-over-SSH.**
+**`@oxidean/api-client` now exposes `sshKey.add` / `list` / `revoke` with Query helpers, and API.md documents keys as full account identity for Git-over-SSH.**
 
 ## Performance
 

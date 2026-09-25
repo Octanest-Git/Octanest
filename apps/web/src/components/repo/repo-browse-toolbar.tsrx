@@ -1,4 +1,4 @@
-import type { RepoRefEntry } from "@octanest/api-client";
+import type { RepoRefEntry } from "@oxidean/api-client";
 import { CloneBox } from "@/components/repo/clone-box";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
 import { RefSelect } from "@/components/repo/ref-select";

@@ -25,15 +25,15 @@ covered_files:
   - .planning/phases/12-pull-requests/12-VALIDATION.md
   - apps/web/src/routes/$owner.$repo.pulls.integration.test.ts
   - apps/web/src/routes/$owner.$repo.pulls.tsrx
-  - crates/octanest-api/tests/pull_comments.rs
-  - crates/octanest-api/tests/pull_files.rs
-  - crates/octanest-api/tests/pull_lifecycle.rs
-  - crates/octanest-api/tests/pull_merge.rs
-  - crates/octanest-api/tests/pull_merge_settings.rs
-  - crates/octanest-api/tests/pull_reviews.rs
-  - crates/octanest-db/migrations/mysql/0016_pull_requests.sql
-  - crates/octanest-db/migrations/postgres/0016_pull_requests.sql
-  - crates/octanest-db/migrations/sqlite/0016_pull_requests.sql
+  - crates/oxidean-api/tests/pull_comments.rs
+  - crates/oxidean-api/tests/pull_files.rs
+  - crates/oxidean-api/tests/pull_lifecycle.rs
+  - crates/oxidean-api/tests/pull_merge.rs
+  - crates/oxidean-api/tests/pull_merge_settings.rs
+  - crates/oxidean-api/tests/pull_reviews.rs
+  - crates/oxidean-db/migrations/mysql/0016_pull_requests.sql
+  - crates/oxidean-db/migrations/postgres/0016_pull_requests.sql
+  - crates/oxidean-db/migrations/sqlite/0016_pull_requests.sql
   - packages/api-client/src/index.ts
 covered_digest: "v1:sha256:97cc2d083cde23641f58d4676aa84c81d33a9d0fcf1db1d88dc88687e374eca1"
 behavior_unverified: 0

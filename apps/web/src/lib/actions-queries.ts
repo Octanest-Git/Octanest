@@ -6,7 +6,7 @@ import {
   actionsListRunsQueryOptions,
   actionsListWorkflowsQueryOptions,
   actionsRerunRunMutationOptions,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 
 export const ACTIONS_RUNS_PER_PAGE = 25;

@@ -40,27 +40,27 @@ covered_files:
   - apps/web/src/lib/lfs-pointer.ts
   - apps/web/src/routes/$owner.$repo.settings.tsrx
   - apps/web/src/routes/admin/lfs.tsrx
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/auth/admin.rs
-  - crates/octanest-api/src/jobs/lfs_gc.rs
-  - crates/octanest-api/src/jobs/schedule.rs
-  - crates/octanest-api/src/lfs/auth.rs
-  - crates/octanest-api/src/lfs/batch.rs
-  - crates/octanest-api/src/lfs/mod.rs
-  - crates/octanest-api/src/lfs/quota.rs
-  - crates/octanest-api/src/lfs/store.rs
-  - crates/octanest-api/src/repo/mod.rs
-  - crates/octanest-api/src/routes/git_lfs.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/lfs_batch.rs
-  - crates/octanest-api/tests/lfs_store.rs
-  - crates/octanest-core/src/repo_types.rs
-  - crates/octanest-db/migrations/mysql/0012_lfs.sql
-  - crates/octanest-db/migrations/postgres/0012_lfs.sql
-  - crates/octanest-db/migrations/sqlite/0012_lfs.sql
-  - crates/octanest-db/migrations/sqlite/0013_lfs_quotas.sql
-  - crates/octanest-db/src/lfs.rs
-  - crates/octanest-db/tests/dialect_lfs.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/auth/admin.rs
+  - crates/oxidean-api/src/jobs/lfs_gc.rs
+  - crates/oxidean-api/src/jobs/schedule.rs
+  - crates/oxidean-api/src/lfs/auth.rs
+  - crates/oxidean-api/src/lfs/batch.rs
+  - crates/oxidean-api/src/lfs/mod.rs
+  - crates/oxidean-api/src/lfs/quota.rs
+  - crates/oxidean-api/src/lfs/store.rs
+  - crates/oxidean-api/src/repo/mod.rs
+  - crates/oxidean-api/src/routes/git_lfs.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/lfs_batch.rs
+  - crates/oxidean-api/tests/lfs_store.rs
+  - crates/oxidean-core/src/repo_types.rs
+  - crates/oxidean-db/migrations/mysql/0012_lfs.sql
+  - crates/oxidean-db/migrations/postgres/0012_lfs.sql
+  - crates/oxidean-db/migrations/sqlite/0012_lfs.sql
+  - crates/oxidean-db/migrations/sqlite/0013_lfs_quotas.sql
+  - crates/oxidean-db/src/lfs.rs
+  - crates/oxidean-db/tests/dialect_lfs.rs
   - docker-compose.yml
   - docs/API.md
   - docs/ARCHITECTURE.md
@@ -79,7 +79,7 @@ decision_coverage: "{'honored': 19, 'total': 19, 'not_honored': []}"
 **Verified:** 2026-09-14T18:08:00Z  
 **Status:** passed  
 **Re-verification:** No — initial verification  
-**Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-14-lfs` (`feat/execute-14-lfs-cont`)  
+**Worktree:** `/home/jesse/wsl-projects/personal/typescript/oxidean-wt-14-lfs` (`feat/execute-14-lfs-cont`)  
 **Migration constraint:** `0012_lfs` present on sqlite/postgres/mysql (+ `0013_lfs_quotas`); not renamed.
 
 ## Goal Achievement
@@ -88,7 +88,7 @@ decision_coverage: "{'honored': 19, 'total': 19, 'not_honored': []}"
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | Operator can configure LFS storage on the filesystem (volume-backed) for the instance | ✓ VERIFIED | `OCTANEST_LFS_DIR` in `app.rs`; Compose `./var/lfs:/var/lfs` + env; OID shard `ab/cd/oid` in `lfs/store.rs`; migration `0012_lfs`; nextest `lfs_store_oid_sharded_path_under_lfs_dir` + `dialect_lfs_migrate_schema_presence` PASS |
+| 1 | Operator can configure LFS storage on the filesystem (volume-backed) for the instance | ✓ VERIFIED | `OXIDEAN_LFS_DIR` in `app.rs`; Compose `./var/lfs:/var/lfs` + env; OID shard `ab/cd/oid` in `lfs/store.rs`; migration `0012_lfs`; nextest `lfs_store_oid_sharded_path_under_lfs_dir` + `dialect_lfs_migrate_schema_presence` PASS |
 | 2 | User can push and fetch Git LFS objects for a repository | ✓ VERIFIED | Batch + PUT/GET under `/{owner}/{repo}.git/info/lfs/…`; nextest `lfs_batch_upload_put_download_happy_path` PASS (basic transfer) |
 | 3 | LFS endpoints use PAT Basic only; session Cookie never authorizes LFS (D-LFS-09) | ✓ VERIFIED | `lfs/auth.rs` ignores Cookie; nextest `lfs_batch_cookie_ignored_as_anon` PASS |
 | 4 | Only Admin can enable/disable per-repo LFS; disabled repos reject batch (D-LFS-10) | ✓ VERIFIED | `repo.lfs.setEnabled` Admin gate; nextest `lfs_enable_disabled_repo_rejects_batch` listed; Vitest Settings non-Admin cannot toggle |
@@ -109,10 +109,10 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (19/19). D-L
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-api/src/routes/git_lfs.rs` | Batch + basic transfer | ✓ VERIFIED | Wired in `app.rs`; uses `store`/`auth`/`quota` |
-| `crates/octanest-api/src/lfs/store.rs` | OID-sharded `LFS_DIR` | ✓ VERIFIED | `shard_path` + streaming PUT |
-| `crates/octanest-db/migrations/*/0012_lfs.sql` | Schema | ✓ VERIFIED | `lfs_enabled`, `lfs_objects`, `lfs_object_links` |
-| `docker-compose.yml` | Volume bind | ✓ VERIFIED | `./var/lfs:/var/lfs`, `OCTANEST_LFS_DIR=/var/lfs` |
+| `crates/oxidean-api/src/routes/git_lfs.rs` | Batch + basic transfer | ✓ VERIFIED | Wired in `app.rs`; uses `store`/`auth`/`quota` |
+| `crates/oxidean-api/src/lfs/store.rs` | OID-sharded `LFS_DIR` | ✓ VERIFIED | `shard_path` + streaming PUT |
+| `crates/oxidean-db/migrations/*/0012_lfs.sql` | Schema | ✓ VERIFIED | `lfs_enabled`, `lfs_objects`, `lfs_object_links` |
+| `docker-compose.yml` | Volume bind | ✓ VERIFIED | `./var/lfs:/var/lfs`, `OXIDEAN_LFS_DIR=/var/lfs` |
 | `docs/CONFIGURATION.md` | Operator knobs | ✓ VERIFIED | Git LFS section |
 | `packages/api-client` | Generated LFS RPC | ✓ VERIFIED | rpc-sync-check ok |
 | `apps/web/.../lfs-settings-panel.tsrx` | Settings | ✓ VERIFIED | Imported from settings route |
@@ -120,14 +120,14 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (19/19). D-L
 | `apps/web/.../blob-viewer.tsrx` | Badge + Download | ✓ VERIFIED | `parseLfsPointer` + `repo.lfs.download` |
 | `apps/web/.../lfs-browser.tsrx` | Browser | ✓ VERIFIED | `listObjects` |
 | `scripts/smoke-git-lfs.sh` | Compose smoke | ✓ VERIFIED | Skip-ok without Docker/stack |
-| `crates/octanest-api/src/jobs/lfs_gc.rs` | GC job | ✓ VERIFIED | Scheduled when interval > 0 |
+| `crates/oxidean-api/src/jobs/lfs_gc.rs` | GC job | ✓ VERIFIED | Scheduled when interval > 0 |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `git_lfs.rs` | `lfs/store.rs` | `store::put_stream` / `read_object` | ✓ WIRED | Manual (gsd path-literal check false-negative) |
-| `app.rs` / Compose | `OCTANEST_LFS_DIR` | env → `AppState.lfs_dir` | ✓ WIRED | Both sides set `/var/lfs` |
+| `app.rs` / Compose | `OXIDEAN_LFS_DIR` | env → `AppState.lfs_dir` | ✓ WIRED | Both sides set `/var/lfs` |
 | `lfs-settings-panel.tsrx` | api-client | `repo.lfs.setEnabled` / `getUsage` | ✓ WIRED | Query + mutation |
 | `blob-viewer.tsrx` | api-client | `repo.lfs.download` | ✓ WIRED | Session RPC, not Cookie on `.git/info/lfs` |
 | `admin/lfs.tsrx` | api-client | `admin.lfs.*` | ✓ WIRED | Settings + usage |
@@ -169,7 +169,7 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (19/19). D-L
 | Requirement | Source Plan | Description | Status | Evidence |
 | ----------- | ---------- | ----------- | ------ | -------- |
 | GIT-12 | 14-02..14-12 | Push and fetch Git LFS objects | ✓ SATISFIED | Batch+basic nextest + routes + smoke scaffold |
-| GIT-13 | 14-02, 14-07 | Operator filesystem volume LFS storage | ✓ SATISFIED | `OCTANEST_LFS_DIR` + Compose + docs + store |
+| GIT-13 | 14-02, 14-07 | Operator filesystem volume LFS storage | ✓ SATISFIED | `OXIDEAN_LFS_DIR` + Compose + docs + store |
 
 No orphaned requirements for Phase 14.
 

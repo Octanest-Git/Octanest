@@ -44,8 +44,8 @@ Clarify phase requirements through structured Socratic questioning with quantita
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/spec-phase.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/templates/spec.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/spec-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/templates/spec.md
 </execution_context>
 
 <runtime_note>

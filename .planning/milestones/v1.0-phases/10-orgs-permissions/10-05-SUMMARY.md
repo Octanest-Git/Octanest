@@ -10,7 +10,7 @@ requires:
 provides:
   - "org.get / org.listMine / org.members.* RPCs with Admin+ and last-owner guards"
   - "org.updateSettings member_base_permission (none|read|write) for Admin+"
-  - "Generated @octanest/api-client org members + settings surface"
+  - "Generated @oxidean/api-client org members + settings surface"
 affects:
   - 10-06 invites
   - 10-10 org overview UI
@@ -32,18 +32,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/org/members.rs
+    - crates/oxidean-api/src/org/members.rs
     - .planning/phases/10-orgs-permissions/.tdd/10-05-t1-red-evidence.json
     - .planning/phases/10-orgs-permissions/.tdd/10-05-t2-red-evidence.json
   modified:
-    - crates/octanest-api/src/org/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-core/src/org_types.rs
-    - crates/octanest-db/src/org_members.rs
-    - crates/octanest-db/src/organizations.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/tests/org_create_members.rs
+    - crates/oxidean-api/src/org/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-core/src/org_types.rs
+    - crates/oxidean-db/src/org_members.rs
+    - crates/oxidean-db/src/organizations.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/tests/org_create_members.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -64,7 +64,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_members_add_by_username)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_members_add_by_username)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -72,7 +72,7 @@ coverage:
     requirement: ORG-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_members_update_role) | test(org_members_last_owner)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_members_update_role) | test(org_members_last_owner)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -80,7 +80,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_get_and_list_mine)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_get_and_list_mine)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -88,7 +88,7 @@ coverage:
     requirement: ORG-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_member_base) | test(coalesce) | test(repo_private)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_member_base) | test(coalesce) | test(repo_private)'"
         status: pass
     human_judgment: false
 
@@ -113,7 +113,7 @@ status: complete
 
 - Shipped `org.get`, `org.listMine`, and `org.members.list/add/updateRole/remove` with Admin+/Owner policy (T-10-09 / T-10-10).
 - `org.updateSettings` persists `member_base_permission` / `display_name`; Member private access follows none|read|write while Owner/Admin stay admin.
-- Regenerated `@octanest/api-client` org surface; `make rpc-sync-check` clean.
+- Regenerated `@oxidean/api-client` org surface; `make rpc-sync-check` clean.
 
 ## Task Commits
 
@@ -128,12 +128,12 @@ Each task was committed atomically (TDD RED → GREEN):
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/org/members.rs` — members.* handlers
-- `crates/octanest-api/src/org/mod.rs` — get/listMine/updateSettings + shared helpers
-- `crates/octanest-db/src/org_members.rs` — list/update/remove/count_owners/listMine joins
-- `crates/octanest-db/src/organizations.rs` — update_settings
-- `crates/octanest-core/src/org_types.rs` — RPC DTOs
-- `crates/octanest-api/tests/org_create_members.rs` — membership + member_base integration tests
+- `crates/oxidean-api/src/org/members.rs` — members.* handlers
+- `crates/oxidean-api/src/org/mod.rs` — get/listMine/updateSettings + shared helpers
+- `crates/oxidean-db/src/org_members.rs` — list/update/remove/count_owners/listMine joins
+- `crates/oxidean-db/src/organizations.rs` — update_settings
+- `crates/oxidean-core/src/org_types.rs` — RPC DTOs
+- `crates/oxidean-api/tests/org_create_members.rs` — membership + member_base integration tests
 - `packages/api-client/src/index.ts` — generated client
 
 ## Decisions Made
@@ -178,6 +178,6 @@ None — surfaces match plan threat model (T-10-09 / T-10-10 mitigated; no new p
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/org/members.rs`
+- FOUND: `crates/oxidean-api/src/org/members.rs`
 - FOUND: commits `ec6bf5d`, `24f8856`, `fcdec04`, `d2c562f`
 - FOUND: RED evidence files for T1 and T2

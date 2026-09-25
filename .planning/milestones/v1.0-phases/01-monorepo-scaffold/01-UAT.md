@@ -25,7 +25,7 @@ reported: "I prefer if we use /health instead of /healthz"
 severity: major
 
 ### 2. Landing first viewport
-expected: Open http://localhost:3000/ (make dev) or http://localhost/ (Compose). See Octanest brand mark + name as hero signal, headline "Where repositories nest — cloud or yours", CTAs Get started and Explore Octanest, and placeholder search — not a dashboard of stats/cards.
+expected: Open http://localhost:3000/ (make dev) or http://localhost/ (Compose). See Oxidean brand mark + name as hero signal, headline "Where repositories nest — cloud or yours", CTAs Get started and Explore Oxidean, and placeholder search — not a dashboard of stats/cards.
 result: pass
 
 ### 3. Theme persistence
@@ -38,7 +38,7 @@ result: pass
 verified_by: agent (Playwright)
 
 ### 5. API reachable from the UI path
-expected: Browser or curl through the same origin the UI uses (Vite proxy or Traefik) can hit /healthz and POST /api/rpc system.health with header Octanest-RPC-Version: 1 and get ok JSON.
+expected: Browser or curl through the same origin the UI uses (Vite proxy or Traefik) can hit /healthz and POST /api/rpc system.health with header Oxidean-RPC-Version: 1 and get ok JSON.
 result: pass
 verified_by: agent (curl via Vite proxy)
 
@@ -66,7 +66,7 @@ blocked: 0
   test: 1
   root_cause: "Phase 1 locked Kubernetes-style /healthz; product preference is /health for the public probe path."
   artifacts:
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-api/src/app.rs
     - docker-compose.yml
     - apps/web/vite.config.ts
     - scripts/compose-smoke.sh

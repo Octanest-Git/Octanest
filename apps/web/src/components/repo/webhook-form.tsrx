@@ -1,4 +1,4 @@
-import type { WebhookPublic } from "@octanest/api-client";
+import type { WebhookPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 const EVENT_OPTIONS = [
   { id: "push", label: "push" },
@@ -218,7 +218,7 @@ export function WebhookForm(props: {
           type="url"
           value={url}
           onInput={(e) => setUrl((e.currentTarget as HTMLInputElement).value)}
-          placeholder="https://example.com/hooks/octanest"
+          placeholder="https://example.com/hooks/oxidean"
           autoComplete="off"
           disabled={pending}
           required

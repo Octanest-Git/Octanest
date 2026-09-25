@@ -34,7 +34,7 @@ Use when `.planning/phases/` has accumulated directories from past milestones.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/cleanup.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/cleanup.md
 </execution_context>
 
 <process>

@@ -23,22 +23,22 @@ tech-stack:
     - "Draft visibility gated by meets(Write)"
 key-files:
   created:
-    - crates/octanest-core/src/release_types.rs
-    - crates/octanest-db/migrations/sqlite/0014_releases_redirects.sql
-    - crates/octanest-db/src/releases.rs
-    - crates/octanest-db/src/redirects.rs
-    - crates/octanest-api/src/release/mod.rs
+    - crates/oxidean-core/src/release_types.rs
+    - crates/oxidean-db/migrations/sqlite/0014_releases_redirects.sql
+    - crates/oxidean-db/src/releases.rs
+    - crates/oxidean-db/src/redirects.rs
+    - crates/oxidean-api/src/release/mod.rs
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
     - packages/api-client/src/index.ts
-    - crates/octanest-api/tests/release_rpc.rs
-    - crates/octanest-db/tests/dialect_releases.rs
+    - crates/oxidean-api/tests/release_rpc.rs
+    - crates/oxidean-db/tests/dialect_releases.rs
 key-decisions:
-  - "Default ENV stubs: OCTANEST_RELEASE_ASSETS_DIR=var/release-assets, max 512MiB, redirect retention 90d"
+  - "Default ENV stubs: OXIDEAN_RELEASE_ASSETS_DIR=var/release-assets, max 512MiB, redirect retention 90d"
   - "release.tag_missing + repo.not_found map to HTTP 400/404 via existing rpc_status"
 patterns-established:
-  - "Release DTOs in octanest-core; persistence in octanest-db; handlers in api/release"
+  - "Release DTOs in oxidean-core; persistence in oxidean-db; handlers in api/release"
 requirements-completed: [GIT-14]
 coverage:
   - id: D1
@@ -46,7 +46,7 @@ coverage:
     requirement: GIT-14
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(release_create)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(release_create)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-14
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(release_tag) | test(release_draft)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(release_tag) | test(release_draft)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -62,7 +62,7 @@ coverage:
     requirement: GIT-14
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(release_update) | test(release_delete)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(release_update) | test(release_delete)'"
         status: pass
     human_judgment: false
 duration: 10min
@@ -120,7 +120,7 @@ None.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/release/mod.rs
-- FOUND: crates/octanest-db/migrations/sqlite/0014_releases_redirects.sql
+- FOUND: crates/oxidean-api/src/release/mod.rs
+- FOUND: crates/oxidean-db/migrations/sqlite/0014_releases_redirects.sql
 - FOUND: commit 4e1b5d1
 - TESTS: dialect_releases 2/2; release create/tag/draft/update/delete/write 6/6

@@ -1,4 +1,4 @@
-# Octanest Cloud gateway — Caddyfile
+# Oxidean Cloud gateway — Caddyfile
 #
 # File-configured reverse proxy (D-CLOUD-03). Mirrors Compose Traefik path
 # priorities without a Docker socket. Public Host is catch-all (Railway TLS /

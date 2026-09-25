@@ -1,4 +1,4 @@
-# Publish the official octanest-runner image to GHCR.
+# Publish the official oxidean-runner image to GHCR.
 #
 # Triggers:
 #   - push to main touching the runner crate or its Dockerfile (tag: main)
@@ -14,8 +14,8 @@ on:
   push:
     branches: [main]
     paths:
-      - crates/octanest-runner/**
-      - docker/octanest-runner/**
+      - crates/oxidean-runner/**
+      - docker/oxidean-runner/**
       - Cargo.lock
       - .github/workflows/publish-runner.yml
     tags: ["v*.*.*"]
@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   publish:
-    name: ghcr.io/${{ github.repository_owner }}/octanest-runner
+    name: ghcr.io/${{ github.repository_owner }}/oxidean-runner
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/octanest-runner
+          images: ghcr.io/${{ github.repository_owner }}/oxidean-runner
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -56,7 +56,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/octanest-runner/Dockerfile
+          file: docker/oxidean-runner/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

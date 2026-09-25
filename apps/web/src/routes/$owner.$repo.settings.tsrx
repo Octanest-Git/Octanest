@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
-import type { OwnerType, RepoVisibility } from "@octanest/api-client";
+import type { OwnerType, RepoVisibility } from "@oxidean/api-client";
 import { useState } from "octane";
 import { CollaboratorsPanel } from "@/components/repo/collaborators-panel";
 import { BranchProtectionPanel } from "@/components/repo/branch-protection-panel";
@@ -27,16 +27,16 @@ export const Route = createFileRoute("/$owner/$repo/settings")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Settings · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Settings · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),
 });
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PRIVATE_HELPER = "Only people with access can see this private repository.";
 const SOFT_DELETE_BODY =
-  "Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm.";
+  "Removes this repository from Oxidean. Files may be purged from disk later. Type the repository name to confirm.";
 const TRANSFER_BODY =
   "Transfers this repository to another user or organization. Type the repository name to confirm.";
 
@@ -437,7 +437,7 @@ export function RepoSettingsPage() @{
 
           <div className="flex flex-col gap-3">
             <p className="text-[14px] leading-[1.4] text-muted-foreground">
-              Soft-delete removes this repository from Octanest. Disk cleanup may run later.
+              Soft-delete removes this repository from Oxidean. Disk cleanup may run later.
             </p>
             <Button
               type="button"

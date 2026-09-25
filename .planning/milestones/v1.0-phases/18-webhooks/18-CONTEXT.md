@@ -55,8 +55,8 @@ Repo admins subscribe outbound HTTPS webhooks for repository events, the instanc
 
 ### B — Event catalog & payloads
 - **D-HOOK-05:** Ship at least: **`push`**, **`pull_request`**, **`issues`**, plus synthetic **`ping`** on create/manual redeliver-test — **Reversibility:** reversible
-- **D-HOOK-06:** Event names and envelope headers follow **GitHub Hookshot conventions**: `X-GitHub-Event`, `X-GitHub-Delivery` (UUID), `X-GitHub-Hook-ID`, `User-Agent: Octanest-Hookshot/*`, `Content-Type: application/json` — **Reversibility:** costly — public integration contract
-- **D-HOOK-07:** Payload bodies are **GitHub-shaped JSON** (action + resource + repository + sender). Prefer field names familiar to GitHub consumers; Octanest-specific extras only when no GitHub analog exists — **Reversibility:** costly — payload contract
+- **D-HOOK-06:** Event names and envelope headers follow **GitHub Hookshot conventions**: `X-GitHub-Event`, `X-GitHub-Delivery` (UUID), `X-GitHub-Hook-ID`, `User-Agent: Oxidean-Hookshot/*`, `Content-Type: application/json` — **Reversibility:** costly — public integration contract
+- **D-HOOK-07:** Payload bodies are **GitHub-shaped JSON** (action + resource + repository + sender). Prefer field names familiar to GitHub consumers; Oxidean-specific extras only when no GitHub analog exists — **Reversibility:** costly — payload contract
 - **D-HOOK-08:** **`issues` actions** at minimum: `opened`, `edited`, `closed`, `reopened` (map from Phase 11 issue.create/update lifecycle). **`issue_comment`** is Claude's discretion if it fits the same emitter without scope creep — **Reversibility:** reversible
 - **D-HOOK-09:** **`pull_request` actions** at minimum: `opened`, `edited`, `closed`, `reopened`, `synchronize`, `merged` (or GitHub's `closed` + `merged: true`). Payload **PR identity** MUST align with Phase 12: shared per-repo **`#N`** with issues (D-PR-02), head may be same-repo or fork (D-PR-01…03), include draft flag if Phase 12 ships it — **Reversibility:** costly — couples to PR schema
 - **D-HOOK-10:** **`push`** fires after successful **git-receive-pack** (HTTPS and SSH) when refs update; include ref, before/after SHAs, commits summary, pusher/sender, repository — **Reversibility:** reversible
@@ -80,7 +80,7 @@ Repo admins subscribe outbound HTTPS webhooks for repository events, the instanc
 
 ### F — Cross-phase wiring
 - **D-HOOK-22:** Emitters hook Phase 11 **issue** mutations and Phase 12 **pull** mutations; push hooks Smart HTTP receive-pack + SSH receive path after successful update — **Reversibility:** reversible
-- **D-HOOK-23:** Introduce a small internal **`WebhookDispatcher` / event-bus seam** in `octanest-api` so Phase 17 notifications and Phase 19 Actions can subscribe later without rewriting callers — **Reversibility:** costly — shared event seam
+- **D-HOOK-23:** Introduce a small internal **`WebhookDispatcher` / event-bus seam** in `oxidean-api` so Phase 17 notifications and Phase 19 Actions can subscribe later without rewriting callers — **Reversibility:** costly — shared event seam
 - **D-HOOK-24:** On repo **transfer/rename**, webhooks stay on `repository_id` (already Phase 15 D-REL-11 intent) — **Reversibility:** reversible
 
 ### Claude's Discretion
@@ -118,10 +118,10 @@ Repo admins subscribe outbound HTTPS webhooks for repository events, the instanc
 - GitHub: Webhook events and payloads (`push`, `pull_request`, `issues`)
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/acl.rs` — Admin resolve
-- `crates/octanest-api/src/issue/mod.rs` — issue mutation hooks
-- `crates/octanest-api/src/routes/git_smart_http.rs` — receive-pack success path
-- `crates/octanest-api/src/jobs/schedule.rs` — background job spawn pattern (retry worker)
+- `crates/oxidean-api/src/repo/acl.rs` — Admin resolve
+- `crates/oxidean-api/src/issue/mod.rs` — issue mutation hooks
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — receive-pack success path
+- `crates/oxidean-api/src/jobs/schedule.rs` — background job spawn pattern (retry worker)
 - `apps/web/src/routes/$owner.$repo.settings.tsrx` — Admin settings shell
 - `apps/web/src/components/settings/pat-reveal.tsrx` — one-time secret reveal pattern
 
@@ -132,7 +132,7 @@ Repo admins subscribe outbound HTTPS webhooks for repository events, the instanc
 
 ### Reusable Assets
 - `Capability::Admin` + `can_admin` on repo settings UI
-- `reqwest` + `sha2` already in `octanest-api` (HMAC via RustCrypto `hmac` crate — legitimacy gate if added)
+- `reqwest` + `sha2` already in `oxidean-api` (HMAC via RustCrypto `hmac` crate — legitimacy gate if added)
 - In-process `spawn_background_jobs` for retry/drain loops
 - PAT create one-time reveal UX for secrets
 - Issue RPC surface fully shipped (Phase 11); push via Smart HTTP + SSH
@@ -152,7 +152,7 @@ Repo admins subscribe outbound HTTPS webhooks for repository events, the instanc
 
 - User: GitHub-like outbound webhooks; CRUD for repo admins; deliver at least push/PR/issue; show delivery attempts/status
 - User: Auto-decide gray areas; align PR payloads with Phase 12 PR model from CONTEXT
-- Prefer integration compatibility (GitHub header/event names) over inventing Octanest-only vocabulary
+- Prefer integration compatibility (GitHub header/event names) over inventing Oxidean-only vocabulary
 
 </specifics>
 

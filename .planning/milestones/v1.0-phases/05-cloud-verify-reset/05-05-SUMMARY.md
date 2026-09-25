@@ -31,11 +31,11 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/auth/external.rs
-    - crates/octanest-api/src/auth/workos.rs
-    - crates/octanest-api/src/auth/oidc.rs
-    - crates/octanest-api/src/auth/verify_reset.rs
-    - crates/octanest-api/tests/auth_verify_gate.rs
+    - crates/oxidean-api/src/auth/external.rs
+    - crates/oxidean-api/src/auth/workos.rs
+    - crates/oxidean-api/src/auth/oidc.rs
+    - crates/oxidean-api/src/auth/verify_reset.rs
+    - crates/oxidean-api/tests/auth_verify_gate.rs
 
 key-decisions:
   - "Re-apply IdP-trust on existing identity link path so returning SSO users with newly verified IdP email get marked"
@@ -53,16 +53,16 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: unit
-        ref: "crates/octanest-api/src/auth/external.rs#link_or_create_marks_verified_when_idp_asserts"
+        ref: "crates/oxidean-api/src/auth/external.rs#link_or_create_marks_verified_when_idp_asserts"
         status: pass
       - kind: unit
-        ref: "crates/octanest-api/src/auth/workos.rs#maps_workos_email_verified_into_identity_flag"
+        ref: "crates/oxidean-api/src/auth/workos.rs#maps_workos_email_verified_into_identity_flag"
         status: pass
       - kind: unit
-        ref: "crates/octanest-api/src/auth/oidc.rs#maps_oidc_email_verified_claim_some_true_only"
+        ref: "crates/oxidean-api/src/auth/oidc.rs#maps_oidc_email_verified_claim_some_true_only"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_gate.rs#idp_trust_verified_sso_user_privileged_ping_ok"
+        ref: "crates/oxidean-api/tests/auth_verify_gate.rs#idp_trust_verified_sso_user_privileged_ping_ok"
         status: pass
     human_judgment: false
   - id: D2
@@ -70,7 +70,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: unit
-        ref: "crates/octanest-api/src/auth/external.rs#link_or_create_leaves_unverified_when_idp_does_not_assert"
+        ref: "crates/oxidean-api/src/auth/external.rs#link_or_create_leaves_unverified_when_idp_does_not_assert"
         status: pass
     human_judgment: false
   - id: D3
@@ -78,7 +78,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: unit
-        ref: "crates/octanest-api/src/auth/verify_reset.rs#clear_email_verification_clears_verified_flag"
+        ref: "crates/oxidean-api/src/auth/verify_reset.rs#clear_email_verification_clears_verified_flag"
         status: pass
     human_judgment: false
 
@@ -124,11 +124,11 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/external.rs` — `email_verified` field + IdP-trust apply on link/create
-- `crates/octanest-api/src/auth/workos.rs` — `map_workos_email_verified` + finish mapping
-- `crates/octanest-api/src/auth/oidc.rs` — `map_oidc_email_verified` (Some(true) only) + finish mapping
-- `crates/octanest-api/src/auth/verify_reset.rs` — `clear_email_verification` + unit test
-- `crates/octanest-api/tests/auth_verify_gate.rs` — IdP-trust privileged_ping integration
+- `crates/oxidean-api/src/auth/external.rs` — `email_verified` field + IdP-trust apply on link/create
+- `crates/oxidean-api/src/auth/workos.rs` — `map_workos_email_verified` + finish mapping
+- `crates/oxidean-api/src/auth/oidc.rs` — `map_oidc_email_verified` (Some(true) only) + finish mapping
+- `crates/oxidean-api/src/auth/verify_reset.rs` — `clear_email_verification` + unit test
+- `crates/oxidean-api/tests/auth_verify_gate.rs` — IdP-trust privileged_ping integration
 
 ## Decisions Made
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AuthShell } from "@/components/auth-shell";
 import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
@@ -15,11 +15,11 @@ export type TokensNewFgLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/tokens/new/fine-grained")({
   component: TokensNewFineGrainedPage,
-  head: () => ({ meta: [{ title: "New fine-grained token · Octanest" }] }),
+  head: () => ({ meta: [{ title: "New fine-grained token · Oxidean" }] }),
   loader: async (): Promise<TokensNewFgLoaderData> => {
     try {
       const res = await fetchSessionMe();

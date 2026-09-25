@@ -1,11 +1,11 @@
-import type { WebhookDeliveryPublic } from "@octanest/api-client";
+import type { WebhookDeliveryPublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 /** Recent delivery attempts for one webhook (HOOK-03 / D-HOOK-20 / D-HOOK-21). */
 export function WebhookDeliveries(props: {

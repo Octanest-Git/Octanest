@@ -28,11 +28,11 @@ key-files:
     - .planning/phases/10-orgs-permissions/10-03-t1-red-evidence.json
     - .planning/phases/10-orgs-permissions/10-03-t2-red-evidence.json
   modified:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-db/src/repositories.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-db/src/repositories.rs
+    - crates/oxidean-core/src/repo_types.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "User-first then org slug resolve (T-10-07); never trust client owner_id alone"
@@ -48,7 +48,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/org_create_members.rs#org_create_owned_repo_resolves_by_org_slug"
+        ref: "crates/oxidean-api/tests/org_create_members.rs#org_create_owned_repo_resolves_by_org_slug"
         status: pass
     human_judgment: false
   - id: D2
@@ -56,7 +56,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_under_org_as_owner"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_under_org_as_owner"
         status: pass
     human_judgment: false
   - id: D3
@@ -64,10 +64,10 @@ coverage:
     requirement: ORG-03
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_under_org_as_member_denied"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_under_org_as_member_denied"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_under_other_user_denied"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_under_other_user_denied"
         status: pass
     human_judgment: false
 duration: 17min
@@ -104,11 +104,11 @@ commits: 5
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/acl.rs` — OwnerRef + resolve_owner_slug
-- `crates/octanest-api/src/repo/mod.rs` — create owner authorization (A5)
-- `crates/octanest-api/src/routes/git_smart_http.rs` — shared OwnerRef resolve
-- `crates/octanest-db/src/repositories.rs` — owner_type column + polymorphic disk refs
-- `crates/octanest-core/src/repo_types.rs` — CreateRepoRequest.owner, RepoPublic.owner_type
+- `crates/oxidean-api/src/repo/acl.rs` — OwnerRef + resolve_owner_slug
+- `crates/oxidean-api/src/repo/mod.rs` — create owner authorization (A5)
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — shared OwnerRef resolve
+- `crates/oxidean-db/src/repositories.rs` — owner_type column + polymorphic disk refs
+- `crates/oxidean-core/src/repo_types.rs` — CreateRepoRequest.owner, RepoPublic.owner_type
 - `packages/api-client/src/index.ts` — generated client surface
 
 ## Decisions Made
@@ -125,7 +125,7 @@ commits: 5
 - **Found during:** Task 1 (OwnerRef plumbing)
 - **Issue:** Disk-ref query INNER JOIN users only — org-owned rows would vanish from orphan reconcile
 - **Fix:** LEFT JOIN users/orgs keyed by owner_type; CASE slug selection
-- **Files modified:** `crates/octanest-db/src/repositories.rs`
+- **Files modified:** `crates/oxidean-db/src/repositories.rs`
 - **Commit:** `8b08fbf`
 
 **2. [Rule 3 - Blocking] Web fixtures for RepoPublic.owner_type**

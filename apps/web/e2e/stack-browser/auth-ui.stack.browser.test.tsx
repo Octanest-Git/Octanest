@@ -35,7 +35,7 @@ describe("stack browser e2e: local signup + login UI", () => {
 
     const suffix = Date.now();
     const ok = await commands.signupThroughUi({
-      email: `ui.user.${suffix}@octanest.local`,
+      email: `ui.user.${suffix}@oxidean.local`,
       username: `uiuser${suffix}`,
       password: "password1",
     });

@@ -9,7 +9,7 @@
 
 ### Locked Decisions
 #### A — Storage layout
-- **D-LFS-01:** Separate instance volume via **`OCTANEST_LFS_DIR`** (Compose bind like uploads), not under each bare repo — **Reversibility:** costly — ops path + backup story
+- **D-LFS-01:** Separate instance volume via **`OXIDEAN_LFS_DIR`** (Compose bind like uploads), not under each bare repo — **Reversibility:** costly — ops path + backup story
 - **D-LFS-02:** **Instance-wide content-addressed OID store** (dedup across repos) — **Reversibility:** costly — shared GC/refcount model
 - **D-LFS-03:** On-disk layout **OID-sharded** (`ab/cd/<oid>`) plus **DB pointer/refcount rows** — **Reversibility:** costly — migration if changed
 - **D-LFS-04:** **Factory reset wipes `LFS_DIR`** along with repositories — **Reversibility:** reversible (policy)
@@ -59,16 +59,16 @@
 | ID | Description | Research Support |
 |----|-------------|------------------|
 | GIT-12 | User can push and fetch Git LFS objects for a repository | Batch API + basic transfer under `/{owner}/{repo}.git/info/lfs`; PAT Basic + Capability Read/Write; per-repo enable gate |
-| GIT-13 | Operator can configure LFS storage on the filesystem (volume-backed) for the instance | `OCTANEST_LFS_DIR` Compose bind; AppState `lfs_dir`; CONFIGURATION docs; factory-reset wipe |
+| GIT-13 | Operator can configure LFS storage on the filesystem (volume-backed) for the instance | `OXIDEAN_LFS_DIR` Compose bind; AppState `lfs_dir`; CONFIGURATION docs; factory-reset wipe |
 </phase_requirements>
 
 ## Summary
 
-Phase 14 adds a first-class Git LFS server to Octanest on the existing Smart HTTP `.git` surface. Clients discover LFS at `{remote}.git/info/lfs` and call `POST …/objects/batch`, then transfer bytes with the **basic** adapter (GET download / PUT upload / optional verify). Auth must mirror `git_smart_http.rs`: PAT Basic only, cookies ignored, Read for download, Write + verified email for upload, classic `repo` / FG `contents` scopes (no new `lfs` scope). Storage is a separate volume (`OCTANEST_LFS_DIR`) with instance-wide OID dedup, DB refcounts, quotas, and GC — matching Gitea/Forgejo-shaped filesystem forges rather than per-bare-repo `.git/lfs`.
+Phase 14 adds a first-class Git LFS server to Oxidean on the existing Smart HTTP `.git` surface. Clients discover LFS at `{remote}.git/info/lfs` and call `POST …/objects/batch`, then transfer bytes with the **basic** adapter (GET download / PUT upload / optional verify). Auth must mirror `git_smart_http.rs`: PAT Basic only, cookies ignored, Read for download, Write + verified email for upload, classic `repo` / FG `contents` scopes (no new `lfs` scope). Storage is a separate volume (`OXIDEAN_LFS_DIR`) with instance-wide OID dedup, DB refcounts, quotas, and GC — matching Gitea/Forgejo-shaped filesystem forges rather than per-bare-repo `.git/lfs`.
 
 **Critical planning constraint for D-LFS-07 (LOCKED 2026-09-14):** the stock `git-lfs` client (verified locally `git-lfs/3.7.1`; official API README) currently documents **only `basic`** as a supported transfer adapter. The `multipart` transfer mode is a **proposal** (`docs/proposals/multipart_transfer_mode.md`) and is **not** implemented in the open-source client. CONTEXT D-LFS-07 is amended to match: Batch + basic is the GIT-12 path; “multipart/resumable” means streaming PUT + optional verify + Range GET — **not** requiring clients to negotiate `transfer: "multipart"`.
 
-**Primary recommendation:** Implement Axum LFS routes beside Smart HTTP; reuse `authenticate_pat` / `effective_capability` / `pat_allows_operation`; store objects at `{OCTANEST_LFS_DIR}/{oid[0:2]}/{oid[2:4]}/{oid}`; enforce enable + quotas before issuing upload actions; raise/disable Axum body limits on LFS PUT; extend factory reset + Compose; ship Octane Settings/Admin/blob/browser UI via RPC (`make rpc-gen`).
+**Primary recommendation:** Implement Axum LFS routes beside Smart HTTP; reuse `authenticate_pat` / `effective_capability` / `pat_allows_operation`; store objects at `{OXIDEAN_LFS_DIR}/{oid[0:2]}/{oid[2:4]}/{oid}`; enforce enable + quotas before issuing upload actions; raise/disable Axum body limits on LFS PUT; extend factory reset + Compose; ship Octane Settings/Admin/blob/browser UI via RPC (`make rpc-gen`).
 
 ## Architectural Responsibility Map
 
@@ -80,15 +80,15 @@ Phase 14 adds a first-class Git LFS server to Octanest on the existing Smart HTT
 | Per-repo LFS enable toggle | API / Backend | Browser / Client | Admin Capability via RPC; Settings UI |
 | Quotas / usage dashboards | API / Backend | Browser / Client | Enforcement server-side; Admin + repo Settings display |
 | Pointer badge + Download | Browser / Client | API / Backend | Detect pointer in blob RPC; download via LFS/session-safe helper |
-| Compose `OCTANEST_LFS_DIR` | CDN / Static (ops) | API / Backend | Volume bind + env; Traefik already routes `.git` |
+| Compose `OXIDEAN_LFS_DIR` | CDN / Static (ops) | API / Backend | Volume bind + env; Traefik already routes `.git` |
 | Docs / `.gitattributes` guidance | Browser / Client | — | Docs-only; no auto-commit |
 
 ## Project Constraints (from `.cursor/rules/`)
 
-- One product: Bun workspaces + Cargo crates; do not invent parallel app structure. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- One product: Bun workspaces + Cargo crates; do not invent parallel app structure. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 - Web UI is **Octane** (`.tsrx`), not React JSX; load Octane skill before UI edits. [VERIFIED: `.cursor/rules/octane-ui.mdc`]
-- RPC types: change Rust → `make rpc-gen`; never hand-edit `@octanest/api-client` as SoT. [VERIFIED: `.cursor/rules/rpc-codegen.mdc`]
-- Dialect SQL only inside `crates/octanest-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
+- RPC types: change Rust → `make rpc-gen`; never hand-edit `@oxidean/api-client` as SoT. [VERIFIED: `.cursor/rules/rpc-codegen.mdc`]
+- Dialect SQL only inside `crates/oxidean-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
 - Prefer extending Smart HTTP / ACL / Make smoke patterns over new frameworks. [VERIFIED: `AGENTS.md`]
 
 ## Standard Stack
@@ -97,8 +97,8 @@ Phase 14 adds a first-class Git LFS server to Octanest on the existing Smart HTT
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| Axum (existing) | workspace | LFS HTTP routes | Already serves Smart HTTP [VERIFIED: `crates/octanest-api/src/app.rs:140-152`] |
-| `sha2` | `0.11.0` (in-tree) | Hash upload stream vs OID | Already depended; verify OID on PUT [VERIFIED: `crates/octanest-api/Cargo.toml`] |
+| Axum (existing) | workspace | LFS HTTP routes | Already serves Smart HTTP [VERIFIED: `crates/oxidean-api/src/app.rs:140-152`] |
+| `sha2` | `0.11.0` (in-tree) | Hash upload stream vs OID | Already depended; verify OID on PUT [VERIFIED: `crates/oxidean-api/Cargo.toml`] |
 | `tempfile` | `3` (in-tree) | Atomic write via `.tmp` + rename | Forgejo ContentStore pattern [CITED: Forgejo `content_store.go` via search] |
 | system `git-lfs` (CI/smoke) | ≥3.x | Client smoke | Present in env: `git-lfs/3.7.1` [VERIFIED: local `git-lfs --version`] |
 | Octane + TanStack Query | in-tree | Settings / Admin / blob UI | Project UI stack [VERIFIED: AGENTS.md] |
@@ -117,7 +117,7 @@ Phase 14 adds a first-class Git LFS server to Octanest on the existing Smart HTT
 |------------|-----------|----------|
 | In-process Axum LFS | External `lfs-test-server` / Giftless | Extra service; conflicts with one-API Compose story |
 | `multipart` transfer adapter | Stock `basic` only | Multipart not in open-source client; basic is required for GIT-12 |
-| Per-repo `.git/lfs` | Instance `OCTANEST_LFS_DIR` | Locked D-LFS-01/02; per-repo breaks dedup/GC |
+| Per-repo `.git/lfs` | Instance `OXIDEAN_LFS_DIR` | Locked D-LFS-01/02; per-repo breaks dedup/GC |
 
 **Installation:** No new npm packages required for Phase 14. Reuse existing Rust crates; do not add LFS JS SDKs.
 
@@ -159,7 +159,7 @@ Batch response (transfer=basic)
     ├─ upload   → PUT  …/objects/{oid}     → tmp → sha256 verify → rename
     └─ verify   → POST …/objects/verify    → size/oid check (optional but recommended)
     ▼
-OCTANEST_LFS_DIR / ab / cd / <oid>
+OXIDEAN_LFS_DIR / ab / cd / <oid>
     ▲
 DB: lfs_objects + lfs_object_links (refcount) + quota counters
     ▲
@@ -169,7 +169,7 @@ RPC (session): repo.lfs.* / admin.lfs.*  → Octane Settings / Admin / browser
 ### Recommended Project Structure
 
 ```
-crates/octanest-api/src/
+crates/oxidean-api/src/
 ├── routes/git_lfs.rs          # batch + basic transfer handlers
 ├── lfs/
 │   ├── mod.rs
@@ -182,7 +182,7 @@ apps/web/src/
 ├── routes/admin/…                      # instance quotas/usage
 ├── components/repo/blob-viewer.tsrx    # pointer badge + Download
 ├── components/repo/lfs-browser.tsrx    # in-app OID browser
-crates/octanest-db/migrations/*/0011_lfs.sql   # or next free number at execute time
+crates/oxidean-db/migrations/*/0011_lfs.sql   # or next free number at execute time
 ```
 
 ### Pattern 1: Batch then basic transfer
@@ -221,8 +221,8 @@ If the server already has the OID linked for this repo, **omit `actions`** so th
 | upload | Write | classic `repo` or FG contents **write** | required (mirror receive-pack) |
 | enable toggle RPC | Admin | session RPC (not PAT) | privileged gates as today |
 
-[VERIFIED: `crates/octanest-api/src/routes/git_smart_http.rs:289-354` scopes; `:428-464` receive-pack gates]  
-[VERIFIED: `crates/octanest-api/src/repo/acl.rs:24-28` — `Capability { Read = 1, Write = 2, Admin = 3 }`]
+[VERIFIED: `crates/oxidean-api/src/routes/git_smart_http.rs:289-354` scopes; `:428-464` receive-pack gates]  
+[VERIFIED: `crates/oxidean-api/src/repo/acl.rs:24-28` — `Capability { Read = 1, Write = 2, Admin = 3 }`]
 
 ### Pattern 3: OID store + refcount
 
@@ -249,7 +249,7 @@ If the server already has the OID linked for this repo, **omit `actions`** so th
 | Content hashing | Custom hash | SHA-256 OID from stream (`sha2`) | Spec requires sha256 |
 | Atomic object write | Direct overwrite | temp file + fsync + rename | Corruption / partial PUT |
 | UI framework | React/Zustand for LFS pages | Octane `.tsrx` + Query | Project rules |
-| Dialect SQL in API | `#[cfg]` SQL | `octanest-db` migrations/API | Hard boundary |
+| Dialect SQL in API | `#[cfg]` SQL | `oxidean-db` migrations/API | Hard boundary |
 
 **Key insight:** LFS is an HTTP JSON+bytes protocol bolted beside Smart HTTP — reuse auth/ACL/routing; invent only the OID store + quota/GC policy.
 
@@ -285,7 +285,7 @@ If the server already has the OID linked for this repo, **omit `actions`** so th
 
 ### Pitfall 7: Factory reset scope
 **What goes wrong:** DB wiped but LFS volume retains orphans (or opposite).  
-**How to avoid:** Extend `database_and_repositories` to also wipe `OCTANEST_LFS_DIR` children (D-LFS-04), mirroring `wipe_repos_dir_contents`. [VERIFIED: `admin.rs:210-212` repos wipe today]
+**How to avoid:** Extend `database_and_repositories` to also wipe `OXIDEAN_LFS_DIR` children (D-LFS-04), mirroring `wipe_repos_dir_contents`. [VERIFIED: `admin.rs:210-212` repos wipe today]
 
 ## Code Examples
 
@@ -303,7 +303,7 @@ Extend `BlobViewer` when `!is_binary && encoding===utf-8` and content matches �
 
 ### Capability ladder (verbatim)
 
-```24:28:crates/octanest-api/src/repo/acl.rs
+```24:28:crates/oxidean-api/src/repo/acl.rs
 pub enum Capability {
     Read = 1,
     Write = 2,
@@ -313,7 +313,7 @@ pub enum Capability {
 
 ### Smart HTTP route mount to mirror
 
-```140:152:crates/octanest-api/src/app.rs
+```140:152:crates/oxidean-api/src/app.rs
         // Smart HTTP — D-18/D-22: only on /{owner}/{repo}.git (segment includes .git suffix)
         .route(
             "/{owner}/{repo_git}/info/refs",
@@ -346,7 +346,7 @@ Add sibling routes, e.g. `…/info/lfs/objects/batch`, `…/info/lfs/objects/{oi
 
 | Topic | Recommendation | Confidence |
 |-------|----------------|------------|
-| Max object size default | **2 GiB** (`OCTANEST_LFS_MAX_OBJECT_BYTES=2147483648`) | [ASSUMED] GitHub-class default |
+| Max object size default | **2 GiB** (`OXIDEAN_LFS_MAX_OBJECT_BYTES=2147483648`) | [ASSUMED] GitHub-class default |
 | Per-repo quota default | **10 GiB** logical | [ASSUMED] |
 | Per-user quota default | **50 GiB** logical (sum of OIDs attributed to uploader) | [ASSUMED] |
 | Unlimited sentinel | `0` or `-1` = unlimited in env/Admin | [ASSUMED] match Forgejo soft-quota style |
@@ -406,18 +406,18 @@ Step 2.6: completed (external tools: git, git-lfs, Docker Compose volume).
 |----------|-------|
 | Framework | cargo-nextest (Rust) + Vitest ^5 (web) |
 | Config file | `.config/nextest.toml`; `apps/web/vitest.config.ts` |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(lfs)'` (once named) |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(lfs)'` (once named) |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-12 | Batch download/upload with PAT | integration | `cargo nextest run -p octanest-api -E 'test(lfs_batch)'` | ❌ Wave 0 |
+| GIT-12 | Batch download/upload with PAT | integration | `cargo nextest run -p oxidean-api -E 'test(lfs_batch)'` | ❌ Wave 0 |
 | GIT-12 | Reject upload without Write / unverified | integration | same | ❌ Wave 0 |
-| GIT-12 | Skip actions when OID exists | unit | `cargo nextest run -p octanest-api -E 'test(lfs_dedup)'` | ❌ Wave 0 |
+| GIT-12 | Skip actions when OID exists | unit | `cargo nextest run -p oxidean-api -E 'test(lfs_dedup)'` | ❌ Wave 0 |
 | GIT-12 | Disabled repo rejects LFS | integration | `… lfs_disabled` | ❌ Wave 0 |
-| GIT-13 | Objects land under `OCTANEST_LFS_DIR` shard | integration | `… lfs_store_layout` | ❌ Wave 0 |
+| GIT-13 | Objects land under `OXIDEAN_LFS_DIR` shard | integration | `… lfs_store_layout` | ❌ Wave 0 |
 | GIT-13 | Factory reset wipes LFS_DIR | integration | extend `factory_reset_scope` | ❌ Wave 0 |
 | GIT-12 | `git lfs push/pull` smoke over Traefik | smoke | `make smoke-git-lfs` (new) | ❌ Wave 0 |
 | D-LFS-16 | Pointer badge detection | unit (web) | `bun run test:unit` blob/lfs pointer | ❌ Wave 0 |
@@ -432,8 +432,8 @@ Step 2.6: completed (external tools: git, git-lfs, Docker Compose volume).
 
 ### Wave 0 Gaps
 
-- [ ] `crates/octanest-api/tests/lfs_batch.rs` — GIT-12 batch/auth matrix  
-- [ ] `crates/octanest-api/tests/lfs_store.rs` — GIT-13 layout + verify hash mismatch  
+- [ ] `crates/oxidean-api/tests/lfs_batch.rs` — GIT-12 batch/auth matrix  
+- [ ] `crates/oxidean-api/tests/lfs_store.rs` — GIT-13 layout + verify hash mismatch  
 - [ ] Extend `factory_reset_scope.rs` — LFS_DIR wipe  
 - [ ] `scripts/smoke-git-lfs.sh` + Makefile target  
 - [ ] `apps/web` unit tests for pointer parse helper  
@@ -506,7 +506,7 @@ Step 2.6: completed (external tools: git, git-lfs, Docker Compose volume).
 ### Key Findings
 
 1. Stock Git LFS clients only speak **Batch + basic** transfer; `multipart` is a proposal — plan basic as the GIT-12 gate.
-2. Reuse Smart HTTP PAT/ACL/Traefik `.git` routing; add Axum LFS routes under `info/lfs`; raise body limits and stream to `OCTANEST_LFS_DIR/{ab}/{cd}/{oid}`.
+2. Reuse Smart HTTP PAT/ACL/Traefik `.git` routing; add Axum LFS routes under `info/lfs`; raise body limits and stream to `OXIDEAN_LFS_DIR/{ab}/{cd}/{oid}`.
 3. SSH git remotes still use **HTTPS LFS** via discovery; document credential-helper UX (no `git-lfs-authenticate` in Phase 14).
 4. Dedup needs refcount + dual quota accounting (logical vs physical); factory reset must wipe LFS volume with repos.
 5. Rich UI (Settings toggle, Admin quotas, pointer badge, browser) is in-scope via session RPC + Octane — separate from PAT LFS wire path.

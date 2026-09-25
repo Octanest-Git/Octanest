@@ -62,7 +62,7 @@ reviewed_at: 2026-09-10T00:46:00Z
 |------|----------|
 | Chrome | Keep global `SiteHeader` + `SiteFooter` (same as Phase 3) |
 | Page column | Centered; **max-w-md** (`28rem`); page padding **3xl** vertical / **md** horizontal |
-| Brand | `OctanestMark` **48×48** above title — **no** duplicate “Octanest” wordmark in the panel (header already brands) |
+| Brand | `OxideanMark` **48×48** above title — **no** duplicate “Oxidean” wordmark in the panel (header already brands) |
 | Title | Heading role (24 / 600 / 1.2 Sora) |
 | Support | One Body muted sentence under title |
 | Surface | Editorial — **no marketing card grid**. Optional single `bg-card` panel with `border-border` + `rounded-md` + **lg** padding **only** if it improves form contrast on busy atmospheres; default is flat on `--background` |
@@ -77,8 +77,8 @@ UI mode comes from public `auth.provider_config` (mode: `local` \| `workos` \| `
 | Mode | `/login` | `/signup` |
 |------|----------|-----------|
 | **`local`** | Email-or-username + password + Remember me + **Sign in** | Email + username + password (+ confirm) + **Create account** |
-| **`workos`** | Octanest chrome + single primary CTA **Continue with WorkOS** → API start URL | Same CTA copy; title “Create your account”; body notes SSO via WorkOS |
-| **`oidc`** | Octanest chrome + single primary CTA **Continue with SSO** → API start URL | Same CTA; title “Create your account”; body notes enterprise SSO |
+| **`workos`** | Oxidean chrome + single primary CTA **Continue with WorkOS** → API start URL | Same CTA copy; title “Create your account”; body notes SSO via WorkOS |
+| **`oidc`** | Oxidean chrome + single primary CTA **Continue with SSO** → API start URL | Same CTA; title “Create your account”; body notes enterprise SSO |
 
 **SSO panel chrome:** Mark 48 + Heading + Body + one full-width primary Button (≥44px). No IdP logo soup. No secondary consumer OAuth buttons.
 
@@ -178,13 +178,13 @@ UI mode comes from public `auth.provider_config` (mode: `local` \| `workos` \| `
 
 | Route | `<title>` |
 |-------|-----------|
-| `/login` | `Sign in · Octanest` |
-| `/signup` | `Sign up · Octanest` |
-| `/dashboard` | `Dashboard · Octanest` |
-| `/settings/profile` | `Profile · Octanest` |
-| `/admin/auth` | `Auth settings · Octanest` |
+| `/login` | `Sign in · Oxidean` |
+| `/signup` | `Sign up · Oxidean` |
+| `/dashboard` | `Dashboard · Oxidean` |
+| `/settings/profile` | `Profile · Oxidean` |
+| `/admin/auth` | `Auth settings · Oxidean` |
 
-Pattern remains `Page · Octanest` (Phase 3 D-21).
+Pattern remains `Page · Oxidean` (Phase 3 D-21).
 
 ---
 
@@ -269,12 +269,12 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** |
+| Product name | **Oxidean** |
 | Header Sign in / Sign up | Sign in / Sign up |
 | Landing primary CTA | **Get started** → `/signup` |
 | Login title | Sign in |
 | Login support (local) | Use your email or username to continue. |
-| Login support (workos) | Continue with WorkOS to access this Octanest instance. |
+| Login support (workos) | Continue with WorkOS to access this Oxidean instance. |
 | Login support (oidc) | Continue with your organization’s SSO to access this instance. |
 | Login identifier label | Email or username |
 | Login identifier placeholder | Email or username |
@@ -283,7 +283,7 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 | Login primary CTA | **Sign in** |
 | Login SSO CTA (workos) | **Continue with WorkOS** |
 | Login SSO CTA (oidc) | **Continue with SSO** |
-| Login cross-link | New to Octanest? **Create an account** |
+| Login cross-link | New to Oxidean? **Create an account** |
 | Signup title | Create your account |
 | Signup support (local) | Email, username, and password — GitHub-shaped handles. |
 | Signup support (workos/oidc) | You’ll finish signup with your identity provider. |
@@ -298,7 +298,7 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 | Signup error (validation) | {field problem}. Fix the highlighted fields and try again. |
 | Signup error (taken) | That email or username is already taken. Try another or sign in. |
 | Signup error (reserved) | That username is reserved. Choose a different username. |
-| Network / unreachable | Can’t reach Octanest. Check your connection and try again. |
+| Network / unreachable | Can’t reach Oxidean. Check your connection and try again. |
 | Submit pending | Working… |
 | Dashboard title | Welcome, {name} |
 | Dashboard body | You’re signed in. Profile and admin tools live here until a fuller home arrives. |
@@ -350,7 +350,7 @@ Account menu: use component default open/close only — do not add custom bounce
 
 | Component | Action | Notes |
 |-----------|--------|-------|
-| Button / Input / Select / OctanestMark | **Reuse** | Phase 3 |
+| Button / Input / Select / OxideanMark | **Reuse** | Phase 3 |
 | ThemeSelect / SiteHeader / SiteFooter | **Extend** | Wire auth links + account menu |
 | Label | **Add** (shadcn official) | Form labels |
 | Checkbox | **Add** (shadcn official) | Remember me |
@@ -399,7 +399,7 @@ No third-party registries. Do not add `@registry` URLs beyond shadcn official.
 - [ ] Enable header Sign in/Sign up + landing Get started; signed-in account menu with Log out (this device)
 - [ ] Profile: display name, username, bio, avatar upload; Log out all devices with confirm
 - [ ] Admin auth settings under `/admin/auth`; secrets shown as ENV-configured, not pasted into DB fields
-- [ ] Titles use `Page · Octanest`
+- [ ] Titles use `Page · Oxidean`
 - [ ] No verify/reset/forgot-password UI; no Better Auth; no consumer OAuth buttons
 - [ ] Touch targets ≥ 44px; weights 400/600 only; spacing multiples of 4 (+ 44px exception)
 - [ ] shadcn official components only for new primitives

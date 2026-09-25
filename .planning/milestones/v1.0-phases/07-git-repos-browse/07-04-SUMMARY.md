@@ -38,10 +38,10 @@ key-files:
     - apps/web/src/routes/index.tsrx
     - apps/web/src/routes/settings/profile.tsrx
     - apps/web/src/routes/admin/auth.tsrx
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-db/src/repositories.rs
-    - crates/octanest-core/src/auth_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-db/src/repositories.rs
+    - crates/oxidean-core/src/auth_types.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -50,7 +50,7 @@ key-decisions:
   - "default_branch saved via optional UpdateProfileRequest field + dedicated Save default branch UI"
 
 patterns-established:
-  - "Home document title Repositories · Octanest when signed-in loader tree"
+  - "Home document title Repositories · Oxidean when signed-in loader tree"
   - "Visibility Badge + Lock icon for private rows"
 
 requirements-completed: [GIT-01]
@@ -69,7 +69,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: other
-        ref: "rg listMine crates/octanest-api/src/rpc.rs + cargo nextest repo_create"
+        ref: "rg listMine crates/oxidean-api/src/rpc.rs + cargo nextest repo_create"
         status: pass
     human_judgment: false
   - id: D3
@@ -83,7 +83,7 @@ coverage:
     description: "Sys-admin instance default_visibility settings (D-08)"
     verification:
       - kind: integration
-        ref: "cargo nextest -p octanest-api admin_auth_settings"
+        ref: "cargo nextest -p oxidean-api admin_auth_settings"
         status: pass
     human_judgment: false
 
@@ -107,7 +107,7 @@ status: complete
 ## Accomplishments
 
 - Replaced signed-in home stub with UI-SPEC dashboard: Your repositories, Badge rows, empty hero, activity placeholder only
-- Added `repo.listMine` (owner-only, soft-delete excluded, `updated_at` DESC) + document title `Repositories · Octanest`
+- Added `repo.listMine` (owner-only, soft-delete excluded, `updated_at` DESC) + document title `Repositories · Oxidean`
 - Wired D-09 default branch on profile and D-08 default visibility on admin auth settings (consumed by existing `repo.create`)
 
 ## Task Commits
@@ -130,8 +130,8 @@ Each task was committed atomically:
 
 - `apps/web/src/components/signed-in-home.tsrx` — dashboard IA
 - `apps/web/src/components/ui/badge.tsrx` — Public/Private badges
-- `crates/octanest-api/src/repo/mod.rs` — `list_mine`
-- `crates/octanest-db/src/repositories.rs` — `list_by_owner`
+- `crates/oxidean-api/src/repo/mod.rs` — `list_mine`
+- `crates/oxidean-db/src/repositories.rs` — `list_by_owner`
 - `apps/web/src/routes/settings/profile.tsrx` — Default branch name section
 - `apps/web/src/routes/admin/auth.tsrx` — Default repository visibility select
 - `packages/api-client/src/index.ts` — rpc-gen sync

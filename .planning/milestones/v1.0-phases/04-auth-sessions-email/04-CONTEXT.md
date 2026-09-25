@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Users can create accounts, stay signed in, manage a basic profile (including avatar upload), and operators can send mail via log sink, SMTP, or Resend. Auth is **Rust-native** in `octanest-api`, with a uniform provider adapter supporting **`local`**, **`workos`** (official WorkOS Rust SDK), and **generic OIDC** from day one. Provider mode is configurable via **image/ENV defaults** and a **system-admin dashboard** inside Octanest.
+Users can create accounts, stay signed in, manage a basic profile (including avatar upload), and operators can send mail via log sink, SMTP, or Resend. Auth is **Rust-native** in `oxidean-api`, with a uniform provider adapter supporting **`local`**, **`workos`** (official WorkOS Rust SDK), and **generic OIDC** from day one. Provider mode is configurable via **image/ENV defaults** and a **system-admin dashboard** inside Oxidean.
 
 **Requirements:** AUTH-01, AUTH-02, AUTH-03, AUTH-08, AUTH-09, AUTH-10, AUTH-11
 
@@ -41,7 +41,7 @@ Users can create accounts, stay signed in, manage a basic profile (including ava
 - **D-04:** **Rust-native auth core** in the API (not Better Auth in the web layer)
 - **D-05:** Uniform **provider adapter** interface; modes: **`local` | `workos` | `oidc`** (generic OIDC)
 - **D-06:** Provider naming: use **`local`** (not “in-house”)
-- **D-07:** **WorkOS** integrated via the **official WorkOS Rust SDK** (`workos` crate) — AuthKit/SSO start + callback on the API; after callback, mint the **same Octanest session** as local
+- **D-07:** **WorkOS** integrated via the **official WorkOS Rust SDK** (`workos` crate) — AuthKit/SSO start + callback on the API; after callback, mint the **same Oxidean session** as local
 - **D-08:** **Generic OIDC** supported alongside local and WorkOS (Auth0/Keycloak/Okta-class IdPs)
 - **D-09:** Provider configuration: **ENV/image bootstrap defaults** + **system-admin dashboard** can **override and persist** instance auth settings
 - **D-10:** Rejected: Better Auth + `@octanejs/better-auth` as the session owner (client bindings alone don’t solve Rust forge identity; WorkOS AuthKit is not a Better Auth plugin)
@@ -54,7 +54,7 @@ Users can create accounts, stay signed in, manage a basic profile (including ava
 ### D — Auth UI
 - **D-14:** Dedicated routes: **`/login`** and **`/signup`**
 - **D-15:** Post-auth redirect: **`returnTo` previous page if it wasn’t the homepage; otherwise `/dashboard`** (thin signed-in shell acceptable until a richer home exists)
-- **D-16:** Mode-exclusive UI on those routes: **`local`** → Octanest custom email/password (+ username on signup) forms; **`workos`** → WorkOS AuthKit/SSO flow driven from Rust (redirect/PKCE + callback; Octanest chrome around CTA); **`oidc`** → standard OIDC redirect/callback with Octanest chrome
+- **D-16:** Mode-exclusive UI on those routes: **`local`** → Oxidean custom email/password (+ username on signup) forms; **`workos`** → WorkOS AuthKit/SSO flow driven from Rust (redirect/PKCE + callback; Oxidean chrome around CTA); **`oidc`** → standard OIDC redirect/callback with Oxidean chrome
 - **D-17:** Enable header **Sign in / Sign up** (and landing Get started as appropriate) to these routes; signed-in chrome shows account menu (profile, log out)
 
 ### E — Profile
@@ -88,7 +88,7 @@ Users can create accounts, stay signed in, manage a basic profile (including ava
 
 ### Prior phase decisions
 - `.planning/phases/01-monorepo-scaffold/01-CONTEXT.md` — CORS + credentials for future session cookies; RPC namespaces; header auth placeholders
-- `.planning/phases/02-multi-db-storage/02-CONTEXT.md` — multi-dialect DB via `octanest-db` (users/sessions must migrate on all dialects)
+- `.planning/phases/02-multi-db-storage/02-CONTEXT.md` — multi-dialect DB via `oxidean-db` (users/sessions must migrate on all dialects)
 - `.planning/phases/03-brand-shell-theme/03-CONTEXT.md` — disabled Sign in/Sign up until Auth; ShadCN/Base UI chrome rules; assets-only SW must not cache `/api/*`
 
 ### External (implementers should consult)
@@ -106,8 +106,8 @@ No phase-local SPEC.md yet — decisions above are the implementation lock.
 ### Reusable Assets
 - `apps/web` ShadCN/Base UI `Button` / `Input` / chrome — wire real Sign in/Sign up; build `/login`, `/signup`, profile, admin settings with same kit
 - API client package (generated) — prefer `credentials: "include"`; extend with auth/session procedures + TanStack Query helpers
-- `crates/octanest-api` CORS — credentials-ready for session cookies
-- `crates/octanest-db` + migrations — add users/sessions/identities/auth settings across dialects
+- `crates/oxidean-api` CORS — credentials-ready for session cookies
+- `crates/oxidean-db` + migrations — add users/sessions/identities/auth settings across dialects
 
 ### Established Patterns
 - Dotted RPC namespaces (`system.*`) — prefer `auth.*` / `user.*` style procedures

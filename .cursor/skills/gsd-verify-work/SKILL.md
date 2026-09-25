@@ -36,8 +36,8 @@ Output: {phase_num}-UAT.md tracking all test results. If issues found: diagnosed
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/verify-work.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/templates/UAT.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/verify-work.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/templates/UAT.md
 </execution_context>
 
 <context>

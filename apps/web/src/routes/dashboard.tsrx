@@ -9,7 +9,7 @@ export const Route = createFileRoute("/dashboard")({
     throw notFound();
   },
   component: DashboardGone,
-  head: () => ({ meta: [{ title: "Octanest" }] }),
+  head: () => ({ meta: [{ title: "Oxidean" }] }),
 });
 
 /** Unreachable when beforeLoad throws notFound — kept so the route tree stays valid. */

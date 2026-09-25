@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { RepoBlameResponse, RepoPublic } from "@octanest/api-client";
+import type { RepoBlameResponse, RepoPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { CommitAuthorLink } from "@/components/repo/commit-author-link";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
@@ -21,7 +21,7 @@ export type BlameLoaderData =
 
 type Phase = { kind: "loading" } | BlameLoaderData;
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function loadBlamePage(
   owner: string,
@@ -72,7 +72,7 @@ export const Route = createFileRoute("/$owner/$repo/blame/$")({
     const base = path.split("/").pop() || path || "file";
     const trunc = base.length > 40 ? `…${base.slice(-36)}` : base;
     return {
-      meta: [{ title: `Blame · ${trunc} · Octanest` }],
+      meta: [{ title: `Blame · ${trunc} · Oxidean` }],
     };
   },
   loader: async ({ params }): Promise<BlameLoaderData> => {

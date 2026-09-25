@@ -38,7 +38,7 @@ key-files:
     - apps/web/src/routes/index.tsrx
   modified:
     - packages/api-client/src/index.ts
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - apps/web/src/routes/index.integration.test.ts
     - apps/web/vitest.config.ts
 
@@ -48,7 +48,7 @@ key-decisions:
   - "Client redirectIfNeedsSetup demoted to PE after shared root SSR gate landed"
 
 patterns-established:
-  - "SSR auth: createServerFn → Cookie header → createClient fetch override → Octanest RPC"
+  - "SSR auth: createServerFn → Cookie header → createClient fetch override → Oxidean RPC"
   - "App locks: resolveAppAccessRedirect pure helper; root beforeLoad throws redirect({ href })"
 
 requirements-completed: [AUTH-06, AUTH-07]
@@ -98,7 +98,7 @@ status: complete
 
 ## Accomplishments
 
-- SSR auth helpers forward Cookie to Octanest RPC (no Start `useSession`)
+- SSR auth helpers forward Cookie to Oxidean RPC (no Start `useSession`)
 - Shared root gate redirects all app UI except `/status`, `/setup`, `/setup/credentials`
 - `/` first HTML matches session vs marketing via loader + `selectHomeTree`
 
@@ -122,7 +122,7 @@ status: complete
 
 - Prefer `.tsrx` route modules (rename already in flight) over restoring tracked `.tsx`
 - Skip `auth.me` during `needs_setup` (priority + avoid setup allowlist blocks)
-- Keep `octanest_signed_in` presence hint as PE skeleton only (D-21)
+- Keep `oxidean_signed_in` presence hint as PE skeleton only (D-21)
 
 ## Deviations from Plan
 
@@ -132,7 +132,7 @@ status: complete
 - **Found during:** Task 1
 - **Issue:** Rust DTO had the flag; api-client/`rpc_gen` UserPublic did not — SSR must_change gate could not type-check
 - **Fix:** Added field to `packages/api-client` and `rpc_gen.rs`
-- **Files modified:** `packages/api-client/src/index.ts`, `crates/octanest-api/src/bin/rpc_gen.rs`
+- **Files modified:** `packages/api-client/src/index.ts`, `crates/oxidean-api/src/bin/rpc_gen.rs`
 - **Commit:** `f4b92eb`
 
 **2. [Rule 3 - Blocking] `*.gate.test.ts` not discovered by vitest projects**

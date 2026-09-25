@@ -127,9 +127,9 @@
 | Mode-exclusive forms vs WorkOS CTA | | |
 | Local + optional WorkOS button | | |
 | Thin redirect shells for WorkOS | | |
-| Custom forms for local; AuthKit in-app for WorkOS | Desired; refined to Rust redirect/PKCE + Octanest chrome | ✓ |
+| Custom forms for local; AuthKit in-app for WorkOS | Desired; refined to Rust redirect/PKCE + Oxidean chrome | ✓ |
 
-**User's choice:** Local = custom forms; WorkOS/OIDC = provider flow from Rust with Octanest chrome on shared routes
+**User's choice:** Local = custom forms; WorkOS/OIDC = provider flow from Rust with Oxidean chrome on shared routes
 
 ---
 

@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from "@octanejs/lucide";
-import type { RepoRefEntry } from "@octanest/api-client";
+import type { RepoRefEntry } from "@oxidean/api-client";
 import {
   SelectIcon,
   SelectItem,

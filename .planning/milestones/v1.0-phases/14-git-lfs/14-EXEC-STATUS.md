@@ -12,7 +12,7 @@ All plans **14-00 → 14-12** have SUMMARYs. Tip after 14-12 docs commit.
 | Plan | Focus |
 |------|--------|
 | 14-00 … 14-06 | Prior waves (stubs → tracer → auth → quotas → dedup → GC) |
-| 14-07 | Compose / `OCTANEST_LFS_*` / CONFIGURATION |
+| 14-07 | Compose / `OXIDEAN_LFS_*` / CONFIGURATION |
 | 14-08 | Session RPCs + `make rpc-gen` |
 | 14-09 | Repo Settings LFS UI |
 | 14-10 | Admin LFS quotas UI |

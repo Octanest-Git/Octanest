@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RepoTreeEntry } from "@octanest/api-client";
+import type { RepoTreeEntry } from "@oxidean/api-client";
 import {
   activityHref,
   blobHref,
@@ -144,12 +144,12 @@ describe("resolveAboutRootFiles", () => {
 
 describe("activityHref / blobHref About links", () => {
   it("builds GitHub-shaped activity and license blob URLs", () => {
-    expect(activityHref("octanest", "forge")).toBe("/octanest/forge/activity");
-    expect(blobHref("octanest", "forge", "main", "LICENSE")).toBe(
-      "/octanest/forge/blob/main/LICENSE",
+    expect(activityHref("oxidean", "forge")).toBe("/oxidean/forge/activity");
+    expect(blobHref("oxidean", "forge", "main", "LICENSE")).toBe(
+      "/oxidean/forge/blob/main/LICENSE",
     );
-    expect(blobHref("octanest", "forge", "feat/x", "CONTRIBUTING.md")).toBe(
-      "/octanest/forge/blob/feat%2Fx/CONTRIBUTING.md",
+    expect(blobHref("oxidean", "forge", "feat/x", "CONTRIBUTING.md")).toBe(
+      "/oxidean/forge/blob/feat%2Fx/CONTRIBUTING.md",
     );
   });
 });

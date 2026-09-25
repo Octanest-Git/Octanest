@@ -22,17 +22,17 @@ actuals:
 tech-stack:
   added: []
   patterns:
-    - "IssueListFilters struct in octanest-db; username→id resolve in API"
-    - "Dialect LIKE/ILIKE text search stays in octanest-db only"
+    - "IssueListFilters struct in oxidean-db; username→id resolve in API"
+    - "Dialect LIKE/ILIKE text search stays in oxidean-db only"
     - "Offset Prev/Next (page size 25), not infinite scroll"
 
 key-files:
   created: []
   modified:
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/tests/issue_lifecycle.rs
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/tests/issue_lifecycle.rs
     - apps/web/src/components/repo/issues-list.tsrx
     - apps/web/src/routes/$owner.$repo.issues.tsrx
     - apps/web/src/routes/$owner.$repo.issues.integration.test.ts
@@ -55,7 +55,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/issue_lifecycle.rs#issue_list_filters_and_offset_pagination"
+        ref: "crates/oxidean-api/tests/issue_lifecycle.rs#issue_list_filters_and_offset_pagination"
         status: pass
       - kind: integration
         ref: "apps/web/src/routes/$owner.$repo.issues.integration.test.ts#list defaults Open with Closed and All controls"
@@ -66,7 +66,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/issue_lifecycle.rs#issue_list_filters_and_offset_pagination"
+        ref: "crates/oxidean-api/tests/issue_lifecycle.rs#issue_list_filters_and_offset_pagination"
         status: pass
       - kind: integration
         ref: "apps/web/src/routes/$owner.$repo.issues.integration.test.ts#author/label/assignee/text filters and Apply"
@@ -110,10 +110,10 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-db/src/issues.rs` — `IssueListFilters` + dialect filtered list/count
-- `crates/octanest-db/src/lib.rs` — `Database::list_issues_for_repo` takes filters
-- `crates/octanest-api/src/issue/mod.rs` — username resolve + filter passthrough
-- `crates/octanest-api/tests/issue_lifecycle.rs` — `issue_list_filters_and_offset_pagination`
+- `crates/oxidean-db/src/issues.rs` — `IssueListFilters` + dialect filtered list/count
+- `crates/oxidean-db/src/lib.rs` — `Database::list_issues_for_repo` takes filters
+- `crates/oxidean-api/src/issue/mod.rs` — username resolve + filter passthrough
+- `crates/oxidean-api/tests/issue_lifecycle.rs` — `issue_list_filters_and_offset_pagination`
 - `apps/web/src/components/repo/issues-list.tsrx` — filter form + pagination nav
 - `apps/web/src/routes/$owner.$repo.issues.tsrx` — filter state + query keys
 - `apps/web/src/routes/$owner.$repo.issues.integration.test.ts` — D-ISS-17/18 UI coverage
@@ -163,7 +163,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- Found: `crates/octanest-db/src/issues.rs`, `apps/web/src/components/repo/issues-list.tsrx`, `11-11-SUMMARY.md`
+- Found: `crates/oxidean-db/src/issues.rs`, `apps/web/src/components/repo/issues-list.tsrx`, `11-11-SUMMARY.md`
 - Found commits: `f4524b1`, `1ac0911`, `82c0763`
 
 ---

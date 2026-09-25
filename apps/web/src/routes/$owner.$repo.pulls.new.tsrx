@@ -6,7 +6,7 @@ import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { apiClient } from "@/lib/api-client";
 import { fetchRepoGet, fetchRepoRefs } from "@/lib/ssr-repo";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const Route = createFileRoute("/$owner/$repo/pulls/new")({
   component: NewPullPage,
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/$owner/$repo/pulls/new")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `New pull request · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `New pull request · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

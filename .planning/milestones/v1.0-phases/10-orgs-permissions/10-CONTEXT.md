@@ -73,10 +73,10 @@ Users collaborate via organizations and repository permissions with private data
 - `.planning/phases/09-git-ssh/09-CONTEXT.md` — SSH ACL must call shared module after Phase 10
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/acl.rs` — `can_read_as_owner` stub to replace
-- `crates/octanest-api/src/repo/mod.rs` — owner mutate gates
-- `crates/octanest-db/migrations/*/0007_repositories.sql` — user-only `owner_id`
-- `crates/octanest-api/src/routes/git_smart_http.rs` — git ACL consumer
+- `crates/oxidean-api/src/repo/acl.rs` — `can_read_as_owner` stub to replace
+- `crates/oxidean-api/src/repo/mod.rs` — owner mutate gates
+- `crates/oxidean-db/migrations/*/0007_repositories.sql` — user-only `owner_id`
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — git ACL consumer
 - `apps/web/src/routes/$owner.$repo*.tsrx` — flat owner/repo chrome
 - `apps/web/src/routes/new.tsrx` — owner locked to current user today
 - `docs/ARCHITECTURE.md` — owner-only private ACL until org collaborators

@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export type OrgsNewLoaderData = {
   user: UserPublic;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const RESERVED_ERROR = "That username is reserved. Choose a different username.";
 const TAKEN_ERROR = "That slug is already used by a user or organization. Choose a different slug.";
 const SLUG_HELPER =
@@ -22,7 +22,7 @@ const SLUG_HELPER =
 
 export const Route = createFileRoute("/orgs/new")({
   component: OrgsNewPage,
-  head: () => ({ meta: [{ title: "New organization · Octanest" }] }),
+  head: () => ({ meta: [{ title: "New organization · Oxidean" }] }),
   beforeLoad: async () => {
     try {
       const me = await fetchSessionMe();

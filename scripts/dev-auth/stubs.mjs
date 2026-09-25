@@ -87,7 +87,7 @@ const server = Bun.serve({
         user: {
           object: "user",
           id: "user_dev_local",
-          email: "dev@octanest.local",
+          email: "dev@oxidean.local",
           email_verified: true,
           first_name: "Dev",
           last_name: "User",
@@ -101,11 +101,11 @@ const server = Bun.serve({
     }
 
     if (url.pathname === "/health" || url.pathname === "/") {
-      return json({ ok: true, service: "octanest-dev-stubs" });
+      return json({ ok: true, service: "oxidean-dev-stubs" });
     }
 
     return json({ error: "not_found", path: url.pathname }, 404);
   },
 });
 
-console.log(`octanest-dev-stubs listening on http://0.0.0.0:${server.port}`);
+console.log(`oxidean-dev-stubs listening on http://0.0.0.0:${server.port}`);

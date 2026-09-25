@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
-import type { PullListResponse, RepoPublic } from "@octanest/api-client";
+import type { PullListResponse, RepoPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { MemberLookup } from "@/components/org/member-lookup";
 import { PullsList } from "@/components/repo/pulls-list";
@@ -28,7 +28,7 @@ export type PullsLoaderData =
       state: "open" | "closed" | "all";
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PAGE_SIZE = 25;
 
 async function loadPullsPage(
@@ -75,7 +75,7 @@ export const Route = createFileRoute("/$owner/$repo/pulls/")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Pulls · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Pulls · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

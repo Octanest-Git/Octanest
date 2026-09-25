@@ -344,7 +344,7 @@ Recent decisions affecting current work:
 - Theme: system default; user can force light or dark
 - Stack: Rust backend, RPC codegen, multi-DB, gitoxide-preferred
 - Phase 3: squircle mark, ShadCN semantic tokens, Vite PWA assets-only SW; mobile one-row header + burger menu
-- [Phase 04]: Session create takes explicit id + RFC3339 expires_at for multi-dialect binds — Sessions table requires PK without adding uuid to octanest-db yet; string timestamps bind portably
+- [Phase 04]: Session create takes explicit id + RFC3339 expires_at for multi-dialect binds — Sessions table requires PK without adding uuid to oxidean-db yet; string timestamps bind portably
 - [Phase 04]: var/ already covers avatar upload volume path — Existing gitignore var/ makes var/uploads/ redundant
 - [Phase 04]: lettre default-features off + rustls (aws-lc-rs); reqwest 0.13 uses `rustls` feature — Current crate versions differ from plan's rustls-tls naming
 - [Phase 04]: ResendSender::with_base_url for wiremock; production URL https://api.resend.com/emails — Testable without live Resend
@@ -352,8 +352,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Hex 32-byte session tokens; SHA-256 hex at rest; SessionService owns env Secure flag — Matches discretion locks; avoids Domain attribute / Vite proxy pitfall
 - [Phase 04]: auth.unauthenticated → HTTP 401; other auth errors → 400 — Prefer consistent JSON err with distinct unauthenticated status for clients
 - [Phase 04]: Welcome email failures logged only; signup still succeeds — Mail adapter outages must not block account creation (D-20)
-- [Phase 04]: Admin seed only when OCTANEST_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
-- [Phase 04]: WorkOS AuthKit PKCE + authenticate_with_code mints Octanest session (not sealed cookies) — D-07 / T-04-17
+- [Phase 04]: Admin seed only when OXIDEAN_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
+- [Phase 04]: WorkOS AuthKit PKCE + authenticate_with_code mints Oxidean session (not sealed cookies) — D-07 / T-04-17
 - [Phase 04]: OIDC issuer SSRF: https-only; reject localhost/10/8/link-local/metadata — T-04-16 ASVS L1
 - [Phase 04]: Avatar public URL path /uploads/avatars/{user_id}.webp stored in users.avatar_path — UI consumes avatar_url directly; filesystem path stays under uploads_dir
 - [Phase 04]: AppState email is Arc<RwLock> for hot-rebuild on admin.auth.update_settings — D-09 email_provider changes must take effect without restart
@@ -402,7 +402,7 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06]: Land chrome/admin edits on .tsrx (Octane rename in flight)
 - [Phase 06]: [Phase 06]: needs_setup omits account CTAs; Sign up fail-closed until allow_signup===true
 - [Phase 06]: AUTH-05 keeps checkbox; v1 note clarifies allow_signup supersedes always-open cloud signup
-- [Phase 06]: Document cloud OCTANEST_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
+- [Phase 06]: Document cloud OXIDEAN_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
 - [Post-06]: Client server-state via `@octanejs/tanstack-query` (not Zustand) — shared `auth.me` / bootstrap / providerConfig / admin settings; forms stay local `useState`
 - [Post-06]: Author UI in Octane `.tsrx` with `@{` / `@if` / `@else` / `@for`; do not mix React-style `return (` components with Rivet directives (breaks Vite import-protection HMR)
 - [Post-06]: OIDC reqwest connect/request timeouts; mock-oauth2-server healthcheck + compose issuer pointing at reachable host
@@ -410,7 +410,7 @@ Recent decisions affecting current work:
 - [Phase 07]: Git backend is system `git` CLI 2.5+ (fail boot if missing); gitoxide deferred until feature-complete; keep GitBackend abstraction (amends GIT-09)
 - [Phase 07]: GitHub-like browse IA (`/{owner}/{repo}`, tree/blob/raw/blame/compare); private=owner-only until Phase 10; create via `/new` with full templates
 - [Phase 07]: Wave 0 is RED-only — no CliGitBackend or repo RPC handlers; later 07-xx plans turn stubs green
-- [Phase 07]: octanest-git exports parse_git_version/assert_git_version placeholders that Err until implementation
+- [Phase 07]: oxidean-git exports parse_git_version/assert_git_version placeholders that Err until implementation
 - [Phase 07]: Wave 0 web stubs RED-only for /new wall + home CTA → /new — Production /new and CTA wiring deferred to 07-13 / 07-04; Nyquist discoverability first
 - [Phase 07]: new.integration.test uses @vite-ignore dynamic import while route absent — Static import('./new') fails Vite transform with 0 tests; runtime import keeps suite discoverable and RED
 - [Phase 07]: D-14: owner_repo_path — public URLs /{owner}/{repo} with reserved-name denylist
@@ -422,7 +422,7 @@ Recent decisions affecting current work:
 - [Phase 07]: CreateRepoRequest.visibility optional — omit uses instance default_visibility else public (D-08)
 - [Phase 07]: Fail-boot git gate + Dockerfile/Compose left to 07-17 (D-33)
 - [Phase 07]: Fail boot with eprintln + exit(1) when git missing or < 2.5.0 (D-33)
-- [Phase 07]: Install distro git in API image; bind ./var/repos without overriding default OCTANEST_REPOS_DIR
+- [Phase 07]: Install distro git in API image; bind ./var/repos without overriding default OXIDEAN_REPOS_DIR
 - [Phase 07]: Added $owner.$repo Outlet layout so Quick setup index registers like /setup
 - [Phase 07]: Template/license/gitignore remain None-only placeholders until 07-03
 - [Phase 07]: Public/Private via button group until radio-group in 07-09
@@ -463,42 +463,42 @@ Recent decisions affecting current work:
 - [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
 - [Phase 08]: Wave 0 web stubs RED-only; variable @vite-ignore import for absent tokens route
 - [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
-- [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
+- [Phase 08]: D-08 PAT prefixes locked to oxidean_pat_ / oxidean_fg_ (option oxidean_prefixes; deviation from ona_*)
 - [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 - [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
-- [Phase 08]: 08-03-T0: proceed_locked — implement D-08 octanest_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
-- [Phase 08]: 08-03: PAT schema uses octanest_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
-- [Phase 08]: 08-04: mint classic PATs with octanest_pat_ (not ona_pat_); Axum uses {repo_git} segment
+- [Phase 08]: 08-03-T0: proceed_locked — implement D-08 oxidean_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
+- [Phase 08]: 08-03: PAT schema uses oxidean_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
+- [Phase 08]: 08-04: mint classic PATs with oxidean_pat_ (not ona_pat_); Axum uses {repo_git} segment
 - [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
-- [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_
+- [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (oxidean_fg_), not plan-prose ona_fg_
 - [Phase 08]: Empty selected FG repos → pat.repos_required; foreign/non-owned → pat.invalid_scope; all ignores repository_ids
 - [Phase 08]: PAT list token_prefix is brand + first 8 hex of secret (display fingerprint)
-- [Phase 08]: Prefixes remain octanest_pat_/octanest_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
+- [Phase 08]: Prefixes remain oxidean_pat_/oxidean_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
 - [Phase 08]: PAT client surface via rpc_gen template only (no hand-edit api-client)
 - [Phase 08]: API.md D-01: session cookie for RPC; PAT Basic for Smart HTTP only
 - [Phase 08]: Separate Traefik api-git router (PathRegexp prio 110) → service api; keep api@100 and web@1
-- [Phase 08]: smoke-git-https uses octanest_pat_/octanest_fg_ prefixes; skips exit 0 without Docker
+- [Phase 08]: smoke-git-https uses oxidean_pat_/oxidean_fg_ prefixes; skips exit 0 without Docker
 - [Phase 08]: 08-09: SettingsNav + Account menu PAT link; Generate disabled when unverified
 - [Phase 08]: 08-09: Revoke AlertDialog Keep token / Revoke token (no type-to-confirm)
 - [Phase 08]: Classic create: session loader mirrors tokens list; plaintext only in ephemeral page state until Back to tokens
 - [Phase 08]: PatReveal shared component for classic (08-10) and fine-grained (08-11) one-time reveal
 - [Phase 08]: PatHowTo CTA uses plain <a href=/settings/tokens> so CloneBox tests need no RouterProvider; tokens route handles signed-out redirect
 - [Phase 08]: PatHowTo always-visible shared panel in CloneBox (compact) and QuickSetup; SSH placeholder unchanged until Phase 9
-- [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (octanest_fg_)
-- [Phase 08]: Docs use octanest_pat_/octanest_fg_ (D-08), not ona_* draft wording
+- [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (oxidean_fg_)
+- [Phase 08]: Docs use oxidean_pat_/oxidean_fg_ (D-08), not ona_* draft wording
 - [Phase 08]: nyquist_compliant left false; validate-phase owns Nyquist flip
 - [Phase 09]: Wave 0 RED-only for Phase 9 SSH — no russh/migrations/RPC in 09-00
 - [Phase 09]: SSH keys migration number is 0009_ssh_keys (Phase 10 owns 0010)
 - [Phase 09]: smoke-git-ssh exits 1 when Docker present until 09-05 greens TCP 2222
 - [Phase 09]: Wave 0 web stubs only — no production ssh-keys UI or CloneBox SSH panel (09-07/09-08)
 - [Phase 09]: GIT-03/GIT-04 not marked complete after 09-01 Wave 0 stubs; greens land in 09-07/09-08
-- [Phase 09]: D-SSH-02 proceed: scp-style clone URL + single OCTANEST_SSH_PORT
+- [Phase 09]: D-SSH-02 proceed: scp-style clone URL + single OXIDEAN_SSH_PORT
 - [Phase 09]: SSH key revoke is hard-delete (no revoked_at)
 - [Phase 09]: SSH tracer: upload-pack for any authenticated key; private ACL in 09-04
 - [Phase 09]: SSH ACL reuses Smart HTTP helpers; denials via git stderr
 - [Phase 09]: SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket
 - [Phase 09]: Compose publishes SSH on TCP 2222 only; never Traefik for SSH
-- [Phase 09]: CloneBox SSH is scp-style; Port hint when OCTANEST_SSH_PORT ≠ 22
+- [Phase 09]: CloneBox SSH is scp-style; Port hint when OXIDEAN_SSH_PORT ≠ 22
 - [Phase 09]: SSH documented as russh in-api + Compose TCP 2222; never Traefik
 - [Phase 10]: Wave 0 is RED-only — no production org RPC, ACL rewrite, or 0010 migrations
 - [Phase 10]: Use 0010_orgs_acl (not 0009) because Phase 09 SSH claims 0009_ssh_keys
@@ -531,12 +531,12 @@ Recent decisions affecting current work:
 - [Phase 10]: Gate repo settings on repo.can_admin not owner_id equality
 - [Phase 10]: Reuse MemberLookup for collaborator username add (no email)
 - [Phase 10]: factory_reset deletes repositories then organizations before users (polymorphic owner_id)
-- [Phase 10]: No new org env vars; invites reuse EmailSender + OCTANEST_PUBLIC_ORIGIN
+- [Phase 10]: No new org env vars; invites reuse EmailSender + OXIDEAN_PUBLIC_ORIGIN
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 - [Phase 11]: Issue domain wipe relies on FK ON DELETE CASCADE (no explicit issue DELETEs in factory_reset)
 - [Phase 11]: Org-scoped labels survive repo hard-delete; cleared on factory_reset via organizations wipe
 - [Phase 11]: Wave 0 LFS stubs use empty passing tests so nextest list filters work without --run-ignored
-- [Phase 11]: LFS tracer ships Batch+basic only (D-LFS-07); OCTANEST_LFS_DIR OID shards ab/cd/oid
+- [Phase 11]: LFS tracer ships Batch+basic only (D-LFS-07); OXIDEAN_LFS_DIR OID shards ab/cd/oid
 - [Phase 11]: LFS auth mirrors Smart HTTP; Cookie ignored; Admin soft-deny for setEnabled
 - [Phase 11]: LFS quotas: logical per-repo/owner; Admin override via instance_lfs_settings
 - [Phase 11]: Document SSH remotes still use HTTPS LFS; no LFS-over-SSH claim
@@ -580,7 +580,7 @@ Recent decisions affecting current work:
 - [Phase 22.1]: Nyquist compliant only after live nextest/vitest + green task maps (D-VER-02) — Threat T-22.1-04 forbids hand-faked nyquist_compliant
 - [Phase 22.1]: Phase 15 draft Wave 0 VALIDATION map was documentation drift, not missing coverage — Greened release/transfer tests already on disk; map reconciled during validate-phase
 - [Phase 22.1]: Sibling make smoke-protection with enforce_admins for ORG-06 Compose denial proof
-- [Phase 22.1]: Smart HTTP resolve_protection_helper_with(env, default_helper_path) + OCTANEST_ENV CGI re-inject
+- [Phase 22.1]: Smart HTTP resolve_protection_helper_with(env, default_helper_path) + OXIDEAN_ENV CGI re-inject
 - [Phase 22.1]: Reuse repo.fork_failed + compensate for clone_bare hook-install failure
 - [Phase 22.1]: Force hook-install failure in tests via GIT_TEMPLATE_DIR hooks-as-file
 - [Phase 22.1]: SSH receive-pack uses receive_pack_protection_env (helper/DB/repos/capability/ENV); upload-pack unchanged
@@ -632,7 +632,7 @@ Recent decisions affecting current work:
 - Theme: system default; user can force light or dark
 - Stack: Rust backend, RPC codegen, multi-DB, gitoxide-preferred
 - Phase 3: squircle mark, ShadCN semantic tokens, Vite PWA assets-only SW; mobile one-row header + burger menu
-- [Phase 04]: Session create takes explicit id + RFC3339 expires_at for multi-dialect binds — Sessions table requires PK without adding uuid to octanest-db yet; string timestamps bind portably
+- [Phase 04]: Session create takes explicit id + RFC3339 expires_at for multi-dialect binds — Sessions table requires PK without adding uuid to oxidean-db yet; string timestamps bind portably
 - [Phase 04]: var/ already covers avatar upload volume path — Existing gitignore var/ makes var/uploads/ redundant
 - [Phase 04]: lettre default-features off + rustls (aws-lc-rs); reqwest 0.13 uses `rustls` feature — Current crate versions differ from plan's rustls-tls naming
 - [Phase 04]: ResendSender::with_base_url for wiremock; production URL https://api.resend.com/emails — Testable without live Resend
@@ -640,8 +640,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Hex 32-byte session tokens; SHA-256 hex at rest; SessionService owns env Secure flag — Matches discretion locks; avoids Domain attribute / Vite proxy pitfall
 - [Phase 04]: auth.unauthenticated → HTTP 401; other auth errors → 400 — Prefer consistent JSON err with distinct unauthenticated status for clients
 - [Phase 04]: Welcome email failures logged only; signup still succeeds — Mail adapter outages must not block account creation (D-20)
-- [Phase 04]: Admin seed only when OCTANEST_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
-- [Phase 04]: WorkOS AuthKit PKCE + authenticate_with_code mints Octanest session (not sealed cookies) — D-07 / T-04-17
+- [Phase 04]: Admin seed only when OXIDEAN_ADMIN_* set and count_users==0 — T-04-13; Phase 6 owns interactive wizard
+- [Phase 04]: WorkOS AuthKit PKCE + authenticate_with_code mints Oxidean session (not sealed cookies) — D-07 / T-04-17
 - [Phase 04]: OIDC issuer SSRF: https-only; reject localhost/10/8/link-local/metadata — T-04-16 ASVS L1
 - [Phase 04]: Avatar public URL path /uploads/avatars/{user_id}.webp stored in users.avatar_path — UI consumes avatar_url directly; filesystem path stays under uploads_dir
 - [Phase 04]: AppState email is Arc<RwLock> for hot-rebuild on admin.auth.update_settings — D-09 email_provider changes must take effect without restart
@@ -690,7 +690,7 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06]: Land chrome/admin edits on .tsrx (Octane rename in flight)
 - [Phase 06]: [Phase 06]: needs_setup omits account CTAs; Sign up fail-closed until allow_signup===true
 - [Phase 06]: AUTH-05 keeps checkbox; v1 note clarifies allow_signup supersedes always-open cloud signup
-- [Phase 06]: Document cloud OCTANEST_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
+- [Phase 06]: Document cloud OXIDEAN_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)
 - [Post-06]: Client server-state via `@octanejs/tanstack-query` (not Zustand) — shared `auth.me` / bootstrap / providerConfig / admin settings; forms stay local `useState`
 - [Post-06]: Author UI in Octane `.tsrx` with `@{` / `@if` / `@else` / `@for`; do not mix React-style `return (` components with Rivet directives (breaks Vite import-protection HMR)
 - [Post-06]: OIDC reqwest connect/request timeouts; mock-oauth2-server healthcheck + compose issuer pointing at reachable host
@@ -698,7 +698,7 @@ Recent decisions affecting current work:
 - [Phase 07]: Git backend is system `git` CLI 2.5+ (fail boot if missing); gitoxide deferred until feature-complete; keep GitBackend abstraction (amends GIT-09)
 - [Phase 07]: GitHub-like browse IA (`/{owner}/{repo}`, tree/blob/raw/blame/compare); private=owner-only until Phase 10; create via `/new` with full templates
 - [Phase 07]: Wave 0 is RED-only — no CliGitBackend or repo RPC handlers; later 07-xx plans turn stubs green
-- [Phase 07]: octanest-git exports parse_git_version/assert_git_version placeholders that Err until implementation
+- [Phase 07]: oxidean-git exports parse_git_version/assert_git_version placeholders that Err until implementation
 - [Phase 07]: Wave 0 web stubs RED-only for /new wall + home CTA → /new — Production /new and CTA wiring deferred to 07-13 / 07-04; Nyquist discoverability first
 - [Phase 07]: new.integration.test uses @vite-ignore dynamic import while route absent — Static import('./new') fails Vite transform with 0 tests; runtime import keeps suite discoverable and RED
 - [Phase 07]: D-14: owner_repo_path — public URLs /{owner}/{repo} with reserved-name denylist
@@ -710,7 +710,7 @@ Recent decisions affecting current work:
 - [Phase 07]: CreateRepoRequest.visibility optional — omit uses instance default_visibility else public (D-08)
 - [Phase 07]: Fail-boot git gate + Dockerfile/Compose left to 07-17 (D-33)
 - [Phase 07]: Fail boot with eprintln + exit(1) when git missing or < 2.5.0 (D-33)
-- [Phase 07]: Install distro git in API image; bind ./var/repos without overriding default OCTANEST_REPOS_DIR
+- [Phase 07]: Install distro git in API image; bind ./var/repos without overriding default OXIDEAN_REPOS_DIR
 - [Phase 07]: Added $owner.$repo Outlet layout so Quick setup index registers like /setup
 - [Phase 07]: Template/license/gitignore remain None-only placeholders until 07-03
 - [Phase 07]: Public/Private via button group until radio-group in 07-09
@@ -751,29 +751,29 @@ Recent decisions affecting current work:
 - [Phase 08]: dialect_pats test names include dialect_pats for nextest test() filter discovery
 - [Phase 08]: Wave 0 web stubs RED-only; variable @vite-ignore import for absent tokens route
 - [Phase 08]: Threat stubs encode T-08-01 (no plaintext on list) and T-08-03 (unverified Generate gate)
-- [Phase 08]: D-08 PAT prefixes locked to octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from ona_*)
+- [Phase 08]: D-08 PAT prefixes locked to oxidean_pat_ / oxidean_fg_ (option oxidean_prefixes; deviation from ona_*)
 - [Phase 08]: D-18 HTTPS clone URL locked to /{owner}/{repo}.git on public origin (option owner_repo_git)
 - [Phase 08]: D-21/D-01 locked — git private unauth → 401+WWW-Authenticate; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)
-- [Phase 08]: 08-03-T0: proceed_locked — implement D-08 octanest_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
-- [Phase 08]: 08-03: PAT schema uses octanest_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
-- [Phase 08]: 08-04: mint classic PATs with octanest_pat_ (not ona_pat_); Axum uses {repo_git} segment
+- [Phase 08]: 08-03-T0: proceed_locked — implement D-08 oxidean_* prefixes + D-18 owner_repo_git + D-21/D-01 git_401_pat_https_only
+- [Phase 08]: 08-03: PAT schema uses oxidean_* prefixes; soft-revoked excluded from hash lookup; list created_at DESC
+- [Phase 08]: 08-04: mint classic PATs with oxidean_pat_ (not ona_pat_); Axum uses {repo_git} segment
 - [Phase 08]: 08-04: Smart HTTP CGI via git-http-backend; Cookie ignored; password → 401 PAT hint
-- [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (octanest_fg_), not plan-prose ona_fg_
+- [Phase 08]: D-08 mint uses FINE_GRAINED_PAT_PREFIX (oxidean_fg_), not plan-prose ona_fg_
 - [Phase 08]: Empty selected FG repos → pat.repos_required; foreign/non-owned → pat.invalid_scope; all ignores repository_ids
 - [Phase 08]: PAT list token_prefix is brand + first 8 hex of secret (display fingerprint)
-- [Phase 08]: Prefixes remain octanest_pat_/octanest_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
+- [Phase 08]: Prefixes remain oxidean_pat_/oxidean_fg_; rate-limit IP test uses git alias; unverified push → auth.email_unverified JSON
 - [Phase 08]: PAT client surface via rpc_gen template only (no hand-edit api-client)
 - [Phase 08]: API.md D-01: session cookie for RPC; PAT Basic for Smart HTTP only
 - [Phase 08]: Separate Traefik api-git router (PathRegexp prio 110) → service api; keep api@100 and web@1
-- [Phase 08]: smoke-git-https uses octanest_pat_/octanest_fg_ prefixes; skips exit 0 without Docker
+- [Phase 08]: smoke-git-https uses oxidean_pat_/oxidean_fg_ prefixes; skips exit 0 without Docker
 - [Phase 08]: 08-09: SettingsNav + Account menu PAT link; Generate disabled when unverified
 - [Phase 08]: 08-09: Revoke AlertDialog Keep token / Revoke token (no type-to-confirm)
 - [Phase 08]: Classic create: session loader mirrors tokens list; plaintext only in ephemeral page state until Back to tokens
 - [Phase 08]: PatReveal shared component for classic (08-10) and fine-grained (08-11) one-time reveal
 - [Phase 08]: PatHowTo CTA uses plain <a href=/settings/tokens> so CloneBox tests need no RouterProvider; tokens route handles signed-out redirect
 - [Phase 08]: PatHowTo always-visible shared panel in CloneBox (compact) and QuickSetup; SSH placeholder unchanged until Phase 9
-- [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (octanest_fg_)
-- [Phase 08]: Docs use octanest_pat_/octanest_fg_ (D-08), not ona_* draft wording
+- [Phase 08]: FG create defaults to Only select repositories + Read-only contents; mint via createFineGrained; reveal reuses PatReveal (oxidean_fg_)
+- [Phase 08]: Docs use oxidean_pat_/oxidean_fg_ (D-08), not ona_* draft wording
 - [Phase 08]: nyquist_compliant left false; validate-phase owns Nyquist flip
 - [Phase 10]: Wave 0 is RED-only — no production org RPC, ACL rewrite, or 0010 migrations
 - [Phase 10]: Use 0010_orgs_acl (not 0009) because Phase 09 SSH claims 0009_ssh_keys
@@ -806,7 +806,7 @@ Recent decisions affecting current work:
 - [Phase 10]: Gate repo settings on repo.can_admin not owner_id equality
 - [Phase 10]: Reuse MemberLookup for collaborator username add (no email)
 - [Phase 10]: factory_reset deletes repositories then organizations before users (polymorphic owner_id)
-- [Phase 10]: No new org env vars; invites reuse EmailSender + OCTANEST_PUBLIC_ORIGIN
+- [Phase 10]: No new org env vars; invites reuse EmailSender + OXIDEAN_PUBLIC_ORIGIN
 - [Phase 10]: 10-VALIDATION nyquist_compliant true after Wave 0 closed + phase gate green
 
 ### Pending Todos

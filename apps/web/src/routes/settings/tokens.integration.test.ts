@@ -164,7 +164,7 @@ describe("/settings/tokens (GIT-11 / D-14 list)", () => {
     expect(screen.getByText("Fine-grained token")).toBeInTheDocument();
     // T-08-01: no plaintext secrets on list
     expect(container.textContent).not.toMatch(
-      /octanest_pat_[a-f0-9]{16,}|octanest_fg_[a-f0-9]{16,}/i,
+      /oxidean_pat_[a-f0-9]{16,}|oxidean_fg_[a-f0-9]{16,}/i,
     );
   }, 15_000);
 
@@ -230,7 +230,7 @@ describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
           id: "pat-1",
           kind: "classic",
           name: "laptop",
-          token_prefix: "octanest_pat_abcd",
+          token_prefix: "oxidean_pat_abcd",
           scopes: ["repo"],
           expires_at: null,
           last_used_at: null,
@@ -269,7 +269,7 @@ describe("/settings/tokens (GIT-11 / D-17 revoke)", () => {
           id: "pat-1",
           kind: "classic",
           name: "ci-bot",
-          token_prefix: "octanest_pat_ef01",
+          token_prefix: "oxidean_pat_ef01",
           scopes: ["repo"],
           expires_at: null,
           last_used_at: null,
@@ -399,12 +399,12 @@ describe("/settings/tokens/new (GIT-11 / D-15 one-time reveal)", () => {
     createClassicMock.mockResolvedValue({
       ok: true,
       data: {
-        token: "octanest_pat_abcdef0123456789deadbeef",
+        token: "oxidean_pat_abcdef0123456789deadbeef",
         item: {
           id: "pat-new",
           kind: "classic",
           name: "laptop",
-          token_prefix: "octanest_pat_abcd",
+          token_prefix: "oxidean_pat_abcd",
           scopes: ["repo"],
           expires_at: null,
           last_used_at: null,
@@ -442,7 +442,7 @@ describe("/settings/tokens/new (GIT-11 / D-15 one-time reveal)", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByText("You won’t be able to see it again.")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("octanest_pat_abcdef0123456789deadbeef")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("oxidean_pat_abcdef0123456789deadbeef")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy token" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to tokens" })).toHaveAttribute(
       "href",
@@ -557,12 +557,12 @@ describe("/settings/tokens/new/fine-grained (GIT-11 / D-15 FG reveal)", () => {
     createFineGrainedMock.mockResolvedValue({
       ok: true,
       data: {
-        token: "octanest_fg_abcdef0123456789deadbeef",
+        token: "oxidean_fg_abcdef0123456789deadbeef",
         item: {
           id: "pat-fg-1",
           kind: "fine_grained",
           name: "ci",
-          token_prefix: "octanest_fg_abcd",
+          token_prefix: "oxidean_fg_abcd",
           contents: "write",
           repo_access: "all",
           expires_at: null,
@@ -604,7 +604,7 @@ describe("/settings/tokens/new/fine-grained (GIT-11 / D-15 FG reveal)", () => {
       ).toBeInTheDocument();
     });
     expect(screen.getByText("You won’t be able to see it again.")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("octanest_fg_abcdef0123456789deadbeef")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("oxidean_fg_abcdef0123456789deadbeef")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Copy token" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to tokens" })).toHaveAttribute(
       "href",

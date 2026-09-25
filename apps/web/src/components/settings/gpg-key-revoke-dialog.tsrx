@@ -1,4 +1,4 @@
-import type { GpgKeyListItem } from "@octanest/api-client";
+import type { GpgKeyListItem } from "@oxidean/api-client";
 import { useState } from "octane";
 import {
   AlertDialog,

@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
-import type { HealthResponse, RpcResult } from "@octanest/api-client";
+import type { HealthResponse, RpcResult } from "@oxidean/api-client";
 import { StatusPageSkeleton } from "@/components/page-skeletons";
 import { fetchSystemHealth } from "@/lib/ssr-auth";
 
@@ -11,7 +11,7 @@ export type StatusPhase =
 const UNREACHABLE: StatusPhase = {
   kind: "unreachable",
   message:
-    "Octanest couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again.",
+    "Oxidean couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again.",
 };
 
 const UNHEALTHY: StatusPhase = {
@@ -34,7 +34,7 @@ export function resolveStatusPhase(res: RpcResult<HealthResponse>): StatusPhase 
 
 export const Route = createFileRoute("/status")({
   component: StatusPage,
-  head: () => ({ meta: [{ title: "Status · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Status · Oxidean" }] }),
   loader: async (): Promise<StatusPhase> => {
     try {
       return resolveStatusPhase(await fetchSystemHealth());

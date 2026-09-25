@@ -25,13 +25,13 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/lfs/auth.rs
+    - crates/oxidean-api/src/lfs/auth.rs
   modified:
-    - crates/octanest-api/src/routes/git_lfs.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/tests/lfs_batch.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-api/src/routes/git_lfs.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
+    - crates/oxidean-core/src/repo_types.rs
 
 key-decisions:
   - "Combined Task 1+2 in one commit (auth + enable tightly coupled in routes/tests)"
@@ -48,7 +48,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_batch)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_batch)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -56,7 +56,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_enable)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_enable)'"
         status: pass
     human_judgment: false
 
@@ -94,5 +94,5 @@ Combined tasks into one commit; soft-deny non-Admin toggle via existing admin re
 None - plan executed as written (combined commit for intertwined files).
 
 ## Self-Check: PASSED
-- FOUND: crates/octanest-api/src/lfs/auth.rs
+- FOUND: crates/oxidean-api/src/lfs/auth.rs
 - FOUND: ec72b71

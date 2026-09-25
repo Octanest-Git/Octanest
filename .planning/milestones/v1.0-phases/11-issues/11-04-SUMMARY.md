@@ -38,12 +38,12 @@ key-files:
     - apps/web/src/components/repo/issue-history.tsrx
     - apps/web/src/components/repo/issue-delete-dialog.tsrx
   modified:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/issue/acl.rs
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-api/tests/issue_lifecycle.rs
-    - crates/octanest-api/tests/issue_delete.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/issue/acl.rs
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-api/tests/issue_lifecycle.rs
+    - crates/oxidean-api/tests/issue_delete.rs
     - packages/api-client/src/index.ts
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
     - apps/web/src/routes/$owner.$repo.issues.integration.test.ts
@@ -65,7 +65,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_lifecycle) | test(issue_history)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_lifecycle) | test(issue_history)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -73,7 +73,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_history_full_title_body_trail)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_history_full_title_body_trail)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -81,7 +81,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_delete)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_delete)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -126,12 +126,12 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/issue/mod.rs` — update/close/reopen/history/delete handlers
-- `crates/octanest-api/src/issue/acl.rs` — can_edit_issue + resolve_for_admin
-- `crates/octanest-db/src/issues.rs` — revisions + content/state mutations
-- `crates/octanest-core/src/issue_types.rs` — Update/Delete/History DTOs
-- `crates/octanest-api/tests/issue_lifecycle.rs` — greened edit/close/history
-- `crates/octanest-api/tests/issue_delete.rs` — greened Admin delete + no reuse
+- `crates/oxidean-api/src/issue/mod.rs` — update/close/reopen/history/delete handlers
+- `crates/oxidean-api/src/issue/acl.rs` — can_edit_issue + resolve_for_admin
+- `crates/oxidean-db/src/issues.rs` — revisions + content/state mutations
+- `crates/oxidean-core/src/issue_types.rs` — Update/Delete/History DTOs
+- `crates/oxidean-api/tests/issue_lifecycle.rs` — greened edit/close/history
+- `crates/oxidean-api/tests/issue_delete.rs` — greened Admin delete + no reuse
 - `packages/api-client/src/index.ts` — generated client + mutation helpers
 - `apps/web/src/routes/$owner.$repo.issues.$n.tsrx` — lifecycle UI
 - `apps/web/src/components/repo/issue-history.tsrx` — revision trail panel
@@ -152,7 +152,7 @@ status: complete
 - **Found during:** Task 1 (history test)
 - **Issue:** Two revisions in the same second sorted by UUID `id`, so trail order flipped
 - **Fix:** `ORDER BY created_at ASC, rowid ASC` for SQLite revision listing
-- **Files modified:** `crates/octanest-db/src/issues.rs`
+- **Files modified:** `crates/oxidean-db/src/issues.rs`
 - **Commit:** `4caf22d`
 
 **2. [Rule 3 - Blocking] Plan file listed `$number` route; repo uses `$n`**
@@ -172,7 +172,7 @@ None that block this plan's goal. Comments/labels/assignees/Linked PRs remain em
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/issue/mod.rs`
+- FOUND: `crates/oxidean-api/src/issue/mod.rs`
 - FOUND: `apps/web/src/components/repo/issue-delete-dialog.tsrx`
 - FOUND: `apps/web/src/components/repo/issue-history.tsrx`
 - FOUND: `.planning/phases/11-issues/11-04-SUMMARY.md`

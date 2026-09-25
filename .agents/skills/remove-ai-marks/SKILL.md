@@ -36,7 +36,7 @@ Base URL comes from `WATERMARKS_SERVICE_URL`, default `http://127.0.0.1:8765`:
 WM="${WATERMARKS_SERVICE_URL:-http://127.0.0.1:8765}"
 ```
 
-### Octanest lifecycle (required)
+### Oxidean lifecycle (required)
 
 In this repo the agent **starts the HTTP service for the run and stops it
 afterward** — do not ask the user to run `make serve` first.
@@ -44,8 +44,8 @@ afterward** — do not ask the user to run `make serve` first.
 Helper (preferred):
 
 ```bash
-HELPER=".agents/skills/remove-ai-marks/scripts/octanest-watermarks-service.sh"
-# from Octanest repo root:
+HELPER=".agents/skills/remove-ai-marks/scripts/oxidean-watermarks-service.sh"
+# from Oxidean repo root:
 "$HELPER" ensure      # prints STARTED or REUSED; clones tmp/watermarks-remover if needed
 # … inspect / clean / audit via curl or service scripts …
 "$HELPER" teardown    # STOPPED only if this run started it; else LEFT_RUNNING
@@ -370,5 +370,5 @@ Always state:
 If `ensure` fails (clone error, port conflict, timeout): report the helper
 log at `tmp/watermarks-service.agent.log` and stop. Do **not** invent local
 cleaners. Optional operator fallbacks: `docker compose up -d` or GHCR image
-from upstream watermarks-remover — still prefer the Octanest helper for
+from upstream watermarks-remover — still prefer the Oxidean helper for
 agent-driven runs.

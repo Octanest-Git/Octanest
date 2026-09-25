@@ -9,7 +9,7 @@ requires:
     provides: Wave 0 dialect_actions stub
 provides:
   - 0021_actions dialect migrations + actions.rs accessors
-  - OCTANEST_ACTIONS_LOG_DIR / OCTANEST_ACTIONS_ENABLED + Compose volume
+  - OXIDEAN_ACTIONS_LOG_DIR / OXIDEAN_ACTIONS_ENABLED + Compose volume
   - Factory reset wipe for Actions domain + log dir
 affects: [19-03, 19-04, 19-05, 19-07, 19-10]
 
@@ -24,17 +24,17 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/sqlite/0021_actions.sql
-    - crates/octanest-db/migrations/postgres/0021_actions.sql
-    - crates/octanest-db/migrations/mysql/0021_actions.sql
-    - crates/octanest-db/src/actions.rs
-    - crates/octanest-db/tests/factory_reset_actions.rs
+    - crates/oxidean-db/migrations/sqlite/0021_actions.sql
+    - crates/oxidean-db/migrations/postgres/0021_actions.sql
+    - crates/oxidean-db/migrations/mysql/0021_actions.sql
+    - crates/oxidean-db/src/actions.rs
+    - crates/oxidean-db/tests/factory_reset_actions.rs
   modified:
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/tests/dialect_actions.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/auth/admin.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/tests/dialect_actions.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/auth/admin.rs
     - docker-compose.yml
     - docs/CONFIGURATION.md
 
@@ -54,7 +54,7 @@ coverage:
     requirement: ACT-03
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-db -E 'test(dialect_actions)'
+        ref: cargo nextest run -p oxidean-db -E 'test(dialect_actions)'
         status: pass
     human_judgment: false
   - id: D2
@@ -62,7 +62,7 @@ coverage:
     requirement: ACT-03
     verification:
       - kind: other
-        ref: rg OCTANEST_ACTIONS_LOG_DIR app.rs compose CONFIGURATION.md
+        ref: rg OXIDEAN_ACTIONS_LOG_DIR app.rs compose CONFIGURATION.md
         status: pass
     human_judgment: false
   - id: D3
@@ -70,7 +70,7 @@ coverage:
     requirement: ACT-07
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-db -E 'test(factory_reset_actions)'
+        ref: cargo nextest run -p oxidean-db -E 'test(factory_reset_actions)'
         status: pass
     human_judgment: false
 
@@ -82,7 +82,7 @@ status: complete
 
 # Phase 19 Plan 02: Actions schema + LOG_DIR Summary
 
-**Dialect `0021_actions` migrations, thin `actions.rs` accessors, Compose/docs for `OCTANEST_ACTIONS_LOG_DIR` / `OCTANEST_ACTIONS_ENABLED`, and factory-reset wipe for Actions metadata + logs.**
+**Dialect `0021_actions` migrations, thin `actions.rs` accessors, Compose/docs for `OXIDEAN_ACTIONS_LOG_DIR` / `OXIDEAN_ACTIONS_ENABLED`, and factory-reset wipe for Actions metadata + logs.**
 
 ## Performance
 
@@ -102,9 +102,9 @@ status: complete
 3. **Task 3: Factory reset wipe Actions** - `09bf82d` (test)
 
 ## Files Created/Modified
-- `crates/octanest-db/migrations/*/0021_actions.sql` — schema
-- `crates/octanest-db/src/actions.rs` — accessors + wipe_actions_domain
-- `crates/octanest-api/src/app.rs` — env parse (replaces planned config.rs)
+- `crates/oxidean-db/migrations/*/0021_actions.sql` — schema
+- `crates/oxidean-db/src/actions.rs` — accessors + wipe_actions_domain
+- `crates/oxidean-api/src/app.rs` — env parse (replaces planned config.rs)
 - `docker-compose.yml` / `docs/CONFIGURATION.md` — volume + docs
 
 ## Decisions Made
@@ -124,7 +124,7 @@ status: complete
 
 **2. [Rule 3 - Blocking] config.rs path**
 - **Found during:** Task 2
-- **Issue:** Plan referenced nonexistent `crates/octanest-api/src/config.rs`
+- **Issue:** Plan referenced nonexistent `crates/oxidean-api/src/config.rs`
 - **Fix:** Extended `app.rs` + `RpcCtx` like LFS/packages
 - **Commit:** c6cc541
 
@@ -136,7 +136,7 @@ status: complete
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-db/migrations/sqlite/0021_actions.sql
-- FOUND: crates/octanest-db/src/actions.rs
-- FOUND: crates/octanest-db/tests/factory_reset_actions.rs
+- FOUND: crates/oxidean-db/migrations/sqlite/0021_actions.sql
+- FOUND: crates/oxidean-db/src/actions.rs
+- FOUND: crates/oxidean-db/tests/factory_reset_actions.rs
 - FOUND: efc69ab, c6cc541, 09bf82d

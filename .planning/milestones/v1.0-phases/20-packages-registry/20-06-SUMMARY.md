@@ -18,14 +18,14 @@ actuals:
 
 tech-stack:
   added: []
-  patterns: [CouchDB publish attachments, OCTANEST_PUBLIC_ORIGIN tarball URLs]
+  patterns: [CouchDB publish attachments, OXIDEAN_PUBLIC_ORIGIN tarball URLs]
 
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/packages/npm.rs
-    - crates/octanest-api/tests/npm_registry.rs
-    - crates/octanest-db/src/packages.rs
+    - crates/oxidean-api/src/packages/npm.rs
+    - crates/oxidean-api/tests/npm_registry.rs
+    - crates/oxidean-db/src/packages.rs
 
 key-decisions:
   - "Package description column stores npm dist-tags JSON for package-level metadata"
@@ -38,7 +38,7 @@ coverage:
     requirement: PKG-02
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(npm_registry)'
+        ref: cargo nextest run -p oxidean-api -E 'test(npm_registry)'
         status: pass
     human_judgment: false
 

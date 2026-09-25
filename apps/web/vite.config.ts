@@ -17,7 +17,7 @@ import { swBuildIdPlugin } from "./vite-plugins/sw-build-id.ts";
 // hook never fires — no sw.js is produced, silently). Per the 03-05 plan's
 // documented fallback, the manifest and service worker are hand-authored as
 // static files in apps/web/public/ instead (manifest.webmanifest, sw.js).
-// swBuildIdPlugin stamps CACHE_NAME + VITE_OCTANEST_SW_BUILD per deploy so
+// swBuildIdPlugin stamps CACHE_NAME + VITE_OXIDEAN_SW_BUILD per deploy so
 // clients install a fresh worker instead of pinning an old shell cache.
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -32,24 +32,24 @@ function resolveViteAllowedHosts(): true | string[] | undefined {
     return true;
   }
   const hosts = parseViteAllowedHosts(
-    process.env.OCTANEST_VITE_ALLOWED_HOSTS,
-    process.env.OCTANEST_PUBLIC_ORIGIN,
+    process.env.OXIDEAN_VITE_ALLOWED_HOSTS,
+    process.env.OXIDEAN_PUBLIC_ORIGIN,
   );
   return hosts.length > 0 ? hosts : undefined;
 }
 
 export default defineConfig(() => {
   const apiProxyTarget =
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080";
   const viteAllowedHosts = resolveViteAllowedHosts();
 
   return {
     plugins: [
-      // Before Start/proxy: Compose + Dockerfile probe `/health` with Octanest-Health-Probe.
+      // Before Start/proxy: Compose + Dockerfile probe `/health` with Oxidean-Health-Probe.
       webHealthPlugin(),
-      // Per-deploy CACHE_NAME + VITE_OCTANEST_SW_BUILD for SW update busting.
+      // Per-deploy CACHE_NAME + VITE_OXIDEAN_SW_BUILD for SW update busting.
       swBuildIdPlugin(),
       fixTypeOnlyImports(RECHARTS_TYPE_ONLY_IMPORT_FIX),
       tanstackStart({

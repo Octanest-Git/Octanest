@@ -86,11 +86,11 @@ Users discover public work via explore, profiles, stars, and forks. Delivers SOC
 - AUTH-08 (profile edit) already shipped — extend read-side only for public profiles
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/acl.rs` — Read/Write/Admin
-- `crates/octanest-api/src/repo/mod.rs` — `repo.create` / `to_public` / listByOwner
-- `crates/octanest-db/migrations/*/0015_packages.sql` — next migration after packages
-- `crates/octanest-core/src/repo_types.rs` — `RepoPublic`
-- `crates/octanest-core/src/auth_types.rs` — `explore` reserved; `UserPublic` profile fields
+- `crates/oxidean-api/src/repo/acl.rs` — Read/Write/Admin
+- `crates/oxidean-api/src/repo/mod.rs` — `repo.create` / `to_public` / listByOwner
+- `crates/oxidean-db/migrations/*/0015_packages.sql` — next migration after packages
+- `crates/oxidean-core/src/repo_types.rs` — `RepoPublic`
+- `crates/oxidean-core/src/auth_types.rs` — `explore` reserved; `UserPublic` profile fields
 - `apps/web/src/routes/$owner.index.tsrx` — org-only today; must branch for users
 - `apps/web/src/components/repo/repo-chrome.tsrx` — Star/Fork affordances
 - `apps/web/src/components/chrome.tsrx` — SiteHeader Explore link

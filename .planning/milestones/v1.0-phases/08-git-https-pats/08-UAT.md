@@ -21,7 +21,7 @@ evidence: |
   Live browser skipped — Docker unavailable in this environment; coverage is automated.
 
 ### 2. FG + real git HTTPS — Compose smoke
-expected: Token mints with octanest_fg_; Basic auth with PAT works; account password fails with PAT hint; private anon gets 401+WWW-Authenticate
+expected: Token mints with oxidean_fg_; Basic auth with PAT works; account password fails with PAT hint; private anon gets 401+WWW-Authenticate
 result: pass
 evidence: |
   nextest `pat_rpc` FG create (all/selected/foreign/empty/unverified) green.
@@ -39,7 +39,7 @@ expected: DB only stores token_hash; /api/rpc still session-only; docs say PATs 
 result: pass
 evidence: |
   Schema `token_hash CHAR(64) UNIQUE` in `0008_pats.sql` (all dialects); no plaintext column.
-  `docs/API.md` D-01: PATs are not RPC Bearer; RPC uses `octanest_session` cookie only.
+  `docs/API.md` D-01: PATs are not RPC Bearer; RPC uses `oxidean_session` cookie only.
   `git_smart_http.rs` ignores Cookie for auth; `pat_list_omits_secret_token` nextest asserts list has no token field.
 
 ## Summary

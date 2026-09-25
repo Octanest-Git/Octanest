@@ -37,9 +37,9 @@ Three modes:
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/undo.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/gate-prompts.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/undo.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/gate-prompts.md
 </execution_context>
 
 <context>

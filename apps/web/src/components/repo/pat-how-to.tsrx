@@ -26,7 +26,7 @@ export function PatHowTo({ httpsUrl, compact }: PatHowToProps) @{
       Authenticate with a personal access token
     </h3>
     <ul className="mt-2 flex flex-col gap-1.5 text-[13px] leading-relaxed text-muted-foreground">
-      <li>Username: your Octanest username, or `git`, `token`, or `oauth2`.</li>
+      <li>Username: your Oxidean username, or `git`, `token`, or `oauth2`.</li>
       <li>Password: a personal access token — not your account password.</li>
     </ul>
     <p className="mt-3">

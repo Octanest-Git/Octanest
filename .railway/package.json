@@ -1,8 +1,8 @@
 {
-  "name": "octanest-railway-iac",
+  "name": "oxidean-railway-iac",
   "private": true,
   "version": "0.0.0",
-  "description": "Railway TypeScript IaC for Octanest Cloud (isolated from Bun workspaces)",
+  "description": "Railway TypeScript IaC for Oxidean Cloud (isolated from Bun workspaces)",
   "type": "module",
   "dependencies": {
     "railway": "3.11.0"

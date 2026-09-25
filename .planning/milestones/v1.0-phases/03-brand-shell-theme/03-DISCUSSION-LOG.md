@@ -18,7 +18,7 @@
 | Light variant later | Defer art | |
 | Other: macOS app icon | Rounded-square squircle | ✓ |
 
-**User's choice:** Clip PNG to macOS app-icon squircle; shared mark everywhere in UI; mark+wordmark wide / mark-only narrow; hero = large mark + headline only; `alt="Octanest"` always; footer text-only; same black in light/dark; clip asset (no extra pad).
+**User's choice:** Clip PNG to macOS app-icon squircle; shared mark everywhere in UI; mark+wordmark wide / mark-only narrow; hero = large mark + headline only; `alt="Oxidean"` always; footer text-only; same black in light/dark; clip asset (no extra pad).
 
 **Notes:** User rejected generic tight/flush/circle plates in favor of macOS app icon shape.
 
@@ -59,7 +59,7 @@
 | Full icon set | favicon + apple-touch + manifest | ✓ |
 | Defer multi-size | link to PNG only | |
 
-Also locked: inline FOUC boot script; `Page · Octanest` titles; full multi-section landing + 2–3 motions.
+Also locked: inline FOUC boot script; `Page · Oxidean` titles; full multi-section landing + 2–3 motions.
 
 ---
 

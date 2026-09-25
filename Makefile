@@ -20,7 +20,7 @@ COMPOSE ?= docker compose
 COMPOSE_FILE ?= docker-compose.yml
 
 help:
-	@echo "Octanest targets:"
+	@echo "Oxidean targets:"
 	@echo "  make makefile-lint  - parse Makefile + checkmake (CI early gate)"
 	@echo "  make dev            - local API + web (Vite proxy; D-10)"
 	@echo "  make rpc-gen        - regenerate packages/api-client from Rust"
@@ -58,7 +58,7 @@ help:
 	@echo "  make smoke-compose-ci - Compose dialect bring-up smoke for CI (D-CI-01; DIALECT=postgres|sqlite|mysql)"
 	@echo "  make smoke-mysql    - bring-up smoke asserting dialect=mysql"
 	@echo "  make smoke-sqlite   - bring-up smoke asserting dialect=sqlite"
-	@echo "  make cloud-plan     - railway config plan (Octanest Cloud IaC; no apply)"
+	@echo "  make cloud-plan     - railway config plan (Oxidean Cloud IaC; no apply)"
 	@echo "  make cloud-docs     - print pointers to cloud deploy docs"
 	@echo "  make cloud-production-autodeploy-check - assert production has no GitHub autodeploy triggers"
 	@echo "  make db-migrate     - apply migrations for DATABASE_URL"
@@ -66,19 +66,19 @@ help:
 	@echo "  make db-matrix      - run the dialect probe test against DATABASE_URL"
 	@echo ""
 	@echo "Sample DATABASE_URLs:"
-	@echo "  postgres://octanest:octanest@localhost:5432/octanest"
-	@echo "  mysql://octanest:octanest@127.0.0.1:3306/octanest"
-	@echo "  sqlite:./var/octanest.db"
+	@echo "  postgres://oxidean:oxidean@localhost:5432/oxidean"
+	@echo "  mysql://oxidean:oxidean@127.0.0.1:3306/oxidean"
+	@echo "  sqlite:./var/oxidean.db"
 
 dev:
 	@echo "Starting API + web (rpc-gen once)..."
 	@$(MAKE) rpc-gen
 	@echo "Run in two terminals:"
-	@echo "  OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin octanest-api"
-	@echo "  bun run --filter @octanest/web dev"
+	@echo "  OXIDEAN_ENV=development API_BIND=127.0.0.1:8080 cargo run -p oxidean-api --bin oxidean-api"
+	@echo "  bun run --filter @oxidean/web dev"
 
 rpc-gen:
-	cargo run -q -p octanest-api --bin rpc-gen
+	cargo run -q -p oxidean-api --bin rpc-gen
 
 rpc-sync-check:
 	@./scripts/check-rpc-sync.sh
@@ -101,7 +101,7 @@ up-mysql:
 up-sqlite:
 	mkdir -p var
 	@host="$$(./scripts/sqlite-host-dir.sh)"; \
-	printf 'OCTANEST_SQLITE_HOST_DIR=%s\n' "$$host" > .env.sqlite; \
+	printf 'OXIDEAN_SQLITE_HOST_DIR=%s\n' "$$host" > .env.sqlite; \
 	$(COMPOSE) --env-file .env.sqlite -f docker-compose.yml -f docker-compose.sqlite.yml up --build -d
 
 down:
@@ -125,7 +125,7 @@ up-dev-auth:
 # Main Traefik stack + Mailpit/stubs; API SMTP defaults to smtp://mailpit:1025.
 up-with-dev-auth:
 	@bash -c 'source ./scripts/docker-wsl-creds.sh; \
-	  export OCTANEST_HOST_GATEWAY_IP="$$(./scripts/dev-auth/host-gateway-ip.sh)"; \
+	  export OXIDEAN_HOST_GATEWAY_IP="$$(./scripts/dev-auth/host-gateway-ip.sh)"; \
 	  $(COMPOSE) -f docker-compose.yml \
 	    -f docker-compose.dev-auth.yml \
 	    -f docker-compose.dev-auth-attach.yml \
@@ -154,7 +154,7 @@ test-e2e-stack:
 
 # Seed the ci-demo repo + workflow and poll the Actions run to green.
 # Works against local compose (default http://localhost) or any origin:
-#   OCTANEST_ORIGIN=https://... OCTANEST_SEED_USER=... OCTANEST_SEED_PASSWORD=... make seed-actions-demo
+#   OXIDEAN_ORIGIN=https://... OXIDEAN_SEED_USER=... OXIDEAN_SEED_PASSWORD=... make seed-actions-demo
 seed-actions-demo:
 	./scripts/dev-auth/seed-actions-demo.sh
 
@@ -185,7 +185,7 @@ smoke-protection:
 	@./scripts/compose-smoke-protection.sh
 
 # Requires stack already up (`make up`). Public repo at SMOKE_GIT_OWNER/SMOKE_GIT_REPO;
-# optional SMOKE_PAT=octanest_pat_… for push. See scripts/smoke-git-https.sh.
+# optional SMOKE_PAT=oxidean_pat_… for push. See scripts/smoke-git-https.sh.
 # Docker-missing skips exit 0 locally; CI=true / SMOKE_REQUIRE_STACK=1 fails closed.
 smoke-git-https:
 	@./scripts/smoke-git-https.sh
@@ -229,10 +229,10 @@ cloud-production-autodeploy-check:
 	@bash scripts/railway-production-autodeploy-check.sh
 
 cloud-docs:
-	@echo "Octanest Cloud:"
+	@echo "Oxidean Cloud:"
 	@echo "  IaC:       .railway/railway.ts"
 	@echo "  Gateway:   deploy/cloud/Caddyfile"
-	@echo "  Operator:  docs/DEPLOYMENT.md (Octanest Cloud section)"
+	@echo "  Operator:  docs/DEPLOYMENT.md (Oxidean Cloud section)"
 	@echo "  Plan only: make cloud-plan"
 	@echo "  Apply:     railway config apply  # human-approved only"
 
@@ -242,29 +242,29 @@ smoke-mysql:
 smoke-sqlite:
 	mkdir -p var
 	@host="$$(./scripts/sqlite-host-dir.sh)"; \
-	OCTANEST_SQLITE_HOST_DIR="$$host" COMPOSE_FILES="-f docker-compose.yml -f docker-compose.sqlite.yml" EXPECT_DIALECT=sqlite ./scripts/compose-smoke.sh; \
+	OXIDEAN_SQLITE_HOST_DIR="$$host" COMPOSE_FILES="-f docker-compose.yml -f docker-compose.sqlite.yml" EXPECT_DIALECT=sqlite ./scripts/compose-smoke.sh; \
 	if echo "$$host" | grep -Eq '^[A-Za-z]:/'; then \
-	  src="$$(wslpath "$$host")/octanest.db"; \
-	  if [ -f "$$src" ]; then cp -f "$$src" ./var/octanest.db; echo "==> mirrored $$src -> ./var/octanest.db"; fi; \
+	  src="$$(wslpath "$$host")/oxidean.db"; \
+	  if [ -f "$$src" ]; then cp -f "$$src" ./var/oxidean.db; echo "==> mirrored $$src -> ./var/oxidean.db"; fi; \
 	fi
 
 db-migrate:
-	cargo run -q -p octanest-db --bin migrate
+	cargo run -q -p oxidean-db --bin migrate
 
 db-switch-dialect:
 	./scripts/db-switch-dialect.sh $(ARGS)
 
 db-matrix:
-	cargo test -p octanest-db --test dialect_probe -- --nocapture
+	cargo test -p oxidean-db --test dialect_probe -- --nocapture
 
 # D-QH-02 coverage collect + weighted gate (see docs/TESTING.md).
 # Collect continues when Vitest exits non-zero so summaries are still emitted
 # (reportOnFailure); web-octane remains the hard test pass/fail job.
 coverage-web:
 	@mkdir -p var/coverage
-	@bun run --filter @octanest/web test:coverage:unit \
+	@bun run --filter @oxidean/web test:coverage:unit \
 		|| echo "==> unit coverage finished with test failures (summaries may still exist)"
-	@bun run --filter @octanest/web test:coverage:integration \
+	@bun run --filter @oxidean/web test:coverage:integration \
 		|| echo "==> integration coverage finished with test failures (summaries may still exist)"
 	@test -f apps/web/coverage/unit/coverage-summary.json
 	@test -f apps/web/coverage/integration/coverage-summary.json
@@ -293,11 +293,11 @@ route-coverage-check:
 	@./scripts/route-coverage-check.sh
 
 web-lint:
-	bun run --filter @octanest/web lint
+	bun run --filter @oxidean/web lint
 	bun run scripts/check-octane-dom-races.ts
 
 web-format-check:
-	bun run --filter @octanest/web format:check
+	bun run --filter @oxidean/web format:check
 
 coverage-weighted: coverage-web
 	@mkdir -p var/coverage

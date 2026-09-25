@@ -6,7 +6,7 @@
  * missing baseline) it writes `actual` + `diff` artifacts to the gitignored
  * repo `tmp/e2e-visual/` directory and throws.
  *
- * Regenerate/seed baselines with `OCTANEST_E2E_UPDATE_VISUAL=1` — the run still
+ * Regenerate/seed baselines with `OXIDEAN_E2E_UPDATE_VISUAL=1` — the run still
  * asserts page errors but writes new baselines instead of comparing.
  *
  * Pages render relative timestamps ("5m ago"), so callers should mask volatile
@@ -48,7 +48,7 @@ export type VisualBaselineOptions = {
 function updateMode(): boolean {
   try {
     const proc = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
-    return proc?.env?.OCTANEST_E2E_UPDATE_VISUAL === "1";
+    return proc?.env?.OXIDEAN_E2E_UPDATE_VISUAL === "1";
   } catch {
     return false;
   }
@@ -103,7 +103,7 @@ export async function assertVisualBaseline(
     writeFileSync(actualPath, shot);
     throw new Error(
       `visual baseline missing: ${baselinePath}. Actual written to ${actualPath}. ` +
-        `Seed with OCTANEST_E2E_UPDATE_VISUAL=1 after reviewing the screenshot.`,
+        `Seed with OXIDEAN_E2E_UPDATE_VISUAL=1 after reviewing the screenshot.`,
     );
   }
 

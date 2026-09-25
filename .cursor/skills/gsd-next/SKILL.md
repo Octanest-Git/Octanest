@@ -34,8 +34,8 @@ This is a launcher/router only. It never does the work itself. It reads project 
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/smart-entry.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/smart-entry.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -43,5 +43,5 @@ Arguments: {{GSD_ARGS}}
 </context>
 
 <process>
-Follow /home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/smart-entry.md. Detect the situation, present the menu, and dispatch exactly one command. Then stop.
+Follow /home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/smart-entry.md. Detect the situation, present the menu, and dispatch exactly one command. Then stop.
 </process>

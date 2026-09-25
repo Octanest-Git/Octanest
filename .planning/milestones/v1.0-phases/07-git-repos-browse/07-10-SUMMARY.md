@@ -11,7 +11,7 @@ provides:
   - Factory reset scope radios (database_only vs database_and_repositories)
   - In-process orphan reconcile + soft-delete retention purge
   - Scheduled and manual git gc (admin.repos.gc)
-  - CONFIGURATION docs for OCTANEST_REPOS_DIR, git ≥2.5, UID/GID, cleanup knobs
+  - CONFIGURATION docs for OXIDEAN_REPOS_DIR, git ≥2.5, UID/GID, cleanup knobs
 affects: [ship, ops, admin-ui]
 
 actuals:
@@ -31,20 +31,20 @@ tech-stack:
 key-files:
   created:
     - apps/web/src/components/ui/radio-group.tsrx
-    - crates/octanest-api/src/jobs/mod.rs
-    - crates/octanest-api/src/jobs/reconcile.rs
-    - crates/octanest-api/src/jobs/schedule.rs
-    - crates/octanest-api/tests/factory_reset_scope.rs
-    - crates/octanest-api/tests/orphan_reconcile_gc.rs
+    - crates/oxidean-api/src/jobs/mod.rs
+    - crates/oxidean-api/src/jobs/reconcile.rs
+    - crates/oxidean-api/src/jobs/schedule.rs
+    - crates/oxidean-api/tests/factory_reset_scope.rs
+    - crates/oxidean-api/tests/orphan_reconcile_gc.rs
   modified:
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-db/src/repositories.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-db/src/repositories.rs
     - apps/web/src/routes/admin/auth.tsrx
     - docs/CONFIGURATION.md
     - packages/api-client/src/index.ts
@@ -66,10 +66,10 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/factory_reset_scope.rs#factory_reset_database_only_keeps_repo_files
+        ref: crates/oxidean-api/tests/factory_reset_scope.rs#factory_reset_database_only_keeps_repo_files
         status: pass
       - kind: integration
-        ref: crates/octanest-api/tests/factory_reset_scope.rs#factory_reset_database_and_repositories_wipes_disk
+        ref: crates/oxidean-api/tests/factory_reset_scope.rs#factory_reset_database_and_repositories_wipes_disk
         status: pass
     human_judgment: false
   - id: D2
@@ -77,10 +77,10 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/orphan_reconcile_gc.rs#orphan_reconcile_purges_soft_deleted_past_retention
+        ref: crates/oxidean-api/tests/orphan_reconcile_gc.rs#orphan_reconcile_purges_soft_deleted_past_retention
         status: pass
       - kind: unit
-        ref: crates/octanest-api/src/jobs/reconcile.rs#orphan_reconcile_removes_disk_without_db_row
+        ref: crates/oxidean-api/src/jobs/reconcile.rs#orphan_reconcile_removes_disk_without_db_row
         status: pass
     human_judgment: false
   - id: D3
@@ -88,18 +88,18 @@ coverage:
     requirement: GIT-09
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/orphan_reconcile_gc.rs#admin_repos_gc_runs_for_one_and_all
+        ref: crates/oxidean-api/tests/orphan_reconcile_gc.rs#admin_repos_gc_runs_for_one_and_all
         status: pass
       - kind: unit
-        ref: crates/octanest-git/src/cli.rs#gc_runs_on_bare_repo
+        ref: crates/oxidean-git/src/cli.rs#gc_runs_on_bare_repo
         status: pass
     human_judgment: false
   - id: D4
-    description: CONFIGURATION documents OCTANEST_REPOS_DIR, git ≥2.5, Compose ownership, cleanup knobs
+    description: CONFIGURATION documents OXIDEAN_REPOS_DIR, git ≥2.5, Compose ownership, cleanup knobs
     requirement: GIT-08
     verification:
       - kind: other
-        ref: rg -n 'OCTANEST_REPOS_DIR|git.*2\.5|var/repos|UID|GID|orphan|gc' docs/CONFIGURATION.md
+        ref: rg -n 'OXIDEAN_REPOS_DIR|git.*2\.5|var/repos|UID|GID|orphan|gc' docs/CONFIGURATION.md
         status: pass
     human_judgment: false
 
@@ -124,7 +124,7 @@ status: complete
 
 - Admin factory reset Dialog with Database only (default) vs Database and repositories scopes; server-side wipe confined under `repos_dir`
 - In-process orphan reconcile (orphans + soft-delete retention, default 14d) and scheduled `git gc --auto`, plus `admin.repos.gc`
-- CONFIGURATION documents `OCTANEST_REPOS_DIR`, git ≥2.5 boot gate, Compose UID/GID ownership, and cleanup interval knobs
+- CONFIGURATION documents `OXIDEAN_REPOS_DIR`, git ≥2.5 boot gate, Compose UID/GID ownership, and cleanup interval knobs
 
 ## Task Commits
 
@@ -138,13 +138,13 @@ Each task was committed atomically:
 
 - `apps/web/src/components/ui/radio-group.tsrx` - Base UI radio group wrapper
 - `apps/web/src/routes/admin/auth.tsrx` - Reset this instance Dialog + scopes
-- `crates/octanest-api/src/jobs/*` - Orphan reconcile + interval schedulers
-- `crates/octanest-git/src/backend.rs` / `cli.rs` - `GitBackend::gc`
+- `crates/oxidean-api/src/jobs/*` - Orphan reconcile + interval schedulers
+- `crates/oxidean-git/src/backend.rs` / `cli.rs` - `GitBackend::gc`
 - `docs/CONFIGURATION.md` - Repos/git/cleanup operator runbook
 
 ## Decisions Made
 
-- Cleanup frequency and soft-delete retention via ENV (`OCTANEST_*_INTERVAL_SECS`, `OCTANEST_SOFT_DELETE_RETENTION_DAYS`) rather than new instance_settings columns — avoids a Phase 7 schema migration while still documenting operator knobs.
+- Cleanup frequency and soft-delete retention via ENV (`OXIDEAN_*_INTERVAL_SECS`, `OXIDEAN_SOFT_DELETE_RETENTION_DAYS`) rather than new instance_settings columns — avoids a Phase 7 schema migration while still documenting operator knobs.
 - Soft-deleted bare dirs are kept until retention elapses; orphan scan only removes dirs with no matching DB row (active or soft-deleted).
 - Manual GC: both `owner`+`name` for one repo, or omit both for all active repos.
 
@@ -156,14 +156,14 @@ Each task was committed atomically:
 - **Found during:** Task 1 / Task 2
 - **Issue:** Threat model T-07-26 requires canonicalize-under-repos_dir for destructive FS ops.
 - **Fix:** Shared strip_prefix guards in factory wipe and `delete_under_repos_dir`.
-- **Files modified:** `crates/octanest-api/src/auth/admin.rs`, `crates/octanest-api/src/jobs/reconcile.rs`
+- **Files modified:** `crates/oxidean-api/src/auth/admin.rs`, `crates/oxidean-api/src/jobs/reconcile.rs`
 - **Commit:** `a4be3d4`, `e6d7c22`
 
 **2. [Rule 2 - Missing critical functionality] Explicit retention API for tests**
 - **Found during:** Task 2
 - **Issue:** Backdating `deleted_at` via raw sqlx in integration tests needed unlinked sqlx dep.
 - **Fix:** Added `orphan_reconcile_with_retention` so retention=0 proves purge without env races or sqlx in tests.
-- **Files modified:** `crates/octanest-api/src/jobs/reconcile.rs`, `tests/orphan_reconcile_gc.rs`
+- **Files modified:** `crates/oxidean-api/src/jobs/reconcile.rs`, `tests/orphan_reconcile_gc.rs`
 - **Commit:** `e6d7c22`
 
 ## Threat Flags
@@ -173,6 +173,6 @@ None — factory reset and FS purge surfaces were in the plan threat model (T-07
 ## Self-Check: PASSED
 
 - FOUND: `apps/web/src/components/ui/radio-group.tsrx`
-- FOUND: `crates/octanest-api/src/jobs/reconcile.rs`
-- FOUND: `docs/CONFIGURATION.md` (OCTANEST_REPOS_DIR + git 2.5)
+- FOUND: `crates/oxidean-api/src/jobs/reconcile.rs`
+- FOUND: `docs/CONFIGURATION.md` (OXIDEAN_REPOS_DIR + git 2.5)
 - FOUND: commits `a4be3d4`, `e6d7c22`, `caf38a0`

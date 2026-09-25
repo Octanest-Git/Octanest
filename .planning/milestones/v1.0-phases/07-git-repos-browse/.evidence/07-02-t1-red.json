@@ -1,9 +1,9 @@
 {
-  "command": "cargo test -p octanest-core --lib repo_types::tests::validate_repo_name_accepts_my_app -- --nocapture",
+  "command": "cargo test -p oxidean-core --lib repo_types::tests::validate_repo_name_accepts_my_app -- --nocapture",
   "exitCode": 101,
-  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s\n     Running unittests src/lib.rs (target/debug/build/octanest-core/5ba2f9690afa65c7/out/octanest_core-5ba2f9690afa65c7)\n\nrunning 1 test\n\nthread 'repo_types::tests::validate_repo_name_accepts_my_app' (222553) panicked at crates/octanest-core/src/repo_types.rs:66:9:\nD-06: underscore must be allowed in repo names\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest repo_types::tests::validate_repo_name_accepts_my_app ... FAILED\n\nfailures:\n\nfailures:\n    repo_types::tests::validate_repo_name_accepts_my_app\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p octanest-core --lib`\n\n\nnot ok 1 - repo_types::tests::validate_repo_name_accepts_my_app\n# tests 1\n# pass 0\n# fail 1\n",
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s\n     Running unittests src/lib.rs (target/debug/build/oxidean-core/5ba2f9690afa65c7/out/oxidean_core-5ba2f9690afa65c7)\n\nrunning 1 test\n\nthread 'repo_types::tests::validate_repo_name_accepts_my_app' (222553) panicked at crates/oxidean-core/src/repo_types.rs:66:9:\nD-06: underscore must be allowed in repo names\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest repo_types::tests::validate_repo_name_accepts_my_app ... FAILED\n\nfailures:\n\nfailures:\n    repo_types::tests::validate_repo_name_accepts_my_app\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 16 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p oxidean-core --lib`\n\n\nnot ok 1 - repo_types::tests::validate_repo_name_accepts_my_app\n# tests 1\n# pass 0\n# fail 1\n",
   "targetTest": "repo_types::tests::validate_repo_name_accepts_my_app",
-  "targetFile": "crates/octanest-core/src/repo_types.rs",
+  "targetFile": "crates/oxidean-core/src/repo_types.rs",
   "expected": "validate_repo_name(\"my_app\") is Ok (D-06 underscore allowed)",
   "actual": "D-06: underscore must be allowed in repo names (stub Err)"
 }

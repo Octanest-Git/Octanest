@@ -37,8 +37,8 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 <execution_context>
 **Load these files NOW (before proceeding):**
 
-- @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/complete-milestone.md (main workflow)
-- @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/templates/milestone-archive.md (archive template)
+- @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/complete-milestone.md (main workflow)
+- @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/templates/milestone-archive.md (archive template)
   </execution_context>
 
 <context>

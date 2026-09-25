@@ -10,13 +10,13 @@ describe("AuthShell", () => {
   it("renders brand heading and support copy", () => {
     render(AuthShell, {
       props: {
-        title: "Sign in to Octanest",
+        title: "Sign in to Oxidean",
         support: "Use your account.",
         children: createElement(Button, { type: "button" }, "Continue"),
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Sign in to Octanest" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Sign in to Oxidean" })).toBeInTheDocument();
     expect(screen.getByText("Use your account.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument();
   });

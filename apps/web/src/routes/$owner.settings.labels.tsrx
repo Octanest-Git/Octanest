@@ -7,7 +7,7 @@ import {
 } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { LabelPublic, OrgPublic } from "@octanest/api-client";
+import type { LabelPublic, OrgPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { Tags } from "@octanejs/lucide";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -26,7 +26,7 @@ export type OrgLabelsLoaderData = {
   canAdmin: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need organization admin access to manage labels.";
 
 function labelsQueryKey(slug: string) {

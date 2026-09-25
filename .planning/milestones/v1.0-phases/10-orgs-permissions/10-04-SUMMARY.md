@@ -30,17 +30,17 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/src/repo_collaborators.rs
+    - crates/oxidean-db/src/repo_collaborators.rs
   modified:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/src/org_members.rs
-    - crates/octanest-db/src/organizations.rs
-    - crates/octanest-api/tests/repo_private_404.rs
-    - crates/octanest-api/tests/repo_collaborators_acl.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/src/org_members.rs
+    - crates/oxidean-db/src/organizations.rs
+    - crates/oxidean-api/tests/repo_private_404.rs
+    - crates/oxidean-api/tests/repo_collaborators_acl.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -61,7 +61,7 @@ coverage:
     requirement: ORG-02
     verification:
       - kind: unit
-        ref: "cargo nextest run -p octanest-api -E 'test(coalesce)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(coalesce)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -69,7 +69,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_private_404.rs#repo_private_404_org_non_member_soft_not_found"
+        ref: "crates/oxidean-api/tests/repo_private_404.rs#repo_private_404_org_non_member_soft_not_found"
         status: pass
     human_judgment: false
   - id: D3
@@ -77,7 +77,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_private_404.rs#repo_private_404_org_public_anonymous_ok"
+        ref: "crates/oxidean-api/tests/repo_private_404.rs#repo_private_404_org_public_anonymous_ok"
         status: pass
     human_judgment: false
 
@@ -114,13 +114,13 @@ commits: 2
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/acl.rs` — Capability ACL + effective_capability + resolve rewrite
-- `crates/octanest-db/src/repo_collaborators.rs` — find_collaborator dialect helper
-- `crates/octanest-db/src/org_members.rs` / `organizations.rs` / `lib.rs` — role + member_base lookups
-- `crates/octanest-core/src/repo_types.rs` — can_admin / can_write on RepoPublic
-- `crates/octanest-api/src/bin/rpc_gen.rs` + `packages/api-client` — client types
-- `crates/octanest-api/tests/repo_private_404.rs` — org Owner vs stranger + public anon
-- `crates/octanest-api/tests/repo_collaborators_acl.rs` — ignored until plan 07
+- `crates/oxidean-api/src/repo/acl.rs` — Capability ACL + effective_capability + resolve rewrite
+- `crates/oxidean-db/src/repo_collaborators.rs` — find_collaborator dialect helper
+- `crates/oxidean-db/src/org_members.rs` / `organizations.rs` / `lib.rs` — role + member_base lookups
+- `crates/oxidean-core/src/repo_types.rs` — can_admin / can_write on RepoPublic
+- `crates/oxidean-api/src/bin/rpc_gen.rs` + `packages/api-client` — client types
+- `crates/oxidean-api/tests/repo_private_404.rs` — org Owner vs stranger + public anon
+- `crates/oxidean-api/tests/repo_collaborators_acl.rs` — ignored until plan 07
 
 ## Decisions Made
 
@@ -136,22 +136,22 @@ commits: 2
 - **Found during:** Task 2
 - **Issue:** Updating `RepoPublic` in core alone left `rpc_gen.rs` template / api-client without `can_admin`/`can_write`
 - **Fix:** Extended the TypeScript template in `rpc_gen.rs` and re-ran `make rpc-gen`
-- **Files modified:** `crates/octanest-api/src/bin/rpc_gen.rs`, `packages/api-client/src/index.ts`
+- **Files modified:** `crates/oxidean-api/src/bin/rpc_gen.rs`, `packages/api-client/src/index.ts`
 - **Commit:** `c9b942b`
 
 ## Known Stubs
 
 | File | Line | Stub | Reason |
 |------|------|------|--------|
-| `crates/octanest-api/tests/repo_collaborators_acl.rs` | (all) | `#[ignore]` Wave 0 collab CRUD | Plan 07 owns collaborator RPCs |
-| `crates/octanest-api/tests/repo_private_404.rs` | collaborator_granted_read | `#[ignore]` | Needs collaborator grant path (plan 07) |
+| `crates/oxidean-api/tests/repo_collaborators_acl.rs` | (all) | `#[ignore]` Wave 0 collab CRUD | Plan 07 owns collaborator RPCs |
+| `crates/oxidean-api/tests/repo_private_404.rs` | collaborator_granted_read | `#[ignore]` | Needs collaborator grant path (plan 07) |
 | Smart HTTP (`git_smart_http.rs`) | can_read_as_owner | Still owner-id stub | Deferred — not this plan's web ACL surface |
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/repo/acl.rs
-- FOUND: crates/octanest-db/src/repo_collaborators.rs
-- FOUND: crates/octanest-core/src/repo_types.rs
+- FOUND: crates/oxidean-api/src/repo/acl.rs
+- FOUND: crates/oxidean-db/src/repo_collaborators.rs
+- FOUND: crates/oxidean-core/src/repo_types.rs
 - FOUND: packages/api-client/src/index.ts
 - FOUND: 7c86ba9
 - FOUND: c9b942b

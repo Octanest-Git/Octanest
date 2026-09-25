@@ -1,6 +1,6 @@
 import { createFileRoute } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useRef, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { AuthFormSkeleton } from "@/components/page-skeletons";
@@ -13,13 +13,13 @@ import { safeReturnTo } from "@/lib/return-to";
 export const Route = createFileRoute("/verify")({
   component: VerifyPage,
   head: () => ({
-    meta: [{ title: "Verify email · Octanest" }, { name: "referrer", content: "no-referrer" }],
+    meta: [{ title: "Verify email · Oxidean" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
 const SUPPORT_DEFAULT =
   "We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in. Codes also work for additional addresses on your account.";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const INVALID_EXPIRED =
   "That code or link is invalid or expired. Request a new email and try again.";
 const WRONG_USER =

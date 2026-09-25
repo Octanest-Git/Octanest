@@ -45,32 +45,32 @@ covered_files:
   - apps/web/src/routes/admin/packages.tsrx
   - apps/web/src/routes/settings/tokens.packages.integration.test.ts
   - apps/web/vite.config.ts
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/jobs/schedule.rs
-  - crates/octanest-api/src/packages/acl.rs
-  - crates/octanest-api/src/packages/auth.rs
-  - crates/octanest-api/src/packages/generic.rs
-  - crates/octanest-api/src/packages/mod.rs
-  - crates/octanest-api/src/packages/npm.rs
-  - crates/octanest-api/src/packages/oci.rs
-  - crates/octanest-api/src/packages/quota.rs
-  - crates/octanest-api/src/packages/rpc.rs
-  - crates/octanest-api/src/packages/store.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/generic_registry.rs
-  - crates/octanest-api/tests/npm_registry.rs
-  - crates/octanest-api/tests/oci_registry.rs
-  - crates/octanest-api/tests/package_acl.rs
-  - crates/octanest-api/tests/package_gc.rs
-  - crates/octanest-api/tests/package_quota.rs
-  - crates/octanest-api/tests/package_rpc.rs
-  - crates/octanest-core/src/package_types.rs
-  - crates/octanest-core/src/pat_types.rs
-  - crates/octanest-db/migrations/mysql/0015_packages.sql
-  - crates/octanest-db/migrations/postgres/0015_packages.sql
-  - crates/octanest-db/migrations/sqlite/0015_packages.sql
-  - crates/octanest-db/src/packages.rs
-  - crates/octanest-db/tests/dialect_packages.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/jobs/schedule.rs
+  - crates/oxidean-api/src/packages/acl.rs
+  - crates/oxidean-api/src/packages/auth.rs
+  - crates/oxidean-api/src/packages/generic.rs
+  - crates/oxidean-api/src/packages/mod.rs
+  - crates/oxidean-api/src/packages/npm.rs
+  - crates/oxidean-api/src/packages/oci.rs
+  - crates/oxidean-api/src/packages/quota.rs
+  - crates/oxidean-api/src/packages/rpc.rs
+  - crates/oxidean-api/src/packages/store.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/generic_registry.rs
+  - crates/oxidean-api/tests/npm_registry.rs
+  - crates/oxidean-api/tests/oci_registry.rs
+  - crates/oxidean-api/tests/package_acl.rs
+  - crates/oxidean-api/tests/package_gc.rs
+  - crates/oxidean-api/tests/package_quota.rs
+  - crates/oxidean-api/tests/package_rpc.rs
+  - crates/oxidean-core/src/package_types.rs
+  - crates/oxidean-core/src/pat_types.rs
+  - crates/oxidean-db/migrations/mysql/0015_packages.sql
+  - crates/oxidean-db/migrations/postgres/0015_packages.sql
+  - crates/oxidean-db/migrations/sqlite/0015_packages.sql
+  - crates/oxidean-db/src/packages.rs
+  - crates/oxidean-db/tests/dialect_packages.rs
   - docker-compose.yml
   - docs/API.md
   - docs/CONFIGURATION.md
@@ -92,7 +92,7 @@ advisory: "['Repo packages chrome / Packages tab IA — CLOSED in Phase 11.1-01/
 **Status:** passed (with caveats — OCI referrers deferred; chrome/IA + packages e2e/smoke closed in 11.1)  
 **Honesty annotate:** 2026-09-15 — residual UI/IA; 11.1-05 closeout marks chrome + stack-browser + CI smoke closed  
 **Re-verification:** Yes — after gap closure (`fccad92`)  
-**Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-phase20` (`feat/execute-20-packages`)  
+**Worktree:** `/home/jesse/wsl-projects/personal/typescript/oxidean-wt-phase20` (`feat/execute-20-packages`)  
 **Migration:** `0015_packages` (postgres/sqlite/mysql) — confirmed; not 0012/0013
 
 ## Goal Achievement
@@ -119,9 +119,9 @@ None — re-verification Step 7 found no new-scope unevidenced blockers.
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0015_packages.sql` | Schema packages/versions/blobs/refs/quotas | ✓ VERIFIED | All three dialects present |
-| `crates/octanest-api/src/packages/{oci,npm,generic,acl,auth,store,rpc,quota}.rs` | Protocol + shared subsystem | ✓ VERIFIED | Substantive; mounted in `app.rs` |
-| `crates/octanest-api/tests/{oci,npm,generic}_registry.rs` + `package_*.rs` | Behavioral coverage | ✓ VERIFIED | Named RPC list-by-repo test re-run green |
+| `crates/oxidean-db/migrations/*/0015_packages.sql` | Schema packages/versions/blobs/refs/quotas | ✓ VERIFIED | All three dialects present |
+| `crates/oxidean-api/src/packages/{oci,npm,generic,acl,auth,store,rpc,quota}.rs` | Protocol + shared subsystem | ✓ VERIFIED | Substantive; mounted in `app.rs` |
+| `crates/oxidean-api/tests/{oci,npm,generic}_registry.rs` + `package_*.rs` | Behavioral coverage | ✓ VERIFIED | Named RPC list-by-repo test re-run green |
 | `apps/web/src/routes/$owner.packages.tsrx` | Owner list + delete | ✓ VERIFIED | Query + mutation wired |
 | `apps/web/src/routes/$owner.$repo.packages.tsrx` | Repo-linked list | ✓ VERIFIED | Resolves repo id then lists by `repository_id` |
 | `apps/web/src/components/packages/delete-version-dialog.tsrx` | Type-to-confirm | ✓ VERIFIED | Prior pass |
@@ -137,7 +137,7 @@ None — re-verification Step 7 found no new-scope unevidenced blockers.
 | `app.rs` | `packages::{oci,npm,generic}::router` | nest `/v2` `/npm` `/generic` | WIRED | Prior pass |
 | Protocol handlers | `acl` + `store` + `quota` | authorize + CA commit + check_can_store | WIRED | Prior pass |
 | `rpc.rs` dispatch | `packages::rpc::*` | `packages.list` / `deleteVersion` / admin | WIRED | `list` branches on `repository_id` → `list_packages_by_repository` |
-| Owner packages UI | `@octanest/api-client` | `packagesListQueryOptions` / delete mutation | WIRED | Prior pass |
+| Owner packages UI | `@oxidean/api-client` | `packagesListQueryOptions` / delete mutation | WIRED | Prior pass |
 | Repo packages UI | `packages.list` by `repository_id` | `repo.get` → id → list | WIRED | Fixed in `fccad92` |
 | Traefik / Vite | API | PathPrefix / proxy | WIRED | Prior pass |
 | GC job | `quota::gc_unref_blobs` | schedule interval | WIRED | Prior pass |
@@ -156,7 +156,7 @@ None — re-verification Step 7 found no new-scope unevidenced blockers.
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------- |
 | Repo UI scopes by repository_id | `bunx vitest run src/routes/$owner.$repo.packages.integration.test.ts` | 2 passed | ✓ PASS |
-| RPC list by repo | `cargo test -p octanest-api --test package_rpc package_rpc_list_by_repo_link -- --exact` | ok | ✓ PASS |
+| RPC list by repo | `cargo test -p oxidean-api --test package_rpc package_rpc_list_by_repo_link -- --exact` | ok | ✓ PASS |
 | Migration id | `ls …/0015_packages.sql` (3 dialects) | present | ✓ PASS |
 
 ### Probe Execution
@@ -219,7 +219,7 @@ Audit source: `tmp/issue-3-quality-audit.md` (Issue #3) + Phase 11.1 context `D-
 | --- | -------- | ------------------- |
 | Repo packages chrome / Packages tab IA | Layout `RepoChrome` + Packages tab + content-only leaves (`11.1-01` / `03` / `06`) | **CLOSED** — D-QH-01 |
 | Owner vs repo packages chrome inconsistency | Shared layout chrome for `$owner.$repo.packages`; owner packages page remains owner-scoped | **CLOSED** for repo shell; owner page intentional scope |
-| OCI referrers deferred | `referrers_deferred` in `crates/octanest-api/src/packages/oci.rs` (route returns 404; clients use referrers tag schema) | Documented Phase 20 deferral (`20-RESEARCH` / `20-05-SUMMARY`); **still open / out of 11.1 scope** |
+| OCI referrers deferred | `referrers_deferred` in `crates/oxidean-api/src/packages/oci.rs` (route returns 404; clients use referrers tag schema) | Documented Phase 20 deferral (`20-RESEARCH` / `20-05-SUMMARY`); **still open / out of 11.1 scope** |
 | Stack-browser e2e for packages | `forge-repo.stack.browser.test.tsx` Packages tab / list (11.1-04); CI `smoke-packages` via `smoke-protocol` (11.1-05) | **CLOSED** for list/discovery + protocol routing |
 
 ---

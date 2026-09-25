@@ -9,9 +9,9 @@ requires:
     provides: "Auth schema/CRUD (01), EmailSender (02), Argon2id + SessionService (03)"
 provides:
   - "auth.signup|login|logout|logout_all|me|provider_config RPC over RpcCtx"
-  - "HttpOnly octanest_session Set-Cookie on signup/login; clear on logout"
+  - "HttpOnly oxidean_session Set-Cookie on signup/login; clear on logout"
   - "Welcome email on local signup only (D-20)"
-  - "Optional OCTANEST_ADMIN_* empty-table admin seed (T-04-13)"
+  - "Optional OXIDEAN_ADMIN_* empty-table admin seed (T-04-13)"
   - "Generated api-client auth namespace with credentials: include"
   - "auth_signup + auth_session integration tests (AUTH-01/02/03)"
 affects:
@@ -29,16 +29,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/tests/auth_signup.rs
-    - crates/octanest-api/tests/auth_session.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/tests/auth_signup.rs
+    - crates/oxidean-api/tests/auth_session.rs
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/auth/mod.rs
-    - crates/octanest-api/src/lib.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/auth/mod.rs
+    - crates/oxidean-api/src/lib.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - .env.example
     - .planning/phases/04-auth-sessions-email/04-USER-SETUP.md
@@ -62,7 +62,7 @@ completed: 2026-09-09
 
 # Phase 4 Plan 04: Local Auth RPC & Sessions Summary
 
-**Rust-native local auth RPC with HttpOnly `octanest_session` cookies, welcome email on signup, optional admin seed, and green AUTH-01/02/03 integration tests**
+**Rust-native local auth RPC with HttpOnly `oxidean_session` cookies, welcome email on signup, optional admin seed, and green AUTH-01/02/03 integration tests**
 
 ## Performance
 
@@ -76,8 +76,8 @@ completed: 2026-09-09
 
 - Local `auth.signup` / `auth.login` / `auth.logout` / `auth.logout_all` / `auth.me` / `auth.provider_config` over session-aware `RpcCtx`
 - Cookie round-trip: Set-Cookie on signup/login; clear on logout; `auth.me` persists across requests
-- Welcome email (`Welcome to Octanest`) on local signup only; mode≠local → `auth.provider_mismatch`
-- Optional `OCTANEST_ADMIN_*` seed when users empty; rpc-gen auth client; AUTH-01/02/03 tests green
+- Welcome email (`Welcome to Oxidean`) on local signup only; mode≠local → `auth.provider_mismatch`
+- Optional `OXIDEAN_ADMIN_*` seed when users empty; rpc-gen auth client; AUTH-01/02/03 tests green
 
 ## Task Commits
 
@@ -90,13 +90,13 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/local.rs` — signup/login/logout/me/provider_config + welcome email
-- `crates/octanest-api/src/rpc.rs` — `RpcCtx`, `CookieChange`, auth procedure dispatch
-- `crates/octanest-api/src/app.rs` — expanded `AppState`, cookie parse/Set-Cookie, 401 for unauthenticated
-- `crates/octanest-api/src/main.rs` — `OCTANEST_ADMIN_*` empty-table admin seed
-- `crates/octanest-api/src/bin/rpc_gen.rs` / `packages/api-client/src/index.ts` — auth namespace + helpers
-- `crates/octanest-api/tests/auth_signup.rs` — AUTH-01 cookie, taken, reserved, welcome
-- `crates/octanest-api/tests/auth_session.rs` — AUTH-02/03 me/logout/logout_all
+- `crates/oxidean-api/src/auth/local.rs` — signup/login/logout/me/provider_config + welcome email
+- `crates/oxidean-api/src/rpc.rs` — `RpcCtx`, `CookieChange`, auth procedure dispatch
+- `crates/oxidean-api/src/app.rs` — expanded `AppState`, cookie parse/Set-Cookie, 401 for unauthenticated
+- `crates/oxidean-api/src/main.rs` — `OXIDEAN_ADMIN_*` empty-table admin seed
+- `crates/oxidean-api/src/bin/rpc_gen.rs` / `packages/api-client/src/index.ts` — auth namespace + helpers
+- `crates/oxidean-api/tests/auth_signup.rs` — AUTH-01 cookie, taken, reserved, welcome
+- `crates/oxidean-api/tests/auth_session.rs` — AUTH-02/03 me/logout/logout_all
 - `.env.example` / `04-USER-SETUP.md` — admin + mail + SSO placeholders
 
 ## Decisions Made
@@ -116,22 +116,22 @@ None
 ## User Setup Required
 
 **External services / optional bootstrap require manual configuration.** See [04-USER-SETUP.md](./04-USER-SETUP.md) for:
-- `OCTANEST_ADMIN_EMAIL` / `OCTANEST_ADMIN_PASSWORD`
+- `OXIDEAN_ADMIN_EMAIL` / `OXIDEAN_ADMIN_PASSWORD`
 - SMTP / Resend / mail From
 - Verification commands
 
 ## Next Phase Readiness
 
-- Local cookie auth ready for OIDC/WorkOS (04-05) to mint the same Octanest session after callback
+- Local cookie auth ready for OIDC/WorkOS (04-05) to mint the same Oxidean session after callback
 - Profile/admin RPCs (04-06) and auth UI (04-07) can call generated `auth.*` client
 
 ## Self-Check: PASSED
 
-- `crates/octanest-api/src/auth/local.rs` — FOUND
-- `crates/octanest-api/tests/auth_signup.rs` — FOUND
-- `crates/octanest-api/tests/auth_session.rs` — FOUND
+- `crates/oxidean-api/src/auth/local.rs` — FOUND
+- `crates/oxidean-api/tests/auth_signup.rs` — FOUND
+- `crates/oxidean-api/tests/auth_session.rs` — FOUND
 - Commits `ada59cd`, `8906e42` — FOUND
-- `cargo test -p octanest-api --test auth_signup --test auth_session` — 7 passed
+- `cargo test -p oxidean-api --test auth_signup --test auth_session` — 7 passed
 
 ---
 *Phase: 04-auth-sessions-email*

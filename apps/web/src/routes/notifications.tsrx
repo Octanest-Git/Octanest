@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { NotificationPublic } from "@octanest/api-client";
+import type { NotificationPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { BellRing, CheckCheck } from "@octanejs/lucide";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/notifications")({
   component: NotificationsPage,
-  head: () => ({ meta: [{ title: "Notifications · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Notifications · Oxidean" }] }),
   beforeLoad: async () => {
     try {
       const me = await fetchSessionMe();

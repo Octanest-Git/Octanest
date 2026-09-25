@@ -40,7 +40,7 @@ Flag handling rule:
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/docs-update.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/docs-update.md
 </execution_context>
 
 <context>

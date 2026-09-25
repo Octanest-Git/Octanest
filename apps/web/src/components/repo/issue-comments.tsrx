@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { CommentRevisionPublic, IssueCommentPublic } from "@octanest/api-client";
+import type { CommentRevisionPublic, IssueCommentPublic } from "@oxidean/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -18,7 +18,7 @@ export type IssueCommentsProps = {
   currentUserId: string;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function CommentBody(props: { body: string; owner: string; repoName: string }) @{
   <MarkdownBody

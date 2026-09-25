@@ -1,4 +1,4 @@
-import type { RepoTemplateOption } from "@octanest/api-client";
+import type { RepoTemplateOption } from "@oxidean/api-client";
 import { useState } from "octane";
 import { TemplatePicker } from "@/components/repo/template-picker";
 

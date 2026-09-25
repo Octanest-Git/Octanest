@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQueryClient } from "@octanejs/tanstack-query";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AccountSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { ThemeSelect } from "@/components/theme-select";
@@ -20,13 +20,13 @@ export type GeneralLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const BIO_MAX = 160;
 const LOGIN_RETURN = "/login?returnTo=/settings/general";
 
 export const Route = createFileRoute("/settings/general")({
   component: GeneralPage,
-  head: () => ({ meta: [{ title: "General · Octanest" }] }),
+  head: () => ({ meta: [{ title: "General · Oxidean" }] }),
   beforeLoad: async () => {
     try {
       const me = await fetchSessionMe();

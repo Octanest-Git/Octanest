@@ -59,27 +59,27 @@ covered_files:
   - apps/web/src/routes/settings/tokens.new.fine-grained.tsrx
   - apps/web/src/routes/settings/tokens.new.tsrx
   - apps/web/src/routes/settings/tokens.tsrx
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/auth/session.rs
-  - crates/octanest-api/src/git/http_backend.rs
-  - crates/octanest-api/src/git/mod.rs
-  - crates/octanest-api/src/pat/mod.rs
-  - crates/octanest-api/src/pat/rate_limit.rs
-  - crates/octanest-api/src/repo/acl.rs
-  - crates/octanest-api/src/routes/git_smart_http.rs
-  - crates/octanest-api/src/routes/mod.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/git_smart_http.rs
-  - crates/octanest-api/tests/pat_rpc.rs
-  - crates/octanest-core/src/auth_types.rs
-  - crates/octanest-core/src/lib.rs
-  - crates/octanest-core/src/pat_types.rs
-  - crates/octanest-db/migrations/mysql/0008_pats.sql
-  - crates/octanest-db/migrations/postgres/0008_pats.sql
-  - crates/octanest-db/migrations/sqlite/0008_pats.sql
-  - crates/octanest-db/src/lib.rs
-  - crates/octanest-db/src/pats.rs
-  - crates/octanest-db/tests/dialect_pats.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/auth/session.rs
+  - crates/oxidean-api/src/git/http_backend.rs
+  - crates/oxidean-api/src/git/mod.rs
+  - crates/oxidean-api/src/pat/mod.rs
+  - crates/oxidean-api/src/pat/rate_limit.rs
+  - crates/oxidean-api/src/repo/acl.rs
+  - crates/oxidean-api/src/routes/git_smart_http.rs
+  - crates/oxidean-api/src/routes/mod.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/git_smart_http.rs
+  - crates/oxidean-api/tests/pat_rpc.rs
+  - crates/oxidean-core/src/auth_types.rs
+  - crates/oxidean-core/src/lib.rs
+  - crates/oxidean-core/src/pat_types.rs
+  - crates/oxidean-db/migrations/mysql/0008_pats.sql
+  - crates/oxidean-db/migrations/postgres/0008_pats.sql
+  - crates/oxidean-db/migrations/sqlite/0008_pats.sql
+  - crates/oxidean-db/src/lib.rs
+  - crates/oxidean-db/src/pats.rs
+  - crates/oxidean-db/tests/dialect_pats.rs
   - docker-compose.yml
   - docs/API.md
   - docs/ARCHITECTURE.md
@@ -109,9 +109,9 @@ human_verification: "[]"
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | User can create, list, and revoke personal access tokens for HTTPS git (session RPC; PATs not RPC Bearer per D-01 / GIT-11 “where applicable”) | ✓ VERIFIED | `pat.createClassic` / `createFineGrained` / `list` / `revoke` in `crates/octanest-api/src/pat/mod.rs` + `rpc.rs`; `pat_create_classic_returns_one_time_token` PASS this run |
+| 1 | User can create, list, and revoke personal access tokens for HTTPS git (session RPC; PATs not RPC Bearer per D-01 / GIT-11 “where applicable”) | ✓ VERIFIED | `pat.createClassic` / `createFineGrained` / `list` / `revoke` in `crates/oxidean-api/src/pat/mod.rs` + `rpc.rs`; `pat_create_classic_returns_one_time_token` PASS this run |
 | 2 | User can clone, fetch, and push over HTTPS using a PAT; account password is rejected for git auth | ✓ VERIFIED | Smart HTTP Basic → SHA-256 → `find_pat_by_token_hash`; `looks_like_pat` rejects non-prefix secrets; `git_smart_basic_account_password_rejected_401` PASS this run |
-| 3 | Token prefixes are `octanest_pat_` / `octanest_fg_` (D-08 locked) | ✓ VERIFIED | `CLASSIC_PAT_PREFIX` / `FINE_GRAINED_PAT_PREFIX` in `pat_types.rs`; unit asserts reject `ona_*` / github prefixes |
+| 3 | Token prefixes are `oxidean_pat_` / `oxidean_fg_` (D-08 locked) | ✓ VERIFIED | `CLASSIC_PAT_PREFIX` / `FINE_GRAINED_PAT_PREFIX` in `pat_types.rs`; unit asserts reject `ona_*` / github prefixes |
 | 4 | HTTPS Smart HTTP URL is `/{owner}/{repo}.git` (D-18) | ✓ VERIFIED | Axum `/{owner}/{repo_git}/…`; Traefik `PathRegexp(^/[^/]+/[^/]+\.git)` priority 110 in `docker-compose.yml` |
 | 5 | Private unauth git → 401 + `WWW-Authenticate`; PATs HTTPS-git-only (not RPC Bearer) (D-21 / D-01) | ✓ VERIFIED | `WWW-Authenticate` + `looks_like_pat` / `find_pat_by_token_hash` in `git_smart_http.rs`; prior named tests + UAT #2/#4; docs session-only RPC |
 | 6 | Users manage tokens in UI (list/create classic+FG/revoke + CloneBox how-to) | ✓ VERIFIED | Routes `/settings/tokens`, `/new`, `/new/fine-grained`; vitest tokens + clone-box **17/17 PASS** this run |
@@ -121,7 +121,7 @@ human_verification: "[]"
 
 **Locked decisions honored in code (not SUMMARY claims):**
 
-- Prefixes: `octanest_pat_` / `octanest_fg_` (not `ona_*`)
+- Prefixes: `oxidean_pat_` / `oxidean_fg_` (not `ona_*`)
 - Clone path: `/{owner}/{repo}.git`
 - Private unauth: 401 + WWW-Authenticate; PATs not RPC Bearer
 
@@ -133,12 +133,12 @@ None — re-verification digest refresh after UAT; no new unevidenced Step 7 blo
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0008_pats.sql` | PAT tables + `token_hash` | ✓ VERIFIED | Tri-dialect; hash UNIQUE; no plaintext column |
-| `crates/octanest-db/src/pats.rs` | create/find/list/revoke | ✓ VERIFIED | Exists + wired via `Database` |
-| `crates/octanest-core/src/pat_types.rs` | prefixes + DTOs | ✓ VERIFIED | Classic/FG kinds; locked prefixes |
-| `crates/octanest-api/src/pat/mod.rs` | PAT RPC | ✓ VERIFIED | createClassic/FG, list, revoke |
-| `crates/octanest-api/src/routes/git_smart_http.rs` | Smart HTTP auth | ✓ VERIFIED | Basic PAT, password reject, WWW-Authenticate |
-| `crates/octanest-api/src/git/http_backend.rs` | CGI helper | ✓ VERIFIED | Exists + used by Smart HTTP |
+| `crates/oxidean-db/migrations/*/0008_pats.sql` | PAT tables + `token_hash` | ✓ VERIFIED | Tri-dialect; hash UNIQUE; no plaintext column |
+| `crates/oxidean-db/src/pats.rs` | create/find/list/revoke | ✓ VERIFIED | Exists + wired via `Database` |
+| `crates/oxidean-core/src/pat_types.rs` | prefixes + DTOs | ✓ VERIFIED | Classic/FG kinds; locked prefixes |
+| `crates/oxidean-api/src/pat/mod.rs` | PAT RPC | ✓ VERIFIED | createClassic/FG, list, revoke |
+| `crates/oxidean-api/src/routes/git_smart_http.rs` | Smart HTTP auth | ✓ VERIFIED | Basic PAT, password reject, WWW-Authenticate |
+| `crates/oxidean-api/src/git/http_backend.rs` | CGI helper | ✓ VERIFIED | Exists + used by Smart HTTP |
 | `apps/web/src/routes/settings/tokens*.tsrx` | Token UI | ✓ VERIFIED | List + classic + FG create |
 | `apps/web/src/components/repo/pat-how-to.tsrx` | HTTPS how-to | ✓ VERIFIED | Wrap classes present; wired CloneBox/QuickSetup |
 | `packages/api-client/src/index.ts` | Generated client | ✓ VERIFIED | Present (prior `rpc-sync-check` green) |
@@ -149,7 +149,7 @@ None — re-verification digest refresh after UAT; no new unevidenced Step 7 blo
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `git_smart_http.rs` | DB `find_pat_by_token_hash` | Basic password → SHA-256 | ✓ WIRED | |
-| `pat/mod.rs` | `octanest_db` pats | create / list / revoke | ✓ WIRED | |
+| `pat/mod.rs` | `oxidean_db` pats | create / list / revoke | ✓ WIRED | |
 | `tokens.tsrx` / `pat-list.tsrx` | api-client | `pat.*` Query/RPC | ✓ WIRED | |
 | `tokens.new*.tsrx` | api-client | `createClassic` / `createFineGrained` | ✓ WIRED | |
 | `clone-box.tsrx` | `pat-how-to.tsrx` | `<PatHowTo />` | ✓ WIRED | Also QuickSetup |
@@ -169,8 +169,8 @@ None — re-verification digest refresh after UAT; no new unevidenced Step 7 blo
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Password rejected | `cargo test -p octanest-api --test git_smart_http git_smart_basic_account_password_rejected_401 -- --exact` | ok | ✓ PASS |
-| Create classic | `cargo test -p octanest-api --test pat_rpc pat_create_classic_returns_one_time_token -- --exact` | ok | ✓ PASS |
+| Password rejected | `cargo test -p oxidean-api --test git_smart_http git_smart_basic_account_password_rejected_401 -- --exact` | ok | ✓ PASS |
+| Create classic | `cargo test -p oxidean-api --test pat_rpc pat_create_classic_returns_one_time_token -- --exact` | ok | ✓ PASS |
 | Tokens + how-to UI | `vitest run tokens.integration.test.ts clone-box.pat.integration.test.ts` | 17 passed | ✓ PASS |
 
 ### Probe Execution
@@ -196,9 +196,9 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (26/26). Mes
 
 | Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
 |-----------|-----------|--------|---------|----------|-----------------|---------|
-| `crates/octanest-api/tests/pat_rpc.rs` | GIT-11 | 10 | 0 | No | Behavioral / value | PASS |
-| `crates/octanest-api/tests/git_smart_http.rs` | GIT-02 | 8 | 0 | No | Behavioral / status | PASS |
-| `crates/octanest-db/tests/dialect_pats.rs` | GIT-11 | 2 | 0 | No | Value (schema) | PASS |
+| `crates/oxidean-api/tests/pat_rpc.rs` | GIT-11 | 10 | 0 | No | Behavioral / value | PASS |
+| `crates/oxidean-api/tests/git_smart_http.rs` | GIT-02 | 8 | 0 | No | Behavioral / status | PASS |
+| `crates/oxidean-db/tests/dialect_pats.rs` | GIT-11 | 2 | 0 | No | Value (schema) | PASS |
 | `apps/web/.../tokens.integration.test.ts` | GIT-11 | (suite) | 0 | No | Behavioral (mocked RPC) | PASS |
 | `apps/web/.../clone-box.pat.integration.test.ts` | GIT-02 | (suite) | 0 | No | Value (copy/CTA/wrap) | PASS |
 

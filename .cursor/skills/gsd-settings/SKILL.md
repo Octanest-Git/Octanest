@@ -39,7 +39,7 @@ Routes to the settings workflow which handles:
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/settings.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/settings.md
 </execution_context>
 
 <process>

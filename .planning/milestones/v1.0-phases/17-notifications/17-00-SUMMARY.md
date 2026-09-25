@@ -18,8 +18,8 @@ tech-stack:
   patterns: [ignored nextest Wave 0 stubs, Vitest raw-source discoverability stubs]
 key-files:
   created:
-    - crates/octanest-api/tests/notification_rpc.rs
-    - crates/octanest-db/tests/dialect_notifications.rs
+    - crates/oxidean-api/tests/notification_rpc.rs
+    - crates/oxidean-db/tests/dialect_notifications.rs
     - apps/web/src/components/chrome.notifications.integration.test.ts
     - apps/web/src/routes/notifications.integration.test.ts
   modified:
@@ -36,7 +36,7 @@ coverage:
     requirement: NOTF-01
     verification:
       - kind: unit
-        ref: crates/octanest-api/tests/notification_rpc.rs
+        ref: crates/oxidean-api/tests/notification_rpc.rs
         status: pass
     human_judgment: false
   - id: D2
@@ -78,8 +78,8 @@ commits: 2
 2. **Task 2: Web Wave 0 stubs + validation** - `ca99d7a` (test)
 
 ## Files Created/Modified
-- `crates/octanest-api/tests/notification_rpc.rs` — NOTF-01/02 RPC stubs
-- `crates/octanest-db/tests/dialect_notifications.rs` — migration parity stub
+- `crates/oxidean-api/tests/notification_rpc.rs` — NOTF-01/02 RPC stubs
+- `crates/oxidean-db/tests/dialect_notifications.rs` — migration parity stub
 - `apps/web/src/components/chrome.notifications.integration.test.ts` — bell stub
 - `apps/web/src/routes/notifications.integration.test.ts` — page stub
 - `.planning/phases/17-notifications/17-VALIDATION.md` — Wave 0 checklist
@@ -94,8 +94,8 @@ None - plan executed exactly as written.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/notification_rpc.rs
-- FOUND: crates/octanest-db/tests/dialect_notifications.rs
+- FOUND: crates/oxidean-api/tests/notification_rpc.rs
+- FOUND: crates/oxidean-db/tests/dialect_notifications.rs
 - FOUND: apps/web/src/components/chrome.notifications.integration.test.ts
 - FOUND: apps/web/src/routes/notifications.integration.test.ts
 - FOUND: ba90f7d, ca99d7a

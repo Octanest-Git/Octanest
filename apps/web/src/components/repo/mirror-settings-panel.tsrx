@@ -1,4 +1,4 @@
-import type { RepoMirrorPublic } from "@octanest/api-client";
+import type { RepoMirrorPublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function mirrorQueryKey(owner: string, name: string) {
   return ["repo", "mirror", owner, name] as const;
@@ -527,7 +527,7 @@ export function MirrorSettingsPanel(props: {
             <span className="flex flex-col gap-0.5">
               <span className="text-[14px] font-medium text-foreground">SSH deploy key</span>
               <span className="text-[13px] text-muted-foreground">
-                Dedicated key for this mirror — not your Octanest account SSH keys.
+                Dedicated key for this mirror — not your Oxidean account SSH keys.
               </span>
             </span>
           </label>
@@ -552,7 +552,7 @@ export function MirrorSettingsPanel(props: {
             <p className="text-[13px] text-muted-foreground">
               Often <code className="rounded bg-muted px-1 font-mono text-[12px]">git</code> or{" "}
               <code className="rounded bg-muted px-1 font-mono text-[12px]">x-access-token</code> on
-              GitHub. Remote forge username, not your Octanest login.
+              GitHub. Remote forge username, not your Oxidean login.
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -573,7 +573,7 @@ export function MirrorSettingsPanel(props: {
             />
             <p className="text-[13px] text-muted-foreground">
               Token on the <strong className="font-medium text-foreground">remote</strong> forge
-              with write access — not an Octanest PAT.
+              with write access — not an Oxidean PAT.
             </p>
           </div>
         </div>
@@ -666,7 +666,7 @@ export function MirrorSettingsPanel(props: {
           <h3 className="text-[15px] font-semibold text-foreground">Inbound webhook</h3>
           <p className="text-[14px] text-muted-foreground">
             On GitHub, GitLab, Gitea, or Forgejo, add a Push webhook with this URL and secret
-            so remote-only pushes wake Octanest.
+            so remote-only pushes wake Oxidean.
           </p>
           <CopyField
             label="Webhook URL"

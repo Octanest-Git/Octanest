@@ -7,7 +7,7 @@ import {
   useLocation,
   useParams,
 } from "@octanejs/tanstack-router";
-import type { OrgPublic } from "@octanest/api-client";
+import type { OrgPublic } from "@oxidean/api-client";
 import { OrgSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import type { OrgSettingsNavActive } from "@/components/org/org-settings-nav";
 import { fetchOrgGet, fetchOrgListMine } from "@/lib/ssr-org";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/$owner/settings")({
     const data = loaderData as OrgSettingsLoaderData | undefined;
     const owner = String((params as { owner?: string }).owner ?? "");
     const name = data?.org?.display_name || data?.org?.slug || owner;
-    return { meta: [{ title: `Settings · ${name} · Octanest` }] };
+    return { meta: [{ title: `Settings · ${name} · Oxidean` }] };
   },
   beforeLoad: async ({ params }) => {
     const owner = String((params as { owner?: string }).owner ?? "");

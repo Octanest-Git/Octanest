@@ -10,7 +10,7 @@ Turn domain rubric ingredients into measurable, tooled evaluation criteria. Writ
 </role>
 
 <required_reading>
-Read `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ai-evals.md` before planning. This is your evaluation framework.
+Read `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ai-evals.md` before planning. This is your evaluation framework.
 </required_reading>
 
 <input>

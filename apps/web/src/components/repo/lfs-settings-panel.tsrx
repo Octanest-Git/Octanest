@@ -1,4 +1,4 @@
-import type { RepoLfsObjectEntry, RepoLfsUsageResponse } from "@octanest/api-client";
+import type { RepoLfsObjectEntry, RepoLfsUsageResponse } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return "0 B";
@@ -86,7 +86,7 @@ export function LfsSettingsPanel(props: {
     <p className="text-[14px] text-muted-foreground">
       Enable Git LFS for this repository. Track large files with{" "}
       <code className="text-[13px]">git lfs track</code> and commit{" "}
-      <code className="text-[13px]">.gitattributes</code> yourself — Octanest does not auto-commit
+      <code className="text-[13px]">.gitattributes</code> yourself — Oxidean does not auto-commit
       attributes.
     </p>
 

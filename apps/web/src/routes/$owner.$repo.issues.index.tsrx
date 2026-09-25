@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
-import type { IssueListResponse, LabelPublic, RepoPublic } from "@octanest/api-client";
+import type { IssueListResponse, LabelPublic, RepoPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import {
   ISSUE_LIST_PAGE_SIZE,
@@ -24,7 +24,7 @@ export type IssuesLoaderData =
       state: IssueListStateFilter;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function loadIssuesPage(
   owner: string,
@@ -77,7 +77,7 @@ export const Route = createFileRoute("/$owner/$repo/issues/")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Issues · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Issues · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

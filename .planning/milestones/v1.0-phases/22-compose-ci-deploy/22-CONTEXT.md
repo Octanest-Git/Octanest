@@ -9,7 +9,7 @@
 <domain>
 ## Phase Boundary
 
-Every PR proves Compose health across supported databases, and the same images deploy as Octanest Cloud on a Railway-class container host.
+Every PR proves Compose health across supported databases, and the same images deploy as Oxidean Cloud on a Railway-class container host.
 
 **Requirements:** PLAT-02, PLAT-03, PLAT-09
 
@@ -18,13 +18,13 @@ Every PR proves Compose health across supported databases, and the same images d
 **Success criteria (from ROADMAP):**
 1. Project CI builds and validates Docker Compose (bring-up health) on every PR
 2. Project CI exercises at least PostgreSQL and SQLite; MySQL is in CI or covered by an explicit compatibility test job
-3. Operator can deploy the same images/stack to a container host (e.g. Railway) as Octanest Cloud
+3. Operator can deploy the same images/stack to a container host (e.g. Railway) as Oxidean Cloud
 
 **Out of scope (do not invent):**
 - Automatic CD from GitHub Actions → Railway with production secrets on fork PRs
 - Multi-region HA / geo-replicated storage
 - Replacing local Compose Traefik with a different local ingress
-- Hosted Octanest Cloud on MySQL or SQLite (cloud default remains managed Postgres; MySQL/SQLite stay self-host/CI dialects)
+- Hosted Oxidean Cloud on MySQL or SQLite (cloud default remains managed Postgres; MySQL/SQLite stay self-host/CI dialects)
 - Publishing images to a public registry as a mandatory gate (Compose `--build` in CI is sufficient for PLAT-03)
 
 </domain>
@@ -41,16 +41,16 @@ Every PR proves Compose health across supported databases, and the same images d
 - **D-CI-05:** Keep `smoke-protocol` as a **separate** job (forge protocol routing). Compose-smoke proves dialect health + Traefik `/` + `/health` + `system.db_probe`; do not merge into one mega-job. — **Reversibility:** reversible
 - **D-CI-06:** Image proof = `docker compose … up --build` inside smoke (existing path). No mandatory GHCR/Docker Hub push in this phase. — **Reversibility:** reversible
 
-### B — Octanest Cloud / Railway-class deploy (PLAT-02)
+### B — Oxidean Cloud / Railway-class deploy (PLAT-02)
 
-- **D-CLOUD-01:** Octanest Cloud deploys the **same Dockerfiles** already used by Compose: `crates/octanest-api/Dockerfile` and `apps/web/Dockerfile` (repo-root build context). Railway (or equiv.) services use **DOCKERFILE** builder — not a second app architecture / Railpack-from-source fork. — **Reversibility:** costly — cloud release train
-- **D-CLOUD-02:** Hosted cloud **default database = managed Postgres** (Railway Postgres plugin or equivalent). MySQL/SQLite remain supported for self-host/CI, not the Octanest Cloud default. — **Reversibility:** reversible
+- **D-CLOUD-01:** Oxidean Cloud deploys the **same Dockerfiles** already used by Compose: `crates/oxidean-api/Dockerfile` and `apps/web/Dockerfile` (repo-root build context). Railway (or equiv.) services use **DOCKERFILE** builder — not a second app architecture / Railpack-from-source fork. — **Reversibility:** costly — cloud release train
+- **D-CLOUD-02:** Hosted cloud **default database = managed Postgres** (Railway Postgres plugin or equivalent). MySQL/SQLite remain supported for self-host/CI, not the Oxidean Cloud default. — **Reversibility:** reversible
 - **D-CLOUD-03:** Local Compose keeps **Traefik + Docker provider**. Cloud ingress uses a **file-configured gateway** (Caddy preferred; Traefik file provider acceptable) under `deploy/cloud/` that mirrors Compose path priorities (git `.git`, packages `/v2|/npm|/generic`, `/api`/`/uploads`/`/health`, then SPA). Do **not** require a Docker socket on the cloud host. — **Reversibility:** costly — ingress contract
 - **D-CLOUD-04:** Persist forge volumes on the cloud host: repos, LFS, packages, release-assets, uploads, SSH host keys (map to Railway volumes / equivalent mounts). — **Reversibility:** costly — ops/backup layout
 - **D-CLOUD-05:** Author cloud topology as Railway **IaC** in `.railway/railway.ts` (TypeScript). Do **not** add deprecated `railway.json` / `railway.toml`. Secrets stay out of git (`preserve()` / dashboard vars). — **Reversibility:** costly — platform lock-in of IaC shape
-- **D-CLOUD-06:** Cloud env defaults documented: `OCTANEST_ENV=production`, required `OCTANEST_CORS_ORIGINS` + `OCTANEST_PUBLIC_ORIGIN`, `OCTANEST_ALLOW_SIGNUP=true` for open cloud signup, prefer `OCTANEST_AUTO_MIGRATE=false` with explicit migrate/preDeploy. — **Reversibility:** reversible
+- **D-CLOUD-06:** Cloud env defaults documented: `OXIDEAN_ENV=production`, required `OXIDEAN_CORS_ORIGINS` + `OXIDEAN_PUBLIC_ORIGIN`, `OXIDEAN_ALLOW_SIGNUP=true` for open cloud signup, prefer `OXIDEAN_AUTO_MIGRATE=false` with explicit migrate/preDeploy. — **Reversibility:** reversible
 - **D-CLOUD-07:** Phase 22 delivers **IaC + operator docs + Make helpers**; live `railway config apply` / first production project is a **human operator action** (blocking checkpoint when executing). No production Railway token in PR CI. — **Reversibility:** reversible
-- **D-CLOUD-08:** Git-over-SSH: document Railway (or host) **TCP publish** for `OCTANEST_SSH_PORT` when available; HTTPS Smart HTTP remains the always-on cloud git path. — **Reversibility:** reversible
+- **D-CLOUD-08:** Git-over-SSH: document Railway (or host) **TCP publish** for `OXIDEAN_SSH_PORT` when available; HTTPS Smart HTTP remains the always-on cloud git path. — **Reversibility:** reversible
 
 ### Claude's Discretion
 
@@ -93,7 +93,7 @@ Every PR proves Compose health across supported databases, and the same images d
 - `docker-compose.yml`, `docker-compose.mysql.yml`, `docker-compose.sqlite.yml`
 - `Makefile` — `smoke` / `smoke-mysql` / `smoke-sqlite` / `smoke-protocol-ci`
 - `scripts/compose-smoke.sh`, `scripts/ci-smoke-protocol.sh`
-- `crates/octanest-api/Dockerfile`, `apps/web/Dockerfile`
+- `crates/oxidean-api/Dockerfile`, `apps/web/Dockerfile`
 - `docs/DEPLOYMENT.md`, `docs/CONFIGURATION.md`, `docs/TESTING.md`
 - `.agents/skills/use-railway/SKILL.md` + `references/iac.md` + `references/deploy.md`
 

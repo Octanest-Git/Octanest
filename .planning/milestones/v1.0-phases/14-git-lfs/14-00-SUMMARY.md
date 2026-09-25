@@ -23,12 +23,12 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/lfs_batch.rs
-    - crates/octanest-api/tests/lfs_store.rs
-    - crates/octanest-db/tests/dialect_lfs.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
+    - crates/oxidean-api/tests/lfs_store.rs
+    - crates/oxidean-db/tests/dialect_lfs.rs
     - scripts/smoke-git-lfs.sh
   modified:
-    - crates/octanest-api/tests/factory_reset_scope.rs
+    - crates/oxidean-api/tests/factory_reset_scope.rs
     - Makefile
 
 key-decisions:
@@ -46,7 +46,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(lfs)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(lfs)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-13
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-db -E 'test(dialect_lfs)'; rg smoke-git-lfs Makefile"
+        ref: "cargo nextest list -p oxidean-db -E 'test(dialect_lfs)'; rg smoke-git-lfs Makefile"
         status: pass
     human_judgment: false
 
@@ -87,9 +87,9 @@ commits: 2
 2. **Task 2: Dialect + factory reset + smoke scaffolds** - `1d17605` (test)
 
 ## Files Created/Modified
-- `crates/octanest-api/tests/lfs_batch.rs` — batch/auth/enable/quota/dedup stubs
-- `crates/octanest-api/tests/lfs_store.rs` — shard/verify/gc stubs
-- `crates/octanest-db/tests/dialect_lfs.rs` — migration parity stub
+- `crates/oxidean-api/tests/lfs_batch.rs` — batch/auth/enable/quota/dedup stubs
+- `crates/oxidean-api/tests/lfs_store.rs` — shard/verify/gc stubs
+- `crates/oxidean-db/tests/dialect_lfs.rs` — migration parity stub
 - `scripts/smoke-git-lfs.sh` — Traefik LFS routing smoke (docker-skip)
 - `Makefile` — `smoke-git-lfs` target
 - `factory_reset_scope.rs` — D-LFS-04 wipe stub
@@ -109,8 +109,8 @@ Empty passing stubs instead of `#[ignore]` so plan verify `nextest list` filters
 - **Commit:** 26788d4 / 1d17605
 
 ## Self-Check: PASSED
-- FOUND: crates/octanest-api/tests/lfs_batch.rs
-- FOUND: crates/octanest-api/tests/lfs_store.rs
-- FOUND: crates/octanest-db/tests/dialect_lfs.rs
+- FOUND: crates/oxidean-api/tests/lfs_batch.rs
+- FOUND: crates/oxidean-api/tests/lfs_store.rs
+- FOUND: crates/oxidean-db/tests/dialect_lfs.rs
 - FOUND: scripts/smoke-git-lfs.sh
 - FOUND: 26788d4, 1d17605

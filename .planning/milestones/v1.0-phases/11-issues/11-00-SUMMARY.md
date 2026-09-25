@@ -33,18 +33,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/issue_lifecycle.rs
-    - crates/octanest-api/tests/issue_delete.rs
-    - crates/octanest-api/tests/issue_comments.rs
-    - crates/octanest-api/tests/issue_labels.rs
-    - crates/octanest-api/tests/issue_assignees.rs
-    - crates/octanest-api/tests/issue_links.rs
-    - crates/octanest-api/tests/issue_reactions.rs
-    - crates/octanest-db/tests/dialect_issues.rs
-    - crates/octanest-db/tests/factory_reset_issues.rs
+    - crates/oxidean-api/tests/issue_lifecycle.rs
+    - crates/oxidean-api/tests/issue_delete.rs
+    - crates/oxidean-api/tests/issue_comments.rs
+    - crates/oxidean-api/tests/issue_labels.rs
+    - crates/oxidean-api/tests/issue_assignees.rs
+    - crates/oxidean-api/tests/issue_links.rs
+    - crates/oxidean-api/tests/issue_reactions.rs
+    - crates/oxidean-db/tests/dialect_issues.rs
+    - crates/oxidean-db/tests/factory_reset_issues.rs
   modified:
-    - crates/octanest-api/tests/repo_private_404.rs
-    - crates/octanest-api/tests/git_ssh.rs
+    - crates/oxidean-api/tests/repo_private_404.rs
+    - crates/oxidean-api/tests/git_ssh.rs
 
 key-decisions:
   - "Wave 0 is RED-only — no production issue RPC, migrations, or UI"
@@ -63,7 +63,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(issue_lifecycle) | test(issue_history)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(issue_lifecycle) | test(issue_history)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -71,7 +71,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(issue_delete)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(issue_delete)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -79,7 +79,7 @@ coverage:
     requirement: ISS-02
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(issue_comments)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(issue_comments)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -87,7 +87,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(issue_labels) | test(issue_assignees)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(issue_labels) | test(issue_assignees)'"
         status: pass
     human_judgment: false
   - id: D5
@@ -95,7 +95,7 @@ coverage:
     requirement: ISS-04
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(issue_links) | test(issue_reactions)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(issue_links) | test(issue_reactions)'"
         status: pass
     human_judgment: false
   - id: D6
@@ -103,7 +103,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-db -E 'test(dialect_issues)'"
+        ref: "cargo nextest list -p oxidean-db -E 'test(dialect_issues)'"
         status: pass
     human_judgment: false
   - id: D7
@@ -111,7 +111,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(repo_private) | test(issue_private)'; cargo nextest list -p octanest-db -E 'test(factory_reset)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(repo_private) | test(issue_private)'; cargo nextest list -p oxidean-db -E 'test(factory_reset)'"
         status: pass
     human_judgment: false
 
@@ -150,17 +150,17 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/issue_lifecycle.rs` — create/edit/close/reopen + history stubs
-- `crates/octanest-api/tests/issue_delete.rs` — Admin hard-delete + confirmNumber + no reuse
-- `crates/octanest-api/tests/issue_comments.rs` — comment CRUD/moderation/history
-- `crates/octanest-api/tests/issue_labels.rs` — Admin defs + Write+ assign
-- `crates/octanest-api/tests/issue_assignees.rs` — multi-assignee + Read+ eligibility
-- `crates/octanest-api/tests/issue_links.rs` — stub links + no closing-keyword enforcement
-- `crates/octanest-api/tests/issue_reactions.rs` — GitHub eight content values
-- `crates/octanest-db/tests/dialect_issues.rs` — 0011_issues tri-dialect stub
-- `crates/octanest-db/tests/factory_reset_issues.rs` — cascade wipe stub
-- `crates/octanest-api/tests/repo_private_404.rs` — private issue soft not-found stubs
-- `crates/octanest-api/tests/git_ssh.rs` — Rule 3 arity fix for `insert_repository` owner_type
+- `crates/oxidean-api/tests/issue_lifecycle.rs` — create/edit/close/reopen + history stubs
+- `crates/oxidean-api/tests/issue_delete.rs` — Admin hard-delete + confirmNumber + no reuse
+- `crates/oxidean-api/tests/issue_comments.rs` — comment CRUD/moderation/history
+- `crates/oxidean-api/tests/issue_labels.rs` — Admin defs + Write+ assign
+- `crates/oxidean-api/tests/issue_assignees.rs` — multi-assignee + Read+ eligibility
+- `crates/oxidean-api/tests/issue_links.rs` — stub links + no closing-keyword enforcement
+- `crates/oxidean-api/tests/issue_reactions.rs` — GitHub eight content values
+- `crates/oxidean-db/tests/dialect_issues.rs` — 0011_issues tri-dialect stub
+- `crates/oxidean-db/tests/factory_reset_issues.rs` — cascade wipe stub
+- `crates/oxidean-api/tests/repo_private_404.rs` — private issue soft not-found stubs
+- `crates/oxidean-api/tests/git_ssh.rs` — Rule 3 arity fix for `insert_repository` owner_type
 
 ## Decisions Made
 
@@ -174,10 +174,10 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 3 - Blocking] Fixed git_ssh insert_repository arity for nextest list**
-- **Found during:** Task 1 verification (`cargo nextest list -p octanest-api`)
-- **Issue:** Pre-existing `git_ssh.rs` called `insert_repository` with 6 args after Phase 10 added `owner_type`, blocking compile of all `octanest-api` test targets and thus Wave 0 discovery
+- **Found during:** Task 1 verification (`cargo nextest list -p oxidean-api`)
+- **Issue:** Pre-existing `git_ssh.rs` called `insert_repository` with 6 args after Phase 10 added `owner_type`, blocking compile of all `oxidean-api` test targets and thus Wave 0 discovery
 - **Fix:** Pass `"user"` as `owner_type` at three call sites
-- **Files modified:** `crates/octanest-api/tests/git_ssh.rs`
+- **Files modified:** `crates/oxidean-api/tests/git_ssh.rs`
 - **Commit:** `007956d`
 
 ## Known Stubs
@@ -186,10 +186,10 @@ Intentional Wave 0 RED stubs (`assert!(false)` until later plans green them):
 
 | File | Pattern | Reason |
 |------|---------|--------|
-| `crates/octanest-api/tests/issue_*.rs` | `assert!(false, "Wave 0: …")` | Nyquist stubs; greens in 11-02+ |
-| `crates/octanest-db/tests/dialect_issues.rs` | empty migration + final `assert!(false)` | 0011_issues not shipped yet |
-| `crates/octanest-db/tests/factory_reset_issues.rs` | `assert!(false)` | cascade wipe not wired yet |
-| `crates/octanest-api/tests/repo_private_404.rs` (new issue_* cases) | `assert!(false)` | private issue ACL greens later |
+| `crates/oxidean-api/tests/issue_*.rs` | `assert!(false, "Wave 0: …")` | Nyquist stubs; greens in 11-02+ |
+| `crates/oxidean-db/tests/dialect_issues.rs` | empty migration + final `assert!(false)` | 0011_issues not shipped yet |
+| `crates/oxidean-db/tests/factory_reset_issues.rs` | `assert!(false)` | cascade wipe not wired yet |
+| `crates/oxidean-api/tests/repo_private_404.rs` (new issue_* cases) | `assert!(false)` | private issue ACL greens later |
 
 ## Threat Flags
 

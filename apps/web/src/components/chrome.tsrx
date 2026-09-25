@@ -1,10 +1,10 @@
 import { Bell, Menu, Plus, X } from "@octanejs/lucide";
 import { Link, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useEffectEvent, useState } from "octane";
 import { GlobalSearch } from "@/components/global-search";
-import { OctanestMark } from "@/components/octanest-mark";
+import { OxideanMark } from "@/components/oxidean-mark";
 import { ThemeSelect } from "@/components/theme-select";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -38,7 +38,7 @@ function AccountAvatar({ user, size = "sm" }: { user: UserPublic; size?: "sm" | 
   const dim = `${px}px`;
 
   <div
-    className={cn("octanest-squircle relative block shrink-0 overflow-hidden bg-muted", box)}
+    className={cn("oxidean-squircle relative block shrink-0 overflow-hidden bg-muted", box)}
     style={{ width: dim, height: dim, minWidth: dim, minHeight: dim }}
   >
     @if (user.avatar_url) {
@@ -612,9 +612,9 @@ export function SiteHeader() @{
         className="col-start-1 row-start-1 flex shrink-0 items-center gap-2.5 no-underline"
         onClick={closeMenu}
       >
-        <OctanestMark size={32} />
+        <OxideanMark size={32} />
         <span className="hidden font-[family-name:var(--font-display)] text-[22px] font-semibold tracking-tight text-foreground md:inline">
-          Octanest
+          Oxidean
         </span>
       </Link>
 
@@ -661,7 +661,7 @@ export function SiteFooter() @{
   <footer className="border-t border-border bg-header py-10 text-[14px] text-muted-foreground">
     <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4">
       <span className="font-[family-name:var(--font-display)] text-[13px] font-medium tracking-tight text-foreground/80">
-        © Octanest
+        © Oxidean
       </span>
       <Link
         to="/status"

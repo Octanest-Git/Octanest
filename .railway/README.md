@@ -1,6 +1,6 @@
-# Octanest Cloud — Railway IaC
+# Oxidean Cloud — Railway IaC
 
-TypeScript Infrastructure as Code for **Octanest Cloud** on Railway (PLAT-02 / D-CLOUD-01…07).
+TypeScript Infrastructure as Code for **Oxidean Cloud** on Railway (PLAT-02 / D-CLOUD-01…07).
 
 ## Layout
 
@@ -15,9 +15,9 @@ TypeScript Infrastructure as Code for **Octanest Cloud** on Railway (PLAT-02 / D
 
 | Service | Builder | Dockerfile |
 |---------|---------|------------|
-| `api` | `DOCKERFILE` | `crates/octanest-api/Dockerfile` (repo-root context) |
+| `api` | `DOCKERFILE` | `crates/oxidean-api/Dockerfile` (repo-root context) |
 | `web` | `DOCKERFILE` | `apps/web/Dockerfile` (repo-root context) |
-| `runner` | `DOCKERFILE` | `docker/octanest-runner/Dockerfile` (repo-root context) |
+| `runner` | `DOCKERFILE` | `docker/oxidean-runner/Dockerfile` (repo-root context) |
 | `gateway` | `DOCKERFILE` | `deploy/cloud/Dockerfile` (Caddy file proxy) |
 
 Cloud default database is **managed Postgres** (`postgres()` helper). MySQL/SQLite remain self-host/CI dialects only (D-CLOUD-02).
@@ -40,9 +40,9 @@ Ephemeral PR environments clone `preview` (services, networking, variables) when
 
 | Service | Watch paths |
 |---------|-------------|
-| `api` | `crates/octanest-api/**`, `crates/octanest-core/**`, `crates/octanest-db/**`, `packages/api-client/**` |
+| `api` | `crates/oxidean-api/**`, `crates/oxidean-core/**`, `crates/oxidean-db/**`, `packages/api-client/**` |
 | `web` | `apps/web/**`, `packages/**` |
-| `runner` | `docker/octanest-runner/**`, `crates/octanest-runner/**`, `Cargo.lock` |
+| `runner` | `docker/oxidean-runner/**`, `crates/oxidean-runner/**`, `Cargo.lock` |
 | `gateway` | `deploy/cloud/**` |
 
 **Volume size:** `forge-data` is **20480 MB** (20 GB) in IaC.
@@ -62,52 +62,52 @@ railway config plan
 railway config apply
 ```
 
-Secrets (`OCTANEST_ENV`, `OCTANEST_VITE_ALLOWED_HOSTS`, `OCTANEST_ACTIONS_SECRETS_KEY`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git. Set a unique `OCTANEST_ACTIONS_SECRETS_KEY` on each environment’s **api** service (`openssl rand -base64 32`); without it, mirror credentials and Actions secrets cannot be saved. `OCTANEST_WEB_FLOW_PRIVATE_KEY` (optional, **api**) pins the web-flow commit-signing key — required on `production`/`cloud` where auto-generation fails closed; preview/staging/PR Environments auto-generate on first use when unset.
+Secrets (`OXIDEAN_ENV`, `OXIDEAN_VITE_ALLOWED_HOSTS`, `OXIDEAN_ACTIONS_SECRETS_KEY`, SSO/email keys, etc.) stay in the Railway dashboard or `preserve()` — not in git. Set a unique `OXIDEAN_ACTIONS_SECRETS_KEY` on each environment’s **api** service (`openssl rand -base64 32`); without it, mirror credentials and Actions secrets cannot be saved. `OXIDEAN_WEB_FLOW_PRIVATE_KEY` (optional, **api**) pins the web-flow commit-signing key — required on `production`/`cloud` where auto-generation fails closed; preview/staging/PR Environments auto-generate on first use when unset.
 
 IaC sets public browser/SSH advertise vars from the **gateway** domain (not `preserve()`):
 
 | Variable | Source |
 |----------|--------|
-| `OCTANEST_PUBLIC_ORIGIN` / `OCTANEST_CORS_ORIGINS` (api + web origin) | `https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
-| `OCTANEST_SSH_HOST` | `${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
-| `OCTANEST_API_ORIGIN` (web) | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` |
-| `OCTANEST_AUTO_MIGRATE` | `true` on all environments (including production) |
-| `OCTANEST_PROTECTION_HELPER` | `/usr/local/bin/octanest-protection-hook` (API image) |
+| `OXIDEAN_PUBLIC_ORIGIN` / `OXIDEAN_CORS_ORIGINS` (api + web origin) | `https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
+| `OXIDEAN_SSH_HOST` | `${{gateway.RAILWAY_PUBLIC_DOMAIN}}` |
+| `OXIDEAN_API_ORIGIN` (web) | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:8080` |
+| `OXIDEAN_AUTO_MIGRATE` | `true` on all environments (including production) |
+| `OXIDEAN_PROTECTION_HELPER` | `/usr/local/bin/oxidean-protection-hook` (API image) |
 
 PR Environments inherit from `preview`; dynamic gateway refs and auto-migrate on every environment (including production) keep schema current and avoid stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
 
-On **`web`**, set `OCTANEST_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,octanest.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
+On **`web`**, set `OXIDEAN_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,oxidean.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
 
 ### Promote / rollback production
 
-Do **not** rely on Environment Sync for promote: Sync includes variables and can clobber production-only origins and `OCTANEST_ENV`.
+Do **not** rely on Environment Sync for promote: Sync includes variables and can clobber production-only origins and `OXIDEAN_ENV`.
 
 1. Confirm the commit is healthy on **staging**.
 2. GitHub → **Actions** → **Production deploy** → Run workflow:
    - **promote** — `serviceInstanceDeployV2` with `commitSha` for `api` / `web` / `gateway` (default: `main` HEAD). Gated on CI success for that SHA. Leaves production variables alone.
    - **rollback** — `deploymentRollback` to the prior `canRollback` deployment on each of those services.
    - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN` for rollback target lookup).
-3. Smoke `https://octanest.jereko.dev/health` (skipped on dry-run).
+3. Smoke `https://oxidean.jereko.dev/health` (skipped on dry-run).
 
 Scripts: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh), [`scripts/railway-production-autodeploy-check.sh`](../scripts/railway-production-autodeploy-check.sh) (`make cloud-production-autodeploy-check`). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 
-**GitHub Environment `Octanest / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
+**GitHub Environment `Oxidean / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
 
 ## Actions runner service
 
-The `runner` service runs `octanest-runner` (native Rust, `crates/octanest-runner`) against the api over the private network. **Host execution only** — Railway exposes no Docker socket, so `docker://` labels are unsupported; the declared labels (`ubuntu-latest,self-hosted`) run steps on the runner host. `actions/checkout` is implemented as a git clone of `OCTANEST_PUBLIC_ORIGIN` (the api's private domain) — no public egress needed.
+The `runner` service runs `oxidean-runner` (native Rust, `crates/oxidean-runner`) against the api over the private network. **Host execution only** — Railway exposes no Docker socket, so `docker://` labels are unsupported; the declared labels (`ubuntu-latest,self-hosted`) run steps on the runner host. `actions/checkout` is implemented as a git clone of `OXIDEAN_PUBLIC_ORIGIN` (the api's private domain) — no public egress needed.
 
 State (runner token, workspaces) persists on the `runner-data` volume at `/data`.
 
-**One-time token setup (per environment):** `OCTANEST_RUNNER_REGISTRATION_TOKEN` must hold the **same value** on the `api` and `runner` services — `preserve()` cannot share a variable across services. In each environment's dashboard:
+**One-time token setup (per environment):** `OXIDEAN_RUNNER_REGISTRATION_TOKEN` must hold the **same value** on the `api` and `runner` services — `preserve()` cannot share a variable across services. In each environment's dashboard:
 
 1. Generate once: `openssl rand -hex 32`
-2. Set it on `api` → `OCTANEST_RUNNER_REGISTRATION_TOKEN` **and** `runner` → `OCTANEST_RUNNER_REGISTRATION_TOKEN`
+2. Set it on `api` → `OXIDEAN_RUNNER_REGISTRATION_TOKEN` **and** `runner` → `OXIDEAN_RUNNER_REGISTRATION_TOKEN`
 3. Redeploy `runner` — it self-registers on boot (or reuses the persisted token on `runner-data`)
 
-The env bootstrap token is reusable while set — acceptable for preview/staging/PR Environments. On **production** prefer Admin-minted one-time tokens (`admin.actions.createRegistrationToken`) and leave the api-side env unset; set `OCTANEST_RUNNER_REGISTRATION_TOKEN` on `runner` to the minted `reg_…` value instead.
+The env bootstrap token is reusable while set — acceptable for preview/staging/PR Environments. On **production** prefer Admin-minted one-time tokens (`admin.actions.createRegistrationToken`) and leave the api-side env unset; set `OXIDEAN_RUNNER_REGISTRATION_TOKEN` on `runner` to the minted `reg_…` value instead.
 
-Optional: `OCTANEST_RUNNER_GIT_TOKEN` (a PAT with `repo` scope) on `runner` enables cloning **private** repositories — public repos clone anonymously.
+Optional: `OXIDEAN_RUNNER_GIT_TOKEN` (a PAT with `repo` scope) on `runner` enables cloning **private** repositories — public repos clone anonymously.
 
 ## Related
 

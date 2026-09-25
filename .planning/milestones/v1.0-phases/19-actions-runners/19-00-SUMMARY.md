@@ -22,20 +22,20 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/actions_workflow_parse.rs
-    - crates/octanest-api/tests/actions_triggers.rs
-    - crates/octanest-api/tests/actions_rpc.rs
-    - crates/octanest-api/tests/actions_runner_protocol.rs
-    - crates/octanest-api/tests/actions_dispatch_policy.rs
-    - crates/octanest-api/tests/commit_statuses.rs
-    - crates/octanest-db/tests/dialect_actions.rs
+    - crates/oxidean-api/tests/actions_workflow_parse.rs
+    - crates/oxidean-api/tests/actions_triggers.rs
+    - crates/oxidean-api/tests/actions_rpc.rs
+    - crates/oxidean-api/tests/actions_runner_protocol.rs
+    - crates/oxidean-api/tests/actions_dispatch_policy.rs
+    - crates/oxidean-api/tests/commit_statuses.rs
+    - crates/oxidean-db/tests/dialect_actions.rs
   modified: []
 
 key-decisions:
   - "Used assert!(false) without #[ignore] so nextest list discovers stubs without --run-ignored"
 
 patterns-established:
-  - "Phase 19 Actions integration stubs live under crates/octanest-api/tests/actions_*.rs and commit_statuses.rs"
+  - "Phase 19 Actions integration stubs live under crates/oxidean-api/tests/actions_*.rs and commit_statuses.rs"
 
 requirements-completed: []
 
@@ -45,7 +45,7 @@ coverage:
     requirement: ACT-01
     verification:
       - kind: integration
-        ref: cargo nextest list -p octanest-api (actions_*|commit_statuses)
+        ref: cargo nextest list -p oxidean-api (actions_*|commit_statuses)
         status: pass
     human_judgment: false
   - id: D2
@@ -53,7 +53,7 @@ coverage:
     requirement: ACT-03
     verification:
       - kind: integration
-        ref: crates/octanest-db/tests/dialect_actions.rs
+        ref: crates/oxidean-db/tests/dialect_actions.rs
         status: pass
     human_judgment: false
 
@@ -87,13 +87,13 @@ status: complete
 2. **Task 2: dialect_actions Wave 0 stub** - `c23a4cf` (test)
 
 ## Files Created/Modified
-- `crates/octanest-api/tests/actions_workflow_parse.rs` — ACT-01 discovery/parse stubs
-- `crates/octanest-api/tests/actions_triggers.rs` — ACT-02 push/PR stubs
-- `crates/octanest-api/tests/actions_rpc.rs` — ACT-03 list/detail/logs stubs
-- `crates/octanest-api/tests/actions_runner_protocol.rs` — ACT-06 Register/Declare/FetchTask stubs
-- `crates/octanest-api/tests/actions_dispatch_policy.rs` — ACT-07 registered-only stubs
-- `crates/octanest-api/tests/commit_statuses.rs` — D-ACT-15 context naming stubs
-- `crates/octanest-db/tests/dialect_actions.rs` — migration parity stub
+- `crates/oxidean-api/tests/actions_workflow_parse.rs` — ACT-01 discovery/parse stubs
+- `crates/oxidean-api/tests/actions_triggers.rs` — ACT-02 push/PR stubs
+- `crates/oxidean-api/tests/actions_rpc.rs` — ACT-03 list/detail/logs stubs
+- `crates/oxidean-api/tests/actions_runner_protocol.rs` — ACT-06 Register/Declare/FetchTask stubs
+- `crates/oxidean-api/tests/actions_dispatch_policy.rs` — ACT-07 registered-only stubs
+- `crates/oxidean-api/tests/commit_statuses.rs` — D-ACT-15 context naming stubs
+- `crates/oxidean-db/tests/dialect_actions.rs` — migration parity stub
 
 ## Decisions Made
 - Non-ignored `assert!(false)` stubs so plan verify `nextest list` finds them
@@ -105,12 +105,12 @@ None - plan executed exactly as written.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/actions_workflow_parse.rs
-- FOUND: crates/octanest-api/tests/actions_triggers.rs
-- FOUND: crates/octanest-api/tests/actions_rpc.rs
-- FOUND: crates/octanest-api/tests/actions_runner_protocol.rs
-- FOUND: crates/octanest-api/tests/actions_dispatch_policy.rs
-- FOUND: crates/octanest-api/tests/commit_statuses.rs
-- FOUND: crates/octanest-db/tests/dialect_actions.rs
+- FOUND: crates/oxidean-api/tests/actions_workflow_parse.rs
+- FOUND: crates/oxidean-api/tests/actions_triggers.rs
+- FOUND: crates/oxidean-api/tests/actions_rpc.rs
+- FOUND: crates/oxidean-api/tests/actions_runner_protocol.rs
+- FOUND: crates/oxidean-api/tests/actions_dispatch_policy.rs
+- FOUND: crates/oxidean-api/tests/commit_statuses.rs
+- FOUND: crates/oxidean-db/tests/dialect_actions.rs
 - FOUND: b956bfc
 - FOUND: c23a4cf

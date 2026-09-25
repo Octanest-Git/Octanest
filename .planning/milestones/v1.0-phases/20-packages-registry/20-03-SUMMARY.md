@@ -8,7 +8,7 @@ requires:
   - phase: 20-packages-registry
     provides: 0015_packages schema + PACKAGES_DIR
 provides:
-  - Content-addressed blob store under OCTANEST_PACKAGES_DIR
+  - Content-addressed blob store under OXIDEAN_PACKAGES_DIR
   - Package ACL ∩ PAT package scopes helpers
   - Classic/FG package:read/write PAT types + rpc-gen
 affects: [20-04, 20-05, 20-06, 20-09]
@@ -24,16 +24,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/packages/mod.rs
-    - crates/octanest-api/src/packages/store.rs
-    - crates/octanest-api/src/packages/acl.rs
-    - crates/octanest-api/src/packages/auth.rs
-    - crates/octanest-db/src/packages.rs
+    - crates/oxidean-api/src/packages/mod.rs
+    - crates/oxidean-api/src/packages/store.rs
+    - crates/oxidean-api/src/packages/acl.rs
+    - crates/oxidean-api/src/packages/auth.rs
+    - crates/oxidean-db/src/packages.rs
   modified:
-    - crates/octanest-core/src/pat_types.rs
-    - crates/octanest-api/src/pat/mod.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/tests/package_acl.rs
+    - crates/oxidean-core/src/pat_types.rs
+    - crates/oxidean-api/src/pat/mod.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/tests/package_acl.rs
 
 key-decisions:
   - "Classic repo scope alone never grants packages (fail closed)"
@@ -50,7 +50,7 @@ coverage:
     requirement: PKG-04
     verification:
       - kind: unit
-        ref: cargo test -p octanest-api --lib packages::store
+        ref: cargo test -p oxidean-api --lib packages::store
         status: pass
     human_judgment: false
   - id: D2
@@ -58,7 +58,7 @@ coverage:
     requirement: PKG-04
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(package_acl)'
+        ref: cargo nextest run -p oxidean-api -E 'test(package_acl)'
         status: pass
     human_judgment: false
 
@@ -79,7 +79,7 @@ status: complete
 - **Files modified:** 11
 
 ## Accomplishments
-- `packages/store.rs` — sha256 CA layout under `OCTANEST_PACKAGES_DIR`
+- `packages/store.rs` — sha256 CA layout under `OXIDEAN_PACKAGES_DIR`
 - `packages/acl.rs` + `auth.rs` — Capability ladder ∩ package scopes; Cookie ignored
 - Classic/FG PAT extensions; `make rpc-gen` / `rpc-sync-check` clean
 

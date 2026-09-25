@@ -75,25 +75,25 @@ covered_files:
   - apps/web/src/routes/$owner.$repo.tags.tsrx
   - apps/web/src/routes/$owner.$repo.tree.$.tsrx
   - apps/web/src/routes/new.tsrx
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/main.rs
-  - crates/octanest-api/src/repo/acl.rs
-  - crates/octanest-api/src/repo/mod.rs
-  - crates/octanest-api/src/repo/templates.rs
-  - crates/octanest-api/src/routes/repo_raw.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/repo_archive.rs
-  - crates/octanest-api/tests/repo_branch_soft_protect.rs
-  - crates/octanest-api/tests/repo_create.rs
-  - crates/octanest-core/src/repo_types.rs
-  - crates/octanest-db/migrations/mysql/0007_repositories.sql
-  - crates/octanest-db/migrations/postgres/0007_repositories.sql
-  - crates/octanest-db/migrations/sqlite/0007_repositories.sql
-  - crates/octanest-db/src/repositories.rs
-  - crates/octanest-git/src/backend.rs
-  - crates/octanest-git/src/cli.rs
-  - crates/octanest-git/src/lib.rs
-  - crates/octanest-git/src/version.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/main.rs
+  - crates/oxidean-api/src/repo/acl.rs
+  - crates/oxidean-api/src/repo/mod.rs
+  - crates/oxidean-api/src/repo/templates.rs
+  - crates/oxidean-api/src/routes/repo_raw.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/repo_archive.rs
+  - crates/oxidean-api/tests/repo_branch_soft_protect.rs
+  - crates/oxidean-api/tests/repo_create.rs
+  - crates/oxidean-core/src/repo_types.rs
+  - crates/oxidean-db/migrations/mysql/0007_repositories.sql
+  - crates/oxidean-db/migrations/postgres/0007_repositories.sql
+  - crates/oxidean-db/migrations/sqlite/0007_repositories.sql
+  - crates/oxidean-db/src/repositories.rs
+  - crates/oxidean-git/src/backend.rs
+  - crates/oxidean-git/src/cli.rs
+  - crates/oxidean-git/src/lib.rs
+  - crates/oxidean-git/src/version.rs
   - docker-compose.yml
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
@@ -127,7 +127,7 @@ advisory: "[]"
 | 1 | Authenticated (and verified, on cloud) user can create a public or private repository | ✓ VERIFIED | `repo.create` + `/new` visibility; WR-01 `compensate_failed_create` → `soft_delete_repository`; `repo_create_git_failure_soft_deletes_row_allows_recreate` **PASS** |
 | 2 | User can browse files, commits, branches, and tags in the web UI and download a source archive for a ref | ✓ VERIFIED | tree/blob/commits/branches/tags routes; clone-box archives; `repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref` **PASS**; WR-03 `parseRefAndPath(..., knownRefs)` on tree/blob/blame; UAT 5/5 **PASS** |
 | 3 | User can create, rename, and delete branches from the web UI where permitted | ✓ VERIFIED | Soft-protect + CR-02: `reject_option_like_branch`, `validate_treeish` leading `-`, branch argv `--`; injection + soft-protect named tests **PASS** |
-| 4 | Repository objects live on the local filesystem (volume-backed), and git ops use system `git` CLI with docs allowing future gitoxide swap | ✓ VERIFIED | `OCTANEST_REPOS_DIR` + Compose `./var/repos:/var/repos`; `CliGitBackend`; `assert_git_version` fail-boot; ARCHITECTURE Cli now / Gix later; no `GixGitBackend` impl |
+| 4 | Repository objects live on the local filesystem (volume-backed), and git ops use system `git` CLI with docs allowing future gitoxide swap | ✓ VERIFIED | `OXIDEAN_REPOS_DIR` + Compose `./var/repos:/var/repos`; `CliGitBackend`; `assert_git_version` fail-boot; ARCHITECTURE Cli now / Gix later; no `GixGitBackend` impl |
 | 5 | Private/non-access returns identical `repo.not_found` (D-23–D-25) | ✓ VERIFIED | `resolve_repo_for_read` / `acl.rs` unified `repo.not_found` |
 | 6 | Default-branch rename/delete via intended APIs returns soft-protect error | ✓ VERIFIED | Soft-protect checks + `repo_branch_soft_protect_blocks_default_rename_and_delete` **PASS**; CR-02 bypass closed |
 | 7 | Archive/treeish argv cannot be interpreted as git CLI options | ✓ VERIFIED | `validate_treeish` / `validate_archive_treeish` / `validate_ref` reject leading `-`; archive `--` before treeish; `repo_archive_rejects_option_like_treeish_no_output_file` **PASS** |
@@ -156,19 +156,19 @@ None — re-verification Step 7 found no new-scope unevidenced blockers. Shared 
 
 | Artifact | Expected | Status | Details |
 | -------- | ----------- | ------ | ------- |
-| `crates/octanest-git/src/cli.rs` | CliGitBackend + safe argv | ✓ VERIFIED | Leading-`-` in `validate_treeish`; `--` on branch_* and archive |
-| `crates/octanest-git/src/backend.rs` | GitBackend trait | ✓ VERIFIED | Trait + future Gix docs |
-| `crates/octanest-git/src/version.rs` | assert_git_version ≥2.5 | ✓ VERIFIED | Called from `main.rs` → exit(1) |
-| `crates/octanest-db/migrations/*/0007_repositories.sql` | repos schema | ✓ VERIFIED | sqlite/postgres/mysql present |
-| `crates/octanest-api/src/repo/mod.rs` | create + branch + compensate | ✓ VERIFIED | `reject_option_like_branch`; `compensate_failed_create` |
-| `crates/octanest-api/src/routes/repo_raw.rs` | raw + archive HTTP | ✓ VERIFIED | Leading-`-` reject; slashy refs allowed (WR-02) |
+| `crates/oxidean-git/src/cli.rs` | CliGitBackend + safe argv | ✓ VERIFIED | Leading-`-` in `validate_treeish`; `--` on branch_* and archive |
+| `crates/oxidean-git/src/backend.rs` | GitBackend trait | ✓ VERIFIED | Trait + future Gix docs |
+| `crates/oxidean-git/src/version.rs` | assert_git_version ≥2.5 | ✓ VERIFIED | Called from `main.rs` → exit(1) |
+| `crates/oxidean-db/migrations/*/0007_repositories.sql` | repos schema | ✓ VERIFIED | sqlite/postgres/mysql present |
+| `crates/oxidean-api/src/repo/mod.rs` | create + branch + compensate | ✓ VERIFIED | `reject_option_like_branch`; `compensate_failed_create` |
+| `crates/oxidean-api/src/routes/repo_raw.rs` | raw + archive HTTP | ✓ VERIFIED | Leading-`-` reject; slashy refs allowed (WR-02) |
 | `apps/web/src/lib/repo-browse.ts` | hierarchical parse | ✓ VERIFIED | `parseRefAndPath(splat, knownRefs?)` longest-prefix |
 | `apps/web/src/lib/repo-browse.unit.test.ts` | WR-03 unit coverage | ✓ VERIFIED | 9 tests **PASS** |
 | `apps/web/src/components/repo/path-breadcrumb.tsrx` | long-path truncate | ✓ VERIFIED | truncate + title; UAT #3 **PASS** |
 | `apps/web/src/routes/new.tsrx` | create UI | ✓ VERIFIED | rpc-gen client create; UAT wrap **PASS** |
 | `apps/web/src/routes/$owner.$repo.{tree,blob,blame,branches,tags,settings}*` | browse UI | ✓ VERIFIED | knownRefs wired on tree/blob/blame |
 | `docs/ARCHITECTURE.md` | GitBackend docs | ✓ VERIFIED | CliGitBackend / GixGitBackend section |
-| `docker-compose.yml` / `.env.example` | volume-backed repos | ✓ VERIFIED | `./var/repos:/var/repos` + `OCTANEST_REPOS_DIR` |
+| `docker-compose.yml` / `.env.example` | volume-backed repos | ✓ VERIFIED | `./var/repos:/var/repos` + `OXIDEAN_REPOS_DIR` |
 
 ### Key Link Verification
 
@@ -196,11 +196,11 @@ None — re-verification Step 7 found no new-scope unevidenced blockers. Shared 
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| CR-02 injection closed | `cargo test -p octanest-api --test repo_branch_soft_protect repo_branch_create_rejects_option_like_name_leaves_default_intact -- --exact` | 1 passed | ✓ PASS |
-| Soft-protect default rename/delete | `cargo test -p octanest-api --test repo_branch_soft_protect repo_branch_soft_protect_blocks_default_rename_and_delete -- --exact` | 1 passed | ✓ PASS |
-| CR-01 `--output=` rejected | `cargo test -p octanest-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact` | 1 passed | ✓ PASS |
-| Archive zip/tar.gz nonempty | `cargo test -p octanest-api --test repo_archive repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref -- --exact` | 1 passed | ✓ PASS |
-| WR-01 create compensate | `cargo test -p octanest-api --test repo_create repo_create_git_failure_soft_deletes_row_allows_recreate -- --exact` | 1 passed | ✓ PASS |
+| CR-02 injection closed | `cargo test -p oxidean-api --test repo_branch_soft_protect repo_branch_create_rejects_option_like_name_leaves_default_intact -- --exact` | 1 passed | ✓ PASS |
+| Soft-protect default rename/delete | `cargo test -p oxidean-api --test repo_branch_soft_protect repo_branch_soft_protect_blocks_default_rename_and_delete -- --exact` | 1 passed | ✓ PASS |
+| CR-01 `--output=` rejected | `cargo test -p oxidean-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact` | 1 passed | ✓ PASS |
+| Archive zip/tar.gz nonempty | `cargo test -p oxidean-api --test repo_archive repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref -- --exact` | 1 passed | ✓ PASS |
+| WR-01 create compensate | `cargo test -p oxidean-api --test repo_create repo_create_git_failure_soft_deletes_row_allows_recreate -- --exact` | 1 passed | ✓ PASS |
 | WR-03 parseRefAndPath | `bunx vitest run src/lib/repo-browse.unit.test.ts` | 9 passed | ✓ PASS |
 | Clone-box + highlight + breadcrumb | `bunx vitest run ...clone-box... ...highlight... ...path-breadcrumb...` | 10 passed | ✓ PASS |
 

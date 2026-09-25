@@ -24,9 +24,9 @@ key-files:
   created:
     - .planning/phases/07-git-repos-browse/.tdd/07-19-red-evidence.json
   modified:
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/tests/repo_branch_soft_protect.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/tests/repo_branch_soft_protect.rs
 key-decisions:
   - "reject_option_like_branch treats any leading- hyphen as repo.invalid_ref (covers -d/-D/-m/-M/-f and case variants)"
   - "Known flags -m/-D stay before --; user from/to/name always after end-of-options"
@@ -39,7 +39,7 @@ coverage:
     requirement: GIT-06
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_branch_soft_protect.rs#repo_branch_create_rejects_option_like_name_leaves_default_intact"
+        ref: "crates/oxidean-api/tests/repo_branch_soft_protect.rs#repo_branch_create_rejects_option_like_name_leaves_default_intact"
         status: pass
     human_judgment: false
   - id: D2
@@ -47,10 +47,10 @@ coverage:
     requirement: GIT-06
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#validate_treeish + branch_create/rename/delete argv"
+        ref: "crates/oxidean-git/src/cli.rs#validate_treeish + branch_create/rename/delete argv"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-api --test repo_branch_soft_protect"
+        ref: "cargo test -p oxidean-api --test repo_branch_soft_protect"
         status: pass
     human_judgment: false
 duration: 2min
@@ -97,9 +97,9 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/repo_branch_soft_protect.rs` — CR-02 injection regression
-- `crates/octanest-git/src/cli.rs` — leading-`-` reject; `--` on branch create/rename/delete
-- `crates/octanest-api/src/repo/mod.rs` — `reject_option_like_branch` on create branch/start
+- `crates/oxidean-api/tests/repo_branch_soft_protect.rs` — CR-02 injection regression
+- `crates/oxidean-git/src/cli.rs` — leading-`-` reject; `--` on branch create/rename/delete
+- `crates/oxidean-api/src/repo/mod.rs` — `reject_option_like_branch` on create branch/start
 - `.planning/phases/07-git-repos-browse/.tdd/07-19-red-evidence.json` — RED gate record
 
 ## Decisions Made
@@ -126,7 +126,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-git/src/cli.rs`, `crates/octanest-api/src/repo/mod.rs`, `crates/octanest-api/tests/repo_branch_soft_protect.rs`, `.tdd/07-19-red-evidence.json`
+- FOUND: `crates/oxidean-git/src/cli.rs`, `crates/oxidean-api/src/repo/mod.rs`, `crates/oxidean-api/tests/repo_branch_soft_protect.rs`, `.tdd/07-19-red-evidence.json`
 - FOUND commits: `4e5a06a`, `f0b9fda`, `bcb5cf2`
 - Full `repo_branch_soft_protect` binary: 4 passed
 

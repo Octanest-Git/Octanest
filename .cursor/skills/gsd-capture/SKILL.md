@@ -53,13 +53,13 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/add-todo.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/note.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/add-backlog.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/plant-seed.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/check-todos.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/list-seeds.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/add-todo.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/note.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/add-backlog.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/plant-seed.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/check-todos.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/list-seeds.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

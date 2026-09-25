@@ -1,4 +1,4 @@
-// Octanest service worker — assets-only app-shell cache (D-30).
+// Oxidean service worker — assets-only app-shell cache (D-30).
 //
 // Hand-authored fallback for vite-plugin-pwa (see 03-05-SUMMARY.md): this
 // repo's Vite 8 / @octanejs/tanstack-start multi-environment build never
@@ -9,10 +9,10 @@
 // deploy replaces the shell instead of pinning clients to an old bundle
 // (T-03-18).
 //
-// `__OCTANEST_SW_BUILD__` is replaced at build/serve time with a per-deploy
+// `__OXIDEAN_SW_BUILD__` is replaced at build/serve time with a per-deploy
 // fingerprint (commit SHA or local build id) so CACHE_NAME changes every
 // release and browsers install a fresh worker.
-const CACHE_NAME = "octanest-shell-__OCTANEST_SW_BUILD__";
+const CACHE_NAME = "oxidean-shell-__OXIDEAN_SW_BUILD__";
 
 const PRECACHE_URLS = [
   "/favicon.ico",

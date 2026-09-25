@@ -5,7 +5,7 @@ import {
   emailResendVerifyMutationOptions,
   emailSetPrimaryMutationOptions,
   type EmailListItem,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
@@ -31,7 +31,7 @@ import { apiClient } from "@/lib/api-client";
 
 const LIST_ERROR = "Couldn't load email addresses. Check your connection and try again.";
 const VERIFY_INVALID = "That code is invalid or expired. Resend verification and try again.";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export type AccountEmailsSectionProps = {
   initialEmails?: EmailListItem[];

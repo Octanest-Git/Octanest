@@ -38,7 +38,7 @@ coverage:
     requirement: HOOK-01
     verification:
       - kind: integration
-        ref: "bun --filter @octanest/web test -- src/routes/$owner.$repo.settings.webhooks.integration.test.ts"
+        ref: "bun --filter @oxidean/web test -- src/routes/$owner.$repo.settings.webhooks.integration.test.ts"
         status: pass
     human_judgment: false
   - id: D2
@@ -46,7 +46,7 @@ coverage:
     requirement: HOOK-03
     verification:
       - kind: integration
-        ref: "bun --filter @octanest/web test -- src/routes/$owner.$repo.settings.webhooks.integration.test.ts"
+        ref: "bun --filter @oxidean/web test -- src/routes/$owner.$repo.settings.webhooks.integration.test.ts"
         status: pass
     human_judgment: false
 duration: 5min

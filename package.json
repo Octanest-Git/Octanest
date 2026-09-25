@@ -1,5 +1,5 @@
 {
-  "name": "octanest",
+  "name": "oxidean",
   "private": true,
   "packageManager": "bun@1.4.0",
   "workspaces": [

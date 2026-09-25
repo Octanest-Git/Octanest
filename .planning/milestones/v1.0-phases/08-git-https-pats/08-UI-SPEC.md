@@ -187,7 +187,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |---------|----------|
 | CloneBox | Below HTTPS URL row (inside dropdown), add expandable or always-visible **Authenticate with a personal access token** panel |
 | QuickSetup | After HTTPS URL block, add same how-to section (shared component preferred: `PatHowTo` / `HttpsPatGuide`) |
-| Content order | (1) Username: your Octanest username, or `git`, `token`, or `oauth2`. (2) Password: a personal access token — **not** your account password. (3) Primary link/button **Create a personal access token** → `/settings/tokens`. (4) Example: `git clone https://…` then when prompted, username + PAT. |
+| Content order | (1) Username: your Oxidean username, or `git`, `token`, or `oauth2`. (2) Password: a personal access token — **not** your account password. (3) Primary link/button **Create a personal access token** → `/settings/tokens`. (4) Example: `git clone https://…` then when prompted, username + PAT. |
 | SSH | Keep existing muted SSH placeholder — unchanged |
 | Visual | Label headings + Body muted; code examples monospace Label 13–14px in `bg-muted/50` bordered blocks matching QuickSetup |
 | Signed-out | How-to still visible on public empty repos; CTA may go to login with `returnTo=/settings/tokens` |
@@ -198,12 +198,12 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 
 | Route | `<title>` |
 |-------|-----------|
-| `/settings/tokens` | `Personal access tokens · Octanest` |
-| `/settings/tokens/new` | `New classic token · Octanest` |
-| `/settings/tokens/new/fine-grained` | `New fine-grained token · Octanest` |
-| Profile (unchanged) | `Profile · Octanest` |
+| `/settings/tokens` | `Personal access tokens · Oxidean` |
+| `/settings/tokens/new` | `New classic token · Oxidean` |
+| `/settings/tokens/new/fine-grained` | `New fine-grained token · Oxidean` |
+| Profile (unchanged) | `Profile · Oxidean` |
 
-Pattern: `Page · Octanest` (Phase 3 D-21).
+Pattern: `Page · Oxidean` (Phase 3 D-21).
 
 ---
 
@@ -283,7 +283,7 @@ Do **not** use Display on settings forms.
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** |
+| Product name | **Oxidean** |
 | Settings nav Profile | Profile |
 | Settings nav Tokens | Personal access tokens |
 | Account menu Tokens | Personal access tokens |
@@ -340,11 +340,11 @@ Do **not** use Display on settings forms.
 | Unverified wall body | Verify your email before creating a personal access token. |
 | Unverified wall CTA | **Verify email** |
 | How-to heading | Authenticate with a personal access token |
-| How-to username | Username: your Octanest username, or `git`, `token`, or `oauth2`. |
+| How-to username | Username: your Oxidean username, or `git`, `token`, or `oauth2`. |
 | How-to password | Password: a personal access token — not your account password. |
 | How-to CTA | **Create a personal access token** |
 | How-to example lead | When Git asks for a password, paste your token. |
-| Network error | Can’t reach Octanest. Check your connection and try again. |
+| Network error | Can’t reach Oxidean. Check your connection and try again. |
 | List load error | Couldn’t load tokens. Refresh and try again. |
 
 ---
@@ -427,7 +427,7 @@ Applicable: **45** — **38** explicit · **4** backstop · **3** dismissed · *
 
 ### Forge parity (executor checklist) — match GitHub / Forgejo as closely as possible
 
-| Surface | Target contract (GitHub unless noted) | Octanest lock | Intentional delta only |
+| Surface | Target contract (GitHub unless noted) | Oxidean lock | Intentional delta only |
 |---------|----------------------------------------|---------------|------------------------|
 | Settings IA | Developer settings → Personal access tokens | `/settings/tokens` + Profile \| Personal access tokens nav; Account menu item | Nested under account settings (no separate “Developer settings” hub yet) |
 | Dual token types | Classic vs Fine-grained, **separate** create UIs | D-05 routes `/new` + `/new/fine-grained`; Generate dropdown split | Same |
@@ -448,7 +448,7 @@ Applicable: **45** — **38** explicit · **4** backstop · **3** dismissed · *
 | Org/FG org tokens | Later | Out — Phase 10+ | Same |
 | RPC Bearer PAT | GitHub API tokens work as Bearer | **Out** Phase 8 (D-01) — git HTTPS only | Document in how-to: web stays on session cookies |
 
-**Parity bar for executors:** If a GitHub PAT settings / HTTPS clone help screen has a control or copy pattern for the rows above, implement the Octanest equivalent unless the Intentional delta column says otherwise. Prefer familiar labels (**Generate new token**, **Classic**, **Fine-grained**, **All repositories**, **No expiration**, one-time reveal warning) over novel IA.
+**Parity bar for executors:** If a GitHub PAT settings / HTTPS clone help screen has a control or copy pattern for the rows above, implement the Oxidean equivalent unless the Intentional delta column says otherwise. Prefer familiar labels (**Generate new token**, **Classic**, **Fine-grained**, **All repositories**, **No expiration**, one-time reveal warning) over novel IA.
 
 <!-- Status vocabulary: ✅ covered / 🧪 backstop / dismissed / ⚠ unresolved — Rows REPLACED on probe re-run. -->
 
@@ -503,7 +503,7 @@ Do not add `@registry` URLs beyond shadcn official. No new npm UI kits for Phase
 - [ ] Email verified gate for create — AuthShell wall + list Generate disabled (D-24/D-25)
 - [ ] CloneBox + QuickSetup full PAT how-to panel + CTA (D-13)
 - [ ] Classic scope UI: `repo` only; FG: all/selected repos + contents read/write (research catalogs)
-- [ ] Titles `Page · Octanest`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
+- [ ] Titles `Page · Oxidean`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
 - [ ] Official shadcn / existing wrappers only; no third-party registries
 - [ ] Author `.tsrx` + Query; `make rpc-gen` for `pat.*` — never hand-edit api-client as source of truth
 

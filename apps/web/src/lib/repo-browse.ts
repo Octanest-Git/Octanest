@@ -1,4 +1,4 @@
-import type { RepoTreeEntry } from "@octanest/api-client";
+import type { RepoTreeEntry } from "@oxidean/api-client";
 
 /** Directories (and gitlink commits) before blobs; then localeCompare (D-15). */
 export function sortTreeEntries(entries: RepoTreeEntry[]): RepoTreeEntry[] {

@@ -6,11 +6,11 @@
 ## What shipped
 - `apps/web` on `@octanejs/tanstack-start` + `@octanejs/tanstack-router` + `octane`
 - Tailwind v4 CSS (`@import "tailwindcss"`) + Sora / Source Sans 3 + light/dark tokens
-- Theme: system default + light/dark force, persisted as `octanest-theme`
+- Theme: system default + light/dark force, persisted as `oxidean-theme`
 - Vite proxy for `/api/rpc` and `/api/rpc/ws`
-- Landing `/` with UI-SPEC copy + Get started / Explore Octanest
+- Landing `/` with UI-SPEC copy + Get started / Explore Oxidean
 - Header placeholders (Search / Sign in / Sign up) + footer **Status** → `/status`
-- `/status` live `system.health` via `systemHealthQueryOptions` from `@octanest/api-client`
+- `/status` live `system.health` via `systemHealthQueryOptions` from `@oxidean/api-client`
 - Document shell via Octane `Html` / `Head` / `Body` + `shellComponent` (correct `#__app` hydration)
 - `components.json` + Tailwind-styled Button (Base UI package installed; full shadcn CLI catalog deferred)
 - `vite build` (client + SSR) succeeds

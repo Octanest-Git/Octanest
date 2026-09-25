@@ -35,7 +35,7 @@
 | You decide | | ✓ |
 
 **User's choice:** You decide + “there should not be different deployment modes”
-**Notes:** Locked: no OCTANEST_DEPLOYMENT_MODE; hard rule against cloud/self-host conditionals.
+**Notes:** Locked: no OXIDEAN_DEPLOYMENT_MODE; hard rule against cloud/self-host conditionals.
 
 ### Post-bootstrap signup (extended)
 
@@ -45,7 +45,7 @@
 | Leave AUTH-05 alone | Phase 6 only AUTH-06/07 | |
 | You decide / invite-only default | | ✓ (refined) |
 
-**User's choice:** Bootstrap first; configure `allow_signup` (ENV default); after bootstrap rule applies. Off = hard block (no invites). Default false. ENV seed + wizard both apply `OCTANEST_ALLOW_SIGNUP`.
+**User's choice:** Bootstrap first; configure `allow_signup` (ENV default); after bootstrap rule applies. Off = hard block (no invites). Default false. ENV seed + wizard both apply `OXIDEAN_ALLOW_SIGNUP`.
 **Notes:** Invite codes deferred. Conflicts with Phase 5 D-08 — Phase 6 supersedes for product rule.
 
 ---

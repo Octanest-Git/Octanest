@@ -26,11 +26,11 @@ covered_files:
   - apps/web/src/components/ui/select.tsrx
   - apps/web/src/routes/__root.tsrx
   - apps/web/src/styles.css
-  - crates/octanest-api/src/bin/rpc_gen.rs
-  - crates/octanest-api/src/cors.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/rpc_http.rs
-  - crates/octanest-api/tests/rpc_ws.rs
+  - crates/oxidean-api/src/bin/rpc_gen.rs
+  - crates/oxidean-api/src/cors.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/rpc_http.rs
+  - crates/oxidean-api/tests/rpc_ws.rs
   - docker-compose.mysql.yml
   - docker-compose.sqlite.yml
   - docker-compose.yml
@@ -57,8 +57,8 @@ overrides_applied: 0
 | --- | ------- | ---------- | -------------- |
 | 1 | Operator can run the full stack with Docker Compose (PLAT-01) | ✓ VERIFIED | `docker-compose.yml` + mysql/sqlite overlays; `scripts/compose-smoke.sh`; Make `up`/`smoke*`; CI `compose` job validates config; historical smoke green 2026-09-09 (local docker CLI may be env-blocked — caveat below) |
 | 2 | Web UI on OctaneJS + TanStack Start (PLAT-04) | ✓ VERIFIED | `apps/web/package.json` depends on `octane`, `@octanejs/tanstack-start`, router/query/form; routes/components are `.tsrx`; `01-03-SUMMARY` + `01-VALIDATION` web build green |
-| 3 | Backend forge/API in Rust (PLAT-05) | ✓ VERIFIED | Cargo workspace `octanest-api` / `octanest-core` / `octanest-db`; Axum app + RPC; `cargo test -p octanest-api --test rpc_http` historically 4/4 |
-| 4 | Typed RPC + generated TS client, regen on change (PLAT-06) | ✓ VERIFIED | `rpc_gen` bin; `make rpc-gen` / `make rpc-sync-check`; `packages/api-client` generated `RPC_VERSION` + `Octanest-RPC-Version` header; `rpc_http`/`rpc_ws` reject missing/wrong version |
+| 3 | Backend forge/API in Rust (PLAT-05) | ✓ VERIFIED | Cargo workspace `oxidean-api` / `oxidean-core` / `oxidean-db`; Axum app + RPC; `cargo test -p oxidean-api --test rpc_http` historically 4/4 |
+| 4 | Typed RPC + generated TS client, regen on change (PLAT-06) | ✓ VERIFIED | `rpc_gen` bin; `make rpc-gen` / `make rpc-sync-check`; `packages/api-client` generated `RPC_VERSION` + `Oxidean-RPC-Version` header; `rpc_http`/`rpc_ws` reject missing/wrong version |
 | 5 | UI components ShadCN + Base UI (PLAT-10) | ✓ VERIFIED | CVA `buttonVariants` in `button.tsrx`; `input.tsrx` / `select.tsrx`; `@octanejs/base-ui` in web deps; Phase 03 refined tokens but scaffold established primitives |
 | 6 | Tailwind CSS v4 with CSS-as-config (PLAT-11) | ✓ VERIFIED | `apps/web/src/styles.css` starts with `@import "tailwindcss"` and `@theme inline` mapping semantic `--primary` tokens — no JS Tailwind config SoT |
 
@@ -70,7 +70,7 @@ overrides_applied: 0
 | -------- | ----------- | ------ | ------- |
 | Bun + Turborepo + Cargo workspaces | Monorepo scaffold | ✓ VERIFIED | `01-01-SUMMARY`; root packageManager bun; `Cargo.toml` workspace |
 | Axum RPC + specta codegen | Typed RPC surface | ✓ VERIFIED | `01-02-SUMMARY`; `rpc.rs`, `rpc_gen`, client sync script |
-| Octane web app | Start shell | ✓ VERIFIED | `01-03-SUMMARY`; `@octanest/web` |
+| Octane web app | Start shell | ✓ VERIFIED | `01-03-SUMMARY`; `@oxidean/web` |
 | Compose + smoke | Local stack | ✓ VERIFIED | `01-04-SUMMARY`; compose files + smoke script |
 | CI gates | rust/js/rpc-sync/compose | ✓ VERIFIED | `01-05-SUMMARY`; `.github/workflows/ci.yml` |
 
@@ -79,9 +79,9 @@ overrides_applied: 0
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `make rpc-gen` | `packages/api-client` | `rpc-gen` bin | ✓ WIRED | Makefile + check script |
-| API RPC | `Octanest-RPC-Version` | header gate | ✓ WIRED | `rpc.rs` + client constant |
+| API RPC | `Oxidean-RPC-Version` | header gate | ✓ WIRED | `rpc.rs` + client constant |
 | Compose | API + web | smoke health | ✓ WIRED | `compose-smoke.sh` |
-| Web | `@octanest/api-client` | workspace dep | ✓ WIRED | `apps/web/package.json` |
+| Web | `@oxidean/api-client` | workspace dep | ✓ WIRED | `apps/web/package.json` |
 
 ### Requirements Coverage
 
@@ -89,7 +89,7 @@ overrides_applied: 0
 | ----------- | ----------- | ------ | -------- |
 | PLAT-01 | Docker Compose local stack | ✓ SATISFIED (evidence) | Compose files, smoke, CI compose config; REQUIREMENTS checkbox flip deferred to 22.1-10 (D-HYG-02) |
 | PLAT-04 | Octane + TanStack Start | ✓ SATISFIED (evidence) | Web package Octane deps + `.tsrx` app |
-| PLAT-05 | Rust API | ✓ SATISFIED (evidence) | `octanest-api` crate + tests |
+| PLAT-05 | Rust API | ✓ SATISFIED (evidence) | `oxidean-api` crate + tests |
 | PLAT-06 | Typed RPC + generated client | ✓ SATISFIED (evidence) | rpc-gen + sync-check + version header |
 | PLAT-10 | ShadCN + Base UI | ✓ SATISFIED (evidence) | UI primitives + `@octanejs/base-ui` |
 | PLAT-11 | Tailwind v4 CSS config | ✓ SATISFIED (evidence) | `@import "tailwindcss"` + `@theme` in `styles.css` |

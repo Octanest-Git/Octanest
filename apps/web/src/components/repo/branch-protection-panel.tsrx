@@ -1,4 +1,4 @@
-import type { BranchProtectionRulePublic } from "@octanest/api-client";
+import type { BranchProtectionRulePublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function protectionQueryKey(owner: string, name: string) {
   return ["repo", "branchProtection", owner, name] as const;

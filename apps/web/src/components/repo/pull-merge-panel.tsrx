@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { MergeMethod, RepoMergeSettings } from "@octanest/api-client";
+import type { MergeMethod, RepoMergeSettings } from "@oxidean/api-client";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
@@ -12,7 +12,7 @@ export type PullMergePanelProps = {
   pullState: string;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 const REASON_LABELS: Record<string, string> = {
   reviews: "Required approving reviews",

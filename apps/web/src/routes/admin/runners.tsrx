@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { Cpu } from "@octanejs/lucide";
 import { ActionsRunnersDocs } from "@/components/admin/actions-runners-docs";
@@ -20,12 +20,12 @@ type AdminGateLoader =
   | { kind: "error"; message: string }
   | { kind: "ready"; me: UserPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need admin access to manage Actions runners.";
 
 export const Route = createFileRoute("/admin/runners")({
   component: AdminRunnersPage,
-  head: () => ({ meta: [{ title: "Actions runners · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Actions runners · Oxidean" }] }),
   loader: async (): Promise<AdminGateLoader> => {
     try {
       const meRes = await fetchSessionMe();
@@ -150,7 +150,7 @@ export function AdminRunnersPage() @{
             <p className="mt-1 text-[14px] text-muted-foreground">
               Create a one-time token, then pass it to the runner as{" "}
               <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px]">
-                OCTANEST_RUNNER_REGISTRATION_TOKEN
+                OXIDEAN_RUNNER_REGISTRATION_TOKEN
               </code>
               . Never commit real tokens.
             </p>

@@ -22,8 +22,8 @@ tech-stack:
 
 key-files:
   modified:
-    - crates/octanest-api/src/packages/npm.rs
-    - crates/octanest-api/tests/npm_registry.rs
+    - crates/oxidean-api/src/packages/npm.rs
+    - crates/oxidean-api/tests/npm_registry.rs
 
 key-decisions:
   - "Deprecate updates version metadata_json only; tarball bytes unchanged"
@@ -36,7 +36,7 @@ coverage:
     requirement: PKG-02
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(npm_registry)'
+        ref: cargo nextest run -p oxidean-api -E 'test(npm_registry)'
         status: pass
     human_judgment: false
 

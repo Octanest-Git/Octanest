@@ -1,5 +1,5 @@
-import type { SshKeyListItem } from "@octanest/api-client";
-import { sshKeyListQueryOptions } from "@octanest/api-client";
+import type { SshKeyListItem } from "@oxidean/api-client";
+import { sshKeyListQueryOptions } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { KeyRound } from "@octanejs/lucide";

@@ -67,7 +67,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Badge | `@/components/ui/badge` — **add** if missing | Visibility Public / Private; lock icon companion OK via lucide |
 | Separator | `@/components/ui/separator` — **add** if useful | Clone box / settings sections |
 | Breadcrumb | `@/components/ui/breadcrumb` — **add** official **or** Label-size path links | Tree/blob path crumbs |
-| OctanestMark | `@/components/octanest-mark` | Chrome only |
+| OxideanMark | `@/components/oxidean-mark` | Chrome only |
 | SiteHeader / SiteFooter | `@/components/chrome` | Unchanged chrome; no new warm Sign-up rules |
 | SignedInHome | `@/components/signed-in-home` | **Replace** stub with dashboard IA (D-13) |
 | AuthShell | `@/components/auth-shell` | Unverified `/new` wall may reuse AuthShell **or** inline wall — prefer AuthShell-width column for consistency |
@@ -210,7 +210,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |---------|----------|
 | Trigger | Existing Danger zone → opens **Dialog** (replace single-button wipe with scoped flow) |
 | Title | **Reset this instance** |
-| Radios | (1) **Database only** — wipe users/sessions/auth; keep repository files on disk. (2) **Database and repositories** — wipe DB and delete repo files under `OCTANEST_REPOS_DIR`. Default: **Database only** |
+| Radios | (1) **Database only** — wipe users/sessions/auth; keep repository files on disk. (2) **Database and repositories** — wipe DB and delete repo files under `OXIDEAN_REPOS_DIR`. Default: **Database only** |
 | Confirm | Type **RESET** (unchanged phrase) |
 | CTA | Destructive **Reset instance** — disabled until phrase matches |
 | Pending | **Resetting…** then redirect `/setup` |
@@ -222,7 +222,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |---------|----------|
 | Placement | Repo settings danger zone |
 | Confirm | AlertDialog: type repo name; **Delete repository** |
-| Copy | Soft-delete: “Repository will be removed from Octanest. Disk cleanup may run later.” |
+| Copy | Soft-delete: “Repository will be removed from Oxidean. Disk cleanup may run later.” |
 
 ---
 
@@ -230,19 +230,19 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 
 | Route | `<title>` |
 |-------|-----------|
-| `/` (signed-in) | `Repositories · Octanest` (or keep `Octanest` if marketing; **lock signed-in:** `Repositories · Octanest`) |
-| `/new` | `New repository · Octanest` |
-| `/{owner}/{repo}` | `{owner}/{repo} · Octanest` |
-| Tree/blob | `{path} · {owner}/{repo} · Octanest` (truncate path if needed) |
-| Commits | `Commits · {owner}/{repo} · Octanest` |
-| Branches | `Branches · {owner}/{repo} · Octanest` |
-| Tags | `Tags · {owner}/{repo} · Octanest` |
-| Compare | `Compare · {owner}/{repo} · Octanest` |
-| Blame | `Blame · {path} · Octanest` |
-| Repo settings | `Settings · {owner}/{repo} · Octanest` |
-| 404 (incl. private) | `Not found · Octanest` |
+| `/` (signed-in) | `Repositories · Oxidean` (or keep `Oxidean` if marketing; **lock signed-in:** `Repositories · Oxidean`) |
+| `/new` | `New repository · Oxidean` |
+| `/{owner}/{repo}` | `{owner}/{repo} · Oxidean` |
+| Tree/blob | `{path} · {owner}/{repo} · Oxidean` (truncate path if needed) |
+| Commits | `Commits · {owner}/{repo} · Oxidean` |
+| Branches | `Branches · {owner}/{repo} · Oxidean` |
+| Tags | `Tags · {owner}/{repo} · Oxidean` |
+| Compare | `Compare · {owner}/{repo} · Oxidean` |
+| Blame | `Blame · {path} · Oxidean` |
+| Repo settings | `Settings · {owner}/{repo} · Oxidean` |
+| 404 (incl. private) | `Not found · Oxidean` |
 
-Pattern: `Page · Octanest` (Phase 3 D-21).
+Pattern: `Page · Oxidean` (Phase 3 D-21).
 
 ---
 
@@ -325,12 +325,12 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** |
+| Product name | **Oxidean** |
 | Home title | Your repositories |
 | Home support (optional) | Repositories you own, newest activity first. |
 | Primary CTA (home + empty) | **New repository** |
 | Home empty heading | Create your first repository |
-| Home empty body | Host your code on Octanest. Create a repository to get started. |
+| Home empty body | Host your code on Oxidean. Create a repository to get started. |
 | Home activity placeholder | Activity will show up here. |
 | Unverified CTA hint | Verify your email to create a repository. |
 | `/new` title | Create a new repository |
@@ -382,7 +382,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | Default branch CTA | **Save default branch** |
 | Private/missing 404 title | Page not found |
 | Private/missing 404 body | We couldn’t find that page. |
-| Network error | Can’t reach Octanest. Check your connection and try again. |
+| Network error | Can’t reach Oxidean. Check your connection and try again. |
 | Factory reset title | Reset this instance |
 | Factory reset radio DB | Database only — remove users and auth data; keep repository files on disk. |
 | Factory reset radio both | Database and repositories — remove users, auth data, and repository files. |
@@ -390,7 +390,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | Factory reset CTA | **Reset instance** |
 | Factory reset pending | Resetting… |
 | Soft-delete repo title | Delete repository? |
-| Soft-delete repo body | Removes this repository from Octanest. Files may be purged from disk later. Type the repository name to confirm. |
+| Soft-delete repo body | Removes this repository from Oxidean. Files may be purged from disk later. Type the repository name to confirm. |
 | Soft-delete repo CTA | **Delete repository** |
 
 ---
@@ -543,7 +543,7 @@ Do not add `@registry` URLs beyond shadcn official. Syntax highlighter / Markdow
 - [ ] Clone box: HTTPS now; SSH placeholder; ZIP + tar.gz archives
 - [ ] Safe sanitized GFM Markdown for README; highlighter covers GitHub languages + `.tsrx` + `.ripple`
 - [ ] Factory reset: Dialog + two radios + RESET phrase
-- [ ] Titles `Page · Octanest`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px / code-row exceptions)
+- [ ] Titles `Page · Oxidean`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px / code-row exceptions)
 - [ ] Official shadcn only for new primitives; no third-party registries
 - [ ] Author `.tsrx` + Query; SW continues to bypass `/api/*`
 

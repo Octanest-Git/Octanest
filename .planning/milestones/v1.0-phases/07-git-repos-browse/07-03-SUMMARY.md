@@ -31,16 +31,16 @@ tech-stack:
     - "Native <select> for full SPDX (custom Select stalls on ~500 items)"
 key-files:
   created:
-    - crates/octanest-api/src/repo/templates.rs
-    - crates/octanest-api/assets/stack-presets/
-    - crates/octanest-api/assets/gitignore/
-    - crates/octanest-api/assets/licenses/
+    - crates/oxidean-api/src/repo/templates.rs
+    - crates/oxidean-api/assets/stack-presets/
+    - crates/oxidean-api/assets/gitignore/
+    - crates/oxidean-api/assets/licenses/
     - apps/web/src/lib/spdx-licenses.ts
     - docs/guides/stack-presets.md
   modified:
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-core/src/repo_types.rs
     - apps/web/src/routes/new.tsrx
     - packages/api-client/src/index.ts
     - docs/ARCHITECTURE.md
@@ -49,7 +49,7 @@ key-decisions:
   - "Unknown SPDX IDs seed SPDX-License-Identifier stub LICENSE when text not vendored"
   - "repo.createDefaults RPC supplies default_visibility + stack/gitignore catalogs"
 patterns-established:
-  - "Embedded assets under crates/octanest-api/assets/ via include_dir"
+  - "Embedded assets under crates/oxidean-api/assets/ via include_dir"
   - "GitBackend::seed_commit for template initial commits"
 requirements-completed: [GIT-01]
 coverage:
@@ -58,7 +58,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_with_templates_seeds_initial_commit"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_with_templates_seeds_initial_commit"
         status: pass
     human_judgment: false
   - id: D2
@@ -66,7 +66,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_all_none_templates_leaves_empty_bare"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_all_none_templates_leaves_empty_bare"
         status: pass
     human_judgment: false
   - id: D3
@@ -118,9 +118,9 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/templates.rs` — catalog resolve + seed file assembly
-- `crates/octanest-api/assets/*` — stack / gitignore / license packs
-- `crates/octanest-git/src/cli.rs` — `seed_commit` via temp worktree + push
+- `crates/oxidean-api/src/repo/templates.rs` — catalog resolve + seed file assembly
+- `crates/oxidean-api/assets/*` — stack / gitignore / license packs
+- `crates/oxidean-git/src/cli.rs` — `seed_commit` via temp worktree + push
 - `apps/web/src/routes/new.tsrx` — full create UX
 - `apps/web/src/lib/spdx-licenses.ts` — SPDX option list
 - `docs/guides/stack-presets.md` — PR contribution path
@@ -171,7 +171,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/repo/templates.rs`
+- FOUND: `crates/oxidean-api/src/repo/templates.rs`
 - FOUND: `docs/guides/stack-presets.md`
 - FOUND: `apps/web/src/lib/spdx-licenses.ts`
 - FOUND: commits `d2b00e6`, `cb7d4c8`, `6c746ba`, `2405d3e`

@@ -9,10 +9,10 @@
 #   - For ls-remote: a public repo at SMOKE_GIT_OWNER/SMOKE_GIT_REPO (defaults below)
 #     Create one via the UI/RPC after signup + email verify, or set env to an existing
 #     public owner/repo on the running instance.
-#   - Optional push: SMOKE_PAT=octanest_pat_… (or octanest_fg_…) + write access
+#   - Optional push: SMOKE_PAT=oxidean_pat_… (or oxidean_fg_…) + write access
 #
 # Env knobs:
-#   OCTANEST_SMOKE_URL   default http://localhost (must match Traefik Host)
+#   OXIDEAN_SMOKE_URL   default http://localhost (must match Traefik Host)
 #   SMOKE_GIT_OWNER      default smokeowner
 #   SMOKE_GIT_REPO        default smokerepo
 #   SMOKE_PAT            if set, also git push a throwaway ref (Basic auth username=git)
@@ -29,7 +29,7 @@ cd "$ROOT"
 source "${ROOT}/scripts/smoke-lib.sh"
 SMOKE_NAME="smoke-git-https"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 OWNER="${SMOKE_GIT_OWNER:-smokeowner}"
 REPO="${SMOKE_GIT_REPO:-smokerepo}"
 GIT_URL="${BASE_URL}/${OWNER}/${REPO}.git"

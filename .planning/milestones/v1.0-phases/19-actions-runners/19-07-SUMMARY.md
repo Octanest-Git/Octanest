@@ -23,11 +23,11 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/actions/statuses.rs
+    - crates/oxidean-api/src/actions/statuses.rs
   modified:
-    - crates/octanest-api/src/actions/dispatch.rs
-    - crates/octanest-api/src/actions/runner_proto.rs
-    - crates/octanest-api/tests/commit_statuses.rs
+    - crates/oxidean-api/src/actions/dispatch.rs
+    - crates/oxidean-api/src/actions/runner_proto.rs
+    - crates/oxidean-api/tests/commit_statuses.rs
 
 key-decisions:
   - "Reuse Phase 13 repo.commitStatus.list — no new RPC procedure"

@@ -47,7 +47,7 @@ function toastVariantFromType(type: string | undefined): ToastVariant {
 }
 
 /**
- * Octanest toast chrome — bottom-right stack (same corner as verify callout).
+ * Oxidean toast chrome — bottom-right stack (same corner as verify callout).
  * CVA variants: success / info / warning / error.
  */
 function ToastList() @{

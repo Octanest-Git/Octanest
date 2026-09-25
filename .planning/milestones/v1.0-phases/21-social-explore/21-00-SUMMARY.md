@@ -19,11 +19,11 @@ tech-stack:
   patterns: ["Wave 0 #[ignore] stubs documenting RPC contracts"]
 key-files:
   created:
-    - crates/octanest-api/tests/repo_stars.rs
-    - crates/octanest-api/tests/repo_fork.rs
-    - crates/octanest-api/tests/repo_explore.rs
-    - crates/octanest-api/tests/user_public_profile.rs
-    - crates/octanest-db/tests/dialect_social.rs
+    - crates/oxidean-api/tests/repo_stars.rs
+    - crates/oxidean-api/tests/repo_fork.rs
+    - crates/oxidean-api/tests/repo_explore.rs
+    - crates/oxidean-api/tests/user_public_profile.rs
+    - crates/oxidean-db/tests/dialect_social.rs
     - apps/web/src/routes/explore.integration.test.ts
     - apps/web/src/components/repo/repo-chrome.social.integration.test.ts
   modified: []
@@ -37,7 +37,7 @@ coverage:
     requirement: SOC-01
     verification:
       - kind: other
-        ref: "cargo nextest list -p octanest-api -E 'test(repo_stars)' --run-ignored all"
+        ref: "cargo nextest list -p oxidean-api -E 'test(repo_stars)' --run-ignored all"
         status: pass
     human_judgment: false
 duration: 15min

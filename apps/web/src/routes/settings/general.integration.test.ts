@@ -75,7 +75,7 @@ import { GeneralPage, Route } from "./general";
 
 const readyUser = {
   id: "u1",
-  email: "general@octanest.local",
+  email: "general@oxidean.local",
   username: "generaluser",
   display_name: "General User",
   bio: "",

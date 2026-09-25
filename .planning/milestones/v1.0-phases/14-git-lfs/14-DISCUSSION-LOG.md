@@ -13,7 +13,7 @@
 
 | Option | Selected |
 |--------|----------|
-| Separate `OCTANEST_LFS_DIR` volume | ✓ |
+| Separate `OXIDEAN_LFS_DIR` volume | ✓ |
 | Under each bare repo | |
 
 | Option | Selected |

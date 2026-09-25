@@ -5,23 +5,23 @@ subsystem: api
 tags: [rpc, startup, dialect, migrate, typed-client]
 requires:
   - phase: 02-multi-db-storage
-    provides: "02-01 Dialect/DbPool/Database connection layer; 02-02 migrate/probe on octanest-db"
+    provides: "02-01 Dialect/DbPool/Database connection layer; 02-02 migrate/probe on oxidean-db"
 provides:
   - API startup fail-fast dialect resolve + auto-migrate
   - system.db_probe RPC procedure
   - generated TS client system.dbProbe + systemDbProbeQueryOptions
 affects: [02-04 dialect switch tooling/Compose, 02-05 CI matrix + docs]
 tech-stack:
-  added: [tempfile dev-dependency in octanest-api]
+  added: [tempfile dev-dependency in oxidean-api]
   patterns: [db.probe_failed detail stays server-side only (T-02-06), unauthenticated bounded probe accepted (T-02-07)]
 key-files:
   created:
-    - crates/octanest-api/tests/rpc_db_probe.rs
+    - crates/oxidean-api/tests/rpc_db_probe.rs
   modified:
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - packages/api-client/src/index.test.ts
     - Cargo.lock
@@ -29,7 +29,7 @@ key-decisions:
   - "When DATABASE_URL is set, both dialect mismatch and connect failure now fail-fast (exit 1) instead of warn-and-continue — a deliberate behavior change from Phase 1 for that case only"
   - "system.db_probe error branch never interpolates the raw sqlx/db error into the RPC response; detail goes to tracing::error! only, response carries the stable db.probe_failed code"
 patterns-established:
-  - "system.* RPC arms may call Database methods only — no dialect branching leaks into octanest-api (D-08 held)"
+  - "system.* RPC arms may call Database methods only — no dialect branching leaks into oxidean-api (D-08 held)"
 requirements-completed: [PLAT-07, PLAT-08]
 duration: 25min
 completed: 2026-09-09
@@ -37,7 +37,7 @@ completed: 2026-09-09
 
 # Phase 2 Plan 03: API startup + system.db_probe RPC Summary
 
-**API now fails fast on a bad `DATABASE_URL`/`OCTANEST_DB_DIALECT` pairing or dead database, auto-migrates on boot by default, and answers `system.db_probe` over RPC with a matching generated TypeScript client surface.**
+**API now fails fast on a bad `DATABASE_URL`/`OXIDEAN_DB_DIALECT` pairing or dead database, auto-migrates on boot by default, and answers `system.db_probe` over RPC with a matching generated TypeScript client surface.**
 
 ## Performance
 
@@ -48,11 +48,11 @@ completed: 2026-09-09
 ## Accomplishments
 
 - `main.rs`: when `DATABASE_URL` is set, resolves dialect via `resolve_dialect_from_env`, exits 1 with an operator-readable, credential-redacted message on mismatch or connect failure; logs the resolved dialect. When unset, preserves the Phase 1 `Database::skipped()` + warn behavior so Docker-free `cargo test`/`make dev` keep working.
-- `OCTANEST_AUTO_MIGRATE` (default `true`) runs `db.migrate()` before `axum::serve` starts when a pool exists; `false` logs the `make db-migrate` hint instead. Migration failure exits 1.
+- `OXIDEAN_AUTO_MIGRATE` (default `true`) runs `db.migrate()` before `axum::serve` starts when a pool exists; `false` logs the `make db-migrate` hint instead. Migration failure exits 1.
 - `system.db_probe` dispatch arm in `rpc.rs` calls the shared `Database::probe()` path: `db.not_configured` when no pool, `db.probe_failed` (generic message, detail only in `tracing::error!`) on any other error — matching threat mitigation T-02-06.
 - Three new integration tests in `rpc_db_probe.rs`: not-configured error shape, version-header enforcement on the new procedure, and a SQLite tempdir round-trip proving `probe_count` increments across two calls.
 - `rpc_gen.rs` now emits `DbProbeResponse`, `system.dbProbe()`, and `systemDbProbeQueryOptions` (registered as `queryOptions.systemDbProbe`); `packages/api-client/src/index.ts` regenerated via `make rpc-gen`, verified clean via `make rpc-sync-check`. Added a client test that asserts the `system.db_probe` procedure name and version header on the new call.
-- No dialect branching added to `octanest-api` (`! grep -q 'Dialect::Postgres' crates/octanest-api/src` — clean) and `apps/web` untouched (no diagnostics UI, per CONTEXT D-12).
+- No dialect branching added to `oxidean-api` (`! grep -q 'Dialect::Postgres' crates/oxidean-api/src` — clean) and `apps/web` untouched (no diagnostics UI, per CONTEXT D-12).
 
 ## Task Commits
 
@@ -64,18 +64,18 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/main.rs` - dialect resolve + fail-fast + auto-migrate before listener bind
-- `crates/octanest-api/src/rpc.rs` - `system.db_probe` dispatch arm with stable error codes
-- `crates/octanest-api/Cargo.toml` - added `tempfile = "3"` dev-dependency for the SQLite round-trip test
-- `crates/octanest-api/tests/rpc_db_probe.rs` - 3 new integration tests
-- `crates/octanest-api/src/bin/rpc_gen.rs` - emits `DbProbeResponse` type, `dbProbe()` client method, `systemDbProbeQueryOptions`
+- `crates/oxidean-api/src/main.rs` - dialect resolve + fail-fast + auto-migrate before listener bind
+- `crates/oxidean-api/src/rpc.rs` - `system.db_probe` dispatch arm with stable error codes
+- `crates/oxidean-api/Cargo.toml` - added `tempfile = "3"` dev-dependency for the SQLite round-trip test
+- `crates/oxidean-api/tests/rpc_db_probe.rs` - 3 new integration tests
+- `crates/oxidean-api/src/bin/rpc_gen.rs` - emits `DbProbeResponse` type, `dbProbe()` client method, `systemDbProbeQueryOptions`
 - `packages/api-client/src/index.ts` - regenerated (never hand-edited)
 - `packages/api-client/src/index.test.ts` - added a `dbProbe` header/procedure-name test
-- `Cargo.lock` - `tempfile` added to `octanest-api`'s dependency graph
+- `Cargo.lock` - `tempfile` added to `oxidean-api`'s dependency graph
 
 ## Decisions Made
 
-- Fail-fast on connect failure only applies when `DATABASE_URL` is set (an explicit operator choice); the Phase 1 no-`DATABASE_URL` degraded-mode path is untouched, keeping `cargo test -p octanest-api` and `make dev` Docker-free.
+- Fail-fast on connect failure only applies when `DATABASE_URL` is set (an explicit operator choice); the Phase 1 no-`DATABASE_URL` degraded-mode path is untouched, keeping `cargo test -p oxidean-api` and `make dev` Docker-free.
 - `db.probe_failed` responses never carry the raw sqlx error text; it goes to `tracing::error!` only, matching the STRIDE mitigation for T-02-06 (information disclosure).
 
 ## Deviations from Plan
@@ -83,15 +83,15 @@ Each task was committed atomically:
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Test file initially asserted `HTTP 200` for the `db.not_configured` error response**
-- **Found during:** Task 2 verification (`cargo test -p octanest-api --test rpc_db_probe`)
-- **Issue:** `crates/octanest-api/src/app.rs`'s existing `rpc_http` handler maps any `RpcResponse::Err` (other than `rpc.unknown_procedure`, which maps to 404) to HTTP 400 — this predates this plan and matches `system_health_requires_version`'s existing test pattern, but my first draft of `db_probe_without_database_returns_not_configured` assumed 200.
+- **Found during:** Task 2 verification (`cargo test -p oxidean-api --test rpc_db_probe`)
+- **Issue:** `crates/oxidean-api/src/app.rs`'s existing `rpc_http` handler maps any `RpcResponse::Err` (other than `rpc.unknown_procedure`, which maps to 404) to HTTP 400 — this predates this plan and matches `system_health_requires_version`'s existing test pattern, but my first draft of `db_probe_without_database_returns_not_configured` assumed 200.
 - **Fix:** Changed the assertion to `StatusCode::BAD_REQUEST`, matching the established handler behavior; no source changes needed.
-- **Files modified:** `crates/octanest-api/tests/rpc_db_probe.rs` (test-only)
-- **Verification:** `cargo test -p octanest-api --test rpc_db_probe` — 3 passed
+- **Files modified:** `crates/oxidean-api/tests/rpc_db_probe.rs` (test-only)
+- **Verification:** `cargo test -p oxidean-api --test rpc_db_probe` — 3 passed
 
 **2. [Rule 3 - Blocking] `cargo fmt` reformatted unrelated pre-existing files**
-- **Found during:** Pre-commit `cargo fmt -p octanest-api` run
-- **Issue:** `cargo fmt` also reformatted `crates/octanest-api/src/app.rs` and `crates/octanest-api/tests/rpc_ws.rs`, both outside this plan's file list and pre-existing (not touched by 02-03's tasks).
+- **Found during:** Pre-commit `cargo fmt -p oxidean-api` run
+- **Issue:** `cargo fmt` also reformatted `crates/oxidean-api/src/app.rs` and `crates/oxidean-api/tests/rpc_ws.rs`, both outside this plan's file list and pre-existing (not touched by 02-03's tasks).
 - **Fix:** `git checkout --` those two files after formatting, keeping only the plan-scoped files in the diff.
 - **Files modified:** none (reverted the unintended reformat)
 - **Committed in:** n/a — never staged
@@ -118,14 +118,14 @@ None — all verification ran Docker-free against a tempdir SQLite file. Postgre
 
 ## Self-Check: PASSED
 
-- `cargo test -p octanest-api --tests` — 10 passed (6 suites)
-- `cargo test -p octanest-api --test rpc_db_probe` — 3 passed
+- `cargo test -p oxidean-api --tests` — 10 passed (6 suites)
+- `cargo test -p oxidean-api --test rpc_db_probe` — 3 passed
 - `cargo test --workspace` (no `DATABASE_URL`) — 21 passed (14 suites)
-- `DATABASE_URL=postgres://u:p@localhost/x OCTANEST_DB_DIALECT=mysql cargo run -q -p octanest-api --bin octanest-api` — exit 1, prints `OCTANEST_DB_DIALECT=mysql does not match DATABASE_URL scheme (detected postgres)`
+- `DATABASE_URL=postgres://u:p@localhost/x OXIDEAN_DB_DIALECT=mysql cargo run -q -p oxidean-api --bin oxidean-api` — exit 1, prints `OXIDEAN_DB_DIALECT=mysql does not match DATABASE_URL scheme (detected postgres)`
 - `make rpc-gen && make rpc-sync-check` — `rpc-sync-check: ok` on the committed tree
-- `bun run --filter @octanest/api-client test` — 3 passed
+- `bun run --filter @oxidean/api-client test` — 3 passed
 - `git status --porcelain apps/web` — empty (no diagnostics UI touched)
-- Acceptance-criteria greps for all three tasks (`OCTANEST_AUTO_MIGRATE`, `resolve_dialect_from_env`, `migration failed`, no `Dialect::Postgres` in API, `system.db_probe`/`db.probe_failed`/`db.not_configured` in `rpc.rs`, `DbProbeResponse`/`systemDbProbeQueryOptions` in generated client, no `format!` in the probe-failed error) — all pass
+- Acceptance-criteria greps for all three tasks (`OXIDEAN_AUTO_MIGRATE`, `resolve_dialect_from_env`, `migration failed`, no `Dialect::Postgres` in API, `system.db_probe`/`db.probe_failed`/`db.not_configured` in `rpc.rs`, `DbProbeResponse`/`systemDbProbeQueryOptions` in generated client, no `format!` in the probe-failed error) — all pass
 
 ---
 *Phase: 02-multi-db-storage*

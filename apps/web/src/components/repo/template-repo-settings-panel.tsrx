@@ -5,7 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function enabledQueryKey(owner: string, name: string) {
   return ["repo", "templates", "getEnabled", owner, name] as const;

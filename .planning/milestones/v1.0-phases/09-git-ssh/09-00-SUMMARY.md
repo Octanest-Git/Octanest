@@ -30,9 +30,9 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/ssh_key_rpc.rs
-    - crates/octanest-api/tests/git_ssh.rs
-    - crates/octanest-db/tests/dialect_ssh_keys.rs
+    - crates/oxidean-api/tests/ssh_key_rpc.rs
+    - crates/oxidean-api/tests/git_ssh.rs
+    - crates/oxidean-db/tests/dialect_ssh_keys.rs
     - scripts/smoke-git-ssh.sh
   modified:
     - Makefile
@@ -53,7 +53,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: unit
-        ref: "cargo nextest list -p octanest-api -E 'test(ssh_key)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(ssh_key)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -61,7 +61,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: unit
-        ref: "cargo nextest list -p octanest-api -E 'test(git_ssh)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(git_ssh)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -69,7 +69,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: unit
-        ref: "cargo nextest list -p octanest-db -E 'test(dialect_ssh_keys)'"
+        ref: "cargo nextest list -p oxidean-db -E 'test(dialect_ssh_keys)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -118,9 +118,9 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to later 09-xx plans._
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/ssh_key_rpc.rs` - GIT-04 Wave 0 `assert!(false)` stubs for sshKey.*
-- `crates/octanest-api/tests/git_ssh.rs` - GIT-03 Wave 0 stubs for SSH transport auth/ACL/pack
-- `crates/octanest-db/tests/dialect_ssh_keys.rs` - 0009_ssh_keys tri-dialect presence stub
+- `crates/oxidean-api/tests/ssh_key_rpc.rs` - GIT-04 Wave 0 `assert!(false)` stubs for sshKey.*
+- `crates/oxidean-api/tests/git_ssh.rs` - GIT-03 Wave 0 stubs for SSH transport auth/ACL/pack
+- `crates/oxidean-db/tests/dialect_ssh_keys.rs` - 0009_ssh_keys tri-dialect presence stub
 - `scripts/smoke-git-ssh.sh` - Compose SSH smoke stub (D-SSH-02 / D-SSH-07)
 - `Makefile` - `.PHONY` / help / `smoke-git-ssh` target
 
@@ -140,9 +140,9 @@ Wave 0 intentional RED stubs (expected until later plans):
 
 | File | Stub | Reason |
 |------|------|--------|
-| `crates/octanest-api/tests/ssh_key_rpc.rs` | all 7 `assert!(false)` tests | RED until 09-03 sshKey RPC |
-| `crates/octanest-api/tests/git_ssh.rs` | all 7 `assert!(false)` tests | RED until 09-04 / 09-05 russh |
-| `crates/octanest-db/tests/dialect_ssh_keys.rs` | schema + tri-dialect asserts (fail until migration) | RED until 09-02 `0009_ssh_keys` |
+| `crates/oxidean-api/tests/ssh_key_rpc.rs` | all 7 `assert!(false)` tests | RED until 09-03 sshKey RPC |
+| `crates/oxidean-api/tests/git_ssh.rs` | all 7 `assert!(false)` tests | RED until 09-04 / 09-05 russh |
+| `crates/oxidean-db/tests/dialect_ssh_keys.rs` | schema + tri-dialect asserts (fail until migration) | RED until 09-02 `0009_ssh_keys` |
 | `scripts/smoke-git-ssh.sh` | exit 1 Wave 0 when Docker present | RED until 09-05 Compose TCP smoke |
 
 ## Threat Flags
@@ -151,9 +151,9 @@ None — threat surface encoded only as stub assertions (T-09-01, T-09-02); no n
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/ssh_key_rpc.rs
-- FOUND: crates/octanest-api/tests/git_ssh.rs
-- FOUND: crates/octanest-db/tests/dialect_ssh_keys.rs
+- FOUND: crates/oxidean-api/tests/ssh_key_rpc.rs
+- FOUND: crates/oxidean-api/tests/git_ssh.rs
+- FOUND: crates/oxidean-db/tests/dialect_ssh_keys.rs
 - FOUND: scripts/smoke-git-ssh.sh
 - FOUND: 5e82976
 - FOUND: 3d754fc

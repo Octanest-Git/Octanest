@@ -1,4 +1,4 @@
-import type { RepoCommitSummary, RepoTreeEntry } from "@octanest/api-client";
+import type { RepoCommitSummary, RepoTreeEntry } from "@oxidean/api-client";
 import { FileCode2, Folder, Package } from "@octanejs/lucide";
 import {
   blobHref,

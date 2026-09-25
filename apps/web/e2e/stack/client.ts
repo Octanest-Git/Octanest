@@ -21,7 +21,7 @@ export async function rpc(
 ): Promise<RpcResult> {
   const headers: Record<string, string> = {
     "content-type": "application/json",
-    "Octanest-RPC-Version": "1",
+    "Oxidean-RPC-Version": "1",
   };
   if (cookie) headers.cookie = cookie;
 
@@ -120,7 +120,7 @@ export async function updateAuthSettings(
     {
       provider_mode: patch.provider_mode,
       email_provider: patch.email_provider,
-      from_address: patch.from_address ?? "Octanest <noreply@localhost>",
+      from_address: patch.from_address ?? "Oxidean <noreply@localhost>",
       oidc_issuer: patch.oidc_issuer ?? null,
       oidc_client_id: patch.oidc_client_id ?? null,
       workos_client_id: patch.workos_client_id ?? null,

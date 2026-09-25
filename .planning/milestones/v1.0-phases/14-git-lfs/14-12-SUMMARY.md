@@ -47,7 +47,7 @@ coverage:
     requirement: GIT-13
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs)'"
         status: pass
       - kind: other
         ref: "make rpc-sync-check"

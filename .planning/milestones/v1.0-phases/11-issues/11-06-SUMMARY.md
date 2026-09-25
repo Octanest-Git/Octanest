@@ -36,16 +36,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/label/mod.rs
+    - crates/oxidean-api/src/label/mod.rs
     - apps/web/src/routes/$owner.settings.labels.tsrx
     - apps/web/src/routes/$owner.$repo.issues.labels.tsrx
     - apps/web/src/components/repo/issue-labels-panel.tsrx
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-db/src/issue_labels.rs
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-api/tests/issue_labels.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-db/src/issue_labels.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-api/tests/issue_labels.rs
     - packages/api-client/src/index.ts
     - apps/web/src/components/org/org-settings-nav.tsrx
     - apps/web/src/components/repo/issues-list.tsrx
@@ -70,7 +70,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_labels)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_labels)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -78,7 +78,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_labels_effective)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_labels_effective)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -86,7 +86,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_labels_write_assign)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_labels_write_assign)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -138,14 +138,14 @@ status: complete
 - **Found during:** Task 1
 - **Issue:** `rows.iter().map(|r| map_label!(r)).collect()` failed because `?` inside the macro cannot return from a non-Result closure
 - **Fix:** Use for-loop `out.push(map_label!(r))` matching `issues.rs` patterns
-- **Files modified:** `crates/octanest-db/src/issue_labels.rs`
+- **Files modified:** `crates/oxidean-db/src/issue_labels.rs`
 - **Commit:** `f690be6`
 
 **2. [Rule 1 - Bug] Raw-string `#` color broke issue_labels test compile**
 - **Found during:** Task 1
 - **Issue:** `r#"..."#d73a4a..."#` terminated early on `"#`
 - **Fix:** Pass bare hex `d73a4a` (API already normalizes)
-- **Files modified:** `crates/octanest-api/tests/issue_labels.rs`
+- **Files modified:** `crates/oxidean-api/tests/issue_labels.rs`
 - **Commit:** `f690be6`
 
 **3. [Rule 1 - Bug] History assertion raced after Labels panel query**
@@ -161,7 +161,7 @@ None — label definition Admin gates and assignment Write+ match plan threat mo
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/label/mod.rs`
+- FOUND: `crates/oxidean-api/src/label/mod.rs`
 - FOUND: `apps/web/src/routes/$owner.settings.labels.tsrx`
 - FOUND: `apps/web/src/routes/$owner.$repo.issues.labels.tsrx`
 - FOUND: `apps/web/src/components/repo/issue-labels-panel.tsrx`

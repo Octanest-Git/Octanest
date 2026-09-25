@@ -15,7 +15,7 @@ export function resolveSwBuildId(
   fallback = (): string => `local-${Date.now().toString(36)}`,
 ): string {
   const candidates = [
-    env.VITE_OCTANEST_SW_BUILD,
+    env.VITE_OXIDEAN_SW_BUILD,
     env.RAILWAY_GIT_COMMIT_SHA,
     env.SOURCE_COMMIT,
     env.GITHUB_SHA,
@@ -28,7 +28,7 @@ export function resolveSwBuildId(
 }
 
 /** Placeholder embedded in apps/web/public/sw.js — replaced at build/serve time. */
-export const SW_BUILD_PLACEHOLDER = "__OCTANEST_SW_BUILD__";
+export const SW_BUILD_PLACEHOLDER = "__OXIDEAN_SW_BUILD__";
 
 export function stampSwSource(source: string, buildId: string): string {
   const id = sanitizeSwBuildId(buildId);
@@ -36,8 +36,8 @@ export function stampSwSource(source: string, buildId: string): string {
     // Already stamped or hand-edited — still force a unique CACHE_NAME suffix
     // when the file uses a static name so deploys do not pin forever.
     return source.replace(
-      /const CACHE_NAME = "octanest-shell-[^"]+";/,
-      `const CACHE_NAME = "octanest-shell-${id}";`,
+      /const CACHE_NAME = "oxidean-shell-[^"]+";/,
+      `const CACHE_NAME = "oxidean-shell-${id}";`,
     );
   }
   return source.split(SW_BUILD_PLACEHOLDER).join(id);

@@ -26,11 +26,11 @@ covered_files:
   - .planning/phases/21-social-explore/21-VALIDATION.md
   - apps/web/src/components/repo/repo-chrome.social.integration.test.ts
   - apps/web/src/routes/explore.integration.test.ts
-  - crates/octanest-api/tests/repo_explore.rs
-  - crates/octanest-api/tests/repo_fork.rs
-  - crates/octanest-api/tests/repo_stars.rs
-  - crates/octanest-api/tests/user_public_profile.rs
-  - crates/octanest-git/src/cli.rs
+  - crates/oxidean-api/tests/repo_explore.rs
+  - crates/oxidean-api/tests/repo_fork.rs
+  - crates/oxidean-api/tests/repo_stars.rs
+  - crates/oxidean-api/tests/user_public_profile.rs
+  - crates/oxidean-git/src/cli.rs
 covered_digest: "v1:sha256:355c186e30205b3bee736ab26037690dd5d66bab67fe2bbd7f535c8f0fe0928c"
 behavior_unverified: 0
 overrides_applied: 0

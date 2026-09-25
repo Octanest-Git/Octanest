@@ -2,31 +2,31 @@
 # seed-actions-demo.sh — seed a ci-demo repo + workflow, push it, and poll the
 # Actions run to a terminal state. Prints the run URL and a job-log tail.
 #
-# Works against any reachable Octanest origin (local compose, Railway
+# Works against any reachable Oxidean origin (local compose, Railway
 # preview/staging). Requires curl, git, jq.
 #
 # Usage:
 #   ./scripts/dev-auth/seed-actions-demo.sh
-#   OCTANEST_ORIGIN=https://gateway-octanest-pr-39.up.railway.app \
-#     OCTANEST_SEED_USER=you OCTANEST_SEED_PASSWORD=secret \
+#   OXIDEAN_ORIGIN=https://gateway-oxidean-pr-39.up.railway.app \
+#     OXIDEAN_SEED_USER=you OXIDEAN_SEED_PASSWORD=secret \
 #     ./scripts/dev-auth/seed-actions-demo.sh
 #
 # Env:
-#   OCTANEST_ORIGIN           default http://localhost
-#   OCTANEST_SEED_USER        login identifier (default admin@octanest.local)
-#   OCTANEST_SEED_PASSWORD    login password   (default password1 — dev stack)
-#   OCTANEST_SEED_OWNER       owner slug for the repo (default: session username)
-#   OCTANEST_SEED_REPO        repo name (default ci-demo)
-#   OCTANEST_SEED_TIMEOUT_S   max seconds to wait for the run (default 180)
+#   OXIDEAN_ORIGIN           default http://localhost
+#   OXIDEAN_SEED_USER        login identifier (default admin@oxidean.local)
+#   OXIDEAN_SEED_PASSWORD    login password   (default password1 — dev stack)
+#   OXIDEAN_SEED_OWNER       owner slug for the repo (default: session username)
+#   OXIDEAN_SEED_REPO        repo name (default ci-demo)
+#   OXIDEAN_SEED_TIMEOUT_S   max seconds to wait for the run (default 180)
 
 set -euo pipefail
 
-ORIGIN="${OCTANEST_ORIGIN:-http://localhost}"
+ORIGIN="${OXIDEAN_ORIGIN:-http://localhost}"
 ORIGIN="${ORIGIN%/}"
-USER_ID="${OCTANEST_SEED_USER:-admin@octanest.local}"
-PASS="${OCTANEST_SEED_PASSWORD:-password1}"
-REPO="${OCTANEST_SEED_REPO:-ci-demo}"
-TIMEOUT="${OCTANEST_SEED_TIMEOUT_S:-180}"
+USER_ID="${OXIDEAN_SEED_USER:-admin@oxidean.local}"
+PASS="${OXIDEAN_SEED_PASSWORD:-password1}"
+REPO="${OXIDEAN_SEED_REPO:-ci-demo}"
+TIMEOUT="${OXIDEAN_SEED_TIMEOUT_S:-180}"
 
 for bin in curl git jq; do
   command -v "$bin" >/dev/null 2>&1 || { echo "missing dependency: $bin" >&2; exit 2; }
@@ -53,7 +53,7 @@ rpc_allow() {
   local proc="$1" input="$2"
   curl -sS -b "$JAR" -c "$JAR" \
     -H 'Content-Type: application/json' \
-    -H 'Octanest-RPC-Version: 1' \
+    -H 'Oxidean-RPC-Version: 1' \
     -d "{\"procedure\":\"$proc\",\"input\":$input}" \
     "$ORIGIN/api/rpc"
 }
@@ -62,7 +62,7 @@ echo "==> login $USER_ID @ $ORIGIN"
 rpc auth.login "{\"identifier\":\"$USER_ID\",\"password\":\"$PASS\",\"remember_me\":false}" >/dev/null
 
 ME="$(rpc auth.me '{}')"
-OWNER="${OCTANEST_SEED_OWNER:-$(echo "$ME" | jq -r '.username // empty')}"
+OWNER="${OXIDEAN_SEED_OWNER:-$(echo "$ME" | jq -r '.username // empty')}"
 [ -n "$OWNER" ] || { echo "could not resolve session username" >&2; exit 1; }
 echo "==> owner: $OWNER"
 
@@ -86,7 +86,7 @@ CLONE="$TMP/repo"
 git clone "$AUTH_ORIGIN/$OWNER/$REPO.git" "$CLONE" 2>/dev/null \
   || git clone "$ORIGIN/$OWNER/$REPO.git" "$CLONE"
 cd "$CLONE"
-git config user.email "seed@octanest.local"
+git config user.email "seed@oxidean.local"
 git config user.name "actions-seed"
 
 mkdir -p .github/workflows
@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: marker
         run: |
-          echo "octanest-hello from actions"
+          echo "oxidean-hello from actions"
           test -f README.md || { echo "workspace missing README.md"; exit 1; }
           test -n "$GITHUB_SHA" || { echo "GITHUB_SHA unset"; exit 1; }
           echo "checkout ok at $GITHUB_SHA"
@@ -137,12 +137,12 @@ if [ -n "$JOB_ID" ]; then
   LOG="$(rpc repo.actions.getJobLog "{\"owner\":\"$OWNER\",\"name\":\"$REPO\",\"run_id\":\"$RUN_ID\",\"job_id\":\"$JOB_ID\"}" | jq -r '.content // empty')"
   echo "==> job $JOB_ID log (tail):"
   echo "$LOG" | tail -n 20 | sed 's/^/    /'
-  if [ "$STATUS" = "success" ] && ! echo "$LOG" | grep -q "octanest-hello"; then
-    if [ "${OCTANEST_SEED_REQUIRE_MARKER:-0}" = "1" ]; then
-      echo "log lacks the octanest-hello marker" >&2
+  if [ "$STATUS" = "success" ] && ! echo "$LOG" | grep -q "oxidean-hello"; then
+    if [ "${OXIDEAN_SEED_REQUIRE_MARKER:-0}" = "1" ]; then
+      echo "log lacks the oxidean-hello marker" >&2
       exit 1
     fi
-    echo "WARN: run succeeded but log lacks the octanest-hello marker" >&2
+    echo "WARN: run succeeded but log lacks the oxidean-hello marker" >&2
   fi
 fi
 

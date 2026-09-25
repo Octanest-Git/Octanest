@@ -10,7 +10,7 @@ requires:
 provides:
   - "Tri-dialect 0010_orgs_acl (organizations, members, invites, collaborators, owner_type)"
   - "Database insert organization + Owner membership helpers"
-  - "octanest-core org_types DTOs for later org.create"
+  - "oxidean-core org_types DTOs for later org.create"
 affects:
   - 10-13 org.create tracer
   - 10-04/10-05 ACL + members
@@ -32,16 +32,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0010_orgs_acl.sql
-    - crates/octanest-db/migrations/mysql/0010_orgs_acl.sql
-    - crates/octanest-db/migrations/sqlite/0010_orgs_acl.sql
-    - crates/octanest-db/src/organizations.rs
-    - crates/octanest-db/src/org_members.rs
-    - crates/octanest-core/src/org_types.rs
+    - crates/oxidean-db/migrations/postgres/0010_orgs_acl.sql
+    - crates/oxidean-db/migrations/mysql/0010_orgs_acl.sql
+    - crates/oxidean-db/migrations/sqlite/0010_orgs_acl.sql
+    - crates/oxidean-db/src/organizations.rs
+    - crates/oxidean-db/src/org_members.rs
+    - crates/oxidean-core/src/org_types.rs
   modified:
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/tests/dialect_orgs.rs
-    - crates/octanest-core/src/lib.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/tests/dialect_orgs.rs
+    - crates/oxidean-core/src/lib.rs
 
 key-decisions:
   - "Human chose proceed_0010 — migration 0010_orgs_acl + owner_type/owner_id polymorphic repos"
@@ -60,10 +60,10 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-db --lib migration_parity"
+        ref: "cargo test -p oxidean-db --lib migration_parity"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-db --test dialect_orgs"
+        ref: "cargo test -p oxidean-db --test dialect_orgs"
         status: pass
     human_judgment: false
   - id: D2
@@ -71,7 +71,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo test -p octanest-db --test dialect_orgs#dialect_orgs_migrate_0010_schema_presence"
+        ref: "cargo test -p oxidean-db --test dialect_orgs#dialect_orgs_migrate_0010_schema_presence"
         status: pass
     human_judgment: false
   - id: D3
@@ -79,7 +79,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-db --test dialect_orgs (pulls octanest-core)"
+        ref: "cargo test -p oxidean-db --test dialect_orgs (pulls oxidean-core)"
         status: pass
     human_judgment: false
 
@@ -116,12 +116,12 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/*/0010_orgs_acl.sql` — tri-dialect org ACL schema
-- `crates/octanest-db/src/organizations.rs` — insert / find by id|slug
-- `crates/octanest-db/src/org_members.rs` — insert Owner membership
-- `crates/octanest-db/src/lib.rs` — Database facade wiring
-- `crates/octanest-core/src/org_types.rs` — OrgRole, MemberBasePermission, OwnerType, DTOs
-- `crates/octanest-db/tests/dialect_orgs.rs` — Wave 0 stubs turned green
+- `crates/oxidean-db/migrations/*/0010_orgs_acl.sql` — tri-dialect org ACL schema
+- `crates/oxidean-db/src/organizations.rs` — insert / find by id|slug
+- `crates/oxidean-db/src/org_members.rs` — insert Owner membership
+- `crates/oxidean-db/src/lib.rs` — Database facade wiring
+- `crates/oxidean-core/src/org_types.rs` — OrgRole, MemberBasePermission, OwnerType, DTOs
+- `crates/oxidean-db/tests/dialect_orgs.rs` — Wave 0 stubs turned green
 
 ## Decisions Made
 
@@ -148,8 +148,8 @@ None beyond plan threat model (UNIQUE slug; dual-check vs users deferred to 10-1
 ## Verification
 
 ```text
-cargo test -p octanest-db --lib migration_parity  # ok
-cargo test -p octanest-db --test dialect_orgs     # ok (2 passed)
+cargo test -p oxidean-db --lib migration_parity  # ok
+cargo test -p oxidean-db --test dialect_orgs     # ok (2 passed)
 ```
 
 ## Self-Check: PASSED

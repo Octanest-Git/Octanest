@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { MemberBasePermission } from "@octanest/api-client";
+import type { MemberBasePermission } from "@oxidean/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
@@ -24,7 +24,7 @@ import { toastError, toastSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { OrgSettingsLoaderData } from "./$owner.settings";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need organization admin access to manage settings.";
 const MEMBER_BASE_HELPER =
   "Applies to Members on private organization repositories. Owners and Admins always have admin access. Public repositories remain readable.";
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/$owner/settings/")({
     const data = loaderData as OrgSettingsLoaderData | undefined;
     const owner = String((params as { owner?: string }).owner ?? "");
     const name = data?.org?.display_name || data?.org?.slug || owner;
-    return { meta: [{ title: `General · ${name} · Octanest` }] };
+    return { meta: [{ title: `General · ${name} · Oxidean` }] };
   },
 });
 

@@ -34,7 +34,7 @@ Closes the plan → execute → verify → ship loop.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/ship.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/ship.md
 </execution_context>
 
-Execute the ship workflow from @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/ship.md end-to-end.
+Execute the ship workflow from @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/ship.md end-to-end.

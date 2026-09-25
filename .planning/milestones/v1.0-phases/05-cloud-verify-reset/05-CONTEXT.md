@@ -100,8 +100,8 @@ No phase-local SPEC.md — decisions above are the implementation lock.
 ## Existing Code Insights
 
 ### Reusable Assets
-- `crates/octanest-api/src/email/` — `EmailSender` + log/SMTP/Resend adapters; extend with verify/reset templates (welcome already exercises send path)
-- `crates/octanest-db/src/users.rs` — `email_verified_at` column already exists; wire gating + `auth.me`
+- `crates/oxidean-api/src/email/` — `EmailSender` + log/SMTP/Resend adapters; extend with verify/reset templates (welcome already exercises send path)
+- `crates/oxidean-db/src/users.rs` — `email_verified_at` column already exists; wire gating + `auth.me`
 - `packages/api-client` + `auth.me` / signup / login / `logout_all` — extend procedures; expose `email_verified`
 - `apps/web` routes: `login.tsx`, `signup.tsx`, `dashboard.tsx`, signed-in chrome — add `/verify`, `/reset-password`, banner, forgot-password entry
 - ShadCN/Base UI form primitives (`Input`, `Label`, `Button`) — compose with `input-otp`

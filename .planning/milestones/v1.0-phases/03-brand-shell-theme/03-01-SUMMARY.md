@@ -8,10 +8,10 @@ requires:
   - phase: 01-monorepo-scaffold
     provides: apps/web TanStack Start app, styles.css scaffold, hand-rolled Button, brand mark PNG
 provides:
-  - Full ShadCN semantic token layer (light + dark) mapped to Octanest cool/warm brand split, legacy accent-cool/accent-warm deleted
+  - Full ShadCN semantic token layer (light + dark) mapped to Oxidean cool/warm brand split, legacy accent-cool/accent-warm deleted
   - CVA-based Button (default/secondary/ghost variants, exported buttonVariants) replacing the hand-rolled component
   - ShadCN Input and styled Base UI Select wrappers
-  - Shared OctanestMark component + committed superellipse squircle mask (scripts/gen-squircle.mjs)
+  - Shared OxideanMark component + committed superellipse squircle mask (scripts/gen-squircle.mjs)
 affects: [03-02-chrome-navigation, 03-03-landing, 03-04-status, 03-05-pwa-icons]
 
 tech-stack:
@@ -25,7 +25,7 @@ key-files:
   created:
     - apps/web/src/components/ui/input.tsx
     - apps/web/src/components/ui/select.tsx
-    - apps/web/src/components/octanest-mark.tsx
+    - apps/web/src/components/oxidean-mark.tsx
     - scripts/gen-squircle.mjs
     - apps/web/public/brand/squircle.svg
   modified:
@@ -44,7 +44,7 @@ completed: 2026-09-09
 
 # Phase 3 Plan 01: Brand Shell Foundation Summary
 
-**Full ShadCN semantic token layer (cool primary / warm secondary, light+dark) plus CVA Button, Input, Base UI Select, and a shared squircle-clipped OctanestMark backed by a generated superellipse SVG mask.**
+**Full ShadCN semantic token layer (cool primary / warm secondary, light+dark) plus CVA Button, Input, Base UI Select, and a shared squircle-clipped OxideanMark backed by a generated superellipse SVG mask.**
 
 ## Performance
 
@@ -56,7 +56,7 @@ completed: 2026-09-09
 - Rewrote `styles.css` onto the complete ShadCN semantic token set (background, foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, ring) in both `:root` and `.dark`, with `--primary` as the cool/left blue family and `--secondary` as the warm/right orange family; legacy `--color-accent-cool`/`--color-accent-warm` fully removed from the stylesheet
 - Replaced the hand-rolled `Button` with a CVA implementation (`default`/`secondary`/`ghost` variants, 44px height) and exported `buttonVariants` for anchor-styled CTAs
 - Added ShadCN `Input` and a full set of styled Base UI `Select` wrappers (trigger/popup/item/etc.) for wave-2 chrome to consume instead of native controls
-- Added a dependency-free superellipse (n=5, macOS app-icon curve) SVG generator and committed its output, plus a shared `OctanestMark` component that clips `/octanest-mark.png` to that squircle with no padded plate and `alt="Octanest"` in both themes
+- Added a dependency-free superellipse (n=5, macOS app-icon curve) SVG generator and committed its output, plus a shared `OxideanMark` component that clips `/oxidean-mark.png` to that squircle with no padded plate and `alt="Oxidean"` in both themes
 
 ## Task Commits
 
@@ -64,16 +64,16 @@ Each task was committed atomically:
 
 1. **Task 1: Full ShadCN semantic token layer, legacy accents deleted** - `02fc953` (feat)
 2. **Task 2: CVA Button + ShadCN Input + Base UI Select wrappers** - `9fe2998` (feat)
-3. **Task 3: Superellipse mask + shared OctanestMark component** - `4220114` (feat)
+3. **Task 3: Superellipse mask + shared OxideanMark component** - `4220114` (feat)
 
 **Plan metadata:** pending (this commit)
 
 ## Files Created/Modified
-- `apps/web/src/styles.css` - Full semantic token layer (light+dark), `.octanest-squircle` mask utility, legacy accent vars removed
+- `apps/web/src/styles.css` - Full semantic token layer (light+dark), `.oxidean-squircle` mask utility, legacy accent vars removed
 - `apps/web/src/components/ui/button.tsx` - CVA Button with `default`/`secondary`/`ghost` variants, exports `buttonVariants`
 - `apps/web/src/components/ui/input.tsx` - ShadCN Input for disabled header search
 - `apps/web/src/components/ui/select.tsx` - Styled Base UI Select part wrappers
-- `apps/web/src/components/octanest-mark.tsx` - Shared squircle-clipped brand mark component
+- `apps/web/src/components/oxidean-mark.tsx` - Shared squircle-clipped brand mark component
 - `scripts/gen-squircle.mjs` - Deterministic superellipse (n=5) SVG generator, no dependencies
 - `apps/web/public/brand/squircle.svg` - Generated + committed mask asset (1024×1024, single `<path>`)
 
@@ -92,10 +92,10 @@ None.
 None - no external service configuration required.
 
 ## Known Stubs
-None. `OctanestMark`, `Input`, and the `Select` wrappers are not yet wired into `chrome.tsx` — that consumption happens in wave-2 plan 03-02, as scoped by this plan's objective ("Everything in wave 2 consumes these exact exports"). This is intentional scope, not a stub: the plan's own success criteria state wave-2 plans build chrome/landing/status from these exports, not this plan.
+None. `OxideanMark`, `Input`, and the `Select` wrappers are not yet wired into `chrome.tsx` — that consumption happens in wave-2 plan 03-02, as scoped by this plan's objective ("Everything in wave 2 consumes these exact exports"). This is intentional scope, not a stub: the plan's own success criteria state wave-2 plans build chrome/landing/status from these exports, not this plan.
 
 ## Next Phase Readiness
-- `styles.css`, `Button`/`buttonVariants`, `Input`, `Select*`, and `OctanestMark` are all in place and build-verified (`bun run --filter @octanest/web build` exits 0) for 03-02 (chrome), 03-03 (landing), and 03-04 (status) to consume directly
+- `styles.css`, `Button`/`buttonVariants`, `Input`, `Select*`, and `OxideanMark` are all in place and build-verified (`bun run --filter @oxidean/web build` exits 0) for 03-02 (chrome), 03-03 (landing), and 03-04 (status) to consume directly
 - `apps/web/src/components/chrome.tsx`, `routes/index.tsx`, and `routes/status.tsx` still reference the deleted `--color-accent-cool`/`--color-accent-warm` custom properties via inline `var(--color-...)` classes — these are unaffected by CSS at runtime (undefined custom properties fail silently) but MUST be migrated onto semantic token utilities in 03-02/03-03/03-04 before the phase-level gate (`grep -rn 'accent-cool|accent-warm' apps/web/src` returning zero) can pass
 - No blockers for wave 2
 

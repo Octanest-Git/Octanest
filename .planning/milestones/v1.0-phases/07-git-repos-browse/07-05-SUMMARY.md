@@ -27,20 +27,20 @@ tech-stack:
 tech-stack-added: []
 key-files:
   created:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/routes/repo_raw.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/routes/repo_raw.rs
   modified:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-core/src/repo_types.rs
     - packages/api-client/src/index.ts
-    - crates/octanest-api/tests/repo_private_404.rs
+    - crates/oxidean-api/tests/repo_private_404.rs
 key-decisions:
   - "Private ACL stub is owner-only until Phase 10 (D-23); no repo.forbidden code"
-  - "Blob soft limit 1 MiB for RPC preview and raw X-Octanest-Blob-Truncated header (D-20)"
+  - "Blob soft limit 1 MiB for RPC preview and raw X-Oxidean-Blob-Truncated header (D-20)"
   - "Empty bare repo tree returns { empty: true, entries: [] } without 500"
 patterns-established:
   - "Browse read path: ACL first, then bare_repo_path, then GitBackend"
@@ -52,7 +52,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_private_404.rs#repo_private_404_identical_not_found_for_missing_and_private"
+        ref: "crates/oxidean-api/tests/repo_private_404.rs#repo_private_404_identical_not_found_for_missing_and_private"
         status: pass
     human_judgment: false
   - id: D2
@@ -60,7 +60,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_private_404.rs#repo_private_404_public_anonymous_get_succeeds"
+        ref: "crates/oxidean-api/tests/repo_private_404.rs#repo_private_404_public_anonymous_get_succeeds"
         status: pass
     human_judgment: false
   - id: D3
@@ -68,7 +68,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_private_404.rs#repo_private_404_empty_tree_structured"
+        ref: "crates/oxidean-api/tests/repo_private_404.rs#repo_private_404_empty_tree_structured"
         status: pass
     human_judgment: false
   - id: D4
@@ -76,7 +76,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#ls_tree_returns_dirs_files_and_gitlink_modes"
+        ref: "crates/oxidean-git/src/cli.rs#ls_tree_returns_dirs_files_and_gitlink_modes"
         status: pass
     human_judgment: false
   - id: D5
@@ -84,7 +84,7 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: other
-        ref: "rg repo_raw crates/octanest-api/src/app.rs"
+        ref: "rg repo_raw crates/oxidean-api/src/app.rs"
         status: pass
     human_judgment: false
 duration: 7min
@@ -125,11 +125,11 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/acl.rs` — owner-only private + identical not_found
-- `crates/octanest-api/src/routes/repo_raw.rs` — raw blob HTTP with path/ref validation
-- `crates/octanest-git/src/backend.rs` / `cli.rs` — ls_tree, cat_blob, list_refs
-- `crates/octanest-api/src/repo/mod.rs` — get/tree/blob/refs handlers
-- `crates/octanest-core/src/repo_types.rs` — browse DTOs
+- `crates/oxidean-api/src/repo/acl.rs` — owner-only private + identical not_found
+- `crates/oxidean-api/src/routes/repo_raw.rs` — raw blob HTTP with path/ref validation
+- `crates/oxidean-git/src/backend.rs` / `cli.rs` — ls_tree, cat_blob, list_refs
+- `crates/oxidean-api/src/repo/mod.rs` — get/tree/blob/refs handlers
+- `crates/oxidean-core/src/repo_types.rs` — browse DTOs
 - `packages/api-client/src/index.ts` — rpc-gen client methods
 
 ## Decisions Made
@@ -146,7 +146,7 @@ None that changed production scope.
 
 ### Scoped exclusions
 
-**1. [Out of scope] Full `octanest-git --lib` includes Wave 0 archive stub**
+**1. [Out of scope] Full `oxidean-git --lib` includes Wave 0 archive stub**
 - **Found during:** Task 1 verify
 - **Issue:** `git_archive_formats_zip_and_tar_gz` still `assert!(false)` (GIT-07 / later plan)
 - **Fix:** Verified with `-E 'not test(git_archive)'`; logged deferred-items + WINDOWS.md
@@ -181,8 +181,8 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/repo/acl.rs`
-- FOUND: `crates/octanest-api/src/routes/repo_raw.rs`
+- FOUND: `crates/oxidean-api/src/repo/acl.rs`
+- FOUND: `crates/oxidean-api/src/routes/repo_raw.rs`
 - FOUND: commits `dc0c2ad`, `038ac5f`
 
 ---

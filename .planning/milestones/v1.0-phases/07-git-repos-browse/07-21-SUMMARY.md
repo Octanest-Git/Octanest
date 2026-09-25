@@ -27,8 +27,8 @@ key-files:
     - .planning/phases/07-git-repos-browse/.tdd/07-21-t1-red-evidence.json
     - .planning/phases/07-git-repos-browse/.tdd/07-21-t2-red-evidence.json
   modified:
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/tests/repo_create.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/tests/repo_create.rs
     - apps/web/src/lib/repo-browse.ts
     - apps/web/src/routes/$owner.$repo.tree.$.tsrx
     - apps/web/src/routes/$owner.$repo.blob.$.tsrx
@@ -46,7 +46,7 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_create.rs#repo_create_git_failure_soft_deletes_row_allows_recreate"
+        ref: "crates/oxidean-api/tests/repo_create.rs#repo_create_git_failure_soft_deletes_row_allows_recreate"
         status: pass
     human_judgment: false
   - id: D2
@@ -102,8 +102,8 @@ Each task was committed atomically (TDD RED → GREEN):
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/mod.rs` — `compensate_failed_create` on init/seed Err
-- `crates/octanest-api/tests/repo_create.rs` — WR-01 recreate integration test
+- `crates/oxidean-api/src/repo/mod.rs` — `compensate_failed_create` on init/seed Err
+- `crates/oxidean-api/tests/repo_create.rs` — WR-01 recreate integration test
 - `apps/web/src/lib/repo-browse.ts` — optional `knownRefs` longest-prefix parse
 - `apps/web/src/lib/repo-browse.unit.test.ts` — hierarchical + fallback unit coverage
 - `apps/web/src/routes/$owner.$repo.tree.$.tsrx` — refs-first then `parseRefAndPath(splat, knownRefs)`

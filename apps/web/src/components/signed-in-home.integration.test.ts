@@ -1,4 +1,4 @@
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 import { createElement } from "octane";
 import { cleanup, fireEvent, render, screen } from "@octanejs/testing-library";
 import { afterEach, describe, expect, it, vi } from "vitest";

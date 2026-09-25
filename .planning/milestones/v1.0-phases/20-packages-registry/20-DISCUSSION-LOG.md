@@ -29,7 +29,7 @@
 
 | Topic | Choice |
 |-------|--------|
-| Volume | Separate `OCTANEST_PACKAGES_DIR` |
+| Volume | Separate `OXIDEAN_PACKAGES_DIR` |
 | Dedup | Content-addressed cross-package |
 | Limits | Max blob + per-owner quotas; reject over limit |
 

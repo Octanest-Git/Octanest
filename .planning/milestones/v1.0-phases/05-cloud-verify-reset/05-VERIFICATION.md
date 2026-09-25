@@ -41,29 +41,29 @@ covered_files:
   - apps/web/src/routes/signup.tsrx
   - apps/web/src/routes/verify.tsrx
   - apps/web/src/styles.css
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/auth/external.rs
-  - crates/octanest-api/src/auth/gate.rs
-  - crates/octanest-api/src/auth/local.rs
-  - crates/octanest-api/src/auth/mod.rs
-  - crates/octanest-api/src/auth/oidc.rs
-  - crates/octanest-api/src/auth/seed.rs
-  - crates/octanest-api/src/auth/verify_reset.rs
-  - crates/octanest-api/src/auth/workos.rs
-  - crates/octanest-api/src/bin/rpc_gen.rs
-  - crates/octanest-api/src/main.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/auth_signup.rs
-  - crates/octanest-api/tests/auth_verify_gate.rs
-  - crates/octanest-api/tests/auth_verify_reset.rs
-  - crates/octanest-core/src/auth_types.rs
-  - crates/octanest-db/migrations/mysql/0003_email_tokens.sql
-  - crates/octanest-db/migrations/postgres/0003_email_tokens.sql
-  - crates/octanest-db/migrations/sqlite/0003_email_tokens.sql
-  - crates/octanest-db/src/email_tokens.rs
-  - crates/octanest-db/src/lib.rs
-  - crates/octanest-db/src/users.rs
-  - crates/octanest-db/tests/dialect_auth.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/auth/external.rs
+  - crates/oxidean-api/src/auth/gate.rs
+  - crates/oxidean-api/src/auth/local.rs
+  - crates/oxidean-api/src/auth/mod.rs
+  - crates/oxidean-api/src/auth/oidc.rs
+  - crates/oxidean-api/src/auth/seed.rs
+  - crates/oxidean-api/src/auth/verify_reset.rs
+  - crates/oxidean-api/src/auth/workos.rs
+  - crates/oxidean-api/src/bin/rpc_gen.rs
+  - crates/oxidean-api/src/main.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/auth_signup.rs
+  - crates/oxidean-api/tests/auth_verify_gate.rs
+  - crates/oxidean-api/tests/auth_verify_reset.rs
+  - crates/oxidean-core/src/auth_types.rs
+  - crates/oxidean-db/migrations/mysql/0003_email_tokens.sql
+  - crates/oxidean-db/migrations/postgres/0003_email_tokens.sql
+  - crates/oxidean-db/migrations/sqlite/0003_email_tokens.sql
+  - crates/oxidean-db/src/email_tokens.rs
+  - crates/oxidean-db/src/lib.rs
+  - crates/oxidean-db/src/users.rs
+  - crates/oxidean-db/tests/dialect_auth.rs
   - packages/api-client/src/index.ts
 covered_digest: "v1:sha256:fe566044c4f0e08dc1393b932dc187c69b1bf27f33b3ac2fb8e6c3ba991f890d"
 behavior_unverified: 0
@@ -76,7 +76,7 @@ human_verification: "[]"
 
 # Phase 5: Cloud Verify & Reset Verification Report
 
-**Phase Goal:** Octanest Cloud feels open to the public while requiring email verification before privileged actions and supporting password reset
+**Phase Goal:** Oxidean Cloud feels open to the public while requiring email verification before privileged actions and supporting password reset
 **Verified:** 2026-09-11T16:45:52Z
 **Status:** passed
 **Re-verification:** Yes — fingerprint refresh after Octane `.tsx` → `.tsrx` rename (prior report `covered_digest` stale)
@@ -87,7 +87,7 @@ human_verification: "[]"
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | On Octanest Cloud, signup requires no invite | ✓ VERIFIED | `signup.tsrx` / `local.rs` have no invite fields; `signup_open_without_invite_fields_auth05` + `signup.integration.test.ts` passed |
+| 1 | On Oxidean Cloud, signup requires no invite | ✓ VERIFIED | `signup.tsrx` / `local.rs` have no invite fields; `signup_open_without_invite_fields_auth05` + `signup.integration.test.ts` passed |
 | 2 | Unverified users cannot perform privileged actions until email verified (Phase 5: `require_verified` + `auth.dev.privileged_ping`; `repo.create` → Phase 7) | ✓ VERIFIED | `gate.rs` returns `auth.email_unverified`; `unverified_privileged_ping_forbidden_then_ok_after_otp` + env allowlist tests passed; `app.rs` maps to HTTP 403 |
 | 3 | When an email provider is configured, user can reset password via an email link | ✓ VERIFIED | `request_password_reset` / `reset_password` in `verify_reset.rs`; anti-enumeration + redeem tests passed; log-sink counts as provider |
 | 4 | All three dialects migrate `auth_email_tokens` with purpose, token_hash, otp_hash, UNIQUE(user_id, purpose) | ✓ VERIFIED | sqlite/postgres/mysql `0003_email_tokens.sql` present with matching UNIQUE; `email_tokens.rs` CRUD + `Database` facades in `lib.rs` |
@@ -114,14 +114,14 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts. **28/28** h
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0003_email_tokens.sql` | token schema | ✓ VERIFIED | All three dialects; UNIQUE(user_id, purpose) |
-| `crates/octanest-db/src/email_tokens.rs` | token CRUD | ✓ VERIFIED | Wired via `Database` facades |
-| `crates/octanest-core/src/auth_types.rs` | `UserPublic.email_verified` | ✓ VERIFIED | Field present |
-| `crates/octanest-api/src/auth/gate.rs` | `require_verified` | ✓ VERIFIED | Used by `privileged_ping` |
-| `crates/octanest-api/src/auth/verify_reset.rs` | verify/reset issue+consume | ✓ VERIFIED | RPC-wired |
-| `crates/octanest-api/tests/auth_verify_gate.rs` | gate CI coverage | ✓ VERIFIED | 3 tests green |
-| `crates/octanest-api/tests/auth_verify_reset.rs` | verify/reset CI | ✓ VERIFIED | 14 tests green |
-| `crates/octanest-api/src/auth/external.rs` | IdP email_verified | ✓ VERIFIED | apply on link/create |
+| `crates/oxidean-db/migrations/*/0003_email_tokens.sql` | token schema | ✓ VERIFIED | All three dialects; UNIQUE(user_id, purpose) |
+| `crates/oxidean-db/src/email_tokens.rs` | token CRUD | ✓ VERIFIED | Wired via `Database` facades |
+| `crates/oxidean-core/src/auth_types.rs` | `UserPublic.email_verified` | ✓ VERIFIED | Field present |
+| `crates/oxidean-api/src/auth/gate.rs` | `require_verified` | ✓ VERIFIED | Used by `privileged_ping` |
+| `crates/oxidean-api/src/auth/verify_reset.rs` | verify/reset issue+consume | ✓ VERIFIED | RPC-wired |
+| `crates/oxidean-api/tests/auth_verify_gate.rs` | gate CI coverage | ✓ VERIFIED | 3 tests green |
+| `crates/oxidean-api/tests/auth_verify_reset.rs` | verify/reset CI | ✓ VERIFIED | 14 tests green |
+| `crates/oxidean-api/src/auth/external.rs` | IdP email_verified | ✓ VERIFIED | apply on link/create |
 | `packages/api-client/src/index.ts` | typed client | ✓ VERIFIED | `email_verified`, verify/reset RPCs |
 | `apps/web/src/components/ui/input-otp.tsrx` | OTP wrapper | ✓ VERIFIED | Present (Octane) |
 | `apps/web/src/routes/verify.tsrx` | `/verify` page | ✓ VERIFIED | token+OTP paths |
@@ -160,10 +160,10 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts. **28/28** h
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Auth gate suite | `cargo test -p octanest-api --test auth_verify_gate` | 3 passed | ✓ PASS |
-| Auth verify/reset suite | `cargo test -p octanest-api --test auth_verify_reset` | 14 passed | ✓ PASS |
+| Auth gate suite | `cargo test -p oxidean-api --test auth_verify_gate` | 3 passed | ✓ PASS |
+| Auth verify/reset suite | `cargo test -p oxidean-api --test auth_verify_reset` | 14 passed | ✓ PASS |
 | Auth signup + session + profile + admin | regression gate suite | all passed | ✓ PASS |
-| Dialect auth | `cargo test -p octanest-db --test dialect_auth` | 2 passed | ✓ PASS |
+| Dialect auth | `cargo test -p oxidean-db --test dialect_auth` | 2 passed | ✓ PASS |
 | Web UAT automation | vitest reset/signup/signed-in-home + copy unit | 10 passed | ✓ PASS |
 
 ### Probe Execution

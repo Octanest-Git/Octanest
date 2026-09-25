@@ -9,7 +9,7 @@ requires:
     provides: Wave 0 stubs (14-00)
 provides:
   - LFS Batch + basic PUT/GET under .git/info/lfs
-  - OCTANEST_LFS_DIR OID-sharded store + DB rows
+  - OXIDEAN_LFS_DIR OID-sharded store + DB rows
   - Tri-dialect 0012_lfs migration
 affects: [14-03, 14-04, 14-05, 14-06, 14-07, 14-08]
 
@@ -21,22 +21,22 @@ actuals:
 tech-stack:
   added: []
   patterns:
-    - "AppState.lfs_dir from OCTANEST_LFS_DIR (default var/lfs)"
+    - "AppState.lfs_dir from OXIDEAN_LFS_DIR (default var/lfs)"
     - "Streaming PUT with sha2 hash-then-rename into ab/cd/oid"
     - "Batch transfer=basic only (D-LFS-07 locked; no multipart)"
 
 key-files:
   created:
-    - crates/octanest-api/src/lfs/store.rs
-    - crates/octanest-api/src/lfs/batch.rs
-    - crates/octanest-api/src/routes/git_lfs.rs
-    - crates/octanest-db/src/lfs.rs
-    - crates/octanest-db/migrations/sqlite/0012_lfs.sql
+    - crates/oxidean-api/src/lfs/store.rs
+    - crates/oxidean-api/src/lfs/batch.rs
+    - crates/oxidean-api/src/routes/git_lfs.rs
+    - crates/oxidean-db/src/lfs.rs
+    - crates/oxidean-db/migrations/sqlite/0012_lfs.sql
   modified:
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/tests/lfs_batch.rs
-    - crates/octanest-api/tests/lfs_store.rs
-    - crates/octanest-db/tests/dialect_lfs.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
+    - crates/oxidean-api/tests/lfs_store.rs
+    - crates/oxidean-db/tests/dialect_lfs.rs
 
 key-decisions:
   - "Migration id 0012_lfs (next free after 0011_issues)"
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_batch)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_batch)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -62,7 +62,7 @@ coverage:
     requirement: GIT-13
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_store)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_store)'"
         status: pass
     human_judgment: false
 
@@ -75,7 +75,7 @@ commits: 1
 
 # Phase 14 Plan 02: LFS tracer Batch + basic transfer Summary
 
-**End-to-end Batch + streaming PUT/GET lands one OID under `OCTANEST_LFS_DIR` with DB rows (D-LFS-07 basic gate).**
+**End-to-end Batch + streaming PUT/GET lands one OID under `OXIDEAN_LFS_DIR` with DB rows (D-LFS-07 basic gate).**
 
 ## Performance
 
@@ -102,7 +102,7 @@ Combined Task 1 and Task 2 into one commit after shared-worktree contention wipe
 **1. [Rule 3 - Blocking] Shared worktree contention with Phase 15**
 - **Found during:** Task 1
 - **Issue:** Parallel agent switched branch / deleted untracked LFS files and dropped competing `0012_releases` migrations into the tree
-- **Fix:** Parked alien files under `/tmp/octanest-alien-wt`, recreated LFS artifacts, committed immediately
+- **Fix:** Parked alien files under `/tmp/oxidean-alien-wt`, recreated LFS artifacts, committed immediately
 - **Commit:** 545515a
 
 **2. [Rule 3 - Blocking] sha2 0.11 finalize formatting**

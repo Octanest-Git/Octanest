@@ -39,17 +39,17 @@ covered_files:
   - apps/web/src/lib/public-origin.ts
   - apps/web/src/routes/settings/ssh-keys.integration.test.ts
   - apps/web/src/routes/settings/ssh-keys.tsrx
-  - crates/octanest-api/src/ssh/mod.rs
-  - crates/octanest-api/src/ssh/server.rs
-  - crates/octanest-api/src/ssh_keys/mod.rs
-  - crates/octanest-api/tests/git_ssh.rs
-  - crates/octanest-api/tests/ssh_key_rpc.rs
-  - crates/octanest-core/src/ssh_key_types.rs
-  - crates/octanest-db/migrations/mysql/0009_ssh_keys.sql
-  - crates/octanest-db/migrations/postgres/0009_ssh_keys.sql
-  - crates/octanest-db/migrations/sqlite/0009_ssh_keys.sql
-  - crates/octanest-db/src/ssh_keys.rs
-  - crates/octanest-db/tests/dialect_ssh_keys.rs
+  - crates/oxidean-api/src/ssh/mod.rs
+  - crates/oxidean-api/src/ssh/server.rs
+  - crates/oxidean-api/src/ssh_keys/mod.rs
+  - crates/oxidean-api/tests/git_ssh.rs
+  - crates/oxidean-api/tests/ssh_key_rpc.rs
+  - crates/oxidean-core/src/ssh_key_types.rs
+  - crates/oxidean-db/migrations/mysql/0009_ssh_keys.sql
+  - crates/oxidean-db/migrations/postgres/0009_ssh_keys.sql
+  - crates/oxidean-db/migrations/sqlite/0009_ssh_keys.sql
+  - crates/oxidean-db/src/ssh_keys.rs
+  - crates/oxidean-db/tests/dialect_ssh_keys.rs
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
@@ -80,7 +80,7 @@ Roadmap success criteria (GIT-03, GIT-04). Evidence is artifact + named automate
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
 | 1 | User can add, list, and revoke SSH public keys on their account (GIT-04) | ✓ VERIFIED | Schema `0009_ssh_keys` tri-dialect + `ssh_keys.rs`; RPC `sshKey.add/list/revoke` in `ssh_keys/mod.rs` + generated client; UI `/settings/ssh-keys` + SettingsNav. Tests: `ssh_key_rpc.rs` (7 cases); `dialect_ssh_keys` (2); Vitest `ssh-keys.integration.test.ts`; stack-browser `forge-packages-ssh-orgs.stack.browser.test.tsx` (11.1-04 add/list). |
-| 2 | User can clone, fetch, and push over SSH with a registered public key (GIT-03) | ✓ VERIFIED | In-process `russh` listener `crates/octanest-api/src/ssh/`; CloneBox scp-style URL + CTA. Tests: `git_ssh.rs`; Vitest `clone-box.ssh.integration.test.ts`; `scripts/smoke-git-ssh.sh` + CI `smoke-protocol` / `make smoke-protocol-ci` (11.1-05; fail-closed TCP; optional ls-remote with fixtures). |
+| 2 | User can clone, fetch, and push over SSH with a registered public key (GIT-03) | ✓ VERIFIED | In-process `russh` listener `crates/oxidean-api/src/ssh/`; CloneBox scp-style URL + CTA. Tests: `git_ssh.rs`; Vitest `clone-box.ssh.integration.test.ts`; `scripts/smoke-git-ssh.sh` + CI `smoke-protocol` / `make smoke-protocol-ci` (11.1-05; fail-closed TCP; optional ls-remote with fixtures). |
 
 **Score:** 2/2 truths verified by API/DB/Vitest + stack-browser SSH keys + CI protocol smoke. **Caveat:** full client ls-remote/push in CI defaults to skipped (`SMOKE_SKIP_LS_REMOTE=1`) — TCP + routing are CI-gated; seeded-repo client remains ops/optional.
 
@@ -92,19 +92,19 @@ CONTEXT decisions D-SSH-01…07 are reflected in shipped code/docs (russh in-api
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0009_ssh_keys.sql` | Tri-dialect SSH keys schema | ✓ VERIFIED | postgres/mysql/sqlite present |
-| `crates/octanest-db/src/ssh_keys.rs` | Key CRUD helpers | ✓ VERIFIED | Used by RPC + dialect tests |
-| `crates/octanest-core/src/ssh_key_types.rs` | DTOs | ✓ VERIFIED | Exported from core |
-| `crates/octanest-api/src/ssh_keys/mod.rs` | `sshKey.*` RPC | ✓ VERIFIED | add/list/revoke; require_verified; max 25 |
-| `crates/octanest-api/src/ssh/` | russh listener + pack | ✓ VERIFIED | auth, host_keys, pack, rate_limit, server |
-| `crates/octanest-api/tests/ssh_key_rpc.rs` | GIT-04 behavioral | ✓ VERIFIED | 7 greened tests (09-09 gate: ssh_key\|git_ssh = 14 passed) |
-| `crates/octanest-api/tests/git_ssh.rs` | GIT-03 behavioral | ✓ VERIFIED | 7 greened tests |
-| `crates/octanest-db/tests/dialect_ssh_keys.rs` | Migration presence | ✓ VERIFIED | schema + tri-dialect files |
+| `crates/oxidean-db/migrations/*/0009_ssh_keys.sql` | Tri-dialect SSH keys schema | ✓ VERIFIED | postgres/mysql/sqlite present |
+| `crates/oxidean-db/src/ssh_keys.rs` | Key CRUD helpers | ✓ VERIFIED | Used by RPC + dialect tests |
+| `crates/oxidean-core/src/ssh_key_types.rs` | DTOs | ✓ VERIFIED | Exported from core |
+| `crates/oxidean-api/src/ssh_keys/mod.rs` | `sshKey.*` RPC | ✓ VERIFIED | add/list/revoke; require_verified; max 25 |
+| `crates/oxidean-api/src/ssh/` | russh listener + pack | ✓ VERIFIED | auth, host_keys, pack, rate_limit, server |
+| `crates/oxidean-api/tests/ssh_key_rpc.rs` | GIT-04 behavioral | ✓ VERIFIED | 7 greened tests (09-09 gate: ssh_key\|git_ssh = 14 passed) |
+| `crates/oxidean-api/tests/git_ssh.rs` | GIT-03 behavioral | ✓ VERIFIED | 7 greened tests |
+| `crates/oxidean-db/tests/dialect_ssh_keys.rs` | Migration presence | ✓ VERIFIED | schema + tri-dialect files |
 | `apps/web/.../ssh-keys.tsrx` + components | Settings UI | ✓ VERIFIED | list/add/revoke + nav |
 | `apps/web/.../clone-box.tsrx` + `ssh-how-to.tsrx` | Live SSH URL | ✓ VERIFIED | placeholder replaced |
 | `packages/api-client/src/index.ts` | Generated `sshKey.*` | ✓ VERIFIED | client + Query helpers |
 | `scripts/smoke-git-ssh.sh` | Compose TCP smoke | ✓ VERIFIED | Makefile target; docker-missing skip |
-| `docs/CONFIGURATION.md` / `ARCHITECTURE.md` | Ops + russh notes | ✓ VERIFIED | `OCTANEST_SSH_*` documented |
+| `docs/CONFIGURATION.md` / `ARCHITECTURE.md` | Ops + russh notes | ✓ VERIFIED | `OXIDEAN_SSH_*` documented |
 | `09-VALIDATION.md` | Phase gate map | ✓ validated | Wave 0 complete; **`nyquist_compliant: true`** (11.1-04 e2e + 11.1-05 CI smoke) |
 
 ### Key Link Verification
@@ -133,7 +133,7 @@ Evidence from **09-09-SUMMARY** phase gate (2026-09-14), cross-checked that test
 | Behavior | Command (gate) | Result (SUMMARY) | Status |
 | -------- | -------------- | ---------------- | ------ |
 | sshKey + git_ssh | `cargo nextest … 'test(ssh_key)\|test(git_ssh)'` | 14 passed | ✓ PASS (recorded) |
-| dialect | `cargo test -p octanest-db --test dialect_ssh_keys` | 2 passed | ✓ PASS (recorded) |
+| dialect | `cargo test -p oxidean-db --test dialect_ssh_keys` | 2 passed | ✓ PASS (recorded) |
 | Vitest SSH UI | ssh-keys + clone-box.ssh | 9 passed | ✓ PASS (recorded) |
 | RPC sync | `make rpc-sync-check` | ok | ✓ PASS (recorded) |
 | Web build | `bun run build` (apps/web) | ok | ✓ PASS (recorded) |

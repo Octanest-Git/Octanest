@@ -6,7 +6,7 @@ import {
 } from "../../vite-plugins/web-health.ts";
 
 describe("web health probe auth", () => {
-  it("accepts Octanest-Health-Probe: 1", () => {
+  it("accepts Oxidean-Health-Probe: 1", () => {
     expect(isAuthorizedWebHealthProbe({ [WEB_HEALTH_PROBE_HEADER]: WEB_HEALTH_PROBE_VALUE })).toBe(
       true,
     );

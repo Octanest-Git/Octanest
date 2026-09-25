@@ -26,19 +26,19 @@ tech-stack:
     - "validate_repo_name separate from validate_username (allows _ and .)"
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0007_repositories.sql
-    - crates/octanest-db/migrations/mysql/0007_repositories.sql
-    - crates/octanest-db/migrations/sqlite/0007_repositories.sql
-    - crates/octanest-db/src/repositories.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-db/migrations/postgres/0007_repositories.sql
+    - crates/oxidean-db/migrations/mysql/0007_repositories.sql
+    - crates/oxidean-db/migrations/sqlite/0007_repositories.sql
+    - crates/oxidean-db/src/repositories.rs
+    - crates/oxidean-core/src/repo_types.rs
     - .planning/phases/07-git-repos-browse/.evidence/07-02-t1-red.json
   modified:
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-core/src/lib.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/auth_settings.rs
-    - crates/octanest-db/tests/dialect_repositories.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-core/src/lib.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/auth_settings.rs
+    - crates/oxidean-db/tests/dialect_repositories.rs
 key-decisions:
   - "Checkpoint Task 0: proceed_locked — honor owner_repo_path (D-14) + fail_boot_git (D-33)"
   - "MySQL soft-delete uniqueness via generated active_name column (NULLs exempt from UNIQUE)"
@@ -53,10 +53,10 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: unit
-        ref: "crates/octanest-db/tests/dialect_repositories.rs#migrate_0007_repositories_schema_presence"
+        ref: "crates/oxidean-db/tests/dialect_repositories.rs#migrate_0007_repositories_schema_presence"
         status: pass
       - kind: unit
-        ref: "crates/octanest-db --lib migration_parity"
+        ref: "crates/oxidean-db --lib migration_parity"
         status: pass
     human_judgment: false
   - id: D2
@@ -64,10 +64,10 @@ coverage:
     requirement: GIT-01
     verification:
       - kind: unit
-        ref: "crates/octanest-core/src/repo_types.rs#validate_repo_name_accepts_my_app"
+        ref: "crates/oxidean-core/src/repo_types.rs#validate_repo_name_accepts_my_app"
         status: pass
       - kind: unit
-        ref: "crates/octanest-core/src/auth_types.rs#new_is_reserved_for_flat_routes"
+        ref: "crates/oxidean-core/src/auth_types.rs#new_is_reserved_for_flat_routes"
         status: pass
     human_judgment: false
   - id: D3
@@ -75,7 +75,7 @@ coverage:
     requirement: GIT-08
     verification:
       - kind: unit
-        ref: "crates/octanest-db/tests/dialect_repositories.rs#migrate_0007_repositories_schema_presence"
+        ref: "crates/oxidean-db/tests/dialect_repositories.rs#migrate_0007_repositories_schema_presence"
         status: pass
     human_judgment: false
 duration: 6min
@@ -115,17 +115,17 @@ status: complete
 | Gate | Commit | Evidence |
 |------|--------|----------|
 | RED | `ed91eb0` | `.evidence/07-02-t1-red.json` → `RED_EVIDENCE_OK` (`validate_repo_name_accepts_my_app`) |
-| GREEN | `2920eea` | `cargo test -p octanest-core --lib` + `migration_parity` + `dialect_repositories` all pass |
+| GREEN | `2920eea` | `cargo test -p oxidean-core --lib` + `migration_parity` + `dialect_repositories` all pass |
 | REFACTOR | — | skipped (not needed) |
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0007_repositories.sql` — repositories + settings columns
-- `crates/octanest-db/src/repositories.rs` — dialect CRUD helpers
-- `crates/octanest-core/src/repo_types.rs` — DTOs + `validate_repo_name`
-- `crates/octanest-core/src/auth_types.rs` — reserved `new` + browse path segments
-- `crates/octanest-db/src/users.rs` / `auth_settings.rs` — read new default columns
-- `crates/octanest-db/tests/dialect_repositories.rs` — green insert/get coverage
+- `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0007_repositories.sql` — repositories + settings columns
+- `crates/oxidean-db/src/repositories.rs` — dialect CRUD helpers
+- `crates/oxidean-core/src/repo_types.rs` — DTOs + `validate_repo_name`
+- `crates/oxidean-core/src/auth_types.rs` — reserved `new` + browse path segments
+- `crates/oxidean-db/src/users.rs` / `auth_settings.rs` — read new default columns
+- `crates/oxidean-db/tests/dialect_repositories.rs` — green insert/get coverage
 
 ## Decisions Made
 

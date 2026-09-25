@@ -23,11 +23,11 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/actions/events.rs
-    - crates/octanest-api/src/actions/hooks.rs
+    - crates/oxidean-api/src/actions/events.rs
+    - crates/oxidean-api/src/actions/hooks.rs
   modified:
-    - crates/octanest-api/src/actions/mod.rs
-    - crates/octanest-api/tests/actions_triggers.rs
+    - crates/oxidean-api/src/actions/mod.rs
+    - crates/oxidean-api/tests/actions_triggers.rs
 
 key-decisions:
   - "No PR module on branch — publish hooks + events API; Phase 12 wires later"

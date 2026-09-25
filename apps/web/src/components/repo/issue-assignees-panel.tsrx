@@ -1,11 +1,11 @@
-import type { IssueAssigneePublic, IssuePublic } from "@octanest/api-client";
+import type { IssueAssigneePublic, IssuePublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 type IssueAssigneesPanelProps = {
   owner: string;

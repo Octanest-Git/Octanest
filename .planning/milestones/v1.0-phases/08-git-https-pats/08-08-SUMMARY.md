@@ -8,7 +8,7 @@ requires:
   - phase: 08-git-https-pats
     provides: 08-04/05 pat.* RPC + 08-06 Smart HTTP ACL
 provides:
-  - "@octanest/api-client pat.createClassic/createFineGrained/list/revoke + DTOs"
+  - "@oxidean/api-client pat.createClassic/createFineGrained/list/revoke + DTOs"
   - "docs/API.md Smart HTTP + PAT auth contract (D-01 not RPC Bearer)"
 affects:
   - 08-10/08-11 settings tokens UI
@@ -25,13 +25,13 @@ tech-stack:
   added: []
   patterns:
     - "rpc-gen is source of truth for api-client; extend bin template then make rpc-gen"
-    - "Token prefixes documented as octanest_pat_ / octanest_fg_ (not ona_*)"
+    - "Token prefixes documented as oxidean_pat_ / oxidean_fg_ (not ona_*)"
 
 key-files:
   created:
     - .planning/phases/08-git-https-pats/08-08-SUMMARY.md
   modified:
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - docs/API.md
 
@@ -41,13 +41,13 @@ key-decisions:
 
 patterns-established:
   - "pat.* client + Query/Mutation helpers mirror repo.* codegen style"
-  - "Docs use redacted octanest_pat_REDACTED examples only"
+  - "Docs use redacted oxidean_pat_REDACTED examples only"
 
 requirements-completed: [GIT-11]
 
 coverage:
   - id: D1
-    description: "make rpc-gen emits pat.createClassic/createFineGrained/list/revoke on @octanest/api-client"
+    description: "make rpc-gen emits pat.createClassic/createFineGrained/list/revoke on @oxidean/api-client"
     requirement: GIT-11
     verification:
       - kind: other
@@ -62,7 +62,7 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: other
-        ref: "rg 'not.*Bearer|Smart HTTP|octanest_pat_' docs/API.md"
+        ref: "rg 'not.*Bearer|Smart HTTP|oxidean_pat_' docs/API.md"
         status: pass
     human_judgment: false
 
@@ -73,7 +73,7 @@ status: complete
 
 # Phase 08 Plan 08: rpc-gen + API.md PAT/Smart HTTP Summary
 
-**Generated `@octanest/api-client` `pat.*` methods via rpc-gen and documented Smart HTTP Basic+PAT auth with D-01 (PATs are not RPC Bearer).**
+**Generated `@oxidean/api-client` `pat.*` methods via rpc-gen and documented Smart HTTP Basic+PAT auth with D-01 (PATs are not RPC Bearer).**
 
 ## Performance
 
@@ -85,7 +85,7 @@ status: complete
 
 ## Accomplishments
 - Extended `rpc_gen.rs` so regeneration exports `pat.createClassic`, `pat.createFineGrained`, `pat.list`, `pat.revoke` plus DTOs and Query helpers
-- Updated `docs/API.md` with PAT procedures, error codes, Smart HTTP paths, `octanest_pat_` / `octanest_fg_` prefixes, and explicit D-01 (session for RPC; PAT for HTTPS git only)
+- Updated `docs/API.md` with PAT procedures, error codes, Smart HTTP paths, `oxidean_pat_` / `oxidean_fg_` prefixes, and explicit D-01 (session for RPC; PAT for HTTPS git only)
 - `make rpc-sync-check` green after commit
 
 ## Task Commits
@@ -97,13 +97,13 @@ Each task was committed atomically:
 **Plan metadata:** `afb6522` (docs: complete plan)
 
 ## Files Created/Modified
-- `crates/octanest-api/src/bin/rpc_gen.rs` - PAT types, client methods, TanStack helpers
+- `crates/oxidean-api/src/bin/rpc_gen.rs` - PAT types, client methods, TanStack helpers
 - `packages/api-client/src/index.ts` - regenerated client (do not hand-edit)
 - `docs/API.md` - PAT RPC + Smart HTTP auth documentation
 
 ## Decisions Made
 - Source of truth remains Rust + `rpc-gen` template; api-client was never hand-patched as lasting source
-- Documented locked prefixes `octanest_pat_` / `octanest_fg_` (not `ona_*`) with redacted examples only
+- Documented locked prefixes `oxidean_pat_` / `oxidean_fg_` (not `ona_*`) with redacted examples only
 
 ## Deviations from Plan
 
@@ -113,7 +113,7 @@ Each task was committed atomically:
 - **Found during:** Task 1 (make rpc-gen + API.md)
 - **Issue:** `make rpc-gen` alone did not emit `pat.*` — `rpc_gen.rs` had no PAT surface despite Rust RPC handlers existing
 - **Fix:** Added PAT DTOs, `client.pat.*`, and Query/Mutation helpers to `rpc_gen.rs`, then regenerated
-- **Files modified:** `crates/octanest-api/src/bin/rpc_gen.rs`, `packages/api-client/src/index.ts`
+- **Files modified:** `crates/oxidean-api/src/bin/rpc_gen.rs`, `packages/api-client/src/index.ts`
 - **Verification:** `make rpc-sync-check` exits 0; rg finds createClassic/createFineGrained
 - **Committed in:** `483daf5` (part of task commit)
 
@@ -129,7 +129,7 @@ Each task was committed atomically:
 None - no external service configuration required.
 
 ## Next Phase Readiness
-- Web UI plans can import `@octanest/api-client` `pat.*` without hand patches
+- Web UI plans can import `@oxidean/api-client` `pat.*` without hand patches
 - Smart HTTP / PAT auth contracts documented for CloneBox and settings UI
 
 ## Self-Check: PASSED

@@ -18,7 +18,7 @@
 
 ### Delivered
 - Tri-dialect `0014_releases_redirects` (`releases`, `release_assets`, `repository_redirects`)
-- `release.*` RPC + multipart asset HTTP on `OCTANEST_RELEASE_ASSETS_DIR`
+- `release.*` RPC + multipart asset HTTP on `OXIDEAN_RELEASE_ASSETS_DIR`
 - `repo.rename` / `repo.transfer` with redirects, Smart HTTP/SSH resolve, purge retention
 - Octane Releases tab + Danger zone rename/transfer; Settings via `can_admin`
 - Factory reset `database_and_repositories` wipes release-assets children

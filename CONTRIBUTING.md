@@ -1,6 +1,6 @@
-# Contributing to Octanest
+# Contributing to Oxidean
 
-Thanks for helping build Octanest — a self-hostable forge with one codebase for cloud and on-prem.
+Thanks for helping build Oxidean — a self-hostable forge with one codebase for cloud and on-prem.
 
 This guide is for **human contributors** and **coding agents**. Agents should also read [AGENTS.md](AGENTS.md).
 
@@ -45,7 +45,7 @@ Auth stubs without cloud secrets: [docs/dev-auth.md](docs/dev-auth.md).
 
 1. Prefer small, focused PRs that match an existing roadmap phase or a clear bugfix.
 2. Include tests for behavior changes (see [docs/TESTING.md](docs/TESTING.md)).
-3. After changing RPC procedures or shared types: run `make rpc-gen` and commit `@octanest/api-client` updates together.
+3. After changing RPC procedures or shared types: run `make rpc-gen` and commit `@oxidean/api-client` updates together.
 4. Do not commit secrets (`.env`, tokens, private keys). Use examples under `docs/` and `.env.example`.
 5. Keep UI in `.tsrx` Octane style; do not introduce a parallel React app or alias React to Octane.
 6. Before opening a PR that touches `apps/web`: `make web-lint` and `make web-format-check` must pass (CI `web-octane` gates them). Fix type-aware oxlint diagnostics; do not leave formatting drift.

@@ -5,7 +5,7 @@ import type {
   OrgMineEntry,
   ProviderConfigPublic,
   UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 
 export const authMeQueryKey = ["auth", "me"] as const;

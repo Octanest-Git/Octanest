@@ -1,4 +1,4 @@
-# Octanest Cloud gateway
+# Oxidean Cloud gateway
 
 File-configured **Caddy** reverse proxy for Railway-class hosts. Replaces Compose Traefik’s Docker-socket provider (D-CLOUD-03).
 
@@ -18,7 +18,7 @@ Public Host is catch-all (suitable for Railway domains / custom DNS). TLS is exp
 ## Build
 
 ```bash
-docker build -f deploy/cloud/Dockerfile -t octanest-gateway .
+docker build -f deploy/cloud/Dockerfile -t oxidean-gateway .
 ```
 
 Pinned base: `caddy:2.11.4-alpine` (Docker Official Image).

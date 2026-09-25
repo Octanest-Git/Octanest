@@ -36,7 +36,7 @@ changes that are irrelevant to code review.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/pr-branch.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/pr-branch.md
 </execution_context>
 
 <process>

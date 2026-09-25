@@ -8,7 +8,7 @@ requires:
   - phase: 04-auth-sessions-email
     provides: "Local auth RPC + SessionService + auth_identities (04)"
 provides:
-  - "WorkOS AuthKit start/callback minting Octanest session cookie"
+  - "WorkOS AuthKit start/callback minting Oxidean session cookie"
   - "Generic OIDC auth-code+PKCE start/callback minting same session"
   - "Pending OAuth state store (TTL 10m) + SSRF-safe issuer validation"
   - "External identity link via auth_identities; username/profile_incomplete rules"
@@ -26,18 +26,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/workos.rs
-    - crates/octanest-api/src/auth/oidc.rs
-    - crates/octanest-api/src/auth/external.rs
-    - crates/octanest-api/src/auth/pending.rs
-    - crates/octanest-api/src/routes/auth_callbacks.rs
-    - crates/octanest-api/src/routes/mod.rs
+    - crates/oxidean-api/src/auth/workos.rs
+    - crates/oxidean-api/src/auth/oidc.rs
+    - crates/oxidean-api/src/auth/external.rs
+    - crates/oxidean-api/src/auth/pending.rs
+    - crates/oxidean-api/src/routes/auth_callbacks.rs
+    - crates/oxidean-api/src/routes/mod.rs
   modified:
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/auth/mod.rs
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/src/lib.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/auth/mod.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/src/lib.rs
 
 key-decisions:
   - "WorkOS uses client.authkit().pkce_authorization_url + user_management().authenticate_with_code with PKCE verifier"
@@ -46,7 +46,7 @@ key-decisions:
   - "No rust-toolchain.toml bump — local rustc 1.100.0-nightly already ≥ workos MSRV 1.88"
 
 patterns-established:
-  - "SSO callbacks always mint Octanest sessions via SessionService (remember_me=false)"
+  - "SSO callbacks always mint Oxidean sessions via SessionService (remember_me=false)"
   - "IdP errors logged server-side; browser redirected to /login?error=sso"
   - "sanitize_return_to allows only same-origin relative paths"
 
@@ -58,7 +58,7 @@ completed: 2026-09-09
 
 # Phase 4 Plan 05: WorkOS & OIDC Adapters Summary
 
-**WorkOS AuthKit and generic OIDC PKCE adapters with HTTP start/callback routes that mint the same Octanest `octanest_session` cookie as local login**
+**WorkOS AuthKit and generic OIDC PKCE adapters with HTTP start/callback routes that mint the same Oxidean `oxidean_session` cookie as local login**
 
 ## Performance
 
@@ -70,7 +70,7 @@ completed: 2026-09-09
 
 ## Accomplishments
 
-- WorkOS AuthKit: `provider=authkit` + PKCE start URL; `authenticate_with_code` finish; Octanest session on callback
+- WorkOS AuthKit: `provider=authkit` + PKCE start URL; `authenticate_with_code` finish; Oxidean session on callback
 - Generic OIDC: discover + PKCE + nonce; ID token verify; SSRF issuer checks; same session mint path
 - Shared `auth_identities` linking, username derivation / `u{shortid}` placeholders, safe `return_to`
 - Local signup/login remain rejected when mode is workos/oidc (existing `require_local`)
@@ -86,13 +86,13 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/workos.rs` — AuthKit start/finish + unit tests
-- `crates/octanest-api/src/auth/oidc.rs` — OIDC PKCE + SSRF validation + unit tests
-- `crates/octanest-api/src/auth/external.rs` — ExternalIdentity, link_or_create_user, sanitize_return_to
-- `crates/octanest-api/src/auth/pending.rs` — in-memory state/PKCE store (TTL 10m)
-- `crates/octanest-api/src/routes/auth_callbacks.rs` — `/api/auth/{workos,oidc}/{start,callback}`
-- `crates/octanest-api/src/app.rs` — mount callback routes; PendingAuthStore on AppState
-- `crates/octanest-api/src/auth/local.rs` — profile_incomplete from placeholder username
+- `crates/oxidean-api/src/auth/workos.rs` — AuthKit start/finish + unit tests
+- `crates/oxidean-api/src/auth/oidc.rs` — OIDC PKCE + SSRF validation + unit tests
+- `crates/oxidean-api/src/auth/external.rs` — ExternalIdentity, link_or_create_user, sanitize_return_to
+- `crates/oxidean-api/src/auth/pending.rs` — in-memory state/PKCE store (TTL 10m)
+- `crates/oxidean-api/src/routes/auth_callbacks.rs` — `/api/auth/{workos,oidc}/{start,callback}`
+- `crates/oxidean-api/src/app.rs` — mount callback routes; PendingAuthStore on AppState
+- `crates/oxidean-api/src/auth/local.rs` — profile_incomplete from placeholder username
 
 ## Decisions Made
 
@@ -110,7 +110,7 @@ Each task was committed atomically:
 - **Issue:** OIDC code exchange requires the same redirect_uri used at authorize time; plan’s pending map fields omitted it
 - **Fix:** Added `redirect_uri` to `PendingAuth` (WorkOS stores it too for consistency)
 - **Files modified:** `pending.rs`, `workos.rs`, `oidc.rs`
-- **Verification:** `cargo test -p octanest-api --lib auth::oidc` / `auth::workos`
+- **Verification:** `cargo test -p oxidean-api --lib auth::oidc` / `auth::workos`
 - **Committed in:** `2bf2bcb` (Task 2)
 
 **2. [Rule 3 - Blocking] AuthKitHelper::new is crate-private — use Client::authkit()**
@@ -134,8 +134,8 @@ None
 
 **External services require manual configuration for live E2E.** See [04-USER-SETUP.md](./04-USER-SETUP.md) for:
 - `WORKOS_API_KEY` / `WORKOS_CLIENT_ID`
-- `OCTANEST_OIDC_ISSUER` / `OCTANEST_OIDC_CLIENT_ID` / `OCTANEST_OIDC_CLIENT_SECRET`
-- Optional `OCTANEST_PUBLIC_ORIGIN` for correct callback redirect URIs behind proxy
+- `OXIDEAN_OIDC_ISSUER` / `OXIDEAN_OIDC_CLIENT_ID` / `OXIDEAN_OIDC_CLIENT_SECRET`
+- Optional `OXIDEAN_PUBLIC_ORIGIN` for correct callback redirect URIs behind proxy
 
 CI uses unit tests without live IdP keys.
 
@@ -146,13 +146,13 @@ CI uses unit tests without live IdP keys.
 
 ## Self-Check: PASSED
 
-- `crates/octanest-api/src/auth/workos.rs` — FOUND
-- `crates/octanest-api/src/auth/oidc.rs` — FOUND
-- `crates/octanest-api/src/auth/external.rs` — FOUND
-- `crates/octanest-api/src/auth/pending.rs` — FOUND
-- `crates/octanest-api/src/routes/auth_callbacks.rs` — FOUND
+- `crates/oxidean-api/src/auth/workos.rs` — FOUND
+- `crates/oxidean-api/src/auth/oidc.rs` — FOUND
+- `crates/oxidean-api/src/auth/external.rs` — FOUND
+- `crates/oxidean-api/src/auth/pending.rs` — FOUND
+- `crates/oxidean-api/src/routes/auth_callbacks.rs` — FOUND
 - Commits `20e507c`, `2bf2bcb` — FOUND
-- `cargo test -p octanest-api --lib auth::` — 22 passed
+- `cargo test -p oxidean-api --lib auth::` — 22 passed
 
 ---
 *Phase: 04-auth-sessions-email*

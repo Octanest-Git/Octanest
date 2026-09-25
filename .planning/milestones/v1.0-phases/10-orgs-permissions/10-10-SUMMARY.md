@@ -39,10 +39,10 @@ key-files:
   modified:
     - apps/web/src/components/chrome.tsrx
     - apps/web/src/routes/$owner.settings.members.integration.test.ts
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -119,7 +119,7 @@ status: complete
 - `apps/web/src/components/org/org-settings-nav.tsrx` — General | Members nav
 - `apps/web/src/lib/ssr-org.ts` — Cookie-forward org SSR helpers
 - `apps/web/src/components/chrome.tsrx` — New organization account menu link
-- `crates/octanest-api` + `packages/api-client` — `repo.listByOwner` for overview lists
+- `crates/oxidean-api` + `packages/api-client` — `repo.listByOwner` for overview lists
 
 ## Decisions Made
 
@@ -134,7 +134,7 @@ status: complete
 - **Found during:** Task 1
 - **Issue:** No RPC listed org-owned repos; overview could not satisfy public-repos must-have
 - **Fix:** Thin ACL-filtered `repo.listByOwner` + `make rpc-gen`
-- **Files modified:** `crates/octanest-core/src/repo_types.rs`, `crates/octanest-api/src/repo/mod.rs`, `rpc.rs`, `rpc_gen.rs`, `packages/api-client`
+- **Files modified:** `crates/oxidean-core/src/repo_types.rs`, `crates/oxidean-api/src/repo/mod.rs`, `rpc.rs`, `rpc_gen.rs`, `packages/api-client`
 - **Commit:** `19fe42d`
 
 **2. [Rule 1 - Bug] Rivet adjacent JSX in members Admin block**

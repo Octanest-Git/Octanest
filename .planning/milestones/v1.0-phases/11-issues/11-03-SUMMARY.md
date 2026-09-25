@@ -35,16 +35,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/issue/acl.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/issue/acl.rs
     - apps/web/src/components/repo/issues-list.tsrx
     - apps/web/src/routes/$owner.$repo.issues.tsrx
     - apps/web/src/routes/$owner.$repo.issues.new.tsrx
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-db/src/issues.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-db/src/issues.rs
     - packages/api-client/src/index.ts
     - apps/web/src/components/repo/repo-chrome.tsrx
     - apps/web/src/routes/$owner.$repo.issues.integration.test.ts
@@ -66,7 +66,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_lifecycle_create) | test(issue_lifecycle_second)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_lifecycle_create) | test(issue_lifecycle_second)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -74,7 +74,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_private_404_issue) | test(issue_private)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_private_404_issue) | test(issue_private)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -109,7 +109,7 @@ status: complete
 ## Accomplishments
 
 - Wired `issue.create` / `issue.get` / `issue.list` through ACL + `issue_counters` txn allocate
-- Regenerated `@octanest/api-client` via `make rpc-gen` (rpc-sync clean)
+- Regenerated `@oxidean/api-client` via `make rpc-gen` (rpc-sync clean)
 - Shipped Issues chrome tab and list (Open default) / new (Write|Preview) / detail routes with empty later-panel shells
 
 ## Task Commits
@@ -124,9 +124,9 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/issue/mod.rs` — create/get/list handlers
-- `crates/octanest-api/src/issue/acl.rs` — Read/Write resolve helpers
-- `crates/octanest-db/src/issues.rs` — find_by_repo_number + list_for_repo
+- `crates/oxidean-api/src/issue/mod.rs` — create/get/list handlers
+- `crates/oxidean-api/src/issue/acl.rs` — Read/Write resolve helpers
+- `crates/oxidean-db/src/issues.rs` — find_by_repo_number + list_for_repo
 - `apps/web/src/routes/$owner.$repo.issues*.tsrx` — list/new/detail
 - `apps/web/src/components/repo/repo-chrome.tsrx` — Issues tab
 - `apps/web/src/components/repo/issues-list.tsrx` — Open/Closed/All + New issue
@@ -145,7 +145,7 @@ status: complete
 - **Found during:** Task 1
 - **Issue:** Schema plan only shipped `insert_issue` / `find_by_id`; get/list need number + filtered list
 - **Fix:** Added `find_by_repo_number` + `list_for_repo` (open|closed|all, newest-updated first) + Database wrappers
-- **Files modified:** `crates/octanest-db/src/issues.rs`, `crates/octanest-db/src/lib.rs`
+- **Files modified:** `crates/oxidean-db/src/issues.rs`, `crates/oxidean-db/src/lib.rs`
 - **Committed in:** `38e32ef`
 
 **2. [Rule 1 - Bug] Detail route filename `$n` vs plan `$number`**
@@ -180,7 +180,7 @@ Ready for 11-04 (edit/close/reopen/history) and subsequent comments/labels plans
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/issue/mod.rs`
+- FOUND: `crates/oxidean-api/src/issue/mod.rs`
 - FOUND: `apps/web/src/routes/$owner.$repo.issues.tsrx`
 - FOUND: `apps/web/src/routes/$owner.$repo.issues.new.tsrx`
 - FOUND: `apps/web/src/routes/$owner.$repo.issues.$n.tsrx`

@@ -8,24 +8,24 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-git/src/backend.rs` | service | transform | `crates/octanest-api/src/email/mod.rs` | role-match |
-| `crates/octanest-git/src/cli.rs` | service | file-I/O | `crates/octanest-api/src/email/mod.rs` (+ RESEARCH CLI argv) | partial |
-| `crates/octanest-git/src/version.rs` | utility | request-response | `crates/octanest-api/src/main.rs` | role-match |
-| `crates/octanest-git/src/lib.rs` | config | — | `crates/octanest-core/src/lib.rs` | role-match |
+| `crates/oxidean-git/src/backend.rs` | service | transform | `crates/oxidean-api/src/email/mod.rs` | role-match |
+| `crates/oxidean-git/src/cli.rs` | service | file-I/O | `crates/oxidean-api/src/email/mod.rs` (+ RESEARCH CLI argv) | partial |
+| `crates/oxidean-git/src/version.rs` | utility | request-response | `crates/oxidean-api/src/main.rs` | role-match |
+| `crates/oxidean-git/src/lib.rs` | config | — | `crates/oxidean-core/src/lib.rs` | role-match |
 | `Cargo.toml` (workspace member) | config | — | `Cargo.toml` | exact |
-| `crates/octanest-core` repo DTOs + `validate_repo_name` | model | transform | `crates/octanest-core/src/auth_types.rs` | exact |
-| `crates/octanest-core` reserved `"new"` | model | transform | `crates/octanest-core/src/auth_types.rs` | exact |
-| `crates/octanest-db/migrations/*/0007_repositories.sql` | migration | CRUD | `crates/octanest-db/migrations/postgres/0002_auth.sql` | exact |
-| settings columns (default_branch / default_visibility) | migration | CRUD | `crates/octanest-db/migrations/postgres/0006_bootstrap_flags.sql` | exact |
-| `crates/octanest-db/src/repositories.rs` | model | CRUD | `crates/octanest-db/src/users.rs` | exact |
-| `crates/octanest-db/src/lib.rs` factory reset + repo API | model | CRUD | `crates/octanest-db/src/lib.rs` | exact |
-| `crates/octanest-api/src/git/` (path + ACL) | middleware | request-response | `crates/octanest-api/src/routes/avatar.rs` + `auth/gate.rs` | role-match |
-| `crates/octanest-api` `repo.*` handlers | controller | request-response | `crates/octanest-api/src/auth/profile.rs` + `gate.rs` | exact |
-| `crates/octanest-api/src/rpc.rs` | route | request-response | `crates/octanest-api/src/rpc.rs` | exact |
-| `crates/octanest-api/src/routes/repo_raw.rs` | route | streaming | `crates/octanest-api/src/routes/avatar.rs` | exact |
-| `crates/octanest-api/src/app.rs` (`repos_dir`) | config | request-response | `crates/octanest-api/src/app.rs` | exact |
-| `crates/octanest-api/src/main.rs` (git boot gate) | config | request-response | `crates/octanest-api/src/main.rs` | exact |
-| `crates/octanest-api/Dockerfile` | config | — | `crates/octanest-api/Dockerfile` | exact |
+| `crates/oxidean-core` repo DTOs + `validate_repo_name` | model | transform | `crates/oxidean-core/src/auth_types.rs` | exact |
+| `crates/oxidean-core` reserved `"new"` | model | transform | `crates/oxidean-core/src/auth_types.rs` | exact |
+| `crates/oxidean-db/migrations/*/0007_repositories.sql` | migration | CRUD | `crates/oxidean-db/migrations/postgres/0002_auth.sql` | exact |
+| settings columns (default_branch / default_visibility) | migration | CRUD | `crates/oxidean-db/migrations/postgres/0006_bootstrap_flags.sql` | exact |
+| `crates/oxidean-db/src/repositories.rs` | model | CRUD | `crates/oxidean-db/src/users.rs` | exact |
+| `crates/oxidean-db/src/lib.rs` factory reset + repo API | model | CRUD | `crates/oxidean-db/src/lib.rs` | exact |
+| `crates/oxidean-api/src/git/` (path + ACL) | middleware | request-response | `crates/oxidean-api/src/routes/avatar.rs` + `auth/gate.rs` | role-match |
+| `crates/oxidean-api` `repo.*` handlers | controller | request-response | `crates/oxidean-api/src/auth/profile.rs` + `gate.rs` | exact |
+| `crates/oxidean-api/src/rpc.rs` | route | request-response | `crates/oxidean-api/src/rpc.rs` | exact |
+| `crates/oxidean-api/src/routes/repo_raw.rs` | route | streaming | `crates/oxidean-api/src/routes/avatar.rs` | exact |
+| `crates/oxidean-api/src/app.rs` (`repos_dir`) | config | request-response | `crates/oxidean-api/src/app.rs` | exact |
+| `crates/oxidean-api/src/main.rs` (git boot gate) | config | request-response | `crates/oxidean-api/src/main.rs` | exact |
+| `crates/oxidean-api/Dockerfile` | config | — | `crates/oxidean-api/Dockerfile` | exact |
 | `docker-compose.yml` (`var/repos`) | config | — | `docker-compose.yml` | exact |
 | `apps/web/src/components/signed-in-home.tsrx` | component | request-response | `apps/web/src/components/signed-in-home.tsrx` | exact |
 | `apps/web/src/routes/new.tsrx` | component | request-response | `apps/web/src/routes/signup.tsrx` + `settings/profile.tsrx` | role-match |
@@ -36,13 +36,13 @@
 | `apps/web/src/lib/session-queries.ts` | hook | request-response | `apps/web/src/lib/session-queries.ts` | exact |
 | `apps/web/src/routes/admin/auth.tsrx` (reset scope) | component | request-response | `apps/web/src/routes/admin/auth.tsrx` | exact |
 | `apps/web/src/routes/settings/profile.tsrx` (default branch) | component | CRUD | `apps/web/src/routes/settings/profile.tsrx` | exact |
-| `crates/octanest-api/tests/repo_*.rs` | test | request-response | `crates/octanest-api/tests/auth_verify_gate.rs` + `support/mod.rs` | role-match |
+| `crates/oxidean-api/tests/repo_*.rs` | test | request-response | `crates/oxidean-api/tests/auth_verify_gate.rs` + `support/mod.rs` | role-match |
 
 ## Pattern Assignments
 
-### `crates/octanest-git` — `GitBackend` trait + `CliGitBackend` (service, transform / file-I/O)
+### `crates/oxidean-git` — `GitBackend` trait + `CliGitBackend` (service, transform / file-I/O)
 
-**Analog:** `crates/octanest-api/src/email/mod.rs` (async trait + concrete adapters behind `Arc<dyn …>`)
+**Analog:** `crates/oxidean-api/src/email/mod.rs` (async trait + concrete adapters behind `Arc<dyn …>`)
 
 **Imports / trait pattern** (lines 11–39):
 ```rust
@@ -57,26 +57,26 @@ pub trait EmailSender: Send + Sync {
 ```
 
 **Copy for Phase 7:**
-- Put `GitBackend` + `GitError` in `octanest-git` (deep module — API never shells out).
+- Put `GitBackend` + `GitError` in `oxidean-git` (deep module — API never shells out).
 - Ship only `CliGitBackend`; document future `GixGitBackend` in module docs (GIT-10 / D-32).
 - Invoke git with `tokio::process::Command` argv arrays only (never `sh -c`) — see RESEARCH Code Examples.
 - Register `Arc<dyn GitBackend>` on `AppState` the same way `Arc<dyn EmailSender>` is held today.
 
-**Workspace wiring analog:** root `Cargo.toml` members + `octanest-api` path deps:
+**Workspace wiring analog:** root `Cargo.toml` members + `oxidean-api` path deps:
 ```toml
 members = [
-  "crates/octanest-api",
-  "crates/octanest-core",
-  "crates/octanest-db",
+  "crates/oxidean-api",
+  "crates/oxidean-core",
+  "crates/oxidean-db",
 ]
 ```
-Add `"crates/octanest-git"`; depend from `octanest-api` like `octanest-db`.
+Add `"crates/oxidean-git"`; depend from `oxidean-api` like `oxidean-db`.
 
 ---
 
-### `crates/octanest-git/src/version.rs` + `main.rs` boot fail (utility / config)
+### `crates/oxidean-git/src/version.rs` + `main.rs` boot fail (utility / config)
 
-**Analog:** `crates/octanest-api/src/main.rs` fail-closed boot (lines 14–19, 27–36):
+**Analog:** `crates/oxidean-api/src/main.rs` fail-closed boot (lines 14–19, 27–36):
 
 ```rust
 let cors = match build_cors(&env_name, cors_origins.as_deref()) {
@@ -94,7 +94,7 @@ let cors = match build_cors(&env_name, cors_origins.as_deref()) {
 
 ### `validate_repo_name` + reserved `"new"` (model, transform)
 
-**Analog:** `crates/octanest-core/src/auth_types.rs` (lines 200–258)
+**Analog:** `crates/oxidean-core/src/auth_types.rs` (lines 200–258)
 
 **Reserved list + validator:**
 ```rust
@@ -118,9 +118,9 @@ pub fn validate_username(raw: &str) -> Result<(), String> {
 
 ### `0007_repositories.sql` + settings columns (migration, CRUD)
 
-**Analog (new table):** `crates/octanest-db/migrations/postgres/0002_auth.sql` (lines 1–14) — `CREATE TABLE` + indexes + FK to `users`.
+**Analog (new table):** `crates/oxidean-db/migrations/postgres/0002_auth.sql` (lines 1–14) — `CREATE TABLE` + indexes + FK to `users`.
 
-**Analog (ALTER columns):** `crates/octanest-db/migrations/postgres/0006_bootstrap_flags.sql`:
+**Analog (ALTER columns):** `crates/oxidean-db/migrations/postgres/0006_bootstrap_flags.sql`:
 ```sql
 -- logical: 0006_bootstrap_flags — allow_signup + must_change_credentials
 ALTER TABLE instance_auth_settings ADD COLUMN allow_signup BOOLEAN NOT NULL DEFAULT FALSE;
@@ -134,9 +134,9 @@ ALTER TABLE users ADD COLUMN must_change_credentials BOOLEAN NOT NULL DEFAULT FA
 
 ---
 
-### `crates/octanest-db/src/repositories.rs` (model, CRUD)
+### `crates/oxidean-db/src/repositories.rs` (model, CRUD)
 
-**Analog:** `crates/octanest-db/src/users.rs` (lines 1–22, 92+)
+**Analog:** `crates/oxidean-db/src/users.rs` (lines 1–22, 92+)
 
 ```rust
 //! User CRUD via `DbPool` match — dialect branching stays in this crate.
@@ -161,7 +161,7 @@ pub async fn insert_user(pool: &DbPool, /* … */) -> Result<(), String> {
 
 ### `repo.*` RPC + `require_verified` (controller, request-response)
 
-**Analog — gate:** `crates/octanest-api/src/auth/gate.rs` (lines 20–42):
+**Analog — gate:** `crates/oxidean-api/src/auth/gate.rs` (lines 20–42):
 ```rust
 pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
     let Some(session) = &ctx.session else {
@@ -178,7 +178,7 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
 }
 ```
 
-**Analog — dispatch:** `crates/octanest-api/src/rpc.rs` (lines 115–118, 188–207):
+**Analog — dispatch:** `crates/oxidean-api/src/rpc.rs` (lines 115–118, 188–207):
 ```rust
 "user.update_profile" => match profile::update_profile(ctx, req.input).await {
     Ok(user) => RpcResponse::ok(user),
@@ -190,7 +190,7 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
 },
 ```
 
-**Analog — confirmed destructive RPC:** `crates/octanest-api/src/auth/admin.rs` (lines 182–208) — parse input, confirm phrase, call DB, structured response.
+**Analog — confirmed destructive RPC:** `crates/oxidean-api/src/auth/admin.rs` (lines 182–208) — parse input, confirm phrase, call DB, structured response.
 
 **Copy for Phase 7:**
 - New module e.g. `auth/repo.rs` or `repo/mod.rs` with handlers; `repo.create` starts with `require_verified`.
@@ -202,7 +202,7 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
 
 ### `routes/repo_raw.rs` — archive / raw HTTP (route, streaming)
 
-**Analog:** `crates/octanest-api/src/routes/avatar.rs`
+**Analog:** `crates/oxidean-api/src/routes/avatar.rs`
 
 **Path safety** (lines 273–306):
 ```rust
@@ -232,7 +232,7 @@ fn err_response(status: StatusCode, code: &str, message: &str) -> Response {
 }
 ```
 
-**Mount pattern:** `crates/octanest-api/src/app.rs` (lines 89–93) + `routes/mod.rs`:
+**Mount pattern:** `crates/oxidean-api/src/app.rs` (lines 89–93) + `routes/mod.rs`:
 ```rust
 .route("/uploads/avatars/{file}", get(avatar::serve_avatar))
 ```
@@ -246,7 +246,7 @@ fn err_response(status: StatusCode, code: &str, message: &str) -> Response {
 
 ### `AppState.repos_dir` + Compose volume (config)
 
-**Analog — state:** `crates/octanest-api/src/app.rs` (lines 26–57):
+**Analog — state:** `crates/oxidean-api/src/app.rs` (lines 26–57):
 ```rust
 pub struct AppState {
     pub uploads_dir: PathBuf,
@@ -266,10 +266,10 @@ volumes:
   - ./var/uploads:/var/uploads
 ```
 
-**Analog — Dockerfile:** `crates/octanest-api/Dockerfile` (lines 7–10) — add `git` to `apt-get install`.
+**Analog — Dockerfile:** `crates/oxidean-api/Dockerfile` (lines 7–10) — add `git` to `apt-get install`.
 
 **Copy for Phase 7:**
-- Default `var/repos`; `with_repos_dir`; env `OCTANEST_REPOS_DIR`.
+- Default `var/repos`; `with_repos_dir`; env `OXIDEAN_REPOS_DIR`.
 - Bind `./var/repos:/var/repos`; bare path `{owner}/{name}.git` (D-30).
 - Pass `repos_dir` into `RpcCtx` like `uploads_dir` (rpc.rs line 35).
 
@@ -295,7 +295,7 @@ volumes:
 </button>
 ```
 
-**Copy for Phase 7:** Enable CTA when verified → navigate `/new`; keep disabled + verify hint when unverified (D-11). Replace stub body with repo list / empty hero / activity placeholder per UI-SPEC. Title `Repositories · Octanest` via `index.tsrx` head when signed-in.
+**Copy for Phase 7:** Enable CTA when verified → navigate `/new`; keep disabled + verify hint when unverified (D-11). Replace stub body with repo list / empty hero / activity placeholder per UI-SPEC. Title `Repositories · Oxidean` via `index.tsrx` head when signed-in.
 
 **Home tree analog:** `apps/web/src/routes/index.tsrx` `selectHomeTree` + `SignedInHome` render path.
 
@@ -312,7 +312,7 @@ export const Route = createFileRoute("/signup")({
       throw notFound();
     }
   },
-  head: () => ({ meta: [{ title: "Sign up · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Sign up · Oxidean" }] }),
 });
 ```
 
@@ -376,14 +376,14 @@ const res = await apiClient.admin.auth.factoryReset({
 
 ### Integration tests (test, request-response)
 
-**Analog:** `crates/octanest-api/tests/auth_verify_gate.rs` (require_verified) + `tests/support/mod.rs` (temp DB helpers) + `tests/profile_avatar.rs` (`with_uploads_dir`).
+**Analog:** `crates/oxidean-api/tests/auth_verify_gate.rs` (require_verified) + `tests/support/mod.rs` (temp DB helpers) + `tests/profile_avatar.rs` (`with_uploads_dir`).
 
 **Copy for Phase 7:** `with_repos_dir(temp)`; seed verified user; assert `repo.create` / private 404 / branch soft-protect / archive bytes. Git crate: unit tests for version parse + `ls_tree` against temp bare repo.
 
 ## Shared Patterns
 
 ### Authentication / verification
-**Source:** `crates/octanest-api/src/auth/gate.rs`
+**Source:** `crates/oxidean-api/src/auth/gate.rs`
 **Apply to:** `repo.create` and any verified-only mutations
 ```rust
 let user = gate::require_verified(ctx).await?;
@@ -396,23 +396,23 @@ let user = gate::require_verified(ctx).await?;
 - Never emit `repo.forbidden` or “private repository” copy
 
 ### Filesystem path safety
-**Source:** `crates/octanest-api/src/routes/avatar.rs` (basename + canonicalize)
+**Source:** `crates/oxidean-api/src/routes/avatar.rs` (basename + canonicalize)
 **Apply to:** `repos_dir/{owner}/{name}.git`, archive/raw path params
 - Reject `..`, absolute escapes; resolve under configured root
 
 ### RPC dispatch + codegen
-**Source:** `crates/octanest-api/src/rpc.rs` + `make rpc-gen`
+**Source:** `crates/oxidean-api/src/rpc.rs` + `make rpc-gen`
 **Apply to:** All new `repo.*` / extended `admin.instance.factory_reset`
 - Match arm → handler → `RpcResponse::ok/err`
 - Stable error codes for UI inline fields
 
 ### Volume-backed storage
 **Source:** `AppState.uploads_dir` + Compose `./var/uploads:/var/uploads`
-**Apply to:** `OCTANEST_REPOS_DIR` default `var/repos`
+**Apply to:** `OXIDEAN_REPOS_DIR` default `var/repos`
 
 ### Swappable backend trait
-**Source:** `crates/octanest-api/src/email/mod.rs` `EmailSender`
-**Apply to:** `GitBackend` in `octanest-git`
+**Source:** `crates/oxidean-api/src/email/mod.rs` `EmailSender`
+**Apply to:** `GitBackend` in `oxidean-git`
 
 ### Octane forms / Query
 **Source:** `settings/profile.tsrx`, `session-queries.ts`, octane-ui rule
@@ -435,7 +435,7 @@ let user = gate::require_verified(ctx).await?;
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-{api,core,db}`, `apps/web/src/{routes,components,lib}`, root `Cargo.toml`, `docker-compose.yml`, `Dockerfile`
+**Analog search scope:** `crates/oxidean-{api,core,db}`, `apps/web/src/{routes,components,lib}`, root `Cargo.toml`, `docker-compose.yml`, `Dockerfile`
 **Files scanned:** ~90 tracked source paths (glob + grep)
 **Tracked-source gate:** All named analogs verified via `git ls-files`
 **Pattern extraction date:** 2026-09-12

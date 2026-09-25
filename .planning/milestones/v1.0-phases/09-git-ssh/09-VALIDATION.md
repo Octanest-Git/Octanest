@@ -25,7 +25,7 @@ verified_at: "2026-09-15"
 |----------|-------|
 | **Framework** | cargo nextest (Rust) + Vitest (web) + stack-browser Playwright + Compose smoke |
 | **Config file** | workspace Cargo / `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(ssh_key) \| test(git_ssh)'` + `cargo test -p octanest-db --test dialect_ssh_keys` + `bunx vitest run src/routes/settings/ssh-keys.integration.test.ts src/components/repo/clone-box.ssh.integration.test.ts` (cwd `apps/web`) |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(ssh_key) \| test(git_ssh)'` + `cargo test -p oxidean-db --test dialect_ssh_keys` + `bunx vitest run src/routes/settings/ssh-keys.integration.test.ts src/components/repo/clone-box.ssh.integration.test.ts` (cwd `apps/web`) |
 | **Full suite command** | `make test` + `make test-e2e-stack` + CI `smoke-protocol` |
 | **Estimated runtime** | ~60–180 seconds targeted; full suite longer |
 | **Missing for Nyquist** | *(cleared)* prior gaps: stack-browser SSH keys + CI-enforced `smoke-git-ssh` — closed in 11.1-04 / 11.1-05 |
@@ -46,11 +46,11 @@ verified_at: "2026-09-15"
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-04 | add/list/revoke keys; max 25; require_verified; unique fingerprint | integration | `cargo nextest run -p octanest-api -E 'test(ssh_key)'` | ✅ yes |
-| GIT-04 | dialect `0009_ssh_keys` CRUD | integration | `cargo test -p octanest-db --test dialect_ssh_keys` | ✅ yes |
+| GIT-04 | add/list/revoke keys; max 25; require_verified; unique fingerprint | integration | `cargo nextest run -p oxidean-api -E 'test(ssh_key)'` | ✅ yes |
+| GIT-04 | dialect `0009_ssh_keys` CRUD | integration | `cargo test -p oxidean-db --test dialect_ssh_keys` | ✅ yes |
 | GIT-04 | `/settings/ssh-keys` list + confirm revoke | integration (Vitest DOM) | `bunx vitest run src/routes/settings/ssh-keys.integration.test.ts` | ✅ yes |
 | GIT-04 | stack-browser add/list SSH keys | e2e / browser | `make test-e2e-stack` (`forge-packages-ssh-orgs.stack.browser.test.tsx`) | ✅ yes (11.1-04) |
-| GIT-03 | force user `git`; reject other usernames | integration | `cargo nextest run -p octanest-api -E 'test(git_ssh)'` | ✅ yes |
+| GIT-03 | force user `git`; reject other usernames | integration | `cargo nextest run -p oxidean-api -E 'test(git_ssh)'` | ✅ yes |
 | GIT-03 | public fetch with key; private non-owner denied (git stderr) | integration | same `git_ssh` filter | ✅ yes |
 | GIT-03 | push requires verified email | integration | same `git_ssh` filter | ✅ yes |
 | GIT-03 | only upload/receive-pack; reject shell | integration | same `git_ssh` filter | ✅ yes |
@@ -63,8 +63,8 @@ verified_at: "2026-09-15"
 
 ## Wave 0 Gaps
 
-- [x] `crates/octanest-api/tests/git_ssh.rs` — greened (auth, ACL, pack allowlist, rate-limit)
-- [x] `crates/octanest-db` dialect tests for `0009_ssh_keys`
+- [x] `crates/oxidean-api/tests/git_ssh.rs` — greened (auth, ACL, pack allowlist, rate-limit)
+- [x] `crates/oxidean-db` dialect tests for `0009_ssh_keys`
 - [x] `apps/web/src/routes/settings/ssh-keys.integration.test.ts` — greened
 - [x] `scripts/smoke-git-ssh.sh` + Makefile target
 - [x] `clone-box.integration.test.ts` / `clone-box.ssh.integration.test.ts` — live SSH panel

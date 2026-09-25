@@ -24,7 +24,7 @@ plan_head_before: 529a4d242bb9fe7e920d82684a7e702b3f7a8867
 tech-stack:
   added: []
   patterns:
-    - "Operator docs use redacted octanest_pat_ / octanest_fg_ only; never claim PAT as RPC Bearer"
+    - "Operator docs use redacted oxidean_pat_ / oxidean_fg_ only; never claim PAT as RPC Bearer"
     - "VALIDATION map statuses filled from gate sweep; nyquist_compliant remains validate-phase owned"
 
 key-files:
@@ -35,7 +35,7 @@ key-files:
     - .planning/phases/08-git-https-pats/08-VALIDATION.md
 
 key-decisions:
-  - "Docs examples use locked D-08 prefixes octanest_pat_ / octanest_fg_ (not plan draft ona_* wording)"
+  - "Docs examples use locked D-08 prefixes oxidean_pat_ / oxidean_fg_ (not plan draft ona_* wording)"
   - "Left nyquist_compliant: false for /gsd-validate-phase ownership"
 
 patterns-established:
@@ -50,15 +50,15 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: other
-        ref: "rg -n 'Smart HTTP|PathRegexp|octanest_pat_|PUBLIC_ORIGIN' docs/CONFIGURATION.md docs/ARCHITECTURE.md"
+        ref: "rg -n 'Smart HTTP|PathRegexp|oxidean_pat_|PUBLIC_ORIGIN' docs/CONFIGURATION.md docs/ARCHITECTURE.md"
         status: pass
     human_judgment: false
   - id: D2
-    description: "CONFIGURATION documents OCTANEST_PUBLIC_ORIGIN clone URLs and REPOS_DIR CGI without new env"
+    description: "CONFIGURATION documents OXIDEAN_PUBLIC_ORIGIN clone URLs and REPOS_DIR CGI without new env"
     requirement: GIT-02
     verification:
       - kind: other
-        ref: "rg -n 'OCTANEST_PUBLIC_ORIGIN|PathRegexp|REPOS_DIR' docs/CONFIGURATION.md"
+        ref: "rg -n 'OXIDEAN_PUBLIC_ORIGIN|PathRegexp|REPOS_DIR' docs/CONFIGURATION.md"
         status: pass
     human_judgment: false
   - id: D3
@@ -66,10 +66,10 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(pat_) | test(git_smart)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(pat_) | test(git_smart)'"
         status: pass
       - kind: unit
-        ref: "cargo test -p octanest-db --lib migration_parity"
+        ref: "cargo test -p oxidean-db --lib migration_parity"
         status: pass
       - kind: other
         ref: "make rpc-sync-check"
@@ -94,7 +94,7 @@ status: complete
 
 # Phase 08 Plan 13: Operator docs + phase gate sweep Summary
 
-**CONFIGURATION/ARCHITECTURE Smart HTTP + PAT operator notes (octanest_pat_/octanest_fg_) and full automated gate sweep green with VALIDATION map refresh.**
+**CONFIGURATION/ARCHITECTURE Smart HTTP + PAT operator notes (oxidean_pat_/oxidean_fg_) and full automated gate sweep green with VALIDATION map refresh.**
 
 ## Performance
 
@@ -106,7 +106,7 @@ status: complete
 
 ## Accomplishments
 
-- Documented Traefik `.git` PathRegexp, `OCTANEST_PUBLIC_ORIGIN` clone URLs (D-19), CGI via `OCTANEST_REPOS_DIR`, and single-replica failed-auth rate limits
+- Documented Traefik `.git` PathRegexp, `OXIDEAN_PUBLIC_ORIGIN` clone URLs (D-19), CGI via `OXIDEAN_REPOS_DIR`, and single-replica failed-auth rate limits
 - Documented `git-http-backend` Smart HTTP, hash-at-rest PATs, session cookies excluded from git auth (D-01/D-12), classic/FG scope summary with pointer to API.md
 - Phase gates: 18 nextest `pat_`/`git_smart` pass, migration_parity, rpc-sync-check, web build; VALIDATION task map 08-00…08-13 marked green (`nyquist_compliant` still false)
 
@@ -127,20 +127,20 @@ Each task was committed atomically:
 
 ## Decisions Made
 
-- Used locked brand prefixes `octanest_pat_` / `octanest_fg_` (D-08) instead of plan draft `ona_*` wording — critical deviation from orchestrator
-- Redacted examples only (`octanest_pat_REDACTED`); explicitly stated PATs are not RPC Bearer
+- Used locked brand prefixes `oxidean_pat_` / `oxidean_fg_` (D-08) instead of plan draft `ona_*` wording — critical deviation from orchestrator
+- Redacted examples only (`oxidean_pat_REDACTED`); explicitly stated PATs are not RPC Bearer
 - Did not set `nyquist_compliant: true` — validate-phase owns that flip
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-**1. [Rule 2 - Missing Critical] Docs use octanest_* prefixes not ona_***
+**1. [Rule 2 - Missing Critical] Docs use oxidean_* prefixes not ona_***
 - **Found during:** Task 1 (operator docs)
-- **Issue:** Plan action/verify text said `ona_pat_` / `ona_fg_`; D-08 and shipped code lock `octanest_pat_` / `octanest_fg_`
-- **Fix:** Documented and verified against `octanest_*` redacted examples only
+- **Issue:** Plan action/verify text said `ona_pat_` / `ona_fg_`; D-08 and shipped code lock `oxidean_pat_` / `oxidean_fg_`
+- **Fix:** Documented and verified against `oxidean_*` redacted examples only
 - **Files modified:** `docs/CONFIGURATION.md`, `docs/ARCHITECTURE.md`
-- **Verification:** `rg` finds `octanest_pat_`; no `ona_pat_` / `ona_fg_` in those docs
+- **Verification:** `rg` finds `oxidean_pat_`; no `ona_pat_` / `ona_fg_` in those docs
 - **Committed in:** `766e94e` (Task 1)
 
 **2. [Rule 3 - Blocking] Web build via `cd apps/web && bun run build`**

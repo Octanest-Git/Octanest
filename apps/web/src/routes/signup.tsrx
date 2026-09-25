@@ -6,7 +6,7 @@ import {
   useLoaderData,
 } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { ProviderMode } from "@octanest/api-client";
+import type { ProviderMode } from "@oxidean/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -21,14 +21,14 @@ export type SignupLoaderData = {
   loadError: string;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const TAKEN_ERROR = "That email or username is already taken. Try another or sign in.";
 const RESERVED_ERROR = "That username is reserved. Choose a different username.";
 const SETUP_ERROR = "This instance needs setup first. Redirecting…";
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
-  head: () => ({ meta: [{ title: "Sign up · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Sign up · Oxidean" }] }),
   beforeLoad: async () => {
     // D-06 / UI-SPEC: closed signup is SSR 404 — never soft AuthShell.
     try {

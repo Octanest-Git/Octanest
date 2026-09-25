@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate, useParams, useSearch } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useState } from "octane";
-import type { RepoSearchHit, RepoSearchType } from "@octanest/api-client";
+import type { RepoSearchHit, RepoSearchType } from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 type SearchSearch = {
   q?: string;
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/$owner/$repo/search")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Search · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Search · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { RepoBlobResponse, RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import type { RepoBlobResponse, RepoPublic, RepoRefEntry } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { BlobViewer } from "@/components/repo/blob-viewer";
 import { PathBreadcrumb } from "@/components/repo/path-breadcrumb";
@@ -30,7 +30,7 @@ export type BlobLoaderData =
 
 type Phase = { kind: "loading" } | BlobLoaderData;
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function highlightBlob(
   path: string,
@@ -127,7 +127,7 @@ export const Route = createFileRoute("/$owner/$repo/blob/$")({
     const base = path.split("/").pop() || path || "file";
     const trunc = base.length > 40 ? `…${base.slice(-36)}` : base;
     return {
-      meta: [{ title: `${trunc} · ${owner}/${repo} · Octanest` }],
+      meta: [{ title: `${trunc} · ${owner}/${repo} · Oxidean` }],
     };
   },
   loader: async ({ params }): Promise<BlobLoaderData> => {

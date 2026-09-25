@@ -10,7 +10,7 @@ requires:
 provides:
   - repo.lfs.getStatus/getUsage/listObjects/download session RPCs
   - admin.lfs.getUsage instance breakdown
-  - Generated @octanest/api-client LFS methods
+  - Generated @oxidean/api-client LFS methods
 affects: [14-09, 14-10, 14-11]
 
 actuals:
@@ -27,14 +27,14 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-db/src/lfs.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-db/src/lfs.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
-    - crates/octanest-api/tests/lfs_batch.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
 
 key-decisions:
   - "repo.lfs.download returns soft-capped base64; oversized → lfs.too_large_for_rpc"
@@ -48,7 +48,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_session_rpc) | test(lfs_admin_get_usage)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_session_rpc) | test(lfs_admin_get_usage)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -69,7 +69,7 @@ commits: 2
 
 # Phase 14 Plan 08: LFS session RPC + api-client Summary
 
-**Typed `repo.lfs.*` / `admin.lfs.*` session RPCs ship with usage breakdowns, browser download, and regenerated `@octanest/api-client`.**
+**Typed `repo.lfs.*` / `admin.lfs.*` session RPCs ship with usage breakdowns, browser download, and regenerated `@oxidean/api-client`.**
 
 ## Task Commits
 

@@ -52,41 +52,41 @@ covered_files:
   - apps/web/src/routes/new.tsrx
   - apps/web/src/routes/orgs.new.integration.test.ts
   - apps/web/src/routes/orgs.new.tsrx
-  - crates/octanest-api/src/org/invites.rs
-  - crates/octanest-api/src/org/members.rs
-  - crates/octanest-api/src/org/mod.rs
-  - crates/octanest-api/src/pat/mod.rs
-  - crates/octanest-api/src/repo/acl.rs
-  - crates/octanest-api/src/repo/collaborators.rs
-  - crates/octanest-api/src/repo/mod.rs
-  - crates/octanest-api/src/routes/git_smart_http.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/src/user/lookup.rs
-  - crates/octanest-api/tests/factory_reset_scope.rs
-  - crates/octanest-api/tests/git_smart_http.rs
-  - crates/octanest-api/tests/org_create_members.rs
-  - crates/octanest-api/tests/org_invites.rs
-  - crates/octanest-api/tests/pat_rpc.rs
-  - crates/octanest-api/tests/repo_branch_soft_protect.rs
-  - crates/octanest-api/tests/repo_collaborators_acl.rs
-  - crates/octanest-api/tests/repo_create.rs
-  - crates/octanest-api/tests/repo_private_404.rs
-  - crates/octanest-core/src/auth_types.rs
-  - crates/octanest-core/src/lib.rs
-  - crates/octanest-core/src/org_types.rs
-  - crates/octanest-core/src/repo_types.rs
-  - crates/octanest-db/migrations/mysql/0010_orgs_acl.sql
-  - crates/octanest-db/migrations/postgres/0010_orgs_acl.sql
-  - crates/octanest-db/migrations/sqlite/0010_orgs_acl.sql
-  - crates/octanest-db/src/lib.rs
-  - crates/octanest-db/src/org_invites.rs
-  - crates/octanest-db/src/org_members.rs
-  - crates/octanest-db/src/organizations.rs
-  - crates/octanest-db/src/repo_collaborators.rs
-  - crates/octanest-db/src/repositories.rs
-  - crates/octanest-db/src/users.rs
-  - crates/octanest-db/tests/dialect_orgs.rs
-  - crates/octanest-db/tests/factory_reset_orgs.rs
+  - crates/oxidean-api/src/org/invites.rs
+  - crates/oxidean-api/src/org/members.rs
+  - crates/oxidean-api/src/org/mod.rs
+  - crates/oxidean-api/src/pat/mod.rs
+  - crates/oxidean-api/src/repo/acl.rs
+  - crates/oxidean-api/src/repo/collaborators.rs
+  - crates/oxidean-api/src/repo/mod.rs
+  - crates/oxidean-api/src/routes/git_smart_http.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/src/user/lookup.rs
+  - crates/oxidean-api/tests/factory_reset_scope.rs
+  - crates/oxidean-api/tests/git_smart_http.rs
+  - crates/oxidean-api/tests/org_create_members.rs
+  - crates/oxidean-api/tests/org_invites.rs
+  - crates/oxidean-api/tests/pat_rpc.rs
+  - crates/oxidean-api/tests/repo_branch_soft_protect.rs
+  - crates/oxidean-api/tests/repo_collaborators_acl.rs
+  - crates/oxidean-api/tests/repo_create.rs
+  - crates/oxidean-api/tests/repo_private_404.rs
+  - crates/oxidean-core/src/auth_types.rs
+  - crates/oxidean-core/src/lib.rs
+  - crates/oxidean-core/src/org_types.rs
+  - crates/oxidean-core/src/repo_types.rs
+  - crates/oxidean-db/migrations/mysql/0010_orgs_acl.sql
+  - crates/oxidean-db/migrations/postgres/0010_orgs_acl.sql
+  - crates/oxidean-db/migrations/sqlite/0010_orgs_acl.sql
+  - crates/oxidean-db/src/lib.rs
+  - crates/oxidean-db/src/org_invites.rs
+  - crates/oxidean-db/src/org_members.rs
+  - crates/oxidean-db/src/organizations.rs
+  - crates/oxidean-db/src/repo_collaborators.rs
+  - crates/oxidean-db/src/repositories.rs
+  - crates/oxidean-db/src/users.rs
+  - crates/oxidean-db/tests/dialect_orgs.rs
+  - crates/oxidean-db/tests/factory_reset_orgs.rs
   - docs/API.md
   - docs/ARCHITECTURE.md
   - docs/CONFIGURATION.md
@@ -126,17 +126,17 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (9/9). Non-b
 
 | Artifact | Expected | Status | Details |
 | -------- | ----------- | ------ | ------- |
-| `crates/octanest-db/migrations/*/0010_orgs_acl.sql` | Tri-dialect org ACL schema | ✓ VERIFIED | postgres/mysql/sqlite present; orgs, members, invites, collaborators, `owner_type` |
-| `crates/octanest-db/src/organizations.rs` | Org insert helpers | ✓ VERIFIED | Wired via `Database` facade; used by `org.create` |
-| `crates/octanest-core/src/org_types.rs` | Org DTOs | ✓ VERIFIED | Used by API + generated client |
-| `crates/octanest-api/src/org/mod.rs` | `org.create` / settings / listMine | ✓ VERIFIED | Registered in `rpc.rs`; DB insert + Owner membership |
-| `crates/octanest-api/src/org/members.rs` | Member CRUD + roles | ✓ VERIFIED | list/add/updateRole/remove |
-| `crates/octanest-api/src/org/invites.rs` | Email invites + accept | ✓ VERIFIED | Hash-at-rest; `ctx.email.send`; closed-signup accept |
-| `crates/octanest-api/src/repo/acl.rs` | Capability coalesce + read resolve | ✓ VERIFIED | 435 lines; unit coalesce matrix; `effective_capability` uses org_members + collaborators DB helpers |
-| `crates/octanest-api/src/repo/collaborators.rs` | Collaborator CRUD | ✓ VERIFIED | Admin via `resolve_repo_for_admin` |
-| `crates/octanest-api/src/routes/git_smart_http.rs` | Git fetch/push ACL | ✓ VERIFIED | `meets(Read\|Write)` after owner resolve |
-| `crates/octanest-api/src/pat/mod.rs` | PAT ∩ ACL | ✓ VERIFIED | `effective_capability` + `meets` |
-| `crates/octanest-api/src/user/lookup.rs` | Username autocomplete | ✓ VERIFIED | ≤10; never email; rate-limited |
+| `crates/oxidean-db/migrations/*/0010_orgs_acl.sql` | Tri-dialect org ACL schema | ✓ VERIFIED | postgres/mysql/sqlite present; orgs, members, invites, collaborators, `owner_type` |
+| `crates/oxidean-db/src/organizations.rs` | Org insert helpers | ✓ VERIFIED | Wired via `Database` facade; used by `org.create` |
+| `crates/oxidean-core/src/org_types.rs` | Org DTOs | ✓ VERIFIED | Used by API + generated client |
+| `crates/oxidean-api/src/org/mod.rs` | `org.create` / settings / listMine | ✓ VERIFIED | Registered in `rpc.rs`; DB insert + Owner membership |
+| `crates/oxidean-api/src/org/members.rs` | Member CRUD + roles | ✓ VERIFIED | list/add/updateRole/remove |
+| `crates/oxidean-api/src/org/invites.rs` | Email invites + accept | ✓ VERIFIED | Hash-at-rest; `ctx.email.send`; closed-signup accept |
+| `crates/oxidean-api/src/repo/acl.rs` | Capability coalesce + read resolve | ✓ VERIFIED | 435 lines; unit coalesce matrix; `effective_capability` uses org_members + collaborators DB helpers |
+| `crates/oxidean-api/src/repo/collaborators.rs` | Collaborator CRUD | ✓ VERIFIED | Admin via `resolve_repo_for_admin` |
+| `crates/oxidean-api/src/routes/git_smart_http.rs` | Git fetch/push ACL | ✓ VERIFIED | `meets(Read\|Write)` after owner resolve |
+| `crates/oxidean-api/src/pat/mod.rs` | PAT ∩ ACL | ✓ VERIFIED | `effective_capability` + `meets` |
+| `crates/oxidean-api/src/user/lookup.rs` | Username autocomplete | ✓ VERIFIED | ≤10; never email; rate-limited |
 | `apps/web/src/routes/orgs.new.tsrx` | Create org UI | ✓ VERIFIED | Calls `org.create`; navigates to `/{slug}` |
 | `apps/web/src/routes/$owner.settings.members.tsrx` | Members + invites UI | ✓ VERIFIED | Wired to `org.members.*` / `org.invites.*` + `MemberLookup` |
 | `apps/web/src/routes/$owner.settings.tsrx` | member_base settings | ✓ VERIFIED | Select none/read/write → `org.updateSettings` |
@@ -180,7 +180,7 @@ Automated `verify.key-links` often fails on cross-crate path strings; manual wir
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Create org → Owner | `cargo test -p octanest-api --test org_create_members org_create_creator_is_owner -- --exact` | ok | ✓ PASS |
+| Create org → Owner | `cargo test -p oxidean-api --test org_create_members org_create_creator_is_owner -- --exact` | ok | ✓ PASS |
 | Add member | `… org_members_add_by_username` | ok | ✓ PASS |
 | Invite create/accept | `… org_invites_create` / `org_invites_accept_closed_signup_…` | ok | ✓ PASS |
 | member_base denies read | `… org_member_base_none_denies_private_repo_read` | ok | ✓ PASS |
@@ -191,8 +191,8 @@ Automated `verify.key-links` often fails on cross-crate path strings; manual wir
 | Git private 401 | `… git_smart_private_anon_401_www_authenticate` | ok | ✓ PASS |
 | Push without Write | `… git_smart_collaborator_read_cannot_push` | ok | ✓ PASS |
 | PAT collaborator push | `… git_smart_collaborator_classic_pat_push` | ok | ✓ PASS |
-| Coalesce unit | `cargo test -p octanest-api --lib repo::acl::coalesce_tests::coalesce_member_base_none_yields_none -- --exact` | ok | ✓ PASS |
-| Factory reset orgs | `cargo test -p octanest-db --test factory_reset_orgs -- --exact` | ok | ✓ PASS |
+| Coalesce unit | `cargo test -p oxidean-api --lib repo::acl::coalesce_tests::coalesce_member_base_none_yields_none -- --exact` | ok | ✓ PASS |
+| Factory reset orgs | `cargo test -p oxidean-db --test factory_reset_orgs -- --exact` | ok | ✓ PASS |
 | Vitest org UI routes | `bun run test --` (4 integration files) | 15 passed | ✓ PASS |
 | RPC client sync | `make rpc-sync-check` | ok | ✓ PASS |
 
@@ -222,7 +222,7 @@ All plan `requirements:` IDs are subsets of ORG-01..04 — every ID accounted fo
 | `$owner.settings.members.integration.test.ts` | — | Existence-only Vitest assertions (`toBeTruthy` on export) | ⚠️ Warning | UI smoke only; ORG behaviors covered by API integration tests |
 | `deferred-items.md` | — | Shared-namespace dual-check on signup/rename (resolved) | ℹ️ Info | `auth.signup` + profile/bootstrap rename use `login_slug_taken` / org-slug checks; `status: resolved` in deferred-items.md |
 
-No unresolved `TBD`/`FIXME`/`XXX` debt markers in phase implementation files. No teams tables/RPCs. No dialect SQL in `octanest-api`. ARCHITECTURE no longer claims owner-only private ACL.
+No unresolved `TBD`/`FIXME`/`XXX` debt markers in phase implementation files. No teams tables/RPCs. No dialect SQL in `oxidean-api`. ARCHITECTURE no longer claims owner-only private ACL.
 
 ### Test Quality Audit
 

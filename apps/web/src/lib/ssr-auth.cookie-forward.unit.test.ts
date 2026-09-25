@@ -27,7 +27,7 @@ describe("SSR Cookie-forward (T-06-11)", () => {
   });
 
   it("targets API origin for SSR client (not browser origin)", () => {
-    expect(src).toMatch(/OCTANEST_API_ORIGIN/);
+    expect(src).toMatch(/OXIDEAN_API_ORIGIN/);
     expect(src).toMatch(/createSsrClient\s*\(\s*incomingCookie\s*\(\s*\)\s*\)/);
   });
 });

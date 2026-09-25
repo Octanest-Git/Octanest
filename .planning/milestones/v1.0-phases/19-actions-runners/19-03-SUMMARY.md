@@ -23,13 +23,13 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/actions/mod.rs
-    - crates/octanest-api/src/actions/parse.rs
-    - crates/octanest-api/src/actions/workflow.rs
+    - crates/oxidean-api/src/actions/mod.rs
+    - crates/oxidean-api/src/actions/parse.rs
+    - crates/oxidean-api/src/actions/workflow.rs
   modified:
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/lib.rs
-    - crates/octanest-api/tests/actions_workflow_parse.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/lib.rs
+    - crates/oxidean-api/tests/actions_workflow_parse.rs
 
 key-decisions:
   - "Flat files only under .github/workflows; path escape rejected"
@@ -46,7 +46,7 @@ coverage:
     requirement: ACT-01
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(actions_workflow_parse)'
+        ref: cargo nextest run -p oxidean-api -E 'test(actions_workflow_parse)'
         status: pass
     human_judgment: false
 
@@ -82,6 +82,6 @@ None material — db/actions.rs unchanged (persist helpers already from 19-02).
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/actions/parse.rs
-- FOUND: crates/octanest-api/src/actions/workflow.rs
+- FOUND: crates/oxidean-api/src/actions/parse.rs
+- FOUND: crates/oxidean-api/src/actions/workflow.rs
 - FOUND: actions_workflow_parse tests green

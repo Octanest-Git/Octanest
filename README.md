@@ -1,18 +1,18 @@
-# Octanest
+# Oxidean
 
 <p align="center">
-  <img src="brand/octanest-mark.png" alt="Octanest" width="128" height="128" />
+  <img src="brand/oxidean-mark.png" alt="Oxidean" width="128" height="128" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/Octanest-Git/Octanest/actions/workflows/ci.yml"><img src="https://github.com/Octanest-Git/Octanest/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="https://github.com/oxidean/oxidean/actions/workflows/ci.yml"><img src="https://github.com/oxidean/oxidean/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/version-0.1.0-informational.svg" alt="Version 0.1.0" /></a>
 </p>
 
 ## What it is
 
-A self-hostable GitHub-style forge — git hosting, issues, organizations, and package registries — that runs as **one product** for Octanest Cloud and on your own machines.
+A self-hostable GitHub-style forge — git hosting, issues, organizations, and package registries — that runs as **one product** for Oxidean Cloud and on your own machines.
 
 ## Who it’s for
 
@@ -22,7 +22,7 @@ A self-hostable GitHub-style forge — git hosting, issues, organizations, and p
 
 ## Cloud vs self-host
 
-**Octanest Cloud** and **self-hosted Octanest** share the same images and application. Self-host with Docker Compose today; Cloud is the hosted instance of that same stack. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+**Oxidean Cloud** and **self-hosted Oxidean** share the same images and application. Self-host with Docker Compose today; Cloud is the hosted instance of that same stack. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## Quick start
 
@@ -82,4 +82,4 @@ Want to change the code? Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs
 
 ## License
 
-[MIT](LICENSE) © Octanest contributors
+[MIT](LICENSE) © Oxidean contributors

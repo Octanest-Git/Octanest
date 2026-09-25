@@ -22,7 +22,7 @@ updated: "2026-09-16"
 |----------|-------|
 | **Framework** | Rust: cargo-nextest; Web: Vitest via Bun |
 | **Config file** | `.config/nextest.toml`; `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'` |
 | **Full suite command** | `make test` (+ `make rpc-sync-check`; `make smoke-actions` skip-ok without Docker) |
 | **Estimated runtime** | ~90–300 seconds (quick); longer with smoke |
 
@@ -76,14 +76,14 @@ updated: "2026-09-16"
 
 ## Wave 0 Requirements
 
-- [x] `crates/octanest-api/tests/actions_workflow_parse.rs` — ACT-01
-- [x] `crates/octanest-api/tests/actions_triggers.rs` — ACT-02
-- [x] `crates/octanest-api/tests/actions_rpc.rs` — ACT-03
-- [x] `crates/octanest-api/tests/actions_runner_protocol.rs` — ACT-06 (includes `update_task` / `update_log`)
-- [x] `crates/octanest-api/tests/actions_dispatch_policy.rs` — ACT-07
-- [x] `crates/octanest-api/tests/actions_secrets.rs` — ACT-06 secrets
-- [x] `crates/octanest-api/tests/commit_statuses.rs` — Phase 13 surface / D-ACT-15
-- [x] `crates/octanest-db/tests/dialect_actions.rs` — migration parity
+- [x] `crates/oxidean-api/tests/actions_workflow_parse.rs` — ACT-01
+- [x] `crates/oxidean-api/tests/actions_triggers.rs` — ACT-02
+- [x] `crates/oxidean-api/tests/actions_rpc.rs` — ACT-03
+- [x] `crates/oxidean-api/tests/actions_runner_protocol.rs` — ACT-06 (includes `update_task` / `update_log`)
+- [x] `crates/oxidean-api/tests/actions_dispatch_policy.rs` — ACT-07
+- [x] `crates/oxidean-api/tests/actions_secrets.rs` — ACT-06 secrets
+- [x] `crates/oxidean-api/tests/commit_statuses.rs` — Phase 13 surface / D-ACT-15
+- [x] `crates/oxidean-db/tests/dialect_actions.rs` — migration parity
 - [x] `apps/web/src/routes/$owner.$repo.actions.integration.test.ts` — ACT-03 UI
 - [x] `apps/web/src/routes/$owner.$repo.actions.$run.integration.test.ts` — ACT-03 detail
 - [x] `scripts/smoke-actions.sh` + `make smoke-actions` — ACT-04/05
@@ -113,7 +113,7 @@ Documented in [docs/TESTING.md](../../../docs/TESTING.md#actions-phase-gate-phas
 
 ```bash
 make smoke-actions
-cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
+cargo nextest run -p oxidean-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
 make rpc-sync-check
 ```
 

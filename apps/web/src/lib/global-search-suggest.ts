@@ -1,4 +1,4 @@
-import type { OrgMineEntry, RepoPublic, UserLookupHit } from "@octanest/api-client";
+import type { OrgMineEntry, RepoPublic, UserLookupHit } from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 
 export type SearchEntityType =

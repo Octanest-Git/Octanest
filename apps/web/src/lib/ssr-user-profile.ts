@@ -2,21 +2,21 @@ import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
 import {
   createClient,
-  type OctanestClient,
+  type OxideanClient,
   type PublicUserProfile,
   type RepoPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { fetchUserProfileReadme, type ProfileReadme } from "@/lib/profile-readme";
 
 function ssrApiOrigin(): string {
   return (
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080"
   );
 }
 
-function createSsrClient(cookie: string): OctanestClient {
+function createSsrClient(cookie: string): OxideanClient {
   return createClient({
     baseUrl: ssrApiOrigin(),
     credentials: "include",

@@ -5,7 +5,7 @@ export type RpcErrorLike = {
   message?: string;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 const DB_NOT_READY =
   "Database not ready. Migrations may still be running — wait a moment and refresh.";

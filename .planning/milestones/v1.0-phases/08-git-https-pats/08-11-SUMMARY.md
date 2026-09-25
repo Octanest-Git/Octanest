@@ -6,7 +6,7 @@ tags: [pat, fine-grained, createFineGrained, octane, auth-shell, git-11, listMin
 
 requires:
   - phase: 08-git-https-pats
-    provides: 08-05 pat.createFineGrained RPC + octanest_fg_ mint
+    provides: 08-05 pat.createFineGrained RPC + oxidean_fg_ mint
   - phase: 08-git-https-pats
     provides: 08-10 PatReveal + classic AuthShell verify wall pattern
   - phase: 08-git-https-pats
@@ -42,7 +42,7 @@ key-files:
 key-decisions:
   - "Default repo access Only select repositories (GitHub FG empty selection)"
   - "Default contents Read-only; All repositories hides checklist"
-  - "Reuse PatReveal; prefix octanest_fg_ (D-08), not ona_fg_"
+  - "Reuse PatReveal; prefix oxidean_fg_ (D-08), not ona_fg_"
 
 patterns-established:
   - "tokens.new.* sibling under SettingsTokensRoute with path /new/fine-grained"
@@ -84,7 +84,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: "FG success reveal via createFineGrained + octanest_fg_ (D-15)"
+    description: "FG success reveal via createFineGrained + oxidean_fg_ (D-15)"
     requirement: GIT-11
     verification:
       - kind: integration
@@ -111,7 +111,7 @@ status: complete
 
 ## Accomplishments
 - Fine-grained create route: Note, All/Selected repos (listMine checklist + visibility Badge + truncate title), Contents read/write, expiry, Generate → `pat.createFineGrained`
-- Reused `PatReveal` for one-time `octanest_fg_` plaintext; AuthShell verify wall when unverified
+- Reused `PatReveal` for one-time `oxidean_fg_` plaintext; AuthShell verify wall when unverified
 - Zero-repos and selected-empty validation copy per UI-SPEC
 
 ## Task Commits
@@ -132,7 +132,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 - Default **Only select repositories** with empty checklist (GitHub FG); **All repositories** hides list
-- Default contents **Read-only**; token prefix **octanest_fg_** (D-08 / api-client), not plan must_have `ona_fg_`
+- Default contents **Read-only**; token prefix **oxidean_fg_** (D-08 / api-client), not plan must_have `ona_fg_`
 - Checklist fed only from `repo.listMine` (T-08-06)
 
 ## Deviations from Plan

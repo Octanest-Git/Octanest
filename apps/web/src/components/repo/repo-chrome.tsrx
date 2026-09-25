@@ -1,6 +1,6 @@
 import { Eye, Lock, Star } from "@octanejs/lucide";
 import { useState } from "octane";
-import type { RepoPublic } from "@octanest/api-client";
+import type { RepoPublic } from "@oxidean/api-client";
 import { Badge } from "@/components/ui/badge";
 import { RepoSearchEntry } from "@/components/repo/repo-search-entry";
 import { Button } from "@/components/ui/button";

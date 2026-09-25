@@ -7,7 +7,7 @@ import {
   packagesListQueryOptions,
   type PackagePublic,
   type PackagesListResponse,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 import { formatRelative } from "@/lib/relative-time";
 import { fetchPackagesList } from "@/lib/ssr-repo";
@@ -18,7 +18,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { DeleteVersionDialog } from "@/components/packages/delete-version-dialog";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export type OwnerPackagesLoaderData =
   | { kind: "error"; message: string }
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/$owner/packages")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `${String((params as { owner?: string }).owner ?? "")} packages · Octanest`,
+        title: `${String((params as { owner?: string }).owner ?? "")} packages · Oxidean`,
       },
     ],
   }),

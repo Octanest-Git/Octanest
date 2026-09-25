@@ -31,9 +31,9 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-db/tests/factory_reset_issues.rs
-    - crates/octanest-api/tests/factory_reset_scope.rs
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-db/tests/factory_reset_issues.rs
+    - crates/oxidean-api/tests/factory_reset_scope.rs
+    - crates/oxidean-db/src/lib.rs
     - docs/API.md
     - docs/ARCHITECTURE.md
     - docs/CONFIGURATION.md
@@ -55,10 +55,10 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "crates/octanest-db/tests/factory_reset_issues.rs#factory_reset_issues_wipes_issue_domain_tables"
+        ref: "crates/oxidean-db/tests/factory_reset_issues.rs#factory_reset_issues_wipes_issue_domain_tables"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/factory_reset_scope.rs#factory_reset_wipes_issue_domain_rows"
+        ref: "crates/oxidean-api/tests/factory_reset_scope.rs#factory_reset_wipes_issue_domain_rows"
         status: pass
     human_judgment: false
   - id: D2
@@ -66,7 +66,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "crates/octanest-db/tests/factory_reset_issues.rs#factory_reset_issues_repository_cascade"
+        ref: "crates/oxidean-db/tests/factory_reset_issues.rs#factory_reset_issues_repository_cascade"
         status: pass
     human_judgment: false
   - id: D3
@@ -85,13 +85,13 @@ coverage:
     requirement: ISS-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_)'"
         status: pass
       - kind: unit
-        ref: "cargo test -p octanest-db --lib migration_parity"
+        ref: "cargo test -p oxidean-db --lib migration_parity"
         status: pass
       - kind: integration
-        ref: "cargo nextest run -p octanest-db -E 'test(dialect_issues)'"
+        ref: "cargo nextest run -p oxidean-db -E 'test(dialect_issues)'"
         status: pass
       - kind: other
         ref: "make rpc-sync-check"
@@ -134,9 +134,9 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-db/tests/factory_reset_issues.rs` — full domain seed + wipe/cascade assertions
-- `crates/octanest-api/tests/factory_reset_scope.rs` — RPC factory_reset wipes issue rows
-- `crates/octanest-db/src/lib.rs` — factory_reset_instance docs mention issue CASCADE
+- `crates/oxidean-db/tests/factory_reset_issues.rs` — full domain seed + wipe/cascade assertions
+- `crates/oxidean-api/tests/factory_reset_scope.rs` — RPC factory_reset wipes issue rows
+- `crates/oxidean-db/src/lib.rs` — factory_reset_instance docs mention issue CASCADE
 - `docs/API.md` — issue/label RPC table + section + error codes
 - `docs/ARCHITECTURE.md` — Issues & labels abstraction + reset cascade
 - `docs/CONFIGURATION.md` — no new env vars; reset wipes issue domain
@@ -175,7 +175,7 @@ None — Linked PR `pr_stub` rows are intentional Phase 11 product stubs (docume
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-db/tests/factory_reset_issues.rs`
+- FOUND: `crates/oxidean-db/tests/factory_reset_issues.rs`
 - FOUND: `docs/API.md` issues section
 - FOUND: `.planning/phases/11-issues/11-VALIDATION.md` with `nyquist_compliant: true`
 - FOUND: commits `3d7e33e`, `b64317d`

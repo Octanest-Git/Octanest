@@ -1,7 +1,7 @@
 import { Link } from "@octanejs/tanstack-router";
 import { Lock, Plus } from "@octanejs/lucide";
 import { useState } from "octane";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,7 +182,7 @@ export function SignedInHome({ user, repos, reposError = null }: SignedInHomePro
                 Create your first repository
               </h2>
               <p className="mx-auto mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-                Host your code on Octanest — public or private, cloud or self-hosted.
+                Host your code on Oxidean — public or private, cloud or self-hosted.
               </p>
               <div className="mt-7 flex justify-center">
                 @if (user.email_verified) {

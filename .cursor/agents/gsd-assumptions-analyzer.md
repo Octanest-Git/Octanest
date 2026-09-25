@@ -17,9 +17,9 @@ Spawned by `discuss-phase-assumptions` via `Task()`. You do NOT present output d
 - Flag topics where codebase analysis alone is insufficient (needs external research)
 </role>
 
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/untrusted-input-boundary.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/untrusted-input-boundary.md
 
-**agent_skills:** self-load per @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/agent-skills-bootstrap.md
+**agent_skills:** self-load per @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/agent-skills-bootstrap.md
 
 <input>
 Agent receives via prompt:

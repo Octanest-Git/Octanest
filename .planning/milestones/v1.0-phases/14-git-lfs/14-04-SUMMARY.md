@@ -25,12 +25,12 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/lfs/quota.rs
-    - crates/octanest-db/migrations/sqlite/0013_lfs_quotas.sql
+    - crates/oxidean-api/src/lfs/quota.rs
+    - crates/oxidean-db/migrations/sqlite/0013_lfs_quotas.sql
   modified:
-    - crates/octanest-api/src/routes/git_lfs.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/tests/lfs_batch.rs
+    - crates/oxidean-api/src/routes/git_lfs.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
 
 key-decisions:
   - "Defaults 2GiB/10GiB/50GiB; 0/-1 unlimited"
@@ -44,7 +44,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_quota)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_quota)'"
         status: pass
     human_judgment: false
 

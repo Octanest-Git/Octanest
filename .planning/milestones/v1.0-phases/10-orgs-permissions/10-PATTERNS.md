@@ -8,17 +8,17 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-api/src/repo/acl.rs` | service | request-response | *(self — expand stub)* | exact |
-| `crates/octanest-api/src/repo/mod.rs` | controller | CRUD | *(self — mutate gates)* | exact |
-| `crates/octanest-api/src/routes/git_smart_http.rs` | middleware | request-response | *(self — git ACL)* | exact |
-| `crates/octanest-api/src/routes/repo_raw.rs` | controller | file-I/O | `repo/acl.rs` + raw routes | exact |
-| `crates/octanest-db/migrations/*/0010_orgs_acl.sql` | migration | CRUD | `0007_repositories.sql` + `0008_pats.sql` | role-match — Phase 09 owns `0009_ssh_keys` |
-| `crates/octanest-db/src/repositories.rs` | model | CRUD | *(self — owner_id)* | exact |
-| `crates/octanest-db/src/organizations.rs` (new) | model | CRUD | `repositories.rs` + `email_tokens.rs` | role-match |
-| `crates/octanest-api/src/org/` (new module) | controller | CRUD | `repo/mod.rs` + `auth/admin.rs` | role-match |
-| `crates/octanest-api/src/org/invite.rs` (or auth-adjacent) | service | request-response | `auth/verify_reset.rs` | exact |
-| `crates/octanest-core` org/ACL types | model | transform | `repo_types.rs` + `auth_types.rs` | role-match |
-| `crates/octanest-core/src/auth_types.rs` | utility | transform | *(self — RESERVED_USERNAMES)* | exact |
+| `crates/oxidean-api/src/repo/acl.rs` | service | request-response | *(self — expand stub)* | exact |
+| `crates/oxidean-api/src/repo/mod.rs` | controller | CRUD | *(self — mutate gates)* | exact |
+| `crates/oxidean-api/src/routes/git_smart_http.rs` | middleware | request-response | *(self — git ACL)* | exact |
+| `crates/oxidean-api/src/routes/repo_raw.rs` | controller | file-I/O | `repo/acl.rs` + raw routes | exact |
+| `crates/oxidean-db/migrations/*/0010_orgs_acl.sql` | migration | CRUD | `0007_repositories.sql` + `0008_pats.sql` | role-match — Phase 09 owns `0009_ssh_keys` |
+| `crates/oxidean-db/src/repositories.rs` | model | CRUD | *(self — owner_id)* | exact |
+| `crates/oxidean-db/src/organizations.rs` (new) | model | CRUD | `repositories.rs` + `email_tokens.rs` | role-match |
+| `crates/oxidean-api/src/org/` (new module) | controller | CRUD | `repo/mod.rs` + `auth/admin.rs` | role-match |
+| `crates/oxidean-api/src/org/invite.rs` (or auth-adjacent) | service | request-response | `auth/verify_reset.rs` | exact |
+| `crates/oxidean-core` org/ACL types | model | transform | `repo_types.rs` + `auth_types.rs` | role-match |
+| `crates/oxidean-core/src/auth_types.rs` | utility | transform | *(self — RESERVED_USERNAMES)* | exact |
 | `apps/web/src/routes/orgs.new.tsrx` | route | request-response | `routes/new.tsrx` | exact |
 | `apps/web/src/routes/$owner.$repo.settings.tsrx` | component | CRUD | *(self — collaborators tab)* | exact |
 | Org settings / members UI | route | CRUD | `settings/profile.tsrx` + `settings-nav` + `admin/auth.tsrx` | role-match |
@@ -27,9 +27,9 @@
 
 ## Pattern Assignments
 
-### `crates/octanest-api/src/repo/acl.rs` (service, request-response)
+### `crates/oxidean-api/src/repo/acl.rs` (service, request-response)
 
-**Analog:** `crates/octanest-api/src/repo/acl.rs` (replace stub; keep web status mapping)
+**Analog:** `crates/oxidean-api/src/repo/acl.rs` (replace stub; keep web status mapping)
 
 **Core stub to replace** (lines 21–24):
 ```rust
@@ -65,7 +65,7 @@ pub async fn resolve_repo_for_read(
 
 ---
 
-### `crates/octanest-api/src/repo/mod.rs` — mutate gates (controller, CRUD)
+### `crates/oxidean-api/src/repo/mod.rs` — mutate gates (controller, CRUD)
 
 **Analog:** `resolve_repo_for_owner_mutate` + `update_visibility` / `branch_create`
 
@@ -102,7 +102,7 @@ pub async fn create(ctx: &RpcCtx, input: serde_json::Value) -> Result<RepoPublic
 
 ---
 
-### `crates/octanest-api/src/routes/git_smart_http.rs` (middleware, request-response)
+### `crates/oxidean-api/src/routes/git_smart_http.rs` (middleware, request-response)
 
 **Analog:** *(self)* — PAT Basic auth + owner-only ACL
 
@@ -122,13 +122,13 @@ if receive && !can_read_as_owner(Some(caller_id), &resolved.owner_id) {
 
 **PAT FG selection still owner-centric** (lines 287–332) — `pat_allows_operation` uses `pat.user_id == owner_id` for Classic push and FG `All`. After Phase 10 ACL, PAT grant still requires repo capability **and** PAT scope; FG `Selected` already keys on `repository_ids`.
 
-**Status mapping rule:** web → `repo.not_found`; git private/unauth → `401` + `WWW-Authenticate: Basic realm="Octanest Git"`. Do not unify these.
+**Status mapping rule:** web → `repo.not_found`; git private/unauth → `401` + `WWW-Authenticate: Basic realm="Oxidean Git"`. Do not unify these.
 
 **Repo resolve for git** still uses `find_user_by_username` (lines 260–282) — must become shared-slug resolve like ACL.
 
 ---
 
-### `crates/octanest-api/src/routes/repo_raw.rs` (controller, file-I/O)
+### `crates/oxidean-api/src/routes/repo_raw.rs` (controller, file-I/O)
 
 **Analog:** uses `repo::resolve_repo_for_read` (cookie session).
 
@@ -138,7 +138,7 @@ Once `resolve_repo_for_read` grows org/collaborator logic, raw/archive inherit i
 
 ### Migrations `0009_*` + `repositories` polymorphic owner (migration / model)
 
-**Analog schema:** `crates/octanest-db/migrations/postgres/0007_repositories.sql`
+**Analog schema:** `crates/oxidean-db/migrations/postgres/0007_repositories.sql`
 
 ```sql
 CREATE TABLE IF NOT EXISTS repositories (
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS auth_email_tokens (
 );
 ```
 
-**DB API dialect pattern** — `crates/octanest-db/src/repositories.rs`:
+**DB API dialect pattern** — `crates/oxidean-db/src/repositories.rs`:
 - `RepositoryRow` + `map_repo!` macro
 - `REPO_SELECT_{PG,MYSQL,SQLITE}` with dialect timestamp formatting
 - `match pool { DbPool::Postgres | MySql | Sqlite }` — **no dialect branching in API crate**
@@ -182,7 +182,7 @@ CREATE TABLE IF NOT EXISTS auth_email_tokens (
 
 ### Disk path — `bare_repo_path` (utility)
 
-**Analog:** `crates/octanest-api/src/git/mod.rs` lines 13–32:
+**Analog:** `crates/oxidean-api/src/git/mod.rs` lines 13–32:
 ```rust
 /// Bare repo path: `{repos_dir}/{owner}/{name}.git` (D-30).
 pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathBuf, AppError> {
@@ -199,9 +199,9 @@ Org slug replaces username in the `owner` segment — same helper; ensure slug v
 
 **Analog handlers:** `repo/mod.rs` (serde input → gate → db → `AppError` codes) + `auth/admin.rs` (`require_admin`-style role gates).
 
-**RPC dispatch:** `crates/octanest-api/src/rpc.rs` match arms — add `org.*` next to `repo.*` / `admin.*`; regenerate client with `make rpc-gen`.
+**RPC dispatch:** `crates/oxidean-api/src/rpc.rs` match arms — add `org.*` next to `repo.*` / `admin.*`; regenerate client with `make rpc-gen`.
 
-**Gate pattern:** `crates/octanest-api/src/auth/gate.rs`:
+**Gate pattern:** `crates/oxidean-api/src/auth/gate.rs`:
 ```rust
 pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
     // unauthenticated → auth.unauthenticated
@@ -224,7 +224,7 @@ Org slug create should call `validate_username` + `is_reserved_username` + uniqu
 
 ### Invite / email tokens (service, request-response)
 
-**Analog:** `crates/octanest-api/src/auth/verify_reset.rs`
+**Analog:** `crates/oxidean-api/src/auth/verify_reset.rs`
 
 **Token issue constants** (lines 16–25):
 ```rust
@@ -255,7 +255,7 @@ fn build_verify_email(to: &str, username: &str, magic: &str, otp: &str) -> Outbo
 
 ### Reserved usernames (utility)
 
-**Analog:** `crates/octanest-core/src/auth_types.rs` lines 234–307
+**Analog:** `crates/oxidean-core/src/auth_types.rs` lines 234–307
 
 Already includes `"orgs"`, `"org"`, `"new"`, `"settings"`, `"admin"`, etc. Org slug creation must reuse:
 ```rust
@@ -324,7 +324,7 @@ Route path `/orgs/new` is free because `orgs` is reserved as a username. Prefer 
 ### Username live lookup (controller) — partial analog
 
 **No prefix-search RPC exists.** Closest pieces:
-- `find_user_by_username` exact match (`octanest-db` / `auth/local.rs` signup uniqueness)
+- `find_user_by_username` exact match (`oxidean-db` / `auth/local.rs` signup uniqueness)
 - Anti-enumeration habits from `verify_reset` / `acl::not_found`
 
 **Planner discretion:** new `user.search` / `org.memberLookup` with prefix + rate limit; return minimal public fields only; do not leak whether private emails exist.
@@ -332,7 +332,7 @@ Route path `/orgs/new` is free because `orgs` is reserved as a username. Prefer 
 ## Shared Patterns
 
 ### Authentication / verified gate
-**Source:** `crates/octanest-api/src/auth/gate.rs`  
+**Source:** `crates/oxidean-api/src/auth/gate.rs`  
 **Apply to:** Org create, invite, member role changes, collaborator grants, repo create under org, mutate RPCs
 ```rust
 pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> { /* … */ }
@@ -353,13 +353,13 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> { /* �
 - Reserved → `auth.reserved_username` (or parallel org code)
 
 ### Dialect SQL isolation
-**Source:** `crates/octanest-db/src/repositories.rs`, `email_tokens.rs`  
+**Source:** `crates/oxidean-db/src/repositories.rs`, `email_tokens.rs`  
 **Apply to:** All new org/member/invite/collaborator tables  
 API calls `Database` methods only; triple migration files stay in sync.
 
 ### RPC + generated client
 **Source:** `rpc.rs` + `make rpc-gen`  
-**Apply to:** Every new procedure / DTO in `octanest-core`  
+**Apply to:** Every new procedure / DTO in `oxidean-core`  
 Do not hand-edit `packages/api-client` as source of truth.
 
 ### Octane UI
@@ -370,7 +370,7 @@ Do not hand-edit `packages/api-client` as source of truth.
 ### Email outbound
 **Source:** `verify_reset.rs` + `crate::email::OutboundEmail`  
 **Apply to:** Org email invites  
-Hash tokens at rest; magic link via `OCTANEST_PUBLIC_ORIGIN`; rate limits; soft-fail send logging where signup-style flows require it.
+Hash tokens at rest; magic link via `OXIDEAN_PUBLIC_ORIGIN`; rate limits; soft-fail send logging where signup-style flows require it.
 
 ## No Analog Found
 
@@ -382,7 +382,7 @@ Hash tokens at rest; magic link via `OCTANEST_PUBLIC_ORIGIN`; rate limits; soft-
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-api/src/repo`, `routes/git_smart_http.rs`, `routes/repo_raw.rs`, `crates/octanest-db/migrations`, `repositories.rs`, `email_tokens.rs`, `auth/verify_reset.rs`, `auth/gate.rs`, `auth/local.rs`, `auth/profile.rs`, `auth_types.rs`, `git/mod.rs`, `apps/web/src/routes/{new,$owner.$repo*,settings,admin}`, `components/settings`  
+**Analog search scope:** `crates/oxidean-api/src/repo`, `routes/git_smart_http.rs`, `routes/repo_raw.rs`, `crates/oxidean-db/migrations`, `repositories.rs`, `email_tokens.rs`, `auth/verify_reset.rs`, `auth/gate.rs`, `auth/local.rs`, `auth/profile.rs`, `auth_types.rs`, `git/mod.rs`, `apps/web/src/routes/{new,$owner.$repo*,settings,admin}`, `components/settings`  
 **Files scanned:** ~35 tracked sources (git `ls-files` gated)  
 **Pattern extraction date:** 2026-09-14  
 **RESEARCH.md:** not present at map time — CONTEXT + codebase only

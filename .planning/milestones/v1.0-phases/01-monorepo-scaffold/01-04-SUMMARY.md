@@ -8,10 +8,10 @@
 - Traefik Host(`localhost`): web `/`; api `/api/*` + `/healthz` (WS-capable path prefix)
 - `docker-compose.mysql.yml` + `--profile mysql` (D-07)
 - SQLite documented in README / `.env.example` (no DB service; Phase 2 dialect proof)
-- Dockerfiles: `crates/octanest-api/Dockerfile` (multi-stage Rust), `apps/web/Dockerfile` (Bun build + `vite preview`)
+- Dockerfiles: `crates/oxidean-api/Dockerfile` (multi-stage Rust), `apps/web/Dockerfile` (Bun build + `vite preview`)
 - Makefile: `up` / `down` / `logs` / `smoke`
-- `scripts/compose-smoke.sh` (config → up --wait → curl `/`, `/healthz`, RPC `system.health` with `Octanest-RPC-Version: 1`)
-- `.env.example` Compose CORS allowlist (`OCTANEST_ENV=compose`)
+- `scripts/compose-smoke.sh` (config → up --wait → curl `/`, `/healthz`, RPC `system.health` with `Oxidean-RPC-Version: 1`)
+- `.env.example` Compose CORS allowlist (`OXIDEAN_ENV=compose`)
 
 ## Verification
 - [x] `docker compose config` succeeds (via Docker Desktop CLI)

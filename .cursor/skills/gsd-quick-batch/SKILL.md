@@ -59,7 +59,7 @@ instead, or file the tasks individually.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/quick-batch.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/quick-batch.md
 </execution_context>
 
 <context>

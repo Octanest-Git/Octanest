@@ -13,19 +13,19 @@
 ## Suggested filters
 
 ```bash
-cargo nextest run -p octanest-api -E 'test(branch_protect) | test(commit_status)'
-cargo test -p octanest-db --test dialect_branch_protection
+cargo nextest run -p oxidean-api -E 'test(branch_protect) | test(commit_status)'
+cargo test -p oxidean-db --test dialect_branch_protection
 bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.settings.branches.integration.test.ts
 bun --cwd apps/web exec vitest run src/routes/\$owner.\$repo.pull.protection.integration.test.ts
 ```
 
 ## Wave 0 files (created by 13-00 / 13-01)
 
-- `crates/octanest-api/tests/branch_protection_rpc.rs`
-- `crates/octanest-api/tests/branch_protect_push.rs`
-- `crates/octanest-api/tests/branch_protect_merge.rs`
-- `crates/octanest-api/tests/commit_status_rpc.rs`
-- `crates/octanest-db/tests/dialect_branch_protection.rs`
+- `crates/oxidean-api/tests/branch_protection_rpc.rs`
+- `crates/oxidean-api/tests/branch_protect_push.rs`
+- `crates/oxidean-api/tests/branch_protect_merge.rs`
+- `crates/oxidean-api/tests/commit_status_rpc.rs`
+- `crates/oxidean-db/tests/dialect_branch_protection.rs`
 - `apps/web/src/routes/$owner.$repo.settings.branches.integration.test.ts`
 - `apps/web/src/routes/$owner.$repo.pull.protection.integration.test.ts`
 

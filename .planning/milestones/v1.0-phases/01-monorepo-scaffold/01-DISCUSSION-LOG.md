@@ -14,9 +14,9 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | apps/web + crates/* + packages/api-client | Split web, Rust crates, generated client | ✓ |
-| (variants discussed) | crate split including octanest-db | ✓ |
+| (variants discussed) | crate split including oxidean-db | ✓ |
 
-**User's choice:** `apps/web` + `crates/*` + `packages/api-client`; crates `octanest-api`, `octanest-core`, later `octanest-db`; Turborepo + Cargo + root Makefile
+**User's choice:** `apps/web` + `crates/*` + `packages/api-client`; crates `oxidean-api`, `oxidean-core`, later `oxidean-db`; Turborepo + Cargo + root Makefile
 **Notes:** Uniform DB adapter crate expected even though multi-dialect proof is Phase 2
 
 ---
@@ -42,7 +42,7 @@
 | Vite/TanStack proxy | For local `make dev` | ✓ |
 
 **User's choice:** Default postgres; MySQL profile; SQLite env/file; Traefik; Vite proxy for `make dev`
-**Notes:** `octanest-db` as uniform adapter
+**Notes:** `oxidean-db` as uniform adapter
 
 ---
 
@@ -124,7 +124,7 @@
 |--------|-------------|----------|
 | Unversioned | — | |
 | Path version | — | |
-| Header version | Octanest-RPC-Version | ✓ (lightweight) |
+| Header version | Oxidean-RPC-Version | ✓ (lightweight) |
 
 **User's choice:** Initially preferred header versioning; after challenge, confirmed lightweight header `1` + reject mismatch (paths unversioned)
 **Notes:** Challenge noted header ceremony vs unversioned for monorepo-only clients; user kept header for scale
@@ -147,7 +147,7 @@
 | Dev-open / prod-strict | + env list for prod | ✓ |
 | Fixed scaffold defaults | — | |
 
-**User's choice:** 2 with option 1 for prod — any origin in dev; `OCTANEST_CORS_ORIGINS` required in prod/Compose
+**User's choice:** 2 with option 1 for prod — any origin in dev; `OXIDEAN_CORS_ORIGINS` required in prod/Compose
 
 ### api-client surface
 

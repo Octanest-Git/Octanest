@@ -17,7 +17,7 @@ describe("stack e2e: SMTP → Mailpit", () => {
       await mailpitDeleteAll();
 
       const suffix = Date.now();
-      const email = `smtp.user.${suffix}@octanest.local`;
+      const email = `smtp.user.${suffix}@oxidean.local`;
       const username = `smtpuser${suffix}`;
 
       const signup = await rpc("auth.signup", {
@@ -26,7 +26,7 @@ describe("stack e2e: SMTP → Mailpit", () => {
         password: "password1",
       });
       expect(signup.ok).toBe(true);
-      expect(signup.cookieHeader).toMatch(/^octanest_session=/);
+      expect(signup.cookieHeader).toMatch(/^oxidean_session=/);
 
       const msg = await waitForMailpit(
         (m) =>

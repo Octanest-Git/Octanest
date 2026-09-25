@@ -69,8 +69,8 @@ Users can create filesystem-backed git repositories and browse history in the UI
 - **D-29:** Archives: **zip and tar.gz** from Code clone/download menu for current ref (also tags/commits where natural)
 
 ### E — On-disk storage & git backend
-- **D-30:** **Bare repos** at `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`) + **Compose volume** — **Reversibility:** costly — storage layout
-- **D-31:** **`OCTANEST_REPOS_DIR`** configurable (mirror uploads pattern)
+- **D-30:** **Bare repos** at `{OXIDEAN_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`) + **Compose volume** — **Reversibility:** costly — storage layout
+- **D-31:** **`OXIDEAN_REPOS_DIR`** configurable (mirror uploads pattern)
 - **D-32:** **REQUIREMENT AMENDMENT (GIT-09):** Phase 7 implements git ops via **system `git` CLI**, not gitoxide-first. Keep a **`GitBackend` abstraction**; **document future gitoxide** path when it covers needed operations — **Reversibility:** costly — roadmap/requirements wording + crate design
 - **D-33:** **Fail boot** if `git` missing or version **&lt; 2.5** — **Reversibility:** one-way — operator contract
 - **D-34:** Factory reset: **modal with radio buttons** for reset scope (e.g. DB-only vs DB+repos) — extends Phase 6 danger zone
@@ -107,16 +107,16 @@ Users can create filesystem-backed git repositories and browse history in the UI
 ### Product docs
 - `docs/ARCHITECTURE.md` — RPC, `var/` layout, Traefik
 - `docs/CODE_PRACTICES.md` — monorepo boundaries, Octane, RPC codegen
-- `docs/CONFIGURATION.md` — extend with `OCTANEST_REPOS_DIR`, git version, visibility defaults
+- `docs/CONFIGURATION.md` — extend with `OXIDEAN_REPOS_DIR`, git version, visibility defaults
 - `docs/database.md` — migration parity pattern
 - `AGENTS.md` — Octane ≠ React; Query session helpers
 - `.agents/skills/octane/SKILL.md` — `.tsrx` authoring
 
 ### Existing implementation (extend)
 - `apps/web/src/components/signed-in-home.tsrx` — New repository CTA stub
-- `crates/octanest-api/src/auth/gate.rs` — `require_verified`
-- `crates/octanest-api/src/rpc.rs` — procedure dispatch (add `repo.*`)
-- `crates/octanest-api/src/routes/avatar.rs` — filesystem + volume precedent
+- `crates/oxidean-api/src/auth/gate.rs` — `require_verified`
+- `crates/oxidean-api/src/rpc.rs` — procedure dispatch (add `repo.*`)
+- `crates/oxidean-api/src/routes/avatar.rs` — filesystem + volume precedent
 - `docker-compose.yml` — volume bind pattern for `var/uploads`
 
 </canonical_refs>
@@ -127,9 +127,9 @@ Users can create filesystem-backed git repositories and browse history in the UI
 ### Reusable Assets
 - `require_verified` + `auth.email_unverified` + disabled home CTA pattern
 - `SignedInHome` / chrome / session Query helpers (`session-queries.ts`)
-- Avatar `uploads_dir` + Compose bind — template for `OCTANEST_REPOS_DIR`
+- Avatar `uploads_dir` + Compose bind — template for `OXIDEAN_REPOS_DIR`
 - Factory reset RPC/UI — extend with reset-scope modal (D-34)
-- Tri-dialect migrations under `crates/octanest-db/migrations/`
+- Tri-dialect migrations under `crates/oxidean-db/migrations/`
 
 ### Established Patterns
 - RPC + `make rpc-gen` for typed client

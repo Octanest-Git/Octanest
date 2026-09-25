@@ -56,7 +56,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Select | `@/components/ui/select` | Theme only; unchanged |
 | Dropdown Menu | `@/components/ui/dropdown-menu` | Account menu; unchanged |
 | AuthShell / AuthErrorBanner | `@/components/auth-shell` | **Reuse** for `/verify` + `/reset-password` |
-| OctanestMark | `@/components/octanest-mark` | Via AuthShell (48×48) |
+| OxideanMark | `@/components/oxidean-mark` | Via AuthShell (48×48) |
 | SiteHeader / SiteFooter | `@/components/chrome` | **Extend** with verify banner host + forgot link surface |
 | InputOtp (local wrapper) | `@/components/ui/input-otp` (new) | Thin wrapper around **npm `input-otp`** + Octane React-compat — **not** a shadcn registry add |
 | VerifyBanner (local) | `@/components/verify-banner` (new) | Persistent chrome banner; not a third-party block |
@@ -89,7 +89,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |------|----------|
 | Chrome | Global `SiteHeader` + `SiteFooter` |
 | Page column | Centered; **max-w-md** (`28rem`); page padding **3xl** vertical / **md** horizontal |
-| Brand | `OctanestMark` **48×48** above title — no duplicate wordmark in panel |
+| Brand | `OxideanMark` **48×48** above title — no duplicate wordmark in panel |
 | Title | Heading (24 / 600 / 1.2 Sora) |
 | Support | One Body muted sentence under title |
 | Surface | Flat on `--background`; optional single `bg-card` panel only if needed for contrast |
@@ -186,11 +186,11 @@ Until Phase 7 ships real create-repo:
 
 | Route | `<title>` |
 |-------|-----------|
-| `/verify` | `Verify email · Octanest` |
-| `/reset-password` | `Reset password · Octanest` |
+| `/verify` | `Verify email · Oxidean` |
+| `/reset-password` | `Reset password · Oxidean` |
 | Existing Phase 4 routes | Unchanged |
 
-Pattern remains `Page · Octanest` (Phase 3 D-21).
+Pattern remains `Page · Oxidean` (Phase 3 D-21).
 
 ---
 
@@ -272,7 +272,7 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** |
+| Product name | **Oxidean** |
 | Verify title | Verify your email |
 | Verify support | We sent a link and an 8-digit code to your email. Enter the code below, or open the link from the same device after signing in. |
 | Verify OTP label | Verification code |
@@ -312,7 +312,7 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 | Reset SSO-only error | This account signs in with SSO. Reset your password with your identity provider. |
 | Reset success | (redirect signed-in; optional one-line on dashboard not required) |
 | Login forgot link | Forgot password? |
-| Network / unreachable | Can’t reach Octanest. Check your connection and try again. |
+| Network / unreachable | Can’t reach Oxidean. Check your connection and try again. |
 | Submit pending | Working… |
 | Privileged CTA (unverified) | New repository |
 | Privileged hint (unverified) | Verify your email to create a repository. |
@@ -324,8 +324,8 @@ Pattern remains `Page · Octanest` (Phase 3 D-21).
 
 | Template | Subject | Body essentials |
 |----------|---------|-----------------|
-| Verify | Verify your Octanest email | Greeting; magic link URL; “Or enter this 8-digit code:”; expires in 30 minutes; ignore if unexpected |
-| Reset | Reset your Octanest password | Greeting; magic link URL; “Or enter this 8-digit code:”; expires in 30 minutes; ignore if unexpected |
+| Verify | Verify your Oxidean email | Greeting; magic link URL; “Or enter this 8-digit code:”; expires in 30 minutes; ignore if unexpected |
+| Reset | Reset your Oxidean password | Greeting; magic link URL; “Or enter this 8-digit code:”; expires in 30 minutes; ignore if unexpected |
 
 Exact plaintext formatting is executor discretion; both link + code **must** appear in one email (D-22 / D-24).
 
@@ -434,7 +434,7 @@ Do not add `@registry` URLs beyond shadcn official. Do not install community “
 - [ ] Password reset strength = signup (≥ 8 characters) + confirm field
 - [ ] Banner from `auth.me.email_verified`; resend with cooldown UX
 - [ ] Privileged CTAs visible but disabled until verified (dashboard placeholder)
-- [ ] Titles `Page · Octanest`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
+- [ ] Titles `Page · Oxidean`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
 - [ ] Same verify policy everywhere — no cloud/self-host detection UI
 - [ ] SW continues to bypass `/api/*`
 

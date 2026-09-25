@@ -43,7 +43,7 @@ Before auditing, discover project context:
 
 **Project skills:** Check `.cursor/skills/` or `.agents/skills/` directory if either exists:
 
-**agent_skills:** self-load per @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/agent-skills-bootstrap.md
+**agent_skills:** self-load per @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/agent-skills-bootstrap.md
 1. List available skills (subdirectories)
 2. Read `SKILL.md` for each skill
 3. Do NOT load full `AGENTS.md` files (100KB+ context cost)

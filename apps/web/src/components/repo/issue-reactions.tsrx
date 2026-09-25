@@ -1,9 +1,9 @@
-import type { ReactionContent, ReactionGroupPublic, ReactionTarget } from "@octanest/api-client";
+import type { ReactionContent, ReactionGroupPublic, ReactionTarget } from "@oxidean/api-client";
 import { useQueryClient } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 /** GitHub eight reaction contents (D-ISS-11). */
 export const REACTION_CONTENTS: {

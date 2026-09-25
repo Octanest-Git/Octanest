@@ -1,7 +1,7 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
-import type { ActionRunGetResponse } from "@octanest/api-client";
+import type { ActionRunGetResponse } from "@oxidean/api-client";
 import { ArrowLeft, Ban, RotateCcw, Workflow } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ function jobDuration(started?: string, finished?: string): string {
   return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export type ActionsRunLoaderData =
   | { kind: "not_found" }
@@ -86,7 +86,7 @@ export const Route = createFileRoute("/$owner/$repo/actions/$run")({
     return {
       meta: [
         {
-          title: `Run ${String(p.run ?? "")} · ${String(p.owner ?? "")}/${String(p.repo ?? "")} · Octanest`,
+          title: `Run ${String(p.run ?? "")} · ${String(p.owner ?? "")}/${String(p.repo ?? "")} · Oxidean`,
         },
       ],
     };

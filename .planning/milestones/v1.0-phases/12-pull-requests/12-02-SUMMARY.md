@@ -12,8 +12,8 @@ completed: "2026-09-16"
 
 ## What shipped
 - Migrations sqlite/postgres/mysql `0016_pull_requests` (PRs, comments, reviews, merge settings, fork parent, issue_links `pr`)
-- `octanest-core` pull_types + `IssueLinkKind::Pr`
-- `octanest-db` pulls module + Database wrappers
+- `oxidean-core` pull_types + `IssueLinkKind::Pr`
+- `oxidean-db` pulls module + Database wrappers
 - GitBackend `merge_commit` / `squash_merge` / `rebase_merge` / `fetch_ref_from` + green merge_* tests
 
 ## Deviations

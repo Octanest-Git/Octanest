@@ -38,7 +38,7 @@ Output ONLY the reference content of the chosen tier. Do NOT add:
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/help.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/help.md
 </execution_context>
 
 <context>
@@ -46,5 +46,5 @@ Arguments: {{GSD_ARGS}}
 </context>
 
 <process>
-Follow /home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/help.md with {{GSD_ARGS}}.
+Follow /home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/help.md with {{GSD_ARGS}}.
 </process>

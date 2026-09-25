@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { GitFork, Search, Star } from "@octanejs/lucide";
-import type { RepoForkPublic, RepoPublic } from "@octanest/api-client";
+import type { RepoForkPublic, RepoPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -33,7 +33,7 @@ export type ForksLoaderData =
       limit: number;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PAGE_LIMIT = 50;
 
 async function loadForksPage(
@@ -74,7 +74,7 @@ export const Route = createFileRoute("/$owner/$repo/forks")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Forks · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Forks · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

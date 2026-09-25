@@ -81,8 +81,8 @@ describe("CloneBox SSH (GIT-03 / D-SSH-02 / D-SSH-06)", () => {
         repo: "hello",
         refName: "main",
         empty: false,
-        publicOrigin: "https://octanest.jereko.dev",
-        sshHost: "octanest.jereko.dev",
+        publicOrigin: "https://oxidean.jereko.dev",
+        sshHost: "oxidean.jereko.dev",
         sshPort: 22,
       },
     });

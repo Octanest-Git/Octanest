@@ -19,7 +19,7 @@ created: "2026-09-12"
 
 | Boundary | Description | Data Crossing |
 |----------|-------------|---------------|
-| Operator ENV → boot seed | Both `OCTANEST_ADMIN_*` create first sys-admin | Email/password secrets; seeded `system-administrator` |
+| Operator ENV → boot seed | Both `OXIDEAN_ADMIN_*` create first sys-admin | Email/password secrets; seeded `system-administrator` |
 | Unauthenticated client → bootstrap wizard | First-admin create when ENV seed absent | Wizard credentials + `allow_signup` |
 | Authenticated ENV admin → confirm credentials | Forced leave of default username | New username/password; session |
 | Anonymous → `auth.signup` / chrome / `/signup` | Closed signup must not admit users | Public `allow_signup` policy |
@@ -38,7 +38,7 @@ created: "2026-09-12"
 | T-06-01 | Elevation of privilege | `allow_signup` default | high | mitigate | Column DEFAULT false; provider_config/signup fail closed on unset/error | closed |
 | T-06-02 | Elevation of privilege | `must_change_credentials` | high | mitigate | Column DEFAULT false; only ENV seed sets true | closed |
 | T-06-03 | Elevation of privilege | ENV default credentials | high | mitigate | Seed sets `must_change_credentials=true`; confirm rejects `system-administrator` (case-insensitive) | closed |
-| T-06-04 | Elevation of privilege | Partial ENV | high | mitigate | Both non-empty `OCTANEST_ADMIN_*` required; else no seed | closed |
+| T-06-04 | Elevation of privilege | Partial ENV | high | mitigate | Both non-empty `OXIDEAN_ADMIN_*` required; else no seed | closed |
 | T-06-05 | Denial of service / Tampering | Seed failure with both ENV set | high | mitigate | `main` exits 1 on seed Err; no wizard fallback | closed |
 | T-06-06 | Elevation of privilege | RPC during `needs_setup` | high | mitigate | Central allowlist in `rpc::dispatch` (`bootstrap_status` / `bootstrap_setup` / `system.health`) | closed |
 | T-06-07 | Elevation of privilege | Race two wizards | high | mitigate | Re-check `count_users` before create; second gets `setup_unavailable` | closed |
@@ -65,7 +65,7 @@ created: "2026-09-12"
 | Threat ID | Evidence |
 |-----------|----------|
 | T-06-00 | Accepted Risks Log (wave-0 stubs only) |
-| T-06-01 | `crates/octanest-db/migrations/*/0006_bootstrap_flags.sql` DEFAULT false/0; `local.rs` provider_config/signup fail-closed |
+| T-06-01 | `crates/oxidean-db/migrations/*/0006_bootstrap_flags.sql` DEFAULT false/0; `local.rs` provider_config/signup fail-closed |
 | T-06-02 | `0006_bootstrap_flags.sql` `must_change_credentials` DEFAULT false; `seed.rs:52` sets true only on ENV seed |
 | T-06-03 | `seed.rs:52` + `bootstrap.rs:232-236` reject default username |
 | T-06-04 | `seed.rs:18-25` early `Ok(())` unless both non-empty |

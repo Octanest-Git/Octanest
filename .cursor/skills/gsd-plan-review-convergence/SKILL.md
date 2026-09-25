@@ -39,10 +39,10 @@ Replaces gsd-plan-phase's internal gsd-plan-checker with external AI reviewers (
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/plan-review-convergence.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/revision-loop.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/gates.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/agent-contracts.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/plan-review-convergence.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/revision-loop.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/gates.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/agent-contracts.md
 </execution_context>
 
 <runtime_note>

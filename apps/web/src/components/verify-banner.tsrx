@@ -9,7 +9,7 @@ const BANNER_MESSAGE =
   "Verify your email to unlock creating repositories and other privileged actions.";
 const RESEND_SUCCESS = "Verification email sent.";
 const RESEND_RATE_LIMITED = "Please wait before requesting another email.";
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const RESEND_COOLDOWN_SECS = 60;
 
 /**

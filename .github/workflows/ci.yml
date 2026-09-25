@@ -43,7 +43,7 @@ jobs:
         with:
           tool: nextest
       - name: install mold linker + protoc
-        # protobuf-compiler: prost-build for crates/octanest-api/proto/runner.proto (Phase 19).
+        # protobuf-compiler: prost-build for crates/oxidean-api/proto/runner.proto (Phase 19).
         run: sudo apt-get update -qq && sudo apt-get install -y -qq mold protobuf-compiler
       - name: cargo nextest
         # Full-workspace debug link has hit lld bus errors (signal 7) on GHA.
@@ -71,13 +71,13 @@ jobs:
       - name: bun install
         run: bun install --frozen-lockfile
       - name: web lint (oxlint type-aware)
-        run: bun run --filter @octanest/web lint
+        run: bun run --filter @oxidean/web lint
       - name: web format check (oxfmt)
-        run: bun run --filter @octanest/web format:check
+        run: bun run --filter @oxidean/web format:check
       - name: vitest (api-client + web unit/integration)
         run: bun run test
       - name: web build
-        run: bunx turbo run build --filter=@octanest/web
+        run: bunx turbo run build --filter=@oxidean/web
 
   # G-11.1-15 — every user-facing apps/web route page must declare happy-dom,
   # stack-browser, or documented skip evidence in the route coverage manifest.
@@ -156,7 +156,7 @@ jobs:
           path: var/e2e/
           if-no-files-found: ignore
 
-  # Actions pipeline e2e: API (sqlite) + native octanest-runner (host mode,
+  # Actions pipeline e2e: API (sqlite) + native oxidean-runner (host mode,
   # no Docker) + seeded push-triggered workflow → green run with log marker.
   actions-e2e:
     name: actions-e2e
@@ -231,13 +231,13 @@ jobs:
         run: docker compose -f docker-compose.yml --profile actions build runner
       - name: export images tarball
         run: |
-          docker save octanest-api:ci octanest-web:ci | gzip -1 > /tmp/octanest-ci-images.tgz
-          ls -lh /tmp/octanest-ci-images.tgz
+          docker save oxidean-api:ci oxidean-web:ci | gzip -1 > /tmp/oxidean-ci-images.tgz
+          ls -lh /tmp/oxidean-ci-images.tgz
       - name: upload compose images (same-run only)
         uses: actions/upload-artifact@v4
         with:
-          name: octanest-ci-images
-          path: /tmp/octanest-ci-images.tgz
+          name: oxidean-ci-images
+          path: /tmp/oxidean-ci-images.tgz
           retention-days: 1
           if-no-files-found: error
 
@@ -263,15 +263,15 @@ jobs:
       - name: download compose images
         uses: actions/download-artifact@v4
         with:
-          name: octanest-ci-images
-          path: /tmp/octanest-ci-images
+          name: oxidean-ci-images
+          path: /tmp/oxidean-ci-images
       - name: load compose images
-        run: ./scripts/ci-load-compose-images.sh /tmp/octanest-ci-images/octanest-ci-images.tgz
+        run: ./scripts/ci-load-compose-images.sh /tmp/oxidean-ci-images/oxidean-ci-images.tgz
       - name: Compose bring-up smoke (${{ matrix.dialect }})
         env:
           CI: "true"
           SMOKE_REQUIRE_STACK: "1"
-          OCTANEST_COMPOSE_SKIP_BUILD: "1"
+          OXIDEAN_COMPOSE_SKIP_BUILD: "1"
         run: ./scripts/ci-compose-smoke.sh ${{ matrix.dialect }}
       - name: upload compose smoke logs on failure
         if: failure()
@@ -279,7 +279,7 @@ jobs:
         with:
           name: compose-smoke-${{ matrix.dialect }}-logs
           path: |
-            /tmp/octanest-smoke*.json
+            /tmp/oxidean-smoke*.json
           if-no-files-found: ignore
 
   # D-QH-04: forge protocol smokes (Smart HTTP, SSH TCP, LFS routing, packages PathPrefix).
@@ -299,17 +299,17 @@ jobs:
       - name: download compose images
         uses: actions/download-artifact@v4
         with:
-          name: octanest-ci-images
-          path: /tmp/octanest-ci-images
+          name: oxidean-ci-images
+          path: /tmp/oxidean-ci-images
       - name: load compose images
-        run: ./scripts/ci-load-compose-images.sh /tmp/octanest-ci-images/octanest-ci-images.tgz
+        run: ./scripts/ci-load-compose-images.sh /tmp/oxidean-ci-images/oxidean-ci-images.tgz
       - name: forge protocol smokes
         env:
           CI: "true"
           SMOKE_REQUIRE_STACK: "1"
           SMOKE_SKIP_LS_REMOTE: "1"
           SMOKE_SKIP_LFS_CLIENT: "1"
-          OCTANEST_COMPOSE_SKIP_BUILD: "1"
+          OXIDEAN_COMPOSE_SKIP_BUILD: "1"
         run: make smoke-protocol-ci # smoke-git-https smoke-git-ssh smoke-git-lfs smoke-packages
       - name: upload compose logs on failure
         if: failure()
@@ -317,7 +317,7 @@ jobs:
         with:
           name: smoke-protocol-logs
           path: |
-            /tmp/octanest-smoke*.json
+            /tmp/oxidean-smoke*.json
           if-no-files-found: ignore
 
   # Both Postgres and MySQL service containers boot on every matrix leg because
@@ -331,31 +331,31 @@ jobs:
       matrix:
         include:
           - dialect: postgres
-            database_url: postgres://octanest:octanest@localhost:5432/octanest
+            database_url: postgres://oxidean:oxidean@localhost:5432/oxidean
           - dialect: mysql
-            database_url: mysql://octanest:octanest@127.0.0.1:3306/octanest
+            database_url: mysql://oxidean:oxidean@127.0.0.1:3306/oxidean
           - dialect: sqlite
-            database_url: sqlite:./var/octanest.db
+            database_url: sqlite:./var/oxidean.db
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: octanest
-          POSTGRES_PASSWORD: octanest
-          POSTGRES_DB: octanest
+          POSTGRES_USER: oxidean
+          POSTGRES_PASSWORD: oxidean
+          POSTGRES_DB: oxidean
         ports: ["5432:5432"]
         options: >-
-          --health-cmd="pg_isready -U octanest" --health-interval=5s --health-timeout=5s --health-retries=10
+          --health-cmd="pg_isready -U oxidean" --health-interval=5s --health-timeout=5s --health-retries=10
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_USER: octanest
-          MYSQL_PASSWORD: octanest
-          MYSQL_DATABASE: octanest
-          MYSQL_ROOT_PASSWORD: octanest
+          MYSQL_USER: oxidean
+          MYSQL_PASSWORD: oxidean
+          MYSQL_DATABASE: oxidean
+          MYSQL_ROOT_PASSWORD: oxidean
         ports: ["3306:3306"]
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poctanest" --health-interval=5s --health-timeout=5s --health-retries=20
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poxidean" --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -363,5 +363,5 @@ jobs:
       - name: migrate + probe (${{ matrix.dialect }})
         env:
           DATABASE_URL: ${{ matrix.database_url }}
-          OCTANEST_DB_DIALECT: ${{ matrix.dialect }}
-        run: cargo test -p octanest-db --test dialect_probe -- --nocapture
+          OXIDEAN_DB_DIALECT: ${{ matrix.dialect }}
+        run: cargo test -p oxidean-db --test dialect_probe -- --nocapture

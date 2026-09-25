@@ -17,8 +17,8 @@ created: 2026-09-09
 
 | Boundary | Description | Data Crossing |
 |----------|-------------|---------------|
-| Operator env → `octanest-db` | `DATABASE_URL` / `OCTANEST_DB_DIALECT` may contain credentials | Connection strings |
-| `octanest-db` → Postgres / MySQL / SQLite | SQL + bound params | App schema / probe row |
+| Operator env → `oxidean-db` | `DATABASE_URL` / `OXIDEAN_DB_DIALECT` may contain credentials | Connection strings |
+| `oxidean-db` → Postgres / MySQL / SQLite | SQL + bound params | App schema / probe row |
 | Host filesystem `./var` → SQLite file | Runtime DB file + WAL/SHM | Local file state |
 | Client → `/api/rpc` `system.db_probe` | Unauthenticated in Phase 2 | Probe response dialect/count |
 | Smoke/switch scripts → operator terminal | Must not echo secrets | Dialect labels only |
@@ -37,7 +37,7 @@ created: 2026-09-09
 | T-02-05 | Denial of service | connection pool exhaustion | mitigate | `max_connections(5)` PG/MySQL; `max_connections(1)` SQLite | closed |
 | T-02-06 | Information disclosure | `system.db_probe` errors | mitigate | Wire code `db.probe_failed` + generic message; detail only in logs (`rpc.rs` + tests) | closed |
 | T-02-07 | Denial of service | unauthenticated probe writes | accept | Single-row upsert `id=1`; auth gate deferred to system dashboard | closed |
-| T-02-08 | Tampering | auto-migrate on boot | mitigate | `OCTANEST_AUTO_MIGRATE=false` skips boot migrate; failure aborts startup | closed |
+| T-02-08 | Tampering | auto-migrate on boot | mitigate | `OXIDEAN_AUTO_MIGRATE=false` skips boot migrate; failure aborts startup | closed |
 | T-02-09 | Spoofing | wrong-DB attribution | mitigate | Response `dialect` read back from `instances` row, not env alone | closed |
 | T-02-10 | Tampering | generated client drift | mitigate | `make rpc-sync-check` / CI `rpc-sync` covers `system.dbProbe` | closed |
 | T-02-11 | Information disclosure | SQLite committed to git | mitigate | `.gitignore` includes `var/` | closed |
@@ -45,7 +45,7 @@ created: 2026-09-09
 | T-02-13 | Tampering | migrate populated DB | mitigate | `migrate --assert-empty` + `db-switch-dialect.sh` refuse non-empty targets | closed |
 | T-02-14 | Spoofing | smoke wrong dialect | mitigate | Smoke asserts `"dialect":"<expected>"` from `system.db_probe` body | closed |
 | T-02-15 | Denial of service | stale compose overlays | accept | Local-only; smoke traps `compose down --remove-orphans` | closed |
-| T-02-16 | Elevation | CI secrets to forks | mitigate | `db-matrix` uses no `secrets.*`; throwaway `octanest` credentials only | closed |
+| T-02-16 | Elevation | CI secrets to forks | mitigate | `db-matrix` uses no `secrets.*`; throwaway `oxidean` credentials only | closed |
 | T-02-17 | Information disclosure | CI URL logs | accept | Matrix URLs are non-secret localhost throwaways; app redacts passwords | closed |
 | T-02-18 | Information disclosure | weak prod credentials in docs | mitigate | `docs/database.md` / README / `.env.example` label local-only; warn on exposure | closed |
 | T-02-19 | Tampering | undocumented destructive switch | mitigate | Docs: empty-target-only switch; no cross-dialect data copy | closed |

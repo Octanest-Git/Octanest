@@ -37,13 +37,13 @@ key-files:
     - .planning/phases/10-orgs-permissions/.tdd/10-08-t1-red-evidence.json
     - .planning/phases/10-orgs-permissions/.tdd/10-08-t2-red-evidence.json
   modified:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-api/src/pat/mod.rs
-    - crates/octanest-api/tests/git_smart_http.rs
-    - crates/octanest-api/tests/repo_branch_soft_protect.rs
-    - crates/octanest-api/tests/pat_rpc.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/pat/mod.rs
+    - crates/oxidean-api/tests/git_smart_http.rs
+    - crates/oxidean-api/tests/repo_branch_soft_protect.rs
+    - crates/oxidean-api/tests/pat_rpc.rs
 
 key-decisions:
   - "ACL deny on Smart HTTP stays 401 Basic (D-21); PAT scope deny stays 403 (D-23)"
@@ -62,7 +62,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(git_smart)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(git_smart)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -70,7 +70,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api --test repo_branch_soft_protect repo_branch_write_collaborator_can_create_read_cannot"
+        ref: "cargo nextest run -p oxidean-api --test repo_branch_soft_protect repo_branch_write_collaborator_can_create_read_cannot"
         status: pass
     human_judgment: false
   - id: D3
@@ -78,7 +78,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(pat_) | test(git_smart)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(pat_) | test(git_smart)'"
         status: pass
     human_judgment: false
 
@@ -124,13 +124,13 @@ Each task was committed atomically (TDD RED → GREEN):
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/acl.rs` — `owner_ref_for_repo`, `fg_all_covers_repo` (A4)
-- `crates/octanest-api/src/repo/mod.rs` — Write-gated `resolve_repo_for_owner_mutate`
-- `crates/octanest-api/src/routes/git_smart_http.rs` — ACL + async `pat_allows_operation`
-- `crates/octanest-api/src/pat/mod.rs` — FG Selected mint via `meets(contents need)`
-- `crates/octanest-api/tests/git_smart_http.rs` — collaborator / FG All / non-grantee cases
-- `crates/octanest-api/tests/repo_branch_soft_protect.rs` — Write collaborator branchCreate
-- `crates/octanest-api/tests/pat_rpc.rs` — Selected collaborator mint + Read/Write mismatch
+- `crates/oxidean-api/src/repo/acl.rs` — `owner_ref_for_repo`, `fg_all_covers_repo` (A4)
+- `crates/oxidean-api/src/repo/mod.rs` — Write-gated `resolve_repo_for_owner_mutate`
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — ACL + async `pat_allows_operation`
+- `crates/oxidean-api/src/pat/mod.rs` — FG Selected mint via `meets(contents need)`
+- `crates/oxidean-api/tests/git_smart_http.rs` — collaborator / FG All / non-grantee cases
+- `crates/oxidean-api/tests/repo_branch_soft_protect.rs` — Write collaborator branchCreate
+- `crates/oxidean-api/tests/pat_rpc.rs` — Selected collaborator mint + Read/Write mismatch
 
 ## Decisions Made
 

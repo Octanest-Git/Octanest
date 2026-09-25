@@ -29,13 +29,13 @@ Users register SSH public keys and clone/fetch/push over SSH like a normal forge
 ## Implementation Decisions
 
 ### A — Server topology
-- **D-SSH-01:** Serve git-over-SSH via a **Rust SSH service/module** (e.g. russh) that authenticates registered public keys against Octanest DB/ACL and spawns system `git-upload-pack` / `git-receive-pack` on the shared `OCTANEST_REPOS_DIR` volume. **Not** OpenSSH/`git-shell`. No interactive shell/SFTP/port-forward — **git pack commands only** — **Reversibility:** costly — Compose/service boundary + deploy story
+- **D-SSH-01:** Serve git-over-SSH via a **Rust SSH service/module** (e.g. russh) that authenticates registered public keys against Oxidean DB/ACL and spawns system `git-upload-pack` / `git-receive-pack` on the shared `OXIDEAN_REPOS_DIR` volume. **Not** OpenSSH/`git-shell`. No interactive shell/SFTP/port-forward — **git pack commands only** — **Reversibility:** costly — Compose/service boundary + deploy story
 
 ### B — Clone URL + port
-- **D-SSH-02:** Public clone URL is always scp-style **`git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`** (GitHub/Gitea-shaped). Compose/dev default listen port **2222**; when advertised port ≠ 22, document `~/.ssh/config` Port or Host alias (do **not** make `ssh://` the primary CloneBox string). Production/cloud prefer port **22** when the platform allows; `OCTANEST_SSH_HOST` + `OCTANEST_SSH_PORT` (listen/advertise) configurable. Host fallback: hostname of public origin — **Reversibility:** one-way — published remote URL contract
+- **D-SSH-02:** Public clone URL is always scp-style **`git@{OXIDEAN_SSH_HOST}:{owner}/{repo}.git`** (GitHub/Gitea-shaped). Compose/dev default listen port **2222**; when advertised port ≠ 22, document `~/.ssh/config` Port or Host alias (do **not** make `ssh://` the primary CloneBox string). Production/cloud prefer port **22** when the platform allows; `OXIDEAN_SSH_HOST` + `OXIDEAN_SSH_PORT` (listen/advertise) configurable. Host fallback: hostname of public origin — **Reversibility:** one-way — published remote URL contract
 
 ### C — Principal
-- **D-SSH-03:** Force SSH login user **`git` only** (GitHub/Gitea-style). Account identity is derived solely from the registered public key fingerprint; the SSH username is not an Octanest account name — **Reversibility:** costly — client docs + reserved `git` principal
+- **D-SSH-03:** Force SSH login user **`git` only** (GitHub/Gitea-style). Account identity is derived solely from the registered public key fingerprint; the SSH username is not an Oxidean account name — **Reversibility:** costly — client docs + reserved `git` principal
 
 ### D — ACL parity with Smart HTTP
 - **D-SSH-04:** Key maps to the **account** (no PAT scopes). Public fetch OK when authenticated; private = **owner-only** until Phase 10 collaborators; **push requires verified email** (same as Smart HTTP). Deny private non-owner with a clear **git error** (not HTTP 401/404) — **Reversibility:** costly — must stay aligned with `repo/acl` + Phase 10
@@ -53,7 +53,7 @@ Users register SSH public keys and clone/fetch/push over SSH like a normal forge
 - Exact Rust SSH crate/version (russh vs alternatives) and process layout (in-api module vs sibling binary/service)
 - Exact host-key storage/rotation and failure log fields
 - Exact rate-limit N/window (within D-SSH-07)
-- Whether advertised port is a separate env from listen port or one `OCTANEST_SSH_PORT` with docs
+- Whether advertised port is a separate env from listen port or one `OXIDEAN_SSH_PORT` with docs
 
 </decisions>
 
@@ -70,9 +70,9 @@ Users register SSH public keys and clone/fetch/push over SSH like a normal forge
 - `.planning/phases/08-git-https-pats/08-CONTEXT.md` — Smart HTTP ACL/auth gates to mirror (D-20/D-21/D-24)
 
 ### Code mirrors
-- `crates/octanest-api/src/routes/git_smart_http.rs` — auth/ACL/rate-limit matrix
-- `crates/octanest-api/src/repo/acl.rs` — owner-only read stub (Phase 10 extends)
-- `crates/octanest-api/src/git/http_backend.rs` — pack spawn pattern
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — auth/ACL/rate-limit matrix
+- `crates/oxidean-api/src/repo/acl.rs` — owner-only read stub (Phase 10 extends)
+- `crates/oxidean-api/src/git/http_backend.rs` — pack spawn pattern
 - `apps/web/src/components/repo/clone-box.tsrx` — SSH placeholder to replace
 - `apps/web/src/routes/settings/tokens*.tsrx` — settings CRUD analog for keys
 - `docker-compose.yml` — Traefik HTTP-only today; SSH needs TCP publish

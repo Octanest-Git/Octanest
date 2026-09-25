@@ -1,4 +1,4 @@
-import { repoTopicsSuggestQueryOptions } from "@octanest/api-client";
+import { repoTopicsSuggestQueryOptions } from "@oxidean/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { X } from "@octanejs/lucide";
 import { useEffect, useState } from "octane";
@@ -23,7 +23,7 @@ export type TopicChipsInputProps = {
 /**
  * Normalize freeform text to a topic slug: lowercase, runs of
  * non-`[a-z0-9-]` collapse to `-`, edges trimmed, ≤ 50 chars.
- * Mirrors `normalize_topic_name` in octanest-db.
+ * Mirrors `normalize_topic_name` in oxidean-db.
  */
 export function normalizeTopicSlug(raw: string): string {
   return raw

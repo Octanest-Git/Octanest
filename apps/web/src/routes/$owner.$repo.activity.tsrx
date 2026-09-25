@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { Activity } from "@octanejs/lucide";
-import type { RepoActivityItem, RepoPublic } from "@octanest/api-client";
+import type { RepoActivityItem, RepoPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { RepoActivityRow } from "@/components/repo/repo-activity-row";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -42,7 +42,7 @@ type Phase =
       loadingMore: boolean;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PAGE_LIMIT = 30;
 
 const FILTER_CHIP_ACTIVE =
@@ -133,7 +133,7 @@ export const Route = createFileRoute("/$owner/$repo/activity")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Activity · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Activity · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

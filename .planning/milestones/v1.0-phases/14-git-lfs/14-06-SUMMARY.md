@@ -25,11 +25,11 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/jobs/lfs_gc.rs
+    - crates/oxidean-api/src/jobs/lfs_gc.rs
   modified:
-    - crates/octanest-api/src/jobs/schedule.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/tests/factory_reset_scope.rs
+    - crates/oxidean-api/src/jobs/schedule.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/tests/factory_reset_scope.rs
 
 key-decisions:
   - "Grace 0 uses far-future cutoff for tests; default grace 7d"
@@ -42,7 +42,7 @@ coverage:
     requirement: GIT-13
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_gc) | test(factory_reset_database_and_repositories_wipes_lfs)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_gc) | test(factory_reset_database_and_repositories_wipes_lfs)'"
         status: pass
     human_judgment: false
 

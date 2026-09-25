@@ -34,8 +34,8 @@ Produces EVAL-REVIEW.md with score, verdict, gaps, and remediation plan.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/eval-review.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ai-evals.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/eval-review.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ai-evals.md
 </execution_context>
 
 <context>

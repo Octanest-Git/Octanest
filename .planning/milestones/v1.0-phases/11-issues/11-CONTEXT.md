@@ -84,9 +84,9 @@ Users track work with repo-scoped issues: create/edit/close/reopen, comments, la
 - `.planning/phases/07-git-repos-browse/07-CONTEXT.md` — repo chrome / owner-repo routes
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/acl.rs` — `Capability`, resolve helpers for read/write/admin
-- `crates/octanest-api/src/rpc.rs` — procedure dispatch pattern
-- `crates/octanest-api/src/repo/mod.rs` — domain RPC module pattern to mirror for `issue`
+- `crates/oxidean-api/src/repo/acl.rs` — `Capability`, resolve helpers for read/write/admin
+- `crates/oxidean-api/src/rpc.rs` — procedure dispatch pattern
+- `crates/oxidean-api/src/repo/mod.rs` — domain RPC module pattern to mirror for `issue`
 - `apps/web/src/components/repo/repo-chrome.tsrx` — Issues tab omitted until this phase
 - `apps/web/src/routes/$owner.$repo*.tsrx` — repo-scoped route shell
 - `apps/web/src/lib/markdown.ts` — `renderGfm` / sanitize for bodies and comments

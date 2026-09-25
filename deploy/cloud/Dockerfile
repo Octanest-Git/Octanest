@@ -1,4 +1,4 @@
-# Octanest Cloud HTTP gateway (D-CLOUD-03).
+# Oxidean Cloud HTTP gateway (D-CLOUD-03).
 # Pins the Docker Official Image approved for Phase 22.
 # Build from repo root: docker build -f deploy/cloud/Dockerfile .
 FROM caddy:2.11.4-alpine

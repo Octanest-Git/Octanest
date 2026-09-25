@@ -41,7 +41,7 @@ key-files:
     - apps/web/src/routes/setup.credentials.integration.test.ts
     - apps/web/src/routeTree.gen.ts
     - packages/api-client/src/index.ts
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
 
 key-decisions:
   - "Land Switch/setup/credentials/login on .tsrx (Octane rename in flight)"
@@ -135,7 +135,7 @@ status: complete
 - **Found during:** Tasks 1–2
 - **Issue:** Rust DTOs/RPCs existed; api-client/`rpc_gen` lacked fields the wizard/credentials UI must send
 - **Fix:** Added `allow_signup?` on BootstrapSetupRequest and ConfirmAdminCredentialsRequest + client method
-- **Files modified:** `packages/api-client/src/index.ts`, `crates/octanest-api/src/bin/rpc_gen.rs`
+- **Files modified:** `packages/api-client/src/index.ts`, `crates/oxidean-api/src/bin/rpc_gen.rs`
 - **Commit:** `8e97808`, `4ba7398`
 
 **2. [Rule 3 - Blocking] Nested `/setup/credentials` blank without parent Outlet**

@@ -29,7 +29,7 @@ export function ActionsRunnersDocs({
       How runners work
     </h2>
     <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-      Octanest is a control plane: it discovers workflows under{" "}
+      Oxidean is a control plane: it discovers workflows under{" "}
       <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
         .github/workflows/
       </code>
@@ -44,7 +44,7 @@ export function ActionsRunnersDocs({
         {" — "}
         Instance admins create a one-time token on this page (or set{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
-          OCTANEST_RUNNER_REGISTRATION_TOKEN
+          OXIDEAN_RUNNER_REGISTRATION_TOKEN
         </code>{" "}
         for Compose bootstrap). Copy it immediately; it is not shown again.
       </li>
@@ -53,7 +53,7 @@ export function ActionsRunnersDocs({
         {" — "}
         Use the{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
-          octanest-runner
+          oxidean-runner
         </code>{" "}
         image with your public forge origin — not{" "}
         <code className="rounded bg-muted px-1 py-0.5 font-mono text-[13px] text-foreground">
@@ -94,23 +94,23 @@ export function ActionsRunnersDocs({
       <div className="mt-5 space-y-3">
         <h3 className="text-[15px] font-semibold text-foreground">Quick start (Compose)</h3>
         <pre className="overflow-x-auto rounded-md border border-border bg-muted/50 p-3 font-mono text-[12px] leading-relaxed text-foreground">
-          {`export OCTANEST_RUNNER_REGISTRATION_TOKEN=reg_…
+          {`export OXIDEAN_RUNNER_REGISTRATION_TOKEN=reg_…
 docker compose --profile actions up -d --build runner`}
         </pre>
         <h3 className="text-[15px] font-semibold text-foreground">Standalone</h3>
         <pre className="overflow-x-auto rounded-md border border-border bg-muted/50 p-3 font-mono text-[12px] leading-relaxed text-foreground">
-          {`export OCTANEST_PUBLIC_ORIGIN=https://git.example.com
-export OCTANEST_RUNNER_REGISTRATION_TOKEN=reg_…
-export OCTANEST_RUNNER_NAME=runner-1
-export OCTANEST_RUNNER_LABELS='ubuntu-latest:docker://node:20-bookworm,self-hosted'
+          {`export OXIDEAN_PUBLIC_ORIGIN=https://git.example.com
+export OXIDEAN_RUNNER_REGISTRATION_TOKEN=reg_…
+export OXIDEAN_RUNNER_NAME=runner-1
+export OXIDEAN_RUNNER_LABELS='ubuntu-latest:docker://node:20-bookworm,self-hosted'
 docker run --rm -it \\
-  -e OCTANEST_PUBLIC_ORIGIN \\
-  -e OCTANEST_RUNNER_REGISTRATION_TOKEN \\
-  -e OCTANEST_RUNNER_NAME \\
-  -e OCTANEST_RUNNER_LABELS \\
-  -v octanest-runner-data:/data \\
+  -e OXIDEAN_PUBLIC_ORIGIN \\
+  -e OXIDEAN_RUNNER_REGISTRATION_TOKEN \\
+  -e OXIDEAN_RUNNER_NAME \\
+  -e OXIDEAN_RUNNER_LABELS \\
+  -v oxidean-runner-data:/data \\
   -v /var/run/docker.sock:/var/run/docker.sock \\
-  octanest-runner`}
+  oxidean-runner`}
         </pre>
         <p className="text-[13px] leading-relaxed text-muted-foreground">
           Mount the Docker socket only on an isolated runner host — not on the API container.

@@ -18,32 +18,32 @@ describe("public-origin", () => {
     );
   });
 
-  it("reads OCTANEST_PUBLIC_ORIGIN when set", () => {
-    const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+  it("reads OXIDEAN_PUBLIC_ORIGIN when set", () => {
+    const prev = process.env.OXIDEAN_PUBLIC_ORIGIN;
     const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
     const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
     delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
     delete process.env.RAILWAY_PUBLIC_DOMAIN;
-    process.env.OCTANEST_PUBLIC_ORIGIN = "https://git.example/";
+    process.env.OXIDEAN_PUBLIC_ORIGIN = "https://git.example/";
     expect(resolvePublicOriginFromEnv()).toBe("https://git.example");
-    if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
-    else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    if (prev === undefined) delete process.env.OXIDEAN_PUBLIC_ORIGIN;
+    else process.env.OXIDEAN_PUBLIC_ORIGIN = prev;
     if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
     else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
     if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
     else process.env.RAILWAY_PUBLIC_DOMAIN = prevDom;
   });
 
-  it("prefers Railway gateway when OCTANEST_PUBLIC_ORIGIN host is stale", () => {
-    const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+  it("prefers Railway gateway when OXIDEAN_PUBLIC_ORIGIN host is stale", () => {
+    const prev = process.env.OXIDEAN_PUBLIC_ORIGIN;
     const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
     const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
     delete process.env.RAILWAY_PUBLIC_DOMAIN;
-    process.env.OCTANEST_PUBLIC_ORIGIN = "https://gateway-preview-4893.up.railway.app";
-    process.env.RAILWAY_SERVICE_GATEWAY_URL = "gateway-octanest-pr-31.up.railway.app";
-    expect(resolvePublicOriginFromEnv()).toBe("https://gateway-octanest-pr-31.up.railway.app");
-    if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
-    else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    process.env.OXIDEAN_PUBLIC_ORIGIN = "https://gateway-preview-4893.up.railway.app";
+    process.env.RAILWAY_SERVICE_GATEWAY_URL = "gateway-oxidean-pr-31.up.railway.app";
+    expect(resolvePublicOriginFromEnv()).toBe("https://gateway-oxidean-pr-31.up.railway.app");
+    if (prev === undefined) delete process.env.OXIDEAN_PUBLIC_ORIGIN;
+    else process.env.OXIDEAN_PUBLIC_ORIGIN = prev;
     if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
     else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
     if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
@@ -51,15 +51,15 @@ describe("public-origin", () => {
   });
 
   it("keeps custom domain when Railway gateway host differs", () => {
-    const prev = process.env.OCTANEST_PUBLIC_ORIGIN;
+    const prev = process.env.OXIDEAN_PUBLIC_ORIGIN;
     const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
     const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
     delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
-    process.env.OCTANEST_PUBLIC_ORIGIN = "https://octanest.jereko.dev";
+    process.env.OXIDEAN_PUBLIC_ORIGIN = "https://oxidean.jereko.dev";
     process.env.RAILWAY_PUBLIC_DOMAIN = "gateway-production.up.railway.app";
-    expect(resolvePublicOriginFromEnv()).toBe("https://octanest.jereko.dev");
-    if (prev === undefined) delete process.env.OCTANEST_PUBLIC_ORIGIN;
-    else process.env.OCTANEST_PUBLIC_ORIGIN = prev;
+    expect(resolvePublicOriginFromEnv()).toBe("https://oxidean.jereko.dev");
+    if (prev === undefined) delete process.env.OXIDEAN_PUBLIC_ORIGIN;
+    else process.env.OXIDEAN_PUBLIC_ORIGIN = prev;
     if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
     else process.env.RAILWAY_SERVICE_GATEWAY_URL = prevGw;
     if (prevDom === undefined) delete process.env.RAILWAY_PUBLIC_DOMAIN;
@@ -77,7 +77,7 @@ describe("public-origin", () => {
     expect(sshNeedsPortHint(2222)).toBe(true);
   });
 
-  it("resolveSshHost prefers OCTANEST_SSH_HOST then origin hostname", () => {
+  it("resolveSshHost prefers OXIDEAN_SSH_HOST then origin hostname", () => {
     expect(resolveSshHost("http://127.0.0.1:3000", undefined)).toBe("127.0.0.1");
     expect(resolveSshHost("http://127.0.0.1:3000", "git.example")).toBe("git.example");
   });

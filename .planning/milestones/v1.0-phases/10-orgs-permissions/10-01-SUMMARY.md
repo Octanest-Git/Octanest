@@ -135,7 +135,7 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to 10-10 / 10-11 / 10-13._
 
 **1. [Rule 3 - Blocking] Relative Write paths landed in main checkout**
 - **Found during:** Task 1 (web stubs)
-- **Issue:** Agent workspace root is the main `octanest` checkout; relative `Write` wrote stubs there instead of `octanest-wt-10`
+- **Issue:** Agent workspace root is the main `oxidean` checkout; relative `Write` wrote stubs there instead of `oxidean-wt-10`
 - **Fix:** Copied files into worktree, deleted untracked copies from main, rewrote subsequent edits via absolute worktree paths
 - **Files modified:** four integration test files (worktree only)
 - **Verification:** `test -f` under worktree; main paths absent

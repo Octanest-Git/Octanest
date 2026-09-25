@@ -33,18 +33,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/pat/rate_limit.rs
+    - crates/oxidean-api/src/pat/rate_limit.rs
     - .planning/phases/08-git-https-pats/08-06-SUMMARY.md
   modified:
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/pat/mod.rs
-    - crates/octanest-api/tests/git_smart_http.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/pat/mod.rs
+    - crates/oxidean-api/tests/git_smart_http.rs
 
 key-decisions:
-  - "Prefixes remain octanest_pat_ / octanest_fg_ via pat_types (not ona_*)"
+  - "Prefixes remain oxidean_pat_ / oxidean_fg_ via pat_types (not ona_*)"
   - "Rate-limit IP test uses username alias git so user bucket (10) does not trip before IP (20)"
   - "Unverified receive-pack → 403 JSON auth.email_unverified; upload-pack still allowed"
 
@@ -60,7 +60,7 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_private_anon_401_www_authenticate"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_private_anon_401_www_authenticate"
         status: pass
     human_judgment: false
   - id: D2
@@ -68,7 +68,7 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_insufficient_scope_403"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_insufficient_scope_403"
         status: pass
     human_judgment: false
   - id: D3
@@ -76,7 +76,7 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_pat_push_fetch_happy_path"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_pat_push_fetch_happy_path"
         status: pass
     human_judgment: false
   - id: D4
@@ -84,10 +84,10 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_failed_auth_rate_limit_429_retry_after"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_failed_auth_rate_limit_429_retry_after"
         status: pass
       - kind: unit
-        ref: "crates/octanest-api/src/pat/rate_limit.rs#ip_limit_trips_at_20"
+        ref: "crates/oxidean-api/src/pat/rate_limit.rs#ip_limit_trips_at_20"
         status: pass
     human_judgment: false
   - id: D5
@@ -95,7 +95,7 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_unverified_push_denied"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_unverified_push_denied"
         status: pass
     human_judgment: false
 
@@ -135,15 +135,15 @@ Each task was committed atomically:
 
 _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
-- `crates/octanest-api/src/pat/rate_limit.rs` — sliding-window IP/user counters
-- `crates/octanest-api/src/routes/git_smart_http.rs` — full ACL/scope/rate-limit/verify matrix
-- `crates/octanest-api/src/repo/acl.rs` — shared `can_read_as_owner` / `is_private_visibility`
-- `crates/octanest-api/src/app.rs` — `git_auth_limiter` on `AppState`
-- `crates/octanest-api/tests/git_smart_http.rs` — all eight `git_smart_*` cases green
+- `crates/oxidean-api/src/pat/rate_limit.rs` — sliding-window IP/user counters
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — full ACL/scope/rate-limit/verify matrix
+- `crates/oxidean-api/src/repo/acl.rs` — shared `can_read_as_owner` / `is_private_visibility`
+- `crates/oxidean-api/src/app.rs` — `git_auth_limiter` on `AppState`
+- `crates/oxidean-api/tests/git_smart_http.rs` — all eight `git_smart_*` cases green
 
 ## Decisions Made
 
-- Token prefixes stay `octanest_pat_` / `octanest_fg_` (pat_types); never `ona_*`
+- Token prefixes stay `oxidean_pat_` / `oxidean_fg_` (pat_types); never `ona_*`
 - IP rate-limit integration test authenticates as username alias `git` so the 10/user bucket does not fire before 20/IP
 - Unverified push returns 403 JSON with `auth.email_unverified`; fetch still allowed (Open Q2)
 
@@ -155,7 +155,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Found during:** Task 2 GREEN
 - **Issue:** Using account username `rluser` recorded against the 10/user limit, so the 11th failure returned 429 before the IP (20) threshold
 - **Fix:** Use Basic username alias `git` in the IP-limit integration test so only the IP bucket fills
-- **Files modified:** `crates/octanest-api/tests/git_smart_http.rs`
+- **Files modified:** `crates/oxidean-api/tests/git_smart_http.rs`
 - **Commit:** `001ce79`
 
 ## Threat Flags

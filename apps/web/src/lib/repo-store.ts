@@ -1,6 +1,6 @@
 import { createStore, useStore } from "@octanejs/zustand";
 import { createContext, useContext } from "octane";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 
 export type RepoLayoutStatus = "ok" | "not_found" | "error";
 
@@ -13,9 +13,9 @@ export type RepoLayoutLoaderData = {
   message: string;
   /** Browser-facing origin for clone URLs (SSR’d). */
   publicOrigin: string;
-  /** Advertised Git SSH host (SSR’d from OCTANEST_SSH_HOST / origin). */
+  /** Advertised Git SSH host (SSR’d from OXIDEAN_SSH_HOST / origin). */
   sshHost: string;
-  /** Advertised Git SSH port (SSR’d from OCTANEST_SSH_PORT). */
+  /** Advertised Git SSH port (SSR’d from OXIDEAN_SSH_PORT). */
   sshPort: number;
 };
 

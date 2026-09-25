@@ -1,4 +1,4 @@
-# Octane reference (Octanest)
+# Octane reference (Oxidean)
 
 Canonical upstream text for agents and contributors:
 

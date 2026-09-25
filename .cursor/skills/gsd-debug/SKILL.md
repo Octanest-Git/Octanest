@@ -45,7 +45,7 @@ Valid GSD subagent types (use exact names — do not fall back to 'general-purpo
 </available_agent_types>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/debug.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/debug.md
 </execution_context>
 
 <context>

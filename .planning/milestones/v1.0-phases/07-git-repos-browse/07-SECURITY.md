@@ -25,7 +25,7 @@ created: "2026-09-13"
 | API → git argv (`CliGitBackend`) | User-influenced refs/names must not become options | Argv arrays only; end-of-options `--` |
 | Browser → Code / Markdown UI | Untrusted README / blob text | Sanitized HTML; soft size caps |
 | Sys-admin → factory reset / GC / purge | Destructive instance and disk ops | `RESET` confirm; scope enum; path canon |
-| Test harness → temp `repos_dir` | Parallel nextest isolation | Temp dirs / `OCTANEST_REPOS_DIR` |
+| Test harness → temp `repos_dir` | Parallel nextest isolation | Temp dirs / `OXIDEAN_REPOS_DIR` |
 
 ---
 
@@ -41,7 +41,7 @@ created: "2026-09-13"
 | T-07-05a | Tampering | repositories uniqueness | medium | mitigate | Unique among non-deleted `(owner_id, lower(name))`; soft-delete column | closed |
 | T-07-05b | Elevation of privilege | `/new` UI | medium | mitigate | Verify wall + disabled CTA; server still `require_verified` | closed |
 | T-07-06 | Tampering | `CliGitBackend` | high | mitigate | `tokio::process::Command` argv arrays only; `validate_repo_name` before path join | closed |
-| T-07-07 | Tampering | `repos_dir` paths | high | mitigate | Absolutize / join under `OCTANEST_REPOS_DIR`; basename guards | closed |
+| T-07-07 | Tampering | `repos_dir` paths | high | mitigate | Absolutize / join under `OXIDEAN_REPOS_DIR`; basename guards | closed |
 | T-07-08 | Denial of service | missing git | high | mitigate | Boot `assert_git_version((2,5,0))` → exit 1 (D-33) | closed |
 | T-07-09 | Tampering | template asset paths | high | mitigate | Pack IDs via allowlist maps under embedded `assets/`; reject `..` | closed |
 | T-07-10 | Information disclosure | duplicate create | low | accept | `repo.name_taken` expected UX for owner namespace | closed |
@@ -84,7 +84,7 @@ created: "2026-09-13"
 | T-07-01 / T-07-05 / T-07-05b | `auth/gate.rs` `require_verified`; `repo/mod.rs` `create` calls it; `/new` verify wall |
 | T-07-02 / T-07-13 / T-07-13b / T-07-21 | `repo/acl.rs` unified `not_found`; archive uses `resolve_repo_for_read` |
 | T-07-03 | ARCHITECTURE / REQUIREMENTS GIT-09 CLI-primary wording (07-01/11 summaries) |
-| T-07-04 / T-07-08 | `octanest-git/src/version.rs` + `main.rs` exit 1 on version Err |
+| T-07-04 / T-07-08 | `oxidean-git/src/version.rs` + `main.rs` exit 1 on version Err |
 | T-07-05a | Soft-delete + uniqueness among non-deleted (migrations / dialect_repositories) |
 | T-07-06 | `CliGitBackend` argv-only `run_git`; `validate_repo_name` before path join |
 | T-07-07 / T-07-26 | `app.rs` absolutize `repos_dir`; `jobs/reconcile.rs` `delete_under_repos_dir` |
@@ -94,7 +94,7 @@ created: "2026-09-13"
 | T-07-12 | Admin settings gate reused for instance default visibility |
 | T-07-14 | `apps/web/src/lib/markdown.ts` `rehypeSanitize` |
 | T-07-15 / T-07-GC20-02/03 | `routes/repo_raw.rs` `validate_ref` / `validate_blob_path` / slashy refs |
-| T-07-16 | `BLOB_SOFT_MAX_BYTES` + `x-octanest-blob-*` headers |
+| T-07-16 | `BLOB_SOFT_MAX_BYTES` + `x-oxidean-blob-*` headers |
 | T-07-17 / T-07-GC19-* | `cli.rs` `validate_treeish` + `--` on branch ops; `reject_option_like_branch` |
 | T-07-18 | `backend.rs` soft patch caps; `truncated` on show/diff |
 | T-07-19 / T-07-20 / T-07-23 / T-07-24 | `resolve_repo_for_owner_mutate`; default-branch protect; `confirm_name` |

@@ -24,17 +24,17 @@ validated_at: "2026-09-19"
 |----------|-------|
 | **Framework** | cargo nextest (Rust) + Vitest (web) |
 | **Config file** | workspace Cargo / `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(release) \| test(rename) \| test(transfer) \| test(redirect)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(release) \| test(rename) \| test(transfer) \| test(redirect)'` |
 | **Full suite command** | `make test` |
 | **Estimated runtime** | ~90–240 seconds targeted |
-| **Phase gate** | Quick run + `cargo test -p octanest-db --test dialect_releases` + `make rpc-sync-check` + web Vitest releases/rename-transfer |
+| **Phase gate** | Quick run + `cargo test -p oxidean-db --test dialect_releases` + `make rpc-sync-check` + web Vitest releases/rename-transfer |
 
 ---
 
 ## Sampling Rate
 
 - **Per task commit:** focused nextest filter + relevant Vitest file
-- **Per wave merge:** `cargo nextest run -p octanest-api -p octanest-db` + web Vitest for touched routes
+- **Per wave merge:** `cargo nextest run -p oxidean-api -p oxidean-db` + web Vitest for touched routes
 - **Phase gate:** Full automated gate green before `/gsd-verify-work`
 
 ---
@@ -43,18 +43,18 @@ validated_at: "2026-09-19"
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? | Status |
 |--------|----------|-----------|-------------------|--------------|--------|
-| GIT-14 | Create release for existing tag with notes + asset | API integration | `cargo nextest run -p octanest-api -E 'test(release)'` | ✅ `release_rpc.rs` | ✅ green |
+| GIT-14 | Create release for existing tag with notes + asset | API integration | `cargo nextest run -p oxidean-api -E 'test(release)'` | ✅ `release_rpc.rs` | ✅ green |
 | GIT-14 | Reject missing tag (`release.tag_missing`) | API integration | same | ✅ | ✅ green |
 | GIT-14 | Draft hidden from Read-only / anon | API integration | same | ✅ | ✅ green |
 | GIT-15 | Download asset with Read / anon public published | API integration | same | ✅ | ✅ green |
 | GIT-15 | Oversized upload rejected | API integration | same | ✅ | ✅ green |
-| GIT-16 | Admin rename moves disk + DB; old path redirects | API integration | `cargo nextest run -p octanest-api -E 'test(rename) \| test(redirect)'` | ✅ `repo_rename_transfer.rs` | ✅ green |
+| GIT-16 | Admin rename moves disk + DB; old path redirects | API integration | `cargo nextest run -p oxidean-api -E 'test(rename) \| test(redirect)'` | ✅ `repo_rename_transfer.rs` | ✅ green |
 | GIT-16 | Non-admin rename → soft not_found | API integration | same | ✅ | ✅ green |
-| GIT-17 | Admin transfer to user/org + type-confirm | API integration | `cargo nextest run -p octanest-api -E 'test(transfer)'` | ✅ | ✅ green |
+| GIT-17 | Admin transfer to user/org + type-confirm | API integration | `cargo nextest run -p oxidean-api -E 'test(transfer)'` | ✅ | ✅ green |
 | GIT-17 | Issues/LFS associations remain on `repo_id` when tables exist | API integration | same | ✅ | ✅ green |
 | GIT-16/17 | New repo at old path supersedes redirect | API integration | same | ✅ | ✅ green |
 | UI | Releases tab + settings danger zone | web | `bunx vitest run src/routes/\$owner.\$repo.releases.integration.test.ts src/routes/\$owner.\$repo.settings.rename-transfer.integration.test.ts` | ✅ | ✅ green |
-| Dialect | Migration parity for releases + redirects | DB | `cargo test -p octanest-db --test dialect_releases` | ✅ | ✅ green |
+| Dialect | Migration parity for releases + redirects | DB | `cargo test -p oxidean-db --test dialect_releases` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -62,9 +62,9 @@ validated_at: "2026-09-19"
 
 ## Wave 0 Requirements
 
-- [x] `crates/octanest-api/tests/release_rpc.rs` — GIT-14/15 — **15-00 → greened**
-- [x] `crates/octanest-api/tests/repo_rename_transfer.rs` — GIT-16/17 + redirects — **15-00 → greened**
-- [x] `crates/octanest-db/tests/dialect_releases.rs` — tri-dialect migration parity — **15-00 → greened**
+- [x] `crates/oxidean-api/tests/release_rpc.rs` — GIT-14/15 — **15-00 → greened**
+- [x] `crates/oxidean-api/tests/repo_rename_transfer.rs` — GIT-16/17 + redirects — **15-00 → greened**
+- [x] `crates/oxidean-db/tests/dialect_releases.rs` — tri-dialect migration parity — **15-00 → greened**
 - [x] `apps/web/src/routes/$owner.$repo.releases.integration.test.ts` — tab/routes — greened
 - [x] `apps/web/src/routes/$owner.$repo.settings.rename-transfer.integration.test.ts` — danger-zone rename/transfer confirm — greened
 
@@ -103,8 +103,8 @@ validated_at: "2026-09-19"
 
 | Gate | Result |
 |------|--------|
-| `cargo nextest run -p octanest-api -E 'test(release)\|test(rename)\|test(transfer)\|test(redirect)'` | ✅ 25 passed (run id e1a2ed5f) |
-| `cargo test -p octanest-db --test dialect_releases` | ✅ 2 passed |
+| `cargo nextest run -p oxidean-api -E 'test(release)\|test(rename)\|test(transfer)\|test(redirect)'` | ✅ 25 passed (run id e1a2ed5f) |
+| `cargo test -p oxidean-db --test dialect_releases` | ✅ 2 passed |
 | Vitest releases + rename-transfer integration | ✅ 6 passed (2 files) |
 | Key files (release_rpc, repo_rename_transfer, dialect_releases, web routes) | ✅ present |
 

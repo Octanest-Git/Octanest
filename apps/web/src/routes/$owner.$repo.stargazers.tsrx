@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { Search, Star } from "@octanejs/lucide";
-import type { RepoPublic, RepoStargazerPublic } from "@octanest/api-client";
+import type { RepoPublic, RepoStargazerPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,7 +26,7 @@ export type StargazersLoaderData =
       limit: number;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PAGE_LIMIT = 50;
 
 async function loadStargazersPage(
@@ -67,7 +67,7 @@ export const Route = createFileRoute("/$owner/$repo/stargazers")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Stargazers · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Stargazers · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

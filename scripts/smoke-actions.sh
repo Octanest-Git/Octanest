@@ -2,7 +2,7 @@
 # Compose Actions / Runners smoke (ACT-04 / ACT-05 / D-ACT-11 / D-ACT-14).
 #
 # Env knobs:
-#   OCTANEST_SMOKE_URL   default http://localhost
+#   OXIDEAN_SMOKE_URL   default http://localhost
 #
 # Operator hosts without Docker/stack: exits 0 with a skip message.
 # CI=true or SMOKE_REQUIRE_STACK=1 fails closed.
@@ -16,23 +16,23 @@ cd "$ROOT"
 source "${ROOT}/scripts/smoke-lib.sh"
 SMOKE_NAME="smoke-actions"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 BASE_URL="${BASE_URL%/}"
 
 echo "==> check official runner Dockerfile"
-if [[ ! -f docker/octanest-runner/Dockerfile ]]; then
-  echo "missing docker/octanest-runner/Dockerfile" >&2
+if [[ ! -f docker/oxidean-runner/Dockerfile ]]; then
+  echo "missing docker/oxidean-runner/Dockerfile" >&2
   exit 1
 fi
-if ! grep -q 'octanest-runner' docker/octanest-runner/Dockerfile; then
-  echo "Dockerfile must build/install the octanest-runner binary" >&2
+if ! grep -q 'oxidean-runner' docker/oxidean-runner/Dockerfile; then
+  echo "Dockerfile must build/install the oxidean-runner binary" >&2
   exit 1
 fi
-if ! grep -qE 'register|ORIGIN|token|label' docker/octanest-runner/README.md; then
+if ! grep -qE 'register|ORIGIN|token|label' docker/oxidean-runner/README.md; then
   echo "runner README missing register docs" >&2
   exit 1
 fi
-if ! grep -qE 'octanest-runner|profiles:.*actions' docker-compose.yml; then
+if ! grep -qE 'oxidean-runner|profiles:.*actions' docker-compose.yml; then
   echo "docker-compose.yml missing actions runner service" >&2
   exit 1
 fi
@@ -41,15 +41,15 @@ echo "OK: runner image + compose profile present"
 smoke_require_docker
 
 if docker info >/dev/null 2>&1; then
-  echo "==> docker build octanest-runner (best-effort, repo-root context)"
-  if ! docker build -q -t octanest-runner:smoke -f docker/octanest-runner/Dockerfile .; then
-    smoke_require_or_skip "docker build octanest-runner failed; skipping further Actions smoke"
+  echo "==> docker build oxidean-runner (best-effort, repo-root context)"
+  if ! docker build -q -t oxidean-runner:smoke -f docker/oxidean-runner/Dockerfile .; then
+    smoke_require_or_skip "docker build oxidean-runner failed; skipping further Actions smoke"
   fi
 else
   smoke_require_or_skip "Docker daemon not available; runner Dockerfile checks already passed"
 fi
 
-if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|octanest-api'; then
+if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|oxidean-api'; then
   smoke_require_or_skip "Compose API not running; skipping live Actions health (run make up to exercise)"
 fi
 

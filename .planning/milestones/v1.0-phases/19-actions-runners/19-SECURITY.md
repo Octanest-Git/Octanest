@@ -20,7 +20,7 @@ created: "2026-09-16"
 |----------|-------------|---------------|
 | Runner ↔ `/api/actions` | Registration + job protocol; no session cookies | Runner token hash; labels; job payload + secrets |
 | Admin ↔ registration tokens | Sys-admin mint/rotate; one-time plaintext display | Raw token once → DB hash |
-| Repo Admin ↔ Actions secrets | Write-only values; list names only | AES-GCM ciphertext at rest (`OCTANEST_ACTIONS_SECRETS_KEY`) |
+| Repo Admin ↔ Actions secrets | Write-only values; list names only | AES-GCM ciphertext at rest (`OXIDEAN_ACTIONS_SECRETS_KEY`) |
 | Operator ↔ Compose runner | Sidecar/host Docker; isolate from API process | Registration env token placeholders |
 | Reader ↔ Actions UI | Repo Read sees runs/logs; Actions tab visible | Run metadata; no secret values |
 
@@ -66,7 +66,7 @@ created: "2026-09-16"
 
 | Risk ID | Threat Ref | Rationale | Accepted By | Date |
 |---------|------------|-----------|-------------|------|
-| AR-19-18 | T-19-18 | Official runner may mount a Docker socket for job containers. Operators must isolate the runner host/network from the API process (documented in `docker/octanest-runner/README.md`). Not a forge-hosted executor. | plan disposition + secure-phase audit | 2026-09-16 |
+| AR-19-18 | T-19-18 | Official runner may mount a Docker socket for job containers. Operators must isolate the runner host/network from the API process (documented in `docker/oxidean-runner/README.md`). Not a forge-hosted executor. | plan disposition + secure-phase audit | 2026-09-16 |
 | AR-19-20 | T-19-20 | Actions chrome tab is visible to users with repo Read (metadata/logs only). Secret values and Admin runner controls remain gated. Matches D-ACT visibility intent. | plan disposition + secure-phase audit | 2026-09-16 |
 
 *Accepted risks do not resurface in future audit runs.*

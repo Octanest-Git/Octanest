@@ -19,7 +19,7 @@ export type InputOtpProps = {
 const OTP_SLOTS = Array.from({ length: OTP_LENGTH }, (_, index) => index);
 
 /**
- * Octanest OTP chrome — Base UI OTPField (8 numeric slots) styled for verify/reset.
+ * Oxidean OTP chrome — Base UI OTPField (8 numeric slots) styled for verify/reset.
  * Prefer this over npm `input-otp` so we stay on the Octane adapter (no ReactCompat).
  */
 export function InputOtp({

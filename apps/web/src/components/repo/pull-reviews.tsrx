@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { PullReviewPublic } from "@octanest/api-client";
+import type { PullReviewPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { MarkdownBody } from "@/components/repo/markdown-body";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
@@ -14,7 +14,7 @@ export type PullReviewsProps = {
   isAuthor: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export function PullReviews(props: PullReviewsProps) @{
   const queryClient = useQueryClient();

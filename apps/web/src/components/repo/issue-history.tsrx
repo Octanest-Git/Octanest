@@ -1,6 +1,6 @@
 import { useQuery } from "@octanejs/tanstack-query";
 import { History } from "@octanejs/lucide";
-import type { IssueRevisionPublic } from "@octanest/api-client";
+import type { IssueRevisionPublic } from "@oxidean/api-client";
 import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";

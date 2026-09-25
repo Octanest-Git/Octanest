@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
-import type { PatListItem, UserPublic } from "@octanest/api-client";
+import type { PatListItem, UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { ChevronDown } from "@octanejs/lucide";
 import { PatList } from "@/components/settings/pat-list";
@@ -20,11 +20,11 @@ export type TokensLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; user: UserPublic; tokens: PatListItem[] };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/tokens/")({
   component: TokensPage,
-  head: () => ({ meta: [{ title: "Personal access tokens · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Personal access tokens · Oxidean" }] }),
   loader: async (): Promise<TokensLoaderData> => {
     try {
       const res = await fetchSessionMe();

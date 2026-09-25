@@ -5,7 +5,7 @@ import type {
   RepoCreateDefaults,
   RepoVisibility,
   UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
@@ -40,13 +40,13 @@ export type NewLoaderData = {
   ownerOrgs: OrgMineEntry[];
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const NAME_HELPER = "Letters, digits, hyphen, underscore, and period. Reserved names are rejected.";
 const DUPLICATE_NAME_ERROR = "A repository with this name already exists. Choose a different name.";
 
 export const Route = createFileRoute("/new")({
   component: NewPage,
-  head: () => ({ meta: [{ title: "New repository · Octanest" }] }),
+  head: () => ({ meta: [{ title: "New repository · Oxidean" }] }),
   beforeLoad: async () => {
     try {
       const me = await fetchSessionMe();

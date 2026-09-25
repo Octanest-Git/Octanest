@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { ProviderMode } from "@octanest/api-client";
+import type { ProviderMode } from "@oxidean/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ const NETWORK_ERROR = networkErrorMessage();
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
-  head: () => ({ meta: [{ title: "Sign in · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Sign in · Oxidean" }] }),
   loader: async (): Promise<LoginLoaderData> => {
     try {
       const me = await fetchSessionMe();
@@ -98,7 +98,7 @@ export function LoginPage() @{
 
   const support =
     mode === "workos"
-      ? "Continue with WorkOS to access this Octanest instance."
+      ? "Continue with WorkOS to access this Oxidean instance."
       : mode === "oidc"
         ? "Continue with your organization’s SSO to access this instance."
         : "Use your email or username to continue.";
@@ -203,7 +203,7 @@ export function LoginPage() @{
 
     @if (allowSignup) {
       <p className="text-[14px] text-muted-foreground">
-        New to Octanest?{" "}
+        New to Oxidean?{" "}
         <a
           href={signupHref as string}
           className="font-normal text-foreground underline-offset-4 hover:underline"

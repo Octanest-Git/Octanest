@@ -147,7 +147,7 @@ describe("/admin/auth SSR-backed settings", () => {
       { timeout: 3000 },
     );
 
-    expect(screen.queryByText(/OCTANEST_SMTP_URL/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/OXIDEAN_SMTP_URL/i)).not.toBeInTheDocument();
 
     const emailTrigger = screen.getByLabelText(/^Email delivery$/i);
     expect(emailTrigger).toHaveTextContent(/Log sink/i);
@@ -165,7 +165,7 @@ describe("/admin/auth SSR-backed settings", () => {
       expect(screen.getByLabelText(/^Email delivery$/i)).toHaveTextContent(/SMTP/i);
       expect(screen.getByText(/SMTP credentials/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/configure OCTANEST_SMTP_URL in the environment/i),
+        screen.getByText(/configure OXIDEAN_SMTP_URL in the environment/i),
       ).toBeInTheDocument();
     });
   }, 15_000);

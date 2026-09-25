@@ -26,18 +26,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/profile.rs
-    - crates/octanest-api/src/auth/admin.rs
-    - crates/octanest-api/src/routes/avatar.rs
-    - crates/octanest-api/tests/profile_avatar.rs
-    - crates/octanest-api/tests/admin_auth_settings.rs
+    - crates/oxidean-api/src/auth/profile.rs
+    - crates/oxidean-api/src/auth/admin.rs
+    - crates/oxidean-api/src/routes/avatar.rs
+    - crates/oxidean-api/tests/profile_avatar.rs
+    - crates/oxidean-api/tests/admin_auth_settings.rs
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/email/mod.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-core/src/auth_types.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/email/mod.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-core/src/auth_types.rs
     - packages/api-client/src/index.ts
     - docker-compose.yml
     - .env.example
@@ -88,13 +88,13 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/profile.rs` — profile get/update RPC handlers
-- `crates/octanest-api/src/auth/admin.rs` — admin.auth get/update + ENV badges
-- `crates/octanest-api/src/routes/avatar.rs` — multipart upload + static serve
-- `crates/octanest-api/tests/profile_avatar.rs` — AUTH-08 round-trip, oversized, traversal
-- `crates/octanest-api/tests/admin_auth_settings.rs` — forbidden + admin update
-- `crates/octanest-api/src/rpc.rs` / `app.rs` — dispatch + routes + email slot
-- `crates/octanest-api/src/email/mod.rs` — `build_email_sender_for_settings`
+- `crates/oxidean-api/src/auth/profile.rs` — profile get/update RPC handlers
+- `crates/oxidean-api/src/auth/admin.rs` — admin.auth get/update + ENV badges
+- `crates/oxidean-api/src/routes/avatar.rs` — multipart upload + static serve
+- `crates/oxidean-api/tests/profile_avatar.rs` — AUTH-08 round-trip, oversized, traversal
+- `crates/oxidean-api/tests/admin_auth_settings.rs` — forbidden + admin update
+- `crates/oxidean-api/src/rpc.rs` / `app.rs` — dispatch + routes + email slot
+- `crates/oxidean-api/src/email/mod.rs` — `build_email_sender_for_settings`
 - `packages/api-client/src/index.ts` — regenerated client
 - `docker-compose.yml` — uploads volume + Traefik `/uploads`
 
@@ -121,7 +121,7 @@ Each task was committed atomically:
 - **Issue:** First tiny PNG fixture failed decode → upload 400
 - **Fix:** Replaced with valid zlib-compressed 1×1 RGB PNG bytes
 - **Files modified:** `tests/profile_avatar.rs`
-- **Verification:** `cargo test -p octanest-api --test profile_avatar` green
+- **Verification:** `cargo test -p oxidean-api --test profile_avatar` green
 - **Committed in:** `3c34d40` (Task 1)
 
 **3. [Rule 2 - Missing Critical] Boot rebuild of EmailSender from DB settings**
@@ -129,7 +129,7 @@ Each task was committed atomically:
 - **Issue:** Plan prefers rebuild on settings update + boot; `router()` only used ENV
 - **Fix:** `main` loads `get_auth_settings` after migrate and builds sender via `build_email_sender_for_settings`
 - **Files modified:** `main.rs`, `email/mod.rs`
-- **Verification:** `cargo check -p octanest-api --bins`
+- **Verification:** `cargo check -p oxidean-api --bins`
 - **Committed in:** `8409834` (Task 2)
 
 ---
@@ -152,21 +152,21 @@ None - no new external services. Existing WorkOS/OIDC/Resend/SMTP ENV vars remai
 
 ## Verification
 
-- `cargo test -p octanest-api --test profile_avatar` — 3 passed
-- `cargo test -p octanest-api --test admin_auth_settings` — 2 passed (non-admin → `admin.forbidden`)
-- `cargo test -p octanest-api --lib` — 31 passed
-- `bun run --filter @octanest/api-client test` — 3 passed
+- `cargo test -p oxidean-api --test profile_avatar` — 3 passed
+- `cargo test -p oxidean-api --test admin_auth_settings` — 2 passed (non-admin → `admin.forbidden`)
+- `cargo test -p oxidean-api --lib` — 31 passed
+- `bun run --filter @oxidean/api-client test` — 3 passed
 
 ## Self-Check: PASSED
 
-- `crates/octanest-api/src/auth/profile.rs` — FOUND
-- `crates/octanest-api/src/auth/admin.rs` — FOUND
-- `crates/octanest-api/src/routes/avatar.rs` — FOUND
-- `crates/octanest-api/tests/profile_avatar.rs` — FOUND
-- `crates/octanest-api/tests/admin_auth_settings.rs` — FOUND
+- `crates/oxidean-api/src/auth/profile.rs` — FOUND
+- `crates/oxidean-api/src/auth/admin.rs` — FOUND
+- `crates/oxidean-api/src/routes/avatar.rs` — FOUND
+- `crates/oxidean-api/tests/profile_avatar.rs` — FOUND
+- `crates/oxidean-api/tests/admin_auth_settings.rs` — FOUND
 - Commits `3c34d40`, `8409834` — FOUND
-- `cargo test -p octanest-api --test profile_avatar` — 3 passed
-- `cargo test -p octanest-api --test admin_auth_settings` — 2 passed
+- `cargo test -p oxidean-api --test profile_avatar` — 3 passed
+- `cargo test -p oxidean-api --test admin_auth_settings` — 2 passed
 
 
 ---

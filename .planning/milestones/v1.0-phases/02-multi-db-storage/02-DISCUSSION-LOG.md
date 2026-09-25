@@ -16,11 +16,11 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | URL scheme only | Infer from DATABASE_URL | |
-| Explicit dialect required | OCTANEST_DB_DIALECT mandatory | |
+| Explicit dialect required | OXIDEAN_DB_DIALECT mandatory | |
 | URL + optional dialect must agree | Prefer scheme; optional env must match | ✓ |
 | Something else | — | |
 
-**User's choice:** Prefer URL scheme; optional `OCTANEST_DB_DIALECT` must agree when set
+**User's choice:** Prefer URL scheme; optional `OXIDEAN_DB_DIALECT` must agree when set
 
 ### Mismatch behavior
 
@@ -79,7 +79,7 @@
 | Auto local/Compose; explicit prod-like | Recommended + accepted | ✓ |
 | Something else | — | |
 
-**Notes:** User asked for recommendation on Q2–Q4; accepted package: auto-migrate default with `OCTANEST_AUTO_MIGRATE` escape; trivial schema; `_sqlx_migrations`
+**Notes:** User asked for recommendation on Q2–Q4; accepted package: auto-migrate default with `OXIDEAN_AUTO_MIGRATE` escape; trivial schema; `_sqlx_migrations`
 
 ### Portability strictness
 
@@ -97,7 +97,7 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | sqlx `_sqlx_migrations` | Recommended + accepted | ✓ |
-| Custom octanest table | — | |
+| Custom oxidean table | — | |
 | Don't care | — | |
 
 **User's choice:** sqlx defaults
@@ -201,11 +201,11 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| ./data/octanest.db | — | |
-| ./var/octanest.db | Runtime-state style | ✓ |
+| ./data/oxidean.db | — | |
+| ./var/oxidean.db | Runtime-state style | ✓ |
 | Configurable only | — | |
 
-**User's choice:** `./var/octanest.db`
+**User's choice:** `./var/oxidean.db`
 
 ### Parent dir creation
 

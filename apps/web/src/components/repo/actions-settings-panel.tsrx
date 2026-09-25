@@ -1,4 +1,4 @@
-import type { ActionSecretMetaPublic } from "@octanest/api-client";
+import type { ActionSecretMetaPublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastError, toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function secretsQueryKey(owner: string, name: string) {
   return ["repo", "actions", "secrets", owner, name] as const;

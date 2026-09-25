@@ -39,13 +39,13 @@ key-files:
   created:
     - apps/web/src/components/repo/issue-assignees-panel.tsrx
   modified:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/tests/issue_assignees.rs
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-db/src/issue_labels.rs
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/tests/issue_assignees.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-db/src/issue_labels.rs
+    - crates/oxidean-db/src/lib.rs
     - packages/api-client/src/index.ts
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
     - apps/web/src/routes/$owner.$repo.issues.integration.test.ts
@@ -69,7 +69,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_assignees)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_assignees)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -77,7 +77,7 @@ coverage:
     requirement: ISS-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_assignees_multi_assign)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_assignees_multi_assign)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -120,9 +120,9 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/issue_assignees.rs` — multi-assign / reject / unassign + candidates
-- `crates/octanest-api/src/issue/mod.rs` — assignees_set + assignee_candidates; assignees on to_public
-- `crates/octanest-db/src/issue_labels.rs` — `list_issue_assignees`
+- `crates/oxidean-api/tests/issue_assignees.rs` — multi-assign / reject / unassign + candidates
+- `crates/oxidean-api/src/issue/mod.rs` — assignees_set + assignee_candidates; assignees on to_public
+- `crates/oxidean-db/src/issue_labels.rs` — `list_issue_assignees`
 - `packages/api-client/src/index.ts` — generated client types/procedures
 - `apps/web/src/components/repo/issue-assignees-panel.tsrx` — multi-select panel
 - `apps/web/src/routes/$owner.$repo.issues.$n.tsrx` — wire panel
@@ -139,9 +139,9 @@ status: complete
 
 **1. [Rule 3 - Blocking] DB helper lives in `issue_labels.rs`, not `issues.rs`**
 - **Found during:** Task 1
-- **Issue:** Plan listed `crates/octanest-db/src/issues.rs`; assignees helpers already live beside labels
+- **Issue:** Plan listed `crates/oxidean-db/src/issues.rs`; assignees helpers already live beside labels
 - **Fix:** Extended `issue_labels.rs` + `Database::list_issue_assignees` (existing pattern)
-- **Files modified:** `crates/octanest-db/src/issue_labels.rs`, `crates/octanest-db/src/lib.rs`
+- **Files modified:** `crates/oxidean-db/src/issue_labels.rs`, `crates/oxidean-db/src/lib.rs`
 - **Commit:** `b6690f7`
 
 **2. [Rule 3 - Blocking] Detail route path is `$n`, not `$number`**

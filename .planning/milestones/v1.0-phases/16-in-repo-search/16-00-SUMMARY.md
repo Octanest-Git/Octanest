@@ -19,7 +19,7 @@ tech-stack:
   patterns: [Wave 0 #[ignore] nextest stubs, Vitest it.todo route stubs]
 key-files:
   created:
-    - crates/octanest-api/tests/repo_search.rs
+    - crates/oxidean-api/tests/repo_search.rs
     - apps/web/src/routes/$owner.$repo.search.integration.test.ts
   modified: []
 key-decisions:
@@ -31,7 +31,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: unit
-        ref: "cargo nextest list -p octanest-api -E 'test(repo_search)' --run-ignored all"
+        ref: "cargo nextest list -p oxidean-api -E 'test(repo_search)' --run-ignored all"
         status: pass
     human_judgment: false
   - id: D2
@@ -74,7 +74,7 @@ commits: 2
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/repo_search.rs` — Wave 0 ignored stubs for all search filters
+- `crates/oxidean-api/tests/repo_search.rs` — Wave 0 ignored stubs for all search filters
 - `apps/web/src/routes/$owner.$repo.search.integration.test.ts` — `it.todo` UI coverage intents
 
 ## Decisions Made
@@ -87,6 +87,6 @@ None - plan executed exactly as written (minor: dropped unused `support` lock af
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/repo_search.rs
+- FOUND: crates/oxidean-api/tests/repo_search.rs
 - FOUND: apps/web/src/routes/$owner.$repo.search.integration.test.ts
 - FOUND: db2cce8, 132104e

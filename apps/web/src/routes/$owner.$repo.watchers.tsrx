@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { Eye, Search } from "@octanejs/lucide";
-import type { RepoPublic, RepoWatcherPublic } from "@octanest/api-client";
+import type { RepoPublic, RepoWatcherPublic } from "@oxidean/api-client";
 import { useState } from "octane";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,7 +26,7 @@ export type WatchersLoaderData =
       limit: number;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const PAGE_LIMIT = 50;
 
 async function loadWatchersPage(
@@ -65,7 +65,7 @@ export const Route = createFileRoute("/$owner/$repo/watchers")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Watchers · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Watchers · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

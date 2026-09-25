@@ -7,11 +7,11 @@
 # expects an SSH push to the same protected ref to fail (D-PKG-03 SSH half).
 #
 # Env:
-#   OCTANEST_SMOKE_URL     default http://localhost
+#   OXIDEAN_SMOKE_URL     default http://localhost
 #   COMPOSE_FILE           default docker-compose.yml
 #   SMOKE_REQUIRE_STACK    if 1 (or CI=true), fail closed when Docker missing
-#   OCTANEST_SSH_HOST      default localhost
-#   OCTANEST_SSH_PORT      default 2222
+#   OXIDEAN_SSH_HOST      default localhost
+#   OXIDEAN_SSH_PORT      default 2222
 #   SMOKE_SKIP_LS_REMOTE   if 1, skip SSH denial branch (HTTPS remains mandatory)
 #
 # Operator hosts without Docker: exits 0 with a skip message (unless fail-closed).
@@ -26,13 +26,13 @@ source "${ROOT}/scripts/smoke-lib.sh"
 source "${ROOT}/scripts/docker-wsl-creds.sh"
 SMOKE_NAME="compose-smoke-protection"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 OWNER="${SMOKE_PROTECT_OWNER:-protowner}"
 REPO="${SMOKE_PROTECT_REPO:-protrepo}"
 PASSWORD="${SMOKE_PROTECT_PASSWORD:-ProtectSmoke1!}"
-SSH_HOST="${OCTANEST_SSH_HOST:-localhost}"
-SSH_PORT="${OCTANEST_SSH_PORT:-2222}"
+SSH_HOST="${OXIDEAN_SSH_HOST:-localhost}"
+SSH_PORT="${OXIDEAN_SSH_PORT:-2222}"
 
 smoke_require_docker
 
@@ -56,8 +56,8 @@ docker compose -f "$COMPOSE_FILE" down -v --remove-orphans >/dev/null 2>&1 || tr
 echo "==> docker compose config"
 docker compose -f "$COMPOSE_FILE" config >/dev/null
 
-if [[ "${OCTANEST_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
-  echo "==> docker compose up -d --wait (OCTANEST_COMPOSE_SKIP_BUILD=1)"
+if [[ "${OXIDEAN_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
+  echo "==> docker compose up -d --wait (OXIDEAN_COMPOSE_SKIP_BUILD=1)"
   docker compose -f "$COMPOSE_FILE" up -d --wait
 else
   echo "==> docker compose up --build -d --wait"
@@ -80,7 +80,7 @@ if [[ "$ok" -ne 1 ]]; then
 fi
 
 echo "==> assert protection helper executable in API image"
-docker compose -f "$COMPOSE_FILE" exec -T api test -x /usr/local/bin/octanest-protection-hook
+docker compose -f "$COMPOSE_FILE" exec -T api test -x /usr/local/bin/oxidean-protection-hook
 echo "==> helper OK"
 
 COOKIE_JAR="$(mktemp)"
@@ -96,7 +96,7 @@ rpc() {
     curl -sS -o "$RPC_OUT" -w "%{http_code}" \
       -c "$COOKIE_JAR" -b "$COOKIE_JAR" \
       -H "content-type: application/json" \
-      -H "Octanest-RPC-Version: 1" \
+      -H "Oxidean-RPC-Version: 1" \
       -d "$body" \
       "${BASE_URL}/api/rpc" || true
   )"
@@ -187,7 +187,7 @@ if [[ -n "$ssh_skip_reason" ]]; then
 else
   echo "==> SSH protected-push denial (D-PKG-03)"
   identity="${WORK}/id_ed25519"
-  ssh-keygen -t ed25519 -N "" -f "$identity" -C "protect-smoke-ssh@octanest" -q
+  ssh-keygen -t ed25519 -N "" -f "$identity" -C "protect-smoke-ssh@oxidean" -q
   pub="$(cat "${identity}.pub")"
   pub_json=$(printf '%s' "$pub" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
   rpc "$(printf '{"procedure":"sshKey.add","input":{"title":"protect-smoke-ssh","public_key":%s}}' "$pub_json")"

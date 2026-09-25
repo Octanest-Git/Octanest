@@ -68,21 +68,21 @@ Deferred ideas (Maven/PyPI/S3/cosign/replication): excluded — cosign/referrers
 
 **2. [dependency_correctness] Cross-plan artifact producers are declared in `depends_on`**
 - Plan: `20-09`
-- Evidence: Plan 09 `files_modified` and Task 2 edit `crates/octanest-api/src/packages/rpc.rs` and run `package_rpc` / `make rpc-gen`, but that module and list/delete RPCs are introduced in plan **08**. `depends_on` is only `["04","05","06"]` — no edge to `08`. Wave 6 ordering may hide this in a full-phase run; isolated or reordered execution breaks Admin quota RPC on a missing foundation.
+- Evidence: Plan 09 `files_modified` and Task 2 edit `crates/oxidean-api/src/packages/rpc.rs` and run `package_rpc` / `make rpc-gen`, but that module and list/delete RPCs are introduced in plan **08**. `depends_on` is only `["04","05","06"]` — no edge to `08`. Wave 6 ordering may hide this in a full-phase run; isolated or reordered execution breaks Admin quota RPC on a missing foundation.
 - Example fix (non-binding): Add `"08"` to plan 09 `depends_on` (wave stays ≥6).
 
 **3. [verify_command_format] Automated verifies must not swallow failures into a passing fallback**
 - Plan: `20-03`
 - Task: 1 (`20-03-T1`)
 - Evidence: Verify is  
-  `cargo nextest … ; cargo test -p octanest-db --lib -- packages 2>/dev/null || cargo check -p octanest-api -p octanest-db`  
+  `cargo nextest … ; cargo test -p oxidean-db --lib -- packages 2>/dev/null || cargo check -p oxidean-api -p oxidean-db`  
   If nextest/db tests fail, `|| cargo check` can still exit 0 and mark the store task done.
 - Example fix (non-binding): Drop the `|| cargo check` fallback; require nextest/db tests (or a single non-masking command) to be the pass/fail signal.
 
 **4. [task_completeness] Task action, verify, and done must agree on the same deliverable**
 - Plan: `20-02`
 - Task: 2 (`20-02-T2`)
-- Evidence: `<action>` only adds `OCTANEST_PACKAGES_DIR` / volume / docs and forbids quota enforcement. `<verify>` and `<done>` also require Traefik `PathPrefix` / `api-packages` labels that Task 3’s action is what actually adds. T2 cannot pass verify from its own action.
+- Evidence: `<action>` only adds `OXIDEAN_PACKAGES_DIR` / volume / docs and forbids quota enforcement. `<verify>` and `<done>` also require Traefik `PathPrefix` / `api-packages` labels that Task 3’s action is what actually adds. T2 cannot pass verify from its own action.
 - Example fix (non-binding): Move PathPrefix/`api-packages` assertions to T3 only, or expand T2 action to own those Compose labels.
 
 ---

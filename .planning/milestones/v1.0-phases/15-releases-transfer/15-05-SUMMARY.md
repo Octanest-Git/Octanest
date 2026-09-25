@@ -25,11 +25,11 @@ key-files:
   modified:
     - apps/web/src/routes/$owner.$repo.settings.tsrx
     - apps/web/src/components/repo/repo-chrome.tsrx
-    - crates/octanest-api/src/auth/admin.rs
+    - crates/oxidean-api/src/auth/admin.rs
     - docs/API.md
 key-decisions:
   - "Settings nav gated on repo.can_admin (not username equality)"
-  - "Factory reset repos scope also clears OCTANEST_RELEASE_ASSETS_DIR children"
+  - "Factory reset repos scope also clears OXIDEAN_RELEASE_ASSETS_DIR children"
 requirements-completed: [GIT-14, GIT-15, GIT-16, GIT-17]
 coverage:
   - id: D1
@@ -52,7 +52,7 @@ coverage:
     description: "API/CONFIG docs for releases, rename/transfer, ENV"
     verification:
       - kind: other
-        ref: "rg release.|repo.rename|OCTANEST_RELEASE docs/API.md docs/CONFIGURATION.md"
+        ref: "rg release.|repo.rename|OXIDEAN_RELEASE docs/API.md docs/CONFIGURATION.md"
         status: pass
     human_judgment: false
 duration: 20min

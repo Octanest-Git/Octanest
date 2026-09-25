@@ -35,7 +35,7 @@ decision_coverage: "{'honored': 6, 'total': 6, 'not_honored': []}"
 
 # Phase 22: Compose CI & Cloud Deploy Verification Report
 
-**Phase Goal:** Every PR proves Compose health across supported databases, and the same images deploy as Octanest Cloud on a container host  
+**Phase Goal:** Every PR proves Compose health across supported databases, and the same images deploy as Oxidean Cloud on a container host  
 **Verified:** 2026-09-19T16:34:11Z  
 **Status:** passed  
 **Re-verification:** Yes — thorough goal-backward verify (D-VER-01, D-VER-04) for v1.0 milestone closure; plans 01–03 + `22-VALIDATION.md` greened 2026-09-16; live Compose bring-up reconfirmed via `make smoke-protection` stack (2026-09-19, Phase 22.1 packaging wave)
@@ -50,7 +50,7 @@ Merged from ROADMAP success criteria + PLAT-02 / PLAT-03 / PLAT-09 + VALIDATION 
 | --- | ------- | ---------- | -------------- |
 | 1 | PR CI builds and brings up Compose and asserts health (PLAT-03) | ✓ VERIFIED | `.github/workflows/ci.yml` job `compose-smoke` → `./scripts/ci-compose-smoke.sh`; wrapper fail-closed under `CI`/`SMOKE_REQUIRE_STACK`; delegates to `make smoke*`; `22-01-SUMMARY`; `docs/TESTING.md` CI table row |
 | 2 | CI exercises Postgres + SQLite; MySQL in same PR workflow (PLAT-09) | ✓ VERIFIED | `compose-smoke` `strategy.matrix.dialect: [postgres, sqlite, mysql]` with `fail-fast: false`; Make targets `smoke` / `smoke-sqlite` / `smoke-mysql`; VALIDATION requirement coverage COVERED |
-| 3 | Operator can deploy same images/stack to Railway-class host as Octanest Cloud (PLAT-02 IaC path) | ✓ VERIFIED | `.railway/railway.ts` + volumes (`forge-data`); `deploy/cloud/Caddyfile` + `Dockerfile`; `make cloud-plan`; `docs/DEPLOYMENT.md` Octanest Cloud section; no `railway.json`; `22-02-SUMMARY` |
+| 3 | Operator can deploy same images/stack to Railway-class host as Oxidean Cloud (PLAT-02 IaC path) | ✓ VERIFIED | `.railway/railway.ts` + volumes (`forge-data`); `deploy/cloud/Caddyfile` + `Dockerfile`; `make cloud-plan`; `docs/DEPLOYMENT.md` Oxidean Cloud section; no `railway.json`; `22-02-SUMMARY` |
 | 4 | Config-only `compose` job remains as cheap signal (not a substitute for bring-up) | ✓ VERIFIED | Separate `compose` job runs `docker compose … config` for base/mysql/sqlite/dev-auth overlays; VALIDATION complementary table |
 | 5 | Complementary jobs do not replace Compose dialect health | ✓ VERIFIED | `smoke-protocol` and `db-matrix` documented as non-substitutes in VALIDATION + TESTING.md (D-CI-05) |
 | 6 | Docs sync: ARCHITECTURE / TESTING / DEPLOYMENT describe CI + cloud path | ✓ VERIFIED | `22-03-SUMMARY`; rg hits for `compose-smoke`, `cloud-plan`, `.railway`, `deploy/cloud` |
@@ -120,7 +120,7 @@ None that block the phase goal. Status policy follows D-VER-03: **passed** with 
 
 ### Gaps Summary
 
-No blocking gaps. Phase 22 goal achieved: PR Compose bring-up matrix (Postgres/SQLite/MySQL), fail-closed CI wrapper, complementary job boundaries documented, and Railway-class IaC + Caddy gateway + operator docs for Octanest Cloud — evidenced by plans 22-01…03, VALIDATION, CI/docs/file presence, and same-day Compose stack health.
+No blocking gaps. Phase 22 goal achieved: PR Compose bring-up matrix (Postgres/SQLite/MySQL), fail-closed CI wrapper, complementary job boundaries documented, and Railway-class IaC + Caddy gateway + operator docs for Oxidean Cloud — evidenced by plans 22-01…03, VALIDATION, CI/docs/file presence, and same-day Compose stack health.
 
 ---
 

@@ -1,4 +1,4 @@
-import type { WebhookPublic } from "@octanest/api-client";
+import type { WebhookPublic } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { WebhookDeliveries } from "@/components/repo/webhook-deliveries";
@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function webhooksQueryKey(owner: string, name: string) {
   return ["webhook", "list", owner, name] as const;

@@ -1,22 +1,22 @@
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
-import { createClient, type OctanestClient } from "@octanest/api-client";
+import { createClient, type OxideanClient } from "@oxidean/api-client";
 import { resolvePublicOriginFromEnv, resolveSshHost, resolveSshPort } from "@/lib/public-origin";
 
 /** API origin for SSR Cookie-forward RPCs — never the browser origin during SSR. */
 function ssrApiOrigin(): string {
   return (
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080"
   );
 }
 
 /**
- * Cookie-forward Octanest RPC client for repo SSR loaders.
+ * Cookie-forward Oxidean RPC client for repo SSR loaders.
  * Forwards the incoming request Cookie only — never logs cookie values (T-06-11).
  */
-function createSsrClient(cookie: string): OctanestClient {
+function createSsrClient(cookie: string): OxideanClient {
   return createClient({
     baseUrl: ssrApiOrigin(),
     credentials: "include",
@@ -535,7 +535,7 @@ export const fetchReleaseList = createServerFn({ method: "GET" })
 
 /**
  * SSR: browser-facing origin for clone URLs.
- * Prefer OCTANEST_PUBLIC_ORIGIN; fall back to forwarded Host.
+ * Prefer OXIDEAN_PUBLIC_ORIGIN; fall back to forwarded Host.
  */
 export const fetchPublicOrigin = createServerFn({ method: "GET" }).handler(async () => {
   const fromEnv = resolvePublicOriginFromEnv();
@@ -558,7 +558,7 @@ export const fetchPublicOrigin = createServerFn({ method: "GET" }).handler(async
 
 /**
  * SSR: advertised Git SSH host + port for CloneBox.
- * Must be server-fn’d — browser bundles cannot read OCTANEST_SSH_* at runtime.
+ * Must be server-fn’d — browser bundles cannot read OXIDEAN_SSH_* at runtime.
  */
 export const fetchSshAdvertise = createServerFn({ method: "GET" })
   .validator((data: { publicOrigin?: string }) => ({

@@ -87,7 +87,7 @@
 | Topic | Options (summary) | Selected |
 |-------|-------------------|----------|
 | Layout | bare `var/repos/...` / non-bare / you decide | ✓ Bare |
-| Config | `OCTANEST_REPOS_DIR` / hardcode / you decide | ✓ Env + volume |
+| Config | `OXIDEAN_REPOS_DIR` / hardcode / you decide | ✓ Env + volume |
 | Backend | gix trait / gix only / you decide | ✓ **git CLI primary**; gitoxide later (user clarified) |
 | Missing git | fail boot / soft-fail / you decide | ✓ Fail boot |
 | Git version | 2.x / any / you decide | ✓ **2.5+** |

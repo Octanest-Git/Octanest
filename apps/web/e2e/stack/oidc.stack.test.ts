@@ -7,19 +7,19 @@ describe("stack e2e: OIDC → mock-oauth2-server", () => {
     requireStack();
   });
 
-  it("start → IdP → callback mints an Octanest session", async () => {
+  it("start → IdP → callback mints an Oxidean session", async () => {
     await withAdminSession(async (adminCookie) => {
       await updateAuthSettings(adminCookie, {
         provider_mode: "oidc",
         email_provider: "log",
-        oidc_issuer: process.env.OCTANEST_E2E_OIDC_ISSUER || "http://127.0.0.1:9090/default",
-        oidc_client_id: "octanest-dev",
+        oidc_issuer: process.env.OXIDEAN_E2E_OIDC_ISSUER || "http://127.0.0.1:9090/default",
+        oidc_client_id: "oxidean-dev",
       });
 
       const start = `${apiOrigin()}/api/auth/oidc/start?return_to=${encodeURIComponent("/")}`;
       const result = await followRedirects(start, { maxHops: 16 });
 
-      const session = result.cookies.find((c) => c.startsWith("octanest_session="));
+      const session = result.cookies.find((c) => c.startsWith("oxidean_session="));
 
       if (!session) {
         throw new Error(

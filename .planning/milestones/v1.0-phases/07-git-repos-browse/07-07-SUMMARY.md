@@ -34,13 +34,13 @@ key-files:
   created:
     - .planning/phases/07-git-repos-browse/.tdd/07-07-red-evidence.json
   modified:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/tests/repo_branch_soft_protect.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/tests/repo_branch_soft_protect.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -60,7 +60,7 @@ coverage:
     requirement: GIT-06
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_allows_non_default_crud"
+        ref: "crates/oxidean-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_allows_non_default_crud"
         status: pass
     human_judgment: false
   - id: D2
@@ -68,7 +68,7 @@ coverage:
     requirement: GIT-06
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_blocks_default_rename_and_delete"
+        ref: "crates/oxidean-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_blocks_default_rename_and_delete"
         status: pass
     human_judgment: false
   - id: D3
@@ -76,7 +76,7 @@ coverage:
     requirement: GIT-06
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_non_owner_mutate_not_found"
+        ref: "crates/oxidean-api/tests/repo_branch_soft_protect.rs#repo_branch_soft_protect_non_owner_mutate_not_found"
         status: pass
     human_judgment: false
 
@@ -114,13 +114,13 @@ _TDD: RED evidence at `.planning/phases/07-git-repos-browse/.tdd/07-07-red-evide
 
 ## Files Created/Modified
 
-- `crates/octanest-git/src/backend.rs` — trait methods for branch CRUD
-- `crates/octanest-git/src/cli.rs` — `git branch` / `-m` / `-D` implementations
-- `crates/octanest-core/src/repo_types.rs` — branch request/response DTOs
-- `crates/octanest-api/src/repo/mod.rs` — owner gate + soft-protect handlers
-- `crates/octanest-api/src/rpc.rs` — procedure dispatch
-- `crates/octanest-api/src/bin/rpc_gen.rs` + `packages/api-client/src/index.ts` — client types
-- `crates/octanest-api/tests/repo_branch_soft_protect.rs` — GIT-06 / D-27 / D-28 coverage
+- `crates/oxidean-git/src/backend.rs` — trait methods for branch CRUD
+- `crates/oxidean-git/src/cli.rs` — `git branch` / `-m` / `-D` implementations
+- `crates/oxidean-core/src/repo_types.rs` — branch request/response DTOs
+- `crates/oxidean-api/src/repo/mod.rs` — owner gate + soft-protect handlers
+- `crates/oxidean-api/src/rpc.rs` — procedure dispatch
+- `crates/oxidean-api/src/bin/rpc_gen.rs` + `packages/api-client/src/index.ts` — client types
+- `crates/oxidean-api/tests/repo_branch_soft_protect.rs` — GIT-06 / D-27 / D-28 coverage
 
 ## Decisions Made
 
@@ -147,8 +147,8 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/repo_branch_soft_protect.rs
-- FOUND: crates/octanest-git/src/cli.rs branch_* methods
+- FOUND: crates/oxidean-api/tests/repo_branch_soft_protect.rs
+- FOUND: crates/oxidean-git/src/cli.rs branch_* methods
 - FOUND: e1e29ad (RED), d40adac (GREEN)
 - FOUND: nextest `test(repo_branch)` 3 passed
 
