@@ -22,7 +22,7 @@ export function parseViteAllowedHosts(
       const { hostname } = new URL(origin);
       if (hostname) hosts.add(hostname.toLowerCase());
     } catch {
-      // Ignore malformed OCTANEST_PUBLIC_ORIGIN; CORS/API config owns validation.
+      // Ignore malformed OXIDEAN_PUBLIC_ORIGIN; CORS/API config owns validation.
     }
   }
 

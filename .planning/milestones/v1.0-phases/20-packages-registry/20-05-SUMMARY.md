@@ -24,8 +24,8 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/packages/oci.rs
-    - crates/octanest-api/tests/oci_registry.rs
+    - crates/oxidean-api/src/packages/oci.rs
+    - crates/oxidean-api/tests/oci_registry.rs
 
 key-decisions:
   - "Repository path is {owner}/{image} two-segment (nested image names deferred to path dispatcher)"
@@ -42,7 +42,7 @@ coverage:
     requirement: PKG-01
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(oci_registry)'
+        ref: cargo nextest run -p oxidean-api -E 'test(oci_registry)'
         status: pass
     human_judgment: false
 

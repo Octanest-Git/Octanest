@@ -34,8 +34,8 @@ Output: {phase_num}-UI-REVIEW.md
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/ui-review.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/ui-review.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

@@ -21,7 +21,7 @@ describe("stack e2e: WorkOS → AuthKit stub", () => {
       const result = await followRedirects(start);
 
       expect(new URL(result.finalUrl).pathname).toBe("/");
-      const session = result.cookies.find((c) => c.startsWith("octanest_session="));
+      const session = result.cookies.find((c) => c.startsWith("oxidean_session="));
       expect(session).toBeTruthy();
 
       await waitForStub((e) => e.method === "POST" && e.path === "/user_management/authenticate");
@@ -29,7 +29,7 @@ describe("stack e2e: WorkOS → AuthKit stub", () => {
       const me = await rpc("auth.me", {}, session);
       expect(me.ok).toBe(true);
       const data = me.data as { email?: string };
-      expect(data.email).toBe("dev@octanest.local");
+      expect(data.email).toBe("dev@oxidean.local");
     });
   }, 45_000);
 });

@@ -10,7 +10,7 @@ Run a ≤6-question interview, score frameworks, return a ranked recommendation 
 </role>
 
 <required_reading>
-Read `/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ai-frameworks.md` before asking questions. This is your decision matrix.
+Read `/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ai-frameworks.md` before asking questions. This is your decision matrix.
 </required_reading>
 
 <project_context>

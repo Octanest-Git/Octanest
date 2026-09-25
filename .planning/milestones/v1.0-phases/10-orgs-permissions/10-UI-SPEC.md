@@ -86,7 +86,7 @@ created: 2026-09-14
 
 - Primary CTAs ≥44px; form labels associated; autocomplete list keyboard-reachable.
 - Prefer existing AuthShell / settings density from `admin/auth` and `settings/profile`.
-- Document titles: `New organization · Octanest`, `{Org} · Octanest`, `Members · {Org}`, etc.
+- Document titles: `New organization · Oxidean`, `{Org} · Oxidean`, `Members · {Org}`, etc.
 
 ---
 

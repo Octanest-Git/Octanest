@@ -1,17 +1,17 @@
 ---
 name: octane
 description: >-
-  Octane UI authoring for Octanest (`.tsrx`, Rivet templates, native events,
+  Octane UI authoring for Oxidean (`.tsrx`, Rivet templates, native events,
   TanStack Query via @octanejs). Use when editing apps/web components, routes,
   SSR loaders, or when tempted to write React JSX patterns. Prefer this over
   treating the UI as React.
 ---
 
-# Octane (Octanest)
+# Octane (Oxidean)
 
 Official reference: [octanejs.dev/llms.txt](https://octanejs.dev/llms.txt) · [Differences from React](https://octanejs.dev/docs/differences-from-react) · [TSRX vs TSX](https://octanejs.dev/docs/tsrx-vs-tsx)
 
-Octane is Inferno’s successor with a React-*shaped* programming model (hooks, Suspense, transitions) but **AOT compilation**, **no virtual DOM**, and **native DOM events**. Octanest ships UI almost entirely as **`.tsrx`**.
+Octane is Inferno’s successor with a React-*shaped* programming model (hooks, Suspense, transitions) but **AOT compilation**, **no virtual DOM**, and **native DOM events**. Oxidean ships UI almost entirely as **`.tsrx`**.
 
 ## Project defaults
 

@@ -18,7 +18,7 @@ const DEFAULT_USERNAME_ERROR = "Choose a username other than the default system-
 
 export const Route = createFileRoute("/setup/credentials")({
   component: CredentialsPage,
-  head: () => ({ meta: [{ title: "Confirm admin · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Confirm admin · Oxidean" }] }),
   beforeLoad: async () => {
     let mustChange: boolean | null = null;
     try {

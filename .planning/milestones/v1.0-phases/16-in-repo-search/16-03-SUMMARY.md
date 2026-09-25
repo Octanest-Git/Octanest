@@ -8,7 +8,7 @@ requires:
     provides: all four repo.search types
 provides:
   - Full search UI with type tabs + chrome entry
-  - OCTANEST_SEARCH_* operator knobs
+  - OXIDEAN_SEARCH_* operator knobs
   - Phase gate green for GIT-18
 affects: []
 actuals:
@@ -24,7 +24,7 @@ key-files:
   modified:
     - apps/web/src/routes/$owner.$repo.search.tsrx
     - apps/web/src/components/repo/repo-chrome.tsrx
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-api/src/app.rs
     - docs/CONFIGURATION.md
     - .env.example
 key-decisions:
@@ -41,11 +41,11 @@ coverage:
         status: pass
     human_judgment: false
   - id: D2
-    description: "OCTANEST_SEARCH_* documented and enforced"
+    description: "OXIDEAN_SEARCH_* documented and enforced"
     requirement: GIT-18
     verification:
       - kind: other
-        ref: "rg OCTANEST_SEARCH_ docs/CONFIGURATION.md .env.example"
+        ref: "rg OXIDEAN_SEARCH_ docs/CONFIGURATION.md .env.example"
         status: pass
     human_judgment: false
   - id: D3
@@ -53,7 +53,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search)'"
         status: pass
     human_judgment: false
 duration: 40min
@@ -77,7 +77,7 @@ commits: 2
 
 - Full `/search` page with Code/Commits/Issues/Pull requests tabs
 - `RepoSearchEntry` in layout-owned RepoChrome; GlobalSearch untouched
-- `OCTANEST_SEARCH_TIMEOUT_MS` / `MAX_MATCHES` / `MAX_FILES` wired + documented
+- `OXIDEAN_SEARCH_TIMEOUT_MS` / `MAX_MATCHES` / `MAX_FILES` wired + documented
 - Phase gate: all `repo_search_*`, git unit tests, rpc-sync-check, Vitest, web build
 
 ## Task Commits
@@ -97,6 +97,6 @@ None material.
 
 ## Self-Check: PASSED
 
-- FOUND: repo-search-entry.tsrx, CONFIGURATION OCTANEST_SEARCH_*
+- FOUND: repo-search-entry.tsrx, CONFIGURATION OXIDEAN_SEARCH_*
 - FOUND: cc6cbec, 960315a
 - Gate: 6/6 repo_search + grep/log_search + rpc-sync + vitest + build

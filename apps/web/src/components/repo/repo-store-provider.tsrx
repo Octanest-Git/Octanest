@@ -1,6 +1,6 @@
 import { useState } from "octane";
 import { RepoStoreContext, createRepoStore, type RepoLayoutStatus } from "@/lib/repo-store";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 
 type RepoStoreProviderProps = {
   owner: string;

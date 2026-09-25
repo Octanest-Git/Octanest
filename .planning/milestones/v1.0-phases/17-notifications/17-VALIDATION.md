@@ -19,7 +19,7 @@ created: "2026-09-16"
 |----------|-------|
 | **Framework** | cargo nextest (Rust) + Vitest (apps/web) |
 | **Config file** | `Cargo.toml` workspace / `apps/web` vitest via package scripts |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(notification)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(notification)'` |
 | **Full suite command** | `make test` (or nextest notification + dialect_notifications + web notification filters) |
 | **Estimated runtime** | ~60–120 seconds for notification-focused filters |
 
@@ -40,9 +40,9 @@ created: "2026-09-16"
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 17-00-T1 | 00 | 0 | NOTF-01/02 | T-17-01 | stubs discoverable | nextest list | see 17-00-PLAN | ✅ | ✅ present |
 | 17-00-T2 | 00 | 0 | NOTF-02 | — | web stubs discoverable | file + vitest list | see 17-00-PLAN | ✅ | ✅ present |
-| 17-01-T1 | 01 | 1 | NOTF-01/02 | T-17-01 | own-rows RPC | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ✅ | ⬜ pending |
+| 17-01-T1 | 01 | 1 | NOTF-01/02 | T-17-01 | own-rows RPC | nextest | `cargo nextest run -p oxidean-api -E 'test(notification)'` | ✅ | ⬜ pending |
 | 17-01-T2 | 01 | 1 | NOTF-01 | T-17-02 | comment→notify author | nextest | same filter | ✅ | ⬜ pending |
-| 17-02-T1 | 02 | 2 | NOTF-01 | T-17-02 | issue event fan-out | nextest | `cargo nextest run -p octanest-api -E 'test(notification)'` | ✅ | ⬜ pending |
+| 17-02-T1 | 02 | 2 | NOTF-01 | T-17-02 | issue event fan-out | nextest | `cargo nextest run -p oxidean-api -E 'test(notification)'` | ✅ | ⬜ pending |
 | 17-02-T2 | 02 | 2 | NOTF-01 | — | @mention recipients | nextest | same | ✅ | ⬜ pending |
 | 17-03-T1 | 03 | 3 | NOTF-01 | T-17-02 | PR event fan-out | nextest | PR+notification filter | ✅ | ⬜ pending |
 | 17-04-T1 | 04 | 4 | NOTF-02 | T-17-03 | bell + badge | vitest | chrome notification filter | ✅ | ⬜ pending |
@@ -54,8 +54,8 @@ created: "2026-09-16"
 
 ## Wave 0 Requirements
 
-- [x] `crates/octanest-api/tests/notification_rpc.rs` — stubs for NOTF-01/02 RPC behaviors
-- [x] `crates/octanest-db/tests/dialect_notifications.rs` — migration parity stub
+- [x] `crates/oxidean-api/tests/notification_rpc.rs` — stubs for NOTF-01/02 RPC behaviors
+- [x] `crates/oxidean-db/tests/dialect_notifications.rs` — migration parity stub
 - [x] `apps/web/src/components/chrome.notifications.integration.test.ts` — bell stub
 - [x] `apps/web/src/routes/notifications.integration.test.ts` — list page stub
 

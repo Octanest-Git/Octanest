@@ -1,4 +1,4 @@
-import type { PatListItem } from "@octanest/api-client";
+import type { PatListItem } from "@oxidean/api-client";
 import { useState } from "octane";
 import {
   AlertDialog,

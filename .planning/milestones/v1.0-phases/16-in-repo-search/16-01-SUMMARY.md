@@ -20,13 +20,13 @@ tech-stack:
   patterns: [git grep via GitBackend, tagged RepoSearchHit, soft truncated flag]
 key-files:
   created:
-    - crates/octanest-api/src/repo/search.rs
+    - crates/oxidean-api/src/repo/search.rs
     - apps/web/src/routes/$owner.$repo.search.tsrx
   modified:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/rpc.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/rpc.rs
     - packages/api-client/src/index.ts
     - apps/web/src/lib/repo-chrome-active.ts
 key-decisions:
@@ -39,7 +39,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search_code)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search_code)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -47,7 +47,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search_acl)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search_acl)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -90,8 +90,8 @@ commits: 2
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/search.rs` — RPC handler
-- `crates/octanest-git/src/cli.rs` — grep impl + unit tests
+- `crates/oxidean-api/src/repo/search.rs` — RPC handler
+- `crates/oxidean-git/src/cli.rs` — grep impl + unit tests
 - `apps/web/src/routes/$owner.$repo.search.tsrx` — tracer page
 - `packages/api-client/src/index.ts` — generated client
 
@@ -108,7 +108,7 @@ commits: 2
 - **Found during:** Task 1
 - **Issue:** Bare-repo grep failed with “must be run in a work tree”
 - **Fix:** Pass treeish before optional `-- pathspec`
-- **Files modified:** `crates/octanest-git/src/cli.rs`
+- **Files modified:** `crates/oxidean-git/src/cli.rs`
 - **Commit:** `7ae1538`
 
 **2. [Rule 3 - Blocking] Soft not_found is HTTP 404**

@@ -16,9 +16,9 @@ created: "2026-09-16"
 | Property | Value |
 |----------|-------|
 | **Framework** | cargo nextest (Rust) + Vitest (web) |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(repo_search)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(repo_search)'` |
 | **Full suite command** | `make test` |
-| **Phase gate** | Quick run + `cargo nextest run -p octanest-git -E 'test(grep) \| test(log_search)'` + `make rpc-sync-check` + Vitest search route + `bun --cwd apps/web run build` |
+| **Phase gate** | Quick run + `cargo nextest run -p oxidean-git -E 'test(grep) \| test(log_search)'` + `make rpc-sync-check` + Vitest search route + `bun --cwd apps/web run build` |
 
 ## Sampling Rate
 
@@ -30,7 +30,7 @@ created: "2026-09-16"
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-18 | Code search finds seeded content | API | `cargo nextest run -p octanest-api -E 'test(repo_search_code)'` | ✅ |
+| GIT-18 | Code search finds seeded content | API | `cargo nextest run -p oxidean-api -E 'test(repo_search_code)'` | ✅ |
 | GIT-18 | Commit search by message/author | API | `… test(repo_search_commits)` | ✅ |
 | GIT-18 | Issue search by title/body | API | `… test(repo_search_issues)` | ✅ |
 | GIT-18 | PR search by title/body | API | `… test(repo_search_pulls)` | ✅ |

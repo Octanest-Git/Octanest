@@ -1,5 +1,5 @@
 // Generates the macOS-style app-icon squircle (superellipse, n = 5) used to clip
-// the Octanest mark in the DOM and to mask raster app icons.
+// the Oxidean mark in the DOM and to mask raster app icons.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 

@@ -1,5 +1,5 @@
 ---
-description: Octane .tsrx / web UI authoring rules for Octanest
+description: Octane .tsrx / web UI authoring rules for Oxidean
 globs: apps/web/**/*.{tsrx,tsx,ts}
 alwaysApply: false
 ---

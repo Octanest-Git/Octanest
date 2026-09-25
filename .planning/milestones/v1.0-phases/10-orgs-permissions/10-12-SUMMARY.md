@@ -28,11 +28,11 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/tests/factory_reset_orgs.rs
+    - crates/oxidean-db/tests/factory_reset_orgs.rs
     - .planning/phases/10-orgs-permissions/.tdd/10-12-t1-red-evidence.json
   modified:
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/tests/factory_reset_scope.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/tests/factory_reset_scope.rs
     - docs/ARCHITECTURE.md
     - docs/API.md
     - docs/CONFIGURATION.md
@@ -40,7 +40,7 @@ key-files:
 
 key-decisions:
   - "Wipe all repository rows (user + org) then organizations before users — polymorphic repos no longer FK-cascade from users"
-  - "No new org env vars; invites reuse EmailSender + OCTANEST_PUBLIC_ORIGIN"
+  - "No new org env vars; invites reuse EmailSender + OXIDEAN_PUBLIC_ORIGIN"
   - "Mark nyquist_compliant true after Wave 0 gaps checked and phase gate green"
 
 patterns-established:
@@ -55,10 +55,10 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: unit
-        ref: crates/octanest-db/tests/factory_reset_orgs.rs#factory_reset_wipes_orgs_members_invites_collaborators_and_repos
+        ref: crates/oxidean-db/tests/factory_reset_orgs.rs#factory_reset_wipes_orgs_members_invites_collaborators_and_repos
         status: pass
       - kind: integration
-        ref: crates/octanest-api/tests/factory_reset_scope.rs#factory_reset_wipes_org_acl_and_repository_rows
+        ref: crates/oxidean-api/tests/factory_reset_scope.rs#factory_reset_wipes_org_acl_and_repository_rows
         status: pass
     human_judgment: false
   - id: D2
@@ -74,7 +74,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_) | test(collab) | test(repo_private) | test(git_smart) | test(pat_) | test(coalesce)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_) | test(collab) | test(repo_private) | test(git_smart) | test(pat_) | test(coalesce)'"
         status: pass
       - kind: other
         ref: "make rpc-sync-check && bun run --cwd apps/web build"
@@ -124,9 +124,9 @@ _Note: TDD Task 1 produced RED + GREEN commits (no REFACTOR)._
 
 ## Files Created/Modified
 
-- `crates/octanest-db/tests/factory_reset_orgs.rs` — DB integration: seed org ACL + repos → reset → empty
-- `crates/octanest-api/tests/factory_reset_scope.rs` — RPC factory_reset also clears org/repo rows
-- `crates/octanest-db/src/lib.rs` — `factory_reset_instance` deletes repositories + organizations first
+- `crates/oxidean-db/tests/factory_reset_orgs.rs` — DB integration: seed org ACL + repos → reset → empty
+- `crates/oxidean-api/tests/factory_reset_scope.rs` — RPC factory_reset also clears org/repo rows
+- `crates/oxidean-db/src/lib.rs` — `factory_reset_instance` deletes repositories + organizations first
 - `docs/ARCHITECTURE.md` — Capability ACL + orgs section; PAT∩ACL
 - `docs/API.md` — `org.*` / collaborators / `user.lookup` / factory_reset docs
 - `docs/CONFIGURATION.md` — no new org env vars; invite mail reuse
@@ -171,8 +171,8 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-db/tests/factory_reset_orgs.rs`
-- FOUND: `crates/octanest-db/src/lib.rs` factory_reset org wipe
+- FOUND: `crates/oxidean-db/tests/factory_reset_orgs.rs`
+- FOUND: `crates/oxidean-db/src/lib.rs` factory_reset org wipe
 - FOUND: `docs/ARCHITECTURE.md` Capability ACL (no owner-only stub)
 - FOUND: `10-12-SUMMARY.md` (this file)
 - FOUND commits: `70bb509`, `b486d58`, `678783d`

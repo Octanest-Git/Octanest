@@ -1,4 +1,4 @@
-import { createClient } from "@octanest/api-client";
+import { createClient } from "@oxidean/api-client";
 
 /** Shared browser client — cookies included for session RPCs. */
 export const apiClient = createClient({

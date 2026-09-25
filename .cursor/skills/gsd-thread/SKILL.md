@@ -34,7 +34,7 @@ doesn't belong to any specific phase.
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/thread.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/thread.md
 </execution_context>
 
 <process>

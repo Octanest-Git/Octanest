@@ -37,8 +37,8 @@
 - **D-27:** Branch create/rename/delete: **owner only**
 - **D-28:** Soft-protect default branch: **block delete/rename** in UI (full branch protection later)
 - **D-29:** Archives: **zip and tar.gz** from Code clone/download menu for current ref (also tags/commits where natural)
-- **D-30:** **Bare repos** at `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`) + **Compose volume** — **Reversibility:** costly — storage layout
-- **D-31:** **`OCTANEST_REPOS_DIR`** configurable (mirror uploads pattern)
+- **D-30:** **Bare repos** at `{OXIDEAN_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`) + **Compose volume** — **Reversibility:** costly — storage layout
+- **D-31:** **`OXIDEAN_REPOS_DIR`** configurable (mirror uploads pattern)
 - **D-32:** **REQUIREMENT AMENDMENT (GIT-09):** Phase 7 implements git ops via **system `git` CLI**, not gitoxide-first. Keep a **`GitBackend` abstraction**; **document future gitoxide** path when it covers needed operations — **Reversibility:** costly — roadmap/requirements wording + crate design
 - **D-33:** **Fail boot** if `git` missing or version **&lt; 2.5** — **Reversibility:** one-way — operator contract
 - **D-34:** Factory reset: **modal with radio buttons** for reset scope (e.g. DB-only vs DB+repos) — extends Phase 6 danger zone
@@ -74,18 +74,18 @@
 | GIT-05 | Browse files, commits, branches, tags in web UI | `GitBackend` read APIs via `ls-tree`/`log`/`show`/`blame`; Octane routes per D-16/D-17 |
 | GIT-06 | Create, rename, delete branches from web UI where permitted | Owner-only + soft-protect default; `git branch` / `update-ref` on bare |
 | GIT-07 | Download source archive for a ref | `git archive --format=zip\|tar.gz`; HTTP download route (not huge RPC) |
-| GIT-08 | Repo objects on local filesystem (volume-backed) | `OCTANEST_REPOS_DIR` + Compose bind mirroring uploads |
+| GIT-08 | Repo objects on local filesystem (volume-backed) | `OXIDEAN_REPOS_DIR` + Compose bind mirroring uploads |
 | GIT-09 | *(amended D-32)* Git ops via system `git` CLI; gitoxide later | `CliGitBackend` primary; docs + trait leave gitoxide path |
 | GIT-10 | Architecture allows swapping backends | `GitBackend` trait + docs in ARCHITECTURE/CONFIGURATION |
 </phase_requirements>
 
 ## Summary
 
-Phase 7 adds the first forge surface: create public/private repos, browse GitHub-like history, manage branches (owner-only), and download archives. **CONTEXT overrides older ROADMAP/REQUIREMENTS gitoxide-first wording:** implement a deep `GitBackend` seam with a **system `git` CLI (2.5+) adapter now**, document a future gitoxide adapter, and **fail API boot** if `git` is missing or too old. Repos are **bare** trees under `{OCTANEST_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`), with DB metadata (visibility, soft-delete, updated_at) and ACL stub **private = owner-only**.
+Phase 7 adds the first forge surface: create public/private repos, browse GitHub-like history, manage branches (owner-only), and download archives. **CONTEXT overrides older ROADMAP/REQUIREMENTS gitoxide-first wording:** implement a deep `GitBackend` seam with a **system `git` CLI (2.5+) adapter now**, document a future gitoxide adapter, and **fail API boot** if `git` is missing or too old. Repos are **bare** trees under `{OXIDEAN_REPOS_DIR}/{owner}/{name}.git` (default `var/repos`), with DB metadata (visibility, soft-delete, updated_at) and ACL stub **private = owner-only**.
 
 The API Dockerfile currently installs only `ca-certificates` and `curl` — **Compose images will fail D-33 until `git` is installed**. Archives and raw blobs should follow the avatar pattern: thin HTTP GET routes under Traefik `/api` (or dedicated prefixes), not multi‑MB RPC payloads. UI stays Octane `.tsrx` + TanStack Query; Markdown via `remark-gfm` + `rehype-sanitize`; highlighting via **Shiki** with custom TextMate grammars for `.tsrx` / `.ripple`.
 
-**Primary recommendation:** Add `crates/octanest-git` (`GitBackend` + `CliGitBackend` via `tokio::process::Command` argv arrays), wire `repo.*` RPC + archive/raw HTTP routes, tri-dialect `repositories` migration, Compose `var/repos` volume + Dockerfile `git`, then build `/new` + `/{owner}/{repo}` browse surfaces per UI-SPEC.
+**Primary recommendation:** Add `crates/oxidean-git` (`GitBackend` + `CliGitBackend` via `tokio::process::Command` argv arrays), wire `repo.*` RPC + archive/raw HTTP routes, tri-dialect `repositories` migration, Compose `var/repos` volume + Dockerfile `git`, then build `/new` + `/{owner}/{repo}` browse surfaces per UI-SPEC.
 
 ## Architectural Responsibility Map
 
@@ -105,8 +105,8 @@ The API Dockerfile currently installs only `ca-certificates` and `curl` — **Co
 
 | Rule | Directive |
 |------|-----------|
-| `octanest-core.mdc` | One product; Bun + Cargo monorepo; Octane `.tsrx` UI; `make rpc-gen` after RPC changes; dialect branching only in `octanest-db`; no secrets in commits; extend existing patterns |
-| `rust-crates.mdc` | `octanest-core` pure domain; `octanest-db` owns SQL; `octanest-api` calls Database; `Result` + structured errors; preserve `require_verified` / admin / bootstrap; nextest in CI |
+| `oxidean-core.mdc` | One product; Bun + Cargo monorepo; Octane `.tsrx` UI; `make rpc-gen` after RPC changes; dialect branching only in `oxidean-db`; no secrets in commits; extend existing patterns |
+| `rust-crates.mdc` | `oxidean-core` pure domain; `oxidean-db` owns SQL; `oxidean-api` calls Database; `Result` + structured errors; preserve `require_verified` / admin / bootstrap; nextest in CI |
 | `rpc-codegen.mdc` | Rust procedures authoritative; regenerate api-client; `make rpc-sync-check`; stable error codes for UI |
 | `octane-ui.mdc` | `.tsrx` + Rivet; `@if`/`@else` (no `@else if`); `onInput` for text; Query for server state; forms `method="post" action="#"` |
 
@@ -120,8 +120,8 @@ Relevant skills: `octane`, `rust-best-practices`, `rust-async-patterns`, `codeba
 |---------|---------|---------|--------------|
 | System `git` CLI | **≥ 2.5** (host has **2.55.0**) | All Phase 7 git ops | Locked D-32/D-33; full porcelain/plumbing for browse + archive [VERIFIED: host `git --version`; CITED: git-scm.com/docs/git-init] |
 | `tokio` (workspace) | already in workspace | `tokio::process::Command` for non-blocking CLI | Existing async runtime; no new process crate required [VERIFIED: Cargo.toml workspace.dependencies] |
-| Axum (existing) | in `octanest-api` | RPC + archive/raw HTTP routes | Established forge edge [VERIFIED: crates/octanest-api/src/app.rs] |
-| sqlx multi-dialect (existing) | `octanest-db` | `repositories` (+ settings columns) | Tri-dialect migration parity [VERIFIED: crates/octanest-db/migrations/] |
+| Axum (existing) | in `oxidean-api` | RPC + archive/raw HTTP routes | Established forge edge [VERIFIED: crates/oxidean-api/src/app.rs] |
+| sqlx multi-dialect (existing) | `oxidean-db` | `repositories` (+ settings columns) | Tri-dialect migration parity [VERIFIED: crates/oxidean-db/migrations/] |
 
 ### Supporting
 
@@ -158,8 +158,8 @@ bun add shiki unified remark-parse remark-gfm remark-rehype rehype-sanitize rehy
 **Discretion recommendations (locked into research for planner):**
 1. **Highlighting:** Shiki + in-repo minimal TextMate grammars for `tsrx` / `ripple` (D-19 — no TS/JS alias gap).
 2. **SPDX:** `spdx-license-list/full` for text; picker uses IDs + “None”.
-3. **gitignore catalog:** Vendor a curated subset of [github/gitignore](https://github.com/github/gitignore) as static JSON/files under `apps/web` or `crates/octanest-api` assets — do **not** call gitignore.io at request time.
-4. **GitBackend:** Async trait in new crate `octanest-git`; only `CliGitBackend` shipped; stub module docs for future `GixGitBackend`.
+3. **gitignore catalog:** Vendor a curated subset of [github/gitignore](https://github.com/github/gitignore) as static JSON/files under `apps/web` or `crates/oxidean-api` assets — do **not** call gitignore.io at request time.
+4. **GitBackend:** Async trait in new crate `oxidean-git`; only `CliGitBackend` shipped; stub module docs for future `GixGitBackend`.
 
 ## Package Legitimacy Audit
 
@@ -190,12 +190,12 @@ flowchart TD
   Browser["Browser Octane UI"]
   Traefik["Traefik :80"]
   Web["web :3000"]
-  Api["octanest-api"]
+  Api["oxidean-api"]
   Rpc["rpc::dispatch repo.*"]
   Gate["require_verified / owner ACL"]
-  Db["octanest-db repositories"]
-  Git["octanest-git CliGitBackend"]
-  Fs["OCTANEST_REPOS_DIR bare *.git"]
+  Db["oxidean-db repositories"]
+  Git["oxidean-git CliGitBackend"]
+  Fs["OXIDEAN_REPOS_DIR bare *.git"]
   GitBin["system git CLI"]
 
   Browser --> Traefik
@@ -215,14 +215,14 @@ flowchart TD
 
 ```
 crates/
-├── octanest-git/                 # NEW: GitBackend trait + CliGitBackend + version probe
+├── oxidean-git/                 # NEW: GitBackend trait + CliGitBackend + version probe
 │   ├── src/lib.rs
 │   ├── src/backend.rs            # trait + error types
 │   ├── src/cli.rs                # argv Command runner (no shell)
 │   └── src/version.rs            # parse git --version; enforce >= 2.5
-├── octanest-core/                # repo DTOs, validate_repo_name, reserved route names
-├── octanest-db/migrations/*/0007_repositories.sql
-└── octanest-api/src/
+├── oxidean-core/                # repo DTOs, validate_repo_name, reserved route names
+├── oxidean-db/migrations/*/0007_repositories.sql
+└── oxidean-api/src/
     ├── git/                      # thin wiring: path resolve, ACL helpers
     ├── auth/gate.rs              # reuse require_verified
     ├── rpc.rs                    # repo.* procedures
@@ -235,7 +235,7 @@ apps/web/src/
 └── lib/highlight.ts              # shiki singleton
 docs/
 ├── ARCHITECTURE.md               # GitBackend + CLI-now / gix-later
-└── CONFIGURATION.md              # OCTANEST_REPOS_DIR, git floor, visibility default
+└── CONFIGURATION.md              # OXIDEAN_REPOS_DIR, git floor, visibility default
 ```
 
 ### Pattern 1: GitBackend deep module (discretion)
@@ -314,7 +314,7 @@ Empty repos (no commits): archive **fails** — UI must hide/disable download un
 | GFM + XSS sanitize | Custom HTML allowlist | `remark-gfm` + `rehype-sanitize` | GitHub-style schema maintained upstream |
 | Syntax highlighting | Regex highlighters | Shiki + TextMate | Coverage + custom langs [CITED: shiki.style] |
 | Process supervision | Custom wait loops | `tokio::process` | Cancellation + async integration |
-| Avatar-style FS path safety | Ad-hoc joins | Same canonicalize/basename guards as `avatar.rs` | Path traversal already solved [VERIFIED: crates/octanest-api/src/routes/avatar.rs] |
+| Avatar-style FS path safety | Ad-hoc joins | Same canonicalize/basename guards as `avatar.rs` | Path traversal already solved [VERIFIED: crates/oxidean-api/src/routes/avatar.rs] |
 
 **Key insight:** The hard forge problems (compat, archive formats, blame, rename) are already in `git`; the product risk is ACL, path layout, UI IA, and keeping a swappable seam — not reimplementing Git.
 
@@ -322,7 +322,7 @@ Empty repos (no commits): archive **fails** — UI must hide/disable download un
 
 ### Pitfall 1: API image lacks `git`
 **What goes wrong:** Compose boot exits (D-33) or runtime “command not found”.
-**Why it happens:** `crates/octanest-api/Dockerfile` installs only `ca-certificates` `curl` [VERIFIED: crates/octanest-api/Dockerfile:7-10].
+**Why it happens:** `crates/oxidean-api/Dockerfile` installs only `ca-certificates` `curl` [VERIFIED: crates/oxidean-api/Dockerfile:7-10].
 **How to avoid:** `apt-get install -y git` in runtime image; CI/smoke assert `git --version`.
 **Warning signs:** Healthy `/health` but every `repo.*` fails; boot exit in logs.
 
@@ -334,20 +334,20 @@ Empty repos (no commits): archive **fails** — UI must hide/disable download un
 
 ### Pitfall 3: Reserved route `new` missing from denylist
 **What goes wrong:** User `new` steals `/new` or collides with create route.
-**Why it happens:** Current `RESERVED_USERNAMES` lacks `"new"` [VERIFIED: crates/octanest-core/src/auth_types.rs:200-234 — list ends with `"setup"`, `"system-administrator"`; no `"new"`].
+**Why it happens:** Current `RESERVED_USERNAMES` lacks `"new"` [VERIFIED: crates/oxidean-core/src/auth_types.rs:200-234 — list ends with `"setup"`, `"system-administrator"`; no `"new"`].
 **How to avoid:** Extend reserved list with all flat routes from UI-SPEC (`new`, and any new top-level paths).
 **Warning signs:** `/new` renders a user profile/repo instead of create.
 
 ### Pitfall 4: Repo name rules ≠ username rules
 **What goes wrong:** Reject valid GitHub-ish names with `_` or `.`.
-**Why it happens:** `validate_username` allows only alphanumeric + hyphen [VERIFIED: crates/octanest-core/src/auth_types.rs:242-254]; D-06 allows underscore and period for **repo** names.
+**Why it happens:** `validate_username` allows only alphanumeric + hyphen [VERIFIED: crates/oxidean-core/src/auth_types.rs:242-254]; D-06 allows underscore and period for **repo** names.
 **How to avoid:** Separate `validate_repo_name` (do not reuse username validator).
 **Warning signs:** Create form rejects `my_app` / `lib.rs`-style names incorrectly.
 
 ### Pitfall 5: Relative `var/repos` vs Compose absolute mount
 **What goes wrong:** Repos written outside the volume.
 **Why it happens:** Uploads use default `var/uploads` with CWD `/` → `/var/uploads` matching bind `./var/uploads:/var/uploads` [VERIFIED: app.rs:47; docker-compose.yml:52-53]. Same pattern must be used for repos (`var/repos` → `/var/repos`).
-**How to avoid:** Document `OCTANEST_REPOS_DIR` default `var/repos`; Compose bind `./var/repos:/var/repos`; optional explicit env.
+**How to avoid:** Document `OXIDEAN_REPOS_DIR` default `var/repos`; Compose bind `./var/repos:/var/repos`; optional explicit env.
 **Warning signs:** Host `./var/repos` empty while container has data under another path.
 
 ### Pitfall 6: Archive / blame on empty repository
@@ -358,7 +358,7 @@ Empty repos (no commits): archive **fails** — UI must hide/disable download un
 
 ### Pitfall 7: Factory reset ignores disk
 **What goes wrong:** After DB wipe, orphan bare repos remain (or vice versa).
-**Why it happens:** Current `factory_reset_instance` only deletes DB tables [VERIFIED: crates/octanest-db/src/lib.rs:370-404].
+**Why it happens:** Current `factory_reset_instance` only deletes DB tables [VERIFIED: crates/oxidean-db/src/lib.rs:370-404].
 **How to avoid:** D-34 scope radios; implement disk wipe path when “Database and repositories” selected; orphan reconcile (D-36) for leftover dirs.
 **Warning signs:** Re-create same name hits leftover `.git` on disk.
 
@@ -459,7 +459,7 @@ const highlighter = await createHighlighter({
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
 | ROADMAP/REQUIREMENTS: gitoxide-first (GIT-09) | CONTEXT D-32: CLI-first + gitoxide later | 2026-09-12 discuss | Planner amends GIT-09 wording; crate trait still satisfies GIT-10 |
-| Default branch `master` | `main` via symbolic-ref / init.defaultBranch | Git community + Octanest D-09 | Empty HEAD points at `refs/heads/main` |
+| Default branch `master` | `main` via symbolic-ref / init.defaultBranch | Git community + Oxidean D-09 | Empty HEAD points at `refs/heads/main` |
 | Shelling out ad hoc in handlers | Deep `GitBackend` module | Phase 7 | Testability + future gix swap |
 
 **Deprecated/outdated:**
@@ -516,7 +516,7 @@ const highlighter = await createHighlighter({
 | Context7 MCP | Docs lookup | ✗ | — | Official git-scm WebFetch + npm view used |
 
 **Missing dependencies with no fallback:**
-- `git` inside `octanest-api` runtime image (blocking for Compose) — planner Wave 0 must add package install.
+- `git` inside `oxidean-api` runtime image (blocking for Compose) — planner Wave 0 must add package install.
 
 **Missing dependencies with fallback:**
 - Context7 — used official docs via WebFetch/WebSearch.
@@ -531,21 +531,21 @@ Step 2.6 note: Host research environment has git 2.55.0; production path is Comp
 |----------|-------|
 | Framework | Rust: cargo nextest (CI profile) + `cargo test`; Web: Vitest 5 (unit / integration / e2e projects) |
 | Config file | `apps/web/vitest.config.ts`; Makefile `make test` |
-| Quick run command | `cargo nextest run -p octanest-git --lib` (after crate exists) && `cd apps/web && bun run test:unit` |
+| Quick run command | `cargo nextest run -p oxidean-git --lib` (after crate exists) && `cd apps/web && bun run test:unit` |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-01 | Verified user creates public/private repo; unverified → `auth.email_unverified` | integration | `cargo nextest run -p octanest-api -- repo_create` | ❌ Wave 0 |
+| GIT-01 | Verified user creates public/private repo; unverified → `auth.email_unverified` | integration | `cargo nextest run -p oxidean-api -- repo_create` | ❌ Wave 0 |
 | GIT-01 | Duplicate name → stable error for inline field | unit/integration | nextest `repo_duplicate_name` | ❌ Wave 0 |
-| GIT-05 | `ls_tree` / log / tags list for seeded bare repo | unit | `cargo nextest run -p octanest-git` | ❌ Wave 0 |
+| GIT-05 | `ls_tree` / log / tags list for seeded bare repo | unit | `cargo nextest run -p oxidean-git` | ❌ Wave 0 |
 | GIT-05 | Private non-owner read → not_found | integration | nextest `repo_private_404` | ❌ Wave 0 |
 | GIT-06 | Owner branch CRUD; default branch rename/delete blocked | integration | nextest `repo_branch_soft_protect` | ❌ Wave 0 |
 | GIT-07 | `git archive` zip + tar.gz bytes for ref | unit | nextest `git_archive_formats` | ❌ Wave 0 |
 | GIT-08 | Files land under configured repos_dir owner/name.git | integration | nextest `repo_fs_layout` | ❌ Wave 0 |
-| GIT-09/10 | Only `CliGitBackend` registered; trait object/docs compile | unit | `cargo test -p octanest-git` | ❌ Wave 0 |
+| GIT-09/10 | Only `CliGitBackend` registered; trait object/docs compile | unit | `cargo test -p oxidean-git` | ❌ Wave 0 |
 | D-33 | Boot helper rejects missing/old git | unit | nextest `git_version_gate` | ❌ Wave 0 |
 | UI | `/new` wall when unverified; home CTA enablement | integration | `bun run test:integration` (new tests) | ❌ Wave 0 |
 
@@ -557,8 +557,8 @@ Step 2.6 note: Host research environment has git 2.55.0; production path is Comp
 
 ### Wave 0 Gaps
 
-- [ ] `crates/octanest-git` crate + version gate unit tests
-- [ ] `crates/octanest-api/tests/repo_*.rs` integration harness (temp repos_dir + DB)
+- [ ] `crates/oxidean-git` crate + version gate unit tests
+- [ ] `crates/oxidean-api/tests/repo_*.rs` integration harness (temp repos_dir + DB)
 - [ ] Tri-dialect migration `0007_repositories` (+ account default_branch / instance default_visibility columns as needed)
 - [ ] Web integration tests for `SignedInHome` CTA → `/new` and unverified wall
 - [ ] Dockerfile installs `git`; Compose volume for `var/repos`

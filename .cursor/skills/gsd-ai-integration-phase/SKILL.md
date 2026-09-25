@@ -34,9 +34,9 @@ Flow: Select Framework → Research Docs → Research Domain → Design Eval Str
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/ai-integration-phase.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ai-frameworks.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ai-evals.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/ai-integration-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ai-frameworks.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ai-evals.md
 </execution_context>
 
 <context>

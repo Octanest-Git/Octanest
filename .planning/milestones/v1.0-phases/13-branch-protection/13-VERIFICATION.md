@@ -33,19 +33,19 @@ covered_files:
   - Makefile
   - apps/web/src/routes/$owner.$repo.pull.protection.integration.test.ts
   - apps/web/src/routes/$owner.$repo.settings.branches.integration.test.ts
-  - crates/octanest-api/Dockerfile
-  - crates/octanest-api/src/main.rs
-  - crates/octanest-api/src/protection/mod.rs
-  - crates/octanest-api/tests/branch_protect_merge.rs
-  - crates/octanest-api/tests/branch_protect_push.rs
-  - crates/octanest-api/tests/branch_protection_rpc.rs
-  - crates/octanest-api/tests/commit_status_rpc.rs
-  - crates/octanest-api/tests/commit_statuses.rs
-  - crates/octanest-db/migrations/mysql/0017_branch_protection.sql
-  - crates/octanest-db/migrations/postgres/0017_branch_protection.sql
-  - crates/octanest-db/migrations/sqlite/0017_branch_protection.sql
-  - crates/octanest-db/tests/dialect_branch_protection.rs
-  - crates/octanest-git/src/cli.rs
+  - crates/oxidean-api/Dockerfile
+  - crates/oxidean-api/src/main.rs
+  - crates/oxidean-api/src/protection/mod.rs
+  - crates/oxidean-api/tests/branch_protect_merge.rs
+  - crates/oxidean-api/tests/branch_protect_push.rs
+  - crates/oxidean-api/tests/branch_protection_rpc.rs
+  - crates/oxidean-api/tests/commit_status_rpc.rs
+  - crates/oxidean-api/tests/commit_statuses.rs
+  - crates/oxidean-db/migrations/mysql/0017_branch_protection.sql
+  - crates/oxidean-db/migrations/postgres/0017_branch_protection.sql
+  - crates/oxidean-db/migrations/sqlite/0017_branch_protection.sql
+  - crates/oxidean-db/tests/dialect_branch_protection.rs
+  - crates/oxidean-git/src/cli.rs
   - docker-compose.yml
   - scripts/compose-smoke-protection.sh
 covered_digest: "v1:sha256:8c9b2815a4a2ed4a68254df0c146866c847c4d7fee7e1a582616b25da9fc48c9"
@@ -73,10 +73,10 @@ Merged from ROADMAP success criteria + ORG-05 / ORG-06 / PR-08 + packaging must-
 | 2 | Protected rules block non-compliant direct pushes (evaluate path) | ✓ VERIFIED | `branch_protect_push_denies_direct_push_when_reviews_required`, force-push / lock-branch / reconcile tests PASS; `13-02`/`13-05`/`13-06` SUMMARYs |
 | 3 | PR merge blocked when applicable protection rules unsatisfied | ✓ VERIFIED | `branch_protect_merge_blocked_without_approval`, `_requires_status_context`, `_succeeds_after_approval` PASS; `13-08` merge blockers UI + Vitest |
 | 4 | Commit status store supports required checks / strict | ✓ VERIFIED | `commit_status_rpc_*` + `commit_statuses_*` (6) PASS; `13-04-SUMMARY` |
-| 5 | Shipped API image contains executable `octanest-protection-hook`; Compose sets helper env (D-PKG-01) | ✓ VERIFIED | `crates/octanest-api/Dockerfile` builds/COPY both bins; `docker-compose.yml` `OCTANEST_PROTECTION_HELPER=/usr/local/bin/octanest-protection-hook`; live `make smoke-protection` → `helper OK` (2026-09-19); `22.1-01-SUMMARY` |
-| 6 | HTTPS + SSH protected push denied in Compose (ORG-06 push half, D-PKG-03) | ✓ VERIFIED | Live `make smoke-protection` 2026-09-19: HTTPS `hook declined` / `octanest-protection: Branch protection rules block this update`; SSH same on `:2222`; log ends `compose-smoke-protection OK (helper present + HTTPS and SSH protected push denied)`; `22.1-01` + `22.1-03` SUMMARYs |
-| 7 | Production/cloud fail-closed when helper missing; forks install hooks (D-PKG-02) | ✓ VERIFIED | Embedded `hooks/update` in `octanest-git` gates `OCTANEST_ENV=production\|cloud`; `clone_bare` calls `install_protection_hooks`; `22.1-02-SUMMARY` nextest coverage |
-| 8 | Boot sweep overwrites protection hooks on bare repos under `OCTANEST_REPOS_DIR` (D-PKG-04) | ✓ VERIFIED | `sweep_protection_hooks` in `protection/mod.rs`; invoked from `main.rs` after `AppState::new`; nextest `sweep_protection_hooks_*` (3) PASS; `22.1-04-SUMMARY` |
+| 5 | Shipped API image contains executable `oxidean-protection-hook`; Compose sets helper env (D-PKG-01) | ✓ VERIFIED | `crates/oxidean-api/Dockerfile` builds/COPY both bins; `docker-compose.yml` `OXIDEAN_PROTECTION_HELPER=/usr/local/bin/oxidean-protection-hook`; live `make smoke-protection` → `helper OK` (2026-09-19); `22.1-01-SUMMARY` |
+| 6 | HTTPS + SSH protected push denied in Compose (ORG-06 push half, D-PKG-03) | ✓ VERIFIED | Live `make smoke-protection` 2026-09-19: HTTPS `hook declined` / `oxidean-protection: Branch protection rules block this update`; SSH same on `:2222`; log ends `compose-smoke-protection OK (helper present + HTTPS and SSH protected push denied)`; `22.1-01` + `22.1-03` SUMMARYs |
+| 7 | Production/cloud fail-closed when helper missing; forks install hooks (D-PKG-02) | ✓ VERIFIED | Embedded `hooks/update` in `oxidean-git` gates `OXIDEAN_ENV=production\|cloud`; `clone_bare` calls `install_protection_hooks`; `22.1-02-SUMMARY` nextest coverage |
+| 8 | Boot sweep overwrites protection hooks on bare repos under `OXIDEAN_REPOS_DIR` (D-PKG-04) | ✓ VERIFIED | `sweep_protection_hooks` in `protection/mod.rs`; invoked from `main.rs` after `AppState::new`; nextest `sweep_protection_hooks_*` (3) PASS; `22.1-04-SUMMARY` |
 
 **Score:** 8/8 truths verified (thorough: live Compose protection smoke + nextest cluster + packaging SUMMARYs)
 
@@ -85,7 +85,7 @@ Merged from ROADMAP success criteria + ORG-05 / ORG-06 / PR-08 + packaging must-
 | Artifact | Expected | Status | Details |
 | -------- | ----------- | ------ | ------- |
 | Tri-dialect `0017_branch_protection` | Schema | ✓ VERIFIED | sqlite/postgres/mysql; `dialect_branch_protection` PASS |
-| Protection evaluate + hooks | Push denial | ✓ VERIFIED | `protection/mod.rs`, `octanest-git` update script + `install_protection_hooks` |
+| Protection evaluate + hooks | Push denial | ✓ VERIFIED | `protection/mod.rs`, `oxidean-git` update script + `install_protection_hooks` |
 | `branch_protection` / merge / status RPC + tests | ORG-05/06, PR-08 | ✓ VERIFIED | Named nextest binaries; 23/23 filter PASS 2026-09-19 |
 | Settings + PR merge blocker UI | Octane | ✓ VERIFIED | `13-07`/`13-08`; Vitest files present |
 | Packaged helper in API image | ORG-06 push | ✓ VERIFIED | Dockerfile multi-bin + Compose env + smoke assert `-x` |
@@ -97,9 +97,9 @@ Merged from ROADMAP success criteria + ORG-05 / ORG-06 / PR-08 + packaging must-
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
-| Smart HTTP receive | `octanest-protection-hook` | `resolve_protection_helper` + `ProtectionCgiEnv` | ✓ WIRED | `22.1-01`; smoke HTTPS denial |
+| Smart HTTP receive | `oxidean-protection-hook` | `resolve_protection_helper` + `ProtectionCgiEnv` | ✓ WIRED | `22.1-01`; smoke HTTPS denial |
 | SSH receive-pack | same helper + capability | `receive_pack_protection_env` | ✓ WIRED | `22.1-03`; smoke SSH denial |
-| Compose / API image | `/usr/local/bin/octanest-protection-hook` | Dockerfile COPY + `OCTANEST_PROTECTION_HELPER` | ✓ WIRED | smoke `helper OK` |
+| Compose / API image | `/usr/local/bin/oxidean-protection-hook` | Dockerfile COPY + `OXIDEAN_PROTECTION_HELPER` | ✓ WIRED | smoke `helper OK` |
 | `clone_bare` / fork | `hooks/update` | `install_protection_hooks` | ✓ WIRED | `22.1-02` |
 | API boot | existing bare repos | `sweep_protection_hooks` | ✓ WIRED | `22.1-04` |
 | Settings Branches UI | `repo.branchProtection.*` | api-client | ✓ WIRED | `13-07` |
@@ -118,10 +118,10 @@ Merged from ROADMAP success criteria + ORG-05 / ORG-06 / PR-08 + packaging must-
 ### Live command evidence (2026-09-19)
 
 ```text
-cargo nextest run -p octanest-api -E 'test(branch_protect) | test(commit_status) | test(sweep) | test(default_helper) | test(protection_helper) | test(receive_pack_protection_env)'
+cargo nextest run -p oxidean-api -E 'test(branch_protect) | test(commit_status) | test(sweep) | test(default_helper) | test(protection_helper) | test(receive_pack_protection_env)'
 → Summary: 23 tests run: 23 passed
 
-cargo test -p octanest-db --test dialect_branch_protection
+cargo test -p oxidean-db --test dialect_branch_protection
 → dialect_branch_protection_migrate_schema_presence ... ok
 
 make smoke-protection
@@ -137,7 +137,7 @@ Packaging plan citations: `22.1-01-SUMMARY` (helper image + HTTPS), `22.1-02-SUM
 
 1. Vitest branch-settings / pull-protection suites were confirmed present; this verify re-ran nextest + Compose smoke, not a full `bun` Vitest gate in-process (UI paths already greened in `13-VALIDATION` / plan SUMMARYs).
 2. Historical v1.0 audit blocker (helper not in image / push fail-open) is **closed** by 22.1-01…04 + this live smoke — audit file itself is updated by later hygiene plans, not this verify.
-3. Live Railway / production fail-closed path is unit-covered (`OCTANEST_ENV=production|cloud`); Compose smoke uses development fail-open for missing helper but still denies when helper is present and rules apply.
+3. Live Railway / production fail-closed path is unit-covered (`OXIDEAN_ENV=production|cloud`); Compose smoke uses development fail-open for missing helper but still denies when helper is present and rules apply.
 
 ### Anti-Patterns Found
 

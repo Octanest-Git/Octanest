@@ -44,7 +44,7 @@ created: 2026-09-16
 | 22-01-03 | 01 | 1 | PLAT-09 | T-22-02 | MySQL Compose bring-up matrix leg | ci | matrix includes `mysql`; `make smoke-mysql` | ✅ | ✅ green |
 | 22-02-01 | 02 | 2 | PLAT-02 | T-22-SC | Package legitimacy (`railway`, `caddy`) | human | npmjs + Docker Hub Official Image | ✅ | ✅ approved |
 | 22-02-02 | 02 | 2 | PLAT-02 | T-22-10/12 | IaC + Caddy gateway; no secrets; no railway.json | file | `test -f .railway/railway.ts && test -f deploy/cloud/Caddyfile && test ! -f railway.json` | ✅ | ✅ green |
-| 22-02-03 | 02 | 2 | PLAT-02 | T-22-10/13 | Volumes + DEPLOYMENT operator steps + cloud-plan | file / docs | `rg -n "cloud-plan|forge-data|OCTANEST_ALLOW_SIGNUP" Makefile docs/DEPLOYMENT.md .railway/railway.ts` | ✅ | ✅ green |
+| 22-02-03 | 02 | 2 | PLAT-02 | T-22-10/13 | Volumes + DEPLOYMENT operator steps + cloud-plan | file / docs | `rg -n "cloud-plan|forge-data|OXIDEAN_ALLOW_SIGNUP" Makefile docs/DEPLOYMENT.md .railway/railway.ts` | ✅ | ✅ green |
 | 22-03-01 | 03 | 3 | PLAT-* | T-22-21 | This VALIDATION map | docs | `rg -n "PLAT-02\|PLAT-03\|PLAT-09" 22-VALIDATION.md` | ✅ | ✅ green |
 | 22-03-02 | 03 | 3 | PLAT-* | T-22-20 | ARCHITECTURE / TESTING / DEPLOYMENT sync | docs | `rg -n "deploy/cloud\|\\.railway\|compose-smoke" docs/` | ✅ | ✅ green |
 
@@ -58,7 +58,7 @@ created: 2026-09-16
 |-------------|-------|--------------------|----------------|--------|
 | **PLAT-03** | PR CI builds/brings up Compose and asserts health | GHA `compose-smoke` (postgres) → `make smoke`; local `make smoke` | Optional: open CI run artifacts on failure | COVERED |
 | **PLAT-09** | CI exercises Postgres + SQLite; MySQL in same PR workflow | `compose-smoke` matrix `[postgres, sqlite, mysql]`; `db-matrix` remains complementary (probe-only, not a substitute) | — | COVERED |
-| **PLAT-02** | Operator can deploy same images to Railway-class host | Files: `.railway/railway.ts`, `deploy/cloud/*`, `make cloud-plan`, `docs/DEPLOYMENT.md` Octanest Cloud section | **Live** `railway config apply` + domain + first migrate — operator only (D-CLOUD-07) | COVERED (IaC/docs); live apply = human-verify |
+| **PLAT-02** | Operator can deploy same images to Railway-class host | Files: `.railway/railway.ts`, `deploy/cloud/*`, `make cloud-plan`, `docs/DEPLOYMENT.md` Oxidean Cloud section | **Live** `railway config apply` + domain + first migrate — operator only (D-CLOUD-07) | COVERED (IaC/docs); live apply = human-verify |
 
 ---
 
@@ -78,7 +78,7 @@ created: 2026-09-16
 |----------|-------------|------------|-------------------|-----|
 | First production Railway apply | PLAT-02 | Needs `RAILWAY_TOKEN` + linked project; must not run on fork PRs | `make cloud-plan` → review → `railway config apply` → hit public `/health` | ⬜ operator |
 | Custom domain + CORS/PUBLIC_ORIGIN | PLAT-02 | Dashboard secrets | Set origins to `https://<domain>`; reload SPA | ⬜ operator |
-| Optional SSH TCP publish | PLAT-02 / D-CLOUD-08 | Platform TCP proxy availability | Confirm `OCTANEST_SSH_PORT` TCP; HTTPS git still works without it | ⬜ optional |
+| Optional SSH TCP publish | PLAT-02 / D-CLOUD-08 | Platform TCP proxy availability | Confirm `OXIDEAN_SSH_PORT` TCP; HTTPS git still works without it | ⬜ optional |
 
 ---
 

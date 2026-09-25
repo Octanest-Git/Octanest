@@ -46,7 +46,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: integration
-        ref: "bun run --filter @octanest/web test -- src/routes/settings/ssh-keys.integration.test.ts"
+        ref: "bun run --filter @oxidean/web test -- src/routes/settings/ssh-keys.integration.test.ts"
         status: pass
     human_judgment: false
   - id: D2
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: integration
-        ref: "bun run --filter @octanest/web test -- src/components/repo/clone-box.ssh.integration.test.ts"
+        ref: "bun run --filter @oxidean/web test -- src/components/repo/clone-box.ssh.integration.test.ts"
         status: pass
     human_judgment: false
 
@@ -107,8 +107,8 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to 09-07 / 09-08._
 
 **1. [Rule 3 - Blocking] Cursor Write landed stubs in main checkout**
 - **Found during:** Task 1
-- **Issue:** Relative Write paths resolved to `/home/jesse/wsl-projects/personal/typescript/octanest` instead of the phase worktree
-- **Fix:** Copied stubs into `octanest-wt-09` and removed the leaked main-tree files before commit
+- **Issue:** Relative Write paths resolved to `/home/jesse/wsl-projects/personal/typescript/oxidean` instead of the phase worktree
+- **Fix:** Copied stubs into `oxidean-wt-09` and removed the leaked main-tree files before commit
 - **Files modified:** worktree copies of the two stub files (main cleaned)
 - **Verification:** `test -f` in worktree; main paths absent
 - **Committed in:** `1f8362b`
@@ -116,7 +116,7 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to 09-07 / 09-08._
 **2. [Rule 3 - Blocking] Plan verify command `bun --cwd apps/web exec vitest` unavailable**
 - **Found during:** Task 1 verify
 - **Issue:** `bun exec` script not found; worktree lacked `node_modules`
-- **Fix:** `bun install` in worktree; ran `bun run --filter @octanest/web test -- <paths>`
+- **Fix:** `bun install` in worktree; ran `bun run --filter @oxidean/web test -- <paths>`
 - **Files modified:** none (local install only)
 - **Verification:** 2 files / 9 tests failed (exit 1) — Wave 0 RED
 - **Committed in:** n/a (tooling only)

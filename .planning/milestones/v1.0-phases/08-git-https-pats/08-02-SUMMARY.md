@@ -8,7 +8,7 @@ requires:
   - phase: 08-git-https-pats
     provides: 08-00/08-01 Wave 0 stubs + 08-CONTEXT decisions for PAT/Smart HTTP
 provides:
-  - "Locked D-08 token prefixes (octanest_pat_ / octanest_fg_)"
+  - "Locked D-08 token prefixes (oxidean_pat_ / oxidean_fg_)"
   - "Locked D-18 HTTPS clone URL /{owner}/{repo}.git"
   - "Locked D-21 git private unauth 401 + D-01 PAT HTTPS-only (not RPC Bearer)"
 affects:
@@ -38,7 +38,7 @@ key-files:
     - .planning/STATE.md
 
 key-decisions:
-  - "D-08: octanest_pat_ / octanest_fg_ (option octanest_prefixes; deviation from plan ona_prefixes)"
+  - "D-08: oxidean_pat_ / oxidean_fg_ (option oxidean_prefixes; deviation from plan ona_prefixes)"
   - "D-18: https://{host}/{owner}/{repo}.git on public origin (option owner_repo_git)"
   - "D-21/D-01: git private unauth → 401+WWW-Authenticate Basic; PATs HTTPS-git-only not RPC Bearer (option git_401_pat_https_only)"
 
@@ -50,7 +50,7 @@ requirements-completed: []  # Gates only; GIT-02/GIT-11 greens land in later 08-
 
 coverage:
   - id: D1
-    description: "Human locked PAT string prefixes to octanest_pat_ / octanest_fg_ (D-08)"
+    description: "Human locked PAT string prefixes to oxidean_pat_ / oxidean_fg_ (D-08)"
     requirement: GIT-11
     verification: []
     human_judgment: true
@@ -75,7 +75,7 @@ status: complete
 
 # Phase 08 Plan 02: Reversibility Gates Summary
 
-**Human-locked D-08/D-18/D-21/D-01 public contracts (octanest_* prefixes, `/{owner}/{repo}.git`, git 401 + PAT HTTPS-only) before schema and Smart HTTP tracer**
+**Human-locked D-08/D-18/D-21/D-01 public contracts (oxidean_* prefixes, `/{owner}/{repo}.git`, git 401 + PAT HTTPS-only) before schema and Smart HTTP tracer**
 
 ## Performance
 
@@ -87,7 +87,7 @@ status: complete
 
 ## Accomplishments
 
-- Locked PAT prefixes to `octanest_pat_` / `octanest_fg_` (option `octanest_prefixes`) — D-08 one-way; never github/gh* prefixes
+- Locked PAT prefixes to `oxidean_pat_` / `oxidean_fg_` (option `oxidean_prefixes`) — D-08 one-way; never github/gh* prefixes
 - Locked HTTPS clone URL to `https://{host}/{owner}/{repo}.git` on public origin (option `owner_repo_git`) — D-18 one-way; Smart HTTP only on `.git` suffix
 - Locked git private/no-access unauth → 401 + WWW-Authenticate Basic and PAT HTTPS-git-only (not typed RPC Bearer) (option `git_401_pat_https_only`) — D-21 / D-01
 - DISCUSSION-LOG records all three locked option IDs for 08-03/08-04 proceed signal
@@ -113,7 +113,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 
-- **D-08:** Human chose `octanest_prefixes` over plan-recommended `ona_prefixes` — full-brand token format for secret-scanning contract
+- **D-08:** Human chose `oxidean_prefixes` over plan-recommended `ona_prefixes` — full-brand token format for secret-scanning contract
 - **D-18:** `owner_repo_git` confirmed — matches Phase 7 clone box; Traefik must not let SPA steal `.git`
 - **D-21/D-01:** `git_401_pat_https_only` confirmed — intentional git 401 vs web 404 split; PATs never authenticate typed RPC in Phase 8
 
@@ -127,8 +127,8 @@ None during Task 3 continuation.
 
 **1. [Human decision] D-08 prefix branding**
 - **Found during:** Task 1 (PAT prefixes)
-- **Issue:** Plan offered `ona_prefixes` (`ona_pat_` / `ona_fg_`); human locked full-brand `octanest_pat_` / `octanest_fg_`
-- **Fix:** Recorded as option `octanest_prefixes` in DISCUSSION-LOG + CONTEXT D-08; schema/tracer must mint `octanest_*`
+- **Issue:** Plan offered `ona_prefixes` (`ona_pat_` / `ona_fg_`); human locked full-brand `oxidean_pat_` / `oxidean_fg_`
+- **Fix:** Recorded as option `oxidean_prefixes` in DISCUSSION-LOG + CONTEXT D-08; schema/tracer must mint `oxidean_*`
 - **Files modified:** `08-DISCUSSION-LOG.md`, `08-CONTEXT.md`
 - **Committed in:** `693df1a`
 
@@ -148,7 +148,7 @@ None - no external service configuration required.
 ## Next Phase Readiness
 
 - Reversibility gates closed — executor may proceed to **08-03** (PAT schema) and **08-04** (mint + Smart HTTP tracer)
-- Implementers must use `octanest_pat_` / `octanest_fg_`, `/{owner}/{repo}.git`, and 401+WWW-Authenticate for private git unauth
+- Implementers must use `oxidean_pat_` / `oxidean_fg_`, `/{owner}/{repo}.git`, and 401+WWW-Authenticate for private git unauth
 - Do not wire PAT Bearer for typed RPC in Phase 8
 
 ## Known Stubs
@@ -159,7 +159,7 @@ None — docs/decision plan only.
 
 - FOUND: `08-02-SUMMARY.md`, `08-DISCUSSION-LOG.md`, `08-CONTEXT.md`
 - FOUND commits: `693df1a` (T1), `9964f08` (T2), `18086a7` (T3)
-- Locked options present: `octanest_prefixes`, `owner_repo_git`, `git_401_pat_https_only`
+- Locked options present: `oxidean_prefixes`, `owner_repo_git`, `git_401_pat_https_only`
 
 ---
 *Phase: 08-git-https-pats*

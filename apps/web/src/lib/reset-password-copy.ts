@@ -15,7 +15,7 @@ export const SUCCESS_HEADING = "Check your email";
 export const SUCCESS_BODY =
   "If an account exists for that email, we sent password reset instructions. Check your inbox and spam folder.";
 
-export const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+export const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const MISMATCH = "Passwords don’t match. Fix the highlighted fields and try again.";
 

@@ -5,7 +5,7 @@ import type {
   RepoCreateDefaults,
   RepoTemplateOption,
   UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ type AdminGateLoader =
   | { kind: "error"; message: string }
   | { kind: "ready"; me: UserPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need admin access to manage templates.";
 const packsQueryKey = ["admin", "templates", "list"] as const;
 const defaultsQueryKey = ["admin", "templates", "defaults"] as const;
@@ -44,7 +44,7 @@ function uniqueSorted(values: string[]): string[] {
 
 export const Route = createFileRoute("/admin/templates")({
   component: AdminTemplatesPage,
-  head: () => ({ meta: [{ title: "Templates · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Templates · Oxidean" }] }),
   loader: async (): Promise<AdminGateLoader> => {
     try {
       const meRes = await fetchSessionMe();
@@ -222,7 +222,7 @@ export function AdminTemplatesPage() @{
             Templates
           </h1>
           <p className="mt-1 text-[14px] text-muted-foreground">
-            Built-in starters ship with Octanest. Upload zip packs to add instance-specific options
+            Built-in starters ship with Oxidean. Upload zip packs to add instance-specific options
             on /new. Max 10 MiB; no node_modules.
           </p>
         </div>

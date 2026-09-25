@@ -52,7 +52,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| Prefixed opaque | Octanest prefixes | ✓ |
+| Prefixed opaque | Oxidean prefixes | ✓ |
 | Unprefixed | | |
 | You decide | | |
 
@@ -189,7 +189,7 @@
 
 | Option | Description | Selected |
 |--------|-------------|----------|
-| `OCTANEST_PUBLIC_ORIGIN` | | ✓ |
+| `OXIDEAN_PUBLIC_ORIGIN` | | ✓ |
 | Request Host | | |
 | Origin then Host fallback | | |
 
@@ -228,11 +228,11 @@
 | Option | Description | Selected |
 |--------|-------------|----------|
 | `ona_prefixes` | `ona_pat_` / `ona_fg_` (plan recommended; CONTEXT/RESEARCH) | |
-| `octanest_prefixes` | `octanest_pat_` / `octanest_fg_` (full-brand) | ✓ |
+| `oxidean_prefixes` | `oxidean_pat_` / `oxidean_fg_` (full-brand) | ✓ |
 | `stop` | Revisit prefix design | |
 
-**User's choice:** `octanest_prefixes` — classic `octanest_pat_`, fine-grained `octanest_fg_`, then CSPRNG hex (32+ bytes). Never `ghp_` / `github_pat_` / `gho_` / any github/gh* prefix.
-**Notes:** Deviation from plan option id `ona_prefixes`. CONTEXT/RESEARCH recommended shorter `ona_*` brand prefixes; human locked full-brand `octanest_*` as the public token format / secret-scanning contract (D-08 one-way).
+**User's choice:** `oxidean_prefixes` — classic `oxidean_pat_`, fine-grained `oxidean_fg_`, then CSPRNG hex (32+ bytes). Never `ghp_` / `github_pat_` / `gho_` / any github/gh* prefix.
+**Notes:** Deviation from plan option id `ona_prefixes`. CONTEXT/RESEARCH recommended shorter `ona_*` brand prefixes; human locked full-brand `oxidean_*` as the public token format / secret-scanning contract (D-08 one-way).
 **Recorded:** 2026-09-13 (08-02 continuation)
 
 ### Task 2 — D-18 HTTPS clone URL (one-way)
@@ -242,7 +242,7 @@
 | `owner_repo_git` | `https://{host}/{owner}/{repo}.git` on public origin (recommended — D-18) | ✓ |
 | `stop` | Revisit URL scheme | |
 
-**User's choice:** `owner_repo_git` — public clone URL shape is `https://{host}/{owner}/{repo}.git` on the same public origin (host from `OCTANEST_PUBLIC_ORIGIN`, D-18/D-19). Smart HTTP only on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` stays web UI (D-22).
+**User's choice:** `owner_repo_git` — public clone URL shape is `https://{host}/{owner}/{repo}.git` on the same public origin (host from `OXIDEAN_PUBLIC_ORIGIN`, D-18/D-19). Smart HTTP only on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` stays web UI (D-22).
 **Notes:** Matches Phase 7 clone box; Traefik PathRegexp must keep SPA from stealing `.git`.
 **Recorded:** 2026-09-13 (08-02 continuation)
 
@@ -269,9 +269,9 @@
 | `stop` | Revisit 08-02 | |
 
 **User's choice:** `proceed_locked` — implement PAT schema/types/CRUD using locked contracts from 08-02:
-- **D-08:** `octanest_pat_` / `octanest_fg_` (option `octanest_prefixes`; **not** plan option id `ona_prefixes` / `ona_pat_`/`ona_fg_`)
+- **D-08:** `oxidean_pat_` / `oxidean_fg_` (option `oxidean_prefixes`; **not** plan option id `ona_prefixes` / `ona_pat_`/`ona_fg_`)
 - **D-18:** `owner_repo_git` — `/{owner}/{repo}.git`
 - **D-21/D-01:** `git_401_pat_https_only`
 
-**Notes:** Plan 08-03 checkpoint text still says `ona_prefixes`; human + 08-02 SUMMARY override to full-brand `octanest_*` everywhere token prefixes appear in new code.
+**Notes:** Plan 08-03 checkpoint text still says `ona_prefixes`; human + 08-02 SUMMARY override to full-brand `oxidean_*` everywhere token prefixes appear in new code.
 **Recorded:** 2026-09-13 (08-03 continuation)

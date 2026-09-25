@@ -37,7 +37,7 @@ key-decisions:
   - "rpc-gen produced no api-client diff — client already matched repo.* dispatch"
 
 patterns-established:
-  - "Git forge docs: trait seam in octanest-git; ACL stub; archive HTTP vs RPC; bare OCTANEST_REPOS_DIR layout"
+  - "Git forge docs: trait seam in oxidean-git; ACL stub; archive HTTP vs RPC; bare OXIDEAN_REPOS_DIR layout"
   - "Phase VALIDATION map uses real plan IDs (not TBD) once execution completes"
 
 requirements-completed: [GIT-09, GIT-10]
@@ -52,11 +52,11 @@ coverage:
         status: pass
     human_judgment: false
   - id: D2
-    description: "CONFIGURATION still documents OCTANEST_REPOS_DIR and git ≥2.5 floor with GitBackend cross-link"
+    description: "CONFIGURATION still documents OXIDEAN_REPOS_DIR and git ≥2.5 floor with GitBackend cross-link"
     requirement: GIT-09
     verification:
       - kind: other
-        ref: "rg OCTANEST_REPOS_DIR|CliGitBackend docs/CONFIGURATION.md"
+        ref: "rg OXIDEAN_REPOS_DIR|CliGitBackend docs/CONFIGURATION.md"
         status: pass
     human_judgment: false
   - id: D3
@@ -68,11 +68,11 @@ coverage:
         status: pass
     human_judgment: false
   - id: D4
-    description: "rpc-gen smoke + web build + repo_/octanest-git tests green; client includes repo.* procedures"
+    description: "rpc-gen smoke + web build + repo_/oxidean-git tests green; client includes repo.* procedures"
     requirement: GIT-10
     verification:
       - kind: integration
-        ref: "cargo run -p octanest-api --bin rpc-gen && bun run --cwd apps/web build && cargo nextest run -p octanest-api -E 'test(repo_)' && cargo nextest run -p octanest-git --lib"
+        ref: "cargo run -p oxidean-api --bin rpc-gen && bun run --cwd apps/web build && cargo nextest run -p oxidean-api -E 'test(repo_)' && cargo nextest run -p oxidean-git --lib"
         status: pass
     human_judgment: false
 
@@ -99,7 +99,7 @@ plan_head_before: 419d4e31d3147cfb23f5759e713d0f36865e9a93
 - Documented deep `GitBackend` seam in `docs/ARCHITECTURE.md`: shipped `CliGitBackend` (system git ≥2.5), future `GixGitBackend`, bare layout, owner-only ACL stub, archive HTTP vs RPC
 - Cross-linked CONFIGURATION repos/git knobs to the architecture seam without claiming gitoxide as Phase 7 primary
 - Replaced TBD VALIDATION rows with every plan ID 07-00..07-18; Wave 0 checklist marked complete; `nyquist_compliant` left false for validate-phase
-- rpc-gen + web build + 19 `repo_*` + 12 `octanest-git` tests passed (api-client already in sync)
+- rpc-gen + web build + 19 `repo_*` + 12 `oxidean-git` tests passed (api-client already in sync)
 
 ## Task Commits
 
@@ -112,7 +112,7 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `docs/ARCHITECTURE.md` — Git forge component diagram, abstractions, GitBackend section, `octanest-git` in tree
+- `docs/ARCHITECTURE.md` — Git forge component diagram, abstractions, GitBackend section, `oxidean-git` in tree
 - `docs/CONFIGURATION.md` — Backend seam cross-link to ARCHITECTURE (repos/git floor unchanged)
 - `.planning/phases/07-git-repos-browse/07-VALIDATION.md` — Full per-plan verification map + Wave 0 checkboxes
 

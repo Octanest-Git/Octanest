@@ -23,7 +23,7 @@
 |------------|--------------|----------------|-----------|
 | Compose config validation | CI (GHA) | Compose files | Cheap PR signal; keep existing job |
 | Compose bring-up + dialect health | CI + Make/scripts | api/web/Traefik containers | PLAT-03/09; reuse compose-smoke |
-| Dialect unit probe (migrate) | CI `db-matrix` | `octanest-db` | Already lands; complements Compose smoke |
+| Dialect unit probe (migrate) | CI `db-matrix` | `oxidean-db` | Already lands; complements Compose smoke |
 | Protocol edge smokes | CI `smoke-protocol` | Traefik labels + SSH TCP | Keep separate (D-CI-05) |
 | Cloud service topology | Ops / Railway IaC | Docker images | PLAT-02; same images |
 | Cloud HTTP ingress | `deploy/cloud` gateway | api + web private hosts | No Docker socket on Railway |
@@ -60,7 +60,7 @@ Phase 1/2/11.1 already shipped the **operator** Compose path and **partial** CI:
 
 ### Compose / Make
 - Default: Traefik + web + api + postgres (`docker-compose.yml`)
-- Overlays: `docker-compose.mysql.yml` (profile `mysql`), `docker-compose.sqlite.yml` (no DB container; bind `OCTANEST_SQLITE_HOST_DIR`)
+- Overlays: `docker-compose.mysql.yml` (profile `mysql`), `docker-compose.sqlite.yml` (no DB container; bind `OXIDEAN_SQLITE_HOST_DIR`)
 - Smoke: `scripts/compose-smoke.sh` — `up --build -d --wait`, curl `/`, `/health`, RPC `system.health` + `system.db_probe` with `EXPECT_DIALECT`
 
 ### Docker images
@@ -111,7 +111,7 @@ No other new npm/pip/cargo runtime deps required for Compose CI work.
 ## Common Pitfalls
 
 1. **GHA disk/time:** Three full `docker compose up --build` legs are heavy — use `fail-fast: false`, free disk step like `api-rust`, consider shared layer cache; do not drop MySQL from PR to “save time” (locked D-CI-03).
-2. **SQLite host path on CI:** `OCTANEST_SQLITE_HOST_DIR` / `.env.sqlite` — use Linux-native `./var` on ubuntu-latest; avoid WSL `docker.exe` helpers in GHA.
+2. **SQLite host path on CI:** `OXIDEAN_SQLITE_HOST_DIR` / `.env.sqlite` — use Linux-native `./var` on ubuntu-latest; avoid WSL `docker.exe` helpers in GHA.
 3. **Traefik Host(`localhost`):** Smoke uses `http://localhost` — keep that for CI; cloud gateway must use public Host / catch-all, not localhost labels.
 4. **CORS / PUBLIC_ORIGIN:** Production cloud must set allowlist + public origin or browsers break SSO/magic links.
 5. **Fork PRs + secrets:** Never put `RAILWAY_TOKEN` on pull_request from forks; IaC validate statically / optional manual workflow.

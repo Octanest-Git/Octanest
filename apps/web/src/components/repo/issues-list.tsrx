@@ -1,6 +1,6 @@
 import { useForm } from "@octanejs/tanstack-form";
 import { CircleCheck, CircleDot, MessageSquare } from "@octanejs/lucide";
-import type { IssuePublic, LabelPublic, RepoPublic } from "@octanest/api-client";
+import type { IssuePublic, LabelPublic, RepoPublic } from "@oxidean/api-client";
 import { MemberLookup } from "@/components/org/member-lookup";
 import { LabelChip } from "@/components/repo/label-chip";
 import { Button } from "@/components/ui/button";

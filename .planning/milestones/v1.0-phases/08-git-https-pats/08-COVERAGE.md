@@ -1,7 +1,7 @@
 # API Coverage — PAT RPC + Git Smart HTTP
 
 > Full coverage by default. Opt-outs are explicit, reasoned decisions.
-> Phase 8 ships first-party Octanest PAT mint/list/revoke and HTTPS Smart HTTP via system `git-http-backend` CGI — not a third-party SaaS SDK. Same gate as Phase 7 `GitBackend` coverage (D-01, D-11–D-26, GIT-02, GIT-11).
+> Phase 8 ships first-party Oxidean PAT mint/list/revoke and HTTPS Smart HTTP via system `git-http-backend` CGI — not a third-party SaaS SDK. Same gate as Phase 7 `GitBackend` coverage (D-01, D-11–D-26, GIT-02, GIT-11).
 
 | capability | decision | reason |
 |---|---|---|
@@ -24,4 +24,4 @@
 | Classic scopes beyond `repo` | OPT-OUT | D-04 classic `repo` only |
 | Multi-replica shared rate-limit store | OPT-OUT | D-26 in-process limiter; document single-replica |
 | OAuth apps / device flow tokens | OPT-OUT | not Phase 8 product surface |
-| GitHub-compatible `ghp_` / `github_pat_` prefixes | OPT-OUT | D-08 Octanest-only `octanest_pat_` / `octanest_fg_` |
+| GitHub-compatible `ghp_` / `github_pat_` prefixes | OPT-OUT | D-08 Oxidean-only `oxidean_pat_` / `oxidean_fg_` |

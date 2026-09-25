@@ -8,7 +8,7 @@
 - docs/API.md pull.* + closing keywords
 
 ## Verification
-- `cargo nextest run -p octanest-api -E 'test(pull_merge)'`
+- `cargo nextest run -p oxidean-api -E 'test(pull_merge)'`
 - `make web-lint` / `make web-format-check`
 - Vitest pulls integration
 

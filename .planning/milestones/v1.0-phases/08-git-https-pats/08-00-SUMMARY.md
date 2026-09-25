@@ -31,9 +31,9 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/pat_rpc.rs
-    - crates/octanest-api/tests/git_smart_http.rs
-    - crates/octanest-db/tests/dialect_pats.rs
+    - crates/oxidean-api/tests/pat_rpc.rs
+    - crates/oxidean-api/tests/git_smart_http.rs
+    - crates/oxidean-db/tests/dialect_pats.rs
   modified: []
 
 key-decisions:
@@ -52,7 +52,7 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(pat_)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(pat_)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -60,7 +60,7 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(git_smart)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(git_smart)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -68,7 +68,7 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-db -E 'test(dialect_pats)'"
+        ref: "cargo nextest list -p oxidean-db -E 'test(dialect_pats)'"
         status: pass
     human_judgment: false
 
@@ -107,9 +107,9 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to later 08-xx plans._
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/pat_rpc.rs` — GIT-11 create/list/revoke + verified/note stubs
-- `crates/octanest-api/tests/git_smart_http.rs` — GIT-02 Smart HTTP auth/ACL status stubs
-- `crates/octanest-db/tests/dialect_pats.rs` — 0008_pats migration parity stub
+- `crates/oxidean-api/tests/pat_rpc.rs` — GIT-11 create/list/revoke + verified/note stubs
+- `crates/oxidean-api/tests/git_smart_http.rs` — GIT-02 Smart HTTP auth/ACL status stubs
+- `crates/oxidean-db/tests/dialect_pats.rs` — 0008_pats migration parity stub
 
 ## Decisions Made
 
@@ -124,7 +124,7 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to later 08-xx plans._
 - **Found during:** Task 1 verification
 - **Issue:** Plan verify uses `-E 'test(dialect_pats)'`, which matches test function names, not the binary id; `migrate_0008_pats_*` produced an empty list
 - **Fix:** Renamed to `dialect_pats_migrate_0008_schema_presence` and `dialect_pats_tri_dialect_files`
-- **Files modified:** `crates/octanest-db/tests/dialect_pats.rs`
+- **Files modified:** `crates/oxidean-db/tests/dialect_pats.rs`
 - **Commit:** `80275ab`
 
 ### Auto-fixed Issues (close-out)
@@ -145,9 +145,9 @@ Wave 0 intentional RED stubs (expected until later plans):
 
 | File | Stub | Reason |
 |------|------|--------|
-| `crates/octanest-api/tests/pat_rpc.rs` | all 5 `assert!(false)` tests | RED until 08-04 pat RPC |
-| `crates/octanest-api/tests/git_smart_http.rs` | all 8 `assert!(false)` tests | RED until 08-04 / 08-06 Smart HTTP |
-| `crates/octanest-db/tests/dialect_pats.rs` | schema + tri-dialect asserts | RED until 08-03 `0008_pats` migration |
+| `crates/oxidean-api/tests/pat_rpc.rs` | all 5 `assert!(false)` tests | RED until 08-04 pat RPC |
+| `crates/oxidean-api/tests/git_smart_http.rs` | all 8 `assert!(false)` tests | RED until 08-04 / 08-06 Smart HTTP |
+| `crates/oxidean-db/tests/dialect_pats.rs` | schema + tri-dialect asserts | RED until 08-03 `0008_pats` migration |
 
 ## Threat Flags
 
@@ -155,7 +155,7 @@ None beyond plan threat model (T-08-01 / T-08-02 encoded in stub messages; no ne
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/tests/pat_rpc.rs`
-- FOUND: `crates/octanest-api/tests/git_smart_http.rs`
-- FOUND: `crates/octanest-db/tests/dialect_pats.rs`
+- FOUND: `crates/oxidean-api/tests/pat_rpc.rs`
+- FOUND: `crates/oxidean-api/tests/git_smart_http.rs`
+- FOUND: `crates/oxidean-db/tests/dialect_pats.rs`
 - FOUND: commit `80275ab`

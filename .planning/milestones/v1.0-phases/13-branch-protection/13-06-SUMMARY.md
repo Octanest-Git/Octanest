@@ -19,8 +19,8 @@ tech-stack:
   patterns: ["dismiss_stale recomputed at merge via review.commit_sha vs head"]
 key-files:
   modified:
-    - crates/octanest-api/src/protection/mod.rs
-    - crates/octanest-api/src/pull/merge_ops.rs
+    - crates/oxidean-api/src/protection/mod.rs
+    - crates/oxidean-api/src/pull/merge_ops.rs
 key-decisions:
   - "dismiss_stale: merge-time ignore Approves whose commit_sha != head (persist-on-push deferred)"
   - "require_last_push_approval wired; last_head_pusher_id optional until push attribution lands"

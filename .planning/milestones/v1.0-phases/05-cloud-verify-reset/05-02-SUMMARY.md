@@ -33,15 +33,15 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/gate.rs
-    - crates/octanest-api/src/auth/verify_reset.rs
-    - crates/octanest-api/tests/auth_verify_gate.rs
-    - crates/octanest-api/tests/auth_verify_reset.rs
+    - crates/oxidean-api/src/auth/gate.rs
+    - crates/oxidean-api/src/auth/verify_reset.rs
+    - crates/oxidean-api/tests/auth_verify_gate.rs
+    - crates/oxidean-api/tests/auth_verify_reset.rs
   modified:
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/src/auth/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/src/auth/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
 
 key-decisions:
   - "privileged_ping allowlist is {development,dev,test,compose} per Open Q2 RESOLVED"
@@ -59,7 +59,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_gate.rs#unverified_privileged_ping_forbidden_then_ok_after_otp"
+        ref: "crates/oxidean-api/tests/auth_verify_gate.rs#unverified_privileged_ping_forbidden_then_ok_after_otp"
         status: pass
     human_judgment: false
   - id: D2
@@ -67,7 +67,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#issue_otp_consume_sets_email_verified_on_me"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#issue_otp_consume_sets_email_verified_on_me"
         status: pass
     human_judgment: false
   - id: D3
@@ -75,7 +75,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_gate.rs#privileged_ping_unknown_outside_env_allowlist"
+        ref: "crates/oxidean-api/tests/auth_verify_gate.rs#privileged_ping_unknown_outside_env_allowlist"
         status: pass
     human_judgment: false
 
@@ -114,14 +114,14 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/gate.rs` — `require_verified` helper
-- `crates/octanest-api/src/auth/verify_reset.rs` — issue/consume verify OTP + privileged_ping
-- `crates/octanest-api/src/auth/local.rs` — `email_verified` on `user_to_public`
-- `crates/octanest-api/src/auth/mod.rs` — module exports
-- `crates/octanest-api/src/rpc.rs` — `auth.verify` + env-gated `auth.dev.privileged_ping`
-- `crates/octanest-api/src/app.rs` — `auth.email_unverified` → 403
-- `crates/octanest-api/tests/auth_verify_gate.rs` — gate + production unknown coverage
-- `crates/octanest-api/tests/auth_verify_reset.rs` — OTP → me.email_verified
+- `crates/oxidean-api/src/auth/gate.rs` — `require_verified` helper
+- `crates/oxidean-api/src/auth/verify_reset.rs` — issue/consume verify OTP + privileged_ping
+- `crates/oxidean-api/src/auth/local.rs` — `email_verified` on `user_to_public`
+- `crates/oxidean-api/src/auth/mod.rs` — module exports
+- `crates/oxidean-api/src/rpc.rs` — `auth.verify` + env-gated `auth.dev.privileged_ping`
+- `crates/oxidean-api/src/app.rs` — `auth.email_unverified` → 403
+- `crates/oxidean-api/tests/auth_verify_gate.rs` — gate + production unknown coverage
+- `crates/oxidean-api/tests/auth_verify_reset.rs` — OTP → me.email_verified
 
 ## Decisions Made
 

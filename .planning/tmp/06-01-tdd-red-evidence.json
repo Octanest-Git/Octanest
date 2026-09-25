@@ -1,9 +1,9 @@
 {
-  "command": "cargo test -p octanest-core --lib auth_types::tests::system_administrator_is_reserved -- --nocapture",
+  "command": "cargo test -p oxidean-core --lib auth_types::tests::system_administrator_is_reserved -- --nocapture",
   "exitCode": 101,
-  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s\n     Running unittests src/lib.rs (target/debug/build/octanest-core/5ba2f9690afa65c7/out/octanest_core-5ba2f9690afa65c7)\n\nrunning 1 test\n\nthread 'auth_types::tests::system_administrator_is_reserved' (982039) panicked at crates/octanest-core/src/auth_types.rs:262:9:\nassertion failed: is_reserved_username(\"system-administrator\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest auth_types::tests::system_administrator_is_reserved ... FAILED\n\nfailures:\n\nfailures:\n    auth_types::tests::system_administrator_is_reserved\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p octanest-core --lib`\n\nnot ok 1 - auth_types::tests::system_administrator_is_reserved\n# tests 1\n# pass 0\n# fail 1\n",
+  "output": "    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.05s\n     Running unittests src/lib.rs (target/debug/build/oxidean-core/5ba2f9690afa65c7/out/oxidean_core-5ba2f9690afa65c7)\n\nrunning 1 test\n\nthread 'auth_types::tests::system_administrator_is_reserved' (982039) panicked at crates/oxidean-core/src/auth_types.rs:262:9:\nassertion failed: is_reserved_username(\"system-administrator\")\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\ntest auth_types::tests::system_administrator_is_reserved ... FAILED\n\nfailures:\n\nfailures:\n    auth_types::tests::system_administrator_is_reserved\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s\n\nerror: test failed, to rerun pass `-p oxidean-core --lib`\n\nnot ok 1 - auth_types::tests::system_administrator_is_reserved\n# tests 1\n# pass 0\n# fail 1\n",
   "targetTest": "auth_types::tests::system_administrator_is_reserved",
-  "targetFile": "crates/octanest-core/src/auth_types.rs",
+  "targetFile": "crates/oxidean-core/src/auth_types.rs",
   "expected": "is_reserved_username(\"system-administrator\") == true",
   "actual": "assertion failed: is_reserved_username(\"system-administrator\")"
 }

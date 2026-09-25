@@ -34,18 +34,18 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/repo/collaborators.rs
+    - crates/oxidean-api/src/repo/collaborators.rs
     - .planning/phases/10-orgs-permissions/.tdd/10-07-t1-red-evidence.json
     - .planning/phases/10-orgs-permissions/.tdd/10-07-t2-red-evidence.json
   modified:
-    - crates/octanest-db/src/repo_collaborators.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/tests/repo_collaborators_acl.rs
-    - crates/octanest-api/tests/repo_private_404.rs
+    - crates/oxidean-db/src/repo_collaborators.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/tests/repo_collaborators_acl.rs
+    - crates/oxidean-api/tests/repo_private_404.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -65,13 +65,13 @@ coverage:
     requirement: ORG-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'binary(repo_collaborators_acl)'#collab_crud_on_personal_repo"
+        ref: "cargo nextest run -p oxidean-api -E 'binary(repo_collaborators_acl)'#collab_crud_on_personal_repo"
         status: pass
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'binary(repo_collaborators_acl)'#collab_crud_on_org_repo"
+        ref: "cargo nextest run -p oxidean-api -E 'binary(repo_collaborators_acl)'#collab_crud_on_org_repo"
         status: pass
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'binary(repo_collaborators_acl)'#collab_permission_read_write_admin"
+        ref: "cargo nextest run -p oxidean-api -E 'binary(repo_collaborators_acl)'#collab_permission_read_write_admin"
         status: pass
     human_judgment: false
   - id: D2
@@ -79,10 +79,10 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(collab_raises)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(collab_raises)'"
         status: pass
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_private_404_collaborator)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_private_404_collaborator)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -90,10 +90,10 @@ coverage:
     requirement: ORG-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(collab_visibility)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(collab_visibility)'"
         status: pass
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_settings)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_settings)'"
         status: pass
     human_judgment: false
 
@@ -129,12 +129,12 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/repo/collaborators.rs` — collaborator RPC + `resolve_repo_for_admin`
-- `crates/octanest-db/src/repo_collaborators.rs` — list/insert/update/remove
-- `crates/octanest-core/src/repo_types.rs` — collaborator DTOs
+- `crates/oxidean-api/src/repo/collaborators.rs` — collaborator RPC + `resolve_repo_for_admin`
+- `crates/oxidean-db/src/repo_collaborators.rs` — list/insert/update/remove
+- `crates/oxidean-core/src/repo_types.rs` — collaborator DTOs
 - `packages/api-client/src/index.ts` — generated client methods
-- `crates/octanest-api/tests/repo_collaborators_acl.rs` — CRUD + raise + visibility matrix
-- `crates/octanest-api/tests/repo_private_404.rs` — granted private read
+- `crates/oxidean-api/tests/repo_collaborators_acl.rs` — CRUD + raise + visibility matrix
+- `crates/oxidean-api/tests/repo_private_404.rs` — granted private read
 
 ## Decisions Made
 
@@ -150,14 +150,14 @@ status: complete
 - **Found during:** Task 1 GREEN
 - **Issue:** `repo.not_found` maps to HTTP 404; invalid domain errors map to 400
 - **Fix:** `rpc_json` accepts OK/NOT_FOUND and known 400 domain codes
-- **Files modified:** `crates/octanest-api/tests/repo_collaborators_acl.rs`
+- **Files modified:** `crates/oxidean-api/tests/repo_collaborators_acl.rs`
 - **Commit:** `c2a703d`
 
 **2. [Rule 3 - Blocking] Username underscores rejected by validate_username**
 - **Found during:** Task 1 GREEN (`collab_permission_read_write_admin`)
 - **Issue:** `u_read` etc. fail signup (alphanumeric/hyphen only)
 - **Fix:** Use `uread1` / `uwrite1` / `uadmin1`
-- **Files modified:** `crates/octanest-api/tests/repo_collaborators_acl.rs`
+- **Files modified:** `crates/oxidean-api/tests/repo_collaborators_acl.rs`
 - **Commit:** `c2a703d`
 
 ### Deferred Issues
@@ -177,6 +177,6 @@ None in this plan's deliverables. Pre-existing `git_smart_collaborator_classic_p
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/repo/collaborators.rs`
+- FOUND: `crates/oxidean-api/src/repo/collaborators.rs`
 - FOUND: `10-07-SUMMARY.md` (this file)
 - FOUND commits: `26a1d62`, `c2a703d`, `b2f2f39`, `044e733`

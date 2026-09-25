@@ -1,10 +1,10 @@
-# @octanest/api-client
+# @oxidean/api-client
 
-Generated TypeScript client for Octanest RPC procedures. Types-only package consumed by `@octanest/web`.
+Generated TypeScript client for Oxidean RPC procedures. Types-only package consumed by `@oxidean/web`.
 
 | | |
 |--|--|
-| **Package** | `@octanest/api-client` |
+| **Package** | `@oxidean/api-client` |
 | **Version** | `0.1.0` |
 | **License** | [MIT](../../LICENSE) |
 
@@ -16,7 +16,7 @@ From the repo root:
 
 ```bash
 make rpc-gen
-# or: cargo run -q -p octanest-api --bin rpc-gen
+# or: cargo run -q -p oxidean-api --bin rpc-gen
 ```
 
 CI enforces sync via `make rpc-sync-check` (job `rpc-sync`).

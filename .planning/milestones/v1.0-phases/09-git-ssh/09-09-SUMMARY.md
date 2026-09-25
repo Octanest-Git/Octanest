@@ -19,7 +19,7 @@ plan_head_before: "2ab8e266e44ea7bc8e64d96ed4b18b5bd43409f0"
 tech-stack:
   added: []
   patterns:
-    - "Document SSH as TCP-not-Traefik; single OCTANEST_SSH_PORT listen+advertise"
+    - "Document SSH as TCP-not-Traefik; single OXIDEAN_SSH_PORT listen+advertise"
 key-files:
   modified:
     - docs/CONFIGURATION.md
@@ -34,7 +34,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: other
-        ref: "rg OCTANEST_SSH_ docs/CONFIGURATION.md"
+        ref: "rg OXIDEAN_SSH_ docs/CONFIGURATION.md"
         status: pass
     human_judgment: false
   - id: D2
@@ -56,7 +56,7 @@ status: complete
 
 ## Accomplishments
 
-- Documented `OCTANEST_SSH_*`, scp-style remotes, Compose TCP (not Traefik), smoke-git-ssh.
+- Documented `OXIDEAN_SSH_*`, scp-style remotes, Compose TCP (not Traefik), smoke-git-ssh.
 - Architecture section for russh pack spawn + ACL parity.
 - Refreshed VALIDATION requirement→test map; `wave_0_complete: true`; `nyquist_compliant: false`.
 
@@ -80,5 +80,5 @@ None material.
 ## Self-Check: PASSED
 
 - FOUND: wave_0_complete: true
-- FOUND: OCTANEST_SSH_ENABLED in CONFIGURATION
+- FOUND: OXIDEAN_SSH_ENABLED in CONFIGURATION
 - FOUND: russh in ARCHITECTURE

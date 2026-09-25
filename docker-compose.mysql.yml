@@ -7,24 +7,24 @@ services:
     profiles: ["mysql"]
     image: mysql:8.4
     environment:
-      MYSQL_USER: ${MYSQL_USER:-octanest}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-octanest}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-octanest}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-octanest}
+      MYSQL_USER: ${MYSQL_USER:-oxidean}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-oxidean}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-oxidean}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-oxidean}
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-octanest}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-oxidean}"]
       interval: 5s
       timeout: 5s
       retries: 20
     networks:
-      - octanest
+      - oxidean
 
   api:
     environment:
-      DATABASE_URL: ${MYSQL_DATABASE_URL:-mysql://octanest:octanest@mysql:3306/octanest}
-      OCTANEST_DB_DIALECT: mysql
+      DATABASE_URL: ${MYSQL_DATABASE_URL:-mysql://oxidean:oxidean@mysql:3306/oxidean}
+      OXIDEAN_DB_DIALECT: mysql
     depends_on:
       mysql:
         condition: service_healthy

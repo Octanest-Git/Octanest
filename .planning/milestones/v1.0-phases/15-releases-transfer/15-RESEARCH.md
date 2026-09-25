@@ -50,7 +50,7 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| GIT-14 | User can create a release for a tag with notes and downloadable assets | Tag-bound `release` rows + multipart asset upload to `OCTANEST_RELEASE_ASSETS_DIR`; Write+ gate; draft/prerelease flags |
+| GIT-14 | User can create a release for a tag with notes and downloadable assets | Tag-bound `release` rows + multipart asset upload to `OXIDEAN_RELEASE_ASSETS_DIR`; Write+ gate; draft/prerelease flags |
 | GIT-15 | User can download release assets from the web UI | Axum download route with Read ACL (anon for public published); Content-Disposition from DB filename |
 | GIT-16 | User with permission can rename a repository | Admin `repo.rename` + disk `fs::rename` of bare dir + `repository_redirects` row + retention purge |
 | GIT-17 | User with permission can transfer a repository to another user or organization | Admin `repo.transfer` + owner_type/owner_id rewrite + bare dir move + redirect + type-confirm; issues/LFS stay on `repo_id` |
@@ -58,11 +58,11 @@
 
 ## Summary
 
-Phase 15 adds two product surfaces that forges treat as related danger-zone / shipping features: **tag-bound releases with binary assets**, and **Admin rename/transfer with redirects**. Octanest already has the hard primitives this phase must reuse: `Capability::{Read,Write,Admin}` coalesce ACL, polymorphic `owner_type`/`owner_id`, bare layout `{repos_dir}/{owner}/{name}.git`, typed confirm for soft-delete, username-driven owner-dir rename, multipart upload + Compose volume pattern for avatars, and orphan-reconcile retention jobs.
+Phase 15 adds two product surfaces that forges treat as related danger-zone / shipping features: **tag-bound releases with binary assets**, and **Admin rename/transfer with redirects**. Oxidean already has the hard primitives this phase must reuse: `Capability::{Read,Write,Admin}` coalesce ACL, polymorphic `owner_type`/`owner_id`, bare layout `{repos_dir}/{owner}/{name}.git`, typed confirm for soft-delete, username-driven owner-dir rename, multipart upload + Compose volume pattern for avatars, and orphan-reconcile retention jobs.
 
-Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to a git tag with draft/prerelease; assets are separate uploads keyed by release id; rename/transfer insert redirect records so old `owner/name` (and Smart HTTP `.git` URLs) keep working until superseded by a new repo at the old path. Octanest locks a **finite redirect retention window** (unlike GitHub’s indefinite redirects) and a **separate release-assets volume** (unlike LFS OID store). Issues and LFS associations should key off `repositories.id` so transfer is primarily an ownership + disk-path rewrite, not a row-by-row content migrate.
+Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to a git tag with draft/prerelease; assets are separate uploads keyed by release id; rename/transfer insert redirect records so old `owner/name` (and Smart HTTP `.git` URLs) keep working until superseded by a new repo at the old path. Oxidean locks a **finite redirect retention window** (unlike GitHub’s indefinite redirects) and a **separate release-assets volume** (unlike LFS OID store). Issues and LFS associations should key off `repositories.id` so transfer is primarily an ownership + disk-path rewrite, not a row-by-row content migrate.
 
-**Primary recommendation:** Implement `release.*` RPC + multipart asset HTTP routes on a new `OCTANEST_RELEASE_ASSETS_DIR` volume; implement `repo.rename` / `repo.transfer` with disk move + `repository_redirects` (web SSR + Smart HTTP + SSH resolution) and ENV-tunable retention/size defaults (90 days / 512 MiB).
+**Primary recommendation:** Implement `release.*` RPC + multipart asset HTTP routes on a new `OXIDEAN_RELEASE_ASSETS_DIR` volume; implement `repo.rename` / `repo.transfer` with disk move + `repository_redirects` (web SSR + Smart HTTP + SSH resolution) and ENV-tunable retention/size defaults (90 days / 512 MiB).
 
 ## Architectural Responsibility Map
 
@@ -79,12 +79,12 @@ Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to 
 
 ## Project Constraints (from .cursor/rules/)
 
-- One product (cloud + self-host); Bun workspaces + Cargo crates — do not invent parallel app structure. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- One product (cloud + self-host); Bun workspaces + Cargo crates — do not invent parallel app structure. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 - Web UI is **Octane** (`.tsrx`), not React; load Octane skill before UI edits; `@if`/`@else` only; TanStack Query for server state. [VERIFIED: `.cursor/rules/octane-ui.mdc`]
 - RPC types: change Rust → `make rpc-gen`; never treat hand-edited `packages/api-client` as source of truth. [VERIFIED: `.cursor/rules/rpc-codegen.mdc`]
-- Dialect SQL only inside `crates/octanest-db`. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
-- No secrets in commits/examples; prefer `make test` / `make rpc-sync-check`. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
-- Prefer extending existing patterns (ACL gates, Make targets, upload volumes) over new frameworks. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- Dialect SQL only inside `crates/oxidean-db`. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
+- No secrets in commits/examples; prefer `make test` / `make rpc-sync-check`. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
+- Prefer extending existing patterns (ACL gates, Make targets, upload volumes) over new frameworks. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 
 ## Standard Stack
 
@@ -92,12 +92,12 @@ Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to 
 
 | Library / Component | Version / Location | Purpose | Why Standard |
 |---------------------|--------------------|---------|--------------|
-| Axum + `DefaultBodyLimit` | in-tree `octanest-api` | Multipart asset upload + download routes | Already used for avatars [VERIFIED: `crates/octanest-api/src/app.rs:127-131`] |
-| `Capability` ACL | `repo/acl.rs` | Read/Write/Admin gates | Phase 10 source of truth [VERIFIED: `crates/octanest-api/src/repo/acl.rs:22-28`] |
-| `CliGitBackend` / `repo.refs` | `octanest-git` + `repo/mod.rs` | Prove tag exists before create | Tags already listed in browse UI |
-| SQLx migrations (3 dialects) | `octanest-db/migrations/*` | `releases`, `release_assets`, `repository_redirects` | Dialect branching stays in db crate |
+| Axum + `DefaultBodyLimit` | in-tree `oxidean-api` | Multipart asset upload + download routes | Already used for avatars [VERIFIED: `crates/oxidean-api/src/app.rs:127-131`] |
+| `Capability` ACL | `repo/acl.rs` | Read/Write/Admin gates | Phase 10 source of truth [VERIFIED: `crates/oxidean-api/src/repo/acl.rs:22-28`] |
+| `CliGitBackend` / `repo.refs` | `oxidean-git` + `repo/mod.rs` | Prove tag exists before create | Tags already listed in browse UI |
+| SQLx migrations (3 dialects) | `oxidean-db/migrations/*` | `releases`, `release_assets`, `repository_redirects` | Dialect branching stays in db crate |
 | Octane `.tsrx` + TanStack Query | `apps/web` | Releases tab + settings danger zone | Project UI stack |
-| Compose volume bind | `docker-compose.yml` | `OCTANEST_RELEASE_ASSETS_DIR` | Same pattern as `./var/uploads` / `./var/repos` |
+| Compose volume bind | `docker-compose.yml` | `OXIDEAN_RELEASE_ASSETS_DIR` | Same pattern as `./var/uploads` / `./var/repos` |
 
 ### Supporting
 
@@ -105,7 +105,7 @@ Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to 
 |---------------------|---------|---------|-------------|
 | Existing AlertDialog / Input confirm | in-tree | Type-repo-name for transfer (and optionally rename) | Mirror soft-delete UX [VERIFIED: `apps/web/src/routes/$owner.$repo.settings.tsrx:74-112`] |
 | `orphan_reconcile` job scheduler | `jobs/reconcile.rs` | Purge expired redirects (+ optional asset orphans) | Extend existing ENV-driven job |
-| `rename_owner_repos_dir` | `git/mod.rs` | Pattern for atomic-ish disk rename before DB commit | Repo rename/transfer bare moves [VERIFIED: `crates/octanest-api/src/git/mod.rs:48-57`] |
+| `rename_owner_repos_dir` | `git/mod.rs` | Pattern for atomic-ish disk rename before DB commit | Repo rename/transfer bare moves [VERIFIED: `crates/oxidean-api/src/git/mod.rs:48-57`] |
 | `renderGfm` | `apps/web/src/lib/markdown.ts` | Release notes HTML | Same as issues |
 
 ### Alternatives Considered
@@ -149,16 +149,16 @@ Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to 
    |                 repo.rename / repo.transfer
    |                 (Capability: Write+ / Admin)
    v
-[octanest-db]
+[oxidean-db]
    repositories (owner_type, owner_id, name)
    releases (repo_id, tag_name, draft, prerelease, ...)
    release_assets (release_id, filename, size, ...)
    repository_redirects (old_owner_slug, old_name, repo_id, expires_at)
    issues* / lfs_repo_oids*  ---- keyed by repo_id (no owner rewrite)
    |
-   +--> [OCTANEST_REPOS_DIR]/{owner}/{name}.git   (rename/transfer fs::rename)
-   +--> [OCTANEST_RELEASE_ASSETS_DIR]/{asset_id}  (stable; not under owner path)
-   +--> [OCTANEST_LFS_DIR] OID store              (associations only; no path rewrite)
+   +--> [OXIDEAN_REPOS_DIR]/{owner}/{name}.git   (rename/transfer fs::rename)
+   +--> [OXIDEAN_RELEASE_ASSETS_DIR]/{asset_id}  (stable; not under owner path)
+   +--> [OXIDEAN_LFS_DIR] OID store              (associations only; no path rewrite)
 
 [Browser / git client]
    |  GET /api/releases/assets/{asset_id}
@@ -173,14 +173,14 @@ Forge research (GitHub + Gitea) converges on: releases are DB metadata bound to 
 ### Recommended Project Structure
 
 ```
-crates/octanest-core/src/release_types.rs   # DTOs + error codes
-crates/octanest-db/migrations/*/00NN_releases_redirects.sql
-crates/octanest-db/src/releases.rs
-crates/octanest-db/src/redirects.rs
-crates/octanest-api/src/release/mod.rs      # RPC handlers
-crates/octanest-api/src/routes/release_assets.rs  # multipart + download
-crates/octanest-api/src/repo/rename_transfer.rs   # rename/transfer + disk
-crates/octanest-api/src/jobs/redirect_purge.rs    # or extend reconcile.rs
+crates/oxidean-core/src/release_types.rs   # DTOs + error codes
+crates/oxidean-db/migrations/*/00NN_releases_redirects.sql
+crates/oxidean-db/src/releases.rs
+crates/oxidean-db/src/redirects.rs
+crates/oxidean-api/src/release/mod.rs      # RPC handlers
+crates/oxidean-api/src/routes/release_assets.rs  # multipart + download
+crates/oxidean-api/src/repo/rename_transfer.rs   # rename/transfer + disk
+crates/oxidean-api/src/jobs/redirect_purge.rs    # or extend reconcile.rs
 apps/web/src/routes/$owner.$repo.releases*.tsrx
 apps/web/src/components/repo/repo-chrome.tsrx     # Releases tab + can_admin Settings
 apps/web/src/routes/$owner.$repo.settings.tsrx   # Danger zone: rename + transfer
@@ -190,14 +190,14 @@ docker-compose.yml                              # bind ./var/release-assets
 
 ### Pattern 1: Tag-must-exist release create (D-REL-01)
 
-**What:** Create release only if `refs/tags/{tag}` exists via `GitBackend` / `repo.refs`; reject with stable `release.tag_missing`. Do **not** create tags from `target_commitish` (GitHub can; Octanest must not in Phase 15).
+**What:** Create release only if `refs/tags/{tag}` exists via `GitBackend` / `repo.refs`; reject with stable `release.tag_missing`. Do **not** create tags from `target_commitish` (GitHub can; Oxidean must not in Phase 15).
 
 **When to use:** `release.create` / publish draft.
 
 **Example:**
 
 ```rust
-// Source: Octanest pattern — verify tag via existing refs listing (repo.refs)
+// Source: Oxidean pattern — verify tag via existing refs listing (repo.refs)
 // [ASSUMED] exact GitBackend helper name; prefer listing refs/tags and matching short name
 if !tag_exists_in_repo(&ctx.git, &bare_path, &tag_name).await? {
     return Err(AppError::new("release.tag_missing", "Tag does not exist on this repository."));
@@ -209,7 +209,7 @@ if !tag_exists_in_repo(&ctx.git, &bare_path, &tag_name).await? {
 **What:** Reuse `resolve_repo_for_read` + `meets`, and Admin helper:
 
 ```rust
-// Source: crates/octanest-api/src/repo/collaborators.rs:51-63
+// Source: crates/oxidean-api/src/repo/collaborators.rs:51-63
 /// Resolve repo for Admin-only mutate (collaborators, visibility, soft-delete).
 /// Missing OR insufficient capability → identical soft [`acl::not_found`].
 pub async fn resolve_repo_for_admin(
@@ -226,7 +226,7 @@ pub async fn resolve_repo_for_admin(
 }
 ```
 
-[VERIFIED: `crates/octanest-api/src/repo/collaborators.rs:51-63`]
+[VERIFIED: `crates/oxidean-api/src/repo/collaborators.rs:51-63`]
 
 - Releases mutate (create/edit/upload): `meets(..., Write)` after verified session.
 - Rename / transfer / delete release: `resolve_repo_for_admin`.
@@ -237,7 +237,7 @@ pub async fn resolve_repo_for_admin(
 **What:** Bare path is `{repos_dir}/{owner}/{name}.git`:
 
 ```rust
-// Source: crates/octanest-api/src/git/mod.rs:13-31
+// Source: crates/oxidean-api/src/git/mod.rs:13-31
 /// Bare repo path: `{repos_dir}/{owner}/{name}.git` (D-30).
 pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathBuf, AppError> {
     // ... path traversal rejects ...
@@ -245,12 +245,12 @@ pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathB
 }
 ```
 
-[VERIFIED: `crates/octanest-api/src/git/mod.rs:13-31`]
+[VERIFIED: `crates/oxidean-api/src/git/mod.rs:13-31`]
 
 Username migrate already renames **owner directories** before DB commit (`rename_owner_repos_dir`). Repo rename/transfer should:
 
-1. Validate new name with `validate_repo_name` [VERIFIED: `crates/octanest-core/src/repo_types.rs:404-430`].
-2. Ensure destination `(owner_id, lower(name))` free (unique index) [VERIFIED: `crates/octanest-db/migrations/sqlite/0010_orgs_acl.sql:74-76`].
+1. Validate new name with `validate_repo_name` [VERIFIED: `crates/oxidean-core/src/repo_types.rs:404-430`].
+2. Ensure destination `(owner_id, lower(name))` free (unique index) [VERIFIED: `crates/oxidean-db/migrations/sqlite/0010_orgs_acl.sql:74-76`].
 3. `tokio::fs::rename` bare dir (and ensure parent owner dir exists on transfer).
 4. Update DB `name` and/or `owner_type`/`owner_id`.
 5. Insert `repository_redirects` for old slug/name with `expires_at`.
@@ -261,7 +261,7 @@ Username migrate already renames **owner directories** before DB commit (`rename
 **What:** Reuse soft-delete confirm pattern:
 
 ```rust
-// Source: crates/octanest-api/src/repo/mod.rs:712-729
+// Source: crates/oxidean-api/src/repo/mod.rs:712-729
 let confirm = req.confirm_name.trim();
 if confirm != accessible.row.name.as_str() {
     return Err(AppError::new(
@@ -271,7 +271,7 @@ if confirm != accessible.row.name.as_str() {
 }
 ```
 
-[VERIFIED: `crates/octanest-api/src/repo/mod.rs:712-729`]
+[VERIFIED: `crates/oxidean-api/src/repo/mod.rs:712-729`]
 
 Transfer (and optionally rename) should use the same `confirmName` + `repo.confirm_mismatch` (or `repo.transfer_confirm_mismatch`) and UI AlertDialog in Danger zone.
 
@@ -279,7 +279,7 @@ Transfer (and optionally rename) should use the same `confirmName` + `repo.confi
 
 **What:** Gitea stores `owner_id + lower_name → redirect_repo_id` and resolves on HTTP (and increasingly SSH). [CITED: github.com/go-gitea/gitea/blob/v1.27.0/models/repo/redirect.go]
 
-Octanest should store **slug strings** (not only owner ids) because web URLs are `/{owner}/{repo}` and owners can be user or org:
+Oxidean should store **slug strings** (not only owner ids) because web URLs are `/{owner}/{repo}` and owners can be user or org:
 
 | Column | Notes |
 |--------|-------|
@@ -300,14 +300,14 @@ Octanest should store **slug strings** (not only owner ids) because web URLs are
 
 ### Pattern 6: Release assets volume (D-REL-04..06)
 
-**What:** New ENV `OCTANEST_RELEASE_ASSETS_DIR` (default `var/release-assets`), Compose bind like uploads. Store files as `{dir}/{asset_id}` (opaque id) so **rename/transfer never rewrites asset paths**. DB holds `filename`, `content_type`, `byte_size`, `release_id`, `uploader_id`.
+**What:** New ENV `OXIDEAN_RELEASE_ASSETS_DIR` (default `var/release-assets`), Compose bind like uploads. Store files as `{dir}/{asset_id}` (opaque id) so **rename/transfer never rewrites asset paths**. DB holds `filename`, `content_type`, `byte_size`, `release_id`, `uploader_id`.
 
 Download: `GET /api/releases/assets/{asset_id}` (stable) with:
 - published + public repo → anonymous OK
 - else session with Read
 - drafts → Write+ only (discretion lock: GitHub-like)
 
-Upload: `POST /api/repos/{owner}/{repo}/releases/{release_id}/assets` multipart + `DefaultBodyLimit::max(OCTANEST_RELEASE_ASSET_MAX_BYTES)`.
+Upload: `POST /api/repos/{owner}/{repo}/releases/{release_id}/assets` multipart + `DefaultBodyLimit::max(OXIDEAN_RELEASE_ASSET_MAX_BYTES)`.
 
 Replace-on-edit (D-REL-05): delete old file then write new, or overwrite same `asset_id` after size check.
 
@@ -334,7 +334,7 @@ Replace-on-edit (D-REL-05): delete old file then write new, or overwrite same `a
 | Redirect purge | Ad-hoc cron container | Extend `jobs/reconcile` / schedule | Existing ENV interval pattern |
 | New state library | Zustand for releases | TanStack Query | Project rule |
 
-**Key insight:** Phase 15 is mostly **composition of existing Octanest seams** (ACL, bare paths, multipart, danger-zone confirm, retention jobs) plus two new tables and forge-standard redirect semantics — not a greenfield storage product.
+**Key insight:** Phase 15 is mostly **composition of existing Oxidean seams** (ACL, bare paths, multipart, danger-zone confirm, retention jobs) plus two new tables and forge-standard redirect semantics — not a greenfield storage product.
 
 ## Common Pitfalls
 
@@ -346,7 +346,7 @@ Replace-on-edit (D-REL-05): delete old file then write new, or overwrite same `a
 
 ### Pitfall 2: Disk/DB ordering races with orphan reconcile
 **What goes wrong:** Orphan job deletes “orphaned” bare dir mid-rename.  
-**Why it happens:** Username migrate docs already warn: rename disk **before** DB commit so reconcile does not purge. [VERIFIED: `crates/octanest-api/src/git/mod.rs:48-52`]  
+**Why it happens:** Username migrate docs already warn: rename disk **before** DB commit so reconcile does not purge. [VERIFIED: `crates/oxidean-api/src/git/mod.rs:48-52`]  
 **How to avoid:** Same ordering; hold reconcile lock or accept short window with compensate.  
 **Warning signs:** Missing bare repo after rename under load.
 
@@ -372,7 +372,7 @@ Replace-on-edit (D-REL-05): delete old file then write new, or overwrite same `a
 
 ### Pitfall 7: Factory reset misses release assets
 **What goes wrong:** DB wiped, binaries remain (or reverse).  
-**How to avoid:** Extend `database_and_repositories` scope to wipe `OCTANEST_RELEASE_ASSETS_DIR` children (and LFS when present).  
+**How to avoid:** Extend `database_and_repositories` scope to wipe `OXIDEAN_RELEASE_ASSETS_DIR` children (and LFS when present).  
 **Warning signs:** Disk growth after repeated resets.
 
 ### Pitfall 8: Vite proxy gaps for new asset routes
@@ -385,7 +385,7 @@ Replace-on-edit (D-REL-05): delete old file then write new, or overwrite same `a
 ### Soft-delete type-confirm (mirror for transfer)
 
 ```rust
-// Source: crates/octanest-api/src/repo/mod.rs:712-737
+// Source: crates/oxidean-api/src/repo/mod.rs:712-737
 pub async fn soft_delete(
     ctx: &RpcCtx,
     input: serde_json::Value,
@@ -407,7 +407,7 @@ pub async fn soft_delete(
 ### Capability enum (gates)
 
 ```rust
-// Source: crates/octanest-api/src/repo/acl.rs:22-28
+// Source: crates/oxidean-api/src/repo/acl.rs:22-28
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Capability {
     Read = 1,
@@ -419,7 +419,7 @@ pub enum Capability {
 ### RepoPublic flags for UI gating
 
 ```rust
-// Source: crates/octanest-core/src/repo_types.rs:78-97
+// Source: crates/oxidean-core/src/repo_types.rs:78-97
 pub struct RepoPublic {
     // ...
     pub can_admin: bool,
@@ -427,7 +427,7 @@ pub struct RepoPublic {
 }
 ```
 
-[VERIFIED: `crates/octanest-core/src/repo_types.rs:78-97`]
+[VERIFIED: `crates/oxidean-core/src/repo_types.rs:78-97`]
 
 ### Suggested RPC surface (planner)
 
@@ -461,14 +461,14 @@ HTTP (non-RPC) for large bodies:
 
 **Deprecated/outdated:**
 - Treating release assets as “just another LFS object”
-- GitHub-style create-tag-on-release for Octanest Phase 15
+- GitHub-style create-tag-on-release for Oxidean Phase 15
 
 ## Discretion Recommendations (for planner locks)
 
 | Topic | Recommendation | Rationale |
 |-------|----------------|-----------|
-| Redirect retention default | **90 days** via `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` | Longer than soft-delete 14d (git remotes linger); shorter than GitHub indefinite for self-host hygiene [ASSUMED] |
-| Max asset size default | **512 MiB** via `OCTANEST_RELEASE_ASSET_MAX_BYTES` | Safe self-host default; operators can raise; GitHub allows up to ~2 GiB [ASSUMED] |
+| Redirect retention default | **90 days** via `OXIDEAN_REPO_REDIRECT_RETENTION_DAYS` | Longer than soft-delete 14d (git remotes linger); shorter than GitHub indefinite for self-host hygiene [ASSUMED] |
+| Max asset size default | **512 MiB** via `OXIDEAN_RELEASE_ASSET_MAX_BYTES` | Safe self-host default; operators can raise; GitHub allows up to ~2 GiB [ASSUMED] |
 | Draft visibility | **Write+ only** | Matches GitHub REST list behavior [CITED: docs.github.com/en/rest/releases/releases] |
 | Settings IA | **Same Danger zone** as soft-delete: Rename, Transfer, Delete | GitHub Settings danger zone parity; less IA sprawl |
 | Asset URL stability | **Id-based** `/api/releases/assets/{asset_id}` | Survives rename/transfer without depending on redirect TTL |
@@ -532,14 +532,14 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 |----------|-------|
 | Framework | cargo nextest (Rust) + Vitest (web) |
 | Config file | `apps/web/vitest.config.ts`; Cargo workspace nextest |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(release) \| test(rename) \| test(transfer) \| test(redirect)'` |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(release) \| test(rename) \| test(transfer) \| test(redirect)'` |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-14 | Create release for existing tag with notes + asset | integration | `cargo nextest run -p octanest-api -E 'test(release_create)'` | ❌ Wave 0 |
+| GIT-14 | Create release for existing tag with notes + asset | integration | `cargo nextest run -p oxidean-api -E 'test(release_create)'` | ❌ Wave 0 |
 | GIT-14 | Reject missing tag (`release.tag_missing`) | integration | same | ❌ Wave 0 |
 | GIT-14 | Draft hidden from Read-only / anon | integration | `… test(release_draft_acl)` | ❌ Wave 0 |
 | GIT-15 | Download asset with Read / anon public | integration | `… test(release_asset_download)` | ❌ Wave 0 |
@@ -549,18 +549,18 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 | GIT-17 | Admin transfer to user/org + type-confirm | integration | `… test(repo_transfer)` | ❌ Wave 0 |
 | GIT-17 | Issues/LFS associations remain on repo_id | integration | `… test(repo_transfer_cascade)` | ❌ Wave 0 (after 11/14 schema) |
 | GIT-16/17 | New repo at old path supersedes redirect | integration | `… test(redirect_supersede)` | ❌ Wave 0 |
-| UI | Releases tab + settings danger zone | web unit/integration | `bun run --filter @octanest/web test` | ❌ Wave 0 |
+| UI | Releases tab + settings danger zone | web unit/integration | `bun run --filter @oxidean/web test` | ❌ Wave 0 |
 
 ### Sampling Rate
 
 - **Per task commit:** targeted nextest filter for touched area
-- **Per wave merge:** `cargo nextest run -p octanest-api -p octanest-db` + web Vitest for new routes
+- **Per wave merge:** `cargo nextest run -p oxidean-api -p oxidean-db` + web Vitest for new routes
 - **Phase gate:** `make test` + `make rpc-sync-check` green before `/gsd-verify-work`
 
 ### Wave 0 Gaps
 
-- [ ] `crates/octanest-api/tests/release_rpc.rs` — GIT-14/15
-- [ ] `crates/octanest-api/tests/repo_rename_transfer.rs` — GIT-16/17 + redirects
+- [ ] `crates/oxidean-api/tests/release_rpc.rs` — GIT-14/15
+- [ ] `crates/oxidean-api/tests/repo_rename_transfer.rs` — GIT-16/17 + redirects
 - [ ] `apps/web/src/routes/$owner.$repo.releases.integration.test.ts` — tab/routes discoverability
 - [ ] Settings danger-zone integration assertions for rename/transfer confirm
 - [ ] None of the above exist today — RED stubs first (match Phases 07–10 Wave 0 style)
@@ -595,11 +595,11 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 
 ### Primary (HIGH confidence — in-repo)
 
-- `crates/octanest-api/src/repo/acl.rs` — Capability ladder / coalesce
-- `crates/octanest-api/src/repo/collaborators.rs` — `resolve_repo_for_admin`
-- `crates/octanest-api/src/repo/mod.rs` — softDelete confirm / visibility Admin
-- `crates/octanest-api/src/git/mod.rs` — `bare_repo_path`, `rename_owner_repos_dir`
-- `crates/octanest-db/migrations/sqlite/0010_orgs_acl.sql` — polymorphic owner + unique name
+- `crates/oxidean-api/src/repo/acl.rs` — Capability ladder / coalesce
+- `crates/oxidean-api/src/repo/collaborators.rs` — `resolve_repo_for_admin`
+- `crates/oxidean-api/src/repo/mod.rs` — softDelete confirm / visibility Admin
+- `crates/oxidean-api/src/git/mod.rs` — `bare_repo_path`, `rename_owner_repos_dir`
+- `crates/oxidean-db/migrations/sqlite/0010_orgs_acl.sql` — polymorphic owner + unique name
 - `apps/web/src/routes/$owner.$repo.settings.tsrx` — Danger zone UX
 - `apps/web/src/components/repo/repo-chrome.tsrx` — tab IA (Settings `isOwner` bug)
 - `.planning/phases/15-releases-transfer/15-CONTEXT.md` — locked decisions
@@ -624,7 +624,7 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 
 **Confidence breakdown:**
 - Standard stack: HIGH — reuse in-repo Axum/ACL/git/Octane; no new packages
-- Architecture: HIGH — mirrors GitHub/Gitea + existing Octanest path/ACL patterns
+- Architecture: HIGH — mirrors GitHub/Gitea + existing Oxidean path/ACL patterns
 - Pitfalls: HIGH — rename/reconcile/draft/redirect collisions well-documented in forge + local jobs
 
 **Research date:** 2026-09-14  
@@ -639,7 +639,7 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 
 ### Key Findings
 - Reuse `Capability` Admin/Write gates, `bare_repo_path`, soft-delete type-confirm, avatar multipart + Compose volume patterns — no new npm packages.
-- Releases: tag must pre-exist; draft/prerelease; assets on `OCTANEST_RELEASE_ASSETS_DIR` keyed by asset id for rename/transfer stability.
+- Releases: tag must pre-exist; draft/prerelease; assets on `OXIDEAN_RELEASE_ASSETS_DIR` keyed by asset id for rename/transfer stability.
 - Rename/transfer: disk `fs::rename` + `repository_redirects` with finite retention; honor redirects on web + Smart HTTP (+ SSH if cheap); live repo supersedes redirect.
 - Transfer cascade: prefer `repo_id` FKs for issues/LFS associations (no OID copy); do not stub webhooks (D-REL-11).
 - Discretion defaults to lock in plan: 90-day redirects, 512 MiB assets, Write+-only drafts, same Danger zone IA, immediate transfer after type-confirm.
@@ -650,7 +650,7 @@ Step 2.6: External tools limited to existing API/git/Compose volume pattern — 
 ### Confidence Assessment
 | Area | Level | Reason |
 |------|-------|--------|
-| Standard Stack | HIGH | Existing Octanest seams verified in source |
+| Standard Stack | HIGH | Existing Oxidean seams verified in source |
 | Architecture | HIGH | Forge docs + Gitea redirect model + local schema |
 | Pitfalls | HIGH | Reconcile races, draft leak, redirect supersede documented |
 

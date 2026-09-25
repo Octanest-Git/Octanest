@@ -24,8 +24,8 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-core/src/action_types.rs
-    - crates/octanest-api/src/actions/rpc.rs
+    - crates/oxidean-core/src/action_types.rs
+    - crates/oxidean-api/src/actions/rpc.rs
     - apps/web/src/lib/actions-queries.ts
     - apps/web/src/routes/$owner.$repo.actions.tsrx
     - apps/web/src/routes/$owner.$repo.actions.index.tsrx

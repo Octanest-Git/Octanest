@@ -20,7 +20,7 @@ tech-stack:
   patterns: ["Star on layout-owned RepoChrome without remount"]
 key-files:
   created:
-    - crates/octanest-api/src/user/list_starred.rs
+    - crates/oxidean-api/src/user/list_starred.rs
   modified:
     - apps/web/src/components/repo/repo-chrome.tsrx
 requirements-completed: [SOC-01]

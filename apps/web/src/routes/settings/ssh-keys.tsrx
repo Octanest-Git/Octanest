@@ -5,7 +5,7 @@ import {
   type GpgKeyListItem,
   type SshKeyListItem,
   type UserPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { GpgKeyAddForm } from "@/components/settings/gpg-key-add-form";
@@ -27,11 +27,11 @@ export type SshKeysLoaderData =
       gpgKeys: GpgKeyListItem[];
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export const Route = createFileRoute("/settings/ssh-keys")({
   component: SshKeysPage,
-  head: () => ({ meta: [{ title: "SSH and GPG keys · Octanest" }] }),
+  head: () => ({ meta: [{ title: "SSH and GPG keys · Oxidean" }] }),
   loader: async (): Promise<SshKeysLoaderData> => {
     try {
       const res = await fetchSessionMe();

@@ -1,5 +1,5 @@
 import { useDropzone } from "@octanejs/dropzone";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AvatarPreview } from "@/components/avatar-preview";
 import { AvatarCropDialog } from "@/components/settings/avatar-crop-dialog";
@@ -113,7 +113,7 @@ export function ProfileAvatarField(props: ProfileAvatarFieldProps) @{
         <span
           aria-hidden
           className={cn(
-            "octanest-squircle pointer-events-none absolute inset-0 flex items-center justify-center",
+            "oxidean-squircle pointer-events-none absolute inset-0 flex items-center justify-center",
             "bg-foreground/70 text-[13px] font-medium text-background opacity-0 transition-opacity",
             "group-hover:opacity-100 group-focus-visible:opacity-100",
             busy && "opacity-100",

@@ -6,30 +6,30 @@ import {
 } from "./profile-readme";
 
 describe("profile-readme resolution", () => {
-  it("prefers .octanest over .github when both are public", () => {
+  it("prefers .oxidean over .github when both are public", () => {
     expect(
       pickOrgProfileSpecialRepo([
         { name: ".github", visibility: "public" },
-        { name: ".octanest", visibility: "public" },
+        { name: ".oxidean", visibility: "public" },
       ]),
-    ).toBe(".octanest");
+    ).toBe(".oxidean");
   });
 
-  it("falls back to .github when .octanest is missing", () => {
+  it("falls back to .github when .oxidean is missing", () => {
     expect(pickOrgProfileSpecialRepo([{ name: ".github", visibility: "public" }])).toBe(".github");
   });
 
   it("ignores private special repos (public profile only)", () => {
     expect(
       pickOrgProfileSpecialRepo([
-        { name: ".octanest", visibility: "private" },
+        { name: ".oxidean", visibility: "private" },
         { name: ".github", visibility: "private" },
       ]),
     ).toBeNull();
 
     expect(
       pickOrgProfileSpecialRepo([
-        { name: ".octanest", visibility: "private" },
+        { name: ".oxidean", visibility: "private" },
         { name: ".github", visibility: "public" },
       ]),
     ).toBe(".github");
@@ -41,7 +41,7 @@ describe("profile-readme resolution", () => {
   });
 
   it("documents preference order and org README directory", () => {
-    expect([...ORG_PROFILE_SPECIAL_REPOS]).toEqual([".octanest", ".github"]);
+    expect([...ORG_PROFILE_SPECIAL_REPOS]).toEqual([".oxidean", ".github"]);
     expect(ORG_PROFILE_README_DIR).toBe("profile");
   });
 });

@@ -1,7 +1,7 @@
 # SQLite overlay (D-07, D-19): no DB container; file bind-mounted from host.
 #   docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up --build
 # Requires Docker Compose v2.24+ for the !reset tag.
-# OCTANEST_SQLITE_HOST_DIR defaults to ./var; on WSL+docker.exe set it via
+# OXIDEAN_SQLITE_HOST_DIR defaults to ./var; on WSL+docker.exe set it via
 # scripts/sqlite-host-dir.sh when Linux path binds are unavailable.
 services:
   postgres:
@@ -10,7 +10,7 @@ services:
   api:
     depends_on: !reset null
     environment:
-      DATABASE_URL: sqlite:/app/var/octanest.db
-      OCTANEST_DB_DIALECT: sqlite
+      DATABASE_URL: sqlite:/app/var/oxidean.db
+      OXIDEAN_DB_DIALECT: sqlite
     volumes:
-      - ${OCTANEST_SQLITE_HOST_DIR:-./var}:/app/var
+      - ${OXIDEAN_SQLITE_HOST_DIR:-./var}:/app/var

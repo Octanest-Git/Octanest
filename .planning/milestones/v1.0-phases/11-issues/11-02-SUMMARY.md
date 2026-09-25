@@ -35,16 +35,16 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0011_issues.sql
-    - crates/octanest-db/migrations/mysql/0011_issues.sql
-    - crates/octanest-db/migrations/sqlite/0011_issues.sql
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-db/src/issue_labels.rs
-    - crates/octanest-core/src/issue_types.rs
+    - crates/oxidean-db/migrations/postgres/0011_issues.sql
+    - crates/oxidean-db/migrations/mysql/0011_issues.sql
+    - crates/oxidean-db/migrations/sqlite/0011_issues.sql
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-db/src/issue_labels.rs
+    - crates/oxidean-core/src/issue_types.rs
   modified:
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-core/src/lib.rs
-    - crates/octanest-db/tests/dialect_issues.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-core/src/lib.rs
+    - crates/oxidean-db/tests/dialect_issues.rs
 
 key-decisions:
   - "T0 proceed_0011 — honor D-ISS-01 with issue_counters (executor confirmed from orchestrator instructions)"
@@ -54,7 +54,7 @@ key-decisions:
 
 patterns-established:
   - "Per-repo #N: allocate_next_number / insert_issue never decrement counters on delete"
-  - "Issue domain DTOs in octanest-core::issue_types; dialect SQL only in octanest-db"
+  - "Issue domain DTOs in oxidean-core::issue_types; dialect SQL only in oxidean-db"
 
 requirements-completed: [ISS-01, ISS-02, ISS-03, ISS-04]
 
@@ -64,10 +64,10 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-db --lib migration_parity"
+        ref: "cargo test -p oxidean-db --lib migration_parity"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-db --test dialect_issues -- dialect_issues_tri_dialect_files"
+        ref: "cargo test -p oxidean-db --test dialect_issues -- dialect_issues_tri_dialect_files"
         status: pass
     human_judgment: false
   - id: D2
@@ -75,7 +75,7 @@ coverage:
     requirement: ISS-01
     verification:
       - kind: integration
-        ref: "cargo test -p octanest-db --test dialect_issues -- dialect_issues_migrate_0011_schema_presence"
+        ref: "cargo test -p oxidean-db --test dialect_issues -- dialect_issues_migrate_0011_schema_presence"
         status: pass
     human_judgment: false
   - id: D3
@@ -83,7 +83,7 @@ coverage:
     requirement: ISS-04
     verification:
       - kind: unit
-        ref: "cargo test -p octanest-core --lib issue_types"
+        ref: "cargo test -p oxidean-core --lib issue_types"
         status: pass
     human_judgment: false
 
@@ -119,11 +119,11 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0011_issues.sql` — schema
-- `crates/octanest-db/src/issues.rs` — counter allocate + insert/delete
-- `crates/octanest-db/src/issue_labels.rs` — label insert + set labels/assignees
-- `crates/octanest-core/src/issue_types.rs` — DTOs/enums
-- `crates/octanest-db/tests/dialect_issues.rs` — Wave 0 RED → green behavioral assertions
+- `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0011_issues.sql` — schema
+- `crates/oxidean-db/src/issues.rs` — counter allocate + insert/delete
+- `crates/oxidean-db/src/issue_labels.rs` — label insert + set labels/assignees
+- `crates/oxidean-core/src/issue_types.rs` — DTOs/enums
+- `crates/oxidean-db/tests/dialect_issues.rs` — Wave 0 RED → green behavioral assertions
 
 ## Decisions Made
 
@@ -145,9 +145,9 @@ None for this plan’s goal (schema door). RPC handlers and UI remain intentiona
 
 ## Verification Results
 
-- `cargo test -p octanest-db --lib migration_parity` — pass
-- `cargo test -p octanest-db --test dialect_issues` — pass
-- `cargo test -p octanest-core --lib issue_types` — pass
+- `cargo test -p oxidean-db --lib migration_parity` — pass
+- `cargo test -p oxidean-db --test dialect_issues` — pass
+- `cargo test -p oxidean-core --lib issue_types` — pass
 
 ## Self-Check: PASSED
 

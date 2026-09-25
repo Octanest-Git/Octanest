@@ -8,7 +8,7 @@ requires:
   - phase: 14-git-lfs
     provides: AppState lfs_dir + LFS routes (14-02+)
 provides:
-  - Compose ./var/lfs volume + OCTANEST_LFS_DIR
+  - Compose ./var/lfs volume + OXIDEAN_LFS_DIR
   - Operator docs for LFS HTTPS and quotas
 affects: [14-12]
 
@@ -39,11 +39,11 @@ requirements-completed: [GIT-13]
 
 coverage:
   - id: D1
-    description: "Compose binds OCTANEST_LFS_DIR volume for API"
+    description: "Compose binds OXIDEAN_LFS_DIR volume for API"
     requirement: GIT-13
     verification:
       - kind: other
-        ref: "rg -n 'OCTANEST_LFS_DIR|/var/lfs' docker-compose.yml .env.example"
+        ref: "rg -n 'OXIDEAN_LFS_DIR|/var/lfs' docker-compose.yml .env.example"
         status: pass
     human_judgment: false
   - id: D2
@@ -51,7 +51,7 @@ coverage:
     requirement: GIT-13
     verification:
       - kind: other
-        ref: "rg -n 'OCTANEST_LFS_DIR|info/lfs|gitattributes' docs/CONFIGURATION.md docs/API.md"
+        ref: "rg -n 'OXIDEAN_LFS_DIR|info/lfs|gitattributes' docs/CONFIGURATION.md docs/API.md"
         status: pass
     human_judgment: false
 
@@ -64,11 +64,11 @@ commits: 2
 
 # Phase 14 Plan 07: Compose + operator LFS docs Summary
 
-**Compose mounts `./var/lfs` with `OCTANEST_LFS_DIR=/var/lfs`; docs cover HTTPS Batch/basic, PAT Basic, quotas, and SSH→HTTPS LFS.**
+**Compose mounts `./var/lfs` with `OXIDEAN_LFS_DIR=/var/lfs`; docs cover HTTPS Batch/basic, PAT Basic, quotas, and SSH→HTTPS LFS.**
 
 ## Task Commits
 
-1. **Task 1: Compose OCTANEST_LFS_DIR volume bind** - `7fe5b6a` (chore)
+1. **Task 1: Compose OXIDEAN_LFS_DIR volume bind** - `7fe5b6a` (chore)
 2. **Task 2: CONFIGURATION + API docs for LFS HTTPS** - `a876e53` (docs)
 
 ## Deviations from Plan

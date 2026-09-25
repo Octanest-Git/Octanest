@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # API
 
-Octanest exposes a versioned JSON RPC over HTTP and WebSocket, plus a small set of browser-oriented auth and avatar routes. The Rust Axum router lives in `crates/octanest-api`; shared envelopes and DTOs live in `crates/octanest-core`. Clients should prefer the generated TypeScript package `@octanest/api-client`.
+Oxidean exposes a versioned JSON RPC over HTTP and WebSocket, plus a small set of browser-oriented auth and avatar routes. The Rust Axum router lives in `crates/oxidean-api`; shared envelopes and DTOs live in `crates/oxidean-core`. Clients should prefer the generated TypeScript package `@oxidean/api-client`.
 
 <!-- VERIFY: production / public base URL for the API -->
 
@@ -9,12 +9,12 @@ Local defaults: API bind `127.0.0.1:8080` (`API_BIND`), or same-origin via Traef
 
 ## Authentication
 
-Session auth uses an **opaque HttpOnly cookie** named `octanest_session` (not JWTs or API keys).
+Session auth uses an **opaque HttpOnly cookie** named `oxidean_session` (not JWTs or API keys).
 
 | Detail | Value |
 | --- | --- |
-| Cookie name | `octanest_session` |
-| Attributes | `HttpOnly`, `Path=/`, `SameSite=Lax`; `Secure` unless `OCTANEST_ENV` is `development` or `dev` |
+| Cookie name | `oxidean_session` |
+| Attributes | `HttpOnly`, `Path=/`, `SameSite=Lax`; `Secure` unless `OXIDEAN_ENV` is `development` or `dev` |
 | Idle TTL | 24 hours (sliding on resolve for non-remember sessions) |
 | Remember-me TTL | 30 days absolute (`auth.login` with `remember_me: true`) |
 | Storage | CSPRNG token in cookie; only SHA-256(token) stored in the DB |
@@ -22,7 +22,7 @@ Session auth uses an **opaque HttpOnly cookie** named `octanest_session` (not JW
 **How to send credentials**
 
 - Browser / generated client: `credentials: "include"` so the cookie is sent same-origin (Vite proxy or Traefik).
-- Manual HTTP: include `Cookie: octanest_session=<token>`.
+- Manual HTTP: include `Cookie: oxidean_session=<token>`.
 - Signup, login, and WorkOS/OIDC callbacks attach `Set-Cookie`. Logout / logout-all clear the cookie (`Max-Age=0`).
 
 **Personal access tokens (PATs) are not RPC Bearer credentials (D-01).** Typed `/api/rpc` and `/api/rpc/ws` use the session cookie only. PATs authenticate **Git Smart HTTP** over HTTPS via HTTP Basic (password = token). Do not send `Authorization: Bearer <pat>` to RPC — it is ignored for session resolution.
@@ -32,7 +32,7 @@ Session auth uses an **opaque HttpOnly cookie** named `octanest_session` (not JW
 **RPC version gate** — every `/api/rpc` and `/api/rpc/ws` request must send:
 
 ```http
-Octanest-RPC-Version: 1
+Oxidean-RPC-Version: 1
 ```
 
 Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
@@ -50,8 +50,8 @@ Missing or mismatched value → error `rpc.version_mismatch` (HTTP 400).
 | `GET` | `/api/auth/workos/callback` | WorkOS code exchange; sets session cookie | No (redirect) |
 | `GET` | `/api/auth/oidc/start` | Start OIDC + PKCE (optional `?return_to=`) | No (redirect) |
 | `GET` | `/api/auth/oidc/callback` | OIDC code exchange; sets session cookie | No (redirect) |
-| `POST` | `/api/user/avatar` | Multipart avatar upload (field `avatar`) | Yes (`octanest_session`) |
-| `DELETE` | `/api/user/avatar` | Remove profile picture | Yes (`octanest_session`) |
+| `POST` | `/api/user/avatar` | Multipart avatar upload (field `avatar`) | Yes (`oxidean_session`) |
+| `DELETE` | `/api/user/avatar` | Remove profile picture | Yes (`oxidean_session`) |
 | `GET` | `/uploads/avatars/{file}` | Public WebP avatar bytes (`{user_id}.webp`) | No |
 | `GET` | `/{owner}/{repo}.git/info/refs` | Git Smart HTTP discovery (`?service=git-upload-pack` \| `git-receive-pack`) | PAT Basic when required (not session) |
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Git fetch / clone body | PAT Basic when required (not session) |
@@ -88,7 +88,7 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `auth.logout_all` | Revoke all sessions for user; clear cookie | Session |
 | `auth.me` | Current user public profile (`must_change_credentials` included) | Session |
 | `auth.provider_config` | Public `{ mode, allow_signup }` for UI (fail-closed when unset/error) | No (blocked while `needs_setup`) |
-| `auth.bootstrap_status` | `{ needs_setup }` — empty users table and incomplete `OCTANEST_ADMIN_*` ENV | No |
+| `auth.bootstrap_status` | `{ needs_setup }` — empty users table and incomplete `OXIDEAN_ADMIN_*` ENV | No |
 | `auth.bootstrap_setup` | One-time `/setup` wizard; creates verified `sys-admin` + session; persists `allow_signup` | No (empty instance only) |
 | `auth.confirm_admin_credentials` | Forced credential change for ENV-seeded admins (`system-administrator` must be changed; email/password may be kept) | Session (seeded admin) |
 | `user.get_profile` | Current user profile | Session |
@@ -134,8 +134,8 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `pull.merge` | Merge / squash / rebase; optional delete head; closing keywords on default branch | Session (+ Write+) |
 | `repo.mergeSettings.get` / `update` | Per-repo allow merge/squash/rebase (Admin for update) | Session (+ Admin for update) |
 | `label.listForRepo` / `listForOrg` / `create` / `update` / `delete` | Org/repo label definitions (Admin for defs) | Session (+ capability) |
-| `pat.createClassic` | Mint classic PAT (`octanest_pat_…`); one-time plaintext in response. Classic scopes include optional `package:read` / `package:write` (repo scope does **not** imply packages) | Session + verified email |
-| `pat.createFineGrained` | Mint fine-grained PAT (`octanest_fg_…`); optional Packages Read/Write | Session + verified email |
+| `pat.createClassic` | Mint classic PAT (`oxidean_pat_…`); one-time plaintext in response. Classic scopes include optional `package:read` / `package:write` (repo scope does **not** imply packages) | Session + verified email |
+| `pat.createFineGrained` | Mint fine-grained PAT (`oxidean_fg_…`); optional Packages Read/Write | Session + verified email |
 | `pat.list` | List active PATs for the signed-in user (no secrets) | Session |
 | `pat.revoke` | Soft-revoke a PAT by `id` | Session |
 | `packages.list` | List packages for an owner login or `repository_id` (ACL-filtered) | Session + verified |
@@ -201,7 +201,7 @@ Optional `error.data` may appear on some errors.
 ```bash
 curl -sS http://127.0.0.1:8080/api/rpc \
   -H 'content-type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
+  -H 'Oxidean-RPC-Version: 1' \
   -d '{"procedure":"system.health","input":{}}'
 ```
 
@@ -210,14 +210,14 @@ Authenticated call (after login/signup returned `Set-Cookie`):
 ```bash
 curl -sS http://127.0.0.1:8080/api/rpc \
   -H 'content-type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
-  -H 'Cookie: octanest_session=…' \
+  -H 'Oxidean-RPC-Version: 1' \
+  -H 'Cookie: oxidean_session=…' \
   -d '{"procedure":"auth.me","input":{}}'
 ```
 
 ### WebSocket `/api/rpc/ws`
 
-1. Upgrade with `Octanest-RPC-Version: 1` (and optional `Cookie` for session).
+1. Upgrade with `Oxidean-RPC-Version: 1` (and optional `Cookie` for session).
 2. Send text frames: same JSON as HTTP `RpcRequest`.
 3. Receive text frames: same JSON as `RpcResponse`.
 4. Invalid JSON frame → `rpc.bad_input`. Cookie `Set-Cookie` is HTTP-only; WS handlers do not attach cookies on responses.
@@ -252,7 +252,7 @@ Bio max 160 characters; display name 1–100 characters. Avatar is **not** set v
 
 ```bash
 curl -sS http://127.0.0.1:8080/api/user/avatar \
-  -H 'Cookie: octanest_session=…' \
+  -H 'Cookie: oxidean_session=…' \
   -F 'avatar=@photo.png;type=image/png'
 ```
 
@@ -264,7 +264,7 @@ curl -sS http://127.0.0.1:8080/api/user/avatar \
 
 ```bash
 curl -sS -X DELETE http://127.0.0.1:8080/api/user/avatar \
-  -H 'Cookie: octanest_session=…'
+  -H 'Cookie: oxidean_session=…'
 ```
 
 - Clears `avatar_path` and deletes `{user_id}.webp` when present (idempotent if already absent)
@@ -278,7 +278,7 @@ curl -sS -X DELETE http://127.0.0.1:8080/api/user/avatar \
 {
   "provider_mode": "local",
   "email_provider": "log",
-  "from_address": "Octanest <noreply@example.com>",
+  "from_address": "Oxidean <noreply@example.com>",
   "oidc_issuer": null,
   "oidc_client_id": null,
   "workos_client_id": null
@@ -289,12 +289,12 @@ Response includes boolean badges such as `smtp_configured`, `resend_configured`,
 
 ### Personal access tokens (`pat.*`)
 
-Manage tokens with the session cookie via RPC (or `@octanest/api-client`). Token **prefixes** (redacted examples only):
+Manage tokens with the session cookie via RPC (or `@oxidean/api-client`). Token **prefixes** (redacted examples only):
 
 | Kind | Prefix | Phase 8 capability |
 | --- | --- | --- |
-| Classic | `octanest_pat_` | Scope catalog: `repo` (HTTPS fetch + push where ACL allows) |
-| Fine-grained | `octanest_fg_` | `repo_access`: `selected` \| `all`; `contents`: `read` \| `write` |
+| Classic | `oxidean_pat_` | Scope catalog: `repo` (HTTPS fetch + push where ACL allows) |
+| Fine-grained | `oxidean_fg_` | `repo_access`: `selected` \| `all`; `contents`: `read` \| `write` |
 
 `pat.createClassic` input:
 
@@ -345,13 +345,13 @@ Organizations share the username slug namespace. `org.create` rejects reserved /
 
 `repo.collaborators.*` grants per-repo `read` \| `write` \| `admin` (never an org role). Mutations require repo Admin capability. Highest-wins coalesce with org roles / `member_base` (collaborator raises effective permission; cannot lower Owner/Admin).
 
-`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks are not invented here (later phases). Package owner-path updates on rename/transfer follow packages rules (see Packages registry).
+`repo.rename` / `repo.transfer` require Admin. Rename updates `name` and moves the bare dir; transfer rewrites `owner_type` / `owner_id` and moves under the destination slug. Both insert a `repository_redirects` row so old `/{owner}/{repo}` (and Smart HTTP / SSH paths) keep resolving until `OXIDEAN_REPO_REDIRECT_RETENTION_DAYS` (default 90). Transfer requires exact `confirmName` match. Issues and LFS associations stay on `repo_id` (no OID copy). Webhooks are not invented here (later phases). Package owner-path updates on rename/transfer follow packages rules (see Packages registry).
 
 ### Releases (`release.*`)
 
-Tag-based releases (GIT-14/15): `release.create` / `update` / `delete` / `list` / `get` / `deleteAsset`. Binary assets use dedicated HTTP routes under `OCTANEST_RELEASE_ASSETS_DIR` (opaque `asset_id`, not the LFS OID store). Multipart upload replaces by filename; max size `OCTANEST_RELEASE_ASSET_MAX_BYTES` (default 512 MiB). Draft visibility follows Write+; published downloads need Read+.
+Tag-based releases (GIT-14/15): `release.create` / `update` / `delete` / `list` / `get` / `deleteAsset`. Binary assets use dedicated HTTP routes under `OXIDEAN_RELEASE_ASSETS_DIR` (opaque `asset_id`, not the LFS OID store). Multipart upload replaces by filename; max size `OXIDEAN_RELEASE_ASSET_MAX_BYTES` (default 512 MiB). Draft visibility follows Write+; published downloads need Read+.
 
-`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories (cascades collaborators, PAT-repo links, and **issue domain** tables), organizations (members/invites/org-scoped labels cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears children under `OCTANEST_REPOS_DIR` and `OCTANEST_RELEASE_ASSETS_DIR`.
+`admin.instance.factory_reset` (`confirmation: "RESET"`) wipes repositories (cascades collaborators, PAT-repo links, and **issue domain** tables), organizations (members/invites/org-scoped labels cascade), and auth users. `scope`: `database_only` (default) keeps bare dirs; `database_and_repositories` also clears children under `OXIDEAN_REPOS_DIR` and `OXIDEAN_RELEASE_ASSETS_DIR`.
 
 ### Issues (`issue.*`) & labels (`label.*`)
 
@@ -376,7 +376,7 @@ Phase 12 ships pull requests (PR-01…07) on migration `0016_pull_requests`:
 | **Merge** | Methods `merge` \| `squash` \| `rebase` gated by `repo.mergeSettings.*` (defaults all enabled). Conflict → `pull.merge_conflict`. Optional `delete_branch`. |
 | **Diff UX** | `pull.files` unified patch; web supports unified/split. Line comments carry path/side/line; outdated after head/base change. |
 
-Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / `client.label.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
+Client surface: `client.pull.*` / `client.mergeSettings.*` / `client.issue.*` / `client.label.*` in `@oxidean/api-client` (regenerate with `make rpc-gen`).
 
 ### Notifications (`notification.*`)
 
@@ -389,7 +389,7 @@ Phase 17 ships in-app activity notifications (NOTF-01 / NOTF-02) on migration `0
 | **Payload** | Rows include `reason`, `subject_kind` (`issue` \| `pull_request`), `owner` / `repo` slugs, `subject_number`, `subject_title`, `actor_username` for deep links `/{owner}/{repo}/issues\|pull/{n}`. |
 | **Fan-out** | Domain writes (e.g. `issue.comments.create`) insert best-effort rows; actors are never notified. Activity email is out of scope. |
 
-Client surface: `client.notification.*` in `@octanest/api-client` (regenerate with `make rpc-gen`).
+Client surface: `client.notification.*` in `@oxidean/api-client` (regenerate with `make rpc-gen`).
 
 ### Git Smart HTTP
 
@@ -402,22 +402,22 @@ Clone / fetch / push use Git Smart HTTP under `/{owner}/{repo}.git` (not `/api/r
 | `POST` | `/{owner}/{repo}.git/git-upload-pack` | Fetch / clone |
 | `POST` | `/{owner}/{repo}.git/git-receive-pack` | Push |
 
-**Auth:** HTTP Basic with password = PAT (`octanest_pat_…` or `octanest_fg_…`). Username may be the account username or aliases `git`, `token`, or `oauth2` (identity comes from the PAT hash). Account passwords are rejected. **Session cookies are ignored** for Smart HTTP authorization.
+**Auth:** HTTP Basic with password = PAT (`oxidean_pat_…` or `oxidean_fg_…`). Username may be the account username or aliases `git`, `token`, or `oauth2` (identity comes from the PAT hash). Account passwords are rejected. **Session cookies are ignored** for Smart HTTP authorization.
 
-Public repos may allow anonymous `upload-pack`. Private repos and push require a valid PAT with sufficient **scope ∩ Capability ACL**; ACL denials stay HTTP **401** Basic, while insufficient PAT scope → HTTP **403**. Unverified-email users may fetch but not push (`auth.email_unverified` JSON on receive-pack). Failed Basic auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` and a PAT hint body.
+Public repos may allow anonymous `upload-pack`. Private repos and push require a valid PAT with sufficient **scope ∩ Capability ACL**; ACL denials stay HTTP **401** Basic, while insufficient PAT scope → HTTP **403**. Unverified-email users may fetch but not push (`auth.email_unverified` JSON on receive-pack). Failed Basic auth may return `401` with `WWW-Authenticate: Basic realm="Oxidean Git"` and a PAT hint body.
 
 Example (redacted token):
 
 ```bash
-git clone https://git:octanest_pat_REDACTED@example.com/alice/demo.git
+git clone https://git:oxidean_pat_REDACTED@example.com/alice/demo.git
 # or:
-git -c http.extraHeader="Authorization: Basic $(printf 'git:octanest_pat_REDACTED' | base64 -w0)" \
+git -c http.extraHeader="Authorization: Basic $(printf 'git:oxidean_pat_REDACTED' | base64 -w0)" \
   ls-remote https://example.com/alice/demo.git
 ```
 
 ### Git LFS
 
-Phase 14 serves **Git LFS** over HTTPS under the same `{owner}/{repo}.git` surface (Traefik `.git` PathRegexp already covers `info/lfs`). Storage is the instance volume `OCTANEST_LFS_DIR` — see [CONFIGURATION.md](CONFIGURATION.md#git-lfs).
+Phase 14 serves **Git LFS** over HTTPS under the same `{owner}/{repo}.git` surface (Traefik `.git` PathRegexp already covers `info/lfs`). Storage is the instance volume `OXIDEAN_LFS_DIR` — see [CONFIGURATION.md](CONFIGURATION.md#git-lfs).
 
 | Method | Path | Role |
 | --- | --- | --- |
@@ -426,7 +426,7 @@ Phase 14 serves **Git LFS** over HTTPS under the same `{owner}/{repo}.git` surfa
 | `GET` | `/{owner}/{repo}.git/info/lfs/objects/{oid}` | Download; optional `Range` |
 | `POST` | `/{owner}/{repo}.git/info/lfs/objects/{oid}/verify` | Optional post-upload verify |
 
-**Auth (D-LFS-09):** Same as Smart HTTP — HTTP Basic with password = **personal access token**. Username aliases `git` / `token` / `oauth2` work. **Session cookies are ignored** for LFS. Failed auth may return `401` with `WWW-Authenticate: Basic realm="Octanest Git"` (LFS clients also accept `LFS-Authenticate`). Read capability for download; Write + verified email for upload. Classic `repo` / fine-grained `contents` scopes (no dedicated `lfs` scope).
+**Auth (D-LFS-09):** Same as Smart HTTP — HTTP Basic with password = **personal access token**. Username aliases `git` / `token` / `oauth2` work. **Session cookies are ignored** for LFS. Failed auth may return `401` with `WWW-Authenticate: Basic realm="Oxidean Git"` (LFS clients also accept `LFS-Authenticate`). Read capability for download; Write + verified email for upload. Classic `repo` / fine-grained `contents` scopes (no dedicated `lfs` scope).
 
 **Enable:** Per-repo LFS must be enabled by a repository Admin before Batch issues upload actions. Quotas / max object size reject oversized uploads with clear LFS error JSON (no soft-warn-only).
 
@@ -445,7 +445,7 @@ git add .gitattributes
 
 Clone / fetch / push over SSH use an in-process listener (Compose TCP **2222** by default — not Traefik). Remotes are **scp-style** `git@{host}:{owner}/{repo}.git` (D-SSH-02). The SSH username must be `git`; identity comes only from a registered public-key fingerprint (full account ACL — no PAT scopes). When advertised port ≠ 22, clients set `Port` in `~/.ssh/config` (or `ssh -p`); do not treat `ssh://` as the primary CloneBox URL.
 
-Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprint buckets). See [CONFIGURATION.md](CONFIGURATION.md) for `OCTANEST_SSH_*`.
+Failed pubkey auth is rate-limited like Smart HTTP PAT failures (IP + fingerprint buckets). See [CONFIGURATION.md](CONFIGURATION.md) for `OXIDEAN_SSH_*`.
 
 ### Two-way repository mirroring
 
@@ -463,7 +463,7 @@ Force-push / `git push --mirror` are used only in **exact** mode. Helper branche
 1. Local ref mutation (HTTPS/SSH receive-pack, PR merge, branch/tag RPC) — async enqueue; the git client is never blocked on the remote.
 2. Inbound push webhook from the remote forge.
 3. `repo.mirror.syncNow` (Admin).
-4. Short poll backstop per mirror (`poll_interval_secs`, default ~60; `0` disables). Instance ticker: `OCTANEST_MIRROR_POLL_TICK_SECS` (see [CONFIGURATION.md](CONFIGURATION.md)).
+4. Short poll backstop per mirror (`poll_interval_secs`, default ~60; `0` disables). Instance ticker: `OXIDEAN_MIRROR_POLL_TICK_SECS` (see [CONFIGURATION.md](CONFIGURATION.md)).
 
 Per repo: at most one sync in flight plus one coalesced follow-up. Mirror-driven local ref updates do **not** re-enqueue (avoids loops after we push to GitHub and it webhooks us back). Equal tips are a cheap skip.
 
@@ -483,7 +483,7 @@ Accept any of:
 - GitLab: `X-Gitlab-Token: <secret>`
 - `Authorization: Bearer <secret>`
 
-The secret is generated on mirror upsert / `repo.mirror.rotateWebhookSecret`. RPC list/get return a masked value; plaintext is returned **once** on create/rotate. Store it like Actions secrets (AES-256-GCM via `OCTANEST_ACTIONS_SECRETS_KEY`).
+The secret is generated on mirror upsert / `repo.mirror.rotateWebhookSecret`. RPC list/get return a masked value; plaintext is returned **once** on create/rotate. Store it like Actions secrets (AES-256-GCM via `OXIDEAN_ACTIONS_SECRETS_KEY`).
 
 #### Admin RPC
 
@@ -515,14 +515,14 @@ Same-host path prefixes (Traefik/Vite must route to the API **before** the SPA):
 
 **Immutability:** Published versions are immutable (npm republish conflict; generic filename conflict; OCI digest tags). Soft-delete via UI/RPC uses type-to-confirm `name@version`.
 
-**Tarball / clone-style URLs:** Absolute URLs in npm packuments use `OCTANEST_PUBLIC_ORIGIN` (same as clone boxes).
+**Tarball / clone-style URLs:** Absolute URLs in npm packuments use `OXIDEAN_PUBLIC_ORIGIN` (same as clone boxes).
 
 **Owner transfer/rename:** When Phase 15 lands owner transfer/rename, package owner path metadata must be updated in lockstep — not implemented in Phase 20.
 
 ### TypeScript client
 
 ```ts
-import { createClient } from "@octanest/api-client";
+import { createClient } from "@oxidean/api-client";
 
 const client = createClient({ baseUrl: "" }); // same-origin; credentials: "include" by default
 const health = await client.system.health();
@@ -552,7 +552,7 @@ Common `error.code` values:
 
 | Code | Meaning |
 | --- | --- |
-| `rpc.version_mismatch` | Missing/wrong `Octanest-RPC-Version` |
+| `rpc.version_mismatch` | Missing/wrong `Oxidean-RPC-Version` |
 | `rpc.bad_input` | Invalid JSON / procedure input |
 | `rpc.payload_too_large` | Echo message too large |
 | `rpc.unknown_procedure` | Unknown procedure name |
@@ -595,14 +595,14 @@ Smart HTTP failed-authentication attempts are rate-limited in-process: **20 fail
 
 ## Actions (Phase 19)
 
-Octanest Actions is a **control plane**: workflows are discovered under `.github/workflows/*.yml`, runs/jobs are queued, and **registered runners** execute them. There is **no managed CI minutes** product and no in-process job executor (ACT-07 / D-ACT-10).
+Oxidean Actions is a **control plane**: workflows are discovered under `.github/workflows/*.yml`, runs/jobs are queued, and **registered runners** execute them. There is **no managed CI minutes** product and no in-process job executor (ACT-07 / D-ACT-10).
 
 ### Workflow layout & triggers (ACT-01 / ACT-02)
 
 - Workflow files live at `.github/workflows/*.yml` (or `.yaml`) on the evaluated ref.
 - **push** — evaluated after Smart HTTP / SSH receive (and related notify hooks).
 - **pull_request** — evaluated on PR open/sync/reopen-style events (Phase 12 hook).
-- Instance gate: `OCTANEST_ACTIONS_ENABLED`. Per-repo Admin toggle: `repo.actions.setEnabled` / Settings → Actions.
+- Instance gate: `OXIDEAN_ACTIONS_ENABLED`. Per-repo Admin toggle: `repo.actions.setEnabled` / Settings → Actions.
 
 ### Runner protocol HTTP (`/api/actions`) (ACT-06)
 
@@ -610,7 +610,7 @@ Mounted under `/api/actions` on the same HTTP port as RPC (Traefik `/api` PathPr
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env `OCTANEST_RUNNER_REGISTRATION_TOKEN`) | Register runner; returns `runner_token` once |
+| POST | `/api/actions/register` | Registration token (`token` body or bootstrap env `OXIDEAN_RUNNER_REGISTRATION_TOKEN`) | Register runner; returns `runner_token` once |
 | POST | `/api/actions/declare` | Bearer runner token | Update labels (`label[:schema[:args]]`, D-ACT-09) |
 | POST | `/api/actions/fetch_task` | Bearer runner token | Claim queued job matching labels; may include decrypted `secrets` map |
 | POST | `/api/actions/update_task` | Bearer runner token | Job state updates (`queued` → `in_progress` / `success` / `failure` / `cancelled`) |
@@ -628,7 +628,7 @@ Example register body (placeholders only):
 
 Runner protocol ignores session cookies (D-ACT-18).
 
-**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm` (bare labels run on the runner host; `docker://` runs in a container when the socket is mounted). Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Octanest Cloud minutes (ACT-07).
+**Custom `runs-on` labels (D-ACT-09):** format `label[:schema[:args]]`, e.g. `ubuntu-latest:docker://node:20-bookworm` (bare labels run on the runner host; `docker://` runs in a container when the socket is mounted). Runners declare labels at register/declare; jobs queue until a registered runner with a matching label calls `fetch_task`. There is **no forge-hosted executor** and no managed Oxidean Cloud minutes (ACT-07).
 
 Session RPC (Read+/Admin as noted):
 
@@ -659,15 +659,15 @@ Example: `CI / build` (job key is the YAML `jobs.<id>`, not the DB row UUID). Ta
 
 ### Official runner image (ACT-04 / ACT-05)
 
-Operators attach compute via `octanest-runner` (`crates/octanest-runner`, image from `docker/octanest-runner`). Compose profile `actions` sidecar or standalone `docker run` against `OCTANEST_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/octanest-runner/README.md`](../docker/octanest-runner/README.md).
+Operators attach compute via `oxidean-runner` (`crates/oxidean-runner`, image from `docker/oxidean-runner`). Compose profile `actions` sidecar or standalone `docker run` against `OXIDEAN_PUBLIC_ORIGIN` — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`docker/oxidean-runner/README.md`](../docker/oxidean-runner/README.md).
 
 ## Regenerating the TypeScript client
 
-Procedure names and DTOs in Rust (`rpc.rs`, `octanest-core`) are authoritative. Regenerate `@octanest/api-client`:
+Procedure names and DTOs in Rust (`rpc.rs`, `oxidean-core`) are authoritative. Regenerate `@oxidean/api-client`:
 
 ```bash
 make rpc-gen
-# equivalent: cargo run -q -p octanest-api --bin rpc-gen
+# equivalent: cargo run -q -p oxidean-api --bin rpc-gen
 ```
 
 This overwrites `packages/api-client/src/index.ts` (do not hand-edit). CI drift check:

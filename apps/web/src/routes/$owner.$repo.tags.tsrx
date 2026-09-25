@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams, useRouter } from "@octanejs/tanstack-router";
-import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import type { RepoPublic, RepoRefEntry } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { FileArchive, Tag } from "@octanejs/lucide";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
@@ -26,7 +26,7 @@ export type TagsLoaderData =
 
 type Phase = { kind: "loading" } | TagsLoaderData;
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function sortTags(refs: RepoRefEntry[]): RepoRefEntry[] {
   return refs
@@ -67,7 +67,7 @@ export const Route = createFileRoute("/$owner/$repo/tags")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Tags · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Tags · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

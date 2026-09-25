@@ -6,7 +6,7 @@ import { Outlet, createFileRoute } from "@octanejs/tanstack-router";
  */
 export const Route = createFileRoute("/settings/tokens")({
   component: TokensLayout,
-  head: () => ({ meta: [{ title: "Personal access tokens · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Personal access tokens · Oxidean" }] }),
 });
 
 function TokensLayout() @{

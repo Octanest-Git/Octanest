@@ -25,9 +25,9 @@ tech-stack:
 
 key-files:
   modified:
-    - crates/octanest-api/src/routes/git_lfs.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/tests/lfs_batch.rs
+    - crates/oxidean-api/src/routes/git_lfs.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/tests/lfs_batch.rs
 
 key-decisions:
   - "No multipart adapter (D-LFS-07 locked)"
@@ -40,7 +40,7 @@ coverage:
     requirement: GIT-12
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(lfs_dedup) | test(lfs_verify)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(lfs_dedup) | test(lfs_verify)'"
         status: pass
     human_judgment: false
 

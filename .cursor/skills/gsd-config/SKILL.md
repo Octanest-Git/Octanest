@@ -49,9 +49,9 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/settings.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/settings-advanced.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/settings-integrations.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/settings.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/settings-advanced.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/settings-integrations.md
 </execution_context>
 
 <context>

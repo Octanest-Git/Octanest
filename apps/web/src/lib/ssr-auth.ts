@@ -1,6 +1,6 @@
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
-import { createClient, type OctanestClient } from "@octanest/api-client";
+import { createClient, type OxideanClient } from "@oxidean/api-client";
 import {
   resolveThemeForSsr,
   themePreferenceFromCookieHeader,
@@ -10,17 +10,17 @@ import {
 /** API origin for SSR Cookie-forward RPCs — never the browser origin during SSR. */
 function ssrApiOrigin(): string {
   return (
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080"
   );
 }
 
 /**
- * Cookie-forward Octanest RPC client for server fns / SSR loaders.
+ * Cookie-forward Oxidean RPC client for server fns / SSR loaders.
  * Forwards the incoming request Cookie only — never logs cookie values (T-06-11).
  */
-function createSsrClient(cookie: string): OctanestClient {
+function createSsrClient(cookie: string): OxideanClient {
   return createClient({
     baseUrl: ssrApiOrigin(),
     credentials: "include",

@@ -29,14 +29,14 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/repo_archive.rs
+    - crates/oxidean-api/tests/repo_archive.rs
     - apps/web/src/components/repo/clone-box.tsrx
     - .planning/phases/07-git-repos-browse/.tdd/07-08-red-evidence.json
   modified:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-api/src/routes/repo_raw.rs
-    - crates/octanest-api/src/app.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-api/src/routes/repo_raw.rs
+    - crates/oxidean-api/src/app.rs
     - apps/web/src/routes/$owner.$repo.index.tsrx
 
 key-decisions:
@@ -55,10 +55,10 @@ coverage:
     requirement: GIT-07
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_archive.rs#repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref"
+        ref: "crates/oxidean-api/tests/repo_archive.rs#repo_archive_zip_and_tar_gz_nonempty_for_seeded_ref"
         status: pass
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#git_archive_formats_zip_and_tar_gz"
+        ref: "crates/oxidean-git/src/cli.rs#git_archive_formats_zip_and_tar_gz"
         status: pass
     human_judgment: false
   - id: D2
@@ -66,7 +66,7 @@ coverage:
     requirement: GIT-07
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_archive.rs#repo_archive_private_non_owner_not_found"
+        ref: "crates/oxidean-api/tests/repo_archive.rs#repo_archive_private_non_owner_not_found"
         status: pass
     human_judgment: false
   - id: D3
@@ -74,10 +74,10 @@ coverage:
     requirement: GIT-07
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_archive.rs#repo_archive_empty_repo_structured_failure"
+        ref: "crates/oxidean-api/tests/repo_archive.rs#repo_archive_empty_repo_structured_failure"
         status: pass
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#git_archive_empty_repo_returns_not_found"
+        ref: "crates/oxidean-git/src/cli.rs#git_archive_empty_repo_returns_not_found"
         status: pass
     human_judgment: false
   - id: D4
@@ -129,11 +129,11 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-git/src/backend.rs` — `ArchiveFormat` + `archive` on `GitBackend`
-- `crates/octanest-git/src/cli.rs` — `git archive` implementation + unit tests
-- `crates/octanest-api/src/routes/repo_raw.rs` — `serve_archive`
-- `crates/octanest-api/src/app.rs` — archive route registration
-- `crates/octanest-api/tests/repo_archive.rs` — seeded / private / empty cases
+- `crates/oxidean-git/src/backend.rs` — `ArchiveFormat` + `archive` on `GitBackend`
+- `crates/oxidean-git/src/cli.rs` — `git archive` implementation + unit tests
+- `crates/oxidean-api/src/routes/repo_raw.rs` — `serve_archive`
+- `crates/oxidean-api/src/app.rs` — archive route registration
+- `crates/oxidean-api/tests/repo_archive.rs` — seeded / private / empty cases
 - `apps/web/src/components/repo/clone-box.tsrx` — clone dropdown
 - `apps/web/src/routes/$owner.$repo.index.tsrx` — wire CloneBox into Code toolbar
 
@@ -170,9 +170,9 @@ GIT-07 archive download path is live for browse ACL; HTTPS clone URL is placehol
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/routes/repo_raw.rs`
+- FOUND: `crates/oxidean-api/src/routes/repo_raw.rs`
 - FOUND: `apps/web/src/components/repo/clone-box.tsrx`
-- FOUND: `crates/octanest-api/tests/repo_archive.rs`
+- FOUND: `crates/oxidean-api/tests/repo_archive.rs`
 - FOUND: `de7e212`, `528d683`, `4d2d205`
 
 ---

@@ -25,12 +25,12 @@ export const Route = createFileRoute("/$owner/")({
   head: ({ loaderData, params }) => {
     const data = loaderData as OwnerIndexLoaderData | undefined;
     const owner = String((params as { owner?: string }).owner ?? "");
-    let title = `${owner} · Octanest`;
+    let title = `${owner} · Oxidean`;
     if (data?.kind === "org" && data.org.org) {
-      title = `${data.org.org.display_name || data.org.org.slug} · Octanest`;
+      title = `${data.org.org.display_name || data.org.org.slug} · Oxidean`;
     } else if (data?.kind === "user" && data.user.profile) {
       const p = data.user.profile;
-      title = `${p.display_name || p.username} · Octanest`;
+      title = `${p.display_name || p.username} · Oxidean`;
     }
     return { meta: [{ title }] };
   },
@@ -287,7 +287,7 @@ export function UserProfilePage() @{
               title="No repositories yet"
               description={
                 isSelf
-                  ? "Create a repository to start hosting your code on Octanest."
+                  ? "Create a repository to start hosting your code on Oxidean."
                   : "This user hasn't published any repositories yet."
               }
               action={

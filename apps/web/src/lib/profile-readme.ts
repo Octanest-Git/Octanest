@@ -1,4 +1,4 @@
-import type { OctanestClient, RepoPublic, RepoTreeEntry } from "@octanest/api-client";
+import type { OxideanClient, RepoPublic, RepoTreeEntry } from "@oxidean/api-client";
 import { findReadmeName, joinRepoPath } from "@/lib/repo-browse";
 import { renderGfm } from "@/lib/markdown";
 
@@ -11,9 +11,9 @@ export type ProfileReadme = {
 
 /**
  * Org profile special-repo preference order.
- * Prefer Octanest’s `.octanest`, then GitHub-compatible `.github`.
+ * Prefer Oxidean’s `.oxidean`, then GitHub-compatible `.github`.
  */
-export const ORG_PROFILE_SPECIAL_REPOS = [".octanest", ".github"] as const;
+export const ORG_PROFILE_SPECIAL_REPOS = [".oxidean", ".github"] as const;
 
 /** Directory inside the special repo that holds the org profile README (GitHub pattern). */
 export const ORG_PROFILE_README_DIR = "profile";
@@ -42,7 +42,7 @@ function isPublicRepo(repo: RepoPublic): boolean {
 }
 
 async function loadReadmeFromTree(
-  client: OctanestClient,
+  client: OxideanClient,
   owner: string,
   repoName: string,
   ref: string,
@@ -80,7 +80,7 @@ async function loadReadmeFromTree(
  * Private / missing / errors → null (never surface private profile content).
  */
 async function loadPublicRepoReadme(
-  client: OctanestClient,
+  client: OxideanClient,
   owner: string,
   repoName: string,
   treePath: string,
@@ -109,7 +109,7 @@ async function loadPublicRepoReadme(
  * (GitHub user profile README pattern).
  */
 export async function fetchUserProfileReadme(
-  client: OctanestClient,
+  client: OxideanClient,
   username: string,
 ): Promise<ProfileReadme | null> {
   const owner = username.trim();
@@ -118,11 +118,11 @@ export async function fetchUserProfileReadme(
 }
 
 /**
- * Org profile README: public `.octanest` then `.github`, file under `profile/`
- * (GitHub org profile README pattern; Octanest-preferred special repo name).
+ * Org profile README: public `.oxidean` then `.github`, file under `profile/`
+ * (GitHub org profile README pattern; Oxidean-preferred special repo name).
  */
 export async function fetchOrgProfileReadme(
-  client: OctanestClient,
+  client: OxideanClient,
   orgSlug: string,
 ): Promise<ProfileReadme | null> {
   const owner = orgSlug.trim();

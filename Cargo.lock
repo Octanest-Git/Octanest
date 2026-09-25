@@ -2896,97 +2896,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "octanest-api"
-version = "0.1.0"
-dependencies = [
- "aes-gcm 0.10.3",
- "argon2",
- "async-trait",
- "axum",
- "chrono",
- "cookie",
- "futures-util",
- "getrandom 0.2.17",
- "http",
- "http-body-util",
- "image",
- "include_dir",
- "lettre",
- "octanest-core",
- "octanest-db",
- "octanest-git",
- "openidconnect",
- "password-hash",
- "prost",
- "prost-build",
- "rand 0.10.2",
- "reqwest 0.13.5",
- "russh",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2 0.11.0",
- "ssh-key",
- "tempfile",
- "thiserror 2.0.20",
- "tokio",
- "tokio-tungstenite 0.26.2",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
- "wiremock",
- "workos",
- "zip",
-]
-
-[[package]]
-name = "octanest-core"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "octanest-db"
-version = "0.1.0"
-dependencies = [
- "octanest-core",
- "serde_json",
- "sqlx",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "octanest-git"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "tempfile",
- "thiserror 2.0.20",
- "tokio",
-]
-
-[[package]]
-name = "octanest-runner"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "reqwest 0.13.5",
- "serde",
- "serde_json",
- "tempfile",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3042,6 +2951,97 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f19d67e5a2795c94e73e0bb1cc1a7edeb2e28efd39e2e1c9b7a40c1108b11c"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "oxidean-api"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm 0.10.3",
+ "argon2",
+ "async-trait",
+ "axum",
+ "chrono",
+ "cookie",
+ "futures-util",
+ "getrandom 0.2.17",
+ "http",
+ "http-body-util",
+ "image",
+ "include_dir",
+ "lettre",
+ "openidconnect",
+ "oxidean-core",
+ "oxidean-db",
+ "oxidean-git",
+ "password-hash",
+ "prost",
+ "prost-build",
+ "rand 0.10.2",
+ "reqwest 0.13.5",
+ "russh",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2 0.11.0",
+ "ssh-key",
+ "tempfile",
+ "thiserror 2.0.20",
+ "tokio",
+ "tokio-tungstenite 0.26.2",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "wiremock",
+ "workos",
+ "zip",
+]
+
+[[package]]
+name = "oxidean-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "oxidean-db"
+version = "0.1.0"
+dependencies = [
+ "oxidean-core",
+ "serde_json",
+ "sqlx",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "oxidean-git"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "tempfile",
+ "thiserror 2.0.20",
+ "tokio",
+]
+
+[[package]]
+name = "oxidean-runner"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "reqwest 0.13.5",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

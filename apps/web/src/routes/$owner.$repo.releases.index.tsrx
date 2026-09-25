@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery } from "@octanejs/tanstack-query";
-import type { ReleasePublic, RepoPublic } from "@octanest/api-client";
+import type { ReleasePublic, RepoPublic } from "@oxidean/api-client";
 import { Rocket, Tag } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export type ReleasesLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic; releases: ReleasePublic[] };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function loadReleasesPage(owner: string, repoName: string): Promise<ReleasesLoaderData> {
   const got = await fetchRepoGet({ data: { owner, name: repoName } });
@@ -50,7 +50,7 @@ export const Route = createFileRoute("/$owner/$repo/releases/")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Releases · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Releases · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

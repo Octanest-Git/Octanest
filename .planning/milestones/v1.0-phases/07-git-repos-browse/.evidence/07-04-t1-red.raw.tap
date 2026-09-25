@@ -120,7 +120,7 @@ Ignored nodes: comments, script, style
     [36m</div>[39m
   [36m</body>[39m
 [36m</html>[39m"
-            at: "/home/jesse/wsl-projects/personal/typescript/octanest/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
+            at: "/home/jesse/wsl-projects/personal/typescript/oxidean/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
             ...
         not ok 2 - verified: enabled New repository navigates to /new # time=1003.07ms
             ---
@@ -222,7 +222,7 @@ Ignored nodes: comments, script, style
     [36m</div>[39m
   [36m</body>[39m
 [36m</html>[39m"
-            at: "/home/jesse/wsl-projects/personal/typescript/octanest/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
+            at: "/home/jesse/wsl-projects/personal/typescript/oxidean/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
             ...
     }
     not ok 2 - SignedInHome dashboard IA (D-13 / UI E1) # time=2014.63ms {
@@ -327,7 +327,7 @@ Ignored nodes: comments, script, style
     [36m</div>[39m
   [36m</body>[39m
 [36m</html>[39m"
-            at: "/home/jesse/wsl-projects/personal/typescript/octanest/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
+            at: "/home/jesse/wsl-projects/personal/typescript/oxidean/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
             ...
         not ok 2 - populated list shows owner/name and visibility Badge # time=1002.89ms
             ---
@@ -429,7 +429,7 @@ Ignored nodes: comments, script, style
     [36m</div>[39m
   [36m</body>[39m
 [36m</html>[39m"
-            at: "/home/jesse/wsl-projects/personal/typescript/octanest/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
+            at: "/home/jesse/wsl-projects/personal/typescript/oxidean/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27"
             ...
         not ok 3 - keeps incomplete-profile banner above the list # time=8.53ms
             ---
@@ -549,7 +549,7 @@ Ignored nodes: comments, script, style
     [36m</div>[39m
   [36m</div>[39m
 [36m</body>[39m"
-            at: "/home/jesse/wsl-projects/personal/typescript/octanest/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19"
+            at: "/home/jesse/wsl-projects/personal/typescript/oxidean/node_modules/.bun/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:37:19"
             ...
     }
 }

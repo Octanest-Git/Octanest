@@ -9,7 +9,7 @@ requires:
     provides: "D-33 fail_boot_git locked (07-01); proceed_locked (07-02); version stubs (07-00); create tracer (07-12)"
 provides:
   - "assert_git_version((2,5,0)) green + API boot exit(1) on missing/old git"
-  - "Dockerfile installs git; Compose ./var/repos:/var/repos; .env.example OCTANEST_REPOS_DIR"
+  - "Dockerfile installs git; Compose ./var/repos:/var/repos; .env.example OXIDEAN_REPOS_DIR"
 affects: [07-10, 07-11, compose-ops]
 
 actuals:
@@ -28,15 +28,15 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-git/src/version.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-api/Dockerfile
+    - crates/oxidean-git/src/version.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-api/Dockerfile
     - docker-compose.yml
     - .env.example
 
 key-decisions:
   - "Fail boot with eprintln + exit(1) when git missing or < 2.5.0 (D-33)"
-  - "Install distro git in API image; bind ./var/repos without overriding default OCTANEST_REPOS_DIR"
+  - "Install distro git in API image; bind ./var/repos without overriding default OXIDEAN_REPOS_DIR"
 
 patterns-established:
   - "parse_git_version strips Apple/Windows suffixes; tuple compare vs floor"
@@ -50,15 +50,15 @@ coverage:
     requirement: GIT-09
     verification:
       - kind: unit
-        ref: "cargo nextest run -p octanest-git -E 'test(git_version_gate)'"
+        ref: "cargo nextest run -p oxidean-git -E 'test(git_version_gate)'"
         status: pass
     human_judgment: false
   - id: D2
-    description: "Dockerfile installs git; Compose binds ./var/repos; OCTANEST_REPOS_DIR documented"
+    description: "Dockerfile installs git; Compose binds ./var/repos; OXIDEAN_REPOS_DIR documented"
     requirement: GIT-08
     verification:
       - kind: other
-        ref: "rg -n 'git' crates/octanest-api/Dockerfile; rg -n 'var/repos|OCTANEST_REPOS_DIR' docker-compose.yml .env.example"
+        ref: "rg -n 'git' crates/oxidean-api/Dockerfile; rg -n 'var/repos|OXIDEAN_REPOS_DIR' docker-compose.yml .env.example"
         status: pass
     human_judgment: false
 
@@ -81,9 +81,9 @@ status: complete
 
 ## Accomplishments
 
-- Implemented `parse_git_version` / `assert_git_version` and wired fail-boot in `octanest-api` main (D-33 / GIT-09)
+- Implemented `parse_git_version` / `assert_git_version` and wired fail-boot in `oxidean-api` main (D-33 / GIT-09)
 - Installed `git` in the API Dockerfile; bound `./var/repos:/var/repos` in Compose (D-30 / D-38)
-- Documented `OCTANEST_REPOS_DIR` (default `var/repos`) in `.env.example` (D-31)
+- Documented `OXIDEAN_REPOS_DIR` (default `var/repos`) in `.env.example` (D-31)
 
 ## Task Commits
 
@@ -95,11 +95,11 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-git/src/version.rs` — green `git_version_gate` helpers
-- `crates/octanest-api/src/main.rs` — boot gate → `exit(1)`
-- `crates/octanest-api/Dockerfile` — apt `git`
+- `crates/oxidean-git/src/version.rs` — green `git_version_gate` helpers
+- `crates/oxidean-api/src/main.rs` — boot gate → `exit(1)`
+- `crates/oxidean-api/Dockerfile` — apt `git`
 - `docker-compose.yml` — `./var/repos:/var/repos`
-- `.env.example` — `OCTANEST_REPOS_DIR` docs
+- `.env.example` — `OXIDEAN_REPOS_DIR` docs
 
 ## Decisions Made
 
@@ -112,7 +112,7 @@ None - plan executed exactly as written.
 
 ## Known Stubs
 
-- `crates/octanest-git/src/version.rs` — `git_archive_formats_zip_and_tar_gz` still Wave 0 `assert!(false)` (owned by archive plan, not 07-17)
+- `crates/oxidean-git/src/version.rs` — `git_archive_formats_zip_and_tar_gz` still Wave 0 `assert!(false)` (owned by archive plan, not 07-17)
 
 ## Threat Flags
 
@@ -121,16 +121,16 @@ None — surface matches plan threat model (T-07-08 mitigated; T-07-SC accepted)
 ## Verification
 
 ```
-cargo nextest run -p octanest-git -E 'test(git_version_gate)'  # 2 passed
-rg assert_git_version / exit(1) / Dockerfile git / var/repos / OCTANEST_REPOS_DIR  # green
-cargo check -p octanest-api --bin octanest-api  # ok
+cargo nextest run -p oxidean-git -E 'test(git_version_gate)'  # 2 passed
+rg assert_git_version / exit(1) / Dockerfile git / var/repos / OXIDEAN_REPOS_DIR  # green
+cargo check -p oxidean-api --bin oxidean-api  # ok
 ```
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-git/src/version.rs
-- FOUND: crates/octanest-api/src/main.rs
-- FOUND: crates/octanest-api/Dockerfile
+- FOUND: crates/oxidean-git/src/version.rs
+- FOUND: crates/oxidean-api/src/main.rs
+- FOUND: crates/oxidean-api/Dockerfile
 - FOUND: docker-compose.yml
 - FOUND: .env.example
 - FOUND: commit 3cd14a4

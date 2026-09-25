@@ -6,7 +6,7 @@ tags: [git-backend, cli-git, d-14, d-32, d-33, coverage, requirements]
 
 requires:
   - phase: 07-git-repos-browse
-    provides: Wave 0 octanest-git stubs + 07-CONTEXT D-14/D-32/D-33 locks
+    provides: Wave 0 oxidean-git stubs + 07-CONTEXT D-14/D-32/D-33 locks
 provides:
   - "Confirmed D-14 public URL scheme /{owner}/{repo}"
   - "Confirmed D-33 fail-boot when git missing or < 2.5"

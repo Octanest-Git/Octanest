@@ -30,23 +30,23 @@ covered_files:
   - apps/web/src/routes/$owner.$repo.releases.tsrx
   - apps/web/src/routes/$owner.$repo.settings.rename-transfer.integration.test.ts
   - apps/web/src/routes/$owner.$repo.settings.tsrx
-  - crates/octanest-api/src/app.rs
-  - crates/octanest-api/src/auth/admin.rs
-  - crates/octanest-api/src/jobs/reconcile.rs
-  - crates/octanest-api/src/release/mod.rs
-  - crates/octanest-api/src/repo/acl.rs
-  - crates/octanest-api/src/repo/rename_transfer.rs
-  - crates/octanest-api/src/routes/git_smart_http.rs
-  - crates/octanest-api/src/routes/release_assets.rs
-  - crates/octanest-api/src/ssh/pack.rs
-  - crates/octanest-api/tests/release_rpc.rs
-  - crates/octanest-api/tests/repo_rename_transfer.rs
-  - crates/octanest-db/migrations/mysql/0014_releases_redirects.sql
-  - crates/octanest-db/migrations/postgres/0014_releases_redirects.sql
-  - crates/octanest-db/migrations/sqlite/0014_releases_redirects.sql
-  - crates/octanest-db/src/redirects.rs
-  - crates/octanest-db/src/releases.rs
-  - crates/octanest-db/tests/dialect_releases.rs
+  - crates/oxidean-api/src/app.rs
+  - crates/oxidean-api/src/auth/admin.rs
+  - crates/oxidean-api/src/jobs/reconcile.rs
+  - crates/oxidean-api/src/release/mod.rs
+  - crates/oxidean-api/src/repo/acl.rs
+  - crates/oxidean-api/src/repo/rename_transfer.rs
+  - crates/oxidean-api/src/routes/git_smart_http.rs
+  - crates/oxidean-api/src/routes/release_assets.rs
+  - crates/oxidean-api/src/ssh/pack.rs
+  - crates/oxidean-api/tests/release_rpc.rs
+  - crates/oxidean-api/tests/repo_rename_transfer.rs
+  - crates/oxidean-db/migrations/mysql/0014_releases_redirects.sql
+  - crates/oxidean-db/migrations/postgres/0014_releases_redirects.sql
+  - crates/oxidean-db/migrations/sqlite/0014_releases_redirects.sql
+  - crates/oxidean-db/src/redirects.rs
+  - crates/oxidean-db/src/releases.rs
+  - crates/oxidean-db/tests/dialect_releases.rs
   - docker-compose.yml
   - docs/API.md
   - docs/CONFIGURATION.md
@@ -68,7 +68,7 @@ human_verification: "[{'test': 'Open a repo with Write+: create a release for an
 
 **Re-verification:** No — initial verification
 
-**Worktree:** `/home/jesse/wsl-projects/personal/typescript/octanest-wt-15-rel` @ `feat/execute-15-releases-cont`
+**Worktree:** `/home/jesse/wsl-projects/personal/typescript/oxidean-wt-15-rel` @ `feat/execute-15-releases-cont`
 
 **Migration lock:** `0014_releases_redirects` present on sqlite/postgres/mysql (not renumbered).
 
@@ -89,7 +89,7 @@ human_verification: "[{'test': 'Open a repo with Write+: create a release for an
 | Behavior | Evidence | Status |
 | --- | --- | --- |
 | Tag missing → `release.tag_missing`; drafts Write+-only | `release/mod.rs` + `release_tag_missing_*` / `release_draft_hidden_*` tests present | ✓ |
-| Assets on `OCTANEST_RELEASE_ASSETS_DIR/{asset_id}` ≠ LFS; max size | `asset_fs_path`, Compose bind, `release_asset_size_reject` | ✓ |
+| Assets on `OXIDEAN_RELEASE_ASSETS_DIR/{asset_id}` ≠ LFS; max size | `asset_fs_path`, Compose bind, `release_asset_size_reject` | ✓ |
 | Redirect retention + purge; live path supersedes | `lookup_repo_row_or_redirect`, Smart HTTP + SSH; `redirect_purge_expired_rows` ok | ✓ |
 | Factory reset wipes release-assets children | `auth/admin.rs` `wipe_dir_contents(&ctx.release_assets_dir, …)` + unit wipe test | ✓ |
 | Migration `0014_releases_redirects` tri-dialect | sqlite/postgres/mysql files; `dialect_releases_*` ok | ✓ |
@@ -102,12 +102,12 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (13/13). D-R
 
 | Artifact | Expected | Status | Details |
 | -------- | -------- | ------ | ------- |
-| `crates/octanest-api/src/release/mod.rs` | release.* RPC | ✓ VERIFIED | create/list/get/update/delete + delete_asset; ACL via `meets(Write)` / `resolve_repo_for_admin` |
-| `crates/octanest-db/src/releases.rs` | persistence | ✓ VERIFIED | 325 lines; insert/list/update/delete + assets |
-| `crates/octanest-db/src/redirects.rs` | redirect helpers | ✓ VERIFIED | insert/find/delete/purge |
-| `crates/octanest-api/src/routes/release_assets.rs` | upload/download | ✓ VERIFIED | 481 lines; multipart + id download |
-| `crates/octanest-api/src/repo/rename_transfer.rs` | rename + transfer | ✓ VERIFIED | 387 lines; confirm, dest resolve, disk move |
-| `crates/octanest-db/migrations/*/0014_releases_redirects.sql` | schema | ✓ VERIFIED | releases, release_assets, repository_redirects |
+| `crates/oxidean-api/src/release/mod.rs` | release.* RPC | ✓ VERIFIED | create/list/get/update/delete + delete_asset; ACL via `meets(Write)` / `resolve_repo_for_admin` |
+| `crates/oxidean-db/src/releases.rs` | persistence | ✓ VERIFIED | 325 lines; insert/list/update/delete + assets |
+| `crates/oxidean-db/src/redirects.rs` | redirect helpers | ✓ VERIFIED | insert/find/delete/purge |
+| `crates/oxidean-api/src/routes/release_assets.rs` | upload/download | ✓ VERIFIED | 481 lines; multipart + id download |
+| `crates/oxidean-api/src/repo/rename_transfer.rs` | rename + transfer | ✓ VERIFIED | 387 lines; confirm, dest resolve, disk move |
+| `crates/oxidean-db/migrations/*/0014_releases_redirects.sql` | schema | ✓ VERIFIED | releases, release_assets, repository_redirects |
 | `packages/api-client/src/index.ts` | generated client | ✓ VERIFIED | `release.*`, `repo.rename`, `repo.transfer` |
 | `apps/web/.../releases*.tsrx` | Releases UI | ✓ VERIFIED | list/new/$tag; in `routeTree.gen.ts` |
 | `apps/web/.../$owner.$repo.settings.tsrx` | Danger zone | ✓ VERIFIED | rename + transfer type-confirm; `can_admin` |
@@ -134,7 +134,7 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (13/13). D-R
 | -------- | ------------- | ------ | ------------------ | ------ |
 | Releases list | `release.list` → `releases` | DB `list_releases_for_repo` | Yes | ✓ FLOWING |
 | Release detail | `release.get` + assets | DB releases + release_assets | Yes | ✓ FLOWING |
-| Asset download | file bytes | `OCTANEST_RELEASE_ASSETS_DIR/{id}` | Yes | ✓ FLOWING |
+| Asset download | file bytes | `OXIDEAN_RELEASE_ASSETS_DIR/{id}` | Yes | ✓ FLOWING |
 | Rename/transfer | repo row + bare path | DB + filesystem | Yes | ✓ FLOWING |
 | Redirect resolve | `repository_redirects` | DB lookup | Yes | ✓ FLOWING |
 
@@ -142,13 +142,13 @@ All trackable CONTEXT.md decisions are honored by shipped artifacts (13/13). D-R
 
 | Behavior | Command | Result | Status |
 | -------- | ------- | ------ | ------ |
-| Create release for existing tag | `cargo test -p octanest-api --test release_rpc release_create_existing_tag_with_notes -- --exact` | ok | ✓ PASS |
-| Asset upload/download ACL | `cargo test -p octanest-api --test release_rpc release_asset_upload_download_acl -- --exact` | ok | ✓ PASS |
-| Admin rename + redirect | `cargo test -p octanest-api --test repo_rename_transfer repo_rename_admin_moves_disk_and_inserts_redirect -- --exact` | ok | ✓ PASS |
-| Admin transfer + confirm | `cargo test -p octanest-api --test repo_rename_transfer repo_transfer_admin_to_user_or_org_with_confirm -- --exact` | ok | ✓ PASS |
+| Create release for existing tag | `cargo test -p oxidean-api --test release_rpc release_create_existing_tag_with_notes -- --exact` | ok | ✓ PASS |
+| Asset upload/download ACL | `cargo test -p oxidean-api --test release_rpc release_asset_upload_download_acl -- --exact` | ok | ✓ PASS |
+| Admin rename + redirect | `cargo test -p oxidean-api --test repo_rename_transfer repo_rename_admin_moves_disk_and_inserts_redirect -- --exact` | ok | ✓ PASS |
+| Admin transfer + confirm | `cargo test -p oxidean-api --test repo_rename_transfer repo_transfer_admin_to_user_or_org_with_confirm -- --exact` | ok | ✓ PASS |
 | Redirect purge | `… redirect_purge_expired_rows -- --exact` | ok | ✓ PASS |
 | Transfer cascade issues/LFS | `… repo_transfer_cascade_issues_lfs_by_repo_id -- --exact` | ok | ✓ PASS |
-| Dialect migration 0013 | `cargo test -p octanest-db --test dialect_releases` | 2 passed | ✓ PASS |
+| Dialect migration 0013 | `cargo test -p oxidean-db --test dialect_releases` | 2 passed | ✓ PASS |
 | Web chrome + settings raw tests | vitest rename-transfer + chrome Releases | 3 passed | ✓ PASS |
 | Web route ESM import discoverability | vitest `routes under /releases discoverable` | import without `?raw` → null | ⚠️ WARNING |
 
@@ -212,7 +212,7 @@ No goal-blocking gaps for the three must-have truths. Roadmap success criteria 1
 
 ## Known stubs / residual gaps
 
-Honesty annotations from [issue #3](https://github.com/Octanest-Git/Octanest/issues/3) quality audit (`tmp/issue-3-quality-audit.md`) and Phase 11.1 `D-QH-05`. These do **not** flip Phase 15 must-haves to failed — API/nextest coverage and compose UAT still support the three truths — but **do** justify **passed with caveats** so planners do not treat green VERIFICATION as full forge browser e2e.
+Honesty annotations from [issue #3](https://github.com/oxidean/oxidean/issues/3) quality audit (`tmp/issue-3-quality-audit.md`) and Phase 11.1 `D-QH-05`. These do **not** flip Phase 15 must-haves to failed — API/nextest coverage and compose UAT still support the three truths — but **do** justify **passed with caveats** so planners do not treat green VERIFICATION as full forge browser e2e.
 
 | Stub / gap | What shipped | What is *not* done | Pointers |
 | ---------- | ------------ | ------------------ | -------- |

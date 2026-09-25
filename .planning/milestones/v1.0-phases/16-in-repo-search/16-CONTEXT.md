@@ -47,7 +47,7 @@ Users can search **code, commits, issues, and pull requests** inside a repositor
 - **D-SRCH-08:** Skip **binary** blobs for code hits; enforce **soft caps** (max matches, max files scanned/returned) and a **server-side timeout** so large repos fail soft (`search.timeout` / truncated flag) rather than hang the RPC — **Reversibility:** reversible
 
 ### D — Issues & PRs (DB; Phase 12 model)
-- **D-SRCH-09:** **Issues** search: title/body (and comment text if cheap) substring match in **`octanest-db`**, building on Phase 11 `IssueListFilters.q` / ILIKE patterns — **Reversibility:** reversible
+- **D-SRCH-09:** **Issues** search: title/body (and comment text if cheap) substring match in **`oxidean-db`**, building on Phase 11 `IssueListFilters.q` / ILIKE patterns — **Reversibility:** reversible
 - **D-SRCH-10:** **Pull requests** search: same pattern against **Phase 12 PR persistence** (shared per-repo `#N` with issues per **D-PR-02**; title/body). Assume PR tables/RPC from `.planning/phases/12-pull-requests/12-CONTEXT.md` at execute time — **Reversibility:** reversible
 - **D-SRCH-11:** Issue vs PR tabs are **separate types** (GitHub). Do not return mixed issue+PR rows in one tab — **Reversibility:** reversible
 
@@ -87,8 +87,8 @@ Users can search **code, commits, issues, and pull requests** inside a repositor
 ### Product / stack
 - `docs/ARCHITECTURE.md` — git / ACL surfaces
 - `.agents/skills/octane/SKILL.md` — Octane `.tsrx` UI (mandatory for UI plans)
-- `crates/octanest-git/src/backend.rs` — `GitBackend` trait to extend
-- `crates/octanest-db/src/issues.rs` — `IssueListFilters.q` ILIKE pattern
+- `crates/oxidean-git/src/backend.rs` — `GitBackend` trait to extend
+- `crates/oxidean-db/src/issues.rs` — `IssueListFilters.q` ILIKE pattern
 - `apps/web/src/components/global-search.tsrx` — global search stays out of scope
 - `apps/web/src/components/repo/repo-chrome.tsrx` — repo entry chrome
 
@@ -106,7 +106,7 @@ Users can search **code, commits, issues, and pull requests** inside a repositor
 
 ### Established Patterns
 - Nested RPC (`repo.*`, `issue.*`) + `make rpc-gen`
-- Dialect SQL only in `octanest-db`
+- Dialect SQL only in `oxidean-db`
 - Octane `.tsrx` + TanStack Query; no Zustand for server data
 
 ### Integration Points

@@ -1,20 +1,20 @@
-# Agent guide — Octanest
+# Agent guide — Oxidean
 
 Short orientation for coding agents and automated contributors. Humans: start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Product
 
-Self-hostable GitHub-style forge (git, issues, orgs, LFS, releases, packages; PRs upcoming). **One codebase** for Octanest Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
+Self-hostable GitHub-style forge (git, issues, orgs, LFS, releases, packages; PRs upcoming). **One codebase** for Oxidean Cloud and self-hosted. Bun + Turborepo (`apps/*`, `packages/*`) and a Rust Cargo workspace (`crates/*`).
 
 ## Stack (do not invent alternatives)
 
 | Layer | Tech |
 |-------|------|
 | Web UI | **Octane** (`.tsrx`), TanStack Start / Router / Query / Form via `@octanejs/*`; file pickers via `@octanejs/dropzone` |
-| API | Rust Axum + typed JSON RPC (`octanest-api`) |
-| Domain types | `octanest-core` |
-| Persistence | `octanest-db` (Postgres / MySQL / SQLite) |
-| TS RPC client | `@octanest/api-client` — **generated** by `make rpc-gen` |
+| API | Rust Axum + typed JSON RPC (`oxidean-api`) |
+| Domain types | `oxidean-core` |
+| Persistence | `oxidean-db` (Postgres / MySQL / SQLite) |
+| TS RPC client | `@oxidean/api-client` — **generated** by `make rpc-gen` |
 
 Canonical docs: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/API.md](docs/API.md), [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
@@ -33,7 +33,7 @@ Before editing UI under `apps/web`:
 ## Hard boundaries
 
 - **Do not hand-edit** generated client sources as source of truth — change Rust RPC / types, then `make rpc-gen`.
-- Dialect SQL lives in `crates/octanest-db` only; API must not branch on DB dialect.
+- Dialect SQL lives in `crates/oxidean-db` only; API must not branch on DB dialect.
 - No production secrets in repo, CI, or docs examples. Use `.env.example` / `docs/dev-auth.env.example`.
 - Prefer extending existing patterns over new frameworks, state libraries, or UI kits.
 - **No AI attribution** on commits or PRs: never add `Co-authored-by` / `Generated with` / `Made-with` (or similar) for Cursor, Claude, Copilot, or any AI/tool unless the user explicitly asks in the current turn. See [`.cursor/rules/no-ai-attribution.mdc`](.cursor/rules/no-ai-attribution.mdc).
@@ -48,7 +48,7 @@ Vendored skills (pin and refresh notes in [`.agents/skills/README-watermarks.md`
 Claude Code also loads the same skills from [`.claude/skills/`](.claude/skills/) (symlinks to `.agents/skills/`).
 
 `remove-ai-marks` auto-starts the HTTP service for the run via
-[`.agents/skills/remove-ai-marks/scripts/octanest-watermarks-service.sh`](.agents/skills/remove-ai-marks/scripts/octanest-watermarks-service.sh)
+[`.agents/skills/remove-ai-marks/scripts/oxidean-watermarks-service.sh`](.agents/skills/remove-ai-marks/scripts/oxidean-watermarks-service.sh)
 (`ensure` → work → `teardown`). Checkout: gitignored `tmp/watermarks-remover`
 (cloned on demand). Do not vendor `service/` into this repo. Do not invent
 local cleaners if ensure fails. Use `clean-user-facing-text` for offline
@@ -57,7 +57,7 @@ prose-only passes (no service).
 
 ```bash
 make help
-make rpc-gen                 # regenerate @octanest/api-client
+make rpc-gen                 # regenerate @oxidean/api-client
 make test                    # Rust nextest + Vitest
 make test-e2e-stack          # full auth stack e2e
 make up / make smoke         # Compose + health
@@ -75,7 +75,7 @@ make web-lint
 make web-format-check
 ```
 
-`make web-lint` is **type-aware** (`oxlint --type-aware` via `oxlint-tsgolint`) and also runs `scripts/check-octane-dom-races.ts` (RadioGroup + sibling `@if`/`@else` heuristic). Treat those diagnostics as the web type gate — plain `tsc --noEmit` does not understand `.tsrx` yet (needs `@tsrx/typescript-plugin`; peer range is still TS 5.9.x while this app uses TypeScript 7). Also fix editor/linter type diagnostics you introduce. Format with `bun run --filter @octanest/web format` when `format:check` fails.
+`make web-lint` is **type-aware** (`oxlint --type-aware` via `oxlint-tsgolint`) and also runs `scripts/check-octane-dom-races.ts` (RadioGroup + sibling `@if`/`@else` heuristic). Treat those diagnostics as the web type gate — plain `tsc --noEmit` does not understand `.tsrx` yet (needs `@tsrx/typescript-plugin`; peer range is still TS 5.9.x while this app uses TypeScript 7). Also fix editor/linter type diagnostics you introduce. Format with `bun run --filter @oxidean/web format` when `format:check` fails.
 
 See [docs/TESTING.md](docs/TESTING.md) and [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 

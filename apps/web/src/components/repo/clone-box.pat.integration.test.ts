@@ -44,7 +44,7 @@ describe("CloneBox PAT how-to (GIT-02 / D-13)", () => {
 
     expect(screen.getByText("Authenticate with a personal access token")).toBeInTheDocument();
     expect(
-      screen.getByText(/Username: your Octanest username, or `git`, `token`, or `oauth2`\./),
+      screen.getByText(/Username: your Oxidean username, or `git`, `token`, or `oauth2`\./),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Password: a personal access token — not your account password\./),

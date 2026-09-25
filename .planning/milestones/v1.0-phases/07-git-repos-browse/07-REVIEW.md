@@ -4,12 +4,12 @@ reviewed: 2026-09-12T20:03:32Z
 depth: standard
 files_reviewed: 11
 files_reviewed_list:
-  - crates/octanest-git/src/cli.rs
-  - crates/octanest-api/src/repo/mod.rs
-  - crates/octanest-api/src/routes/repo_raw.rs
-  - crates/octanest-api/tests/repo_branch_soft_protect.rs
-  - crates/octanest-api/tests/repo_archive.rs
-  - crates/octanest-api/tests/repo_create.rs
+  - crates/oxidean-git/src/cli.rs
+  - crates/oxidean-api/src/repo/mod.rs
+  - crates/oxidean-api/src/routes/repo_raw.rs
+  - crates/oxidean-api/tests/repo_branch_soft_protect.rs
+  - crates/oxidean-api/tests/repo_archive.rs
+  - crates/oxidean-api/tests/repo_create.rs
   - apps/web/src/lib/repo-browse.ts
   - apps/web/src/lib/repo-browse.unit.test.ts
   - apps/web/src/routes/$owner.$repo.tree.$.tsrx
@@ -40,7 +40,7 @@ Gap-closure plans **07-19 / 07-20 / 07-21** close the prior **CR-01** (archive `
 
 ### WR-01: `branch_rename` / `branch_delete` skip API `reject_option_like_branch`
 
-**File:** `crates/octanest-api/src/repo/mod.rs:543-610` (contrast create at `521-528`)
+**File:** `crates/oxidean-api/src/repo/mod.rs:543-610` (contrast create at `521-528`)
 **Issue:** `repo.branchCreate` rejects leading-`-` names at the API before git. Rename/delete rely only on CLI `validate_treeish` + `"--"`. Not exploitable today (CLI blocks), but defense-in-depth is inconsistent with the CR-02 pattern and a future CLI bypass would hit rename/delete first.
 **Fix:** Call `reject_option_like_branch` on `from`/`to` (rename) and `branch` (delete) the same way as create:
 
@@ -67,7 +67,7 @@ const knownRefs = refsRes.data.refs.map((r) => shortRefName(r.name));
 
 ### WR-03: `compensate_failed_create` ignores soft-delete failure
 
-**File:** `crates/octanest-api/src/repo/mod.rs:104-111` (callers `726`, `749`)
+**File:** `crates/oxidean-api/src/repo/mod.rs:104-111` (callers `726`, `749`)
 **Issue:** If `soft_delete_repository` fails, compensate only logs and create still returns `repo.git_init_failed` / `repo.git_seed_failed`. The live row remains (`deleted_at IS NULL`), so the name stays blocked — the WR-01 failure mode the compensate path was meant to eliminate.
 **Fix:** Propagate soft-delete failure (or retry once) and return a distinct error so the client/ops know the row was not cleared; do not claim a clean git-only failure:
 
@@ -84,7 +84,7 @@ async fn compensate_failed_create(...) -> Result<(), AppError> {
 
 ### WR-04: Option-injection regression assertion accepts any `repo.*` code
 
-**File:** `crates/octanest-api/tests/repo_branch_soft_protect.rs:251-255`
+**File:** `crates/oxidean-api/tests/repo_branch_soft_protect.rs:251-255`
 **Issue:** The CR-02 test allows `code.starts_with("repo.")`, so a mis-routed `repo.git_failed` / unrelated `repo.*` error would still pass while soft-protect on `main` might coincidentally hold. Weakens the regression harness for the exact fail-closed contract (`repo.invalid_ref`).
 **Fix:** Assert the specific code (and optionally message shape) produced by `reject_option_like_branch`:
 
@@ -105,13 +105,13 @@ assert_eq!(
 
 ### IN-02: Duplicated HTTP ref validators risk drift
 
-**File:** `crates/octanest-api/src/routes/repo_raw.rs:42-90`
+**File:** `crates/oxidean-api/src/routes/repo_raw.rs:42-90`
 **Issue:** `validate_ref` and `validate_archive_treeish` are identical. Future hardening on one path can miss the other (as happened historically with `/` bans).
 **Fix:** Extract a shared `validate_http_treeish` used by both raw and archive.
 
 ### IN-03: Non-branch/archive git calls still omit `"--"` before revisions
 
-**File:** `crates/octanest-git/src/cli.rs` (`ls_tree` ~445, `log` ~614, `show` ~641, `blame` ~812, `diff` ~737)
+**File:** `crates/oxidean-git/src/cli.rs` (`ls_tree` ~445, `log` ~614, `show` ~641, `blame` ~812, `diff` ~737)
 **Issue:** Those commands place user treeish after flags without an end-of-options marker. Leading-`-` is already rejected by `validate_treeish` (07-19), so CR-01-class injection is blocked; `"--"` would be extra belt-and-suspenders only.
 **Fix:** Optionally insert `"--"` before revision operands for consistency with archive/branch.
 

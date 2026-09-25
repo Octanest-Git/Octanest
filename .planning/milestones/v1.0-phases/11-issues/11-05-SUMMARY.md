@@ -39,11 +39,11 @@ key-files:
     - apps/web/src/components/repo/markdown-write-preview.tsrx
     - apps/web/src/components/repo/issue-comments.tsrx
   modified:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/issue/acl.rs
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-api/tests/issue_comments.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/issue/acl.rs
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-api/tests/issue_comments.rs
     - packages/api-client/src/index.ts
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
     - apps/web/src/routes/$owner.$repo.issues.new.tsrx
@@ -67,7 +67,7 @@ coverage:
     requirement: ISS-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_comments)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_comments)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -75,7 +75,7 @@ coverage:
     requirement: ISS-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_comments_edit_history_trail)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_comments_edit_history_trail)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -124,7 +124,7 @@ status: complete
 - **Found during:** Task 1 GREEN (history trail test)
 - **Issue:** Two revisions in the same second sorted by UUID `id`, not insertion order
 - **Fix:** Explicit fractional `created_at` on SQLite/MySQL comment revision inserts; SQLite `ORDER BY … rowid`
-- **Files modified:** `crates/octanest-db/src/issues.rs`
+- **Files modified:** `crates/oxidean-db/src/issues.rs`
 - **Commit:** `71f5838`
 
 ## Known Stubs
@@ -139,5 +139,5 @@ None beyond plan register (T-11-03, T-11-10, T-11-SC mitigated as designed).
 
 - FOUND: `apps/web/src/components/repo/markdown-write-preview.tsrx`
 - FOUND: `apps/web/src/components/repo/issue-comments.tsrx`
-- FOUND: `crates/octanest-api/tests/issue_comments.rs`
+- FOUND: `crates/oxidean-api/tests/issue_comments.rs`
 - FOUND commits: `ce86304`, `71f5838`, `4b75b4e`

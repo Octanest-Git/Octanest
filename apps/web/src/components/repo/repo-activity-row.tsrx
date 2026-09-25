@@ -1,4 +1,4 @@
-import type { RepoActivityItem } from "@octanest/api-client";
+import type { RepoActivityItem } from "@oxidean/api-client";
 import { commitHref } from "@/lib/repo-browse";
 import { formatRelativeUpdated } from "@/lib/relative-time";
 import { ListRow } from "@/components/ui/list";

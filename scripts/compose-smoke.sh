@@ -15,7 +15,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 echo "==> using docker: $(command -v docker)"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
 COMPOSE_FILES="${COMPOSE_FILES:--f $COMPOSE_FILE}"
 
@@ -34,9 +34,9 @@ EXPECT_DIALECT="${EXPECT_DIALECT:-postgres}"
 # docker.exe (Windows client) does not reliably inherit WSL-exported env vars for
 # Compose interpolation. Pass SQLite host dir via --env-file when set.
 ENV_FILE_ARGS=()
-if [[ -n "${OCTANEST_SQLITE_HOST_DIR:-}" ]]; then
+if [[ -n "${OXIDEAN_SQLITE_HOST_DIR:-}" ]]; then
   SMOKE_ENV_FILE="$(mktemp)"
-  printf 'OCTANEST_SQLITE_HOST_DIR=%s\n' "$OCTANEST_SQLITE_HOST_DIR" > "$SMOKE_ENV_FILE"
+  printf 'OXIDEAN_SQLITE_HOST_DIR=%s\n' "$OXIDEAN_SQLITE_HOST_DIR" > "$SMOKE_ENV_FILE"
   ENV_FILE_ARGS=(--env-file "$SMOKE_ENV_FILE")
 fi
 
@@ -54,8 +54,8 @@ echo "==> docker compose config"
 # shellcheck disable=SC2086
 docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES config >/dev/null
 
-if [[ "${OCTANEST_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
-  echo "==> docker compose up -d --wait (OCTANEST_COMPOSE_SKIP_BUILD=1; using preloaded images)"
+if [[ "${OXIDEAN_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
+  echo "==> docker compose up -d --wait (OXIDEAN_COMPOSE_SKIP_BUILD=1; using preloaded images)"
   # shellcheck disable=SC2086
   docker compose "${ENV_FILE_ARGS[@]}" "${PROFILES_ARGS[@]}" $COMPOSE_FILES up -d --wait
 else
@@ -92,27 +92,27 @@ wait_http "$BASE_URL/health" "health"
 echo "==> RPC system.health"
 curl -fsS \
   -H 'Content-Type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
+  -H 'Oxidean-RPC-Version: 1' \
   -d '{"procedure":"system.health","input":{}}' \
-  "$BASE_URL/api/rpc" -o /tmp/octanest-smoke-rpc.json
-grep -Eq '"ok"[[:space:]]*:[[:space:]]*true|"status"[[:space:]]*:[[:space:]]*"ok"' /tmp/octanest-smoke-rpc.json
+  "$BASE_URL/api/rpc" -o /tmp/oxidean-smoke-rpc.json
+grep -Eq '"ok"[[:space:]]*:[[:space:]]*true|"status"[[:space:]]*:[[:space:]]*"ok"' /tmp/oxidean-smoke-rpc.json
 
 echo "==> RPC system.db_probe (expect dialect=$EXPECT_DIALECT)"
 curl -fsS \
   -H 'Content-Type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
+  -H 'Oxidean-RPC-Version: 1' \
   -d '{"procedure":"system.db_probe","input":{}}' \
-  "$BASE_URL/api/rpc" -o /tmp/octanest-smoke-probe.json
-grep -Eq "\"dialect\"[[:space:]]*:[[:space:]]*\"$EXPECT_DIALECT\"" /tmp/octanest-smoke-probe.json
-count_1="$(grep -o '"probe_count"[^,}]*' /tmp/octanest-smoke-probe.json | grep -o '[0-9]\+')"
+  "$BASE_URL/api/rpc" -o /tmp/oxidean-smoke-probe.json
+grep -Eq "\"dialect\"[[:space:]]*:[[:space:]]*\"$EXPECT_DIALECT\"" /tmp/oxidean-smoke-probe.json
+count_1="$(grep -o '"probe_count"[^,}]*' /tmp/oxidean-smoke-probe.json | grep -o '[0-9]\+')"
 
 curl -fsS \
   -H 'Content-Type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
+  -H 'Oxidean-RPC-Version: 1' \
   -d '{"procedure":"system.db_probe","input":{}}' \
-  "$BASE_URL/api/rpc" -o /tmp/octanest-smoke-probe.json
-grep -Eq "\"dialect\"[[:space:]]*:[[:space:]]*\"$EXPECT_DIALECT\"" /tmp/octanest-smoke-probe.json
-count_2="$(grep -o '"probe_count"[^,}]*' /tmp/octanest-smoke-probe.json | grep -o '[0-9]\+')"
+  "$BASE_URL/api/rpc" -o /tmp/oxidean-smoke-probe.json
+grep -Eq "\"dialect\"[[:space:]]*:[[:space:]]*\"$EXPECT_DIALECT\"" /tmp/oxidean-smoke-probe.json
+count_2="$(grep -o '"probe_count"[^,}]*' /tmp/oxidean-smoke-probe.json | grep -o '[0-9]\+')"
 
 if (( count_2 <= count_1 )); then
   echo "probe_count did not increase across calls ($count_1 -> $count_2)" >&2

@@ -16,7 +16,7 @@
 - **D-05:** **Two separate create flows** — Classic PAT and Fine-grained PAT (not a single wizard)
 - **D-06:** Fine-grained tokens support **selected repos** and **all current + future repositories** (GitHub-style)
 - **D-07:** **Optional expiry** — user may set an expiration date or choose no expiration
-- **D-08:** **Prefixed opaque** token strings with **Octanest-only** prefixes (distinct classic vs fine-grained variants); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks
+- **D-08:** **Prefixed opaque** token strings with **Oxidean-only** prefixes (distinct classic vs fine-grained variants); **no** `github` / `gh*` in the prefix — **Reversibility:** one-way — published token format / secret-scanning hooks
 - **D-09:** Token list shows **last-used timestamp** and **last-used IP**
 
 ### B — HTTPS credential contract
@@ -33,7 +33,7 @@
 
 ### D — Smart HTTP surface
 - **D-18:** Clone URL shape **`https://{host}/{owner}/{repo}.git`** on the same public origin — **Reversibility:** one-way — public git URL scheme
-- **D-19:** Clone URL host comes from **`OCTANEST_PUBLIC_ORIGIN`** (operator config), not the request Host header
+- **D-19:** Clone URL host comes from **`OXIDEAN_PUBLIC_ORIGIN`** (operator config), not the request Host header
 - **D-20:** **Anonymous clone/fetch** of **public** repos; **push always requires a PAT**
 - **D-21:** Unauthenticated access to **private** / no-access over git → **401 + WWW-Authenticate** (not the web UI’s 404 anti-enumeration) — **Reversibility:** costly — git vs web error contracts differ by design
 - **D-22:** Smart HTTP is served **only** on `/{owner}/{repo}.git`; bare `/{owner}/{repo}` remains the web UI
@@ -70,25 +70,25 @@
 
 ## Summary
 
-Phase 8 adds two complementary surfaces on the existing Phase 7 bare-repo layout (`{OCTANEST_REPOS_DIR}/{owner}/{name}.git`) and clone URL helper (`httpsCloneUrl` → `{origin}/{owner}/{repo}.git`): (1) **PAT lifecycle** (classic + fine-grained) stored like sessions (SHA-256 at rest, plaintext once), managed via typed RPC and `/settings/tokens`; (2) **Git Smart HTTP** on `/{owner}/{repo}.git/...` authenticated with **username + PAT as password**, never session cookies and never account passwords.
+Phase 8 adds two complementary surfaces on the existing Phase 7 bare-repo layout (`{OXIDEAN_REPOS_DIR}/{owner}/{name}.git`) and clone URL helper (`httpsCloneUrl` → `{origin}/{owner}/{repo}.git`): (1) **PAT lifecycle** (classic + fine-grained) stored like sessions (SHA-256 at rest, plaintext once), managed via typed RPC and `/settings/tokens`; (2) **Git Smart HTTP** on `/{owner}/{repo}.git/...` authenticated with **username + PAT as password**, never session cookies and never account passwords.
 
 The codebase has **no** Smart HTTP, PAT tables, or Traefik `.git` rules today. Web private ACL returns `repo.not_found` (404-style anti-enumeration); git must diverge per D-21 to **401 + `WWW-Authenticate: Basic`**. Official git docs prescribe CGI `git-http-backend` behind HTTP Basic and **forbid relying on cookies** for git HTTP auth — aligning with D-12.
 
-**Primary recommendation:** Implement Axum Smart HTTP routes that authenticate/authorize then **CGI-spawn `/usr/lib/git-core/git-http-backend`** (already on PATH via system git ≥2.5), with Traefik PathRegexp routing `.git` to the API; ship dual PAT create UIs with the locked scope catalog below; store PAT hashes in `octanest-db` migration `0008_*`.
+**Primary recommendation:** Implement Axum Smart HTTP routes that authenticate/authorize then **CGI-spawn `/usr/lib/git-core/git-http-backend`** (already on PATH via system git ≥2.5), with Traefik PathRegexp routing `.git` to the API; ship dual PAT create UIs with the locked scope catalog below; store PAT hashes in `oxidean-db` migration `0008_*`.
 
 ## Architectural Responsibility Map
 
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |------------|-------------|----------------|-----------|
 | PAT create / list / revoke | API / Backend | Browser / Client | Secrets minted & hashed in API; UI is form + one-time reveal |
-| PAT persistence | Database / Storage | — | Dialect SQL only in `octanest-db` |
+| PAT persistence | Database / Storage | — | Dialect SQL only in `oxidean-db` |
 | Smart HTTP wire protocol | API / Backend | — | Pack streaming + CGI; not web SSR |
 | Basic / PAT auth for git | API / Backend | — | Cookie sessions must not apply (D-12) |
 | ACL (public anon read / owner private / push) | API / Backend | — | Extend Phase 7 owner-only stub with git status codes |
 | Scope check (classic / FG) | API / Backend | — | 403 on insufficient scope (D-23) |
 | Email verified gate | API / Backend | Browser / Client | `require_verified` for create+push; verify wall UI |
 | Failed-auth rate limit | API / Backend | — | Per IP + per user; 429 + Retry-After |
-| Clone URL display / how-to | Browser / Client | Frontend Server (SSR) | `OCTANEST_PUBLIC_ORIGIN` via existing helpers |
+| Clone URL display / how-to | Browser / Client | Frontend Server (SSR) | `OXIDEAN_PUBLIC_ORIGIN` via existing helpers |
 | Traefik `.git` vs web | CDN / Static (edge router) | API / Backend | PathRegexp to API before web catch-all |
 | Settings tokens page | Browser / Client | — | Octane `.tsrx` at `/settings/tokens` |
 
@@ -156,12 +156,12 @@ Follow with CSPRNG hex (32+ bytes). Never `ghp_`, `github_pat_`, `gho_`, etc.
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| system `git` + `git-http-backend` | ≥2.5.0 (boot gate already) | Smart HTTP CGI | Official git server; already required by Phase 7 [VERIFIED: crates/octanest-api/src/main.rs git version gate; `/usr/lib/git-core/git-http-backend` present] |
-| Axum | 0.8 (in-tree) | HTTP routes + Basic auth gate | Existing API router [VERIFIED: crates/octanest-api/Cargo.toml axum 0.8] |
+| system `git` + `git-http-backend` | ≥2.5.0 (boot gate already) | Smart HTTP CGI | Official git server; already required by Phase 7 [VERIFIED: crates/oxidean-api/src/main.rs git version gate; `/usr/lib/git-core/git-http-backend` present] |
+| Axum | 0.8 (in-tree) | HTTP routes + Basic auth gate | Existing API router [VERIFIED: crates/oxidean-api/Cargo.toml axum 0.8] |
 | `sha2` | 0.11 (in-tree) | PAT token_hash at rest | Same pattern as sessions [VERIFIED: session.rs SHA-256; Cargo.toml sha2] |
 | `argon2` | 0.6 (in-tree) | **Not** for git auth | Passwords rejected without git using password verify as success path [VERIFIED: Cargo.toml] |
 | Octane `.tsrx` + TanStack Query | in-tree `@octanejs/*` | `/settings/tokens`, clone how-to | Project UI standard |
-| `@octanest/api-client` | generated | `pat.*` RPC | `make rpc-gen` |
+| `@oxidean/api-client` | generated | `pat.*` RPC | `make rpc-gen` |
 
 ### Supporting
 | Library | Version | Purpose | When to Use |
@@ -180,7 +180,7 @@ Follow with CSPRNG hex (32+ bytes). Never `ghp_`, `github_pat_`, `gho_`, etc.
 
 **Installation:** None required for Phase 8 if CGI path is used — **no new npm/crates packages**.
 
-**Version verification:** `git version 2.55.0` on research host; `git-http-backend` at `/usr/lib/git-core/git-http-backend`. Axum/sha2 versions from `crates/octanest-api/Cargo.toml` (read this session).
+**Version verification:** `git version 2.55.0` on research host; `git-http-backend` at `/usr/lib/git-core/git-http-backend`. Axum/sha2 versions from `crates/oxidean-api/Cargo.toml` (read this session).
 
 ## Package Legitimacy Audit
 
@@ -207,7 +207,7 @@ Traefik :80
    │  Host catch-all → Web :3000 (prio 1)   # /{owner}/{repo} UI only
    ▼
 Axum Smart HTTP (`/{owner}/{repo}.git/*`)
-   │  ignore Cookie: octanest_session
+   │  ignore Cookie: oxidean_session
    ├─ rate-limit failed auth (IP + user)
    ├─ parse Authorization: Basic
    │     ├─ password not PAT-shaped → 401 + hint (create PAT)
@@ -220,7 +220,7 @@ Axum Smart HTTP (`/{owner}/{repo}.git/*`)
    │     ├─ receive-pack always needs PAT + verified email
    │     └─ scope insufficient → 403 (D-23)
    └─ spawn git-http-backend CGI
-         GIT_PROJECT_ROOT=OCTANEST_REPOS_DIR
+         GIT_PROJECT_ROOT=OXIDEAN_REPOS_DIR
          PATH_INFO=/{owner}/{repo}.git/...
          GIT_HTTP_EXPORT_ALL=1
          REMOTE_USER=<username> when authenticated
@@ -235,14 +235,14 @@ Browser (session cookie)
 
 ### Recommended Project Structure
 ```
-crates/octanest-db/migrations/{postgres,mysql,sqlite}/0008_pats.sql
-crates/octanest-db/src/pats.rs
-crates/octanest-core/src/pat_types.rs          # DTOs + scope enums
-crates/octanest-api/src/pat/mod.rs             # RPC handlers
-crates/octanest-api/src/routes/git_smart_http.rs
-crates/octanest-api/src/git/http_backend.rs    # CGI spawn helper
-crates/octanest-api/tests/git_smart_http_*.rs
-crates/octanest-api/tests/pat_rpc.rs
+crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0008_pats.sql
+crates/oxidean-db/src/pats.rs
+crates/oxidean-core/src/pat_types.rs          # DTOs + scope enums
+crates/oxidean-api/src/pat/mod.rs             # RPC handlers
+crates/oxidean-api/src/routes/git_smart_http.rs
+crates/oxidean-api/src/git/http_backend.rs    # CGI spawn helper
+crates/oxidean-api/tests/git_smart_http_*.rs
+crates/oxidean-api/tests/pat_rpc.rs
 apps/web/src/routes/settings/tokens.tsrx
 apps/web/src/components/settings/pat-*.tsrx
 apps/web/src/components/repo/clone-box.tsrx    # extend how-to (D-13)
@@ -253,7 +253,7 @@ docs/API.md / docs/CONFIGURATION.md            # document Smart HTTP + PAT
 ### Pattern 1: PAT hash storage (mirror sessions)
 **What:** CSPRNG opaque token; store only `SHA-256` hex; show plaintext once.
 **When to use:** All PAT creates.
-**Example:** Session pattern already uses cookie CSPRNG + SHA-256 hex at rest — reuse hashing helper style from `auth/session.rs` (`SESSION_COOKIE_NAME = "octanest_session"`). [VERIFIED: crates/octanest-api/src/auth/session.rs:15-16]
+**Example:** Session pattern already uses cookie CSPRNG + SHA-256 hex at rest — reuse hashing helper style from `auth/session.rs` (`SESSION_COOKIE_NAME = "oxidean_session"`). [VERIFIED: crates/oxidean-api/src/auth/session.rs:15-16]
 
 ### Pattern 2: Axum + CGI Smart HTTP
 **What:** Authenticate in Axum; exec `git-http-backend` with CGI env; pipe body.
@@ -265,12 +265,12 @@ docs/API.md / docs/CONFIGURATION.md            # document Smart HTTP + PAT
 **When to use:** `/settings/tokens` and empty-repo CTA.
 
 ### Anti-Patterns to Avoid
-- **Reusing `resolve_repo_for_read` HTTP semantics for git** — web returns `repo.not_found`; git private unauth must be **401** (D-21). Share ACL *decision* logic; split *response* mapping. [VERIFIED: crates/octanest-api/src/repo/acl.rs:8-11,53-58]
+- **Reusing `resolve_repo_for_read` HTTP semantics for git** — web returns `repo.not_found`; git private unauth must be **401** (D-21). Share ACL *decision* logic; split *response* mapping. [VERIFIED: crates/oxidean-api/src/repo/acl.rs:8-11,53-58]
 - **Cookie auth on Smart HTTP** — protocol SHOULD NOT require cookies; locked by D-12. [CITED: git-scm.com/docs/http-protocol Authentication / Session State]
 - **Calling `verify_password` to “detect” account passwords as a success path** — never authenticate git with Argon2 password hash; reject non-PAT secrets with hint (D-11).
 - **Enabling dumb HTTP `/objects/` static maps** — bypasses pack ACL.
 - **Hand-editing `packages/api-client`** — change Rust + `make rpc-gen`.
-- **Dialect SQL in `octanest-api`** — PAT tables only in `octanest-db`.
+- **Dialect SQL in `oxidean-api`** — PAT tables only in `oxidean-db`.
 - **Mixing `return (` JSX with Rivet in `.tsrx`** — Octane skill.
 
 ## Don't Hand-Roll
@@ -281,7 +281,7 @@ docs/API.md / docs/CONFIGURATION.md            # document Smart HTTP + PAT
 | Session auth for git | Cookie parser on `.git` | Basic + PAT only | Spec + D-12 |
 | PAT KDF | New Argon2 per request | SHA-256 hex like sessions | Latency on every fetch |
 | Confirm UI | Custom modal | Existing `AlertDialog` | Branch delete / repo settings already |
-| Public origin | Request Host for clone URL | `OCTANEST_PUBLIC_ORIGIN` / `httpsCloneUrl` | D-19; already implemented |
+| Public origin | Request Host for clone URL | `OXIDEAN_PUBLIC_ORIGIN` / `httpsCloneUrl` | D-19; already implemented |
 
 **Key insight:** Auth/ACL/rate-limit are the product; git wire protocol is a solved CGI.
 
@@ -299,7 +299,7 @@ docs/API.md / docs/CONFIGURATION.md            # document Smart HTTP + PAT
 **How to avoid:** Require PAT before CGI for receive-pack / `service=git-receive-pack`; set `REMOTE_USER` after auth; never set `http.receivepack=true` for anon.
 
 ### Pitfall 3: Missing `GIT_HTTP_EXPORT_ALL`
-**What goes wrong:** 403 export denied — bare repos lack `git-daemon-export-ok` (Phase 7 `init_bare` does not create it). [VERIFIED: crates/octanest-git/src/cli.rs:329-353]
+**What goes wrong:** 403 export denied — bare repos lack `git-daemon-export-ok` (Phase 7 `init_bare` does not create it). [VERIFIED: crates/oxidean-git/src/cli.rs:329-353]
 **How to avoid:** Always set `GIT_HTTP_EXPORT_ALL` in CGI env; ACL stays in Axum.
 
 ### Pitfall 4: Scope 401 vs 403 confusion
@@ -335,7 +335,7 @@ export function httpsCloneUrl(
 
 ### Bare path (already shipped)
 ```rust
-// Source: crates/octanest-api/src/git/mod.rs:10-28 [VERIFIED]
+// Source: crates/oxidean-api/src/git/mod.rs:10-28 [VERIFIED]
 /// Bare repo path: `{repos_dir}/{owner}/{name}.git` (D-30).
 pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathBuf, AppError> {
     // ... validation ...
@@ -345,7 +345,7 @@ pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathB
 
 ### require_verified (reuse for PAT create)
 ```rust
-// Source: crates/octanest-api/src/auth/gate.rs:20-42 [VERIFIED]
+// Source: crates/oxidean-api/src/auth/gate.rs:20-42 [VERIFIED]
 /// Unauthenticated → `auth.unauthenticated`; unverified → `auth.email_unverified`.
 pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> { /* ... */ }
 ```
@@ -437,16 +437,16 @@ Tables: `personal_access_tokens` (id, user_id, kind `classic|fine_grained`, name
 |----------|-------|
 | Framework | Rust: cargo-nextest / `cargo test`; Web: Vitest via Bun |
 | Config file | workspace Cargo; `apps/web` Vitest (existing) |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(pat_)|test(git_smart)'` |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(pat_)|test(git_smart)'` |
 | Full suite command | `make test` (+ `make test-e2e-stack` for Traefik/git client) |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| GIT-11 | create classic/FG returns one-time token; list omits secret; revoke hides token | integration | `cargo nextest run -p octanest-api -E 'test(pat_)'` | ❌ Wave 0 |
+| GIT-11 | create classic/FG returns one-time token; list omits secret; revoke hides token | integration | `cargo nextest run -p oxidean-api -E 'test(pat_)'` | ❌ Wave 0 |
 | GIT-11 | create without verified email → `auth.email_unverified` | integration | same | ❌ Wave 0 |
-| GIT-11 | migration parity 0008 across dialects | unit | `cargo nextest run -p octanest-db -E 'test(migration_parity)'` | ✅ (extend) |
-| GIT-02 | public anon `info/refs?service=git-upload-pack` 200 | integration | `cargo nextest run -p octanest-api -E 'test(git_smart)'` | ❌ Wave 0 |
+| GIT-11 | migration parity 0008 across dialects | unit | `cargo nextest run -p oxidean-db -E 'test(migration_parity)'` | ✅ (extend) |
+| GIT-02 | public anon `info/refs?service=git-upload-pack` 200 | integration | `cargo nextest run -p oxidean-api -E 'test(git_smart)'` | ❌ Wave 0 |
 | GIT-02 | private anon → 401 + `WWW-Authenticate` | integration | same | ❌ Wave 0 |
 | GIT-02 | push with PAT (contents write / classic repo) succeeds | integration | same (+ temp bare + `git push` subprocess) | ❌ Wave 0 |
 | GIT-02 | account password as Basic password → 401 + PAT hint | integration | same | ❌ Wave 0 |
@@ -464,9 +464,9 @@ Tables: `personal_access_tokens` (id, user_id, kind `classic|fine_grained`, name
 - **Phase gate:** Full suite green + Smart HTTP e2e through Traefik before `/gsd-verify-work`
 
 ### Wave 0 Gaps
-- [ ] `crates/octanest-api/tests/pat_rpc.rs` — covers GIT-11
-- [ ] `crates/octanest-api/tests/git_smart_http.rs` — covers GIT-02 auth/ACL/status codes
-- [ ] `crates/octanest-db/migrations/*/0008_pats.sql` + parity
+- [ ] `crates/oxidean-api/tests/pat_rpc.rs` — covers GIT-11
+- [ ] `crates/oxidean-api/tests/git_smart_http.rs` — covers GIT-02 auth/ACL/status codes
+- [ ] `crates/oxidean-db/migrations/*/0008_pats.sql` + parity
 - [ ] `apps/web` Vitest for tokens page / clone how-to
 - [ ] Compose Traefik PathRegexp + smoke script for `git ls-remote` / `git push`
 - [ ] Optional: harness helper to spawn `git` client against `router_with_state` (hyper listener) without Docker
@@ -501,7 +501,7 @@ Tables: `personal_access_tokens` (id, user_id, kind `classic|fine_grained`, name
 
 | Rule | Directive |
 |------|-----------|
-| octanest-core | One product; Octane `.tsrx` not React; `make rpc-gen` for RPC; dialect SQL only in `octanest-db`; no secrets in commits; prefer `make test` / `rpc-sync-check` / e2e; extend existing patterns |
+| oxidean-core | One product; Octane `.tsrx` not React; `make rpc-gen` for RPC; dialect SQL only in `oxidean-db`; no secrets in commits; prefer `make test` / `rpc-sync-check` / e2e; extend existing patterns |
 | octane-ui | `.tsrx` + `@if`/`@else` (no `@else if`); `onInput` for text; TanStack Query via session helpers; no `react`→Octane alias |
 | rpc-codegen | Rust authoritative; regenerate client; no hand-patch as lasting fix; `make rpc-sync-check` |
 | rust-crates | core = pure types; db = SQL; api = HTTP; `Result` no unwrap outside tests; preserve `require_verified`; nextest CI |

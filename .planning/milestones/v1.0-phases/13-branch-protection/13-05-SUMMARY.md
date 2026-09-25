@@ -19,9 +19,9 @@ tech-stack:
   patterns: ["reconcile_protection_hooks lazy repair"]
 key-files:
   modified:
-    - crates/octanest-api/src/protection/mod.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/tests/branch_protect_push.rs
+    - crates/oxidean-api/src/protection/mod.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/tests/branch_protect_push.rs
 key-decisions:
   - "repo.branchDelete consults allow_deletions via evaluate Delete intent"
 requirements-completed: [ORG-06]
@@ -31,7 +31,7 @@ coverage:
     requirement: ORG-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(branch_protect_push)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(branch_protect_push)'"
         status: pass
     human_judgment: false
 duration: 5min

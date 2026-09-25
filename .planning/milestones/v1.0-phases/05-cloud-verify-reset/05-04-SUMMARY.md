@@ -32,12 +32,12 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/auth/verify_reset.rs
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/tests/auth_verify_reset.rs
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-api/src/auth/verify_reset.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/tests/auth_verify_reset.rs
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/lib.rs
 
 key-decisions:
   - "Swallow auth.rate_limited into identical ok on request_password_reset so rate-limit side channel cannot enumerate accounts (D-28 over surfacing verify-style errors)"
@@ -46,7 +46,7 @@ key-decisions:
 
 patterns-established:
   - "PURPOSE_RESET shares issue_token_inner / next_issue_count with verify"
-  - "Reset email subject: Reset your Octanest password; link /reset-password?token="
+  - "Reset email subject: Reset your Oxidean password; link /reset-password?token="
 
 requirements-completed: [AUTH-12]
 
@@ -56,7 +56,7 @@ coverage:
     requirement: AUTH-12
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#request_password_reset_anti_enumeration_identical_success"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#request_password_reset_anti_enumeration_identical_success"
         status: pass
     human_judgment: false
   - id: D2
@@ -64,7 +64,7 @@ coverage:
     requirement: AUTH-12
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#request_password_reset_rate_limit_swallows_into_ok"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#request_password_reset_rate_limit_swallows_into_ok"
         status: pass
     human_judgment: false
   - id: D3
@@ -72,10 +72,10 @@ coverage:
     requirement: AUTH-12
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#reset_password_token_revokes_others_and_signs_in"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#reset_password_token_revokes_others_and_signs_in"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#reset_password_otp_consume"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#reset_password_otp_consume"
         status: pass
     human_judgment: false
   - id: D4
@@ -83,13 +83,13 @@ coverage:
     requirement: AUTH-12
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#reset_password_sso_only_rejected"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#reset_password_sso_only_rejected"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#reset_password_invalid_token_rejected"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#reset_password_invalid_token_rejected"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#reset_password_weak_password_rejected"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#reset_password_weak_password_rejected"
         status: pass
     human_judgment: false
 
@@ -129,11 +129,11 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/verify_reset.rs` — reset issue/send/redeem
-- `crates/octanest-api/src/auth/local.rs` — `normalize_email` pub(crate) for shared use
-- `crates/octanest-api/src/rpc.rs` — `auth.request_password_reset` / `auth.reset_password`
-- `crates/octanest-db/src/users.rs` + `lib.rs` — `set_password_hash`
-- `crates/octanest-api/tests/auth_verify_reset.rs` — AUTH-12 integration tests
+- `crates/oxidean-api/src/auth/verify_reset.rs` — reset issue/send/redeem
+- `crates/oxidean-api/src/auth/local.rs` — `normalize_email` pub(crate) for shared use
+- `crates/oxidean-api/src/rpc.rs` — `auth.request_password_reset` / `auth.reset_password`
+- `crates/oxidean-db/src/users.rs` + `lib.rs` — `set_password_hash`
+- `crates/oxidean-api/tests/auth_verify_reset.rs` — AUTH-12 integration tests
 
 ## Decisions Made
 
@@ -156,7 +156,7 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 - **Found during:** Task 2
 - **Issue:** No DB helper to update Argon2id hash on redeem
 - **Fix:** Dialect-aware `set_password_hash` on users + Database facade
-- **Files modified:** `octanest-db` users/lib
+- **Files modified:** `oxidean-db` users/lib
 - **Verification:** redeem + login-with-new-password tests
 - **Committed in:** `dae88f8`
 

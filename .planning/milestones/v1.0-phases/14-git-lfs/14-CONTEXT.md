@@ -28,7 +28,7 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 ## Implementation Decisions
 
 ### A — Storage layout
-- **D-LFS-01:** Separate instance volume via **`OCTANEST_LFS_DIR`** (Compose bind like uploads), not under each bare repo — **Reversibility:** costly — ops path + backup story
+- **D-LFS-01:** Separate instance volume via **`OXIDEAN_LFS_DIR`** (Compose bind like uploads), not under each bare repo — **Reversibility:** costly — ops path + backup story
 - **D-LFS-02:** **Instance-wide content-addressed OID store** (dedup across repos) — **Reversibility:** costly — shared GC/refcount model
 - **D-LFS-03:** On-disk layout **OID-sharded** (`ab/cd/<oid>`) plus **DB pointer/refcount rows** — **Reversibility:** costly — migration if changed
 - **D-LFS-04:** **Factory reset wipes `LFS_DIR`** along with repositories — **Reversibility:** reversible (policy)
@@ -78,9 +78,9 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 - `.planning/phases/10-orgs-permissions/10-CONTEXT.md` — Read/Write/Admin ACL
 
 ### Code mirrors
-- `crates/octanest-api/src/routes/git_smart_http.rs` — PAT Basic + pack ACL patterns to mirror
-- `crates/octanest-api/src/git/http_backend.rs` — CGI / `OCTANEST_REPOS_DIR` pattern
-- `crates/octanest-api/src/repo/acl.rs` — capability checks for LFS enable + transfer
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — PAT Basic + pack ACL patterns to mirror
+- `crates/oxidean-api/src/git/http_backend.rs` — CGI / `OXIDEAN_REPOS_DIR` pattern
+- `crates/oxidean-api/src/repo/acl.rs` — capability checks for LFS enable + transfer
 - `docker-compose.yml` — `.git` Traefik route + volume bind pattern for new `LFS_DIR`
 - `docs/CONFIGURATION.md` / `docs/API.md` — git auth contracts to extend for LFS
 
@@ -94,7 +94,7 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 
 ### Reusable Assets
 - Smart HTTP PAT auth + rate limit + ACL
-- `OCTANEST_REPOS_DIR` / `var/uploads` volume pattern for a new LFS volume
+- `OXIDEAN_REPOS_DIR` / `var/uploads` volume pattern for a new LFS volume
 - Repo settings UI patterns; Admin settings patterns
 - Blob viewer — extend for pointer detection + Download
 
@@ -107,7 +107,7 @@ Operators get volume-backed Git LFS storage; users can push/fetch LFS objects ov
 - New Axum routes under `/{owner}/{repo}.git/info/lfs/…`
 - Repo settings → LFS enable + usage breakdown
 - Admin → instance quotas/usage breakdown
-- Compose + CONFIGURATION docs for `OCTANEST_LFS_DIR` and limits
+- Compose + CONFIGURATION docs for `OXIDEAN_LFS_DIR` and limits
 
 </code_context>
 

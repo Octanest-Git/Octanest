@@ -20,12 +20,12 @@ tech-stack:
   patterns: [pull_participant_ids includes reviewers/commenters]
 key-files:
   modified:
-    - crates/octanest-api/src/notify/mod.rs
-    - crates/octanest-api/src/pull/mod.rs
-    - crates/octanest-api/src/pull/comments.rs
-    - crates/octanest-api/src/pull/reviews.rs
-    - crates/octanest-api/src/pull/merge_ops.rs
-    - crates/octanest-api/tests/notification_rpc.rs
+    - crates/oxidean-api/src/notify/mod.rs
+    - crates/oxidean-api/src/pull/mod.rs
+    - crates/oxidean-api/src/pull/comments.rs
+    - crates/oxidean-api/src/pull/reviews.rs
+    - crates/oxidean-api/src/pull/merge_ops.rs
+    - crates/oxidean-api/tests/notification_rpc.rs
 key-decisions:
   - "PR review notifies author only; review request notifies requested user"
 requirements-completed: [NOTF-01]
@@ -35,7 +35,7 @@ coverage:
     requirement: NOTF-01
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/notification_rpc.rs#notification_pr_comment_and_review_request
+        ref: crates/oxidean-api/tests/notification_rpc.rs#notification_pr_comment_and_review_request
         status: pass
     human_judgment: false
 duration: 20min

@@ -79,7 +79,7 @@ Implementation stays in-tree: one dialect migration `0016_social` (name finalize
 - One product; Bun + Cargo — no parallel apps. [VERIFIED]
 - Octane `.tsrx` for UI; TanStack Query for server data. [VERIFIED]
 - RPC: change Rust → `make rpc-gen`. [VERIFIED]
-- Dialect SQL only in `octanest-db`. [VERIFIED]
+- Dialect SQL only in `oxidean-db`. [VERIFIED]
 - Prefer existing patterns over new frameworks. [VERIFIED]
 
 ## Standard Stack
@@ -88,8 +88,8 @@ Implementation stays in-tree: one dialect migration `0016_social` (name finalize
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
 | `axum` + existing RPC | workspace | `repo.star` / `repo.fork` / `repo.explore` / `user.getPublicProfile` | Existing API |
-| `sqlx` via `octanest-db` | workspace | stars table + fork columns + explore queries | Dialect isolation |
-| `octanest-git` CLI backend | workspace | bare copy via `git clone --bare` | Existing GitBackend seam |
+| `sqlx` via `oxidean-db` | workspace | stars table + fork columns + explore queries | Dialect isolation |
+| `oxidean-git` CLI backend | workspace | bare copy via `git clone --bare` | Existing GitBackend seam |
 | Octane + TanStack Query | apps/web | Explore/profile/star UI | Existing web stack |
 
 ### Don't Hand-Roll
@@ -149,15 +149,15 @@ Index: `(visibility, star_count DESC, updated_at DESC)` dialect-appropriate.
 
 | Area | Path | Notes |
 |------|------|-------|
-| ACL | `crates/octanest-api/src/repo/acl.rs` | Read gate for star/fork |
-| Repo RPC | `crates/octanest-api/src/repo/mod.rs` | Extend `to_public`; add star/fork/explore |
-| Repo DTO | `crates/octanest-core/src/repo_types.rs` | Add star/fork fields |
-| Migrations | `crates/octanest-db/migrations/{postgres,mysql,sqlite}/` | After `0015_packages` → `0016_social` |
-| Git backend | `crates/octanest-git/src/backend.rs` + `cli.rs` | Add `clone_bare` |
+| ACL | `crates/oxidean-api/src/repo/acl.rs` | Read gate for star/fork |
+| Repo RPC | `crates/oxidean-api/src/repo/mod.rs` | Extend `to_public`; add star/fork/explore |
+| Repo DTO | `crates/oxidean-core/src/repo_types.rs` | Add star/fork fields |
+| Migrations | `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/` | After `0015_packages` → `0016_social` |
+| Git backend | `crates/oxidean-git/src/backend.rs` + `cli.rs` | Add `clone_bare` |
 | Owner page | `apps/web/src/routes/$owner.index.tsrx` | User vs org |
 | Chrome | `apps/web/src/components/repo/repo-chrome.tsrx` | Star/Fork buttons |
 | Site nav | `apps/web/src/components/chrome.tsrx` | Explore link |
-| Reserved | `crates/octanest-core/src/auth_types.rs` | `explore` already reserved [VERIFIED] |
+| Reserved | `crates/oxidean-core/src/auth_types.rs` | `explore` already reserved [VERIFIED] |
 | Profile edit | `apps/web/src/routes/settings/profile.tsrx` | Do not duplicate; link from public profile if self |
 
 ## Common Pitfalls
@@ -193,8 +193,8 @@ No new npm/crates.io packages planned. Git clone uses system `git` already requi
 
 | Layer | Command / artifact |
 |-------|-------------------|
-| Dialect | `cargo nextest -p octanest-db -E 'test(dialect_social)'` |
-| API | `cargo nextest -p octanest-api -E 'test(repo_stars)|test(repo_fork)|test(repo_explore)|test(user_public_profile)'` |
+| Dialect | `cargo nextest -p oxidean-db -E 'test(dialect_social)'` |
+| API | `cargo nextest -p oxidean-api -E 'test(repo_stars)|test(repo_fork)|test(repo_explore)|test(user_public_profile)'` |
 | Web | Vitest integration on explore/profile/chrome star |
 | RPC sync | `make rpc-sync-check` after `make rpc-gen` |
 | Lint | `make web-lint` && `make web-format-check` for web plans |

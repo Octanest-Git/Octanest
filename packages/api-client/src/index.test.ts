@@ -4,7 +4,7 @@ import { RPC_VERSION, RPC_VERSION_HEADER, createClient } from "./index";
 describe("api-client", () => {
   it("exposes protocol version 1", () => {
     expect(RPC_VERSION).toBe(1);
-    expect(RPC_VERSION_HEADER).toBe("Octanest-RPC-Version");
+    expect(RPC_VERSION_HEADER).toBe("Oxidean-RPC-Version");
   });
 
   it("sends version header on health", async () => {
@@ -25,7 +25,7 @@ describe("api-client", () => {
     const res = await client.system.health();
     expect(res.ok).toBe(true);
     const headers = new Headers(calls[0]?.headers);
-    expect(headers.get("Octanest-RPC-Version")).toBe("1");
+    expect(headers.get("Oxidean-RPC-Version")).toBe("1");
   });
 
   it("sends version header on dbProbe", async () => {
@@ -48,6 +48,6 @@ describe("api-client", () => {
     const body = JSON.parse(String(calls[0]?.init.body));
     expect(body.procedure).toBe("system.db_probe");
     const headers = new Headers(calls[0]?.init.headers);
-    expect(headers.get("Octanest-RPC-Version")).toBe("1");
+    expect(headers.get("Oxidean-RPC-Version")).toBe("1");
   });
 });

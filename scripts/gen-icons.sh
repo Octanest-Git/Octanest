@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Regenerates the Octanest favicon / app-icon set from brand/octanest-mark.png.
+# Regenerates the Oxidean favicon / app-icon set from brand/oxidean-mark.png.
 # Squircle silhouette comes from the same mask the DOM mark uses (D-02, D-20).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-SRC=brand/octanest-mark.png
+SRC=brand/oxidean-mark.png
 MASK=apps/web/public/brand/squircle.svg
 OUT=apps/web/public
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# Brand ground is black (see brand/README.md). Transparent corners outside the
+# Brand ground is charcoal (see brand/README.md). Transparent corners outside the
 # squircle read as white in browser chrome / light OS surfaces — flatten onto
-# opaque black while keeping the squircle-clipped mark.
-BRAND_BLACK='#000000'
+# opaque charcoal while keeping the squircle-clipped mark.
+BRAND_BLACK='#121212'
 
 command -v magick >/dev/null || { echo "ImageMagick 'magick' is required" >&2; exit 1; }
 test -f "$MASK" || { echo "missing $MASK — run: node scripts/gen-squircle.mjs" >&2; exit 1; }

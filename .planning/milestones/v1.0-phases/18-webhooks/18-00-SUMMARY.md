@@ -20,9 +20,9 @@ tech-stack:
   patterns: ["Wave 0 #[ignore] stubs discoverable via nextest list --run-ignored all"]
 key-files:
   created:
-    - crates/octanest-api/tests/webhook_rpc.rs
-    - crates/octanest-api/tests/webhook_delivery.rs
-    - crates/octanest-db/tests/dialect_webhooks.rs
+    - crates/oxidean-api/tests/webhook_rpc.rs
+    - crates/oxidean-api/tests/webhook_delivery.rs
+    - crates/oxidean-db/tests/dialect_webhooks.rs
     - apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts
   modified: []
 key-decisions:
@@ -36,7 +36,7 @@ coverage:
     requirement: HOOK-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(webhook)' --run-ignored all"
+        ref: "cargo nextest list -p oxidean-api -E 'test(webhook)' --run-ignored all"
         status: pass
     human_judgment: false
 duration: 16min
@@ -87,8 +87,8 @@ None.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/webhook_rpc.rs
-- FOUND: crates/octanest-api/tests/webhook_delivery.rs
-- FOUND: crates/octanest-db/tests/dialect_webhooks.rs
+- FOUND: crates/oxidean-api/tests/webhook_rpc.rs
+- FOUND: crates/oxidean-api/tests/webhook_delivery.rs
+- FOUND: crates/oxidean-db/tests/dialect_webhooks.rs
 - FOUND: apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts
 - FOUND: 8b6fdcf

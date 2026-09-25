@@ -3,13 +3,13 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "octanest",
+      "name": "oxidean",
       "devDependencies": {
         "turbo": "^2.10.12",
       },
     },
     "apps/web": {
-      "name": "@octanest/web",
+      "name": "@oxidean/web",
       "version": "0.1.0",
       "dependencies": {
         "@octanejs/base-ui": "^0.1.52",
@@ -21,7 +21,7 @@
         "@octanejs/tanstack-router": "^0.1.53",
         "@octanejs/tanstack-start": "^0.1.44",
         "@octanejs/zustand": "^0.1.52",
-        "@octanest/api-client": "workspace:*",
+        "@oxidean/api-client": "workspace:*",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "octane": "^0.2.7",
@@ -59,7 +59,7 @@
       },
     },
     "packages/api-client": {
-      "name": "@octanest/api-client",
+      "name": "@oxidean/api-client",
       "version": "0.1.0",
       "devDependencies": {
         "vitest": "^5.0.0",
@@ -228,10 +228,6 @@
 
     "@octanejs/zustand": ["@octanejs/zustand@0.1.52", "", { "dependencies": { "zustand": "^5.0.14" }, "peerDependencies": { "octane": "^0.1.51 || ^0.2.0" } }, "sha512-ItH8OQwIlt7+af9fBX8ZVx4r5pQq7JmWegFzRs4iD+uQ+U018yGy4vYZHnyK0GLxKrc0vrYu0gykM7TcDrPBpQ=="],
 
-    "@octanest/api-client": ["@octanest/api-client@workspace:packages/api-client"],
-
-    "@octanest/web": ["@octanest/web@workspace:apps/web"],
-
     "@oozcitak/dom": ["@oozcitak/dom@2.0.2", "", { "dependencies": { "@oozcitak/infra": "^2.0.2", "@oozcitak/url": "^3.0.0", "@oozcitak/util": "^10.0.0" } }, "sha512-GjpKhkSYC3Mj4+lfwEyI1dqnsKTgwGy48ytZEhm4A/xnH/8z9M3ZVXKr/YGQi3uCLs1AEBS+x5T2JPiueEDW8w=="],
 
     "@oozcitak/infra": ["@oozcitak/infra@2.0.2", "", { "dependencies": { "@oozcitak/util": "^10.0.0" } }, "sha512-2g+E7hoE2dgCz/APPOEK5s3rMhJvNxSMBrP+U+j1OWsIbtSpWxxlUjq1lU8RIsFJNYv7NMlnVsCuHcUzJW+8vA=="],
@@ -295,6 +291,10 @@
     "@oxfmt/binding-win32-ia32-msvc": ["@oxfmt/binding-win32-ia32-msvc@0.59.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-zwdKBu3pt87uW0bRcywZb0oGMS7C6n87qogwRYFUgmk44T90ZzYlPjtlFYXs/DnBFrgNCvlHwCuWKfVWLeE7kw=="],
 
     "@oxfmt/binding-win32-x64-msvc": ["@oxfmt/binding-win32-x64-msvc@0.59.0", "", { "os": "win32", "cpu": "x64" }, "sha512-dUUbZkKgWrmAeI/puzv4bxN8lzcYaFnQVwFTFtwO2Gp8M7lZGSE2qJjC58g518+1bltJ8mizjYwD0BGHym0l/w=="],
+
+    "@oxidean/api-client": ["@oxidean/api-client@workspace:packages/api-client"],
+
+    "@oxidean/web": ["@oxidean/web@workspace:apps/web"],
 
     "@oxlint-tsgolint/darwin-arm64": ["@oxlint-tsgolint/darwin-arm64@0.24.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-C2uMmwK5Bc4ri4ysZ6sA8Rcu+A5zBQTp6ml2u0CLLbRZp4kMFPV3yWk8B5DK9Aw7y9bbjogIm75tUwGLFzlsYQ=="],
 

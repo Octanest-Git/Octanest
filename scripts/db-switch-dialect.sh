@@ -17,7 +17,7 @@ esac
 
 echo "==> switching to dialect: $dialect"
 
-cargo run -q -p octanest-db --bin migrate -- --assert-empty "$@"
+cargo run -q -p oxidean-db --bin migrate -- --assert-empty "$@"
 
 echo "==> migrated $dialect target"
 echo "==> next step: persist DATABASE_URL in .env for future runs"

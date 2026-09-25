@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { ProviderMode } from "@octanest/api-client";
+import type { ProviderMode } from "@oxidean/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export type SetupLoaderData = {
 
 export const Route = createFileRoute("/setup/")({
   component: SetupPage,
-  head: () => ({ meta: [{ title: "Set up · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Set up · Oxidean" }] }),
   beforeLoad: async () => {
     let needsSetup: boolean | null = null;
     try {
@@ -75,7 +75,7 @@ export function SetupPage() @{
       allowSignup: false,
       providerMode: "local" as ProviderMode,
       oidcIssuer: "http://127.0.0.1:9090/default",
-      oidcClientId: "octanest-dev",
+      oidcClientId: "oxidean-dev",
       workosClientId: "",
     },
     onSubmit: async ({ value }) => {

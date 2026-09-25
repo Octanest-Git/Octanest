@@ -1,5 +1,5 @@
-import type { OrgMineEntry, OwnerType, UserLookupHit } from "@octanest/api-client";
-import { userLookupQueryOptions } from "@octanest/api-client";
+import type { OrgMineEntry, OwnerType, UserLookupHit } from "@oxidean/api-client";
+import { userLookupQueryOptions } from "@oxidean/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useEffect, useState } from "octane";
 import { Input } from "@/components/ui/input";

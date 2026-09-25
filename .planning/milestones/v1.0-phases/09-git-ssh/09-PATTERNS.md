@@ -8,17 +8,17 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-api/src/ssh/pack.rs` (+ `server.rs` / `auth.rs` / `host_keys.rs`) | service | file-I/O + request-response | `crates/octanest-api/src/git/http_backend.rs` | role-match — RESEARCH layout `src/ssh/*` |
-| `crates/octanest-api/src/ssh/mod.rs` | controller | request-response | `crates/octanest-api/src/routes/git_smart_http.rs` | role-match — in-process russh (not Axum `.git` route) |
-| ACL reuse in SSH authz | utility | request-response | `crates/octanest-api/src/repo/acl.rs` | exact |
-| `crates/octanest-db/migrations/{sqlite,postgres,mysql}/0009_ssh_keys.sql` | migration | CRUD | `…/0008_pats.sql` | exact |
-| `crates/octanest-db/src/ssh_keys.rs` (+ `Database` facade) | model | CRUD | `crates/octanest-db/src/pats.rs` | exact |
-| `crates/octanest-db/tests/dialect_ssh_keys.rs` | test | CRUD | `crates/octanest-db/tests/dialect_pats.rs` | exact |
-| `crates/octanest-core/src/ssh_key_types.rs` | model | transform | `crates/octanest-core/src/pat_types.rs` | role-match |
-| `crates/octanest-api/src/ssh_keys/mod.rs` (RPC) | controller | request-response | `crates/octanest-api/src/pat/mod.rs` | exact |
-| `crates/octanest-api/src/ssh/rate_limit.rs` | middleware | request-response | `crates/octanest-api/src/pat/rate_limit.rs` | exact |
-| `crates/octanest-api/src/rpc.rs` + `rpc_gen` + `make rpc-gen` | config | request-response | `pat.*` dispatch in `rpc.rs` / `bin/rpc_gen.rs` | exact |
-| `crates/octanest-api/tests/ssh_key_rpc.rs` | test | request-response | `crates/octanest-api/tests/pat_rpc.rs` | role-match |
+| `crates/oxidean-api/src/ssh/pack.rs` (+ `server.rs` / `auth.rs` / `host_keys.rs`) | service | file-I/O + request-response | `crates/oxidean-api/src/git/http_backend.rs` | role-match — RESEARCH layout `src/ssh/*` |
+| `crates/oxidean-api/src/ssh/mod.rs` | controller | request-response | `crates/oxidean-api/src/routes/git_smart_http.rs` | role-match — in-process russh (not Axum `.git` route) |
+| ACL reuse in SSH authz | utility | request-response | `crates/oxidean-api/src/repo/acl.rs` | exact |
+| `crates/oxidean-db/migrations/{sqlite,postgres,mysql}/0009_ssh_keys.sql` | migration | CRUD | `…/0008_pats.sql` | exact |
+| `crates/oxidean-db/src/ssh_keys.rs` (+ `Database` facade) | model | CRUD | `crates/oxidean-db/src/pats.rs` | exact |
+| `crates/oxidean-db/tests/dialect_ssh_keys.rs` | test | CRUD | `crates/oxidean-db/tests/dialect_pats.rs` | exact |
+| `crates/oxidean-core/src/ssh_key_types.rs` | model | transform | `crates/oxidean-core/src/pat_types.rs` | role-match |
+| `crates/oxidean-api/src/ssh_keys/mod.rs` (RPC) | controller | request-response | `crates/oxidean-api/src/pat/mod.rs` | exact |
+| `crates/oxidean-api/src/ssh/rate_limit.rs` | middleware | request-response | `crates/oxidean-api/src/pat/rate_limit.rs` | exact |
+| `crates/oxidean-api/src/rpc.rs` + `rpc_gen` + `make rpc-gen` | config | request-response | `pat.*` dispatch in `rpc.rs` / `bin/rpc_gen.rs` | exact |
+| `crates/oxidean-api/tests/ssh_key_rpc.rs` | test | request-response | `crates/oxidean-api/tests/pat_rpc.rs` | role-match |
 | `apps/web/src/routes/settings/ssh-keys*.tsrx` | route | CRUD | `apps/web/src/routes/settings/tokens.tsrx` | exact |
 | `apps/web/src/components/settings/settings-nav.tsrx` | component | request-response | same file (extend active union) | exact |
 | `apps/web/src/components/settings/ssh-key-*.tsrx` | component | CRUD | `pat-list.tsrx` / `pat-revoke-dialog.tsrx` | exact |
@@ -29,9 +29,9 @@
 
 ## Pattern Assignments
 
-### `crates/octanest-api/src/ssh/mod.rs` (controller, request-response)
+### `crates/oxidean-api/src/ssh/mod.rs` (controller, request-response)
 
-**Analog:** `crates/octanest-api/src/routes/git_smart_http.rs`
+**Analog:** `crates/oxidean-api/src/routes/git_smart_http.rs`
 
 **Imports / ACL helpers** (lines 20–24):
 ```rust
@@ -87,9 +87,9 @@ SSH forces login user `git` only (D-SSH-03); identity comes from key fingerprint
 
 ---
 
-### `crates/octanest-api/src/ssh/pack.rs` (service, file-I/O)
+### `crates/oxidean-api/src/ssh/pack.rs` (service, file-I/O)
 
-**Analog:** `crates/octanest-api/src/git/http_backend.rs` + path helper `git/mod.rs`
+**Analog:** `crates/oxidean-api/src/git/http_backend.rs` + path helper `git/mod.rs`
 
 **Spawn pattern** (lines 51–74) — adapt `git-http-backend` CGI → `git-upload-pack` / `git-receive-pack` with bare path:
 ```rust
@@ -112,11 +112,11 @@ pub fn bare_repo_path(repos_dir: &Path, owner: &str, name: &str) -> Result<PathB
 }
 ```
 
-Shared volume: Compose already binds `./var/repos:/var/repos` + `OCTANEST_REPOS_DIR=/var/repos` on `api` — SSH service must share the same mount.
+Shared volume: Compose already binds `./var/repos:/var/repos` + `OXIDEAN_REPOS_DIR=/var/repos` on `api` — SSH service must share the same mount.
 
 ---
 
-### `crates/octanest-api/src/repo/acl.rs` (utility, request-response)
+### `crates/oxidean-api/src/repo/acl.rs` (utility, request-response)
 
 **Analog:** same file (reuse; do not fork ACL for SSH)
 
@@ -132,9 +132,9 @@ Phase 10 will deepen this module; SSH must call the same helpers so collaborator
 
 ---
 
-### `crates/octanest-db/migrations/*/0009_ssh_keys.sql` (migration, CRUD)
+### `crates/oxidean-db/migrations/*/0009_ssh_keys.sql` (migration, CRUD)
 
-**Analog:** `crates/octanest-db/migrations/postgres/0008_pats.sql` (tri-dialect siblings required)
+**Analog:** `crates/oxidean-db/migrations/postgres/0008_pats.sql` (tri-dialect siblings required)
 
 **Schema shape to copy** (lines 1–19) — adapt columns for public key + fingerprint uniqueness:
 ```sql
@@ -154,9 +154,9 @@ Ship identical logical migration under `sqlite/`, `postgres/`, `mysql/` (next nu
 
 ---
 
-### `crates/octanest-db/src/ssh_keys.rs` (model, CRUD)
+### `crates/oxidean-db/src/ssh_keys.rs` (model, CRUD)
 
-**Analog:** `crates/octanest-db/src/pats.rs`
+**Analog:** `crates/oxidean-db/src/pats.rs`
 
 **Dialect match + row type** (lines 7–25, 108–147):
 ```rust
@@ -171,13 +171,13 @@ async fn load_repo_ids(pool: &DbPool, token_id: &str) -> Result<Vec<String>, Str
 }
 ```
 
-**CRUD surface to mirror:** `create`, `list_for_user`, `find_by_fingerprint` (auth path), `revoke` / delete, `touch_last_used`. All SQL dialect branching stays in `octanest-db` only.
+**CRUD surface to mirror:** `create`, `list_for_user`, `find_by_fingerprint` (auth path), `revoke` / delete, `touch_last_used`. All SQL dialect branching stays in `oxidean-db` only.
 
 ---
 
-### `crates/octanest-db/tests/dialect_ssh_keys.rs` (test, CRUD)
+### `crates/oxidean-db/tests/dialect_ssh_keys.rs` (test, CRUD)
 
-**Analog:** `crates/octanest-db/tests/dialect_pats.rs`
+**Analog:** `crates/oxidean-db/tests/dialect_pats.rs`
 
 **Schema presence + round-trip** (lines 8–41, 125–158):
 ```rust
@@ -200,9 +200,9 @@ fn dialect_pats_tri_dialect_files() {
 
 ---
 
-### `crates/octanest-api/src/ssh_keys/mod.rs` (controller, request-response)
+### `crates/oxidean-api/src/ssh_keys/mod.rs` (controller, request-response)
 
-**Analog:** `crates/octanest-api/src/pat/mod.rs`
+**Analog:** `crates/oxidean-api/src/pat/mod.rs`
 
 **require_verified on create; session-only list/revoke** (lines 106–124, 291–335):
 ```rust
@@ -238,7 +238,7 @@ Add `sshKey.add` / `sshKey.list` / `sshKey.revoke` the same way, then `make rpc-
 
 ---
 
-### `crates/octanest-api/src/auth/gate.rs` (middleware, request-response)
+### `crates/oxidean-api/src/auth/gate.rs` (middleware, request-response)
 
 **Analog:** same file — apply to SSH key **add** only
 
@@ -263,9 +263,9 @@ UI: disable “Add key” when `!user.email_verified` (same as tokens Generate �
 
 ---
 
-### `crates/octanest-api/src/ssh/rate_limit.rs` (middleware, request-response)
+### `crates/oxidean-api/src/ssh/rate_limit.rs` (middleware, request-response)
 
-**Analog:** `crates/octanest-api/src/pat/rate_limit.rs` + `AppState.git_auth_limiter`
+**Analog:** `crates/oxidean-api/src/pat/rate_limit.rs` + `AppState.git_auth_limiter`
 
 **Sliding window** (lines 9–87):
 ```rust
@@ -281,9 +281,9 @@ Wire a second limiter (or extend keys) on `AppState` like `git_auth_limiter` in 
 
 ---
 
-### `crates/octanest-core/src/ssh_key_types.rs` (model, transform)
+### `crates/oxidean-core/src/ssh_key_types.rs` (model, transform)
 
-**Analog:** `crates/octanest-core/src/pat_types.rs`
+**Analog:** `crates/oxidean-core/src/pat_types.rs`
 
 **DTO conventions** (lines 1–20):
 ```rust
@@ -356,7 +356,7 @@ export function httpsCloneUrl(origin: string, owner: string, repo: string): stri
   const base = (origin || resolvePublicOriginClient()).replace(/\/$/, "");
   return `${base}/${owner}/${repo}.git`;
 }
-// SSH (D-SSH-02): `git@{OCTANEST_SSH_HOST}:{owner}/{repo}.git`
+// SSH (D-SSH-02): `git@{OXIDEAN_SSH_HOST}:{owner}/{repo}.git`
 // Prefer scp-style; document Port/Host alias when advertised port ≠ 22 — do not make ssh:// primary.
 ```
 
@@ -374,7 +374,7 @@ Copy HTTPS copy-input + clipboard pattern for SSH URL; add compact “add a key�
 
 **Analogs:** `docker-compose.yml`, `scripts/smoke-git-https.sh`, `Makefile`
 
-**Compose today is HTTP-only Traefik** (lines 6–14, 67–78) — SSH must **not** use Traefik HTTP routers; publish TCP on the SSH service (e.g. `2222:2222`), share `./var/repos` volume, set `OCTANEST_SSH_HOST` / `OCTANEST_SSH_PORT`.
+**Compose today is HTTP-only Traefik** (lines 6–14, 67–78) — SSH must **not** use Traefik HTTP routers; publish TCP on the SSH service (e.g. `2222:2222`), share `./var/repos` volume, set `OXIDEAN_SSH_HOST` / `OXIDEAN_SSH_PORT`.
 
 **Smoke script skeleton** (`smoke-git-https.sh` lines 23–60, 94–140):
 ```bash
@@ -391,7 +391,7 @@ SSH smoke: `GIT_SSH_COMMAND` or `~/.ssh` test key → `git@{host}:{owner}/{repo}
 ## Shared Patterns
 
 ### Authentication / gates
-**Source:** `crates/octanest-api/src/auth/gate.rs`, `pat/mod.rs`, Smart HTTP ACL
+**Source:** `crates/oxidean-api/src/auth/gate.rs`, `pat/mod.rs`, Smart HTTP ACL
 **Apply to:** SSH key create RPC; SSH push path; settings Add button
 - Session `require_verified` for key registration
 - SSH transport: fingerprint → user; force username `git`
@@ -406,15 +406,15 @@ SSH smoke: `GIT_SSH_COMMAND` or `~/.ssh` test key → `git@{host}:{owner}/{repo}
 - RPC: `AppError` codes (`auth.*`, `rpc.bad_input`, domain `sshKey.*` / `pat.*`-shaped)
 
 ### Rate limiting
-**Source:** `crates/octanest-api/src/pat/rate_limit.rs`
+**Source:** `crates/oxidean-api/src/pat/rate_limit.rs`
 **Apply to:** failed SSH pubkey auth (per IP + per fingerprint)
 
 ### Validation / RPC codegen
 **Source:** `pat/mod.rs`, `rpc.rs`, `bin/rpc_gen.rs`
-**Apply to:** all new SSH RPCs — change Rust → `make rpc-gen`; never hand-edit `@octanest/api-client` as source of truth
+**Apply to:** all new SSH RPCs — change Rust → `make rpc-gen`; never hand-edit `@oxidean/api-client` as source of truth
 
 ### DB dialect isolation
-**Source:** `octanest-db` `pats.rs` + tri-dialect `0008_pats`
+**Source:** `oxidean-db` `pats.rs` + tri-dialect `0008_pats`
 **Apply to:** SSH key tables/CRUD — no dialect branching in API
 
 ### Ops / smoke
@@ -430,7 +430,7 @@ SSH smoke: `GIT_SSH_COMMAND` or `~/.ssh` test key → `git@{host}:{owner}/{repo}
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-api/{routes,git,pat,repo,auth}`, `crates/octanest-db/{migrations,src,tests}`, `crates/octanest-core`, `apps/web/{routes/settings,components/{repo,settings},lib}`, `docker-compose.yml`, `scripts/`, `Makefile`
+**Analog search scope:** `crates/oxidean-api/{routes,git,pat,repo,auth}`, `crates/oxidean-db/{migrations,src,tests}`, `crates/oxidean-core`, `apps/web/{routes/settings,components/{repo,settings},lib}`, `docker-compose.yml`, `scripts/`, `Makefile`
 **Files scanned:** ~35 tracked analogs (git ls-files verified)
 **Upstream:** `09-CONTEXT.md` only (no `09-RESEARCH.md` at map time)
 **Pattern extraction date:** 2026-09-14

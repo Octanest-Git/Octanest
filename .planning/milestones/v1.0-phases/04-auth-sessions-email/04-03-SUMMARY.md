@@ -6,11 +6,11 @@ tags: [argon2, sessions, cookies, sha256, httponly]
 
 requires:
   - phase: 04-auth-sessions-email
-    provides: "users/sessions CRUD via octanest-db Database helpers"
+    provides: "users/sessions CRUD via oxidean-db Database helpers"
 provides:
   - "Argon2id hash_password / verify_password PHC helpers"
-  - "SessionService create/resolve/revoke/revoke_all with opaque octanest_session cookie"
-  - "24h idle slide + 30d remember-me absolute TTL; Secure flag via OCTANEST_ENV"
+  - "SessionService create/resolve/revoke/revoke_all with opaque oxidean_session cookie"
+  - "24h idle slide + 30d remember-me absolute TTL; Secure flag via OXIDEAN_ENV"
 affects:
   - 04-04-local-auth-rpc
   - 04-05-oidc-workos
@@ -25,12 +25,12 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/mod.rs
-    - crates/octanest-api/src/auth/password.rs
-    - crates/octanest-api/src/auth/session.rs
+    - crates/oxidean-api/src/auth/mod.rs
+    - crates/oxidean-api/src/auth/password.rs
+    - crates/oxidean-api/src/auth/session.rs
   modified:
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/lib.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/lib.rs
     - Cargo.lock
 
 key-decisions:
@@ -39,7 +39,7 @@ key-decisions:
   - "SessionService holds env_name for Secure cookie flag; methods take &Database"
 
 patterns-established:
-  - "auth/ module under octanest-api with password + session unit tests"
+  - "auth/ module under oxidean-api with password + session unit tests"
   - "Cookie flags: HttpOnly Path=/ SameSite=Lax; no Domain attribute"
 
 requirements-completed: [AUTH-02]
@@ -50,7 +50,7 @@ completed: 2026-09-09
 
 # Phase 4 Plan 03: Argon2id + SessionService Summary
 
-**Argon2id PHC password helpers and opaque `octanest_session` cookies with SHA-256 token hashes, 24h idle / 30d remember-me TTLs**
+**Argon2id PHC password helpers and opaque `oxidean_session` cookies with SHA-256 token hashes, 24h idle / 30d remember-me TTLs**
 
 ## Performance
 
@@ -63,7 +63,7 @@ completed: 2026-09-09
 ## Accomplishments
 
 - `hash_password` / `verify_password` with Argon2id PHC strings; `hash_password_str` enforces min length 8
-- `SessionService` mint/resolve/revoke over `octanest-db`; HttpOnly SameSite=Lax cookies; Secure when not development
+- `SessionService` mint/resolve/revoke over `oxidean-db`; HttpOnly SameSite=Lax cookies; Secure when not development
 - Idle sessions slide expiry on resolve; remember-me keeps absolute 30d expiry while updating last_seen
 
 ## Task Commits
@@ -77,11 +77,11 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/password.rs` — Argon2id hash/verify + min-length wrapper
-- `crates/octanest-api/src/auth/session.rs` — SessionService, cookie builders, secure_cookies
-- `crates/octanest-api/src/auth/mod.rs` — auth module exports
-- `crates/octanest-api/src/lib.rs` — `pub mod auth`
-- `crates/octanest-api/Cargo.toml` — crypto/cookie deps
+- `crates/oxidean-api/src/auth/password.rs` — Argon2id hash/verify + min-length wrapper
+- `crates/oxidean-api/src/auth/session.rs` — SessionService, cookie builders, secure_cookies
+- `crates/oxidean-api/src/auth/mod.rs` — auth module exports
+- `crates/oxidean-api/src/lib.rs` — `pub mod auth`
+- `crates/oxidean-api/Cargo.toml` — crypto/cookie deps
 - `Cargo.lock` — lockfile update
 
 ## Decisions Made
@@ -116,7 +116,7 @@ None - no external service configuration required.
 
 - Created files present: password.rs, session.rs, auth/mod.rs, 04-03-SUMMARY.md
 - Commits present: `0d08797`, `4896609`
-- `cargo test -p octanest-api --lib auth::` — 9 passed
+- `cargo test -p oxidean-api --lib auth::` — 9 passed
 
 ---
 *Phase: 04-auth-sessions-email*

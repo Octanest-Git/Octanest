@@ -30,26 +30,26 @@ tech-stack:
   patterns:
     - "issue_count column + created_at for DB soft rate limits (no Redis)"
     - "Session-scoped token row lookup for redeem attempt attribution"
-    - "OCTANEST_PUBLIC_ORIGIN-only magic URLs (T-05-07)"
+    - "OXIDEAN_PUBLIC_ORIGIN-only magic URLs (T-05-07)"
     - "maybe_seed_admin extracted to auth::seed for testability"
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/seed.rs
-    - crates/octanest-db/migrations/sqlite/0004_email_token_issue_count.sql
-    - crates/octanest-db/migrations/postgres/0004_email_token_issue_count.sql
-    - crates/octanest-db/migrations/mysql/0004_email_token_issue_count.sql
+    - crates/oxidean-api/src/auth/seed.rs
+    - crates/oxidean-db/migrations/sqlite/0004_email_token_issue_count.sql
+    - crates/oxidean-db/migrations/postgres/0004_email_token_issue_count.sql
+    - crates/oxidean-db/migrations/mysql/0004_email_token_issue_count.sql
   modified:
-    - crates/octanest-api/src/auth/verify_reset.rs
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/src/auth/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/main.rs
-    - crates/octanest-db/src/email_tokens.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-api/tests/auth_verify_reset.rs
-    - crates/octanest-api/tests/auth_signup.rs
+    - crates/oxidean-api/src/auth/verify_reset.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/src/auth/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/main.rs
+    - crates/oxidean-db/src/email_tokens.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-api/tests/auth_verify_reset.rs
+    - crates/oxidean-api/tests/auth_signup.rs
 
 key-decisions:
   - "Added issue_count via migration 0004 rather than amending 0003 (checksum safety)"
@@ -68,7 +68,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#request_verify_sends_magic_and_otp_email"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#request_verify_sends_magic_and_otp_email"
         status: pass
     human_judgment: false
   - id: D2
@@ -76,10 +76,10 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#resend_replaces_prior_and_rate_limits_within_60s"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#resend_replaces_prior_and_rate_limits_within_60s"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#sixth_issue_within_hour_rate_limited"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#sixth_issue_within_hour_rate_limited"
         status: pass
     human_judgment: false
   - id: D3
@@ -87,13 +87,13 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#magic_token_consume_sets_verified"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#magic_token_consume_sets_verified"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#verify_wrong_session_user_rejected"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#verify_wrong_session_user_rejected"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_verify_reset.rs#ten_failed_otp_attempts_invalidate"
+        ref: "crates/oxidean-api/tests/auth_verify_reset.rs#ten_failed_otp_attempts_invalidate"
         status: pass
     human_judgment: false
   - id: D4
@@ -101,10 +101,10 @@ coverage:
     requirement: AUTH-05
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_signup.rs#signup_sets_cookie_and_sends_welcome"
+        ref: "crates/oxidean-api/tests/auth_signup.rs#signup_sets_cookie_and_sends_welcome"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_signup.rs#signup_open_without_invite_fields_auth05"
+        ref: "crates/oxidean-api/tests/auth_signup.rs#signup_open_without_invite_fields_auth05"
         status: pass
     human_judgment: false
   - id: D5
@@ -112,7 +112,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/auth_signup.rs#seeded_admin_is_auto_verified"
+        ref: "crates/oxidean-api/tests/auth_signup.rs#seeded_admin_is_auto_verified"
         status: pass
     human_judgment: false
   - id: D6
@@ -120,7 +120,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: unit
-        ref: "crates/octanest-core/src/auth_types.rs#validate_username_rejects_verify_and_reset_password"
+        ref: "crates/oxidean-core/src/auth_types.rs#validate_username_rejects_verify_and_reset_password"
         status: pass
     human_judgment: false
 
@@ -159,20 +159,20 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/auth/verify_reset.rs` — issue/send/rate-limit/consume
-- `crates/octanest-api/src/auth/seed.rs` — `maybe_seed_admin` with D-04 verify
-- `crates/octanest-api/src/auth/local.rs` — signup auto-issue verify
-- `crates/octanest-api/src/rpc.rs` — request/resend procedures
-- `crates/octanest-db/migrations/postgres/0004_email_token_issue_count.sql` — `issue_count` column
-- `crates/octanest-db/migrations/mysql/0004_email_token_issue_count.sql` — `issue_count` column
-- `crates/octanest-db/migrations/sqlite/0004_email_token_issue_count.sql` — `issue_count` column
-- `crates/octanest-core/src/auth_types.rs` — reserved `verify`, `reset-password`
+- `crates/oxidean-api/src/auth/verify_reset.rs` — issue/send/rate-limit/consume
+- `crates/oxidean-api/src/auth/seed.rs` — `maybe_seed_admin` with D-04 verify
+- `crates/oxidean-api/src/auth/local.rs` — signup auto-issue verify
+- `crates/oxidean-api/src/rpc.rs` — request/resend procedures
+- `crates/oxidean-db/migrations/postgres/0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/oxidean-db/migrations/mysql/0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/oxidean-db/migrations/sqlite/0004_email_token_issue_count.sql` — `issue_count` column
+- `crates/oxidean-core/src/auth_types.rs` — reserved `verify`, `reset-password`
 - Tests: `auth_verify_reset.rs`, `auth_signup.rs`
 
 ## Decisions Made
 
 - Migration **0004** for `issue_count` (do not amend shipped 0003 checksums)
-- Session-scoped redeem for attempt capping; magic URLs from `OCTANEST_PUBLIC_ORIGIN` only
+- Session-scoped redeem for attempt capping; magic URLs from `OXIDEAN_PUBLIC_ORIGIN` only
 
 ## Deviations from Plan
 

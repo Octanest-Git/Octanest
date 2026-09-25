@@ -8,7 +8,7 @@ requires:
   - phase: 19-actions-runners
     provides: runner protocol
 provides:
-  - docker/octanest-runner official image
+  - docker/oxidean-runner official image
   - Compose profile actions + operator docs
 affects: [19-11]
 
@@ -19,13 +19,13 @@ actuals:
 
 tech-stack:
   added: [gitea/act_runner:0.2.11]
-  patterns: [Compose profile opt-in, OCTANEST_PUBLIC_ORIGIN for register]
+  patterns: [Compose profile opt-in, OXIDEAN_PUBLIC_ORIGIN for register]
 
 key-files:
   created:
-    - docker/octanest-runner/Dockerfile
-    - docker/octanest-runner/entrypoint.sh
-    - docker/octanest-runner/README.md
+    - docker/oxidean-runner/Dockerfile
+    - docker/oxidean-runner/entrypoint.sh
+    - docker/oxidean-runner/README.md
   modified:
     - docker-compose.yml
     - docs/DEPLOYMENT.md
@@ -37,7 +37,7 @@ key-decisions:
   - "Docker build credential failure is skip-ok for smoke on WSL"
 
 patterns-established:
-  - "Never commit OCTANEST_RUNNER_REGISTRATION_TOKEN"
+  - "Never commit OXIDEAN_RUNNER_REGISTRATION_TOKEN"
 
 requirements-completed: [ACT-04, ACT-05]
 
@@ -59,7 +59,7 @@ status: complete
 
 # Phase 19 Plan 08: Official runner image Summary
 
-**Official `docker/octanest-runner` (act_runner) plus Compose `actions` profile and operator docs; smoke verifies artifacts (live stack optional).**
+**Official `docker/oxidean-runner` (act_runner) plus Compose `actions` profile and operator docs; smoke verifies artifacts (live stack optional).**
 
 ## Deviations from Plan
 

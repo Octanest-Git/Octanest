@@ -7,7 +7,7 @@ requires:
   - phase: 09-04
     provides: russh ACL + pack allowlist ready for Compose publish
 provides:
-  - Compose TCP 2222 + OCTANEST_SSH_* on api
+  - Compose TCP 2222 + OXIDEAN_SSH_* on api
   - Volume-backed SSH host keys
   - smoke-git-ssh ls-remote/push script
 affects: [09-06-rpc-gen, 09-08-clonebox, 09-09-docs]
@@ -30,7 +30,7 @@ key-files:
     - scripts/smoke-git-ssh.sh
     - Makefile
 key-decisions:
-  - "Hard-map compose 2222:2222; OCTANEST_SSH_PORT defaults 2222 inside container"
+  - "Hard-map compose 2222:2222; OXIDEAN_SSH_PORT defaults 2222 inside container"
   - "Ephemeral key registration via SMOKE_SESSION_COOKIE sshKey.add; or SMOKE_SSH_IDENTITY"
 requirements-completed: [GIT-03]
 coverage:
@@ -39,7 +39,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: other
-        ref: "rg -n '2222:2222|OCTANEST_SSH_ENABLED' docker-compose.yml"
+        ref: "rg -n '2222:2222|OXIDEAN_SSH_ENABLED' docker-compose.yml"
         status: pass
     human_judgment: false
   - id: D2
@@ -67,7 +67,7 @@ status: complete
 
 ## Accomplishments
 
-- Wired `OCTANEST_SSH_ENABLED/PORT/HOST/HOST_KEY_DIR` on api; `2222:2222` publish; `ssh_host_keys` volume.
+- Wired `OXIDEAN_SSH_ENABLED/PORT/HOST/HOST_KEY_DIR` on api; `2222:2222` publish; `ssh_host_keys` volume.
 - Documented SSH env in `.env.example` and `docs/dev-auth.env.example`.
 - Greened `scripts/smoke-git-ssh.sh` (docker skip, health, TCP probe, optional key register + ls-remote/push).
 
@@ -84,7 +84,7 @@ status: complete
 
 ## Decisions Made
 
-- Single compose port map `2222:2222` matching default `OCTANEST_SSH_PORT`.
+- Single compose port map `2222:2222` matching default `OXIDEAN_SSH_PORT`.
 - Live Compose smoke still needs stack + repo/key (same as HTTPS); script is assertable offline via rg.
 
 ## Deviations from Plan

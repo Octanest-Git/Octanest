@@ -34,14 +34,14 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/org_create_members.rs
-    - crates/octanest-api/tests/org_invites.rs
-    - crates/octanest-api/tests/repo_collaborators_acl.rs
-    - crates/octanest-db/tests/dialect_orgs.rs
+    - crates/oxidean-api/tests/org_create_members.rs
+    - crates/oxidean-api/tests/org_invites.rs
+    - crates/oxidean-api/tests/repo_collaborators_acl.rs
+    - crates/oxidean-db/tests/dialect_orgs.rs
   modified:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/tests/repo_private_404.rs
-    - crates/octanest-api/tests/git_smart_http.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/tests/repo_private_404.rs
+    - crates/oxidean-api/tests/git_smart_http.rs
 
 key-decisions:
   - "Wave 0 is RED-only — no production org RPC, ACL rewrite, or 0010 migrations"
@@ -60,7 +60,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(org_)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(org_)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -68,7 +68,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(org_)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(org_)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -76,7 +76,7 @@ coverage:
     requirement: ORG-03
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(collab)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(collab)'"
         status: pass
     human_judgment: false
   - id: D4
@@ -84,7 +84,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-db -E 'test(dialect_orgs)'"
+        ref: "cargo nextest list -p oxidean-db -E 'test(dialect_orgs)'"
         status: pass
     human_judgment: false
   - id: D5
@@ -92,7 +92,7 @@ coverage:
     requirement: ORG-04
     verification:
       - kind: unit
-        ref: "cargo nextest list -p octanest-api -E 'test(coalesce) | test(repo_private) | test(git_smart)'"
+        ref: "cargo nextest list -p oxidean-api -E 'test(coalesce) | test(repo_private) | test(git_smart)'"
         status: pass
     human_judgment: false
 
@@ -134,13 +134,13 @@ _Note: Wave 0 is RED-only by design — GREEN belongs to later 10-xx plans._
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/org_create_members.rs` — ORG-01/02 create + members + member_base stubs
-- `crates/octanest-api/tests/org_invites.rs` — ORG-01 email invite + closed-signup stubs
-- `crates/octanest-api/tests/repo_collaborators_acl.rs` — ORG-03/04 collaborator matrix stubs
-- `crates/octanest-db/tests/dialect_orgs.rs` — 0010_orgs_acl migration parity stub
-- `crates/octanest-api/src/repo/acl.rs` — coalesce_* #[cfg(test)] Wave 0 stubs (production ACL unchanged)
-- `crates/octanest-api/tests/repo_private_404.rs` — org non-member + collaborator read stubs
-- `crates/octanest-api/tests/git_smart_http.rs` — collaborator PAT push + non-grantee 401 stubs
+- `crates/oxidean-api/tests/org_create_members.rs` — ORG-01/02 create + members + member_base stubs
+- `crates/oxidean-api/tests/org_invites.rs` — ORG-01 email invite + closed-signup stubs
+- `crates/oxidean-api/tests/repo_collaborators_acl.rs` — ORG-03/04 collaborator matrix stubs
+- `crates/oxidean-db/tests/dialect_orgs.rs` — 0010_orgs_acl migration parity stub
+- `crates/oxidean-api/src/repo/acl.rs` — coalesce_* #[cfg(test)] Wave 0 stubs (production ACL unchanged)
+- `crates/oxidean-api/tests/repo_private_404.rs` — org non-member + collaborator read stubs
+- `crates/oxidean-api/tests/git_smart_http.rs` — collaborator PAT push + non-grantee 401 stubs
 
 ## Decisions Made
 
@@ -163,9 +163,9 @@ Intentional Wave 0 RED stubs (`assert!(false)`) in all new/extended test paths �
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/org_create_members.rs
-- FOUND: crates/octanest-api/tests/org_invites.rs
-- FOUND: crates/octanest-api/tests/repo_collaborators_acl.rs
-- FOUND: crates/octanest-db/tests/dialect_orgs.rs
-- FOUND: coalesce stubs in crates/octanest-api/src/repo/acl.rs
+- FOUND: crates/oxidean-api/tests/org_create_members.rs
+- FOUND: crates/oxidean-api/tests/org_invites.rs
+- FOUND: crates/oxidean-api/tests/repo_collaborators_acl.rs
+- FOUND: crates/oxidean-db/tests/dialect_orgs.rs
+- FOUND: coalesce stubs in crates/oxidean-api/src/repo/acl.rs
 - FOUND: 8d7315a, 86f2bfa in git log

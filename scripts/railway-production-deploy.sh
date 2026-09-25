@@ -7,10 +7,10 @@
 #   RAILWAY_TOKEN=… scripts/railway-production-deploy.sh rollback [--dry-run]
 #   scripts/railway-production-deploy.sh list   # query-only (auth required)
 #
-# Env overrides (defaults = Octanest Cloud production):
+# Env overrides (defaults = Oxidean Cloud production):
 #   RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID
 #   RAILWAY_SERVICE_API_ID, RAILWAY_SERVICE_WEB_ID, RAILWAY_SERVICE_GATEWAY_ID
-#   OCTANEST_PRODUCTION_HEALTH_URL (default https://octanest.jereko.dev/health)
+#   OXIDEAN_PRODUCTION_HEALTH_URL (default https://app.oxidean.dev/health)
 #   SKIP_HEALTH_CHECK=1 to skip the post-action health probe
 
 set -euo pipefail
@@ -21,7 +21,7 @@ ENVIRONMENT_ID="${RAILWAY_ENVIRONMENT_ID:-b1c33c22-90ce-433b-99f6-864656512115}"
 SERVICE_API_ID="${RAILWAY_SERVICE_API_ID:-19bf0a47-2fdf-4130-b6b0-858de92cb858}"
 SERVICE_WEB_ID="${RAILWAY_SERVICE_WEB_ID:-26b7e1b6-6cfa-4c7e-942a-bed8e5ce12a2}"
 SERVICE_GATEWAY_ID="${RAILWAY_SERVICE_GATEWAY_ID:-864fa81c-6e5d-4939-b33b-85eb435365ac}"
-HEALTH_URL="${OCTANEST_PRODUCTION_HEALTH_URL:-https://octanest.jereko.dev/health}"
+HEALTH_URL="${OXIDEAN_PRODUCTION_HEALTH_URL:-https://app.oxidean.dev/health}"
 
 DRY_RUN=0
 
@@ -92,10 +92,10 @@ health_check() {
   fi
   echo "health: GET ${HEALTH_URL}"
   local code
-  code="$(curl -sS -o /tmp/octanest-prod-health.out -w '%{http_code}' --max-time 30 "$HEALTH_URL" || true)"
+  code="$(curl -sS -o /tmp/oxidean-prod-health.out -w '%{http_code}' --max-time 30 "$HEALTH_URL" || true)"
   if [[ "$code" != 2* ]]; then
     echo "health body:" >&2
-    cat /tmp/octanest-prod-health.out >&2 || true
+    cat /tmp/oxidean-prod-health.out >&2 || true
     die "health check failed (HTTP ${code})"
   fi
   echo "health: ok (HTTP ${code})"

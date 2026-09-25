@@ -89,9 +89,9 @@ Signed-in users stay aware of **issue and PR activity** via **in-app** notificat
 ### Code anchors
 - `apps/web/src/components/chrome.tsrx` — `SiteHeader` / `AccountActions` (bell insertion point)
 - `apps/web/src/lib/session-queries.ts` — Query session helpers for unreadCount pattern
-- `crates/octanest-api/src/email/mod.rs` — EmailSender trait (do **not** wire activity mail)
-- `crates/octanest-api/src/issue/` — issue write paths to hook emitters
-- `crates/octanest-db/migrations/` — next migration after `0015_packages.sql` (or later if Phase 12 adds PR migrations first)
+- `crates/oxidean-api/src/email/mod.rs` — EmailSender trait (do **not** wire activity mail)
+- `crates/oxidean-api/src/issue/` — issue write paths to hook emitters
+- `crates/oxidean-db/migrations/` — next migration after `0015_packages.sql` (or later if Phase 12 adds PR migrations first)
 
 </canonical_refs>
 
@@ -101,13 +101,13 @@ Signed-in users stay aware of **issue and PR activity** via **in-app** notificat
 ### Reusable Assets
 - `SiteHeader` / `AccountActions` in `chrome.tsrx` — signed-in chrome for bell + badge
 - `authSessionQueryOptions` in `session-queries.ts` — pattern for soft Query RPCs in chrome
-- Issue domain under `crates/octanest-api/src/issue/` — hook points for emitters
+- Issue domain under `crates/oxidean-api/src/issue/` — hook points for emitters
 - `EmailSender` — available but **not** used for activity notifications this phase
 - Offset pagination + Unread/All style filters already established on Issues lists
 
 ### Established Patterns
-- Rust Axum JSON RPC → `make rpc-gen` → `@octanest/api-client`
-- Dialect SQL only in `octanest-db`; API must not branch on dialect
+- Rust Axum JSON RPC → `make rpc-gen` → `@oxidean/api-client`
+- Dialect SQL only in `oxidean-db`; API must not branch on dialect
 - Octane `.tsrx` + TanStack Query for server state; no Zustand for session-like data
 - Cookie session auth via `RpcCtx` / `SessionService`
 

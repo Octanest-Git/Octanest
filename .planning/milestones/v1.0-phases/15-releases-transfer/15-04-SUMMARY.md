@@ -22,9 +22,9 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/repo/rename_transfer.rs
-    - crates/octanest-db/src/repositories.rs
-    - crates/octanest-api/tests/repo_rename_transfer.rs
+    - crates/oxidean-api/src/repo/rename_transfer.rs
+    - crates/oxidean-db/src/repositories.rs
+    - crates/oxidean-api/tests/repo_rename_transfer.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "Immediate transfer after type-confirm (no accept-email)"
@@ -36,7 +36,7 @@ coverage:
     requirement: GIT-17
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_transfer)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_transfer)'"
         status: pass
     human_judgment: false
   - id: D2

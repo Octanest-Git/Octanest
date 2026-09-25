@@ -22,12 +22,12 @@ tech-stack:
   patterns: [search_query strip-unknown, pulls::search_by_repo]
 key-files:
   created:
-    - crates/octanest-api/src/repo/search_query.rs
+    - crates/oxidean-api/src/repo/search_query.rs
   modified:
-    - crates/octanest-api/src/repo/search.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-db/src/pulls.rs
-    - crates/octanest-api/tests/repo_search.rs
+    - crates/oxidean-api/src/repo/search.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-db/src/pulls.rs
+    - crates/oxidean-api/tests/repo_search.rs
 key-decisions:
   - "Unknown qualifiers stripped (RESEARCH)"
   - "Issues use IssueListFilters; pulls use dedicated pull_requests search"
@@ -38,7 +38,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search_commits)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search_commits)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -46,7 +46,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search_issues)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search_issues)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -54,7 +54,7 @@ coverage:
     requirement: GIT-18
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_search_pulls)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_search_pulls)'"
         status: pass
     human_judgment: false
 duration: 35min

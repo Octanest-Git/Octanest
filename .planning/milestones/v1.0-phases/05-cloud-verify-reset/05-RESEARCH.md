@@ -8,7 +8,7 @@
 
 Phase 5 extends the Phase 4 Rust-native auth stack with **email verification** and **password reset** that share one channel model (magic link + 8-digit OTP in one email, 30-minute TTL, resend replaces prior issuance, soft rate limits). Verification does **not** block login; a reusable **`require_verified`** helper denies privileged RPCs with stable code **`auth.email_unverified`**. Phase 5 ships that helper plus a **dev/test-only privileged RPC** so CI can prove the gate before Phase 7’s real `repo.create`. `UserPublic` / `auth.me` gain **`email_verified: bool`** for the chrome banner and disabled CTAs. Open signup (AUTH-05) is retained as-is — no invite system.
 
-Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified_at` (already migrated, never wired); session SHA-256-at-rest pattern; `logout_all` / session mint for reset success; WorkOS `User.email_verified` and OIDC `email_verified` claims for IdP-trust; `OCTANEST_PUBLIC_ORIGIN` for link URLs; Octane auth routes + `AuthShell`.
+Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified_at` (already migrated, never wired); session SHA-256-at-rest pattern; `logout_all` / session mint for reset success; WorkOS `User.email_verified` and OIDC `email_verified` claims for IdP-trust; `OXIDEAN_PUBLIC_ORIGIN` for link URLs; Octane auth routes + `AuthShell`.
 
 **Primary recommendation:** Add dialect-parity `auth_email_tokens` (hash-at-rest magic + OTP), verify/reset RPC + templates on existing `EmailSender`, `require_verified` + `auth.dev.privileged_ping`, expose `email_verified` on `UserPublic`, and ship `/verify` + `/reset-password` with local `input-otp` wrapper — do not reopen Phase 6/7 or Better Auth.
 
@@ -72,8 +72,8 @@ Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| AUTH-04 | On Octanest Cloud, user must verify email before privileged actions (at minimum: create repository) | Same-everywhere verify gate (D-01/D-02); `require_verified` + `auth.email_unverified`; test RPC until Phase 7 `repo.create`; IdP-trust + local verify flows |
-| AUTH-05 | On Octanest Cloud, signup is open (no invite required) | Confirm/retain Phase 4 open `auth.signup`; no invite schema/UI |
+| AUTH-04 | On Oxidean Cloud, user must verify email before privileged actions (at minimum: create repository) | Same-everywhere verify gate (D-01/D-02); `require_verified` + `auth.email_unverified`; test RPC until Phase 7 `repo.create`; IdP-trust + local verify flows |
+| AUTH-05 | On Oxidean Cloud, signup is open (no invite required) | Confirm/retain Phase 4 open `auth.signup`; no invite schema/UI |
 | AUTH-12 | User can reset password via email link when an email provider is configured | Reset request/redeem RPCs; magic+OTP email via existing `EmailSender` (log-sink counts); anti-enumeration; local-password only |
 </phase_requirements>
 
@@ -91,7 +91,7 @@ Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified
 | IdP-trust mark verified (WorkOS/OIDC) | API / Backend | — | Claims only trustworthy after SSO callback |
 | Auto-verify seeded admin | API / Backend | — | Boot seed path in `main` |
 | Outbound verify/reset mail | API / Backend | External (SMTP/Resend) or LogSink | Reuse `EmailSender` |
-| Magic-link absolute URLs | API / Backend | Config | `OCTANEST_PUBLIC_ORIGIN` — never trust Host alone |
+| Magic-link absolute URLs | API / Backend | Config | `OXIDEAN_PUBLIC_ORIGIN` — never trust Host alone |
 | `/verify`, `/reset-password`, banner, forgot link | Browser / Client | Frontend Server | Octane routes + chrome |
 | OTP UI (`input-otp`) | Browser / Client | — | npm widget; API owns validation |
 | Dialect migrations for tokens + verified helpers | Database / Storage | API | Parity across sqlite/postgres/mysql |
@@ -102,9 +102,9 @@ Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| Existing `octanest-api` auth + `EmailSender` | in-repo | Verify/reset send + consume | Phase 4 already owns adapters [VERIFIED: crates/octanest-api/src/email/mod.rs:36-39] |
-| Existing `sha2` / `rand` | sha2 **0.11.0**, rand **0.10.2** | Hash tokens / CSPRNG OTP+magic | Same as sessions [VERIFIED: crates/octanest-api/Cargo.toml] |
-| Existing `argon2` | 0.6.x | Reset password hashing | Match signup `MIN_PASSWORD_LEN = 8` [VERIFIED: crates/octanest-api/src/auth/password.rs:13] |
+| Existing `oxidean-api` auth + `EmailSender` | in-repo | Verify/reset send + consume | Phase 4 already owns adapters [VERIFIED: crates/oxidean-api/src/email/mod.rs:36-39] |
+| Existing `sha2` / `rand` | sha2 **0.11.0**, rand **0.10.2** | Hash tokens / CSPRNG OTP+magic | Same as sessions [VERIFIED: crates/oxidean-api/Cargo.toml] |
+| Existing `argon2` | 0.6.x | Reset password hashing | Match signup `MIN_PASSWORD_LEN = 8` [VERIFIED: crates/oxidean-api/src/auth/password.rs:13] |
 | `input-otp` | **1.5.0** | 8-slot OTP UI | Locked D-17; React 16.8–19 peer; zero deps [VERIFIED: npm view 1.5.0; npmjs.com/package/input-otp] |
 | Existing Octane / ShadCN Base UI | in-repo | AuthShell, Button, Input, chrome | UI-SPEC extends Phase 4 — no new shadcn CLI blocks |
 
@@ -114,7 +114,7 @@ Existing seams to extend: `EmailSender` + log/SMTP/Resend; `users.email_verified
 |---------|---------|---------|-------------|
 | Existing sqlx migrations (3 dialects) | in-repo | `0003_*` token table + helpers | Must ship postgres/mysql/sqlite together |
 | Existing `vitest` / `cargo test` | in-repo | Unit/integration for gate + tokens | Wave 0 tests below |
-| `OCTANEST_PUBLIC_ORIGIN` | env | Absolute magic-link base | Already documented for SSO [VERIFIED: docs/CONFIGURATION.md:20] |
+| `OXIDEAN_PUBLIC_ORIGIN` | env | Absolute magic-link base | Already documented for SSO [VERIFIED: docs/CONFIGURATION.md:20] |
 
 ### Alternatives Considered
 
@@ -153,9 +153,9 @@ bun add input-otp@1.5.0
 | Reset password rules | **`MIN_PASSWORD_LEN = 8`**; confirm field client-side (UI-SPEC) |
 | OTP UX | **`onComplete` auto-submit** + keep primary button (UI-SPEC lock) |
 | Anti-enumeration copy | Exact UI-SPEC strings |
-| Test privileged RPC | `auth.dev.privileged_ping` — registered only when `OCTANEST_ENV` ∈ `{development,dev,test}` **or** `cfg(test)`; else `rpc.unknown_procedure` |
+| Test privileged RPC | `auth.dev.privileged_ping` — registered only when `OXIDEAN_ENV` ∈ `{development,dev,test}` **or** `cfg(test)`; else `rpc.unknown_procedure` |
 | HTTP status for `auth.email_unverified` | **403 Forbidden** (extend `rpc_status` like `admin.forbidden`) |
-| Magic URLs | `{OCTANEST_PUBLIC_ORIGIN}/verify?token=…` and `…/reset-password?token=…` — strip trailing slash; fallback derivation same as SSO if unset |
+| Magic URLs | `{OXIDEAN_PUBLIC_ORIGIN}/verify?token=…` and `…/reset-password?token=…` — strip trailing slash; fallback derivation same as SSO if unset |
 | Reserved usernames | Add `verify`, `reset-password` to reserved list |
 | Admin seed | Set `email_verified_at = now` on `maybe_seed_admin` create (D-04) |
 | Email change (D-05) | No email-edit API yet — ship `clear_email_verification(user_id)` helper used when/if email update is added; document for planner |
@@ -203,17 +203,17 @@ SSO callback (WorkOS/OIDC)
 ### Recommended Project Structure
 
 ```
-crates/octanest-db/
+crates/oxidean-db/
   migrations/{postgres,mysql,sqlite}/0003_email_tokens.sql
   src/email_tokens.rs          # CRUD for auth_email_tokens
   src/users.rs                 # set/clear email_verified_at
-crates/octanest-api/src/auth/
+crates/oxidean-api/src/auth/
   verify_reset.rs              # issue/consume/rate-limit
   gate.rs                      # require_verified
   local.rs                     # signup auto-send verify; me email_verified
   external.rs                  # ExternalIdentity.email_verified + apply on link
   workos.rs / oidc.rs          # pass email_verified claim
-crates/octanest-core/src/auth_types.rs  # UserPublic.email_verified
+crates/oxidean-core/src/auth_types.rs  # UserPublic.email_verified
 apps/web/src/
   components/ui/input-otp.tsx  # thin wrapper around input-otp
   components/verify-banner.tsx
@@ -260,11 +260,11 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
 
 `email_verified_at` field already exists on `UserRow`:
 
-```17:17:crates/octanest-db/src/users.rs
+```17:17:crates/oxidean-db/src/users.rs
     pub email_verified_at: Option<String>,
 ```
 
-[VERIFIED: crates/octanest-db/src/users.rs:17]
+[VERIFIED: crates/oxidean-db/src/users.rs:17]
 
 ### Pattern 3: Verify consume requires matching session (D-21)
 **What:** Redeem verify only if `ctx.session.user_id == token.user_id`. Anonymous with `?token=` → UI prompts login with `returnTo=/verify?token=…`.  
@@ -305,7 +305,7 @@ OIDC: `set_email_verified -> email_verified[Option<bool>]` on ID token claims [V
 | Cookie/session crypto for reset login | Custom cookie format | Existing `SessionService` | Already SHA-256 + flags |
 | Password hash on reset | New KDF | `hash_password_str` | Same Argon2id + min length |
 | Mail transport | New HTTP client | `EmailSender` trait | Log/SMTP/Resend already hot-swappable |
-| Dialect SQL branching in API | Raw sqlx in API | `octanest-db` helpers | Phase 2 boundary |
+| Dialect SQL branching in API | Raw sqlx in API | `oxidean-db` helpers | Phase 2 boundary |
 
 **Key insight:** Phase 5 is mostly **policy + token table + thin RPC/UI** on top of Phase 4 primitives — resist new frameworks.
 
@@ -338,7 +338,7 @@ OIDC: `set_email_verified -> email_verified[Option<bool>]` on ID token claims [V
 ### Pitfall 5: `UserPublic` without regenerating client
 **What goes wrong:** Web banner never sees `email_verified`.  
 **Why:** Hand-edit only one of core/rpc_gen/api-client.  
-**How to avoid:** Change `octanest-core` DTO → `rpc-gen` → web.  
+**How to avoid:** Change `oxidean-core` DTO → `rpc-gen` → web.  
 **Warning signs:** TS type missing field after gen.
 
 ### Pitfall 6: Auto-login after reset vs OWASP guidance
@@ -380,7 +380,7 @@ import { OTPInput } from "input-otp";
 
 Current fields (no `email_verified` yet):
 
-```25:36:crates/octanest-core/src/auth_types.rs
+```25:36:crates/oxidean-core/src/auth_types.rs
 pub struct UserPublic {
     pub id: String,
     pub email: String,
@@ -395,7 +395,7 @@ pub struct UserPublic {
 }
 ```
 
-[VERIFIED: crates/octanest-core/src/auth_types.rs:25-36]
+[VERIFIED: crates/oxidean-core/src/auth_types.rs:25-36]
 
 Add: `pub email_verified: bool` derived as `row.email_verified_at.is_some()` in `user_to_public`.
 
@@ -434,7 +434,7 @@ Signup: after create, auto-issue verify email (D-23); keep existing welcome send
 
 Today:
 
-```156:169:crates/octanest-api/src/app.rs
+```156:169:crates/oxidean-api/src/app.rs
 fn rpc_status(resp: &RpcResponse) -> StatusCode {
     match resp {
         RpcResponse::Ok { .. } => StatusCode::OK,
@@ -452,7 +452,7 @@ fn rpc_status(resp: &RpcResponse) -> StatusCode {
 }
 ```
 
-[VERIFIED: crates/octanest-api/src/app.rs:156-169]
+[VERIFIED: crates/oxidean-api/src/app.rs:156-169]
 
 Add branch: `auth.email_unverified` → `FORBIDDEN`.
 
@@ -485,11 +485,11 @@ Add branch: `auth.email_unverified` → `FORBIDDEN`.
    - Recommendation: Optional stretch — not required for AUTH-12; skip unless planner has spare capacity.
    - RESOLVED: Skip notify-after-reset mail in Phase 5. AUTH-12 is satisfied by request/redeem only; D-27 and UI-SPEC do not require a “password was changed” message. Reset plan does not send post-reset notification.
 
-2. **Exact env allowlist for `auth.dev.privileged_ping` in Compose `OCTANEST_ENV=compose`?**
+2. **Exact env allowlist for `auth.dev.privileged_ping` in Compose `OXIDEAN_ENV=compose`?**
    - What we know: D-10 wants CI proof; Compose often uses `compose`.
    - What's unclear: Whether ping should exist in Compose e2e.
    - Recommendation: Allow `{development,dev,test,compose}`; never `production`.
-   - RESOLVED: Register `auth.dev.privileged_ping` when `OCTANEST_ENV` ∈ `{development,dev,test,compose}` or `cfg(test)`; never in `production`. Locked in the tracer plan (gate + privileged_ping).
+   - RESOLVED: Register `auth.dev.privileged_ping` when `OXIDEAN_ENV` ∈ `{development,dev,test,compose}` or `cfg(test)`; never in `production`. Locked in the tracer plan (gate + privileged_ping).
 
 ## Environment Availability
 
@@ -514,15 +514,15 @@ Step 2.6: External tools present; phase is primarily code + existing mail stack.
 |----------|-------|
 | Framework | Rust `cargo test` / nextest + Vitest 5 (apps/web) |
 | Config file | workspace Cargo / apps/web vitest projects |
-| Quick run command | `cargo test -p octanest-api --test auth_verify_reset` (new) |
+| Quick run command | `cargo test -p oxidean-api --test auth_verify_reset` (new) |
 | Full suite command | `make test` / existing CI matrix + `bun run test` in apps/web |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| AUTH-04 | Unverified → `auth.email_unverified` on privileged ping; verified → ok | integration | `cargo test -p octanest-api --test auth_verify_gate` | ❌ Wave 0 |
-| AUTH-04 | Local signup leaves `email_verified_at` null; consume OTP/token sets it | integration | `cargo test -p octanest-api --test auth_verify_reset` | ❌ Wave 0 |
+| AUTH-04 | Unverified → `auth.email_unverified` on privileged ping; verified → ok | integration | `cargo test -p oxidean-api --test auth_verify_gate` | ❌ Wave 0 |
+| AUTH-04 | Local signup leaves `email_verified_at` null; consume OTP/token sets it | integration | `cargo test -p oxidean-api --test auth_verify_reset` | ❌ Wave 0 |
 | AUTH-04 | IdP `email_verified=true` sets verified | unit/integration | workos/oidc mapping + DB assert | ❌ Wave 0 |
 | AUTH-04 | Admin seed auto-verified | integration | seed path test | ❌ Wave 0 |
 | AUTH-05 | Signup without invite fields still succeeds | integration | extend `auth_signup.rs` assert | ✅ extend existing |
@@ -533,14 +533,14 @@ Step 2.6: External tools present; phase is primarily code + existing mail stack.
 | UI | OTP wrapper + verify/reset pages | component | vitest unit/integration | ❌ Wave 0 |
 
 ### Sampling Rate
-- **Per task commit:** targeted `cargo test -p octanest-api --test …` / `bun run test:unit`
+- **Per task commit:** targeted `cargo test -p oxidean-api --test …` / `bun run test:unit`
 - **Per wave merge:** workspace Rust tests + web unit
 - **Phase gate:** Full suite green + human UAT per UI-SPEC copy/banner
 
 ### Wave 0 Gaps
-- [ ] `crates/octanest-api/tests/auth_verify_reset.rs` — issue/consume/rate-limit/anti-enumeration
-- [ ] `crates/octanest-api/tests/auth_verify_gate.rs` — `require_verified` + env-gated ping
-- [ ] Extend `crates/octanest-db/tests/dialect_auth.rs` (or sibling) for `0003` tokens + `set_email_verified`
+- [ ] `crates/oxidean-api/tests/auth_verify_reset.rs` — issue/consume/rate-limit/anti-enumeration
+- [ ] `crates/oxidean-api/tests/auth_verify_gate.rs` — `require_verified` + env-gated ping
+- [ ] Extend `crates/oxidean-db/tests/dialect_auth.rs` (or sibling) for `0003` tokens + `set_email_verified`
 - [ ] Web: InputOtp + verify/reset route smoke tests
 - [ ] rpc-gen / api-client regeneration in plan after DTO change
 
@@ -561,7 +561,7 @@ Step 2.6: External tools present; phase is primarily code + existing mail stack.
 | Pattern | STRIDE | Standard Mitigation |
 |---------|--------|---------------------|
 | Account enumeration via reset | Information Disclosure | Identical success (D-28); timing hygiene |
-| Token theft via Host injection | Spoofing | `OCTANEST_PUBLIC_ORIGIN` only |
+| Token theft via Host injection | Spoofing | `OXIDEAN_PUBLIC_ORIGIN` only |
 | OTP online brute force | Elevation | Rate limit + attempt cap + TTL + single-use |
 | Privilege use before verify | Elevation | `require_verified` on privileged RPC |
 | Session fixation after reset | Elevation | Fresh session id (existing SessionService) + revoke others |
@@ -574,7 +574,7 @@ Step 2.6: External tools present; phase is primarily code + existing mail stack.
 - In-repo Phase 4 auth/email/session/migrations (Read this session)
 - `npm view input-otp` + https://www.npmjs.com/package/input-otp + https://input-otp.rodz.dev/docs/forms
 - WorkOS 3.4.0 `User.email_verified` / openidconnect 4.0.1 `email_verified` claim getters (cargo registry Read)
-- docs/CONFIGURATION.md `OCTANEST_PUBLIC_ORIGIN`
+- docs/CONFIGURATION.md `OXIDEAN_PUBLIC_ORIGIN`
 - 05-CONTEXT.md / 05-UI-SPEC.md locked decisions
 
 ### Secondary (MEDIUM confidence)

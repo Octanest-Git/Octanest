@@ -1,9 +1,9 @@
 {
-  "command": "cargo test -p octanest-api --test repo_private_404 repo_private_404_identical_not_found",
+  "command": "cargo test -p oxidean-api --test repo_private_404 repo_private_404_identical_not_found",
   "exitCode": 101,
   "output": "TAP version 13\nnot ok 1 - repo_private_404_identical_not_found_for_missing_and_private\n  ---\n  message: 'assertion failed: missing repo \u2192 repo.not_found (got rpc.unknown_procedure)'\n  ...\n# tests 1\n# pass 0\n# fail 1\n# cancelled 0\n",
   "targetTest": "repo_private_404_identical_not_found_for_missing_and_private",
-  "targetFile": "crates/octanest-api/tests/repo_private_404.rs",
+  "targetFile": "crates/oxidean-api/tests/repo_private_404.rs",
   "expected": "error.code == repo.not_found for missing and private non-owner (identical)",
   "actual": "error.code == rpc.unknown_procedure (repo.get not implemented)"
 }

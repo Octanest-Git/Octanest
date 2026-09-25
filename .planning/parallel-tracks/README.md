@@ -1,6 +1,6 @@
 # Remaining-phases integration track
 
-**Status (2026-09-19):** Closed. Umbrella integrate branch `cursor/gsd-remaining-integrate-c82f` merged to `main` via [PR #16](https://github.com/Octanest-Git/Octanest/pull/16) (2026-09-16).
+**Status (2026-09-19):** Closed. Umbrella integrate branch `cursor/gsd-remaining-integrate-c82f` merged to `main` via [PR #16](https://github.com/oxidean/oxidean/pull/16) (2026-09-16).
 
 | Phase | Integrate |
 |-------|-----------|

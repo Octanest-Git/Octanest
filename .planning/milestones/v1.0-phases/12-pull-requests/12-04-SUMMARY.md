@@ -8,7 +8,7 @@
 - Outdated line comments on head SHA refresh / base retarget via `pull.update`
 
 ## Verification
-- `cargo nextest run -p octanest-api -E 'test(pull_files) | test(pull_comments)'`
+- `cargo nextest run -p oxidean-api -E 'test(pull_files) | test(pull_comments)'`
 - `make web-lint` / `make web-format-check`
 - Vitest pulls integration (8 pass / 3 expected fail)
 

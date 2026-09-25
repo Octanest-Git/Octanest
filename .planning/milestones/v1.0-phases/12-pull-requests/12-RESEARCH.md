@@ -1,7 +1,7 @@
 # Phase 12: Pull Requests - Research
 
 **Researched:** 2026-09-16  
-**Domain:** Pull requests (open/review/comment/merge) on Octanest Rust RPC + Octane UI + multi-dialect DB + GitBackend CLI  
+**Domain:** Pull requests (open/review/comment/merge) on Oxidean Rust RPC + Octane UI + multi-dialect DB + GitBackend CLI  
 **Confidence:** HIGH (codebase seams) / MEDIUM (fork-minimal vs Phase 21 SOC-04 boundary; bare-repo merge worktree details)
 
 <user_constraints>
@@ -93,15 +93,15 @@ Phase 12 adds first-class pull requests atop Issues numbering, RepoChrome IA (11
 
 | Fact | Evidence |
 |------|----------|
-| Latest migration `0015_packages` | `crates/octanest-db/migrations/sqlite/` |
-| Shared counter `issue_counters` + `allocate_next_issue_number` | `crates/octanest-db/src/issues.rs` |
+| Latest migration `0015_packages` | `crates/oxidean-db/migrations/sqlite/` |
+| Shared counter `issue_counters` + `allocate_next_issue_number` | `crates/oxidean-db/src/issues.rs` |
 | `pr_stub` in links CHECK | `0011_issues.sql` issue_links |
 | No fork columns on repositories | `0010_orgs_acl` repositories_new |
-| `GitBackend` has diff/log/branch_*; **no merge** | `crates/octanest-git/src/backend.rs` |
+| `GitBackend` has diff/log/branch_*; **no merge** | `crates/oxidean-git/src/backend.rs` |
 | `repo.compare` same-repo only | `repo/mod.rs` compare |
 | Compare UI exists | `apps/web/src/routes/$owner.$repo.compare.$.tsrx` |
 | RepoChromeActive lacks `pulls` | `apps/web/src/lib/repo-chrome-active.ts` |
-| Issue RPC pattern | `crates/octanest-api/src/issue/mod.rs` |
+| Issue RPC pattern | `crates/oxidean-api/src/issue/mod.rs` |
 | DiffPatch component | `apps/web/src/components/repo/diff-patch.tsrx` |
 
 ## Schema sketch (`0016_pull_requests`)
@@ -157,4 +157,4 @@ Mirror Phase 11 Wave 0: nextest `pull_*`, `dialect_pulls`, `factory_reset_pulls`
 - Do not hand-edit api-client — `make rpc-gen`  
 - Do not remount RepoChrome in leaves  
 - Do not enforce protection / required reviews  
-- Dialect SQL only in `octanest-db`
+- Dialect SQL only in `oxidean-db`

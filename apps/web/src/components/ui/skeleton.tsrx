@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Layout placeholder — Base UI does not ship Skeleton yet; this matches
- * Octanest chrome (muted surface + pulse) and reserves space to avoid jumps.
+ * Oxidean chrome (muted surface + pulse) and reserves space to avoid jumps.
  */
 export function Skeleton({
   className,

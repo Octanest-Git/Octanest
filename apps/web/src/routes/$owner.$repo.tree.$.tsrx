@@ -8,7 +8,7 @@ import type {
   RepoPublic,
   RepoRefEntry,
   RepoTreeEntry,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
 import { RepoAboutSidebar } from "@/components/repo/repo-about-sidebar";
@@ -66,7 +66,7 @@ export type TreeLoaderData =
 
 type Phase = { kind: "loading" } | TreeLoaderData;
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function loadTreePage(
   owner: string,
@@ -218,7 +218,7 @@ export const Route = createFileRoute("/$owner/$repo/tree/$")({
     const titlePath = path || "root";
     const trunc = titlePath.length > 40 ? `…${titlePath.slice(-36)}` : titlePath;
     return {
-      meta: [{ title: `${trunc} · ${owner}/${repo} · Octanest` }],
+      meta: [{ title: `${trunc} · ${owner}/${repo} · Oxidean` }],
     };
   },
   loader: async ({ params }): Promise<TreeLoaderData> => {

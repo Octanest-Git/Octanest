@@ -10,7 +10,7 @@ requires:
     provides: Full ShadCN semantic token layer (--primary/--secondary/--muted/--card/--border/--destructive) replacing legacy --color-accent-cool/--color-accent-warm
 provides:
   - Branded /status page with a Display-type status hero (loading/healthy/unhealthy/unreachable) driven exclusively by live system.health
-  - Status · Octanest document title via route head
+  - Status · Oxidean document title via route head
   - Soft opacity resolve transition on the status panel, reduced-motion safe
 affects: [03-05-pwa-icons]
 
@@ -36,7 +36,7 @@ completed: 2026-09-09
 
 # Phase 3 Plan 04: Branded Status Hero States Summary
 
-**`/status` rewritten onto semantic tokens with a 40px Display-type hero for all three resolved states (primary for healthy, destructive for unhealthy/unreachable), a `Status · Octanest` document title, and a reduced-motion-safe fade-in on resolution — still backed by exactly one live `system.health` call per mount.**
+**`/status` rewritten onto semantic tokens with a 40px Display-type hero for all three resolved states (primary for healthy, destructive for unhealthy/unreachable), a `Status · Oxidean` document title, and a reduced-motion-safe fade-in on resolution — still backed by exactly one live `system.health` call per mount.**
 
 ## Performance
 
@@ -45,7 +45,7 @@ completed: 2026-09-09
 - **Files modified:** 1
 
 ## Accomplishments
-- Route now declares `head: () => ({ meta: [{ title: "Status · Octanest" }] })`, satisfying D-21 on a non-landing route
+- Route now declares `head: () => ({ meta: [{ title: "Status · Oxidean" }] })`, satisfying D-21 on a non-landing route
 - All four hero states read as unmistakable per UI-SPEC: loading is muted Body text with no accent fill; healthy uses `text-primary` on a 40px Display line; unhealthy and unreachable use `text-destructive` on the same Display treatment
 - Every legacy `var(--color-*)` arbitrary-value class removed from the file in favor of `bg-card`, `border-border`, `text-muted-foreground`, `text-primary`, `text-destructive`
 - Added the UI-SPEC's single allowed status motion — a 200ms opacity fade-in (`oct-status-resolve` + `@keyframes octStatusIn`) on the resolved panel content only, fully disabled under `prefers-reduced-motion: reduce`, with the loading state left unanimated
@@ -60,7 +60,7 @@ Each task was committed atomically:
 **Plan metadata:** pending (this commit)
 
 ## Files Created/Modified
-- `apps/web/src/routes/status.tsx` - Branded hero states on semantic tokens, `Status · Octanest` title, soft resolve fade-in
+- `apps/web/src/routes/status.tsx` - Branded hero states on semantic tokens, `Status · Oxidean` title, soft resolve fade-in
 
 ## Decisions Made
 - Preserved the exact `Phase` union, single-shot `useEffect` fetch, and `cancelled` guard from the pre-existing implementation untouched — only route metadata (`head`) and JSX/class output changed, keeping T-03-14 (no polling) and D-26 (live health only) intact by construction
@@ -81,7 +81,7 @@ None. All four states are wired to the live `system.health` response; no hardcod
 
 ## Next Phase Readiness
 - Status half of D-15 is closed: `grep -cE 'accent-cool|accent-warm|--color-(text|surface|bg|muted|border|destructive)' apps/web/src/routes/status.tsx` outputs `0`
-- `bun run --filter @octanest/web build` exits `0` after both tasks
+- `bun run --filter @oxidean/web build` exits `0` after both tasks
 - No blockers for the remaining phase-level gate, which also depends on 03-02 and 03-03 clearing the same legacy-token grep in their own files
 
 ---
@@ -90,4 +90,4 @@ None. All four states are wired to the live `system.health` response; no hardcod
 
 ## Self-Check: PASSED
 
-Verified `apps/web/src/routes/status.tsx` contains `title: "Status · Octanest"`, `text-primary`, `text-destructive` (count 2), `text-[40px]` (count 3), `oct-status-resolve`, `@keyframes` (count 1), and `prefers-reduced-motion: reduce`; zero occurrences of legacy `--color-*` tokens, `text-secondary`/`bg-secondary`/`border-secondary`, `text-[20px]`/`font-medium`/`font-bold`, `setInterval`/`setTimeout`/`refetchInterval`, `dangerouslySetInnerHTML`, and animation-loop utility classes. Commits `6cfb888` and `9a463c4` verified present in `git log --oneline`. `bun run --filter @octanest/web build` exits 0.
+Verified `apps/web/src/routes/status.tsx` contains `title: "Status · Oxidean"`, `text-primary`, `text-destructive` (count 2), `text-[40px]` (count 3), `oct-status-resolve`, `@keyframes` (count 1), and `prefers-reduced-motion: reduce`; zero occurrences of legacy `--color-*` tokens, `text-secondary`/`bg-secondary`/`border-secondary`, `text-[20px]`/`font-medium`/`font-bold`, `setInterval`/`setTimeout`/`refetchInterval`, `dangerouslySetInnerHTML`, and animation-loop utility classes. Commits `6cfb888` and `9a463c4` verified present in `git log --oneline`. `bun run --filter @oxidean/web build` exits 0.

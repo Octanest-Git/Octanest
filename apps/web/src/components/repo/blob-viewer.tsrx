@@ -1,6 +1,6 @@
 import { Check, Copy, FileCode2 } from "@octanejs/lucide";
 import { useEffect, useEffectEvent, useState } from "octane";
-import type { RepoBlobResponse } from "@octanest/api-client";
+import type { RepoBlobResponse } from "@oxidean/api-client";
 import { MarkdownHtml } from "@/components/repo/markdown-body";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -195,7 +195,7 @@ export function BlobViewer({
       URL.revokeObjectURL(blobUrl);
       setLfsDlPending(false);
     } catch {
-      setLfsDlError("Can't reach Octanest. Check your connection and try again.");
+      setLfsDlError("Can't reach Oxidean. Check your connection and try again.");
       setLfsDlPending(false);
     }
   }

@@ -20,7 +20,7 @@ created: "2026-09-13"
 |----------|-------------|---------------|
 | Web session ↔ typed RPC | Browser cookies authenticate `/api/rpc` only | Session id; never PAT Bearer |
 | Git client ↔ Smart HTTP | Basic auth username+PAT over `/{owner}/{repo}.git` | PAT secret (once); token_hash lookup |
-| PAT mint ↔ DB | Create returns plaintext once; persist hash only | `octanest_pat_`/`octanest_fg_` secret → SHA-256 hex |
+| PAT mint ↔ DB | Create returns plaintext once; persist hash only | `oxidean_pat_`/`oxidean_fg_` secret → SHA-256 hex |
 | Traefik ↔ API vs SPA | `.git` PathRegexp priority 110 → API; bare paths → web | Clone/push traffic vs UI HTML |
 | Trusted proxy ↔ rate limit | Rightmost `X-Forwarded-For` hop for failed-auth IP bucket | Client IP identity |
 
@@ -33,7 +33,7 @@ created: "2026-09-13"
 | T-08-01 | Information disclosure | PAT create/list/reveal/DB | high | mitigate | One-time plaintext; SHA-256 hash-at-rest; list prefix+fingerprint only (D-15) | closed |
 | T-08-02 | Elevation of privilege | Smart HTTP Basic / receive-pack | high | mitigate | PAT-prefix/hash only; reject passwords; ignore cookies; verified+scope for push (D-11/D-12/D-20/D-23/D-24) | closed |
 | T-08-03 | Elevation of privilege | Tokens UI Generate/create | medium | mitigate | AuthShell / disable Generate when !email_verified (D-24/D-25); server `require_verified` | closed |
-| T-08-04 | Spoofing | Token prefixes | high | mitigate | Locked `octanest_pat_` / `octanest_fg_` (not `ona_*` / `gh*`) — D-08 | closed |
+| T-08-04 | Spoofing | Token prefixes | high | mitigate | Locked `oxidean_pat_` / `oxidean_fg_` (not `ona_*` / `gh*`) — D-08 | closed |
 | T-08-05 | Information disclosure | Private git status | medium | mitigate | Unauth private → 401+WWW-Authenticate, not web 404 (D-21) | closed |
 | T-08-06 | Elevation of privilege | FG selected repos | high | mitigate | Ownership check + join table; dedupe; transactional create | closed |
 | T-08-07 | Tampering | git-http-backend CGI | high | mitigate | argv to binary; `bare_repo_path` validation; `GIT_HTTP_EXPORT_ALL` | closed |
@@ -73,7 +73,7 @@ created: "2026-09-13"
 | Open (blocking ≥ high) | 0 |
 | Accepted documented | 1 (T-08-SC) |
 
-Evidence highlights: `pat/mod.rs` hash-at-rest + one-time create; `git_smart_http.rs` Basic/PAT/cookie-ignore/401/rate-limit; `pats.rs` transactional FG links; `pat_types.rs` `octanest_*` prefixes; Traefik `docker-compose.yml` priority 110; docs API/CONFIGURATION PAT HTTPS-only. Code-review fixes WR-01…WR-04 + IN-01…IN-03 incorporated before this audit.
+Evidence highlights: `pat/mod.rs` hash-at-rest + one-time create; `git_smart_http.rs` Basic/PAT/cookie-ignore/401/rate-limit; `pats.rs` transactional FG links; `pat_types.rs` `oxidean_*` prefixes; Traefik `docker-compose.yml` priority 110; docs API/CONFIGURATION PAT HTTPS-only. Code-review fixes WR-01…WR-04 + IN-01…IN-03 incorporated before this audit.
 
 ---
 

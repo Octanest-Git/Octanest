@@ -39,12 +39,12 @@ key-files:
     - apps/web/src/routes/$owner.$repo.blame.$.tsrx
     - .planning/phases/07-git-repos-browse/.tdd/07-06-red-evidence.json
   modified:
-    - crates/octanest-git/src/backend.rs
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-core/src/repo_types.rs
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-git/src/backend.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - apps/web/src/lib/repo-browse.ts
     - apps/web/src/routes/$owner.$repo.blob.$.tsrx
@@ -67,7 +67,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#log_returns_paged_commit_summaries_for_ref"
+        ref: "crates/oxidean-git/src/cli.rs#log_returns_paged_commit_summaries_for_ref"
         status: pass
     human_judgment: false
   - id: D2
@@ -75,7 +75,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#show_commit_returns_files_and_unified_patch"
+        ref: "crates/oxidean-git/src/cli.rs#show_commit_returns_files_and_unified_patch"
         status: pass
     human_judgment: false
   - id: D3
@@ -83,7 +83,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#diff_identical_refs_returns_empty_not_error"
+        ref: "crates/oxidean-git/src/cli.rs#diff_identical_refs_returns_empty_not_error"
         status: pass
     human_judgment: false
   - id: D4
@@ -91,7 +91,7 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#blame_returns_per_line_meta_for_text_file"
+        ref: "crates/oxidean-git/src/cli.rs#blame_returns_per_line_meta_for_text_file"
         status: pass
       - kind: other
         ref: "bun run build (apps/web)"
@@ -148,10 +148,10 @@ _Note: TDD tasks may have multiple commits (test → feat → refactor)_
 
 ## Files Created/Modified
 
-- `crates/octanest-git/src/backend.rs` — Commit/Diff/Blame types + trait methods
-- `crates/octanest-git/src/cli.rs` — CLI implementations + unit tests
-- `crates/octanest-core/src/repo_types.rs` — History DTOs
-- `crates/octanest-api/src/repo/mod.rs` / `rpc.rs` — ACL handlers + dispatch
+- `crates/oxidean-git/src/backend.rs` — Commit/Diff/Blame types + trait methods
+- `crates/oxidean-git/src/cli.rs` — CLI implementations + unit tests
+- `crates/oxidean-core/src/repo_types.rs` — History DTOs
+- `crates/oxidean-api/src/repo/mod.rs` / `rpc.rs` — ACL handlers + dispatch
 - `packages/api-client/src/index.ts` — Generated client
 - `apps/web/src/routes/$owner.$repo.commits.$.tsrx` — Commits list
 - `apps/web/src/routes/$owner.$repo.commit.$sha.tsrx` — Commit detail

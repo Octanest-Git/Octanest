@@ -5,7 +5,7 @@ subsystem: database
 tags: [sqlx, postgres, mysql, sqlite, dialect]
 requires:
   - phase: 01-monorepo-scaffold
-    provides: octanest-db Postgres-only stub + API Database::ping contract
+    provides: oxidean-db Postgres-only stub + API Database::ping contract
 provides:
   - Dialect enum + resolve_dialect / redact_url
   - DbPool enum connecting postgres/mysql/sqlite
@@ -16,17 +16,17 @@ tech-stack:
   patterns: [scheme-prefix dialect resolve, concrete pool enum not AnyPool]
 key-files:
   created:
-    - crates/octanest-db/src/dialect.rs
-    - crates/octanest-db/src/pool.rs
+    - crates/oxidean-db/src/dialect.rs
+    - crates/oxidean-db/src/pool.rs
   modified:
-    - crates/octanest-db/Cargo.toml
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-db/Cargo.toml
+    - crates/oxidean-db/src/lib.rs
     - Cargo.lock
 key-decisions:
-  - "Prefix-match URL schemes; optional OCTANEST_DB_DIALECT must agree (D-01/D-02)"
+  - "Prefix-match URL schemes; optional OXIDEAN_DB_DIALECT must agree (D-01/D-02)"
   - "SQLite WAL + foreign_keys + create_dir_all at connect (D-18/D-20)"
 patterns-established:
-  - "All dialect branching stays inside octanest-db"
+  - "All dialect branching stays inside oxidean-db"
   - "ping() maps pool variants via is_ok() to keep Result types disjoint"
 requirements-completed: [PLAT-07, PLAT-08]
 duration: 15min
@@ -35,7 +35,7 @@ completed: 2026-09-09
 
 # Phase 2 Plan 01: Connection layer Summary
 
-**`octanest-db` resolves dialect from URL (optional agreeing env) and connects Postgres/MySQL/SQLite behind one `Database` type.**
+**`oxidean-db` resolves dialect from URL (optional agreeing env) and connects Postgres/MySQL/SQLite behind one `Database` type.**
 
 ## Performance
 
@@ -61,6 +61,6 @@ completed: 2026-09-09
 
 ## Self-Check: PASSED
 
-- `cargo test -p octanest-db --lib` — 5 passed
+- `cargo test -p oxidean-db --lib` — 5 passed
 - `cargo test --workspace` — green
 - Acceptance greps for Dialect/DbPool/WAL/FK/create_dir_all — ok

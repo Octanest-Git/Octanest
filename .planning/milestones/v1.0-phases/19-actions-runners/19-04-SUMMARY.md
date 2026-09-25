@@ -24,14 +24,14 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/actions/dispatch.rs
-    - crates/octanest-api/src/actions/runner_proto.rs
-    - crates/octanest-api/src/actions/logs.rs
+    - crates/oxidean-api/src/actions/dispatch.rs
+    - crates/oxidean-api/src/actions/runner_proto.rs
+    - crates/oxidean-api/src/actions/logs.rs
   modified:
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-api/src/ssh/server.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-db/src/actions.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/ssh/server.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-db/src/actions.rs
 
 key-decisions:
   - "Tracer uses JSON Register/FetchTask; 19-05 may deepen Connect/prost without remount"
@@ -86,7 +86,7 @@ status: complete
 
 ## Deviations from Plan
 
-**1. [Rule 3] SSH state lean** — Actions SSH hook uses `CliGitBackend::new()` + env `OCTANEST_ACTIONS_ENABLED` instead of extending `SshState`.
+**1. [Rule 3] SSH state lean** — Actions SSH hook uses `CliGitBackend::new()` + env `OXIDEAN_ACTIONS_ENABLED` instead of extending `SshState`.
 
 **2. [Rule 3] JSON protocol stub** — Per plan assumption; full prost/Connect deferred to 19-05.
 

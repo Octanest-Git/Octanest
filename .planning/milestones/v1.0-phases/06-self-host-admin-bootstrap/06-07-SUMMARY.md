@@ -9,7 +9,7 @@ requires:
     provides: ENV seed + wizard + confirm_admin + allow_signup RPC/UI (06-02…06-09)
 provides:
   - "AUTH-06/07 reframed as empty-instance (not On self-host)"
-  - "CONFIGURATION/.env.example document OCTANEST_ALLOW_SIGNUP default false + ADMIN seed"
+  - "CONFIGURATION/.env.example document OXIDEAN_ALLOW_SIGNUP default false + ADMIN seed"
   - "ARCHITECTURE/API describe ENV seed, wizard, forced credentials, RPC allowlist, allow_signup"
   - "rpc-gen synced api-client; flicker todo closed"
   - "06-COVERAGE.md no external API declaration"
@@ -28,7 +28,7 @@ tech-stack:
   added: []
   patterns:
     - "Empty-instance product docs — no cloud/self-host documentation forks"
-    - "OCTANEST_ALLOW_SIGNUP fail-closed default documented beside ADMIN seed"
+    - "OXIDEAN_ALLOW_SIGNUP fail-closed default documented beside ADMIN seed"
 
 key-files:
   created: []
@@ -44,7 +44,7 @@ key-files:
 
 key-decisions:
   - "AUTH-05 keeps checkbox; v1 note clarifies allow_signup supersedes always-open cloud signup"
-  - "Document cloud OCTANEST_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)"
+  - "Document cloud OXIDEAN_ALLOW_SIGNUP=true in manifests — no Compose file change (Open Q2)"
 
 patterns-established:
   - "Operator docs describe one empty-instance bootstrap path for cloud and self-host"
@@ -61,11 +61,11 @@ coverage:
         status: pass
     human_judgment: false
   - id: D2
-    description: "CONFIGURATION + .env.example document OCTANEST_ALLOW_SIGNUP default false and ADMIN seed / system-administrator"
+    description: "CONFIGURATION + .env.example document OXIDEAN_ALLOW_SIGNUP default false and ADMIN seed / system-administrator"
     requirement: AUTH-07
     verification:
       - kind: other
-        ref: "rg OCTANEST_ALLOW_SIGNUP docs/CONFIGURATION.md .env.example"
+        ref: "rg OXIDEAN_ALLOW_SIGNUP docs/CONFIGURATION.md .env.example"
         status: pass
     human_judgment: false
   - id: D3
@@ -81,7 +81,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: other
-        ref: "cargo run -p octanest-api --bin rpc-gen; cargo nextest …bootstrap|seeded_admin|signup; bun run build (apps/web)"
+        ref: "cargo run -p oxidean-api --bin rpc-gen; cargo nextest …bootstrap|seeded_admin|signup; bun run build (apps/web)"
         status: pass
     human_judgment: false
   - id: D5
@@ -111,9 +111,9 @@ status: complete
 
 ## Accomplishments
 
-- Reframed AUTH-06/07 as empty-instance (dropped “On self-host”); AUTH-05 v1 note ties open signup to `allow_signup` / `OCTANEST_ALLOW_SIGNUP`
-- Documented ADMIN seed (`system-administrator`, fail-closed), wizard path, forced credentials, RPC allowlist, and `OCTANEST_ALLOW_SIGNUP` default false in CONFIGURATION / ARCHITECTURE / API / `.env.example`
-- Regenerated `@octanest/api-client` via `rpc-gen`; closed folded signed-in home flicker todo; `06-COVERAGE.md` declares no external API this phase
+- Reframed AUTH-06/07 as empty-instance (dropped “On self-host”); AUTH-05 v1 note ties open signup to `allow_signup` / `OXIDEAN_ALLOW_SIGNUP`
+- Documented ADMIN seed (`system-administrator`, fail-closed), wizard path, forced credentials, RPC allowlist, and `OXIDEAN_ALLOW_SIGNUP` default false in CONFIGURATION / ARCHITECTURE / API / `.env.example`
+- Regenerated `@oxidean/api-client` via `rpc-gen`; closed folded signed-in home flicker todo; `06-COVERAGE.md` declares no external API this phase
 
 ## Task Commits
 
@@ -129,7 +129,7 @@ Each task was committed atomically:
 - `docs/CONFIGURATION.md` — ADMIN + ALLOW_SIGNUP + fail-closed seed defaults
 - `docs/ARCHITECTURE.md` — empty-instance bootstrap / allow_signup narrative
 - `docs/API.md` — bootstrap/confirm/provider_config/admin allow_signup procedures
-- `.env.example` — commented `OCTANEST_ALLOW_SIGNUP=false` beside ADMIN vars
+- `.env.example` — commented `OXIDEAN_ALLOW_SIGNUP=false` beside ADMIN vars
 - `.planning/REQUIREMENTS.md` — AUTH-05/06/07 + out-of-scope invite note
 - `.planning/phases/06-self-host-admin-bootstrap/06-COVERAGE.md` — no external API one-liner
 - `packages/api-client/src/index.ts` — rpc-gen sync (comment trim on `allow_signup`)
@@ -137,7 +137,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 
-- Keep AUTH-05 checked; clarify via v1 note that instance `allow_signup` (default closed) governs local signup after bootstrap; cloud manifests set `OCTANEST_ALLOW_SIGNUP=true` when open signup is desired
+- Keep AUTH-05 checked; clarify via v1 note that instance `allow_signup` (default closed) governs local signup after bootstrap; cloud manifests set `OXIDEAN_ALLOW_SIGNUP=true` when open signup is desired
 - No Compose overlay change for ALLOW_SIGNUP (Open Q2 resolved: docs/manifest note sufficient)
 
 ## Deviations from Plan

@@ -9,7 +9,7 @@ requires:
     provides: Wave 0 dialect_packages stub
 provides:
   - Tri-dialect 0015_packages schema
-  - OCTANEST_PACKAGES_DIR Compose volume + docs
+  - OXIDEAN_PACKAGES_DIR Compose volume + docs
   - Traefik/Vite /v2|/npm|/generic routing; reserved slugs
 affects: [20-03, 20-04, 20-05, 20-06, 20-12]
 
@@ -24,15 +24,15 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-db/migrations/postgres/0015_packages.sql
-    - crates/octanest-db/migrations/mysql/0015_packages.sql
-    - crates/octanest-db/migrations/sqlite/0015_packages.sql
+    - crates/oxidean-db/migrations/postgres/0015_packages.sql
+    - crates/oxidean-db/migrations/mysql/0015_packages.sql
+    - crates/oxidean-db/migrations/sqlite/0015_packages.sql
   modified:
-    - crates/octanest-db/tests/dialect_packages.rs
+    - crates/oxidean-db/tests/dialect_packages.rs
     - docker-compose.yml
     - .env.example
     - docs/CONFIGURATION.md
-    - crates/octanest-core/src/auth_types.rs
+    - crates/oxidean-core/src/auth_types.rs
     - apps/web/vite.config.ts
 
 key-decisions:
@@ -50,7 +50,7 @@ coverage:
     requirement: PKG-04
     verification:
       - kind: unit
-        ref: cargo test -p octanest-db --test dialect_packages
+        ref: cargo test -p oxidean-db --test dialect_packages
         status: pass
     human_judgment: false
   - id: D2
@@ -70,7 +70,7 @@ status: complete
 
 # Phase 20 Plan 02: Schema + Edge Routing Summary
 
-**Tri-dialect `0015_packages` schema, separate `OCTANEST_PACKAGES_DIR` volume, and Traefik/Vite PathPrefix routing for `/v2|/npm|/generic` with reserved usernames.**
+**Tri-dialect `0015_packages` schema, separate `OXIDEAN_PACKAGES_DIR` volume, and Traefik/Vite PathPrefix routing for `/v2|/npm|/generic` with reserved usernames.**
 
 ## Performance
 
@@ -86,7 +86,7 @@ status: complete
 ## Task Commits
 
 1. **Task 1: Tri-dialect packages migration** - `479e76f` (feat)
-2. **Task 2: OCTANEST_PACKAGES_DIR + Compose volume** - `cdbd746` (feat)
+2. **Task 2: OXIDEAN_PACKAGES_DIR + Compose volume** - `cdbd746` (feat)
 3. **Task 3: Reserved usernames + Vite + Traefik** - `095e056` (feat)
 
 ## Decisions Made

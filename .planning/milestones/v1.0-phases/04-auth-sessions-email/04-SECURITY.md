@@ -20,14 +20,14 @@ register_authored_at_plan_time: true
 | Boundary | Description | Data Crossing |
 |----------|-------------|---------------|
 | Browser → `/api/rpc` `auth.*` / `user.*` / `admin.auth.*` | Untrusted credentials, cookies, profile edits | Passwords (ephemeral), session cookie, PII |
-| Browser ↔ cookie `octanest_session` | Opaque session id on credentialed requests | Raw token (browser) ↔ SHA-256 hash (DB) |
-| API → `octanest-db` → SQL engines | Auth PII + password PHC + session token hashes | Users, sessions, identities, settings |
+| Browser ↔ cookie `oxidean_session` | Opaque session id on credentialed requests | Raw token (browser) ↔ SHA-256 hash (DB) |
+| API → `oxidean-db` → SQL engines | Auth PII + password PHC + session token hashes | Users, sessions, identities, settings |
 | Browser multipart → `/api/user/avatar` | Untrusted image bytes | ≤2 MiB JPEG/PNG/WebP → `{user_id}.webp` |
 | Public `GET /uploads/avatars/*` | Public read of avatar bytes | Re-encoded WebP only |
 | API → SMTP / Resend | Outbound mail + ENV credentials | Message content; secrets never logged |
-| Browser → WorkOS / OIDC IdP → `/api/auth/*/callback` | Auth codes, state, PKCE | External IdP tokens → Octanest session mint |
+| Browser → WorkOS / OIDC IdP → `/api/auth/*/callback` | Auth codes, state, PKCE | External IdP tokens → Oxidean session mint |
 | Admin OIDC issuer URL → discovery HTTP | SSRF risk if issuer attacker-controlled | HTTPS allowlist only |
-| ENV `OCTANEST_ADMIN_*` → boot seed | Privilege creation when DB empty | Admin email/password once |
+| ENV `OXIDEAN_ADMIN_*` → boot seed | Privilege creation when DB empty | Admin email/password once |
 
 ---
 
@@ -37,21 +37,21 @@ register_authored_at_plan_time: true
 |-----------|----------|-----------|----------|-------------|------------|--------|
 | T-04-01 | Information disclosure | `password_hash` / `token_hash` columns | high | mitigate | Hash-only TEXT columns; Argon2id PHC + SHA-256 session; never store raw cookie token | closed |
 | T-04-02 | Tampering | username/email uniqueness | medium | mitigate | UNIQUE on email/username all dialects; email lowercased before insert | closed |
-| T-04-03 | Elevation of privilege | `users.is_admin` | high | mitigate | DEFAULT false; only empty-DB `OCTANEST_ADMIN_*` seed / Phase 6; no public insert | closed |
-| T-04-04 | Information disclosure | email logs / errors | high | mitigate | `octanest.mail` logs to/subject/body; SMTP/Resend errors redacted | closed |
+| T-04-03 | Elevation of privilege | `users.is_admin` | high | mitigate | DEFAULT false; only empty-DB `OXIDEAN_ADMIN_*` seed / Phase 6; no public insert | closed |
+| T-04-04 | Information disclosure | email logs / errors | high | mitigate | `oxidean.mail` logs to/subject/body; SMTP/Resend errors redacted | closed |
 | T-04-05 | Tampering | email header injection | medium | mitigate | lettre typed `Mailbox`; Resend structured JSON fields | closed |
 | T-04-06 | Spoofing | From address | low | accept | Operator configures From via ENV; no SPF/DKIM in Phase 4 | closed |
 | T-04-07 | Elevation of privilege | session cookie | high | mitigate | HttpOnly; SameSite=Lax; SHA-256 in DB; CSPRNG token | closed |
 | T-04-08 | Elevation of privilege | session fixation | high | mitigate | `issue_session` / SSO `sessions.create` mint new id on login/signup | closed |
 | T-04-09 | Information disclosure | password handling | high | mitigate | Argon2id PHC; never log password/hash | closed |
-| T-04-10 | Tampering | cookie Secure flag | medium | mitigate | Secure unless `OCTANEST_ENV` ∈ {development,dev}; Path=/; no Domain | closed |
+| T-04-10 | Tampering | cookie Secure flag | medium | mitigate | Secure unless `OXIDEAN_ENV` ∈ {development,dev}; Path=/; no Domain | closed |
 | T-04-11 | Spoofing | auth.login | medium | mitigate | Generic `auth.invalid_credentials` (no user enumeration) | closed |
 | T-04-12 | Elevation of privilege | auth.* when mode≠local | high | mitigate | Signup/login rejected unless `ProviderMode::Local` | closed |
-| T-04-13 | Elevation of privilege | OCTANEST_ADMIN_* seed | high | mitigate | Both env set AND `count_users()==0` only | closed |
+| T-04-13 | Elevation of privilege | OXIDEAN_ADMIN_* seed | high | mitigate | Both env set AND `count_users()==0` only | closed |
 | T-04-14 | Information disclosure | signup duplicate | medium | mitigate | Stable `auth.taken`; combined UI message | closed |
 | T-04-15 | Spoofing | OIDC/WorkOS callback | high | mitigate | Server pending store validates state (+ OIDC nonce); PKCE | closed |
 | T-04-16 | Spoofing / SSRF | OIDC issuer discovery | high | mitigate | HTTPS only; reject localhost/loopback/link-local/10/8/metadata; residual if admin compromised accepted at L1 | closed |
-| T-04-17 | Elevation of privilege | WorkOS sealed session | high | mitigate | Always mint Octanest `sessions` row — never WorkOS sealed cookie as app session | closed |
+| T-04-17 | Elevation of privilege | WorkOS sealed session | high | mitigate | Always mint Oxidean `sessions` row — never WorkOS sealed cookie as app session | closed |
 | T-04-18 | Information disclosure | IdP errors | medium | mitigate | Log server-side; redirect `/login?error=sso` | closed |
 | T-04-19 | Tampering | avatar upload path | high | mitigate | Ignore client filename; `{user_id}.webp` only; reject `..`; 2 MiB; re-encode | closed |
 | T-04-20 | Denial of service | image decode | medium | mitigate | 2 MiB + allowlisted content-types jpeg/png/webp | closed |

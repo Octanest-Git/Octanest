@@ -26,20 +26,20 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/user/lookup.rs
-    - crates/octanest-api/src/user/rate_limit.rs
-    - crates/octanest-api/src/user/mod.rs
-    - crates/octanest-api/tests/user_lookup.rs
+    - crates/oxidean-api/src/user/lookup.rs
+    - crates/oxidean-api/src/user/rate_limit.rs
+    - crates/oxidean-api/src/user/mod.rs
+    - crates/oxidean-api/tests/user_lookup.rs
     - .planning/phases/10-orgs-permissions/.tdd/10-09-t1-red-evidence.json
   modified:
-    - crates/octanest-db/src/users.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-db/src/users.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
-    - crates/octanest-api/tests/org_create_members.rs
+    - crates/oxidean-api/tests/org_create_members.rs
 
 key-decisions:
   - "user/ module for lookup (profile stays under auth/); matches user.* RPC namespace"
@@ -58,10 +58,10 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/user_lookup.rs#user_lookup_prefix_returns_public_fields_without_email"
+        ref: "crates/oxidean-api/tests/user_lookup.rs#user_lookup_prefix_returns_public_fields_without_email"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/org_create_members.rs#org_lookup_shape_prefix_limit_no_email"
+        ref: "crates/oxidean-api/tests/org_create_members.rs#org_lookup_shape_prefix_limit_no_email"
         status: pass
     human_judgment: false
   - id: D2
@@ -69,13 +69,13 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/user_lookup.rs#user_lookup_short_prefix_returns_empty"
+        ref: "crates/oxidean-api/tests/user_lookup.rs#user_lookup_short_prefix_returns_empty"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/user_lookup.rs#user_lookup_email_shaped_prefix_returns_empty"
+        ref: "crates/oxidean-api/tests/user_lookup.rs#user_lookup_email_shaped_prefix_returns_empty"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/user_lookup.rs#user_lookup_prefix_is_case_insensitive"
+        ref: "crates/oxidean-api/tests/user_lookup.rs#user_lookup_prefix_is_case_insensitive"
         status: pass
     human_judgment: false
   - id: D3
@@ -110,7 +110,7 @@ commits: 3
 
 - Shipped `user.lookup` behind `require_verified` with per-session rate limiting
 - Dialect-safe username prefix search (PG/MySQL/SQLite) returning lean public rows only
-- Regenerated `@octanest/api-client` with `user.lookup` + query options; sync-check green
+- Regenerated `@oxidean/api-client` with `user.lookup` + query options; sync-check green
 
 ## Task Commits
 
@@ -127,11 +127,11 @@ Each task was committed atomically (TDD RED → GREEN on Task 1):
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/user/lookup.rs` — RPC handler (prefix gates + DB map)
-- `crates/octanest-api/src/user/rate_limit.rs` — 60/session/60s sliding window
-- `crates/octanest-db/src/users.rs` — `list_by_username_prefix` + `UserLookupRow`
-- `crates/octanest-core/src/auth_types.rs` — `UserLookupRequest` / `Hit` / `Response`
-- `crates/octanest-api/tests/user_lookup.rs` — integration suite
+- `crates/oxidean-api/src/user/lookup.rs` — RPC handler (prefix gates + DB map)
+- `crates/oxidean-api/src/user/rate_limit.rs` — 60/session/60s sliding window
+- `crates/oxidean-db/src/users.rs` — `list_by_username_prefix` + `UserLookupRow`
+- `crates/oxidean-core/src/auth_types.rs` — `UserLookupRequest` / `Hit` / `Response`
+- `crates/oxidean-api/tests/user_lookup.rs` — integration suite
 - `packages/api-client/src/index.ts` — generated client
 
 ## Decisions Made

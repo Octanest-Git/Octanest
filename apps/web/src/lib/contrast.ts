@@ -63,15 +63,15 @@ export const THEME_CONTRAST_PAIRS = {
   light: {
     foregroundOnBackground: ["#1f2328", "#ffffff"] as const,
     mutedOnBackground: ["#59636e", "#ffffff"] as const,
-    primaryOnBackground: ["#0f766e", "#ffffff"] as const,
-    primaryFgOnPrimary: ["#ffffff", "#0f766e"] as const,
+    primaryOnBackground: ["#bf4b0a", "#ffffff"] as const,
+    primaryFgOnPrimary: ["#ffffff", "#bf4b0a"] as const,
     destructiveFgOnDestructive: ["#ffffff", "#cf222e"] as const,
   },
   dark: {
-    foregroundOnBackground: ["#f0f3f6", "#000000"] as const,
-    mutedOnBackground: ["#9da7b3", "#000000"] as const,
-    primaryOnBackground: ["#2dd4bf", "#000000"] as const,
-    primaryFgOnPrimary: ["#04110e", "#2dd4bf"] as const,
-    cardFgOnCard: ["#f0f3f6", "#0d1117"] as const,
+    foregroundOnBackground: ["#f0f3f6", "#121212"] as const,
+    mutedOnBackground: ["#9da7b3", "#121212"] as const,
+    primaryOnBackground: ["#ff7b4a", "#121212"] as const,
+    primaryFgOnPrimary: ["#1a0a04", "#ff7b4a"] as const,
+    cardFgOnCard: ["#f0f3f6", "#1b1d21"] as const,
   },
 } as const;

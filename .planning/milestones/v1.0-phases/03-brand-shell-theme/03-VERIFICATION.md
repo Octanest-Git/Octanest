@@ -22,7 +22,7 @@ covered_files:
   - apps/web/public/manifest.webmanifest
   - apps/web/public/sw.js
   - apps/web/src/components/chrome.tsrx
-  - apps/web/src/components/octanest-mark.tsrx
+  - apps/web/src/components/oxidean-mark.tsrx
   - apps/web/src/components/theme-select.tsrx
   - apps/web/src/components/ui/button.tsrx
   - apps/web/src/lib/theme.integration.test.ts
@@ -39,7 +39,7 @@ overrides_applied: 0
 
 # Phase 3: Brand Shell & Theme Verification Report
 
-**Phase Goal:** Octanest brand shell — semantic tokens, chrome, landing, status, theme persistence, favicon/PWA  
+**Phase Goal:** Oxidean brand shell — semantic tokens, chrome, landing, status, theme persistence, favicon/PWA  
 **Verified:** 2026-09-19T15:21:00Z  
 **Status:** passed  
 **Re-verification:** Yes — lightweight evidence backfill (D-VER-01); `03-VALIDATION.md` reconstructed/validated 2026-09-13; human UAT approved 2026-09-09
@@ -50,8 +50,8 @@ overrides_applied: 0
 
 | # | Truth | Status | Evidence |
 | --- | ------- | ---------- | -------------- |
-| 1 | Shared Octanest mark + semantic primary/secondary tokens (BRAND-01) | ✓ VERIFIED | `octanest-mark.tsrx` sole PNG consumer; `--primary` / `@theme` in `styles.css`; `03-01-SUMMARY` |
-| 2 | Named Octanest chrome / landing / status (BRAND-02) | ✓ VERIFIED | Titles in `__root.tsrx` / `Status · Octanest`; naming greps empty for GitHub-clone / bare Octane (`03-06` gates) |
+| 1 | Shared Oxidean mark + semantic primary/secondary tokens (BRAND-01) | ✓ VERIFIED | `oxidean-mark.tsrx` sole PNG consumer; `--primary` / `@theme` in `styles.css`; `03-01-SUMMARY` |
+| 2 | Named Oxidean chrome / landing / status (BRAND-02) | ✓ VERIFIED | Titles in `__root.tsrx` / `Status · Oxidean`; naming greps empty for GitHub-clone / bare Octane (`03-06` gates) |
 | 3 | Correct light/dark render (BRAND-03) | ✓ VERIFIED | Token layers + status Vitest; human visual approved 2026-09-09 (`03-06-SUMMARY`) |
 | 4 | Default system theme + OS preference (BRAND-04) | ✓ VERIFIED | `theme.integration.test.ts`; FOUC boot `THEME_BOOT_SCRIPT` in `__root.tsrx` |
 | 5 | Persist light/dark override across refresh (BRAND-05) | ✓ VERIFIED | Theme helpers + integration tests; human checklist APPROVED 2026-09-09 |
@@ -74,7 +74,7 @@ overrides_applied: 0
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
 | `styles.css` | chrome / landing / status | semantic tokens | ✓ WIRED | No `accent-cool`/`accent-warm` on brand surfaces |
-| `OctanestMark` | chrome / landing | shared component | ✓ WIRED | Sole PNG path |
+| `OxideanMark` | chrome / landing | shared component | ✓ WIRED | Sole PNG path |
 | Theme helpers | localStorage/cookie | persistence | ✓ WIRED | Integration tests |
 | Manifest / SW | PWA install | assets-only | ✓ WIRED | No `/api`/`/health` cache strategies in built SW |
 

@@ -47,13 +47,13 @@ reviewed_at: 2026-09-09
 ## Layout contracts
 
 ### Global chrome
-- **Header:** mark (`brand/octanest-mark.png`) + wordmark “Octanest”; public **Search** control (disabled/placeholder); **Auth** placeholders (e.g. “Sign in” / “Sign up” non-functional or `disabled` with title “Coming soon”)
+- **Header:** mark (`brand/oxidean-mark.png`) + wordmark “Oxidean”; public **Search** control (disabled/placeholder); **Auth** placeholders (e.g. “Sign in” / “Sign up” non-functional or `disabled` with title “Coming soon”)
 - **Footer:** includes **Status** link → `/status` (CONTEXT D-26)
 - No cards in the hero. Cards allowed only if needed for interactive status details on `/status` (health payload readability)
 
 ### `/` Landing (first viewport)
 - One composition: brand-forward hero (not a dashboard)
-- Contents: brand (mark + name), one headline, one short supporting sentence, CTA group (**Get started** + **Explore Octanest**), full-bleed atmospheric background (gradient/mesh derived from blue↔orange brand — not flat single color)
+- Contents: brand (mark + name), one headline, one short supporting sentence, CTA group (**Get started** + **Explore Oxidean**), full-bleed atmospheric background (gradient/mesh derived from blue↔orange brand — not flat single color)
 - Do **not** put stats, schedules, address blocks, or secondary marketing grids in the first viewport
 - Search/Auth remain chrome-only, not hero overlays/badges
 
@@ -128,7 +128,7 @@ Weights used project-wide: **400** and **600** only.
 
 **Accent reserved for (only):**
 1. Primary CTA (**Get started**) fill
-2. Secondary CTA (**Explore Octanest**) accent treatment (outline or text+underline — not solid fill competing with primary)
+2. Secondary CTA (**Explore Oxidean**) accent treatment (outline or text+underline — not solid fill competing with primary)
 3. Focus rings on interactive controls
 4. Healthy status indicator on `/status`
 5. Brand mark color pairing (asset itself; do not recolor ad hoc)
@@ -141,24 +141,24 @@ Weights used project-wide: **400** and **600** only.
 
 | Element | Copy |
 |---------|------|
-| Product name | Octanest (never bare “Octane”) |
+| Product name | Oxidean (never bare “Octane”) |
 | Landing headline | Where repositories nest — cloud or yours |
-| Landing supporting | Social coding forge: host git, collaborate, and ship — one product for Octanest Cloud and self-host |
+| Landing supporting | Social coding forge: host git, collaborate, and ship — one product for Oxidean Cloud and self-host |
 | Primary CTA | Get started |
-| Secondary CTA | Explore Octanest |
+| Secondary CTA | Explore Oxidean |
 | Header Search placeholder | Search public code (soon) |
 | Header Auth — Sign in | Sign in |
 | Header Auth — Sign up | Sign up |
 | Auth placeholder hint | Coming soon |
 | Footer Status link | Status |
 | Status page title | System status |
-| Status loading | Checking Octanest services… |
+| Status loading | Checking Oxidean services… |
 | Status healthy heading | All systems operational |
 | Status healthy body | API health check succeeded. This page reflects live `system.health` — history arrives in a later release. |
 | Status unhealthy heading | Degraded or failing |
 | Status unhealthy body | The API reported an unhealthy state. Retry in a moment or check your Compose/API logs. |
 | Status unreachable heading | Can’t reach the API |
-| Status unreachable body | Octanest couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again. |
+| Status unreachable body | Oxidean couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again. |
 | Empty state (N/A) | No empty-list UI in Phase 1; status always shows a health outcome |
 | Error (generic fetch) | Something blocked this request. Refresh the page or verify the API is running. |
 | Destructive confirmation | None in Phase 1 |

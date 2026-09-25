@@ -1,7 +1,7 @@
 import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery } from "@octanejs/tanstack-query";
-import type { RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import type { RepoPublic, RepoRefEntry } from "@oxidean/api-client";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
 import { MarkdownWritePreview } from "@/components/repo/markdown-write-preview";
@@ -20,7 +20,7 @@ export type ReleaseNewLoaderData =
   | { kind: "ready"; repo: RepoPublic; tags: string[] }
   | { kind: "forbidden"; repo: RepoPublic; tags: string[] };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function tagNames(refs: RepoRefEntry[]): string[] {
   return refs
@@ -51,7 +51,7 @@ export const Route = createFileRoute("/$owner/$repo/releases/new")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `New release · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `New release · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

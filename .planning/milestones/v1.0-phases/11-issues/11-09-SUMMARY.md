@@ -28,13 +28,13 @@ key-files:
   created:
     - apps/web/src/components/repo/issue-linked-prs.tsrx
   modified:
-    - crates/octanest-core/src/issue_types.rs
-    - crates/octanest-db/src/issues.rs
-    - crates/octanest-db/src/lib.rs
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/tests/issue_links.rs
+    - crates/oxidean-core/src/issue_types.rs
+    - crates/oxidean-db/src/issues.rs
+    - crates/oxidean-db/src/lib.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/tests/issue_links.rs
     - packages/api-client/src/index.ts
     - apps/web/src/routes/$owner.$repo.issues.$n.tsrx
     - apps/web/src/routes/$owner.$repo.issues.integration.test.ts
@@ -57,7 +57,7 @@ coverage:
     requirement: ISS-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_links)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_links)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -73,7 +73,7 @@ coverage:
     requirement: ISS-04
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(issue_links_no_closing_keyword_enforcement)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(issue_links_no_closing_keyword_enforcement)'"
         status: pass
     human_judgment: false
 
@@ -97,7 +97,7 @@ status: complete
 
 ## Accomplishments
 
-- Shipped `issue.links.list|add|remove` with dialect SQL in `octanest-db` and regenerated `@octanest/api-client`
+- Shipped `issue.links.list|add|remove` with dialect SQL in `oxidean-db` and regenerated `@oxidean/api-client`
 - Linked PRs panel lists stubs and exposes Write+ manual link/unlink
 - Negative coverage proves keyword comments do not auto-close or auto-link (D-ISS-15)
 
@@ -109,10 +109,10 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/issue_links.rs` — integration coverage for add/remove/list + no keyword enforcement
-- `crates/octanest-core/src/issue_types.rs` — Add/Remove/List link DTOs
-- `crates/octanest-db/src/issues.rs` / `lib.rs` — insert/list/delete `issue_links`
-- `crates/octanest-api/src/issue/mod.rs` / `rpc.rs` / `bin/rpc_gen.rs` — handlers + client codegen
+- `crates/oxidean-api/tests/issue_links.rs` — integration coverage for add/remove/list + no keyword enforcement
+- `crates/oxidean-core/src/issue_types.rs` — Add/Remove/List link DTOs
+- `crates/oxidean-db/src/issues.rs` / `lib.rs` — insert/list/delete `issue_links`
+- `crates/oxidean-api/src/issue/mod.rs` / `rpc.rs` / `bin/rpc_gen.rs` — handlers + client codegen
 - `packages/api-client/src/index.ts` — generated client
 - `apps/web/src/components/repo/issue-linked-prs.tsrx` — Linked PRs sidebar
 - `apps/web/src/routes/$owner.$repo.issues.$n.tsrx` — wire panel

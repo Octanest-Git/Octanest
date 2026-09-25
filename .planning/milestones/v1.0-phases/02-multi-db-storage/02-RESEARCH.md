@@ -13,26 +13,26 @@
 - Operators can choose SQLite, PostgreSQL, or MySQL for app data with working migrations and core write/read flows on all three.
 - Requirements: PLAT-07, PLAT-08.
 - Success criteria: (1) operator can configure instance dialect via config/env, (2) migrations apply cleanly on each dialect, (3) a core app write/read flow succeeds against each dialect in local Compose.
-- Carried forward from Phase 1 (not re-opened): D-06 default Compose is Postgres; D-07 MySQL via profile, SQLite via env/file (no container); D-08 `octanest-db` is the uniform adapter boundary.
+- Carried forward from Phase 1 (not re-opened): D-06 default Compose is Postgres; D-07 MySQL via profile, SQLite via env/file (no container); D-08 `oxidean-db` is the uniform adapter boundary.
 
 ### Decisions (D-01 … D-20)
-- **D-01:** Prefer inferring dialect from `DATABASE_URL` scheme (`postgres://`/`postgresql://`, `mysql://`, `sqlite:`/`sqlite://`); optional `OCTANEST_DB_DIALECT=postgres|mysql|sqlite` must agree with the URL when set.
+- **D-01:** Prefer inferring dialect from `DATABASE_URL` scheme (`postgres://`/`postgresql://`, `mysql://`, `sqlite:`/`sqlite://`); optional `OXIDEAN_DB_DIALECT=postgres|mysql|sqlite` must agree with the URL when set.
 - **D-02:** Dialect/URL mismatch fails fast at startup with a clear operator-facing error.
 - **D-03:** Dialect switch is supported in Phase 2 only for an **empty** target DB, with a documented recipe (and Make helper — D-14).
 - **D-04:** Canonical operator docs: `.env.example` + README + `make` help targets that print sample URLs + `docs/database.md`.
 - **D-05:** Shared **logical** migrations adapted per dialect via a **thin** adapter (types / autoincrement / quoting) — not a full migration DSL.
 - **D-06:** Materialize/adapt into **sqlx-compatible** per-dialect migration sets; use sqlx migrator bookkeeping (`_sqlx_migrations`).
-- **D-07:** `OCTANEST_AUTO_MIGRATE=true` by default in Compose/dev (`.env.example`); when false (prod-like), require explicit `make db-migrate` / CLI.
+- **D-07:** `OXIDEAN_AUTO_MIGRATE=true` by default in Compose/dev (`.env.example`); when false (prod-like), require explicit `make db-migrate` / CLI.
 - **D-08:** Keep Phase 2 schema trivial so portability stays easy.
 - **D-09:** Proof entity is an early **product-ish** table (e.g. `instances` or `settings`) that later phases may keep — not a disposable `smoke_kv`-only table.
 - **D-10:** Schema includes a **dialect/version stamp** so operators can see which dialect the write hit.
 - **D-11:** Keep as a **supported diagnostic** long-term.
-- **D-12:** Shared Rust diagnostic write/read in `octanest-db`/core; expose via minimal RPC (e.g. `system.db_probe`) so Compose smoke, CI, and a future system-admin diagnostics menu share one path — no Phase 2 diagnostics UI.
+- **D-12:** Shared Rust diagnostic write/read in `oxidean-db`/core; expose via minimal RPC (e.g. `system.db_probe`) so Compose smoke, CI, and a future system-admin diagnostics menu share one path — no Phase 2 diagnostics UI.
 - **D-13:** Phase 2 proves the flow via cargo integration tests + Compose/Make smoke calling that diagnostic (RPC and/or Rust path).
 - **D-14:** Explicit Make targets: `make up`, `make up-mysql`, `make up-sqlite` (or equivalent).
 - **D-15:** CI proves **all three** dialects in a **matrix** in Phase 2.
 - **D-16:** Empty-DB dialect switch: `make db-switch-dialect` (refuse unless empty / `--force-empty`) plus steps in `docs/database.md`.
-- **D-17:** Default SQLite file path: `./var/octanest.db` (runtime-state style; gitignore `var/`).
+- **D-17:** Default SQLite file path: `./var/oxidean.db` (runtime-state style; gitignore `var/`).
 - **D-18:** API creates missing parent directories on startup when dialect is SQLite.
 - **D-19:** `make up-sqlite`: no DB container; api+web(+Traefik) with SQLite file **bind-mounted** from host `./var` (not `./data`).
 - **D-20:** Sensible SQLite defaults only (`WAL`, `foreign_keys=ON`) documented; no deep tuning in Phase 2.
@@ -56,7 +56,7 @@
 
 ## Standard Stack
 
-- **sqlx 0.8** (already pinned in `crates/octanest-db/Cargo.toml`) — add `mysql` and `sqlite` features alongside the existing `postgres`. [VERIFIED: crates/octanest-db/Cargo.toml]
+- **sqlx 0.8** (already pinned in `crates/oxidean-db/Cargo.toml`) — add `mysql` and `sqlite` features alongside the existing `postgres`. [VERIFIED: crates/oxidean-db/Cargo.toml]
 - Pin exact dependency set with `default-features = false` and an explicit feature list, mirroring how the codebase already avoids unused defaults elsewhere:
   ```toml
   sqlx = { version = "0.8", default-features = false, features = [
@@ -67,7 +67,7 @@
   ```
   [CITED: https://docs.rs/crate/sqlx/0.8.6 feature table] — `default` pulls in `any, macros, migrate, json`; none of `any` or `macros` are needed here (see Don't Hand-Roll / Pitfalls). `tls-rustls` avoids adding an OpenSSL/native-tls system dependency to the `debian:bookworm-slim`/`rust:1-bookworm` Docker images already in use. [ASSUMED: rustls is the simpler default for this Debian-based image; native-tls would also work but adds an apt dependency]
 - **No `sqlx::Any`/`AnyPool`.** Use three concrete pool types (`PgPool`, `MySqlPool`, `SqlitePool`) behind a small internal enum. `Any` exists but its own docs say "SEE DOCUMENTATION BEFORE USE" — it doesn't support the `query!`/`query_as!` compile-time macros, requires calling `sqlx::any::install_default_drivers()` once at startup, and still needs dialect-specific SQL text for anything beyond trivial queries (placeholder syntax differs: `$1` vs `?` vs `?1`). Since D-05 already commits to a **thin per-dialect adapter** (not one dialect-agnostic driver), a concrete-pool enum is the simpler, more explicit match for the locked decisions. [CITED: https://docs.rs/sqlx/latest/sqlx/any/index.html]
-- **No `sqlx::query!`/`query_as!` macros.** These require either a live DB or an offline `.sqlx` query cache at *build* time, tied to one schema/dialect — incompatible with "one binary, three dialects chosen at runtime." The current code already avoids them (`sqlx::query("SELECT 1").execute(pool)` in `ping()`), so Phase 2 should continue using plain `sqlx::query()` / `sqlx::query_as::<_, T>()` runtime calls. [VERIFIED: crates/octanest-db/src/lib.rs current `ping()` impl]
+- **No `sqlx::query!`/`query_as!` macros.** These require either a live DB or an offline `.sqlx` query cache at *build* time, tied to one schema/dialect — incompatible with "one binary, three dialects chosen at runtime." The current code already avoids them (`sqlx::query("SELECT 1").execute(pool)` in `ping()`), so Phase 2 should continue using plain `sqlx::query()` / `sqlx::query_as::<_, T>()` runtime calls. [VERIFIED: crates/oxidean-db/src/lib.rs current `ping()` impl]
 - **`sqlx::migrate!` macro is fine and unrelated to the above.** It only embeds `.sql` files as compiled-in byte arrays at build time (no DB connection needed to build); the DB connection happens later, at `Migrator::run(&pool)`. Safe for Docker multi-stage builds with no DB reachable during `cargo build`. [CITED: https://docs.rs/sqlx/latest/sqlx/macro.migrate.html]
 - **sqlite feature is bundled** (`sqlx-sqlite` vendors/statically links libsqlite3 by default), which needs a C compiler at build time. `rust:1-bookworm` (current builder image) and `ubuntu-latest` GitHub runners both ship a C toolchain by default, so no Dockerfile/CI change is required for this. [ASSUMED: verified indirectly — official rust Docker images and GH ubuntu-latest runners include build-essential/gcc; not independently re-verified in this environment]
 
@@ -77,7 +77,7 @@
 
 ### 1. Dialect resolution (D-01/D-02)
 
-Resolve dialect **before** connecting, from the `DATABASE_URL` scheme, by prefix match (not a strict `url::Url::parse`, since `sqlite:./var/octanest.db` and `sqlite::memory:` are not standard RFC-3986 URLs but are valid sqlx SQLite URLs):
+Resolve dialect **before** connecting, from the `DATABASE_URL` scheme, by prefix match (not a strict `url::Url::parse`, since `sqlite:./var/oxidean.db` and `sqlite::memory:` are not standard RFC-3986 URLs but are valid sqlx SQLite URLs):
 
 ```rust
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,16 +107,16 @@ impl Dialect {
 
 pub fn resolve_dialect(url: &str) -> Result<Dialect, String> {
     let from_url = Dialect::from_url(url)?;
-    if let Ok(declared) = std::env::var("OCTANEST_DB_DIALECT") {
+    if let Ok(declared) = std::env::var("OXIDEAN_DB_DIALECT") {
         let declared = match declared.as_str() {
             "postgres" => Dialect::Postgres,
             "mysql" => Dialect::MySql,
             "sqlite" => Dialect::Sqlite,
-            other => return Err(format!("unknown OCTANEST_DB_DIALECT: {other}")),
+            other => return Err(format!("unknown OXIDEAN_DB_DIALECT: {other}")),
         };
         if declared != from_url {
             return Err(format!(
-                "OCTANEST_DB_DIALECT={} does not match DATABASE_URL scheme (detected {})",
+                "OXIDEAN_DB_DIALECT={} does not match DATABASE_URL scheme (detected {})",
                 declared.as_env_str(), from_url.as_env_str()
             ));
         }
@@ -125,7 +125,7 @@ pub fn resolve_dialect(url: &str) -> Result<Dialect, String> {
 }
 ```
 
-This should run in `main.rs` before `Database::from_env()`, and a mismatch/parse error should `eprintln!` + `process::exit(1)` (matching the existing fail-fast pattern already used for CORS config errors in `main.rs`). [VERIFIED: crates/octanest-api/src/main.rs current CORS error-exit pattern — reuse the same style for D-02]
+This should run in `main.rs` before `Database::from_env()`, and a mismatch/parse error should `eprintln!` + `process::exit(1)` (matching the existing fail-fast pattern already used for CORS config errors in `main.rs`). [VERIFIED: crates/oxidean-api/src/main.rs current CORS error-exit pattern — reuse the same style for D-02]
 
 ### 2. Concrete-pool enum, not a trait object (D-08 "keep schema trivial")
 
@@ -142,7 +142,7 @@ pub struct Database {
 }
 ```
 
-`ping()`, `db_probe_write_read()`, and future queries match on the enum and issue dialect-appropriate SQL text. This keeps `octanest-db` as the single dialect-branch point (D-08 carried forward: "API must not dialect-branch ad hoc") while staying honest that the three dialects are *not* SQL-identical.
+`ping()`, `db_probe_write_read()`, and future queries match on the enum and issue dialect-appropriate SQL text. This keeps `oxidean-db` as the single dialect-branch point (D-08 carried forward: "API must not dialect-branch ad hoc") while staying honest that the three dialects are *not* SQL-identical.
 
 ### 3. SQLite connect specifics (D-17/D-18/D-20)
 
@@ -176,14 +176,14 @@ async fn connect_sqlite(url: &str) -> Result<sqlx::SqlitePool, String> {
 
 `.foreign_keys(true)` on `SqliteConnectOptions` is the sqlx-native way to set `PRAGMA foreign_keys=ON` per-connection (SQLite requires this pragma on every connection, it is not persisted in the file). `.journal_mode(Wal)` sets `PRAGMA journal_mode=WAL` (persisted in the file after first set). [CITED: https://docs.rs/sqlx/latest/sqlx/sqlite/struct.SqliteConnectOptions.html]
 
-D-17's default path `./var/octanest.db` should be read from `DATABASE_URL` like any other dialect (i.e., `.env.example`'s SQLite line becomes `DATABASE_URL=sqlite:./var/octanest.db`), not hardcoded — the default only needs to *appear* as the example/Make-generated URL.
+D-17's default path `./var/oxidean.db` should be read from `DATABASE_URL` like any other dialect (i.e., `.env.example`'s SQLite line becomes `DATABASE_URL=sqlite:./var/oxidean.db`), not hardcoded — the default only needs to *appear* as the example/Make-generated URL.
 
 ### 4. Migrations: parallel per-dialect directories, sqlx migrator bookkeeping (D-05/D-06)
 
 Given D-08 ("keep Phase 2 schema trivial") and a single-table proof entity, a full templating/codegen system is overkill. The **prescriptive** thin-adapter mechanism for Phase 2:
 
 ```
-crates/octanest-db/migrations/
+crates/oxidean-db/migrations/
   postgres/0001_init.sql
   mysql/0001_init.sql
   sqlite/0001_init.sql
@@ -206,12 +206,12 @@ pub async fn run_migrations(pool: &DbPool) -> Result<(), sqlx::Error> {
 
 Each dialect gets its own `_sqlx_migrations` bookkeeping table (D-06) — sqlx creates this automatically per target DB on first `Migrator::run`. [CITED: https://docs.rs/sqlx/latest/sqlx/migrate/struct.Migrator.html]
 
-`sqlx::migrate!(path)` resolves `path` relative to `CARGO_MANIFEST_DIR` of the crate it's invoked in (i.e., `crates/octanest-db/`), so `"migrations/postgres"` is correct if the macro is called from within `octanest-db`.
+`sqlx::migrate!(path)` resolves `path` relative to `CARGO_MANIFEST_DIR` of the crate it's invoked in (i.e., `crates/oxidean-db/`), so `"migrations/postgres"` is correct if the macro is called from within `oxidean-db`.
 
 ### 5. Auto-migrate flag (D-07)
 
 ```rust
-let auto_migrate = std::env::var("OCTANEST_AUTO_MIGRATE")
+let auto_migrate = std::env::var("OXIDEAN_AUTO_MIGRATE")
     .map(|v| v == "true" || v == "1")
     .unwrap_or(true); // default true in Compose/dev per D-07; operators flip to false for prod-like
 if auto_migrate {
@@ -219,9 +219,9 @@ if auto_migrate {
 }
 ```
 
-Called from `octanest-api` startup, after `Database::from_env()` succeeds and before the server starts listening — a migrate failure should be fail-fast (`process::exit(1)`), same pattern as bind failure in current `main.rs`.
+Called from `oxidean-api` startup, after `Database::from_env()` succeeds and before the server starts listening — a migrate failure should be fail-fast (`process::exit(1)`), same pattern as bind failure in current `main.rs`.
 
-For `OCTANEST_AUTO_MIGRATE=false`, an explicit `make db-migrate` target must exist and run the *same* `run_migrations` path — the cleanest way is a tiny binary in `octanest-db` (e.g. `crates/octanest-db/src/bin/migrate.rs`) that does `Database::from_env()` + `run_migrations()` and exits, wired as `cargo run -p octanest-db --bin migrate`. This reuses D-12's "share one path" philosophy (no separate migration logic duplicated between server startup and CLI).
+For `OXIDEAN_AUTO_MIGRATE=false`, an explicit `make db-migrate` target must exist and run the *same* `run_migrations` path — the cleanest way is a tiny binary in `oxidean-db` (e.g. `crates/oxidean-db/src/bin/migrate.rs`) that does `Database::from_env()` + `run_migrations()` and exits, wired as `cargo run -p oxidean-db --bin migrate`. This reuses D-12's "share one path" philosophy (no separate migration logic duplicated between server startup and CLI).
 
 ### 6. Proof entity + `system.db_probe` RPC (D-09–D-13)
 
@@ -258,14 +258,14 @@ Per-dialect column types (the "thin adapter" surface — types/autoincrement/quo
 }
 ```
 
-`Database::probe()` lives in `octanest-db`, does the dialect-branched upsert-then-read, and is the single shared path for: cargo integration tests, Compose smoke script, and (future, deferred) system-admin diagnostics UI — satisfying D-12 directly. No auth gate in Phase 2 (explicit discretion).
+`Database::probe()` lives in `oxidean-db`, does the dialect-branched upsert-then-read, and is the single shared path for: cargo integration tests, Compose smoke script, and (future, deferred) system-admin diagnostics UI — satisfying D-12 directly. No auth gate in Phase 2 (explicit discretion).
 
 ### 7. Compose topology (D-14/D-19, carried D-06/D-07)
 
 - `docker-compose.yml` (default): unchanged, Postgres service + api depends_on it. Already correct. [VERIFIED: docker-compose.yml]
 - `docker-compose.mysql.yml` (profile overlay): unchanged in shape; already correct. [VERIFIED: docker-compose.mysql.yml]
-- **New** `docker-compose.sqlite.yml` overlay for `make up-sqlite` (D-19): no new DB service; overrides `api.environment.DATABASE_URL` to `sqlite:/app/var/octanest.db` (container-internal path) and adds a bind mount `./var:/app/var`, and **removes** the Postgres `depends_on`. Compose overlays can't easily *remove* a `depends_on` key from the base file — the practical pattern is to give the `api` service in the base file a `depends_on` that is itself overridable, or restructure so the base `docker-compose.yml`'s Postgres dependency is expressed via a Compose profile too (e.g. tag `postgres` service with a default profile using the `profiles: ["postgres"]` + `COMPOSE_PROFILES=postgres` default-on env trick, or simply document `make up-sqlite` as `docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up --build --scale postgres=0` alternative). **Prescriptive recommendation:** give the `postgres` service in base `docker-compose.yml` `profiles: ["postgres"]` and set `COMPOSE_PROFILES=postgres` as the *default* Make-injected env for `make up`/`make up-mysql`; `make up-sqlite` simply doesn't set that env, so Postgres never starts and `api.depends_on.postgres` needs to be dropped for the sqlite override — Compose overlays **can** override `depends_on` by redeclaring the `api` service's `depends_on` list entirely in the sqlite overlay (last-value-wins per key for scalars, but `depends_on` list needs full redeclaration, not a merge) or converting `api.depends_on` in the base file to only include what's essential when profile is active. Recommend testing `docker compose config` output for whichever final approach is chosen (this is a real compose-file design decision with more than one valid encoding — flag as a planning-time detail to nail down rather than a solved algorithm here).
-- Mount path: `./var:/app/var` on host side, matching D-17 (`./var/octanest.db`, not `./data`). Update `.gitignore` to include `var/` (currently only has `data/`). [VERIFIED: .gitignore current content lacks `var/`]
+- **New** `docker-compose.sqlite.yml` overlay for `make up-sqlite` (D-19): no new DB service; overrides `api.environment.DATABASE_URL` to `sqlite:/app/var/oxidean.db` (container-internal path) and adds a bind mount `./var:/app/var`, and **removes** the Postgres `depends_on`. Compose overlays can't easily *remove* a `depends_on` key from the base file — the practical pattern is to give the `api` service in the base file a `depends_on` that is itself overridable, or restructure so the base `docker-compose.yml`'s Postgres dependency is expressed via a Compose profile too (e.g. tag `postgres` service with a default profile using the `profiles: ["postgres"]` + `COMPOSE_PROFILES=postgres` default-on env trick, or simply document `make up-sqlite` as `docker compose -f docker-compose.yml -f docker-compose.sqlite.yml up --build --scale postgres=0` alternative). **Prescriptive recommendation:** give the `postgres` service in base `docker-compose.yml` `profiles: ["postgres"]` and set `COMPOSE_PROFILES=postgres` as the *default* Make-injected env for `make up`/`make up-mysql`; `make up-sqlite` simply doesn't set that env, so Postgres never starts and `api.depends_on.postgres` needs to be dropped for the sqlite override — Compose overlays **can** override `depends_on` by redeclaring the `api` service's `depends_on` list entirely in the sqlite overlay (last-value-wins per key for scalars, but `depends_on` list needs full redeclaration, not a merge) or converting `api.depends_on` in the base file to only include what's essential when profile is active. Recommend testing `docker compose config` output for whichever final approach is chosen (this is a real compose-file design decision with more than one valid encoding — flag as a planning-time detail to nail down rather than a solved algorithm here).
+- Mount path: `./var:/app/var` on host side, matching D-17 (`./var/oxidean.db`, not `./data`). Update `.gitignore` to include `var/` (currently only has `data/`). [VERIFIED: .gitignore current content lacks `var/`]
 - `make up-sqlite` help text + target added to `Makefile` alongside existing `up`/`up-mysql`-style entries (only `up`/`down`/`logs`/`smoke` currently exist — `up-mysql`/`up-sqlite` don't exist yet and must be added per D-14). [VERIFIED: Makefile current targets]
 
 ### 8. CI matrix (D-15, PLAT-09 adjacency)
@@ -281,31 +281,31 @@ Extend `.github/workflows/ci.yml` with **one job, real `strategy.matrix`**, not 
       matrix:
         include:
           - dialect: postgres
-            database_url: postgres://octanest:octanest@localhost:5432/octanest
+            database_url: postgres://oxidean:oxidean@localhost:5432/oxidean
           - dialect: mysql
-            database_url: mysql://octanest:octanest@127.0.0.1:3306/octanest
+            database_url: mysql://oxidean:oxidean@127.0.0.1:3306/oxidean
           - dialect: sqlite
-            database_url: sqlite:./var/octanest.db
+            database_url: sqlite:./var/oxidean.db
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: octanest
-          POSTGRES_PASSWORD: octanest
-          POSTGRES_DB: octanest
+          POSTGRES_USER: oxidean
+          POSTGRES_PASSWORD: oxidean
+          POSTGRES_DB: oxidean
         ports: ["5432:5432"]
         options: >-
-          --health-cmd="pg_isready -U octanest" --health-interval=5s --health-timeout=5s --health-retries=10
+          --health-cmd="pg_isready -U oxidean" --health-interval=5s --health-timeout=5s --health-retries=10
       mysql:
         image: mysql:8.4
         env:
-          MYSQL_USER: octanest
-          MYSQL_PASSWORD: octanest
-          MYSQL_DATABASE: octanest
-          MYSQL_ROOT_PASSWORD: octanest
+          MYSQL_USER: oxidean
+          MYSQL_PASSWORD: oxidean
+          MYSQL_DATABASE: oxidean
+          MYSQL_ROOT_PASSWORD: oxidean
         ports: ["3306:3306"]
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poctanest" --health-interval=5s --health-timeout=5s --health-retries=20
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -poxidean" --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -313,8 +313,8 @@ Extend `.github/workflows/ci.yml` with **one job, real `strategy.matrix`**, not 
       - name: run migrations + probe test
         env:
           DATABASE_URL: ${{ matrix.database_url }}
-          OCTANEST_DB_DIALECT: ${{ matrix.dialect }}
-        run: cargo test -p octanest-db --test dialect_probe -- --nocapture
+          OXIDEAN_DB_DIALECT: ${{ matrix.dialect }}
+        run: cargo test -p oxidean-db --test dialect_probe -- --nocapture
 ```
 
 Both `postgres` and `mysql` services boot on every matrix leg (including the `sqlite` leg, where they're simply unused) — GitHub Actions `services:` cannot be conditioned on `matrix.*` values, so the pragmatic tradeoff is a few extra seconds of unused service boot time on the sqlite leg rather than three separate job blocks. [ASSUMED: this GH Actions `services:` limitation — services keys don't support skip conditions, only image/env can use expressions, but the whole block can't be omitted per-matrix-leg — based on general GH Actions documentation knowledge, not independently re-verified in this session] If this tradeoff is unwanted, the alternative is three explicit jobs (`db-postgres`, `db-mysql`, `db-sqlite`) each with only their one relevant service — functionally equivalent for D-15, more YAML, no wasted service boot. **Planner should pick one of these two encodings explicitly**; both satisfy "all three dialects in CI."
@@ -338,7 +338,7 @@ This is a small script or Rust CLI subcommand — either shells out via the same
 
 - **A generic multi-dialect query builder / ORM.** Not needed for a one-table proof schema; sqlx's runtime `query()`/`query_as()` plus three short hand-written SQL statements per operation is simpler and matches D-05's "thin adapter, not full DSL."
 - **A custom migration runner.** Use `sqlx::migrate!` + `Migrator::run` per dialect (D-06 explicitly requires "sqlx migrator bookkeeping").
-- **URL parsing via the `url` crate for dialect detection.** SQLite URLs (`sqlite:./var/octanest.db`, `sqlite::memory:`) aren't standard RFC-3986 URLs and can fail strict parsers; simple prefix matching (as sqlx itself effectively does internally) is sufficient and more robust here.
+- **URL parsing via the `url` crate for dialect detection.** SQLite URLs (`sqlite:./var/oxidean.db`, `sqlite::memory:`) aren't standard RFC-3986 URLs and can fail strict parsers; simple prefix matching (as sqlx itself effectively does internally) is sufficient and more robust here.
 - **`sqlx::Any`/`AnyPool` as "the" abstraction.** Tempting for "one pool type," but it forces giving up compile-time-adjacent ergonomics and still needs per-dialect SQL text for anything beyond `SELECT 1`; a concrete-pool enum is more honest about where dialect differences live (see Architecture Patterns §2).
 - **`sqlx::query!`/`query_as!` compile-time macros anywhere in this phase.** They assume one schema/one DB reachable at build time; multi-dialect-at-runtime is fundamentally incompatible with that model. This is the single highest-risk "looks idiomatic but breaks the build" trap for this phase.
 - **A custom SQLite directory-creation library.** `std::fs::create_dir_all` on the parent of the parsed path is enough (D-18); sqlx's `create_if_missing(true)` only creates the file, never parent directories. [CITED: sqlx SqliteConnectOptions docs — create_if_missing behavior]
@@ -353,28 +353,28 @@ This is a small script or Rust CLI subcommand — either shells out via the same
 3. **`PRAGMA foreign_keys=ON` is per-connection, not persisted in the SQLite file.** If any code path opens a raw `SqliteConnection` without going through the configured `SqliteConnectOptions` (e.g. a future admin tool), foreign keys silently revert to OFF. Keep exactly one connection-options constructor.
 4. **Placeholder syntax differs per dialect** ($1/$2 Postgres, `?` MySQL, `?`/`?1` SQLite) — a hand-copied SQL string moved between dialect files without updating placeholders will fail at runtime, not compile time (since macros aren't used). The structural-parity test (see Validation Architecture) should also sanity-check statement counts/shapes, but exact placeholder correctness is only caught by the per-dialect integration test actually running the query.
 5. **Upsert syntax differs**: `ON CONFLICT ... DO UPDATE` (Postgres/SQLite) vs `ON DUPLICATE KEY UPDATE` (MySQL) — different column-reference syntax in the `SET` clause too (`excluded.col` / `instances.col` vs `VALUES(col)`). This is the most likely spot for a copy-paste dialect bug.
-6. **MySQL's `mysql://` driver in sqlx also accepts `mariadb://`** — not relevant to Octanest's URL contract, but don't accidentally document/accept `mariadb://` as a fourth dialect; D-01 only lists three.
+6. **MySQL's `mysql://` driver in sqlx also accepts `mariadb://`** — not relevant to Oxidean's URL contract, but don't accidentally document/accept `mariadb://` as a fourth dialect; D-01 only lists three.
 7. **GitHub Actions `services:` block cannot be conditioned on `matrix.*`.** Don't spend planning time trying to make the mysql/postgres service definitions "only start for their leg" — either accept both booting every leg, or split into three jobs (see §8).
 8. **`docker compose` overlay `depends_on` doesn't deep-merge lists cleanly across files** in every Compose version/edge-case — verify the exact `up-sqlite` overlay behavior with `docker compose -f docker-compose.yml -f docker-compose.sqlite.yml config` before trusting it; this is flagged as a planning-time detail to verify hands-on, not a solved recipe (see Architecture Patterns §7).
 9. **Compose smoke script currently only calls `system.health` and greps for `"ok":true`.** Extending it for the db_probe round-trip (D-13) needs a second curl + a grep/jq check on the `dialect` field in the response to actually prove which dialect was hit, not just that *a* DB responded.
-10. **`.env.example`'s current SQLite line is a stale Phase-1 placeholder** (`DATABASE_URL=sqlite:./data/octanest.db`, using `./data` not `./var`, with a comment saying "full SQLite proof is Phase 2") — this must be corrected as part of Phase 2, not left as-is. [VERIFIED: .env.example current content]
+10. **`.env.example`'s current SQLite line is a stale Phase-1 placeholder** (`DATABASE_URL=sqlite:./data/oxidean.db`, using `./data` not `./var`, with a comment saying "full SQLite proof is Phase 2") — this must be corrected as part of Phase 2, not left as-is. [VERIFIED: .env.example current content]
 11. **`rust:1-bookworm` build stage compiles all three sqlx drivers into one binary** (needed since dialect is chosen at runtime) — expect a real increase in `cargo build --release` time and binary size versus Phase 1's Postgres-only build; not a correctness bug, but worth expecting so CI timing isn't mistaken for a hang.
 
 ---
 
 ## Code Examples
 
-### `octanest-db` Cargo.toml (target state)
+### `oxidean-db` Cargo.toml (target state)
 
 ```toml
 [package]
-name = "octanest-db"
+name = "oxidean-db"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
-octanest-core = { path = "../octanest-core" }
+oxidean-core = { path = "../oxidean-core" }
 sqlx = { version = "0.8", default-features = false, features = [
   "runtime-tokio", "tls-rustls",
   "postgres", "mysql", "sqlite",
@@ -382,7 +382,7 @@ sqlx = { version = "0.8", default-features = false, features = [
 ] }
 ```
 
-### `system.db_probe` response shape (`octanest-core`)
+### `system.db_probe` response shape (`oxidean-core`)
 
 ```rust
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -399,10 +399,10 @@ pub struct DbProbeResponse {
 echo "==> RPC system.db_probe"
 curl -fsS \
   -H 'Content-Type: application/json' \
-  -H 'Octanest-RPC-Version: 1' \
+  -H 'Oxidean-RPC-Version: 1' \
   -d '{"procedure":"system.db_probe","input":{}}' \
-  "$BASE_URL/api/rpc" | tee /tmp/octanest-smoke-probe.json
-grep -q "\"dialect\"" /tmp/octanest-smoke-probe.json
+  "$BASE_URL/api/rpc" | tee /tmp/oxidean-smoke-probe.json
+grep -q "\"dialect\"" /tmp/oxidean-smoke-probe.json
 ```
 
 ---
@@ -412,11 +412,11 @@ grep -q "\"dialect\"" /tmp/octanest-smoke-probe.json
 Phase 2's success criteria are all "works identically across three dialects," so validation must be **per-dialect**, not just per-feature. Structure for the eventual `VALIDATION.md`:
 
 ### Layer 1 — Unit tests (no DB required, run everywhere)
-- `Dialect::from_url` / `resolve_dialect`: table-driven tests covering all valid schemes (`postgres://`, `postgresql://`, `mysql://`, `sqlite:`, `sqlite://`), the D-02 mismatch-fails-fast case (`OCTANEST_DB_DIALECT` disagreeing with URL scheme), and unrecognized-scheme rejection.
+- `Dialect::from_url` / `resolve_dialect`: table-driven tests covering all valid schemes (`postgres://`, `postgresql://`, `mysql://`, `sqlite:`, `sqlite://`), the D-02 mismatch-fails-fast case (`OXIDEAN_DB_DIALECT` disagreeing with URL scheme), and unrecognized-scheme rejection.
 - Migration structural-parity check: a test that lists files in `migrations/postgres/`, `migrations/mysql/`, `migrations/sqlite/` and asserts matching filename sets (same migration steps present in all three) — catches "added a migration to one dialect, forgot the others" without needing a live DB.
 
 ### Layer 2 — Per-dialect integration tests (require a live DB; gated by `DATABASE_URL`)
-- `crates/octanest-db/tests/dialect_probe.rs` (or similar): connects using `DATABASE_URL` from env, runs `run_migrations()`, calls `probe()` twice, asserts `probe_count` increments and `dialect` in the row matches the connected dialect.
+- `crates/oxidean-db/tests/dialect_probe.rs` (or similar): connects using `DATABASE_URL` from env, runs `run_migrations()`, calls `probe()` twice, asserts `probe_count` increments and `dialect` in the row matches the connected dialect.
 - These tests should **skip gracefully** (not fail) when `DATABASE_URL` is unset — matching the existing `Database::skipped()` philosophy — so local `cargo test --workspace` without Docker running still passes. CI's `db-matrix` job is what actually exercises all three dialects (Layer 2 is meaningless without CI setting `DATABASE_URL` per leg).
 - Explicit assertion of D-18 (SQLite parent dir creation): a test that points `DATABASE_URL` at a nested nonexistent path under a tempdir and asserts connect succeeds and the file exists afterward.
 
@@ -431,11 +431,11 @@ Phase 2's success criteria are all "works identically across three dialects," so
 ### What "done" looks like for VALIDATION.md gates
 | Success criterion | Validation layer | Command |
 |---|---|---|
-| Operator can configure dialect via config/env | Layer 1 | `cargo test -p octanest-db resolve_dialect` |
+| Operator can configure dialect via config/env | Layer 1 | `cargo test -p oxidean-db resolve_dialect` |
 | Migrations apply cleanly on each dialect | Layer 2 + 3 | CI `db-matrix` job (all 3 legs green) |
 | Core write/read flow succeeds per dialect in local Compose | Layer 4 | `make smoke`, `make smoke-mysql` (new), `make smoke-sqlite` (new) — locally invokable, not required in CI for this phase |
-| Dialect/URL mismatch fails fast (D-02) | Layer 1 | `cargo test -p octanest-db resolve_dialect_mismatch` |
-| SQLite parent dir auto-create (D-18) | Layer 2 | `cargo test -p octanest-db sqlite_creates_parent_dir` |
+| Dialect/URL mismatch fails fast (D-02) | Layer 1 | `cargo test -p oxidean-db resolve_dialect_mismatch` |
+| SQLite parent dir auto-create (D-18) | Layer 2 | `cargo test -p oxidean-db sqlite_creates_parent_dir` |
 
 ---
 

@@ -7,7 +7,7 @@ tags: [theme, fouc, base-ui-select, chrome, header, footer]
 requires:
   - phase: 03-brand-shell-theme
     plan: "01"
-    provides: OctanestMark, Button/buttonVariants, Input, Select* primitives, full semantic token layer
+    provides: OxideanMark, Button/buttonVariants, Input, Select* primitives, full semantic token layer
 provides:
   - Pre-paint theme boot script (THEME_BOOT_SCRIPT) rendered before HeadContent in __root.tsx, eliminating FOUC
   - ThemeSelect component — Base UI Select bound to theme preference with Monitor/Sun/Moon lucide icons
@@ -52,7 +52,7 @@ completed: 2026-09-09
 
 - Added `THEME_BOOT_SCRIPT` (static, zero-interpolation) and `THEME_OPTIONS` to `lib/theme.ts`; rendered the script as the first child of `<Head>` in `__root.tsx`, ahead of `<HeadContent />`, so `html.dark` is toggled before any stylesheet paints (D-12, BRAND-04/05, no FOUC)
 - Built `ThemeSelect` — a Base UI `Select` bound to `readThemePreference`/`applyTheme`, with `Monitor`/`Sun`/`Moon` lucide icons on menu items, a `Check` selected-indicator, and `aria-label="Theme"` on the trigger (D-08, D-11)
-- Rewrote `chrome.tsx` end to end: `SiteHeader` now composes `OctanestMark` (32px) + responsive wordmark (`hidden … sm:inline`, Heading type) → disabled `Input` search → `ThemeSelect` → a `role="group"` auth `Button` pair (ghost Sign in, secondary Sign up), all on semantic tokens (`border-border`, `bg-card`, `text-foreground`, `text-muted-foreground`) with zero remaining `--color-accent-*` / legacy `var(--color-*)` references; `SiteFooter` stays text-only (`© Octanest` + Status link, no mark)
+- Rewrote `chrome.tsx` end to end: `SiteHeader` now composes `OxideanMark` (32px) + responsive wordmark (`hidden … sm:inline`, Heading type) → disabled `Input` search → `ThemeSelect` → a `role="group"` auth `Button` pair (ghost Sign in, secondary Sign up), all on semantic tokens (`border-border`, `bg-card`, `text-foreground`, `text-muted-foreground`) with zero remaining `--color-accent-*` / legacy `var(--color-*)` references; `SiteFooter` stays text-only (`© Oxidean` + Status link, no mark)
 
 ## Task Commits
 
@@ -66,13 +66,13 @@ Each task was committed atomically:
 ## Files Created/Modified
 
 - `apps/web/src/lib/theme.ts` - Added `THEME_OPTIONS`, `THEME_BOOT_SCRIPT` (static literal, `try/catch`-wrapped, allowlists `light|dark|system`)
-- `apps/web/src/routes/__root.tsx` - Boot script rendered via `dangerouslySetInnerHTML` before `HeadContent`; `title: "Octanest"` head meta unchanged
+- `apps/web/src/routes/__root.tsx` - Boot script rendered via `dangerouslySetInnerHTML` before `HeadContent`; `title: "Oxidean"` head meta unchanged
 - `apps/web/src/components/theme-select.tsx` - New: `ThemeSelect` component, mounts to sync trigger label post-hydration, listens for OS `prefers-color-scheme` changes while preference is `"system"`
-- `apps/web/src/components/chrome.tsx` - `SiteHeader`/`SiteFooter` rewritten onto ShadCN primitives (`OctanestMark`, `Input`, `Button`, `ThemeSelect`) and semantic Tailwind tokens; theme state moved out to `ThemeSelect`
+- `apps/web/src/components/chrome.tsx` - `SiteHeader`/`SiteFooter` rewritten onto ShadCN primitives (`OxideanMark`, `Input`, `Button`, `ThemeSelect`) and semantic Tailwind tokens; theme state moved out to `ThemeSelect`
 
 ## Decisions Made
 
-- `THEME_STORAGE_KEY`'s value (`"octanest-theme"`) is duplicated as a literal inside `THEME_BOOT_SCRIPT` rather than interpolated, because the script executes in `<head>` before any JS module (including `theme.ts`) has run. A code comment flags the two must stay in sync.
+- `THEME_STORAGE_KEY`'s value (`"oxidean-theme"`) is duplicated as a literal inside `THEME_BOOT_SCRIPT` rather than interpolated, because the script executes in `<head>` before any JS module (including `theme.ts`) has run. A code comment flags the two must stay in sync.
 - Theme preference state and the `prefers-color-scheme` media-query listener moved from `SiteHeader` into `ThemeSelect`, so `chrome.tsx` has no local state and is purely compositional, matching the plan's task-1/task-2 split.
 
 ## Deviations from Plan
@@ -81,7 +81,7 @@ None - plan executed exactly as written.
 
 ## Issues Encountered
 
-None. Sibling plans 03-03 (`apps/web/src/routes/index.tsx`) and 03-04 (`apps/web/src/routes/status.tsx`) completed their own accent-token migrations before this plan's final build verification ran, so `bun run --filter @octanest/web build` was green with zero legacy `--color-accent-*` references anywhere in `apps/web/src` at completion — no transient build failure was observed or needed to be documented.
+None. Sibling plans 03-03 (`apps/web/src/routes/index.tsx`) and 03-04 (`apps/web/src/routes/status.tsx`) completed their own accent-token migrations before this plan's final build verification ran, so `bun run --filter @oxidean/web build` was green with zero legacy `--color-accent-*` references anywhere in `apps/web/src` at completion — no transient build failure was observed or needed to be documented.
 
 ## User Setup Required
 
@@ -97,7 +97,7 @@ None. `THEME_BOOT_SCRIPT` matches the plan's T-03-04/T-03-05/T-03-06 mitigations
 
 ## Next Phase Readiness
 
-- `apps/web/src/lib/theme.ts`, `apps/web/src/components/theme-select.tsx`, `apps/web/src/components/chrome.tsx`, and `apps/web/src/routes/__root.tsx` are all in place and build-verified (`bun run --filter @octanest/web build` exits 0) for 03-05 (PWA/icons) to build on
+- `apps/web/src/lib/theme.ts`, `apps/web/src/components/theme-select.tsx`, `apps/web/src/components/chrome.tsx`, and `apps/web/src/routes/__root.tsx` are all in place and build-verified (`bun run --filter @oxidean/web build` exits 0) for 03-05 (PWA/icons) to build on
 - Chrome half of D-15 (legacy accent token removal) is closed alongside 03-03/03-04's route-level migrations — `grep -rcE 'accent-cool|accent-warm' apps/web/src` returns 0 project-wide
 - No blockers for the remaining phase-3 plan (03-05)
 
@@ -107,4 +107,4 @@ None. `THEME_BOOT_SCRIPT` matches the plan's T-03-04/T-03-05/T-03-06 mitigations
 
 ## Self-Check: PASSED
 
-All created/modified files verified present on disk (`apps/web/src/lib/theme.ts`, `apps/web/src/components/theme-select.tsx`, `apps/web/src/components/chrome.tsx`, `apps/web/src/routes/__root.tsx`); both task commits (`8ccc119`, `348f025`) verified present in `git log --oneline`. Plan-level verification (`bun run --filter @octanest/web build` exit 0, zero legacy accent tokens in owned files, boot script precedes `HeadContent`, zero string interpolation in `THEME_BOOT_SCRIPT`, zero native `<select>/<option>/<input>/<button>` in `chrome.tsx`) all passed.
+All created/modified files verified present on disk (`apps/web/src/lib/theme.ts`, `apps/web/src/components/theme-select.tsx`, `apps/web/src/components/chrome.tsx`, `apps/web/src/routes/__root.tsx`); both task commits (`8ccc119`, `348f025`) verified present in `git log --oneline`. Plan-level verification (`bun run --filter @oxidean/web build` exit 0, zero legacy accent tokens in owned files, boot script precedes `HeadContent`, zero string interpolation in `THEME_BOOT_SCRIPT`, zero native `<select>/<option>/<input>/<button>` in `chrome.tsx`) all passed.

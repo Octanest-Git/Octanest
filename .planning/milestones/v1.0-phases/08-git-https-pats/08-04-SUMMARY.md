@@ -2,13 +2,13 @@
 phase: 08-git-https-pats
 plan: "04"
 subsystem: api
-tags: [pat, smart-http, git-http-backend, basic-auth, octanest_pat, git-02, git-11]
+tags: [pat, smart-http, git-http-backend, basic-auth, oxidean_pat, git-02, git-11]
 
 requires:
   - phase: 08-git-https-pats
-    provides: 08-03 PAT schema + pat_types with octanest_pat_/octanest_fg_
+    provides: 08-03 PAT schema + pat_types with oxidean_pat_/oxidean_fg_
 provides:
-  - "pat.createClassic / list / revoke RPC (classic mint with octanest_pat_)"
+  - "pat.createClassic / list / revoke RPC (classic mint with oxidean_pat_)"
   - "Smart HTTP CGI via git-http-backend on /{owner}/{repo}.git"
   - "PAT Basic auth; password reject + cookie ignore"
 affects:
@@ -32,22 +32,22 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/pat/mod.rs
-    - crates/octanest-api/src/git/http_backend.rs
-    - crates/octanest-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/pat/mod.rs
+    - crates/oxidean-api/src/git/http_backend.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
     - .planning/phases/08-git-https-pats/08-04-SUMMARY.md
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/lib.rs
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/auth/session.rs
-    - crates/octanest-api/src/git/mod.rs
-    - crates/octanest-api/src/routes/mod.rs
-    - crates/octanest-api/tests/pat_rpc.rs
-    - crates/octanest-api/tests/git_smart_http.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/lib.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/auth/session.rs
+    - crates/oxidean-api/src/git/mod.rs
+    - crates/oxidean-api/src/routes/mod.rs
+    - crates/oxidean-api/tests/pat_rpc.rs
+    - crates/oxidean-api/tests/git_smart_http.rs
 
 key-decisions:
-  - "D-08 mint uses octanest_pat_ (CLASSIC_PAT_PREFIX), not plan-text ona_pat_"
+  - "D-08 mint uses oxidean_pat_ (CLASSIC_PAT_PREFIX), not plan-text ona_pat_"
   - "Axum 0.8 forbids {repo}.git suffix syntax — use {repo_git} full segment"
   - "Expansion git_smart cases #[ignore] until 08-06 (private/scope/429/push)"
 
@@ -59,17 +59,17 @@ requirements-completed: [GIT-02, GIT-11]
 
 coverage:
   - id: D1
-    description: "Verified createClassic returns one-time octanest_pat_ token; list omits secret; revoke hides"
+    description: "Verified createClassic returns one-time oxidean_pat_ token; list omits secret; revoke hides"
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_classic_returns_one_time_token"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_classic_returns_one_time_token"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_list_omits_secret_token"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_list_omits_secret_token"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_revoke_removes_from_list"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_revoke_removes_from_list"
         status: pass
     human_judgment: false
   - id: D2
@@ -77,10 +77,10 @@ coverage:
     requirement: GIT-11
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_unverified_email_unverified"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_unverified_email_unverified"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/pat_rpc.rs#pat_create_empty_note_required"
+        ref: "crates/oxidean-api/tests/pat_rpc.rs#pat_create_empty_note_required"
         status: pass
     human_judgment: false
   - id: D3
@@ -88,16 +88,16 @@ coverage:
     requirement: GIT-02
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_public_anon_upload_pack_info_refs_ok"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_public_anon_upload_pack_info_refs_ok"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_pat_push_fetch_happy_path"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_pat_push_fetch_happy_path"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_basic_account_password_rejected_401"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_basic_account_password_rejected_401"
         status: pass
       - kind: integration
-        ref: "crates/octanest-api/tests/git_smart_http.rs#git_smart_session_cookie_ignored_as_anon"
+        ref: "crates/oxidean-api/tests/git_smart_http.rs#git_smart_session_cookie_ignored_as_anon"
         status: pass
     human_judgment: false
 
@@ -108,7 +108,7 @@ status: complete
 
 # Phase 08 Plan 04: Classic PAT + Smart HTTP Tracer Summary
 
-**Classic `octanest_pat_` mint/list/revoke RPC plus production Smart HTTP upload-pack via `git-http-backend` with PAT Basic auth (password rejected, cookies ignored)**
+**Classic `oxidean_pat_` mint/list/revoke RPC plus production Smart HTTP upload-pack via `git-http-backend` with PAT Basic auth (password rejected, cookies ignored)**
 
 ## Performance
 
@@ -134,16 +134,16 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/pat/mod.rs` — classic PAT RPC handlers
-- `crates/octanest-api/src/git/http_backend.rs` — git-http-backend CGI helper
-- `crates/octanest-api/src/routes/git_smart_http.rs` — Basic/PAT auth + CGI gate
-- `crates/octanest-api/src/rpc.rs` / `app.rs` / `lib.rs` / `routes/mod.rs` / `git/mod.rs` — wiring
-- `crates/octanest-api/src/auth/session.rs` — pub `sha256_hex` / `bytes_to_hex`
-- `crates/octanest-api/tests/pat_rpc.rs` / `git_smart_http.rs` — Wave 0 → green tracer
+- `crates/oxidean-api/src/pat/mod.rs` — classic PAT RPC handlers
+- `crates/oxidean-api/src/git/http_backend.rs` — git-http-backend CGI helper
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — Basic/PAT auth + CGI gate
+- `crates/oxidean-api/src/rpc.rs` / `app.rs` / `lib.rs` / `routes/mod.rs` / `git/mod.rs` — wiring
+- `crates/oxidean-api/src/auth/session.rs` — pub `sha256_hex` / `bytes_to_hex`
+- `crates/oxidean-api/tests/pat_rpc.rs` / `git_smart_http.rs` — Wave 0 → green tracer
 
 ## Decisions Made
 
-- Mint prefix locked to `octanest_pat_` (D-08 from 08-02/08-03), ignoring stale `ona_pat_` in plan prose
+- Mint prefix locked to `oxidean_pat_` (D-08 from 08-02/08-03), ignoring stale `ona_pat_` in plan prose
 - Axum 0.8 path: capture `{repo_git}` including `.git` suffix (cannot use `{repo}.git` template)
 - Expansion Smart HTTP tests `#[ignore]` for 08-06 (private 401, scope 403, 429, unverified push)
 
@@ -165,10 +165,10 @@ status: complete
 - **Files modified:** `http_backend.rs`
 - **Committed in:** `eee81d8`
 
-**3. [Rule 2 - Critical] Plan prose `ona_pat_` → `octanest_pat_`**
+**3. [Rule 2 - Critical] Plan prose `ona_pat_` → `oxidean_pat_`**
 - **Found during:** Task 1 (critical_deviation lock)
 - **Issue:** Plan still named `ona_pat_` prefix
-- **Fix:** Mint/match `CLASSIC_PAT_PREFIX` (`octanest_pat_`) only
+- **Fix:** Mint/match `CLASSIC_PAT_PREFIX` (`oxidean_pat_`) only
 - **Files modified:** `pat/mod.rs`, tests
 - **Committed in:** `dbe0168`
 
@@ -193,14 +193,14 @@ None - no external service configuration required.
 
 | File | Stub | Reason |
 |------|------|--------|
-| `crates/octanest-api/src/pat/mod.rs` | `create_fine_grained` → `pat.not_implemented` | Deferred to 08-05 |
-| `crates/octanest-api/tests/git_smart_http.rs` | 4 tests `#[ignore]` | Expansion in 08-06 |
+| `crates/oxidean-api/src/pat/mod.rs` | `create_fine_grained` → `pat.not_implemented` | Deferred to 08-05 |
+| `crates/oxidean-api/tests/git_smart_http.rs` | 4 tests `#[ignore]` | Expansion in 08-06 |
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/pat/mod.rs`
-- FOUND: `crates/octanest-api/src/git/http_backend.rs`
-- FOUND: `crates/octanest-api/src/routes/git_smart_http.rs`
+- FOUND: `crates/oxidean-api/src/pat/mod.rs`
+- FOUND: `crates/oxidean-api/src/git/http_backend.rs`
+- FOUND: `crates/oxidean-api/src/routes/git_smart_http.rs`
 - FOUND: `dbe0168`, `eee81d8`, `d795b86`
 
 ---

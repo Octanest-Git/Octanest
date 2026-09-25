@@ -1,14 +1,14 @@
 ---
 description: RPC codegen and api-client sync rules
-globs: packages/api-client/**/*,crates/octanest-api/src/rpc.rs,crates/octanest-api/src/bin/**/*,crates/octanest-core/**/*
+globs: packages/api-client/**/*,crates/oxidean-api/src/rpc.rs,crates/oxidean-api/src/bin/**/*,crates/oxidean-core/**/*
 alwaysApply: false
 ---
 
 # RPC / api-client
 
-- Rust procedure names and types are authoritative (`octanest-api` / `octanest-core`).
-- Regenerate with `make rpc-gen` (or `cargo run -q -p octanest-api --bin rpc-gen`).
+- Rust procedure names and types are authoritative (`oxidean-api` / `oxidean-core`).
+- Regenerate with `make rpc-gen` (or `cargo run -q -p oxidean-api --bin rpc-gen`).
 - Do not hand-patch generated TypeScript as the lasting fix.
 - Before PR: `make rpc-sync-check` must be clean (CI `rpc-sync` job).
-- Web imports go through `@octanest/api-client` / `apps/web/src/lib/api-client.ts`.
+- Web imports go through `@oxidean/api-client` / `apps/web/src/lib/api-client.ts`.
 - Document breaking procedure or error-code changes in the PR; keep stable codes when UI depends on them.

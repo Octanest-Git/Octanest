@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useNavigate, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { IssuePublic, RepoPublic } from "@octanest/api-client";
+import type { IssuePublic, RepoPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { CircleCheck, CircleDot } from "@octanejs/lucide";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -30,7 +30,7 @@ export type IssueDetailLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic; issue: IssuePublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 async function loadIssueDetail(
   owner: string,
@@ -65,7 +65,7 @@ export const Route = createFileRoute("/$owner/$repo/issues/$n")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Issue #${(params as { n: string }).n} · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Issue #${(params as { n: string }).n} · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

@@ -1,4 +1,4 @@
-import type { IssueLinkKind, IssueLinkPublic } from "@octanest/api-client";
+import type { IssueLinkKind, IssueLinkPublic } from "@oxidean/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 type IssueLinkedPrsPanelProps = {
   owner: string;

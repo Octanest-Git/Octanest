@@ -11,14 +11,14 @@
 ### A — Deployment scope (one product)
 - **D-01:** Empty-instance bootstrap applies to **any empty DB** — same path for cloud and self-host (no mode gate)
 - **D-02:** Reframe AUTH-06/07 (and related docs) as **empty-instance**, not “On self-host” — update REQUIREMENTS when touched
-- **D-03:** **No deployment modes** — do not add `OCTANEST_DEPLOYMENT_MODE` or equivalent; cloud ≡ self-host
+- **D-03:** **No deployment modes** — do not add `OXIDEAN_DEPLOYMENT_MODE` or equivalent; cloud ≡ self-host
 - **D-04:** **Hard rule:** no cloud/self-host conditionals in bootstrap (or related Phase 6 paths); tests assert one path — **Reversibility:** costly — product identity depends on single release train
 
 ### B — Post-bootstrap signup (`allow_signup`)
 - **D-05:** After bootstrap, **`allow_signup`** governs local signup (revises Phase 5 D-08 / AUTH-05 “always open” for this product rule)
 - **D-06:** When `allow_signup` is off: **`/signup` returns 404**; logged-out UI **omits all Sign-up references** (no AuthShell soft page; no invite codes) — **Reversibility:** costly — routing + chrome contract
-- **D-07:** Default when ENV unset: **`allow_signup = false`** (`OCTANEST_ALLOW_SIGNUP`)
-- **D-08:** **ENV seed** applies `OCTANEST_ALLOW_SIGNUP` at seed time; **wizard** exposes the same control (**Switch**) — **Reversibility:** costly — persisted instance setting + ENV contract
+- **D-07:** Default when ENV unset: **`allow_signup = false`** (`OXIDEAN_ALLOW_SIGNUP`)
+- **D-08:** **ENV seed** applies `OXIDEAN_ALLOW_SIGNUP` at seed time; **wizard** exposes the same control (**Switch**) — **Reversibility:** costly — persisted instance setting + ENV contract
 
 ### C — Empty-instance lock
 - **D-09:** **Hard SSR/server gate** to `/setup` before paint while `needs_setup`; signup/SSO blocked until bootstrap completes
@@ -27,7 +27,7 @@
 - **D-12:** After successful wizard setup (session issued): land on **signed-in `/`**
 
 ### D — ENV seed edge cases
-- **D-13:** If **either or both** `OCTANEST_ADMIN_*` unset → treat as unset; wizard creates sys-admin
+- **D-13:** If **either or both** `OXIDEAN_ADMIN_*` unset → treat as unset; wizard creates sys-admin
 - **D-14:** If both set but **seed fails** → **fail boot** (surface error; do not serve the app) — **Reversibility:** one-way — operators rely on fail-closed boot
 - **D-15:** ENV-seeded username: **`system-administrator`** (not `admin`/`admin1`)
 - **D-16:** ENV seed **creates** the account; first visit gates **`/setup/credentials`** — must change **default** values (username `system-administrator`); **ENV email/password may be kept** (Keep current password Switch)
@@ -37,7 +37,7 @@
 - **D-18:** **SSR session** chooses marketing vs `SignedInHome` at `/`; first HTML matches final UI
 - **D-19:** Direct **`/dashboard` → 404** (not a public route; remove soft-redirect pattern)
 - **D-20:** `/` SSR priority: **`needs_setup` first** → `/setup`; else session → SignedInHome vs marketing
-- **D-21:** Keep `octanest_signed_in` **presence hint** as progressive enhancement; **drop and rely on SSR** if it causes trouble — agent discretion
+- **D-21:** Keep `oxidean_signed_in` **presence hint** as progressive enhancement; **drop and rely on SSR** if it causes trouble — agent discretion
 - **D-22:** After login and after ENV forced credential change: honor safe **`returnTo`**; else `/`
 
 ### Claude's Discretion
@@ -54,7 +54,7 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| AUTH-06 | Empty instance: when both `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are set, first boot creates that admin | Extend `maybe_seed_admin` (username `system-administrator`, `must_change_credentials`, apply `OCTANEST_ALLOW_SIGNUP`); fail-closed boot already in `main.rs` |
+| AUTH-06 | Empty instance: when both `OXIDEAN_ADMIN_EMAIL` and `OXIDEAN_ADMIN_PASSWORD` are set, first boot creates that admin | Extend `maybe_seed_admin` (username `system-administrator`, `must_change_credentials`, apply `OXIDEAN_ALLOW_SIGNUP`); fail-closed boot already in `main.rs` |
 | AUTH-07 | Empty instance: when those env vars are absent/incomplete, show one-time `/setup` wizard | Existing `needs_setup` / `bootstrap_setup` + SSR gate + `allow_signup` Switch + strict RPC allowlist |
 | AUTH-05 (interaction) | Open signup superseded by `allow_signup` product rule | Persist flag on `instance_auth_settings`; enforce in `auth.signup` + `/signup` 404 + chrome omit links |
 </phase_requirements>
@@ -63,7 +63,7 @@
 
 Phase 6 is mostly **extension of existing empty-instance bootstrap**, not a greenfield auth rewrite. `auth.bootstrap_*`, `/setup`, ENV `maybe_seed_admin`, SSO `reject_if_setup_required`, and fail-closed seed on boot already exist. Gaps vs locked decisions: ENV username still `admin`/`admin1`; no `must_change_credentials` or `/setup/credentials`; no `allow_signup` persistence/enforcement; client-only `redirectIfNeedsSetup` (flicker); soft `/dashboard` redirect; RPC not strictly allowlisted while `needs_setup`; signup always open after bootstrap.
 
-**Primary recommendation:** Persist `allow_signup` on `instance_auth_settings`; add `users.must_change_credentials`; harden seed/wizard/RPC; implement SSR gates via `createServerFn` + Cookie forward to existing `auth.*` RPCs (do not adopt TanStack Start `useSession` — Octanest already owns `octanest_session`).
+**Primary recommendation:** Persist `allow_signup` on `instance_auth_settings`; add `users.must_change_credentials`; harden seed/wizard/RPC; implement SSR gates via `createServerFn` + Cookie forward to existing `auth.*` RPCs (do not adopt TanStack Start `useSession` — Oxidean already owns `oxidean_session`).
 
 ## Architectural Responsibility Map
 
@@ -83,8 +83,8 @@ Phase 6 is mostly **extension of existing empty-instance bootstrap**, not a gree
 ### Core
 | Library / module | Version | Purpose | Why Standard |
 |------------------|---------|---------|--------------|
-| Existing `octanest-api` auth (`bootstrap`, `seed`, `local`, `admin`) | workspace | Seed, wizard, signup gates | Already AUTH-06/07 skeleton [VERIFIED: crates/octanest-api/src/auth/bootstrap.rs:1-167] |
-| `instance_auth_settings` singleton | migration `0002_auth` | Persist `allow_signup` | Same pattern as `provider_mode` [VERIFIED: crates/octanest-db/src/auth_settings.rs:7-16] |
+| Existing `oxidean-api` auth (`bootstrap`, `seed`, `local`, `admin`) | workspace | Seed, wizard, signup gates | Already AUTH-06/07 skeleton [VERIFIED: crates/oxidean-api/src/auth/bootstrap.rs:1-167] |
+| `instance_auth_settings` singleton | migration `0002_auth` | Persist `allow_signup` | Same pattern as `provider_mode` [VERIFIED: crates/oxidean-db/src/auth_settings.rs:7-16] |
 | `@octanejs/tanstack-start` | `0.1.44` | `createServerFn` SSR | Project Start adapter exports it [VERIFIED: apps/web/package.json:22] |
 | `@octanejs/tanstack-router` | `0.1.53` | `beforeLoad`, `redirect`, `notFound` | Re-exports router-core [VERIFIED: apps/web/package.json:21] |
 | `@octanejs/base-ui` Switch | `0.1.52` | `allow_signup` + keep-password toggles | Matches hand-authored Checkbox pattern [VERIFIED: apps/web/package.json:18] |
@@ -101,7 +101,7 @@ Phase 6 is mostly **extension of existing empty-instance bootstrap**, not a gree
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
 | `instance_auth_settings.allow_signup` | New `instance_flags` table | Extra table for one bool — reject |
-| Cookie-forward `createServerFn` | TanStack Start `useSession` | Would duplicate Octanest session store — reject (D-11 Phase 4) |
+| Cookie-forward `createServerFn` | TanStack Start `useSession` | Would duplicate Oxidean session store — reject (D-11 Phase 4) |
 | Client-only presence hint | Keep as sole gate | Causes flicker — demote to PE only |
 
 **Installation:** No new npm/cargo packages required. Add Switch UI wrapper (hand-author like Checkbox). Run `make rpc-gen` after DTO changes.
@@ -125,8 +125,8 @@ Phase 6 is mostly **extension of existing empty-instance bootstrap**, not a gree
 
 ```text
                     ┌─────────────────────────────┐
-  Operator ENV      │ OCTANEST_ADMIN_EMAIL/PASSWORD│
-  OCTANEST_ALLOW_*  │ (+ optional ALLOW_SIGNUP)    │
+  Operator ENV      │ OXIDEAN_ADMIN_EMAIL/PASSWORD│
+  OXIDEAN_ALLOW_*  │ (+ optional ALLOW_SIGNUP)    │
                     └──────────────┬──────────────┘
                                    │ boot
                                    ▼
@@ -159,12 +159,12 @@ Phase 6 is mostly **extension of existing empty-instance bootstrap**, not a gree
 
 ### Recommended Project Structure
 ```
-crates/octanest-db/migrations/{sqlite,postgres,mysql}/0006_bootstrap_flags.sql
-crates/octanest-db/src/{auth_settings,users}.rs          # columns + getters/setters
-crates/octanest-core/src/auth_types.rs                   # DTOs: allow_signup, must_change, BootstrapSetupRequest
-crates/octanest-api/src/auth/{seed,bootstrap,local,admin}.rs
-crates/octanest-api/src/rpc.rs                           # needs_setup allowlist
-crates/octanest-api/tests/auth_bootstrap.rs (+ credentials tests)
+crates/oxidean-db/migrations/{sqlite,postgres,mysql}/0006_bootstrap_flags.sql
+crates/oxidean-db/src/{auth_settings,users}.rs          # columns + getters/setters
+crates/oxidean-core/src/auth_types.rs                   # DTOs: allow_signup, must_change, BootstrapSetupRequest
+crates/oxidean-api/src/auth/{seed,bootstrap,local,admin}.rs
+crates/oxidean-api/src/rpc.rs                           # needs_setup allowlist
+crates/oxidean-api/tests/auth_bootstrap.rs (+ credentials tests)
 apps/web/src/lib/ssr-auth.ts                             # createServerFn cookie-forward helpers
 apps/web/src/routes/{index,setup,setup.credentials,signup,dashboard,login}.tsrx
 apps/web/src/components/ui/switch.tsrx                   # new Base UI wrapper
@@ -173,19 +173,19 @@ docs/{CONFIGURATION,ARCHITECTURE,API}.md + .env.example
 ```
 
 ### Pattern 1: ENV bool parse (match existing)
-**What:** Parse `OCTANEST_ALLOW_SIGNUP` like `OCTANEST_AUTO_MIGRATE`.
+**What:** Parse `OXIDEAN_ALLOW_SIGNUP` like `OXIDEAN_AUTO_MIGRATE`.
 **When to use:** Seed-time + docs.
 **Example:**
 ```rust
-// Source: crates/octanest-api/src/main.rs:49-51 (verbatim pattern)
-let auto_migrate = std::env::var("OCTANEST_AUTO_MIGRATE")
+// Source: crates/oxidean-api/src/main.rs:49-51 (verbatim pattern)
+let auto_migrate = std::env::var("OXIDEAN_AUTO_MIGRATE")
     .map(|v| v == "true" || v == "1")
     .unwrap_or(true);
-// Phase 6: same parse, unwrap_or(false) for OCTANEST_ALLOW_SIGNUP
+// Phase 6: same parse, unwrap_or(false) for OXIDEAN_ALLOW_SIGNUP
 ```
 
 ### Pattern 2: SSR session via Cookie forward (not Start useSession)
-**What:** Server fn reads incoming Cookie and calls Octanest RPC.
+**What:** Server fn reads incoming Cookie and calls Oxidean RPC.
 **When to use:** `/` `beforeLoad`/`loader`, setup gates, signup 404 decision.
 **Example:**
 ```typescript
@@ -193,13 +193,13 @@ let auto_migrate = std::env::var("OCTANEST_AUTO_MIGRATE")
 // [CITED: https://tanstack.com/start/latest/docs/framework/react/guide/authentication]
 import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
-import { createClient } from "@octanest/api-client";
+import { createClient } from "@oxidean/api-client";
 
 export const fetchBootstrapStatus = createServerFn({ method: "GET" }).handler(
   async () => {
     const cookie = getRequestHeader("cookie") ?? "";
     const client = createClient({
-      baseUrl: process.env.OCTANEST_API_ORIGIN ?? "http://127.0.0.1:8080",
+      baseUrl: process.env.OXIDEAN_API_ORIGIN ?? "http://127.0.0.1:8080",
       credentials: "include",
       fetch: (input, init) =>
         fetch(input, {
@@ -231,7 +231,7 @@ export const fetchBootstrapStatus = createServerFn({ method: "GET" }).handler(
 |---------|-------------|-------------|-----|
 | Password hashing | Custom crypto | Existing `hash_password_str` / `set_password_hash` | Already ASVS-aligned argon2 |
 | Session mint | New cookie scheme | `issue_session` | Same as wizard/login |
-| SSR auth store | Start `useSession` | Forward `octanest_session` Cookie to API | Single source of truth |
+| SSR auth store | Start `useSession` | Forward `oxidean_session` Cookie to API | Single source of truth |
 | Switch UI | Raw checkbox/CSS | `@octanejs/base-ui/switch` wrapper | Design-system continuity |
 | 404 routing | Custom error page hack | `notFound()` from `@octanejs/tanstack-router` | router-core export |
 
@@ -241,13 +241,13 @@ export const fetchBootstrapStatus = createServerFn({ method: "GET" }).handler(
 
 ### Pitfall 1: ENV set ⇒ `needs_setup=false` before seed runs
 **What goes wrong:** Wizard hidden while users still empty if seed skipped.
-**Why:** `admin_env_configured()` short-circuits `needs_setup` [VERIFIED: crates/octanest-api/src/auth/bootstrap.rs:55-61].
+**Why:** `admin_env_configured()` short-circuits `needs_setup` [VERIFIED: crates/oxidean-api/src/auth/bootstrap.rs:55-61].
 **How to avoid:** Always run seed before serve (already in `main`); tests that set ENV must call `maybe_seed_admin` or assert fail-boot.
 **Warning signs:** Empty DB + ENV + login works for nobody.
 
 ### Pitfall 2: Strict RPC not centralized
 **What goes wrong:** New procedures bypass setup lock.
-**Why:** Today only `auth.signup` checks `needs_setup` [VERIFIED: crates/octanest-api/src/auth/local.rs:132-138]; dispatch has no allowlist.
+**Why:** Today only `auth.signup` checks `needs_setup` [VERIFIED: crates/oxidean-api/src/auth/local.rs:132-138]; dispatch has no allowlist.
 **How to avoid:** Early allowlist in `rpc::dispatch` when `needs_setup` (bootstrap_* + `system.health` only); keep SSO `reject_if_setup_required`.
 **Warning signs:** `auth.login` / `auth.me` succeed on empty unseeded instance.
 
@@ -260,25 +260,25 @@ export const fetchBootstrapStatus = createServerFn({ method: "GET" }).handler(
 ### Pitfall 4: Forced-change without email update API
 **What goes wrong:** Username/password changeable, email stuck.
 **Why:** DB has `set_password_hash` and profile username update; **no** `UPDATE users SET email` helper found.
-**How to avoid:** Add dialect-safe `update_user_email` (or combined credentials update) in `octanest-db`.
+**How to avoid:** Add dialect-safe `update_user_email` (or combined credentials update) in `oxidean-db`.
 **Warning signs:** Forced-change RPC only updates username.
 
 ### Pitfall 5: Reserved username / default clash
 **What goes wrong:** `system-administrator` accepted forever or blocked incorrectly.
-**Why:** Reserved list has `"system"` and `"admin"` but not `"system-administrator"` [VERIFIED: crates/octanest-core/src/auth_types.rs:151-184].
+**Why:** Reserved list has `"system"` and `"admin"` but not `"system-administrator"` [VERIFIED: crates/oxidean-core/src/auth_types.rs:151-184].
 **How to avoid:** Seed uses fixed default; forced-change rejects case-insensitive equality to `system-administrator`; add name to reserved list for normal signup after bootstrap (wizard may keep reserved bypass for `admin`).
 **Warning signs:** Users can still sign up as `system-administrator`.
 
 ### Pitfall 6: Partial ENV treated as seed path
 **What goes wrong:** One of email/password set → confusing state.
-**Why:** D-13 requires either/both unset ⇒ wizard; current `admin_env_configured` already requires both non-empty [VERIFIED: crates/octanest-api/src/auth/bootstrap.rs:45-52].
+**Why:** D-13 requires either/both unset ⇒ wizard; current `admin_env_configured` already requires both non-empty [VERIFIED: crates/oxidean-api/src/auth/bootstrap.rs:45-52].
 **How to avoid:** Keep both-required; document; add test for email-only / password-only ⇒ `needs_setup=true`.
 
 ## Code Examples
 
 ### Existing seed (must change)
 ```rust
-// Source: crates/octanest-api/src/auth/seed.rs:27-30 [VERIFIED]
+// Source: crates/oxidean-api/src/auth/seed.rs:27-30 [VERIFIED]
 let username = match db.find_user_by_username("admin").await? {
     None => "admin".to_string(),
     Some(_) => "admin1".to_string(),
@@ -288,7 +288,7 @@ Replace with fixed `"system-administrator"`, set `must_change_credentials=true`,
 
 ### Fail-closed boot (already present — keep)
 ```rust
-// Source: crates/octanest-api/src/main.rs:66-69 [VERIFIED]
+// Source: crates/oxidean-api/src/main.rs:66-69 [VERIFIED]
 if let Err(e) = seed::maybe_seed_admin(&db).await {
     eprintln!("admin seed failed: {e}");
     std::process::exit(1);
@@ -297,15 +297,15 @@ if let Err(e) = seed::maybe_seed_admin(&db).await {
 
 ### Bootstrap status shape (extend carefully)
 ```rust
-// Source: crates/octanest-core/src/auth_types.rs:79-84 [VERIFIED]
+// Source: crates/oxidean-core/src/auth_types.rs:79-84 [VERIFIED]
 pub struct BootstrapStatus {
-    /// True when `users` is empty and `OCTANEST_ADMIN_*` ENV seed is not configured.
+    /// True when `users` is empty and `OXIDEAN_ADMIN_*` ENV seed is not configured.
     pub needs_setup: bool,
 }
 ```
 Recommend keeping this lean; put `allow_signup` on `ProviderConfigPublic` instead:
 ```rust
-// Source: crates/octanest-core/src/auth_types.rs:110-114 [VERIFIED]
+// Source: crates/oxidean-core/src/auth_types.rs:110-114 [VERIFIED]
 pub struct ProviderConfigPublic {
     pub mode: ProviderMode,
 }
@@ -313,7 +313,7 @@ pub struct ProviderConfigPublic {
 
 ### Wizard reserved bypass (preserve for bootstrap names)
 ```rust
-// Source: crates/octanest-api/src/auth/bootstrap.rs:100-106 [VERIFIED]
+// Source: crates/oxidean-api/src/auth/bootstrap.rs:100-106 [VERIFIED]
 match validate_username(&username) {
     Ok(()) => {}
     Err(e) if e.contains("reserved") && is_reserved_username(&username) => {}
@@ -323,9 +323,9 @@ match validate_username(&username) {
 
 ### Session cookie names (SSR / gates)
 ```rust
-// Source: crates/octanest-api/src/auth/session.rs:15-20 [VERIFIED]
-pub const SESSION_COOKIE_NAME: &str = "octanest_session";
-pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
+// Source: crates/oxidean-api/src/auth/session.rs:15-20 [VERIFIED]
+pub const SESSION_COOKIE_NAME: &str = "oxidean_session";
+pub const SESSION_PRESENCE_COOKIE_NAME: &str = "oxidean_signed_in";
 ```
 
 ## State of the Art
@@ -348,7 +348,7 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 2. **Public exposure:** Add `allow_signup: bool` to `ProviderConfigPublic` (chrome + signup route). Fail closed (omit Sign up) until resolved — matches UI-SPEC.
 3. **`must_change_credentials`:** Boolean on `users`, default false; set true only in ENV seed; clear in new `auth.confirm_admin_credentials` (or `auth.complete_forced_credentials`) RPC; include on `UserPublic` so SSR/client can gate.
 4. **Presence hint (D-21):** Keep initially; remove if SSR loader path still races. Do not use as security boundary.
-5. **ENV parse:** `OCTANEST_ALLOW_SIGNUP` → true only for `"true"` or `"1"`; default false (mirror AUTO_MIGRATE parse, opposite default).
+5. **ENV parse:** `OXIDEAN_ALLOW_SIGNUP` → true only for `"true"` or `"1"`; default false (mirror AUTO_MIGRATE parse, opposite default).
 6. **UI Switch:** Hand-author `apps/web/src/components/ui/switch.tsrx` from `@octanejs/base-ui/switch` like Checkbox (Phase 4 pattern); optional `bunx shadcn@latest add switch` only if it emits compatible Octane `.tsrx`.
 
 ## Assumptions Log
@@ -369,9 +369,9 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
    - Resolution (assumed by 06-02 / 06-05 / 06-06): **Login may mint a session** while `must_change_credentials` is set; SSR/UI hard-gates `/setup/credentials` (D-16/D-17). Optional extra RPC allowlisting for flagged users is out of scope unless a later plan adds it.
    - Rationale: Matches UI-SPEC first-login flow; avoids blocking session issue needed to call `auth.confirm_admin_credentials`.
 
-2. **Compose/cloud default for `OCTANEST_ALLOW_SIGNUP`** — **RESOLVED**
+2. **Compose/cloud default for `OXIDEAN_ALLOW_SIGNUP`** — **RESOLVED**
    - What we know: Default false (D-07); cloud previously “open signup” (AUTH-05).
-   - Resolution (assumed by 06-04 / 06-07): **Code default remains false** (one product path). Cloud Compose/Railway (and docs) set `OCTANEST_ALLOW_SIGNUP=true` when open signup is desired — documentation-only; no Compose file change required unless ADMIN env is already listed.
+   - Resolution (assumed by 06-04 / 06-07): **Code default remains false** (one product path). Cloud Compose/Railway (and docs) set `OXIDEAN_ALLOW_SIGNUP=true` when open signup is desired — documentation-only; no Compose file change required unless ADMIN env is already listed.
    - Rationale: D-03/D-04 forbid deployment-mode forks; ENV at deploy covers cloud AUTH-05 without branching code.
 
 ## Environment Availability
@@ -396,13 +396,13 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 |----------|-------|
 | Framework | cargo-nextest 0.9.143 (API) + Vitest 5.0.0 (web) |
 | Config file | workspace Cargo; `apps/web/vitest.config.ts` |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(bootstrap)'` |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(bootstrap)'` |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| AUTH-06 | Both ENV set + empty users → seed `system-administrator`, verified, `must_change_credentials` | integration | `cargo nextest run -p octanest-api -E 'test(seeded_admin)'` | ⚠️ extend `auth_signup.rs` / seed tests |
+| AUTH-06 | Both ENV set + empty users → seed `system-administrator`, verified, `must_change_credentials` | integration | `cargo nextest run -p oxidean-api -E 'test(seeded_admin)'` | ⚠️ extend `auth_signup.rs` / seed tests |
 | AUTH-06 | Seed failure → process exit (library returns Err; main exits) | unit/integration | assert `maybe_seed_admin` Err path | ❌ Wave 0 (partial: main already exits) |
 | AUTH-06 | Partial ENV → no seed, `needs_setup=true` | integration | new test in `auth_bootstrap.rs` | ❌ Wave 0 |
 | AUTH-07 | Empty + no ENV → `needs_setup` + wizard creates sys-admin | integration | existing `auth_bootstrap.rs` | ✅ extend for `allow_signup` |
@@ -416,13 +416,13 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 | D-04 path | No cloud/self-host branches in bootstrap | grep/CI assert | `rg` in plan verify | ❌ Wave 0 checklist |
 
 ### Sampling Rate
-- **Per task commit:** `cargo nextest run -p octanest-api -E 'test(bootstrap) | test(seeded_admin) | test(signup)'` and/or `bun run --filter @octanest/web test:unit`
-- **Per wave merge:** `cargo nextest run -p octanest-api` + `bun run --filter @octanest/web test:unit test:integration`
+- **Per task commit:** `cargo nextest run -p oxidean-api -E 'test(bootstrap) | test(seeded_admin) | test(signup)'` and/or `bun run --filter @oxidean/web test:unit`
+- **Per wave merge:** `cargo nextest run -p oxidean-api` + `bun run --filter @oxidean/web test:unit test:integration`
 - **Phase gate:** `make test` green before `/gsd-verify-work`
 
 ### Wave 0 Gaps
-- [ ] Extend `crates/octanest-api/tests/auth_bootstrap.rs` — partial ENV, allow_signup on setup, strict RPC allowlist
-- [ ] Extend seed tests — username `system-administrator`, `must_change_credentials`, `OCTANEST_ALLOW_SIGNUP`
+- [ ] Extend `crates/oxidean-api/tests/auth_bootstrap.rs` — partial ENV, allow_signup on setup, strict RPC allowlist
+- [ ] Extend seed tests — username `system-administrator`, `must_change_credentials`, `OXIDEAN_ALLOW_SIGNUP`
 - [ ] New API tests — forced credential change RPC; signup blocked when `allow_signup=false`
 - [ ] Web: `/setup` Switch + `/setup/credentials` form integration tests
 - [ ] Web: signup/chrome omit + dashboard notFound tests
@@ -436,7 +436,7 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 | ASVS Category | Applies | Standard Control |
 |---------------|---------|-----------------|
 | V2 Authentication | yes | Existing local auth + bootstrap; forced change for ENV defaults |
-| V3 Session Management | yes | Reuse `issue_session` / HttpOnly `octanest_session`; SSR forwards Cookie only |
+| V3 Session Management | yes | Reuse `issue_session` / HttpOnly `oxidean_session`; SSR forwards Cookie only |
 | V4 Access Control | yes | Strict RPC allowlist while `needs_setup`; `allow_signup` on signup; sys-admin settings |
 | V5 Input Validation | yes | Existing username/email/password validators; reject default username on confirm |
 | V6 Cryptography | yes | argon2 via existing helpers — never hand-roll |

@@ -6,13 +6,13 @@ tags: [pwa, service-worker, favicon, manifest, imagemagick, vite]
 
 requires:
   - phase: 03-brand-shell-theme (03-01)
-    provides: "apps/web/public/brand/squircle.svg mask + brand/octanest-mark.png source"
+    provides: "apps/web/public/brand/squircle.svg mask + brand/oxidean-mark.png source"
   - phase: 03-brand-shell-theme (03-02)
     provides: "THEME_BOOT_SCRIPT and __root.tsx <Head> shell with charSet/viewport"
 provides:
-  - "scripts/gen-icons.sh reproducing the full D-20 favicon/app-icon set from brand/octanest-mark.png"
+  - "scripts/gen-icons.sh reproducing the full D-20 favicon/app-icon set from brand/oxidean-mark.png"
   - "committed favicon.ico, favicon-16/32, apple-touch-icon, icon-192/512, icon-512-maskable"
-  - "installable Octanest web manifest at apps/web/public/manifest.webmanifest"
+  - "installable Oxidean web manifest at apps/web/public/manifest.webmanifest"
   - "assets-only service worker at apps/web/public/sw.js that never caches /api/* or /health"
   - "__root.tsx head icon/manifest links, light+dark theme-color metas, SW registration"
 affects: ["04-*", "any future PWA/offline work", "any future service-worker changes"]
@@ -52,7 +52,7 @@ completed: 2026-09-09
 
 # Phase 3 Plan 05: Favicon/App-Icon Set, PWA Manifest, Assets-Only Service Worker Summary
 
-**Hand-authored Octanest web manifest + assets-only service worker (vite-plugin-pwa doesn't emit a SW under this repo's Vite 8 multi-environment build) alongside a full ImageMagick-generated favicon/app-icon set sharing the DOM mark's squircle mask.**
+**Hand-authored Oxidean web manifest + assets-only service worker (vite-plugin-pwa doesn't emit a SW under this repo's Vite 8 multi-environment build) alongside a full ImageMagick-generated favicon/app-icon set sharing the DOM mark's squircle mask.**
 
 ## Performance
 
@@ -64,10 +64,10 @@ completed: 2026-09-09
 
 ## Accomplishments
 
-- `scripts/gen-icons.sh` reproducibly derives the entire D-20 icon set — favicon.ico, 16/32 favicons, 180px apple-touch-icon, 192/512 manifest icons, and a full-bleed 512 maskable icon — from `brand/octanest-mark.png`, clipped with the same `apps/web/public/brand/squircle.svg` mask the DOM `OctanestMark` component uses.
+- `scripts/gen-icons.sh` reproducibly derives the entire D-20 icon set — favicon.ico, 16/32 favicons, 180px apple-touch-icon, 192/512 manifest icons, and a full-bleed 512 maskable icon — from `brand/oxidean-mark.png`, clipped with the same `apps/web/public/brand/squircle.svg` mask the DOM `OxideanMark` component uses.
 - Diagnosed and documented a real incompatibility: `vite-plugin-pwa` (latest, 1.3.0) resolves its virtual manifest module but never runs workbox-build's SW-generation `closeBundle` hook under this repo's Vite 8 + `@octanejs/tanstack-start` dual "client"/"ssr" environment build — confirmed via `DEBUG=vite-plugin-pwa:*` producing zero plugin log output during build.
-- Implemented the plan's documented fallback without weakening any threat mitigation: hand-authored `apps/web/public/manifest.webmanifest` (exact Octanest manifest: `standalone`, `start_url`/`scope` `"/"`, dark brand `theme_color`/`background_color`, 192/512/maskable icons) and `apps/web/public/sw.js` (precaches only the icon/manifest shell; explicitly bypasses — never `caches.put`/`caches.match` in either direction — any request under `/api/` or `/health`; clears stale caches on `activate`).
-- Extended `__root.tsx` `<Head>` with favicon/apple-touch-icon/manifest links and both light (`#f4f6f8`) and dark (`#0b0c0e`) `theme-color` metas per D-29, and registered `/sw.js` via a static, non-interpolated inline script placed after `<Scripts />`, while preserving `THEME_BOOT_SCRIPT` as the first `<Head>` child and the `"Octanest"` home title.
+- Implemented the plan's documented fallback without weakening any threat mitigation: hand-authored `apps/web/public/manifest.webmanifest` (exact Oxidean manifest: `standalone`, `start_url`/`scope` `"/"`, dark brand `theme_color`/`background_color`, 192/512/maskable icons) and `apps/web/public/sw.js` (precaches only the icon/manifest shell; explicitly bypasses — never `caches.put`/`caches.match` in either direction — any request under `/api/` or `/health`; clears stale caches on `activate`).
+- Extended `__root.tsx` `<Head>` with favicon/apple-touch-icon/manifest links and both light (`#f4f6f8`) and dark (`#0b0c0e`) `theme-color` metas per D-29, and registered `/sw.js` via a static, non-interpolated inline script placed after `<Scripts />`, while preserving `THEME_BOOT_SCRIPT` as the first `<Head>` child and the `"Oxidean"` home title.
 
 ## Task Commits
 
@@ -85,7 +85,7 @@ Each task was committed atomically:
 - `apps/web/public/favicon.ico`, `favicon-16.png`, `favicon-32.png`, `apple-touch-icon.png` - squircle-clipped favicons
 - `apps/web/public/icons/icon-192.png`, `icon-512.png` - squircle-clipped manifest icons (transparent corners)
 - `apps/web/public/icons/icon-512-maskable.png` - full-bleed, opaque, safe-zone padded maskable icon
-- `apps/web/public/manifest.webmanifest` - hand-authored Octanest web manifest (fallback path)
+- `apps/web/public/manifest.webmanifest` - hand-authored Oxidean web manifest (fallback path)
 - `apps/web/public/sw.js` - hand-authored assets-only service worker (fallback path)
 - `apps/web/vite.config.ts` - documents the vite-plugin-pwa evaluation/rejection inline; plugin list unchanged from before this plan (`tanstackStart()`, `tailwindcss()`)
 - `apps/web/src/routes/__root.tsx` - favicon/manifest `<link>`s, light/dark `theme-color` metas, `apple-mobile-web-app-title`, static SW-registration script
@@ -93,7 +93,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 
-- **vite-plugin-pwa → hand-authored fallback (plan-anticipated, Rule 3 blocking-issue path):** Added `vite-plugin-pwa@^1.0.0` (resolved to 1.3.0) as a devDependency, wired it into `apps/web/vite.config.ts` exactly per the plan's task 2 snippet (manifest, `injectRegister: null`, `devOptions.enabled: false`, assets-only `workbox.globPatterns`, `navigateFallbackDenylist`, two `NetworkOnly` runtime-caching entries for `/api/` and `/health`), ran `bun install`, and built. `dist/client/manifest.webmanifest` was correctly emitted with all Octanest values, but no `sw.js` appeared anywhere in the build output regardless of dist location searched. Re-ran with `DEBUG=vite-plugin-pwa:*` — zero plugin debug output during either the "client" or "ssr" environment build, confirming the plugin's SW-generation hook simply never fires under `@octanejs/tanstack-start`'s Vite 8 environments API (this plugin version targets the pre-environments single-bundle Vite build model). No newer `vite-plugin-pwa` release exists (1.3.0 is latest as of this session) to retry.
+- **vite-plugin-pwa → hand-authored fallback (plan-anticipated, Rule 3 blocking-issue path):** Added `vite-plugin-pwa@^1.0.0` (resolved to 1.3.0) as a devDependency, wired it into `apps/web/vite.config.ts` exactly per the plan's task 2 snippet (manifest, `injectRegister: null`, `devOptions.enabled: false`, assets-only `workbox.globPatterns`, `navigateFallbackDenylist`, two `NetworkOnly` runtime-caching entries for `/api/` and `/health`), ran `bun install`, and built. `dist/client/manifest.webmanifest` was correctly emitted with all Oxidean values, but no `sw.js` appeared anywhere in the build output regardless of dist location searched. Re-ran with `DEBUG=vite-plugin-pwa:*` — zero plugin debug output during either the "client" or "ssr" environment build, confirming the plugin's SW-generation hook simply never fires under `@octanejs/tanstack-start`'s Vite 8 environments API (this plugin version targets the pre-environments single-bundle Vite build model). No newer `vite-plugin-pwa` release exists (1.3.0 is latest as of this session) to retry.
   Per the plan's explicit instruction ("If vite-plugin-pwa cannot coexist… use the plan's hand-authored fallback WITHOUT weakening D-28–D-30"), removed the plugin and dependency (net-zero `bun.lock`/`package.json` diff — added then cleanly removed) and hand-authored `apps/web/public/manifest.webmanifest` (identical JSON to what the plugin generated) and `apps/web/public/sw.js` (precache-on-install for the exact same static asset list, cache-first serve for only those assets, and an explicit `fetch(event.request)` passthrough — no `caches.put`/`caches.match` on either side — for any request under `/api/` or equal to `/health`, plus stale-cache cleanup on `activate` to satisfy the T-03-18 "no pinned stale shell after deploy" mitigation).
   This is the **fallback path**, not the primary vite-plugin-pwa path. `apps/web/vite.config.ts` plugin list is unchanged from before this plan; the reasoning is documented as an inline code comment for future maintainers.
 - **Maskable icon safe-zone:** generated by extending the plain (non-squircle-clipped) square mark to `410×410` centered on a `512×512` canvas filled with the dark brand surface `#0b0c0e`, guaranteeing full opacity (verified `magick identify %[opaque]` → `true`) so Android/OS launchers can safely apply their own rounding without clipping the mark or exposing transparency.
@@ -107,7 +107,7 @@ Each task was committed atomically:
 - **Issue:** `vite-plugin-pwa` resolves the manifest virtual module but never generates `sw.js` under this repo's Vite 8 + `@octanejs/tanstack-start` multi-environment build (confirmed via debug logging: zero plugin hook activity during build).
 - **Fix:** Removed the plugin/dependency; hand-authored `apps/web/public/manifest.webmanifest` and `apps/web/public/sw.js` with equivalent content and equal-or-stronger threat mitigation (T-03-16 verified against the *actual served* `sw.js`, not a generated artifact whose provenance is now moot).
 - **Files modified:** `apps/web/package.json`, `bun.lock` (net-zero after add+remove), `apps/web/vite.config.ts`, `apps/web/public/manifest.webmanifest` (new), `apps/web/public/sw.js` (new)
-- **Verification:** `bun run --filter @octanest/web build` emits `dist/client/sw.js` (the static file copied through unchanged) and `dist/client/manifest.webmanifest` with correct content; `grep -cE '"url":"[^"]*/api/|"url":"[^"]*/health'` → `0`; `grep -cE 'CacheFirst|StaleWhileRevalidate|NetworkFirst'` → `0`; `bun install --frozen-lockfile` exits `0`.
+- **Verification:** `bun run --filter @oxidean/web build` emits `dist/client/sw.js` (the static file copied through unchanged) and `dist/client/manifest.webmanifest` with correct content; `grep -cE '"url":"[^"]*/api/|"url":"[^"]*/health'` → `0`; `grep -cE 'CacheFirst|StaleWhileRevalidate|NetworkFirst'` → `0`; `bun install --frozen-lockfile` exits `0`.
 - **Committed in:** `31e8145` (Task 2 commit)
 
 ---
@@ -120,10 +120,10 @@ Each task was committed atomically:
 | Plan criterion (vite.config.ts-targeted) | Fallback-path check | Result |
 |---|---|---|
 | `grep -q '"vite-plugin-pwa"' apps/web/package.json` | N/A — plugin removed after proving incompatibility | documented above |
-| Manifest keys (`Octanest`, `standalone`, `start_url: "/"`, `scope: "/"`, icons) | same keys checked in `apps/web/public/manifest.webmanifest` | all present |
+| Manifest keys (`Oxidean`, `standalone`, `start_url: "/"`, `scope: "/"`, icons) | same keys checked in `apps/web/public/manifest.webmanifest` | all present |
 | `theme_color`/`background_color` `#0b0c0e` | checked in `apps/web/public/manifest.webmanifest` | both present |
 | `NetworkOnly` × 2 / `navigateFallbackDenylist` | N/A (no Workbox config) — equivalent enforced directly in `sw.js` fetch handler | `sw.js` bypasses `/api/` and `/health` explicitly (grep confirms) |
-| `bun run --filter @octanest/web build` exits 0 | ran | exit 0 |
+| `bun run --filter @oxidean/web build` exits 0 | ran | exit 0 |
 | Built `sw.js` exists (not under node_modules/dev-dist) | `find apps/web/dist -name sw.js` | `apps/web/dist/client/sw.js` |
 | Built SW precaches nothing under `/api` or `/health` | `grep -cE '"url":"[^"]*/api/|"url":"[^"]*/health' sw.js` | `0` |
 | Built SW has no CacheFirst/SWR/NetworkFirst handler | `grep -cE 'CacheFirst|StaleWhileRevalidate|NetworkFirst' sw.js` | `0` |

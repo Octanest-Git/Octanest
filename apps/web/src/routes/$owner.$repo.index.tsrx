@@ -8,7 +8,7 @@ import type {
   RepoPublic,
   RepoRefEntry,
   RepoTreeEntry,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { FileTree } from "@/components/repo/file-tree";
 import { CloneBox } from "@/components/repo/clone-box";
@@ -225,7 +225,7 @@ export const Route = createFileRoute("/$owner/$repo/")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `${params.owner}/${params.repo} · Octanest`,
+        title: `${params.owner}/${params.repo} · Oxidean`,
       },
     ],
   }),
@@ -251,7 +251,7 @@ export const Route = createFileRoute("/$owner/$repo/")({
     } catch {
       return {
         kind: "error",
-        message: "Can't reach Octanest. Check your connection and try again.",
+        message: "Can't reach Oxidean. Check your connection and try again.",
       };
     }
   },
@@ -303,7 +303,7 @@ export function RepoCodeHome() @{
         if (!cancelled) {
           setPhase({
             kind: "error",
-            message: "Can't reach Octanest. Check your connection and try again.",
+            message: "Can't reach Oxidean. Check your connection and try again.",
           });
         }
       }

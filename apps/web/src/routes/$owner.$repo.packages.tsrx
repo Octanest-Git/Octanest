@@ -4,7 +4,7 @@ import {
   packagesListQueryOptions,
   type PackagesListResponse,
   type RepoPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { Package } from "@octanejs/lucide";
 import { apiClient } from "@/lib/api-client";
 import { formatRelative } from "@/lib/relative-time";
@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export type RepoPackagesLoaderData =
   | { kind: "not_found" }
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/$owner/$repo/packages")({
     return {
       meta: [
         {
-          title: `${String(p.owner ?? "")}/${String(p.repo ?? "")} packages · Octanest`,
+          title: `${String(p.owner ?? "")}/${String(p.repo ?? "")} packages · Oxidean`,
         },
       ],
     };

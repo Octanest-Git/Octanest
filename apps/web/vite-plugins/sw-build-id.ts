@@ -1,6 +1,6 @@
 /**
  * Stamp public/sw.js with a per-deploy build id and expose it to the app
- * as import.meta.env.VITE_OCTANEST_SW_BUILD for registration cache-busting.
+ * as import.meta.env.VITE_OXIDEAN_SW_BUILD for registration cache-busting.
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -34,13 +34,13 @@ export function swBuildIdPlugin(): Plugin {
   };
 
   return {
-    name: "octanest-sw-build-id",
+    name: "oxidean-sw-build-id",
     // Run after Vite copies public/ into outDir so our stamp is not overwritten.
     enforce: "post",
     config() {
       return {
         define: {
-          "import.meta.env.VITE_OCTANEST_SW_BUILD": JSON.stringify(buildId),
+          "import.meta.env.VITE_OXIDEAN_SW_BUILD": JSON.stringify(buildId),
         },
       };
     },

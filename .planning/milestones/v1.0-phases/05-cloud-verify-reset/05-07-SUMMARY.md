@@ -79,7 +79,7 @@ coverage:
         ref: "bun run build (apps/web)"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-api --test auth_verify_gate --test auth_verify_reset --test auth_signup"
+        ref: "cargo test -p oxidean-api --test auth_verify_gate --test auth_verify_reset --test auth_signup"
         status: pass
     human_judgment: true
     rationale: "Hint copy and disabled styling light/dark need human-check; AUTH-05 is absence of invite UI"
@@ -132,7 +132,7 @@ Each task was committed atomically:
 
 None - plan executed exactly as written.
 
-Note: first parallel `auth_verify_gate` + `auth_verify_reset` run hit a pre-existing `OCTANEST_PUBLIC_ORIGIN` env race (`request_verify_sends_magic_and_otp_email`). Re-ran suites sequentially — all green. Not caused by this plan’s UI changes; left as-is (scope boundary).
+Note: first parallel `auth_verify_gate` + `auth_verify_reset` run hit a pre-existing `OXIDEAN_PUBLIC_ORIGIN` env race (`request_verify_sends_magic_and_otp_email`). Re-ran suites sequentially — all green. Not caused by this plan’s UI changes; left as-is (scope boundary).
 
 ## Authentication Gates
 

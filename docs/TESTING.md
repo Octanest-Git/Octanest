@@ -3,7 +3,7 @@
 
 ## Test framework and setup
 
-Octanest uses two test stacks:
+Oxidean uses two test stacks:
 
 | Layer | Framework | Config |
 |-------|-----------|--------|
@@ -17,7 +17,7 @@ Octanest uses two test stacks:
 - For `apps/web` browser projects: Playwright Chromium (`bunx playwright install --with-deps chromium`).
 - For full stack e2e: Docker (Mailpit, OIDC mock, Resend/WorkOS HTTP stubs via `docker-compose.dev-auth.yml`).
 
-Root `bun run test` runs Turbo (`turbo run test`), which executes each package’s `test` script (`@octanest/web` and `@octanest/api-client`).
+Root `bun run test` runs Turbo (`turbo run test`), which executes each package’s `test` script (`@oxidean/web` and `@oxidean/api-client`).
 
 ### Rust (nextest)
 
@@ -26,7 +26,7 @@ Root `bun run test` runs Turbo (`turbo run test`), which executes each package�
 - **`default`** — local runs; slow-timeout 60s (terminate after 3 periods).
 - **`ci`** — `fail-fast = false`, slow-timeout 90s, `test-threads = "num-cpus"`. CI invokes `cargo nextest run --workspace --profile ci`.
 
-Integration-style Rust tests live under `crates/octanest-api/tests/` and `crates/octanest-db/tests/` (plus unit tests colocated in crate sources).
+Integration-style Rust tests live under `crates/oxidean-api/tests/` and `crates/oxidean-db/tests/` (plus unit tests colocated in crate sources).
 
 ### Vitest projects (`apps/web`)
 
@@ -39,7 +39,7 @@ Integration-style Rust tests live under `crates/octanest-api/tests/` and `crates
 | `e2e-stack` | `node` | `e2e/stack/**/*.stack.test.ts` | Only if `E2E_STACK=1`; 60s timeout; no file parallelism |
 | `e2e-stack-browser` | Playwright Chromium | `e2e/stack-browser/**/*.stack.browser.test.{ts,tsx}` | Only if `E2E_STACK=1`; commands open pages via `newGuardedPage` (fails on `pageerror` / DOM races). **Gate** for Base UI + Octane hierarchy races that happy-dom misses (e.g. mirror auth SSH click). |
 
-### `@octanest/api-client`
+### `@oxidean/api-client`
 
 Package Vitest config: `packages/api-client/vitest.config.ts` (`environment: "node"`). Script: `vitest run`. Tests live next to sources (e.g. `src/index.test.ts`) and cover RPC protocol version headers and client fetch behavior with a mock `fetch`.
 
@@ -52,7 +52,7 @@ make test
 ```
 
 1. `cargo nextest run --workspace` if `cargo-nextest` is on `PATH`, else `cargo test --workspace`.
-2. `bun run test` → Turbo → Vitest for `@octanest/web` (unit / integration) and `@octanest/api-client`.
+2. `bun run test` → Turbo → Vitest for `@oxidean/web` (unit / integration) and `@oxidean/api-client`.
 
 Does **not** start Docker stubs or the live API/Vite stack.
 
@@ -60,10 +60,10 @@ Does **not** start Docker stubs or the live API/Vite stack.
 
 ```bash
 bun run test                                    # turbo: all packages with a test script
-bun run --filter @octanest/web test             # web: unit + integration
-bun run --filter @octanest/web test:unit
-bun run --filter @octanest/web test:integration
-bun run --filter @octanest/api-client test
+bun run --filter @oxidean/web test             # web: unit + integration
+bun run --filter @oxidean/web test:unit
+bun run --filter @oxidean/web test:integration
+bun run --filter @oxidean/api-client test
 ```
 
 From `apps/web`:
@@ -84,9 +84,9 @@ make test-e2e-stack
 `scripts/dev-auth/run-stack-e2e.sh`:
 
 1. Brings up `docker-compose.dev-auth.yml` (`--profile dev-auth`): Mailpit, OIDC mock, Resend/WorkOS stubs.
-2. Builds and runs `octanest-api` on SQLite (default `:18080`), Vite on `:13000`.
-3. Sets `E2E_STACK=1` and runs `bun run --filter @octanest/web test:e2e:stack` (`e2e-stack` + `e2e-stack-browser`).
-4. Tears down stubs on exit (unless `OCTANEST_E2E_KEEP_STUBS=1`).
+2. Builds and runs `oxidean-api` on SQLite (default `:18080`), Vite on `:13000`.
+3. Sets `E2E_STACK=1` and runs `bun run --filter @oxidean/web test:e2e:stack` (`e2e-stack` + `e2e-stack-browser`).
+4. Tears down stubs on exit (unless `OXIDEAN_E2E_KEEP_STUBS=1`).
 
 Logs land under `var/e2e/` (API/web logs; CI uploads this on failure).
 
@@ -97,7 +97,7 @@ Manual stub stack for interactive use is documented in [dev-auth.md](./dev-auth.
 ```bash
 cargo nextest run --workspace
 cargo nextest run --workspace --profile ci   # same profile as CI api-rust
-cargo test -p octanest-db --test dialect_probe -- --nocapture
+cargo test -p oxidean-db --test dialect_probe -- --nocapture
 ```
 
 ## Writing new tests
@@ -214,15 +214,15 @@ Workflow: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) (`name: CI`)
 | Job | What it runs |
 |-----|----------------|
 | `api-rust` | Install nextest → `cargo nextest run --workspace --profile ci` |
-| `web-octane` | `bun install --frozen-lockfile` → `bun run test` (api-client + web unit/integration) → Turbo build `@octanest/web` |
+| `web-octane` | `bun install --frozen-lockfile` → `bun run test` (api-client + web unit/integration) → Turbo build `@oxidean/web` |
 | `route-coverage` | `make route-coverage-check` — every user-facing `.tsrx` page has happy-dom, stack-browser, or documented skip (G-11.1-15) |
 | `coverage-weighted` | Bun install → `make coverage-contract` → `make coverage-web` → e2e checklist → `scripts/coverage-weighted.sh` (bootstrap floor `0.65`, ratchet target `0.70`); uploads `var/coverage/` + `apps/web/coverage/` on failure |
 | `e2e-stack` | Rust + Bun + Playwright → `make test-e2e-stack`; on failure uploads `var/e2e/` as `e2e-stack-logs` |
 | `rpc-sync` | `make rpc-sync-check` |
 | `compose` | `docker compose … config` for base, MySQL/SQLite overlays, and `docker-compose.dev-auth.yml` (config-only; does not build/bring-up) |
-| `compose-smoke` | Matrix `postgres` / `sqlite` / `mysql`: `./scripts/ci-compose-smoke.sh` → `make smoke` / `smoke-sqlite` / `smoke-mysql` (**D-CI-01…04**); fail-closed under `CI` / `SMOKE_REQUIRE_STACK`; image proof via `compose up --build` (**D-CI-06**); uploads `/tmp/octanest-smoke*.json` on failure. Complements config-only `compose` and stays separate from `smoke-protocol` (**D-CI-05**) |
+| `compose-smoke` | Matrix `postgres` / `sqlite` / `mysql`: `./scripts/ci-compose-smoke.sh` → `make smoke` / `smoke-sqlite` / `smoke-mysql` (**D-CI-01…04**); fail-closed under `CI` / `SMOKE_REQUIRE_STACK`; image proof via `compose up --build` (**D-CI-06**); uploads `/tmp/oxidean-smoke*.json` on failure. Complements config-only `compose` and stays separate from `smoke-protocol` (**D-CI-05**) |
 | `smoke-protocol` | Compose up → `make smoke-git-https` + `smoke-git-ssh` + `smoke-git-lfs` + `smoke-packages` via `make smoke-protocol-ci` (**D-QH-04**); fail-closed when Docker/stack absent (`CI` / `SMOKE_REQUIRE_STACK`); default `SMOKE_SKIP_LS_REMOTE=1` / `SMOKE_SKIP_LFS_CLIENT=1` (routing + SSH TCP; no seeded-repo client) |
-| `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p octanest-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OCTANEST_DB_DIALECT` (dialect probe only — not a substitute for Compose bring-up) |
+| `db-matrix` | Matrix `postgres` / `mysql` / `sqlite`: `cargo test -p oxidean-db --test dialect_probe -- --nocapture` with matching `DATABASE_URL` / `OXIDEAN_DB_DIALECT` (dialect probe only — not a substitute for Compose bring-up) |
 
 Default `web-octane` stays fast (no Docker auth stubs). True auth/email path coverage is the separate `e2e-stack` job. The `coverage-weighted` job enforces D-QH-02 without reviving component Playwright. Compose dialect health (Traefik `/` + `/health` + `system.db_probe`) is the `compose-smoke` matrix — not folded into `smoke-protocol`. Forge protocol edges (Smart HTTP / SSH TCP / LFS batch / packages PathPrefix) are the `smoke-protocol` job — not happy-dom only.
 
@@ -235,17 +235,17 @@ Default `web-octane` stays fast (no Docker auth stubs). True auth/email path cov
 | `make smoke-mysql` | MySQL overlay bring-up + dialect assert | Profile `mysql` |
 | `make smoke-compose-ci` | Fail-closed CI entry (`DIALECT=…`) | Same as `./scripts/ci-compose-smoke.sh` |
 
-Octanest Cloud (Railway IaC + Caddy gateway) is **not** exercised in PR CI — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`.planning/phases/22-compose-ci-deploy/22-VALIDATION.md`](../.planning/phases/22-compose-ci-deploy/22-VALIDATION.md). Local preview: `make cloud-plan` (requires linked Railway CLI).
+Oxidean Cloud (Railway IaC + Caddy gateway) is **not** exercised in PR CI — see [DEPLOYMENT.md](DEPLOYMENT.md) and [`.planning/phases/22-compose-ci-deploy/22-VALIDATION.md`](../.planning/phases/22-compose-ci-deploy/22-VALIDATION.md). Local preview: `make cloud-plan` (requires linked Railway CLI).
 
 ### Protocol smokes (local + CI)
 
 | Target | Proves | Notes |
 |--------|--------|-------|
 | `make smoke-git-https` | Traefik `/{owner}/{repo}.git` is not SPA HTML; optional `git ls-remote` | Needs stack up; set `SMOKE_SKIP_LS_REMOTE=1` for routing-only |
-| `make smoke-git-ssh` | TCP `OCTANEST_SSH_PORT` (2222); optional scp-style ls-remote/push | Needs SSH-enabled Compose API |
+| `make smoke-git-ssh` | TCP `OXIDEAN_SSH_PORT` (2222); optional scp-style ls-remote/push | Needs SSH-enabled Compose API |
 | `make smoke-git-lfs` | `.git/info/lfs` batch routing not SPA; optional git-lfs client | `SMOKE_SKIP_LFS_CLIENT=1` for routing-only |
 | `make smoke-packages` | `/v2` `/npm` `/generic` PathPrefix → API | Needs running Compose API |
-| `make smoke-protection` | API image ships `octanest-protection-hook`; HTTPS push to reviews-required protected branch denied (**ORG-06** / **D-PKG-03**) | Fresh Compose up (wipes volumes); `scripts/compose-smoke-protection.sh` |
+| `make smoke-protection` | API image ships `oxidean-protection-hook`; HTTPS push to reviews-required protected branch denied (**ORG-06** / **D-PKG-03**) | Fresh Compose up (wipes volumes); `scripts/compose-smoke-protection.sh` |
 | `make smoke-protocol-ci` | All four fail-closed against a fresh Compose up | Same entrypoint as CI `smoke-protocol` |
 
 Locally without Docker, individual `make smoke-git-*` / `smoke-packages` may skip (exit 0). Under `CI=true` or `SMOKE_REQUIRE_STACK=1`, those skips become failures.
@@ -262,7 +262,7 @@ See [dev-auth.md](./dev-auth.md) for interactive setup. Stack e2e depends on:
 
 `e2e-stack` proves SMTP→Mailpit, Resend→stub, WorkOS stub login, and OIDC mock login over HTTP. `e2e-stack-browser` exercises signup UI, WorkOS CTA, and the D-QH-03 forge matrix (repo/packages, issues/releases, SSH keys, org members) against the live web/API in Chromium.
 
-The e2e stack script also builds and attaches a native `octanest-runner` (host execution, labels `ubuntu-latest,self-hosted`) to the API via the `OCTANEST_RUNNER_REGISTRATION_TOKEN` bootstrap. `forge-actions-pipeline.stack.browser.test.tsx` pushes a real `.github/workflows/ci.yml` over Smart HTTP, waits for the runner to drive the run green, and asserts the run detail page streams the job log marker in Chromium.
+The e2e stack script also builds and attaches a native `oxidean-runner` (host execution, labels `ubuntu-latest,self-hosted`) to the API via the `OXIDEAN_RUNNER_REGISTRATION_TOKEN` bootstrap. `forge-actions-pipeline.stack.browser.test.tsx` pushes a real `.github/workflows/ci.yml` over Smart HTTP, waits for the runner to drive the run green, and asserts the run detail page streams the job log marker in Chromium.
 
 
 ## Actions phase gate (Phase 19)
@@ -273,19 +273,19 @@ make smoke-actions
 # or: bash scripts/smoke-actions.sh
 
 # Full API + native runner pipeline (no Docker required): builds
-# octanest-api + octanest-runner, registers, pushes a workflow, and asserts a
+# oxidean-api + oxidean-runner, registers, pushes a workflow, and asserts a
 # green run with the streamed log marker.
 make test-e2e-actions
 # or: bash scripts/e2e-actions-pipeline.sh
 
 # Seed only (works against any origin incl. preview/staging):
-#   OCTANEST_ORIGIN=https://<gateway> OCTANEST_SEED_USER=… OCTANEST_SEED_PASSWORD=… \
+#   OXIDEAN_ORIGIN=https://<gateway> OXIDEAN_SEED_USER=… OXIDEAN_SEED_PASSWORD=… \
 #     make seed-actions-demo
 
 # Targeted API coverage
-cargo nextest run -p octanest-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
+cargo nextest run -p oxidean-api -E 'test(actions_)|test(runner_)|test(commit_status)|test(actions_secrets)'
 # Runner unit tests
-cargo nextest run -p octanest-runner
+cargo nextest run -p oxidean-runner
 
 make rpc-sync-check
 make web-lint && make web-format-check   # after apps/web Actions UI changes

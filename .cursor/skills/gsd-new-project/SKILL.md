@@ -51,11 +51,11 @@ Initialize a new project through unified flow: questioning → research (optiona
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/new-project.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/questioning.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/templates/project.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/templates/requirements.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/new-project.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/questioning.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/templates/project.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/templates/requirements.md
 </execution_context>
 
 <process>

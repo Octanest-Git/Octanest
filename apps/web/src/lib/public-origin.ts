@@ -39,8 +39,8 @@ function railwayGatewayOrigin(env: NodeJS.ProcessEnv = process.env): string | nu
 
 export function resolvePublicOriginFromEnv(env: NodeJS.ProcessEnv = process.env): string | null {
   const configured = (
-    env.OCTANEST_PUBLIC_ORIGIN?.trim() ||
-    env.OCTANEST_COMPOSE_PUBLIC_ORIGIN?.trim() ||
+    env.OXIDEAN_PUBLIC_ORIGIN?.trim() ||
+    env.OXIDEAN_COMPOSE_PUBLIC_ORIGIN?.trim() ||
     ""
   ).replace(/\/$/, "");
   const railway = railwayGatewayOrigin(env);
@@ -98,7 +98,7 @@ export function sshNeedsPortHint(port: number): boolean {
 /** Advertised SSH hostname (env or hostname of public origin). */
 export function resolveSshHost(
   publicOrigin?: string,
-  envHost = process.env.OCTANEST_SSH_HOST,
+  envHost = process.env.OXIDEAN_SSH_HOST,
 ): string {
   const fromEnv = envHost?.trim();
   if (fromEnv) {
@@ -128,7 +128,7 @@ export function resolveSshHost(
 }
 
 /** Advertised/listen SSH port (env default 2222 for Compose). */
-export function resolveSshPort(envPort = process.env.OCTANEST_SSH_PORT): number {
+export function resolveSshPort(envPort = process.env.OXIDEAN_SSH_PORT): number {
   const raw = envPort?.trim();
   if (raw) {
     const n = Number.parseInt(raw, 10);

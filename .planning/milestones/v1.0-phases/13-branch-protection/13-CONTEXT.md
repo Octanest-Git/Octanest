@@ -74,7 +74,7 @@ Repo admins configure classic branch protection rules (required reviews and/or s
 
 ### Claude's Discretion
 - Exact migration number (next free after packages at execute time)
-- Exact hook binary/script packaging (embedded octanest-git-hook vs thin shell → RPC)
+- Exact hook binary/script packaging (embedded oxidean-git-hook vs thin shell → RPC)
 - Exact error-code string between `pull.merge_blocked` vs `repo.branch_protection` (pick one stable code + reasons array)
 - Whether Settings is a sub-route (`…/settings/branches`) vs panel on main settings page
 - Default empty required-contexts list meaning “require checks enabled but none named yet” vs treating as no check requirement until contexts added (prefer: checks block only when contexts non-empty)
@@ -97,11 +97,11 @@ Repo admins configure classic branch protection rules (required reviews and/or s
 - `.planning/phases/09-git-ssh/09-CONTEXT.md` — SSH receive-pack ACL
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/mod.rs` — `soft_protect_err` / branch mutate
-- `crates/octanest-api/src/repo/acl.rs` — Capability gates
-- `crates/octanest-api/src/routes/git_smart_http.rs` — receive-pack CGI path
-- `crates/octanest-api/src/ssh/pack.rs` — SSH receive-pack
-- `crates/octanest-git/src/cli.rs` — `init_bare` hook-install seam
+- `crates/oxidean-api/src/repo/mod.rs` — `soft_protect_err` / branch mutate
+- `crates/oxidean-api/src/repo/acl.rs` — Capability gates
+- `crates/oxidean-api/src/routes/git_smart_http.rs` — receive-pack CGI path
+- `crates/oxidean-api/src/ssh/pack.rs` — SSH receive-pack
+- `crates/oxidean-git/src/cli.rs` — `init_bare` hook-install seam
 - `apps/web/src/routes/$owner.$repo.settings.tsrx` — Admin settings panels pattern
 - `.agents/skills/octane/SKILL.md` — Octane `.tsrx` mandatory for UI
 
@@ -121,7 +121,7 @@ Repo admins configure classic branch protection rules (required reviews and/or s
 - Phase 12 (when landed): PR reviews, threads resolved, merge RPC — merge gate hooks here
 
 ### Established Patterns
-- Tri-dialect SQL only in `octanest-db`
+- Tri-dialect SQL only in `oxidean-db`
 - RPC types in Rust → `make rpc-gen` (never hand-edit api-client SoT)
 - Private deny soft `repo.not_found` on web; git 401/403 mapping unchanged
 - Wave 0 RED stubs + nextest/Vitest filters before implementation (Nyquist)

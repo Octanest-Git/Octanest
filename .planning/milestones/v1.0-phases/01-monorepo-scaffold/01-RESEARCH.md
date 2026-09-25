@@ -9,13 +9,13 @@
 
 ### Locked Decisions
 - **D-01:** `apps/web` + `crates/*` + `packages/api-client`
-- **D-02:** Crates: `octanest-api`, `octanest-core`, `octanest-db` (adapter shape; multi-dialect proof Phase 2)
+- **D-02:** Crates: `oxidean-api`, `oxidean-core`, `oxidean-db` (adapter shape; multi-dialect proof Phase 2)
 - **D-03:** Turborepo + Cargo workspace + root Makefile
 - **D-04/D-05:** Bun via Corepack preferred; Corepack pnpm fallback; CI matches lockfile
 - **D-06–D-10:** Compose web+api+postgres; MySQL profile; SQLite via env; Traefik; Vite/TanStack proxy for `make dev`
-- **D-11–D-21:** HTTP+WS `/api/rpc` + `/api/rpc/ws`; `system.health` + `system.echo`; dotted namespaces; watch+explicit codegen; CI sync; typed errors; WS transport-only; `Octanest-RPC-Version: 1`; CORS (dev any / prod `OCTANEST_CORS_ORIGINS`); TanStack Query helpers, no custom hooks package
+- **D-11–D-21:** HTTP+WS `/api/rpc` + `/api/rpc/ws`; `system.health` + `system.echo`; dotted namespaces; watch+explicit codegen; CI sync; typed errors; WS transport-only; `Oxidean-RPC-Version: 1`; CORS (dev any / prod `OXIDEAN_CORS_ORIGINS`); TanStack Query helpers, no custom hooks package
 - **D-22–D-26:** Marketing `/` + public `/status` (health only); echo tests/CI only; footer Status link
-- **UI-SPEC:** shadcn+Base UI, Tailwind v4, Sora + Source Sans 3, system/light/dark theme, CTAs Get started / Explore Octanest, color tokens as specified
+- **UI-SPEC:** shadcn+Base UI, Tailwind v4, Sora + Source Sans 3, system/light/dark theme, CTAs Get started / Explore Oxidean, color tokens as specified
 
 ### Claude's Discretion
 - Exact RPC library (rspc/specta-style or equivalent) as long as D-11–D-21 hold
@@ -34,9 +34,9 @@
 |------------|-------------|----------------|-----------|
 | Marketing landing + chrome + theme | Browser/Client (`apps/web`) | Frontend Server (SSR via Start) | UI-SPEC; Octane Start owns SSR/hydration |
 | `/status` live health display | Browser/Client | API/Backend | UI calls typed client → `system.health` |
-| Typed RPC procedures | API/Backend (`octanest-api`) | `packages/api-client` (codegen) | Rust SoT; TS consumes generated client |
+| Typed RPC procedures | API/Backend (`oxidean-api`) | `packages/api-client` (codegen) | Rust SoT; TS consumes generated client |
 | Protocol headers/CORS/version | API/Backend | Traefik (ingress) | CORS + version rejection on API; Traefik routes |
-| DB adapter boundary | API/Backend (`octanest-db`) | Database/Storage (Postgres) | Uniform adapter; Phase 1 ping/connect only |
+| DB adapter boundary | API/Backend (`oxidean-db`) | Database/Storage (Postgres) | Uniform adapter; Phase 1 ping/connect only |
 | Compose bring-up | CDN/Static N/A — ops/Compose | Traefik + web + api + postgres | PLAT-01 operator path |
 | Codegen watch + CI sync | Dev tooling / CI | `packages/api-client` | D-15 |
 
@@ -47,11 +47,11 @@
 
 Phase 1 is a greenfield scaffold: JS monorepo (Bun + Turborepo) hosting `@octanejs/tanstack-start` web app, Rust Cargo workspace for API/core/db, Docker Compose with Traefik, and a typed RPC surface with codegen into `packages/api-client`.
 
-**Critical finding:** Upstream **rspc is no longer maintained** (maintainer stepping back; repo WARNING). PROJECT/CONTEXT ask for “rspc/specta-style,” which is still satisfied by **specta-based codegen + Axum** without depending on abandoned rspc. Recommended path: **Axum 0.8 + specta (2.x RC line used by modern specta-typescript) + Octanest-owned procedure router** implementing locked paths, `Octanest-RPC-Version`, typed errors, and HTTP+WS. Alternative worth a spike: **fnrpc** (specta + Axum + `@fnrpc/tanstack-query`) if its transport can meet `/api/rpc/ws` requirements; otherwise use fnrpc patterns only as reference.
+**Critical finding:** Upstream **rspc is no longer maintained** (maintainer stepping back; repo WARNING). PROJECT/CONTEXT ask for “rspc/specta-style,” which is still satisfied by **specta-based codegen + Axum** without depending on abandoned rspc. Recommended path: **Axum 0.8 + specta (2.x RC line used by modern specta-typescript) + Oxidean-owned procedure router** implementing locked paths, `Oxidean-RPC-Version`, typed errors, and HTTP+WS. Alternative worth a spike: **fnrpc** (specta + Axum + `@fnrpc/tanstack-query`) if its transport can meet `/api/rpc/ws` requirements; otherwise use fnrpc patterns only as reference.
 
 Frontend: `@octanejs/tanstack-start@0.1.44` is published and self-contained (Vite plugin). shadcn supports TanStack Start + Tailwind v4; init during Phase 1 per UI-SPEC. Theme tokens (system default + light/dark force) land now; polish is Phase 3.
 
-**Primary recommendation:** Scaffold monorepo → Axum API with Octanest RPC + specta codegen → Octane Start web with shadcn/Base UI per UI-SPEC → Compose+Traefik → Vitest/cargo tests + CI codegen drift check.
+**Primary recommendation:** Scaffold monorepo → Axum API with Oxidean RPC + specta codegen → Octane Start web with shadcn/Base UI per UI-SPEC → Compose+Traefik → Vitest/cargo tests + CI codegen drift check.
 
 </research_summary>
 
@@ -75,7 +75,7 @@ Frontend: `@octanejs/tanstack-start@0.1.44` is published and self-contained (Vit
 | `serde` / `serde_json` | 1.0.x | Serialization | RPC JSON | HIGH [VERIFIED: crates.io] |
 | `specta` | 2.0.0-rc.25 (line) | Type export SoT | specta-style SoT; rspc pins RC line | HIGH [VERIFIED: crates.io] |
 | `specta-typescript` | 0.0.12 | TS emit | Codegen into api-client | HIGH [VERIFIED: crates.io] |
-| `sqlx` | 0.9.0 | DB access behind `octanest-db` | Postgres default; SQLite/MySQL later | HIGH [VERIFIED: crates.io] |
+| `sqlx` | 0.9.0 | DB access behind `oxidean-db` | Postgres default; SQLite/MySQL later | HIGH [VERIFIED: crates.io] |
 | `tracing` / `tracing-subscriber` | 0.1.x / 0.3.x | API logging | Ops baseline | HIGH [VERIFIED: crates.io] |
 | `tailwindcss` | 4.3.3 | Styling (CSS-first) | PLAT-11 | HIGH [VERIFIED: npm] |
 | `shadcn` CLI | 4.21.0 | Component init (Base UI) | PLAT-10 + UI-SPEC | HIGH [VERIFIED: npm] |
@@ -100,8 +100,8 @@ Frontend: `@octanejs/tanstack-start@0.1.44` is published and self-contained (Vit
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| Octanest RPC + specta | rspc 0.4.1 | Faster tRPC-like DX but **unmaintained** — reject as primary |
-| Octanest RPC + specta | fnrpc | Closer to D-21 out of the box; confirm HTTP+WS mounts and version header hooks |
+| Oxidean RPC + specta | rspc 0.4.1 | Faster tRPC-like DX but **unmaintained** — reject as primary |
+| Oxidean RPC + specta | fnrpc | Closer to D-21 out of the box; confirm HTTP+WS mounts and version header hooks |
 | Axum | Actix / Poem | Axum is ecosystem default with tower-http CORS |
 | Bun | pnpm via Corepack | Locked fallback only |
 | Traefik | Caddy / nginx | Traefik locked |
@@ -127,16 +127,16 @@ Browser (apps/web)
   ├─ / marketing + chrome (theme: system|light|dark)
   └─ /status → TanStack Query → packages/api-client
          │
-         ├─ HTTP  POST/GET  /api/rpc     (+ Octanest-RPC-Version: 1)
+         ├─ HTTP  POST/GET  /api/rpc     (+ Oxidean-RPC-Version: 1)
          └─ WS            /api/rpc/ws
                 │
          Traefik (Compose) ─── or Vite proxy (make dev)
                 │
-         octanest-api (Axum)
+         oxidean-api (Axum)
                 ├─ RPC router: system.health, system.echo
                 ├─ CORS layer (dev open / prod allowlist)
-                ├─ octanest-core (shared types/errors)
-                └─ octanest-db → Postgres (default)
+                ├─ oxidean-core (shared types/errors)
+                └─ oxidean-db → Postgres (default)
 ```
 
 ### Codegen flow
@@ -152,7 +152,7 @@ packages/api-client (types + client + queryOptions/mutationOptions)
 ```
 
 ### Recommended patterns
-- **Single API binary** in Phase 1 (`octanest-api`); core/db as libs
+- **Single API binary** in Phase 1 (`oxidean-api`); core/db as libs
 - **Procedure names** as strings `"system.health"` / `"system.echo"` (dotted)
 - **Error type** `AppError { code, message, data? }` exported via specta
 - **Healthcheck:** Compose `HEALTHCHECK` hitting cheap HTTP health (either dedicated `/healthz` wrapping same logic or RPC) — prefer tiny `/healthz` for probes + RPC for app [ASSUMED ops best practice]
@@ -180,7 +180,7 @@ packages/api-client (types + client + queryOptions/mutationOptions)
 | Reverse proxy | Traefik | Locked |
 | Unit test runner (JS) | Vitest | Ecosystem default with Vite |
 
-**Still hand-roll (acceptable):** Octanest RPC dispatch protocol (JSON procedure call envelope) and WS framing — keep small, documented, and tested — unless fnrpc spike proves it maps cleanly to D-11–D-21.
+**Still hand-roll (acceptable):** Oxidean RPC dispatch protocol (JSON procedure call envelope) and WS framing — keep small, documented, and tested — unless fnrpc spike proves it maps cleanly to D-11–D-21.
 
 </dont_hand_roll>
 
@@ -189,7 +189,7 @@ packages/api-client (types + client + queryOptions/mutationOptions)
 
 | Pitfall | Why It Happens | How to Avoid | Severity |
 |---------|----------------|--------------|----------|
-| Adopting rspc then hitting abandonment | Name match to PROJECT wording | Use specta-style Octanest router; document “rspc-style” in README | HIGH |
+| Adopting rspc then hitting abandonment | Name match to PROJECT wording | Use specta-style Oxidean router; document “rspc-style” in README | HIGH |
 | shadcn init fails on Tailwind v4 / tsconfig refs | CLI preflight quirks | Follow ui.shadcn.com TanStack Start guide; ensure `@/*` alias; Base UI preset | HIGH [CITED: shadcn TanStack docs / CLI issues] |
 | WS not proxied by Vite/Traefik | Upgrade headers / path mismatch | Explicit proxy `ws: true` for `/api/rpc/ws`; Traefik WebSocket sticky not required for stateless RPC | HIGH |
 | CORS credentials + `*` origin | Browser forbids combination | Dev: reflect request origin or use regex; Prod: explicit allowlist only | HIGH |
@@ -210,7 +210,7 @@ packages/api-client (types + client + queryOptions/mutationOptions)
 // Conceptual — planner/executor refine
 let cors = CorsLayer::new()
     .allow_credentials(true)
-    // dev: permissive; prod: AllowOrigin::list(parsed OCTANEST_CORS_ORIGINS)
+    // dev: permissive; prod: AllowOrigin::list(parsed OXIDEAN_CORS_ORIGINS)
     ;
 
 let app = Router::new()
@@ -218,7 +218,7 @@ let app = Router::new()
     .route("/api/rpc", post(rpc_http))
     .route("/api/rpc/ws", get(rpc_ws_upgrade))
     .layer(cors)
-    .layer(middleware::from_fn(require_rpc_version)); // Octanest-RPC-Version: 1
+    .layer(middleware::from_fn(require_rpc_version)); // Oxidean-RPC-Version: 1
 ```
 
 ### Vite proxy sketch [ASSUMED]
@@ -266,7 +266,7 @@ git diff --exit-code -- packages/api-client
 
 ### RPC decision for planner (discretion lock-in)
 
-**Choose:** Octanest thin RPC on Axum + specta/specta-typescript (primary).  
+**Choose:** Oxidean thin RPC on Axum + specta/specta-typescript (primary).  
 **Spike budget (optional, ≤½ day):** fnrpc only if it clearly supports custom mount paths + version middleware + WS duplex for same procedures; else do not block Phase 1.
 
 ### Threat highlights for `<threat_model>`
@@ -286,7 +286,7 @@ git diff --exit-code -- packages/api-client
 - **Ops:** `docker compose config` + `docker compose up --wait` smoke
 
 ### Quick vs full
-- **Quick:** `cargo test -p octanest-api --lib` + `bunx vitest run packages/api-client` (~30–90s)
+- **Quick:** `cargo test -p oxidean-api --lib` + `bunx vitest run packages/api-client` (~30–90s)
 - **Full:** workspace cargo test + vitest + `make rpc-gen` drift + compose up health curl (~3–8 min)
 
 ### Requirement → verification map
@@ -295,14 +295,14 @@ git diff --exit-code -- packages/api-client
 |-------------|------------------------|
 | PLAT-01 | Compose up; curl `/healthz` and/or RPC health through Traefik; web container serves `/` |
 | PLAT-04 | `apps/web` depends on `@octanejs/tanstack-start`; build succeeds |
-| PLAT-05 | `octanest-api` Rust binary builds and serves |
+| PLAT-05 | `oxidean-api` Rust binary builds and serves |
 | PLAT-06 | specta codegen writes `packages/api-client`; watch target exists; CI drift job |
 | PLAT-10 | shadcn components + Base UI imports present; button/input used on landing/status |
 | PLAT-11 | Tailwind v4 CSS entry (`@import "tailwindcss"`) — no JS tailwind.config as SoT |
 
 ### Wave 0 test stubs
-- `crates/octanest-api/tests/rpc_http.rs` — health + echo + version reject
-- `crates/octanest-api/tests/rpc_ws.rs` — health + echo over WS
+- `crates/oxidean-api/tests/rpc_http.rs` — health + echo + version reject
+- `crates/oxidean-api/tests/rpc_ws.rs` — health + echo over WS
 - `packages/api-client/src/*.test.ts` — types/helpers smoke
 - Script/job `scripts/check-rpc-sync.sh`
 
@@ -316,7 +316,7 @@ git diff --exit-code -- packages/api-client
 <open_questions>
 ## Open Questions
 
-1. **fnrpc vs Octanest thin RPC** — recommend thin RPC unless executor spike proves fnrpc fits WS+header constraints in <4h.
+1. **fnrpc vs Oxidean thin RPC** — recommend thin RPC unless executor spike proves fnrpc fits WS+header constraints in <4h.
 2. **Exact Traefik image tag** — pin concrete v3.x at execute time from Docker Hub.
 3. **Whether `/healthz` is separate from RPC** — recommend yes for Compose probes.
 

@@ -6,7 +6,7 @@ tags: [pat, settings-tokens, octane, tanstack-query, alert-dialog, git-11]
 
 requires:
   - phase: 08-git-https-pats
-    provides: 08-08 @octanest/api-client pat.list/revoke + DTOs
+    provides: 08-08 @oxidean/api-client pat.list/revoke + DTOs
   - phase: 08-git-https-pats
     provides: 08-01 Wave 0 tokens.integration.test stubs
 provides:
@@ -30,7 +30,7 @@ tech-stack:
   patterns:
     - "Settings secondary nav mirrors repo chrome border-b-2 active underline"
     - "pat.list via patListQueryOptions + Query; revoke via AlertDialog without type-to-confirm"
-    - "Token prefixes in UI octanest_pat_ / octanest_fg_ (not ona_*)"
+    - "Token prefixes in UI oxidean_pat_ / oxidean_fg_ (not ona_*)"
 
 key-files:
   created:
@@ -142,7 +142,7 @@ Each task was committed atomically:
 ## Decisions Made
 - Landed revoke dialog with the list feature commit so PatList compiles and rows work; T2 owns greened dialog tests
 - Skipped D-15 one-time reveal case until 08-10 (`it.skip`) so 08-09 verify can pass
-- Prefix display uses `token_prefix` + ellipsis only (T-08-01); copy uses `octanest_pat_` / `octanest_fg_`
+- Prefix display uses `token_prefix` + ellipsis only (T-08-01); copy uses `oxidean_pat_` / `oxidean_fg_`
 
 ## Deviations from Plan
 

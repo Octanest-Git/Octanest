@@ -2,7 +2,7 @@
 
 **Researched:** 2026-09-16  
 **Domain:** Outbound repository webhooks (CRUD, signed HTTPS delivery, attempt history)  
-**Confidence:** HIGH (GitHub parity + existing Octanest ACL/jobs/reqwest patterns); MEDIUM (exact PR payload fields until Phase 12 RPC lands)
+**Confidence:** HIGH (GitHub parity + existing Oxidean ACL/jobs/reqwest patterns); MEDIUM (exact PR payload fields until Phase 12 RPC lands)
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -16,7 +16,7 @@
 
 ### B — Event catalog & payloads
 - **D-HOOK-05:** Ship at least: **`push`**, **`pull_request`**, **`issues`**, plus synthetic **`ping`**
-- **D-HOOK-06:** GitHub Hookshot header conventions (`X-GitHub-Event`, `X-GitHub-Delivery`, `X-GitHub-Hook-ID`, `User-Agent: Octanest-Hookshot/*`, `Content-Type: application/json`)
+- **D-HOOK-06:** GitHub Hookshot header conventions (`X-GitHub-Event`, `X-GitHub-Delivery`, `X-GitHub-Hook-ID`, `User-Agent: Oxidean-Hookshot/*`, `Content-Type: application/json`)
 - **D-HOOK-07:** GitHub-shaped JSON payloads (action + resource + repository + sender)
 - **D-HOOK-08:** **`issues` actions** at minimum: `opened`, `edited`, `closed`, `reopened`
 - **D-HOOK-09:** **`pull_request` actions** align with Phase 12 PR identity (shared `#N`, forks, draft)
@@ -78,16 +78,16 @@
 | HMAC signing | API / Backend | — | Sign raw JSON with webhook secret |
 | SSRF / URL policy | API / Backend | — | Outbound HTTP must not hit metadata IPs |
 | Delivery history UI | Browser / Client | API / Backend | Octane settings; data from RPC |
-| Dialect schema | Database / Storage | — | Migrations only in `octanest-db` |
+| Dialect schema | Database / Storage | — | Migrations only in `oxidean-db` |
 | Generated TS client | API / Backend → packages | — | `make rpc-gen` after RPC types |
 </architectural_responsibility_map>
 
 <research_summary>
 ## Summary
 
-Outbound webhooks are a solved forge pattern: GitHub and Gitea store per-repo hook configs (URL, secret, events, active), POST JSON on domain events with Hookshot-style headers, sign with HMAC-SHA256, and keep a delivery attempt log for operators. Octanest already has the hard pieces: Admin ACL, issue mutations, Smart HTTP/SSH push, `reqwest` + `sha2`, and in-process background jobs.
+Outbound webhooks are a solved forge pattern: GitHub and Gitea store per-repo hook configs (URL, secret, events, active), POST JSON on domain events with Hookshot-style headers, sign with HMAC-SHA256, and keep a delivery attempt log for operators. Oxidean already has the hard pieces: Admin ACL, issue mutations, Smart HTTP/SSH push, `reqwest` + `sha2`, and in-process background jobs.
 
-**Primary recommendation:** Add `webhooks` + `webhook_deliveries` (and attempts) in `octanest-db`; implement `webhook.*` Admin RPC; centralize fan-out in a `WebhookDispatcher` that enqueues after issue/PR/push success; deliver via `reqwest` with SSRF guards, `X-Hub-Signature-256`, and a retry loop beside existing `spawn_background_jobs`; surface CRUD + history under repo Settings (Octane), mirroring PAT reveal for secrets.
+**Primary recommendation:** Add `webhooks` + `webhook_deliveries` (and attempts) in `oxidean-db`; implement `webhook.*` Admin RPC; centralize fan-out in a `WebhookDispatcher` that enqueues after issue/PR/push success; deliver via `reqwest` with SSRF guards, `X-Hub-Signature-256`, and a retry loop beside existing `spawn_background_jobs`; surface CRUD + history under repo Settings (Octane), mirroring PAT reveal for secrets.
 
 Do **not** introduce Redis/SQS for v1 — use DB-backed pending deliveries + in-process worker (same reliability class as orphan reconcile). Phase 12 PR emitters are a hard dependency for HOOK-02 PR coverage; ship issue+push+ping first if PR module is not yet merged, but plans must include PR wiring against `12-CONTEXT.md` (not invent a parallel PR model).
 </research_summary>
@@ -118,11 +118,11 @@ Do **not** introduce Redis/SQS for v1 — use DB-backed pending deliveries + in-
 |------------|-----------|----------|
 | In-process DB queue | Redis / NATS | Better durability/scale; out of v1 ops model (Compose simplicity) |
 | Sync delivery in RPC | Async enqueue | Sync would block git push / issue create — forbidden by D-HOOK-11 |
-| Custom Octanest headers only | GitHub Hookshot names | Breaks ecosystem tooling; CONTEXT locks GitHub names |
+| Custom Oxidean headers only | GitHub Hookshot names | Breaks ecosystem tooling; CONTEXT locks GitHub names |
 
 **Installation (only if direct dep needed):**
 ```bash
-# crates/octanest-api/Cargo.toml — after legitimacy checkpoint if [ASSUMED]
+# crates/oxidean-api/Cargo.toml — after legitimacy checkpoint if [ASSUMED]
 hmac = "0.12"   # or current RustCrypto line matching sha2 major
 ```
 
@@ -163,13 +163,13 @@ Domain mutate (issue / PR / push)
 
 | Path | Role |
 |------|------|
-| `crates/octanest-core/src/webhook_types.rs` | DTOs: WebhookPublic, DeliveryPublic, event enums |
-| `crates/octanest-db/src/webhooks.rs` | CRUD + delivery/attempt queries (no dialect leak to API) |
-| `crates/octanest-db/migrations/*/00NN_webhooks.sql` | Schema |
-| `crates/octanest-api/src/webhook/mod.rs` | RPC handlers |
-| `crates/octanest-api/src/webhook/dispatch.rs` | Emit + enqueue |
-| `crates/octanest-api/src/webhook/deliver.rs` | HTTP client, sign, SSRF |
-| `crates/octanest-api/src/webhook/worker.rs` | Retry drain |
+| `crates/oxidean-core/src/webhook_types.rs` | DTOs: WebhookPublic, DeliveryPublic, event enums |
+| `crates/oxidean-db/src/webhooks.rs` | CRUD + delivery/attempt queries (no dialect leak to API) |
+| `crates/oxidean-db/migrations/*/00NN_webhooks.sql` | Schema |
+| `crates/oxidean-api/src/webhook/mod.rs` | RPC handlers |
+| `crates/oxidean-api/src/webhook/dispatch.rs` | Emit + enqueue |
+| `crates/oxidean-api/src/webhook/deliver.rs` | HTTP client, sign, SSRF |
+| `crates/oxidean-api/src/webhook/worker.rs` | Retry drain |
 | `apps/web/.../webhooks-*.tsrx` | Settings panels |
 
 ### Schema sketch (dialect-neutral intent)
@@ -209,8 +209,8 @@ Extend `$owner.$repo.settings.tsrx` (or nested `$owner.$repo.settings.hooks*.tsr
 ## Don't Hand-Roll
 
 - Don't invent a new ACL ladder — reuse `Capability::Admin` / `resolve_repo_for_admin`
-- Don't put dialect SQL in `octanest-api`
-- Don't hand-edit `@octanest/api-client` — change Rust + `make rpc-gen`
+- Don't put dialect SQL in `oxidean-api`
+- Don't hand-edit `@oxidean/api-client` — change Rust + `make rpc-gen`
 - Don't block git push / issue RPC on outbound HTTP
 - Don't use SHA-1 signatures or form-urlencoded payloads
 - Don't add Redis/queue infrastructure for v1
@@ -250,7 +250,7 @@ Threat IDs for plans: `T-18-01` SSRF, `T-18-02` secret exposure, `T-18-03` unsig
 - Admin settings UI gate: `can_admin` / `RepoNotFound` anti-enum
 - Background jobs: `jobs/schedule.rs` `tokio::spawn` loops
 - Secret reveal: `pat-reveal.tsrx` + create response plaintext once
-- Tests: `crates/octanest-api/tests/*.rs` nextest + web integration Vitest stubs
+- Tests: `crates/oxidean-api/tests/*.rs` nextest + web integration Vitest stubs
 
 ### Push emit seam note
 
@@ -276,11 +276,11 @@ Prefer wiremock / local `axum` listener or `tiny_http` for outbound capture in t
 
 | ENV | Purpose | Default sketch |
 |-----|---------|----------------|
-| `OCTANEST_WEBHOOK_MAX_ATTEMPTS` | Retry cap | 5 |
-| `OCTANEST_WEBHOOK_TIMEOUT_MS` | Per-attempt HTTP timeout | 10000 |
-| `OCTANEST_WEBHOOK_ALLOW_HTTP_LOOPBACK` | Dev http://127.0.0.1 | true in debug/test |
-| `OCTANEST_WEBHOOK_DELIVERY_RETENTION_DAYS` | History purge | 30 |
-| `OCTANEST_WEBHOOK_WORKER_INTERVAL_MS` | Drain tick | 1000 |
+| `OXIDEAN_WEBHOOK_MAX_ATTEMPTS` | Retry cap | 5 |
+| `OXIDEAN_WEBHOOK_TIMEOUT_MS` | Per-attempt HTTP timeout | 10000 |
+| `OXIDEAN_WEBHOOK_ALLOW_HTTP_LOOPBACK` | Dev http://127.0.0.1 | true in debug/test |
+| `OXIDEAN_WEBHOOK_DELIVERY_RETENTION_DAYS` | History purge | 30 |
+| `OXIDEAN_WEBHOOK_WORKER_INTERVAL_MS` | Drain tick | 1000 |
 </env_config>
 
 <dependency_notes>

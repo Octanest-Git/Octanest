@@ -67,7 +67,7 @@ describe("/admin/packages", () => {
   it("exports AdminPackagesPage and keeps owner-quota copy hints", () => {
     expect(typeof AdminPackagesPage).toBe("function");
     expect(DEFAULT_OWNER_QUOTA_HINT.toLowerCase()).toContain("quota");
-    expect(DEFAULT_OWNER_QUOTA_HINT).toContain("OCTANEST_PACKAGES_OWNER_QUOTA_BYTES");
+    expect(DEFAULT_OWNER_QUOTA_HINT).toContain("OXIDEAN_PACKAGES_OWNER_QUOTA_BYTES");
     expect(DEFAULT_OWNER_QUOTA_LABEL).toMatch(/GiB/);
   });
 

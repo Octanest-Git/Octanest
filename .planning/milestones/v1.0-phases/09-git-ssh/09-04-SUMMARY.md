@@ -23,12 +23,12 @@ tech-stack:
     - "SshAuthLimiter aliases PAT FailedAuthLimiter; fingerprint as user bucket"
 key-files:
   created:
-    - crates/octanest-api/src/ssh/rate_limit.rs
+    - crates/oxidean-api/src/ssh/rate_limit.rs
   modified:
-    - crates/octanest-api/src/ssh/pack.rs
-    - crates/octanest-api/src/ssh/server.rs
-    - crates/octanest-api/src/ssh/mod.rs
-    - crates/octanest-api/tests/git_ssh.rs
+    - crates/oxidean-api/src/ssh/pack.rs
+    - crates/oxidean-api/src/ssh/server.rs
+    - crates/oxidean-api/src/ssh/mod.rs
+    - crates/oxidean-api/tests/git_ssh.rs
 key-decisions:
   - "Count failures only on auth_publickey Reject (not offered); clear fingerprint on Accept"
   - "Single feat commit for ACL + rate-limit (inseparable dirty tree after green suite)"
@@ -39,7 +39,7 @@ coverage:
     requirement: GIT-03
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(git_ssh)'
+        ref: cargo nextest run -p oxidean-api -E 'test(git_ssh)'
         status: pass
     human_judgment: false
   - id: D2
@@ -47,7 +47,7 @@ coverage:
     requirement: GIT-04
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(ssh_key) | test(git_ssh)'
+        ref: cargo nextest run -p oxidean-api -E 'test(ssh_key) | test(git_ssh)'
         status: pass
     human_judgment: false
 duration: 20min
@@ -77,10 +77,10 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/ssh/rate_limit.rs` — SshAuthLimiter alias
-- `crates/octanest-api/src/ssh/pack.rs` — ACL + receive-pack + stderr denials
-- `crates/octanest-api/src/ssh/server.rs` — rate-limit + last_used wiring
-- `crates/octanest-api/tests/git_ssh.rs` — greened ACL/rate-limit cases
+- `crates/oxidean-api/src/ssh/rate_limit.rs` — SshAuthLimiter alias
+- `crates/oxidean-api/src/ssh/pack.rs` — ACL + receive-pack + stderr denials
+- `crates/oxidean-api/src/ssh/server.rs` — rate-limit + last_used wiring
+- `crates/oxidean-api/tests/git_ssh.rs` — greened ACL/rate-limit cases
 
 ## Decisions Made
 
@@ -95,5 +95,5 @@ None beyond combining Task 1+2 into one commit because implementation and tests 
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/ssh/rate_limit.rs
+- FOUND: crates/oxidean-api/src/ssh/rate_limit.rs
 - FOUND: 93474fd

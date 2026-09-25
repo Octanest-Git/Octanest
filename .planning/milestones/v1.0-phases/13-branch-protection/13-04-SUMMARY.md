@@ -19,10 +19,10 @@ tech-stack:
   patterns: ["Latest-wins upsert on (repo,sha,context)"]
 key-files:
   created:
-    - crates/octanest-api/src/repo/commit_status.rs
+    - crates/oxidean-api/src/repo/commit_status.rs
   modified:
-    - crates/octanest-api/tests/commit_status_rpc.rs
-    - crates/octanest-api/tests/branch_protect_merge.rs
+    - crates/oxidean-api/tests/commit_status_rpc.rs
+    - crates/oxidean-api/tests/branch_protect_merge.rs
 key-decisions:
   - "Empty required contexts do not block; named contexts only"
 requirements-completed: [ORG-05, PR-08]
@@ -32,7 +32,7 @@ coverage:
     requirement: PR-08
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(commit_status) | test(branch_protect_merge)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(commit_status) | test(branch_protect_merge)'"
         status: pass
     human_judgment: false
 duration: 5min

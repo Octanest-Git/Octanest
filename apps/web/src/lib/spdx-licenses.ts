@@ -1,6 +1,6 @@
 /** SPDX license picker options from `spdx-license-list` (D-04). */
 
-import type { RepoTemplateOption } from "@octanest/api-client";
+import type { RepoTemplateOption } from "@oxidean/api-client";
 import spdxLicenseList from "spdx-license-list";
 
 export type SpdxLicenseOption = {

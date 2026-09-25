@@ -11,7 +11,7 @@
 #   - SMOKE_PAT for push/pull (username=git; never printed)
 #
 # Env knobs:
-#   OCTANEST_SMOKE_URL   default http://localhost
+#   OXIDEAN_SMOKE_URL   default http://localhost
 #   SMOKE_GIT_OWNER      default smokeowner
 #   SMOKE_GIT_REPO        default smokerepo
 #   SMOKE_PAT            required for push/pull portion
@@ -30,7 +30,7 @@ cd "$ROOT"
 source "${ROOT}/scripts/smoke-lib.sh"
 SMOKE_NAME="smoke-git-lfs"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 OWNER="${SMOKE_GIT_OWNER:-smokeowner}"
 REPO="${SMOKE_GIT_REPO:-smokerepo}"
 GIT_URL="${BASE_URL}/${OWNER}/${REPO}.git"
@@ -101,7 +101,7 @@ fi
 
 if [[ -z "${SMOKE_PAT:-}" ]]; then
   echo "SMOKE_PAT unset; skipping git-lfs push/pull (routing already OK)"
-  echo "Hint: enable LFS on ${OWNER}/${REPO}, set SMOKE_PAT=octanest_pat_… (redacted), re-run."
+  echo "Hint: enable LFS on ${OWNER}/${REPO}, set SMOKE_PAT=oxidean_pat_… (redacted), re-run."
   exit 0
 fi
 
@@ -110,14 +110,14 @@ if [[ -n "${SMOKE_SESSION:-}" ]]; then
   echo "==> enabling LFS via session RPC (cookie redacted)"
   enable_body='{"procedure":"repo.lfs.setEnabled","input":{"owner":"'"$OWNER"'","name":"'"$REPO"'","enabled":true}}'
   enable_code="$(
-    curl -sS -o /tmp/octanest-lfs-enable.json -w "%{http_code}" \
+    curl -sS -o /tmp/oxidean-lfs-enable.json -w "%{http_code}" \
       -H "Content-Type: application/json" \
-      -H "Octanest-RPC-Version: 1" \
+      -H "Oxidean-RPC-Version: 1" \
       -H "Cookie: ${SMOKE_SESSION}" \
       -d "$enable_body" \
       "${BASE_URL}/api/rpc" || true
   )"
-  if [[ "$enable_code" != "200" ]] || grep -q '"error"' /tmp/octanest-lfs-enable.json 2>/dev/null; then
+  if [[ "$enable_code" != "200" ]] || grep -q '"error"' /tmp/oxidean-lfs-enable.json 2>/dev/null; then
     echo "WARN: repo.lfs.setEnabled failed (http=$enable_code); continuing if already enabled" >&2
   else
     echo "==> LFS enabled"
@@ -127,7 +127,7 @@ fi
 work="$(mktemp -d)"
 clone="$(mktemp -d)"
 # shellcheck disable=SC2064
-trap "rm -rf '$work' '$clone'; rm -f '$tmp_headers' '$tmp_body' /tmp/octanest-lfs-enable.json" EXIT
+trap "rm -rf '$work' '$clone'; rm -f '$tmp_headers' '$tmp_body' /tmp/oxidean-lfs-enable.json" EXIT
 
 auth_url="http://git:${SMOKE_PAT}@${HOST_PART}/${OWNER}/${REPO}.git"
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { RepoCommitSummary, RepoPublic } from "@octanest/api-client";
+import type { RepoCommitSummary, RepoPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { GitCommitHorizontal } from "@octanejs/lucide";
 import { CommitAuthorLink } from "@/components/repo/commit-author-link";
@@ -40,7 +40,7 @@ type Phase =
       loadingMore: boolean;
     };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function toReadyPhase(
   data: Extract<CommitsLoaderData, { kind: "ready" }>,
@@ -88,7 +88,7 @@ export const Route = createFileRoute("/$owner/$repo/commits/$")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Commits · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Commits · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

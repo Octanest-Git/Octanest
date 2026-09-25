@@ -32,7 +32,7 @@ Extract structured learnings from completed phase artifacts (PLAN.md, SUMMARY.md
 </objective>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/extract-learnings.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/extract-learnings.md
 </execution_context>
 
-Execute the extract-learnings workflow from @/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/extract-learnings.md end-to-end.
+Execute the extract-learnings workflow from @/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/extract-learnings.md end-to-end.

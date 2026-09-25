@@ -20,9 +20,9 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/notify/mod.rs
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/tests/notification_rpc.rs
+    - crates/oxidean-api/src/notify/mod.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/tests/notification_rpc.rs
 key-decisions:
   - "Mentions who are already participants get issue_comment only; non-participants get issue_mention"
 requirements-completed: [NOTF-01]
@@ -32,7 +32,7 @@ coverage:
     requirement: NOTF-01
     verification:
       - kind: integration
-        ref: crates/octanest-api/tests/notification_rpc.rs
+        ref: crates/oxidean-api/tests/notification_rpc.rs
         status: pass
     human_judgment: false
 duration: 15min

@@ -6,7 +6,7 @@ import {
   useParams,
 } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { OrgInvitePublic, OrgMemberPublic, OrgPublic, OrgRole } from "@octanest/api-client";
+import type { OrgInvitePublic, OrgMemberPublic, OrgPublic, OrgRole } from "@oxidean/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
@@ -46,7 +46,7 @@ export type OrgMembersLoaderData = {
   canAdmin: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const LAST_OWNER_ERROR = "Cannot demote or remove the last organization owner.";
 const FORBIDDEN = "You need organization admin access to manage members.";
 

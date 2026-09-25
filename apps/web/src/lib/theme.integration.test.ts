@@ -73,14 +73,14 @@ describe("theme helpers", () => {
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
     expect(readThemePreference()).toBe("dark");
     expect(document.documentElement.classList.contains("dark")).toBe(true);
-    expect(document.cookie).toMatch(/octanest-theme=dark/);
-    expect(document.cookie).toMatch(/octanest-color-scheme=dark/);
+    expect(document.cookie).toMatch(/oxidean-theme=dark/);
+    expect(document.cookie).toMatch(/oxidean-color-scheme=dark/);
 
     applyTheme("light");
     expect(readThemePreference()).toBe("light");
     expect(document.documentElement.classList.contains("dark")).toBe(false);
-    expect(document.cookie).toMatch(/octanest-theme=light/);
-    expect(document.cookie).toMatch(/octanest-color-scheme=light/);
+    expect(document.cookie).toMatch(/oxidean-theme=light/);
+    expect(document.cookie).toMatch(/oxidean-color-scheme=light/);
 
     applyTheme("system");
     expect(readThemePreference()).toBe("system");
@@ -88,10 +88,10 @@ describe("theme helpers", () => {
   });
 
   it("parses theme cookie and resolves SSR highlight theme", () => {
-    expect(themePreferenceFromCookieHeader("octanest-theme=dark")).toBe("dark");
-    expect(themePreferenceFromCookieHeader("a=1; octanest-theme=system; b=2")).toBe("system");
+    expect(themePreferenceFromCookieHeader("oxidean-theme=dark")).toBe("dark");
+    expect(themePreferenceFromCookieHeader("a=1; oxidean-theme=system; b=2")).toBe("system");
     expect(themePreferenceFromCookieHeader(undefined)).toBeNull();
-    expect(resolvedColorSchemeFromCookieHeader("octanest-color-scheme=dark")).toBe("dark");
+    expect(resolvedColorSchemeFromCookieHeader("oxidean-color-scheme=dark")).toBe("dark");
     expect(resolvedColorSchemeFromCookieHeader(undefined)).toBeNull();
 
     expect(resolveThemeForSsr("dark")).toBe("dark");
@@ -101,11 +101,11 @@ describe("theme helpers", () => {
     expect(resolveThemeForSsr(null, null)).toBe("light");
   });
 
-  it("THEME_BOOT_SCRIPT is a static FOUC boot that reads octanest-theme (D-12)", () => {
-    expect(THEME_BOOT_SCRIPT).toContain('localStorage.getItem("octanest-theme")');
+  it("THEME_BOOT_SCRIPT is a static FOUC boot that reads oxidean-theme (D-12)", () => {
+    expect(THEME_BOOT_SCRIPT).toContain('localStorage.getItem("oxidean-theme")');
     expect(THEME_BOOT_SCRIPT).toContain("prefers-color-scheme: dark");
     expect(THEME_BOOT_SCRIPT).toContain('classList.toggle("dark"');
-    expect(THEME_BOOT_SCRIPT).toContain("octanest-color-scheme=");
+    expect(THEME_BOOT_SCRIPT).toContain("oxidean-color-scheme=");
     expect(THEME_BOOT_SCRIPT).not.toMatch(/\$\{|`/);
   });
 });

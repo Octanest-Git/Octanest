@@ -24,15 +24,15 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/packages/generic.rs
-    - crates/octanest-api/src/packages/oci.rs
-    - crates/octanest-api/src/packages/npm.rs
+    - crates/oxidean-api/src/packages/generic.rs
+    - crates/oxidean-api/src/packages/oci.rs
+    - crates/oxidean-api/src/packages/npm.rs
   modified:
-    - crates/octanest-api/src/app.rs
-    - crates/octanest-api/src/packages/mod.rs
-    - crates/octanest-api/tests/generic_registry.rs
-    - crates/octanest-db/src/packages.rs
-    - crates/octanest-db/src/lib.rs
+    - crates/oxidean-api/src/app.rs
+    - crates/oxidean-api/src/packages/mod.rs
+    - crates/oxidean-api/tests/generic_registry.rs
+    - crates/oxidean-db/src/packages.rs
+    - crates/oxidean-db/src/lib.rs
 
 key-decisions:
   - "Per-file immutability within a version (409 on same filename); multi-file versions allowed"
@@ -49,7 +49,7 @@ coverage:
     requirement: PKG-03
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(generic_registry)'
+        ref: cargo nextest run -p oxidean-api -E 'test(generic_registry)'
         status: pass
     human_judgment: false
   - id: D2
@@ -57,7 +57,7 @@ coverage:
     requirement: PKG-03
     verification:
       - kind: integration
-        ref: cargo nextest run -p octanest-api -E 'test(generic_registry_list)'
+        ref: cargo nextest run -p oxidean-api -E 'test(generic_registry_list)'
         status: pass
     human_judgment: false
 
@@ -110,6 +110,6 @@ status: complete
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/packages/generic.rs
-- FOUND: crates/octanest-api/src/app.rs mounts
+- FOUND: crates/oxidean-api/src/packages/generic.rs
+- FOUND: crates/oxidean-api/src/app.rs mounts
 - FOUND: commits `1ef4c6c`, `e1bc3f5`

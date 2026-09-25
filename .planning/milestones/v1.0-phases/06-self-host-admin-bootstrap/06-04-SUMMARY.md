@@ -15,7 +15,7 @@ provides:
 affects:
   - 06-05 SSR /signup 404 chrome
   - 06-08 admin auth UI Switch
-  - 06-07 docs OCTANEST_ALLOW_SIGNUP
+  - 06-07 docs OXIDEAN_ALLOW_SIGNUP
 
 actuals:
   tokens: 3820
@@ -33,10 +33,10 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/tests/auth_signup.rs
-    - crates/octanest-api/tests/admin_auth_settings.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
-    - crates/octanest-api/src/auth/admin.rs
+    - crates/oxidean-api/tests/auth_signup.rs
+    - crates/oxidean-api/tests/admin_auth_settings.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/auth/admin.rs
     - packages/api-client/src/index.ts
 
 key-decisions:
@@ -55,7 +55,7 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(signup_rejects_when_allow_signup_false) | test(signup_succeeds_when_allow_signup_true) | test(signup_setup_required_before_bootstrap)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(signup_rejects_when_allow_signup_false) | test(signup_succeeds_when_allow_signup_true) | test(signup_setup_required_before_bootstrap)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -63,7 +63,7 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(provider_config_includes_allow_signup)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(provider_config_includes_allow_signup)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -71,7 +71,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'binary(admin_auth_settings)'"
+        ref: "cargo nextest run -p oxidean-api -E 'binary(admin_auth_settings)'"
         status: pass
     human_judgment: false
 
@@ -109,11 +109,11 @@ _Note: Signup gate + provider_config + admin persistence already implemented in 
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/auth_signup.rs` — closed/open signup, provider_config, setup_required cases
-- `crates/octanest-api/tests/admin_auth_settings.rs` — allow_signup get/update round-trip
-- `crates/octanest-api/src/bin/rpc_gen.rs` — allow_signup on ProviderConfigPublic / AuthSettings* DTOs
+- `crates/oxidean-api/tests/auth_signup.rs` — closed/open signup, provider_config, setup_required cases
+- `crates/oxidean-api/tests/admin_auth_settings.rs` — allow_signup get/update round-trip
+- `crates/oxidean-api/src/bin/rpc_gen.rs` — allow_signup on ProviderConfigPublic / AuthSettings* DTOs
 - `packages/api-client/src/index.ts` — regenerated from rpc_gen
-- `crates/octanest-api/src/auth/admin.rs` — unit assert allow_signup serialization
+- `crates/oxidean-api/src/auth/admin.rs` — unit assert allow_signup serialization
 
 ## Decisions Made
 

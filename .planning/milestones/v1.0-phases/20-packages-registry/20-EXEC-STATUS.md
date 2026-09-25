@@ -3,7 +3,7 @@
 **Status: COMPLETE**
 
 **Branch:** `feat/execute-20-packages`  
-**Worktree:** `octanest-wt-phase20`  
+**Worktree:** `oxidean-wt-phase20`  
 **Migration:** `0015_packages` (not 0012/0013)
 
 ## Plans

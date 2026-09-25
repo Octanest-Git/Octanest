@@ -1,6 +1,6 @@
 import { createFileRoute, redirect, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useState } from "octane";
-import type { RepoPublic, UserPublic } from "@octanest/api-client";
+import type { RepoPublic, UserPublic } from "@oxidean/api-client";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/$owner/$repo/fork")({
   head: ({ params }) => {
     const owner = String((params as { owner?: string }).owner ?? "");
     const repo = String((params as { repo?: string }).repo ?? "");
-    return { meta: [{ title: `Fork ${owner}/${repo} · Octanest` }] };
+    return { meta: [{ title: `Fork ${owner}/${repo} · Oxidean` }] };
   },
   beforeLoad: async ({ params }) => {
     const owner = String((params as { owner?: string }).owner ?? "");
@@ -96,7 +96,7 @@ export function ForkConfirmPage() @{
       const dest = res.data;
       window.location.assign(`/${dest.owner_username}/${dest.name}`);
     } catch {
-      setError("Can't reach Octanest. Check your connection and try again.");
+      setError("Can't reach Oxidean. Check your connection and try again.");
     } finally {
       setPending(false);
     }

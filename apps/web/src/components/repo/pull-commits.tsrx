@@ -1,6 +1,6 @@
 import { useQuery } from "@octanejs/tanstack-query";
 import { GitCommitHorizontal } from "@octanejs/lucide";
-import type { PullCommitSummary } from "@octanest/api-client";
+import type { PullCommitSummary } from "@oxidean/api-client";
 import { CommitAuthorLink } from "@/components/repo/commit-author-link";
 import { CommitVerifiedBadge } from "@/components/repo/commit-verified-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -15,7 +15,7 @@ export type PullCommitsProps = {
   number: number;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export function PullCommits(props: PullCommitsProps) @{
   const commitsQ = useQuery({

@@ -159,7 +159,7 @@ function envVar(key: string): string | undefined {
 }
 
 function forceLocalViaSqlite(): boolean {
-  const dbPath = envVar("OCTANEST_E2E_DB_PATH") || e2eDbPath();
+  const dbPath = envVar("OXIDEAN_E2E_DB_PATH") || e2eDbPath();
   if (!dbPath) return false;
   try {
     const { DatabaseSync } = require("node:sqlite") as {
@@ -298,12 +298,12 @@ export const loginThroughOidc: BrowserCommand<[]> = async (ctx) => {
   await context.clearCookies();
   const cookie = await adminLogin();
   lastAdminCookie = cookie;
-  const issuer = envVar("OCTANEST_E2E_OIDC_ISSUER") || "http://127.0.0.1:9090/default";
+  const issuer = envVar("OXIDEAN_E2E_OIDC_ISSUER") || "http://127.0.0.1:9090/default";
   await updateAuthSettings(cookie, {
     provider_mode: "oidc",
     email_provider: "log",
     oidc_issuer: issuer,
-    oidc_client_id: "octanest-dev",
+    oidc_client_id: "oxidean-dev",
   });
 
   const pageGuard = await newGuardedPage(context);
@@ -369,7 +369,7 @@ export const expectAuthMeDedupedOnHome: BrowserCommand<[]> = async (ctx) => {
   await context.clearCookies();
   const cookieHeader = await adminLogin();
   const eq = cookieHeader.indexOf("=");
-  const name = eq >= 0 ? cookieHeader.slice(0, eq) : "octanest_session";
+  const name = eq >= 0 ? cookieHeader.slice(0, eq) : "oxidean_session";
   const value = eq >= 0 ? cookieHeader.slice(eq + 1) : cookieHeader;
   await context.addCookies([
     {
@@ -425,7 +425,7 @@ async function injectSessionCookie(
   cookieHeader: string,
 ): Promise<void> {
   const eq = cookieHeader.indexOf("=");
-  const name = eq >= 0 ? cookieHeader.slice(0, eq) : "octanest_session";
+  const name = eq >= 0 ? cookieHeader.slice(0, eq) : "oxidean_session";
   const value = eq >= 0 ? cookieHeader.slice(eq + 1) : cookieHeader;
   await context.addCookies([
     {
@@ -509,7 +509,7 @@ async function seedForgeRepo(): Promise<ForgeRepoSeed> {
 function pushTagViaGit(opts: { owner: string; repo: string; token: string; tag: string }): void {
   const origin = apiOrigin().replace(/^https?:\/\//, "");
   const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
-  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-tag-"));
+  const work = mkdtempSync(join(tmpdir(), "oxidean-e2e-tag-"));
   try {
     execFileSync("git", ["clone", "--depth", "1", gitUrl, work], {
       stdio: "pipe",
@@ -980,7 +980,7 @@ export const expectAdminLfsQuotasFlow: BrowserCommand<[]> = async (ctx) => {
       if (body.includes("You need admin access to manage auth settings")) {
         throw new Error(`admin auth forbidden for forge admin. url=${url}`);
       }
-      if (body.includes("Can't reach Octanest")) {
+      if (body.includes("Can't reach Oxidean")) {
         throw new Error(`admin auth network error. url=${url}`);
       }
       await new Promise((r) => setTimeout(r, 500));
@@ -1011,11 +1011,11 @@ export const expectForgeSshAndOrgMembersFlow: BrowserCommand<[]> = async (ctx) =
     throw new Error(`org.create failed: ${JSON.stringify(org.error)}`);
   }
 
-  const keyDir = mkdtempSync(join(tmpdir(), "octanest-e2e-ssh-"));
+  const keyDir = mkdtempSync(join(tmpdir(), "oxidean-e2e-ssh-"));
   const keyPath = join(keyDir, "id_ed25519");
   let pubKey = "";
   try {
-    execFileSync("ssh-keygen", ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "e2e@octanest"], {
+    execFileSync("ssh-keygen", ["-t", "ed25519", "-f", keyPath, "-N", "", "-C", "e2e@oxidean"], {
       stdio: "pipe",
     });
     pubKey = readFileSync(`${keyPath}.pub`, "utf8").trim();
@@ -1453,7 +1453,7 @@ async function seedGenericPackage(opts: {
  * Visual baselines for the packages surfaces (repo-scoped empty state,
  * repo-scoped linked list, owner-scoped list row). Screenshots mask
  * relative-time text; baselines live in e2e/visual-baselines/ and update via
- * OCTANEST_E2E_UPDATE_VISUAL=1.
+ * OXIDEAN_E2E_UPDATE_VISUAL=1.
  */
 export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
@@ -1585,7 +1585,7 @@ function pushActionsWorkflow(opts: {
 }): void {
   const origin = apiOrigin().replace(/^https?:\/\//, "");
   const gitUrl = `http://git:${encodeURIComponent(opts.token)}@${origin}/${opts.owner}/${opts.repo}.git`;
-  const work = mkdtempSync(join(tmpdir(), "octanest-e2e-actions-"));
+  const work = mkdtempSync(join(tmpdir(), "oxidean-e2e-actions-"));
   try {
     execFileSync("git", ["clone", gitUrl, work], {
       stdio: "pipe",
@@ -1614,7 +1614,7 @@ jobs:
         "-C",
         work,
         "-c",
-        "user.email=e2e@octanest.local",
+        "user.email=e2e@oxidean.local",
         "-c",
         "user.name=e2e",
         "commit",
@@ -1661,7 +1661,7 @@ async function pollRunTerminal(cookie: string, owner: string, repo: string): Pro
 
 /**
  * End-to-end Actions pipeline in the real UI: seed repo → push workflow →
- * bundled octanest-runner claims it (host exec) → run goes green → run detail
+ * bundled oxidean-runner claims it (host exec) → run goes green → run detail
  * shows the streamed job log marker.
  */
 export const expectActionsPipelineFlow: BrowserCommand<[]> = async (ctx) => {
@@ -1670,7 +1670,7 @@ export const expectActionsPipelineFlow: BrowserCommand<[]> = async (ctx) => {
   const seed = await seedForgeRepo();
   await injectSessionCookie(context, seed.cookie);
 
-  const marker = `octanest-stack-hello-${Date.now()}`;
+  const marker = `oxidean-stack-hello-${Date.now()}`;
   const token = await createClassicPat(seed.cookie, ["repo"]);
   pushActionsWorkflow({ owner: seed.owner, repo: seed.repo, token, marker });
 

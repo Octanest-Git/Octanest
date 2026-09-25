@@ -6,7 +6,7 @@
  * Outlet-only layouts and `__root` are marked `layoutOnly` and excluded from
  * the required set by `scripts/route-coverage-check.sh`.
  *
- * Paths are repo-relative from the Octanest root.
+ * Paths are repo-relative from the Oxidean root.
  */
 
 export type RouteCoverageKind = "happy-dom" | "stack-browser" | "skip";

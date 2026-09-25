@@ -1,13 +1,13 @@
 export type ThemePreference = "system" | "light" | "dark";
 
-export const THEME_STORAGE_KEY = "octanest-theme";
+export const THEME_STORAGE_KEY = "oxidean-theme";
 /** Cookie mirrors localStorage so SSR can pick github-light vs github-dark. */
-export const THEME_COOKIE_KEY = "octanest-theme";
+export const THEME_COOKIE_KEY = "oxidean-theme";
 /**
  * Resolved light/dark after system preference — set by the FOUC boot script so
  * SSR highlighting matches `html.dark` on the next request (and hydrate).
  */
-export const THEME_RESOLVED_COOKIE_KEY = "octanest-color-scheme";
+export const THEME_RESOLVED_COOKIE_KEY = "oxidean-color-scheme";
 
 export function readThemePreference(): ThemePreference {
   if (typeof localStorage === "undefined") return "system";
@@ -22,21 +22,21 @@ export function resolveTheme(pref: ThemePreference): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-/** Parse `octanest-theme` from a Cookie header (SSR). */
+/** Parse `oxidean-theme` from a Cookie header (SSR). */
 export function themePreferenceFromCookieHeader(
   cookieHeader: string | undefined | null,
 ): ThemePreference | null {
   if (!cookieHeader) return null;
-  const match = /(?:^|;\s*)octanest-theme=(light|dark|system)(?:;|$)/.exec(cookieHeader);
+  const match = /(?:^|;\s*)oxidean-theme=(light|dark|system)(?:;|$)/.exec(cookieHeader);
   return match ? (match[1] as ThemePreference) : null;
 }
 
-/** Parse resolved `octanest-color-scheme` cookie (SSR highlight alignment). */
+/** Parse resolved `oxidean-color-scheme` cookie (SSR highlight alignment). */
 export function resolvedColorSchemeFromCookieHeader(
   cookieHeader: string | undefined | null,
 ): "light" | "dark" | null {
   if (!cookieHeader) return null;
-  const match = /(?:^|;\s*)octanest-color-scheme=(light|dark)(?:;|$)/.exec(cookieHeader);
+  const match = /(?:^|;\s*)oxidean-color-scheme=(light|dark)(?:;|$)/.exec(cookieHeader);
   return match ? (match[1] as "light" | "dark") : null;
 }
 
@@ -79,12 +79,12 @@ export const THEME_OPTIONS: readonly ThemePreference[] = ["system", "light", "da
 // Mirrors preference + resolved scheme into cookies so the next SSR request
 // highlights with the same theme hydrate will use (`html.dark`).
 export const THEME_BOOT_SCRIPT =
-  '(function(){try{var v=localStorage.getItem("octanest-theme");' +
+  '(function(){try{var v=localStorage.getItem("oxidean-theme");' +
   'var p=(v==="light"||v==="dark"||v==="system")?v:"system";' +
   'var d=p==="dark"||(p==="system"&&window.matchMedia("(prefers-color-scheme: dark)").matches);' +
   'document.documentElement.classList.toggle("dark",d);' +
-  'document.cookie="octanest-theme="+p+";path=/;max-age=31536000;SameSite=Lax";' +
-  'document.cookie="octanest-color-scheme="+(d?"dark":"light")+";path=/;max-age=31536000;SameSite=Lax";' +
+  'document.cookie="oxidean-theme="+p+";path=/;max-age=31536000;SameSite=Lax";' +
+  'document.cookie="oxidean-color-scheme="+(d?"dark":"light")+";path=/;max-age=31536000;SameSite=Lax";' +
   "}catch(e){}})();";
 
 /**

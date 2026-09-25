@@ -1,4 +1,4 @@
-import type { PatListItem } from "@octanest/api-client";
+import type { PatListItem } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { KeyRound } from "@octanejs/lucide";
@@ -10,7 +10,7 @@ import { List, ListRow } from "@/components/ui/list";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 import { formatRelativeUpdated } from "@/lib/relative-time";
-import { patListQueryOptions } from "@octanest/api-client";
+import { patListQueryOptions } from "@oxidean/api-client";
 
 const LIST_ERROR = "Couldn't load tokens. Check your connection and try again.";
 

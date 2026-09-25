@@ -9,9 +9,9 @@ requires:
     provides: "Auth schema/DTOs from 04-01 (welcome wiring lands in 04-04)"
 provides:
   - "EmailSender trait + OutboundEmail + EmailError"
-  - "LogSink (AUTH-09) via tracing target octanest.mail"
+  - "LogSink (AUTH-09) via tracing target oxidean.mail"
   - "SmtpSender via lettre AsyncSmtpTransport (AUTH-10)"
-  - "ResendSender via reqwest + User-Agent octanest-api/0.1 (AUTH-11)"
+  - "ResendSender via reqwest + User-Agent oxidean-api/0.1 (AUTH-11)"
   - "build_email_sender_from_env selection: Resend → SMTP → LogSink"
 affects:
   - 04-04-local-auth-rpc
@@ -26,14 +26,14 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/email/mod.rs
-    - crates/octanest-api/src/email/log_sink.rs
-    - crates/octanest-api/src/email/smtp.rs
-    - crates/octanest-api/src/email/resend.rs
+    - crates/oxidean-api/src/email/mod.rs
+    - crates/oxidean-api/src/email/log_sink.rs
+    - crates/oxidean-api/src/email/smtp.rs
+    - crates/oxidean-api/src/email/resend.rs
     - .planning/phases/04-auth-sessions-email/04-USER-SETUP.md
   modified:
-    - crates/octanest-api/Cargo.toml
-    - crates/octanest-api/src/lib.rs
+    - crates/oxidean-api/Cargo.toml
+    - crates/oxidean-api/src/lib.rs
     - Cargo.lock
 
 key-decisions:
@@ -42,7 +42,7 @@ key-decisions:
   - "ResendSender::with_base_url for wiremock; production uses https://api.resend.com/emails"
 
 patterns-established:
-  - "Outbound mail adapters live under crates/octanest-api/src/email/"
+  - "Outbound mail adapters live under crates/oxidean-api/src/email/"
   - "Provider selection from ENV only in Phase 4 (secrets not in DB)"
 
 requirements-completed: [AUTH-09, AUTH-10, AUTH-11]
@@ -65,10 +65,10 @@ completed: 2026-09-09
 
 ## Accomplishments
 
-- `EmailSender` + `OutboundEmail` + `EmailError`; default `LogSink` logs to/subject/body on `octanest.mail` with no network (AUTH-09)
+- `EmailSender` + `OutboundEmail` + `EmailError`; default `LogSink` logs to/subject/body on `oxidean.mail` with no network (AUTH-09)
 - `SmtpSender` builds/sends via lettre typed `Mailbox` addresses; invalid To → `EmailError::InvalidAddress` (AUTH-10, T-04-05)
-- `ResendSender` POSTs JSON to `https://api.resend.com/emails` with Bearer auth and `User-Agent: octanest-api/0.1`; wiremock proves headers (AUTH-11)
-- `build_email_sender_from_env`: Resend key → SMTP URL → LogSink; From via `OCTANEST_MAIL_FROM`
+- `ResendSender` POSTs JSON to `https://api.resend.com/emails` with Bearer auth and `User-Agent: oxidean-api/0.1`; wiremock proves headers (AUTH-11)
+- `build_email_sender_from_env`: Resend key → SMTP URL → LogSink; From via `OXIDEAN_MAIL_FROM`
 
 ## Task Commits
 
@@ -81,12 +81,12 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/email/mod.rs` — trait, errors, env factory
-- `crates/octanest-api/src/email/log_sink.rs` — AUTH-09 LogSink + unit test
-- `crates/octanest-api/src/email/smtp.rs` — AUTH-10 SmtpSender + address validation test
-- `crates/octanest-api/src/email/resend.rs` — AUTH-11 ResendSender + wiremock UA test
-- `crates/octanest-api/src/lib.rs` — `pub mod email`
-- `crates/octanest-api/Cargo.toml` — lettre, reqwest, async-trait, thiserror, wiremock
+- `crates/oxidean-api/src/email/mod.rs` — trait, errors, env factory
+- `crates/oxidean-api/src/email/log_sink.rs` — AUTH-09 LogSink + unit test
+- `crates/oxidean-api/src/email/smtp.rs` — AUTH-10 SmtpSender + address validation test
+- `crates/oxidean-api/src/email/resend.rs` — AUTH-11 ResendSender + wiremock UA test
+- `crates/oxidean-api/src/lib.rs` — `pub mod email`
+- `crates/oxidean-api/Cargo.toml` — lettre, reqwest, async-trait, thiserror, wiremock
 - `Cargo.lock` — dependency lock updates
 - `04-USER-SETUP.md` — optional SMTP/Resend operator env setup
 
@@ -104,15 +104,15 @@ Each task was committed atomically:
 - **Found during:** Task 1 (dependency compile)
 - **Issue:** Default lettre features pulled `native-tls` without `tokio1-native-tls`, and rustls required crypto/certs features
 - **Fix:** `default-features = false` + `tokio1,tokio1-rustls,smtp-transport,builder,hostname,aws-lc-rs,rustls-native-certs`
-- **Files modified:** `crates/octanest-api/Cargo.toml`
-- **Verification:** `cargo test -p octanest-api --lib email::` passes
+- **Files modified:** `crates/oxidean-api/Cargo.toml`
+- **Verification:** `cargo test -p oxidean-api --lib email::` passes
 - **Committed in:** `4bd41c7` (Task 1)
 
 **2. [Rule 3 - Blocking] reqwest feature rename**
 - **Found during:** Task 1 (`cargo add`)
 - **Issue:** reqwest 0.13 has no `rustls-tls` feature (plan assumed 0.12 name)
 - **Fix:** Use `--features rustls,json`
-- **Files modified:** `crates/octanest-api/Cargo.toml`
+- **Files modified:** `crates/oxidean-api/Cargo.toml`
 - **Verification:** Dependency resolves; Resend tests pass
 - **Committed in:** `4bd41c7` (Task 1) / exercised in `862efc4` (Task 2)
 
@@ -128,7 +128,7 @@ None beyond the dependency feature adjustments above.
 ## User Setup Required
 
 **External services require manual configuration for live delivery.** See [04-USER-SETUP.md](./04-USER-SETUP.md) for:
-- `OCTANEST_SMTP_URL`, `OCTANEST_MAIL_FROM`, `OCTANEST_RESEND_API_KEY`
+- `OXIDEAN_SMTP_URL`, `OXIDEAN_MAIL_FROM`, `OXIDEAN_RESEND_API_KEY`
 - Optional Resend account / domain verification
 
 ## Next Phase Readiness
@@ -139,10 +139,10 @@ None beyond the dependency feature adjustments above.
 
 ## Self-Check: PASSED
 
-- `crates/octanest-api/src/email/{mod,log_sink,smtp,resend}.rs` present
+- `crates/oxidean-api/src/email/{mod,log_sink,smtp,resend}.rs` present
 - Commits `4bd41c7`, `862efc4` in git log
-- `cargo test -p octanest-api --lib email::` — 3 passed
-- Acceptance greps for `EmailSender`, `octanest.mail`, `AsyncSmtpTransport`, `api.resend.com/emails`, `User-Agent`, `octanest-api/0.1` — PASS
+- `cargo test -p oxidean-api --lib email::` — 3 passed
+- Acceptance greps for `EmailSender`, `oxidean.mail`, `AsyncSmtpTransport`, `api.resend.com/emails`, `User-Agent`, `oxidean-api/0.1` — PASS
 
 ---
 *Phase: 04-auth-sessions-email*

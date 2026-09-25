@@ -33,14 +33,14 @@ result: pass
 verified_by: agent (make smoke-sqlite; Windows bind fallback + mirror to ./var)
 
 ### 4. Dialect mismatch fails fast
-expected: DATABASE_URL postgres + OCTANEST_DB_DIALECT=mysql exits 1 with mismatch message; password not leaked.
+expected: DATABASE_URL postgres + OXIDEAN_DB_DIALECT=mysql exits 1 with mismatch message; password not leaked.
 result: pass
-verified_by: agent (cargo run -p octanest-api --bin octanest-api)
+verified_by: agent (cargo run -p oxidean-api --bin oxidean-api)
 
 ### 5. SQLite migrate + probe without Compose
 expected: DATABASE_URL=sqlite nested path; migrate creates parents; dialect_probe round-trip succeeds.
 result: pass
-verified_by: agent (migrate + cargo test -p octanest-db --test dialect_probe)
+verified_by: agent (migrate + cargo test -p oxidean-db --test dialect_probe)
 
 ### 6. Empty-target dialect switch
 expected: db-switch-dialect succeeds on empty SQLite; --assert-empty refuses populated target.

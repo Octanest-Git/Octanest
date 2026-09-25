@@ -10,19 +10,19 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-db/migrations/{sqlite,postgres,mysql}/0006_bootstrap_flags.sql` | migration | transform | `crates/octanest-db/migrations/sqlite/0004_email_token_issue_count.sql` (+ pg/mysql twins) | exact |
-| `crates/octanest-db/src/auth_settings.rs` | model | CRUD | same file | exact |
-| `crates/octanest-db/src/users.rs` | model | CRUD | same file (`set_password_hash`, `map_user`, `update_user_profile`) | exact |
-| `crates/octanest-core/src/auth_types.rs` | model | transform | same file (`ProviderConfigPublic`, `UserPublic`, reserved list) | exact |
-| `crates/octanest-api/src/auth/seed.rs` | service | CRUD | same file | exact |
-| `crates/octanest-api/src/auth/bootstrap.rs` | service | request-response | `seed.rs` + `local.rs` signup | role-match |
-| `crates/octanest-api/src/auth/local.rs` | service | request-response | same file (`signup`, `provider_config`) | exact |
-| `crates/octanest-api/src/auth/admin.rs` | service | CRUD | same file (`require_admin`, `update_settings`) | exact |
-| `crates/octanest-api/src/rpc.rs` | route | request-response | same file (`auth.dev.privileged_ping` env gate) | role-match |
-| `crates/octanest-api/src/main.rs` | config | request-response | same file (`OCTANEST_AUTO_MIGRATE` + fail-closed seed) | exact |
-| `crates/octanest-api/src/routes/auth_callbacks.rs` | route | request-response | `crates/octanest-api/src/auth/gate.rs` (`require_verified`) | role-match |
-| `crates/octanest-api/tests/auth_bootstrap.rs` (+ credentials tests) | test | request-response | `crates/octanest-api/tests/auth_signup.rs` | role-match |
-| `crates/octanest-db/tests/dialect_auth.rs` | test | CRUD | same file | exact |
+| `crates/oxidean-db/migrations/{sqlite,postgres,mysql}/0006_bootstrap_flags.sql` | migration | transform | `crates/oxidean-db/migrations/sqlite/0004_email_token_issue_count.sql` (+ pg/mysql twins) | exact |
+| `crates/oxidean-db/src/auth_settings.rs` | model | CRUD | same file | exact |
+| `crates/oxidean-db/src/users.rs` | model | CRUD | same file (`set_password_hash`, `map_user`, `update_user_profile`) | exact |
+| `crates/oxidean-core/src/auth_types.rs` | model | transform | same file (`ProviderConfigPublic`, `UserPublic`, reserved list) | exact |
+| `crates/oxidean-api/src/auth/seed.rs` | service | CRUD | same file | exact |
+| `crates/oxidean-api/src/auth/bootstrap.rs` | service | request-response | `seed.rs` + `local.rs` signup | role-match |
+| `crates/oxidean-api/src/auth/local.rs` | service | request-response | same file (`signup`, `provider_config`) | exact |
+| `crates/oxidean-api/src/auth/admin.rs` | service | CRUD | same file (`require_admin`, `update_settings`) | exact |
+| `crates/oxidean-api/src/rpc.rs` | route | request-response | same file (`auth.dev.privileged_ping` env gate) | role-match |
+| `crates/oxidean-api/src/main.rs` | config | request-response | same file (`OXIDEAN_AUTO_MIGRATE` + fail-closed seed) | exact |
+| `crates/oxidean-api/src/routes/auth_callbacks.rs` | route | request-response | `crates/oxidean-api/src/auth/gate.rs` (`require_verified`) | role-match |
+| `crates/oxidean-api/tests/auth_bootstrap.rs` (+ credentials tests) | test | request-response | `crates/oxidean-api/tests/auth_signup.rs` | role-match |
+| `crates/oxidean-db/tests/dialect_auth.rs` | test | CRUD | same file | exact |
 | `apps/web/src/lib/ssr-auth.ts` | utility | request-response | `packages/api-client/src/index.ts` (`CreateClientOptions.fetch`) + `apps/web/src/lib/api-client.ts` | partial |
 | `apps/web/src/routes/index.tsrx` | route | request-response | `apps/web/src/routes/index.tsx` | exact |
 | `apps/web/src/routes/setup.tsrx` | route | request-response | `apps/web/src/routes/signup.tsx` + `apps/web/src/components/auth-shell.tsx` | role-match |
@@ -40,9 +40,9 @@
 
 ## Pattern Assignments
 
-### `crates/octanest-db/migrations/*/0006_bootstrap_flags.sql` (migration, transform)
+### `crates/oxidean-db/migrations/*/0006_bootstrap_flags.sql` (migration, transform)
 
-**Analog:** `crates/octanest-db/migrations/sqlite/0004_email_token_issue_count.sql` (and postgres/mysql twins)
+**Analog:** `crates/oxidean-db/migrations/sqlite/0004_email_token_issue_count.sql` (and postgres/mysql twins)
 
 **Core pattern** (sqlite lines 1-2; postgres uses `INT`, mysql `INT`):
 ```sql
@@ -54,7 +54,7 @@ ALTER TABLE auth_email_tokens ADD COLUMN issue_count INTEGER NOT NULL DEFAULT 1;
 
 ---
 
-### `crates/octanest-db/src/auth_settings.rs` (model, CRUD)
+### `crates/oxidean-db/src/auth_settings.rs` (model, CRUD)
 
 **Analog:** same file
 
@@ -90,7 +90,7 @@ macro_rules! map_settings {
 
 ---
 
-### `crates/octanest-db/src/users.rs` (model, CRUD)
+### `crates/oxidean-db/src/users.rs` (model, CRUD)
 
 **Analog:** same file
 
@@ -115,7 +115,7 @@ pub async fn set_password_hash(
 
 ---
 
-### `crates/octanest-core/src/auth_types.rs` (model, transform)
+### `crates/oxidean-core/src/auth_types.rs` (model, transform)
 
 **Analog:** same file
 
@@ -155,18 +155,18 @@ Extend with `allow_signup: bool` for wizard Switch.
 
 ---
 
-### `crates/octanest-api/src/auth/seed.rs` (service, CRUD)
+### `crates/oxidean-api/src/auth/seed.rs` (service, CRUD)
 
 **Analog:** same file (primary ENV seed pattern)
 
 **Core pattern** (lines 12-54):
 ```rust
 pub async fn maybe_seed_admin(db: &Database) -> Result<(), String> {
-    let email = match std::env::var("OCTANEST_ADMIN_EMAIL") {
+    let email = match std::env::var("OXIDEAN_ADMIN_EMAIL") {
         Ok(v) if !v.is_empty() => v.trim().to_ascii_lowercase(),
         _ => return Ok(()),
     };
-    let password = match std::env::var("OCTANEST_ADMIN_PASSWORD") {
+    let password = match std::env::var("OXIDEAN_ADMIN_PASSWORD") {
         Ok(v) if !v.is_empty() => v,
         _ => return Ok(()),
     };
@@ -177,13 +177,13 @@ pub async fn maybe_seed_admin(db: &Database) -> Result<(), String> {
     };
 ```
 
-**Apply:** Fixed username `"system-administrator"`; set `must_change_credentials=true`; parse/write `OCTANEST_ALLOW_SIGNUP` like `main.rs` AUTO_MIGRATE (`true`/`1`, default **false**); keep auto-verify via `set_email_verified_at`.
+**Apply:** Fixed username `"system-administrator"`; set `must_change_credentials=true`; parse/write `OXIDEAN_ALLOW_SIGNUP` like `main.rs` AUTO_MIGRATE (`true`/`1`, default **false**); keep auto-verify via `set_email_verified_at`.
 
 ---
 
-### `crates/octanest-api/src/auth/bootstrap.rs` (service, request-response)
+### `crates/oxidean-api/src/auth/bootstrap.rs` (service, request-response)
 
-**Analog:** `crates/octanest-api/src/auth/seed.rs` (create sys-admin) + `crates/octanest-api/src/auth/local.rs` (RPC parse/session/errors)
+**Analog:** `crates/oxidean-api/src/auth/seed.rs` (create sys-admin) + `crates/oxidean-api/src/auth/local.rs` (RPC parse/session/errors)
 
 > File is **untracked WIP** on disk — planner/executor should treat it as **create/stabilize** using tracked patterns below, not copy from the untracked blob as source of truth.
 
@@ -209,15 +209,15 @@ pub async fn signup(ctx: &mut RpcCtx, input: serde_json::Value) -> Result<UserPu
 
 ---
 
-### `crates/octanest-api/src/auth/local.rs` (service, request-response)
+### `crates/oxidean-api/src/auth/local.rs` (service, request-response)
 
 **Analog:** same file
 
 **Public config** (lines 329-333):
 ```rust
-pub async fn provider_config(ctx: &RpcCtx) -> Result<octanest_core::ProviderConfigPublic, AppError> {
+pub async fn provider_config(ctx: &RpcCtx) -> Result<oxidean_core::ProviderConfigPublic, AppError> {
     let mode = resolve_provider_mode(ctx).await.unwrap_or(ProviderMode::Local);
-    Ok(octanest_core::ProviderConfigPublic { mode })
+    Ok(oxidean_core::ProviderConfigPublic { mode })
 }
 ```
 
@@ -225,7 +225,7 @@ pub async fn provider_config(ctx: &RpcCtx) -> Result<octanest_core::ProviderConf
 
 ---
 
-### `crates/octanest-api/src/auth/admin.rs` (service, CRUD)
+### `crates/oxidean-api/src/auth/admin.rs` (service, CRUD)
 
 **Analog:** same file
 
@@ -255,7 +255,7 @@ async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
 
 ---
 
-### `crates/octanest-api/src/rpc.rs` (route, request-response)
+### `crates/oxidean-api/src/rpc.rs` (route, request-response)
 
 **Analog:** same file — early procedure gate pattern via `auth.dev.privileged_ping`
 
@@ -280,13 +280,13 @@ async fn require_admin(ctx: &RpcCtx) -> Result<(), AppError> {
 
 ---
 
-### `crates/octanest-api/src/main.rs` (config, boot)
+### `crates/oxidean-api/src/main.rs` (config, boot)
 
 **Analog:** same file
 
 **ENV bool parse** (lines 49-51):
 ```rust
-let auto_migrate = std::env::var("OCTANEST_AUTO_MIGRATE")
+let auto_migrate = std::env::var("OXIDEAN_AUTO_MIGRATE")
     .map(|v| v == "true" || v == "1")
     .unwrap_or(true);
 ```
@@ -299,13 +299,13 @@ if let Err(e) = seed::maybe_seed_admin(&db).await {
 }
 ```
 
-**Apply:** Keep fail-closed. Parse `OCTANEST_ALLOW_SIGNUP` with same `true`/`1` rule and `unwrap_or(false)` inside seed (or pass into seed).
+**Apply:** Keep fail-closed. Parse `OXIDEAN_ALLOW_SIGNUP` with same `true`/`1` rule and `unwrap_or(false)` inside seed (or pass into seed).
 
 ---
 
-### `crates/octanest-api/src/routes/auth_callbacks.rs` (route, request-response)
+### `crates/oxidean-api/src/routes/auth_callbacks.rs` (route, request-response)
 
-**Analog:** `crates/octanest-api/src/auth/gate.rs` for early hard reject shape
+**Analog:** `crates/oxidean-api/src/auth/gate.rs` for early hard reject shape
 
 **Core gate** (gate.rs lines 20-42):
 ```rust
@@ -324,9 +324,9 @@ pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {
 
 ---
 
-### `crates/octanest-api/tests/auth_bootstrap.rs` (+ credentials) (test, request-response)
+### `crates/oxidean-api/tests/auth_bootstrap.rs` (+ credentials) (test, request-response)
 
-**Analog:** `crates/octanest-api/tests/auth_signup.rs`
+**Analog:** `crates/oxidean-api/tests/auth_signup.rs`
 
 **Harness** (lines 28-59):
 ```rust
@@ -337,7 +337,7 @@ fn rpc_req(body: &str) -> Request<Body> {
         .method("POST")
         .uri("/api/rpc")
         .header("content-type", "application/json")
-        .header("Octanest-RPC-Version", "1")
+        .header("Oxidean-RPC-Version", "1")
         .body(Body::from(body.to_owned()))
         .unwrap()
 }
@@ -350,7 +350,7 @@ async fn signup_sets_cookie_and_sends_welcome() {
     db.migrate().await.expect("migrate");
 ```
 
-**Seed assertion** (lines 191-214 `seeded_admin_is_auto_verified`): set `OCTANEST_ADMIN_*`, call `maybe_seed_admin`, assert role + verified.
+**Seed assertion** (lines 191-214 `seeded_admin_is_auto_verified`): set `OXIDEAN_ADMIN_*`, call `maybe_seed_admin`, assert role + verified.
 
 **Apply:** Tempdir SQLite + migrate + RPC oneshot. Cover: partial ENV → needs_setup; wizard `allow_signup`; strict RPC allowlist; forced credentials; signup blocked when closed. Prefer a tracked shared test helper for ENV mutex once bootstrap lands (avoid racy env in parallel nextest).
 
@@ -404,7 +404,7 @@ import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 // ...
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
-  head: () => ({ meta: [{ title: "Sign up · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Sign up · Oxidean" }] }),
 });
 ```
 
@@ -423,7 +423,7 @@ export function AuthShell({
 }) {
   return (
     <div className="relative overflow-hidden px-4 py-16">
-      {/* radial mesh + OctanestMark 48 + Heading + Body support */}
+      {/* radial mesh + OxideanMark 48 + Heading + Body support */}
 ```
 
 **Form submit / error codes** (`signup.tsx` lines 73-99): pending flag, `AuthErrorBanner`, map RPC codes to copy.
@@ -442,7 +442,7 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
     meta: [
-      { title: "Reset password · Octanest" },
+      { title: "Reset password · Oxidean" },
       // ...
     ],
   }),
@@ -481,7 +481,7 @@ type View =
 ```typescript
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
-  head: () => ({ meta: [{ title: "Dashboard · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Dashboard · Oxidean" }] }),
 });
 // useEffect → auth.me → login?returnTo=/dashboard
 ```
@@ -496,7 +496,7 @@ export const Route = createFileRoute("/dashboard")({
 
 **Login cross-link** (`login.tsx` lines 175-183):
 ```typescript
-New to Octanest?{" "}
+New to Oxidean?{" "}
 <a href={signupHref} /* ... */>
   Create an account
 </a>
@@ -580,9 +580,9 @@ export function Checkbox({
 
 **Analogs:** existing files.
 
-**CONFIGURATION table pattern** (`docs/CONFIGURATION.md` lines 22-23): document `OCTANEST_ALLOW_SIGNUP` next to `OCTANEST_ADMIN_*`; default false; `true`/`1` only.
+**CONFIGURATION table pattern** (`docs/CONFIGURATION.md` lines 22-23): document `OXIDEAN_ALLOW_SIGNUP` next to `OXIDEAN_ADMIN_*`; default false; `true`/`1` only.
 
-**.env.example** (lines 34-35): add commented `OCTANEST_ALLOW_SIGNUP=false`.
+**.env.example** (lines 34-35): add commented `OXIDEAN_ALLOW_SIGNUP=false`.
 
 **REQUIREMENTS:** reframe AUTH-06/07 as empty-instance (D-02); AUTH-05 interaction with `allow_signup`.
 
@@ -591,7 +591,7 @@ export function Checkbox({
 ## Shared Patterns
 
 ### AppError + RPC codes
-**Source:** `crates/octanest-api/src/auth/local.rs`, `admin.rs`
+**Source:** `crates/oxidean-api/src/auth/local.rs`, `admin.rs`
 **Apply to:** bootstrap, signup gate, confirm credentials, RPC allowlist
 ```rust
 return Err(AppError::new(
@@ -601,12 +601,12 @@ return Err(AppError::new(
 ```
 
 ### Fail-closed boot
-**Source:** `crates/octanest-api/src/main.rs` lines 66-69
+**Source:** `crates/oxidean-api/src/main.rs` lines 66-69
 **Apply to:** seed failure when both ENV set
 
 ### ENV bool parse
-**Source:** `crates/octanest-api/src/main.rs` lines 49-51
-**Apply to:** `OCTANEST_ALLOW_SIGNUP` (default **false**)
+**Source:** `crates/oxidean-api/src/main.rs` lines 49-51
+**Apply to:** `OXIDEAN_ALLOW_SIGNUP` (default **false**)
 
 ### AuthShell + AuthErrorBanner
 **Source:** `apps/web/src/components/auth-shell.tsx`
@@ -617,23 +617,23 @@ return Err(AppError::new(
 **Apply to:** login, forced credential change success
 
 ### Session cookies
-**Source:** `crates/octanest-api/src/auth/session.rs` lines 15-20
+**Source:** `crates/oxidean-api/src/auth/session.rs` lines 15-20
 ```rust
-pub const SESSION_COOKIE_NAME: &str = "octanest_session";
-pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
+pub const SESSION_COOKIE_NAME: &str = "oxidean_session";
+pub const SESSION_PRESENCE_COOKIE_NAME: &str = "oxidean_signed_in";
 ```
-**Apply to:** SSR Cookie forward (`octanest_session`); presence hint PE only
+**Apply to:** SSR Cookie forward (`oxidean_session`); presence hint PE only
 
 ### Triple-dialect SQL helpers
-**Source:** `crates/octanest-db/src/{auth_settings,users}.rs`
+**Source:** `crates/oxidean-db/src/{auth_settings,users}.rs`
 **Apply to:** new columns + email update helper
 
 ### Integration test RPC harness
-**Source:** `crates/octanest-api/tests/auth_signup.rs`
+**Source:** `crates/oxidean-api/tests/auth_signup.rs`
 **Apply to:** bootstrap / allow_signup / credentials / RPC allowlist tests
 
 ### Sys-admin settings guard
-**Source:** `crates/octanest-api/src/auth/admin.rs` `require_admin`
+**Source:** `crates/oxidean-api/src/auth/admin.rs` `require_admin`
 **Apply to:** post-bootstrap `allow_signup` admin toggle
 
 ## No Analog Found
@@ -642,11 +642,11 @@ pub const SESSION_PRESENCE_COOKIE_NAME: &str = "octanest_signed_in";
 |------|------|-----------|--------|
 | `apps/web/src/lib/ssr-auth.ts` (`createServerFn` / `getRequestHeader`) | utility | request-response | No tracked app usage of TanStack Start server fns; use RESEARCH Pattern 2 + `@octanejs/tanstack-start` exports |
 | `apps/web/src/routes/dashboard.tsrx` / closed `/signup` `notFound()` | route | request-response | No tracked `notFound()` / `beforeLoad` in `apps/web`; use `@octanejs/tanstack-router` exports per RESEARCH Don't Hand-Roll |
-| `crates/octanest-api/src/auth/bootstrap.rs` (as self-analog) | service | request-response | Untracked WIP only — use tracked `seed.rs` + `local.rs` patterns above |
+| `crates/oxidean-api/src/auth/bootstrap.rs` (as self-analog) | service | request-response | Untracked WIP only — use tracked `seed.rs` + `local.rs` patterns above |
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-api`, `crates/octanest-db`, `crates/octanest-core`, `apps/web/src` (tracked `.tsx`), `packages/api-client`, `docs/`, `.env.example`
+**Analog search scope:** `crates/oxidean-api`, `crates/oxidean-db`, `crates/oxidean-core`, `apps/web/src` (tracked `.tsx`), `packages/api-client`, `docs/`, `.env.example`
 **Files scanned:** ~120 tracked paths in those trees; plus HEAD blobs for deleted `.tsx` working-tree renames
 **Pattern extraction date:** 2026-09-11
 **Note:** Prefer tracked analogs over working-tree `.tsrx` / untracked bootstrap until those land in git

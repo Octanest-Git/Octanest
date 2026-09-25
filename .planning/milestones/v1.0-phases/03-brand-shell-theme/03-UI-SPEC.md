@@ -38,8 +38,8 @@ reviewed_at: 2026-09-09
 
 | Route | Purpose | Focal point (eye first) |
 |-------|---------|-------------------------|
-| Global header | Product identity + theme + placeholder search/auth | Squircle mark (+ “Octanest” wordmark on wide viewports) |
-| `/` | Multi-section marketing landing | Large squircle mark, then headline (no duplicate “Octanest” text), then CTA group |
+| Global header | Product identity + theme + placeholder search/auth | Squircle mark (+ “Oxidean” wordmark on wide viewports) |
+| `/` | Multi-section marketing landing | Large squircle mark, then headline (no duplicate “Oxidean” text), then CTA group |
 | `/status` | Marketed live system-status page | Status hero message (operational / degraded / unreachable), then version + database detail |
 
 **Out of scope (deferred):** real search, auth flows, status history, light/transparent mark variants, aggressive offline API caching.
@@ -54,24 +54,24 @@ reviewed_at: 2026-09-09
 
 | Element | Contract |
 |---------|----------|
-| Mark | Shared `OctanestMark` component; macOS **squircle** clip of `brand/octanest-mark.png` (via `public/`); **no** padded plate; same treatment light/dark; `alt="Octanest"`; header size **32×32** |
-| Wordmark | Text “Octanest” in display font; **visible ≥ `sm`**; **hidden on narrow** (mark-only) |
+| Mark | Shared `OxideanMark` component; macOS **squircle** clip of `brand/oxidean-mark.png` (via `public/`); **no** padded plate; same treatment light/dark; `alt="Oxidean"`; header size **32×32** |
+| Wordmark | Text “Oxidean” in display font; **visible ≥ `sm`**; **hidden on narrow** (mark-only) |
 | Search | ShadCN/Base UI **Input**, disabled, placeholder below; height ≥ 44px |
 | Theme | ShadCN/Base UI **Select** (not native `<select>`); after search, before Sign in |
 | Auth | ShadCN **Button** group: Sign in = `ghost` disabled; Sign up = `secondary` disabled; `title="Coming soon"` |
 
 **Theme Select interaction (D-07, D-11):**
-- Preference model: `system` \| `light` \| `dark`; persist `localStorage` key `octanest-theme` (existing `theme.ts`)
+- Preference model: `system` \| `light` \| `dark`; persist `localStorage` key `oxidean-theme` (existing `theme.ts`)
 - Closed trigger: **icon + short label** for current choice (`System` / `Light` / `Dark`)
 - Menu items: **icon + text** for all three
 - Icons (default from CONTEXT discretion): `Monitor` = System, `Sun` = Light, `Moon` = Dark (lucide)
 - Height ≥ 44px; label/trigger text uses Label role (14px / 400)
 
-**FOUC (D-12):** Inline boot script in document head **before paint** reads `octanest-theme`, resolves system via `prefers-color-scheme`, toggles `html.dark`. React hydrate must not flash the opposite theme.
+**FOUC (D-12):** Inline boot script in document head **before paint** reads `oxidean-theme`, resolves system via `prefers-color-scheme`, toggles `html.dark`. React hydrate must not flash the opposite theme.
 
 ### Footer (D-06)
 
-- Text-only: `© Octanest` + link **Status** → `/status`
+- Text-only: `© Oxidean` + link **Status** → `/status`
 - **No** footer mark
 
 ### `/` Landing — section map (D-22…D-25)
@@ -80,8 +80,8 @@ reviewed_at: 2026-09-09
 
 | # | Band | Job | Focal / content |
 |---|------|-----|-----------------|
-| 1 | **Hero** (first viewport) | Brand-first composition | Large squircle mark (**96×96** default; discretionary ±16 within scale) + **one** Display headline + one Body support + CTA group. **No** duplicate “Octanest” wordmark/text in hero (mark carries brand). Full-bleed cool↔warm radial atmosphere on bg (not flat). No stats, schedules, chips, overlays, or inset media cards. |
-| 2 | **Dual-mode** (`id="explore"` target) | Cloud + self-host | Split editorial row: left “Octanest Cloud”, right “Self-host” — one headline each + short body; **not** a card grid |
+| 1 | **Hero** (first viewport) | Brand-first composition | Large squircle mark (**96×96** default; discretionary ±16 within scale) + **one** Display headline + one Body support + CTA group. **No** duplicate “Oxidean” wordmark/text in hero (mark carries brand). Full-bleed cool↔warm radial atmosphere on bg (not flat). No stats, schedules, chips, overlays, or inset media cards. |
+| 2 | **Dual-mode** (`id="explore"` target) | Cloud + self-host | Split editorial row: left “Oxidean Cloud”, right “Self-host” — one headline each + short body; **not** a card grid |
 | 3 | **Collaboration pillars** | Why nest here | Horizontal or stacked editorial pillars (3 max): host git / collaborate / ship — typography + spacing, not bordered cards |
 | 4 | **Closing CTA** | Reaffirm action | Short Display/Heading line + CTA group mirroring hero rules |
 
@@ -98,7 +98,7 @@ reviewed_at: 2026-09-09
 
 | State | Hero treatment |
 |-------|----------------|
-| Loading | Muted body: “Checking Octanest services…” — no accent fill |
+| Loading | Muted body: “Checking Oxidean services…” — no accent fill |
 | Healthy | Cool **primary** accent on hero line “All systems operational” |
 | Unhealthy / degraded | **Destructive** on “Degraded or failing” |
 | Unreachable | **Destructive** on “Can’t reach the API” + recovery body |
@@ -109,7 +109,7 @@ reviewed_at: 2026-09-09
 
 ### Shared mark component
 
-- Single `OctanestMark` (name discretionary) used in header, landing hero, and any marketing empty spots
+- Single `OxideanMark` (name discretionary) used in header, landing hero, and any marketing empty spots
 - Clip: **macOS app-icon squircle** (CSS `clip-path` or SVG mask — executor discretion)
 - Never recolor the PNG ad hoc; brand colors live in the asset + semantic tokens
 
@@ -117,11 +117,11 @@ reviewed_at: 2026-09-09
 
 | Route | `<title>` |
 |-------|-----------|
-| `/` | `Octanest` |
-| `/status` | `Status · Octanest` |
-| Future pages | `Page · Octanest` pattern |
+| `/` | `Oxidean` |
+| `/status` | `Status · Oxidean` |
+| Future pages | `Page · Oxidean` pattern |
 
-### Icon / favicon set (from `brand/octanest-mark.png`)
+### Icon / favicon set (from `brand/oxidean-mark.png`)
 
 Generate and wire at minimum:
 - `favicon.ico`
@@ -133,7 +133,7 @@ Generate and wire at minimum:
 
 | Field | Value |
 |-------|-------|
-| `name` / `short_name` | Octanest |
+| `name` / `short_name` | Oxidean |
 | `display` | `standalone` |
 | `start_url` | `/` |
 | `theme_color` | Follow brand surfaces — ≈ dark surface / primary cool when dark; light surface when light; use `theme-color` meta with `media` for light/dark where supported |
@@ -196,7 +196,7 @@ Exactly **4** sizes and **2** weights project-wide for this phase:
 
 ### Semantic token mapping (D-13…D-15)
 
-Migrate off legacy `--color-accent-cool` / `--color-accent-warm`. Map Octanest brand into full ShadCN semantic layer:
+Migrate off legacy `--color-accent-cool` / `--color-accent-warm`. Map Oxidean brand into full ShadCN semantic layer:
 
 | Semantic token | Brand meaning | Notes |
 |----------------|---------------|-------|
@@ -272,35 +272,35 @@ Migrate off legacy `--color-accent-cool` / `--color-accent-warm`. Map Octanest b
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** (never bare “Octane”; never market as “GitHub clone”) |
-| Mark `alt` | Octanest |
+| Product name | **Oxidean** (never bare “Octane”; never market as “GitHub clone”) |
+| Mark `alt` | Oxidean |
 | Landing headline | Where repositories nest — cloud or yours |
-| Landing supporting | Social coding forge: host git, collaborate, and ship — one product for Octanest Cloud and self-host |
-| Dual-mode Cloud title | Octanest Cloud |
+| Landing supporting | Social coding forge: host git, collaborate, and ship — one product for Oxidean Cloud and self-host |
+| Dual-mode Cloud title | Oxidean Cloud |
 | Dual-mode Cloud body | Hosted forge with the same product you run yourself — one release train. |
 | Dual-mode Self-host title | Self-host |
-| Dual-mode Self-host body | Run Octanest on your machines with Docker Compose — your data, your network. |
+| Dual-mode Self-host body | Run Oxidean on your machines with Docker Compose — your data, your network. |
 | Pillars titles | Host git · Collaborate · Ship |
 | Pillars bodies (defaults) | Browse repos and history in the browser. / Issues and pull requests for teams. / Releases and CI when you’re ready to ship. |
 | Closing headline | One forge. Cloud or yours. |
 | Primary CTA | **Get started** (disabled placeholder) |
-| Secondary CTA | **Explore** (scroll to `#explore`; visible label may be “Explore” or “Explore Octanest” — prefer **Explore** to avoid hero brand duplication; header already says Octanest) |
+| Secondary CTA | **Explore** (scroll to `#explore`; visible label may be “Explore” or “Explore Oxidean” — prefer **Explore** to avoid hero brand duplication; header already says Oxidean) |
 | Header Search placeholder | Search public code (soon) |
 | Header Auth | Sign in / Sign up |
 | Auth / Get started hint | Coming soon |
 | Theme aria-label | Theme |
 | Theme options | System / Light / Dark |
-| Footer | © Octanest |
+| Footer | © Oxidean |
 | Footer link | Status |
-| Status document title | Status · Octanest |
+| Status document title | Status · Oxidean |
 | Status page title | System status |
-| Status loading | Checking Octanest services… |
+| Status loading | Checking Oxidean services… |
 | Status healthy heading | All systems operational |
 | Status healthy body | API health check succeeded. This page reflects live `system.health` — history arrives in a later release. |
 | Status unhealthy heading | Degraded or failing |
 | Status unhealthy body | The API reported an unhealthy state. Retry in a moment or check your Compose/API logs. |
 | Status unreachable heading | Can’t reach the API |
-| Status unreachable body | Octanest couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again. |
+| Status unreachable body | Oxidean couldn’t complete a health check. Confirm the stack is up (`docker compose` / `make dev`) and try again. |
 | Status unreachable hint | Something blocked this request. Refresh the page or verify the API is running. |
 | Status meta | `version {v} · database {dialect}` |
 | Empty state | No empty-list UI in Phase 3; status always resolves to a health outcome |
@@ -330,7 +330,7 @@ Ship **exactly 3** intentional motions (CSS keyframes preferred; Motion library 
 
 | Component | Action | Notes |
 |-----------|--------|-------|
-| `OctanestMark` | **Add** | Shared squircle-clipped mark |
+| `OxideanMark` | **Add** | Shared squircle-clipped mark |
 | Button | **Replace** hand-rolled with ShadCN/Base UI + **CVA** | Variants: `default`/`primary`, `secondary`, `ghost`; h ≥ 44px |
 | Input | **Add** ShadCN | Disabled header search |
 | Select | **Add** ShadCN | Theme control (trigger + items with lucide icons) |
@@ -358,14 +358,14 @@ No third-party registries. Do not add `@registry` URLs beyond shadcn official un
 
 - [ ] Shared squircle mark everywhere the mark appears (not one-off `<img>` in header only)
 - [ ] Header: mark + wordmark wide; mark-only narrow; footer text-only
-- [ ] Landing hero: large mark + headline — **no** duplicate “Octanest” text
+- [ ] Landing hero: large mark + headline — **no** duplicate “Oxidean” text
 - [ ] Theme: Select + persistence + FOUC boot; default system
 - [ ] Full semantic token layer; delete `--color-accent-cool` / `--color-accent-warm`
 - [ ] Primary = cool left; Secondary = warm right
 - [ ] Landing bands: Hero → Dual-mode → Pillars → Closing CTA; editorial, no card grid
 - [ ] Get started disabled; Explore scrolls to dual-mode
 - [ ] Status branded hero states; live health only
-- [ ] Titles: `Octanest` / `Status · Octanest`
+- [ ] Titles: `Oxidean` / `Status · Oxidean`
 - [ ] Full favicon/PWA icon set + Vite PWA assets-only SW
 - [ ] CVA on variant components; ShadCN over native controls
 - [ ] 2–3 motions with reduced-motion respect

@@ -1,7 +1,7 @@
 # Phase 17: Notifications - Research
 
 **Researched:** 2026-09-16
-**Domain:** In-app activity notifications (issue + PR) on Octanest Rust RPC + Octane chrome + multi-dialect DB
+**Domain:** In-app activity notifications (issue + PR) on Oxidean Rust RPC + Octane chrome + multi-dialect DB
 **Confidence:** HIGH (codebase patterns / issue hooks) / MEDIUM (PR hooks — Phase 12 domain not on this branch yet)
 
 <user_constraints>
@@ -52,9 +52,9 @@
 
 ## Summary
 
-Phase 17 adds a per-user in-app notification inbox for issue and PR activity. No new frameworks or npm packages are required: extend `octanest-db` with a `notifications` migration, add a `notification` API module dispatched from `rpc.rs`, regenerate `@octanest/api-client` via `make rpc-gen`, hook fan-out after successful issue (and later PR) mutations, and expose a signed-in bell + `/notifications` page in Octane using TanStack Query.
+Phase 17 adds a per-user in-app notification inbox for issue and PR activity. No new frameworks or npm packages are required: extend `oxidean-db` with a `notifications` migration, add a `notification` API module dispatched from `rpc.rs`, regenerate `@oxidean/api-client` via `make rpc-gen`, hook fan-out after successful issue (and later PR) mutations, and expose a signed-in bell + `/notifications` page in Octane using TanStack Query.
 
-EmailSender already exists for auth/org mail `[VERIFIED: crates/octanest-api/src/email/mod.rs:36-39]` quote: `pub trait EmailSender: Send + Sync { async fn send(&self, msg: OutboundEmail) -> Result<(), EmailError>; }` — but activity email needs preference UX and templates (locked out by D-06). Phase 12 PR handlers are not present on this worktree yet (`crates/octanest-api/src/issue/` exists; no `pull`/`pr` module) `[VERIFIED: directory listing this session]` — plan PR hooks with an execute-time precondition that Phase 12 has landed.
+EmailSender already exists for auth/org mail `[VERIFIED: crates/oxidean-api/src/email/mod.rs:36-39]` quote: `pub trait EmailSender: Send + Sync { async fn send(&self, msg: OutboundEmail) -> Result<(), EmailError>; }` — but activity email needs preference UX and templates (locked out by D-06). Phase 12 PR handlers are not present on this worktree yet (`crates/oxidean-api/src/issue/` exists; no `pull`/`pr` module) `[VERIFIED: directory listing this session]` — plan PR hooks with an execute-time precondition that Phase 12 has landed.
 
 **Primary recommendation:** Ship `notification.*` RPCs + `notifications` table with `read_at`, a shared `notify::fanout` helper used from issue (and PR) write paths, server-side `@username` mention extraction via `find_user_by_username`, header bell with Query-polled `unreadCount`, and `/notifications` list matching Issues offset pagination.
 
@@ -74,7 +74,7 @@ EmailSender already exists for auth/org mail `[VERIFIED: crates/octanest-api/src
 
 | Rule | Directive |
 |------|-----------|
-| `octanest-core.mdc` | One product; Bun + Cargo; Octane `.tsrx` not React; `make rpc-gen`; dialect SQL only in `octanest-db`; no secrets; prefer existing patterns |
+| `oxidean-core.mdc` | One product; Bun + Cargo; Octane `.tsrx` not React; `make rpc-gen`; dialect SQL only in `oxidean-db`; no secrets; prefer existing patterns |
 | `octane-ui.mdc` | `.tsrx` with `@{` / `@if`/`@else` (no `@else if`) / `@for`; TanStack Query via session helpers |
 | `rpc-codegen.mdc` | Rust types authoritative; regenerate api-client; `make rpc-sync-check` clean |
 | `rust-crates.mdc` | core = types; db = SQL; api = handlers; preserve auth gates |
@@ -85,9 +85,9 @@ EmailSender already exists for auth/org mail `[VERIFIED: crates/octanest-api/src
 
 | Library / Component | Version | Purpose | Why Standard |
 |---------------------|---------|---------|--------------|
-| Axum RPC + `octanest-api` | in-repo | `notification.*` procedures | Existing dispatch `[VERIFIED: crates/octanest-api/src/rpc.rs:71]` quote: `pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {` |
-| `require_verified` | in-repo | Gate mutating issue paths that emit events | `[VERIFIED: crates/octanest-api/src/auth/gate.rs:23-28]` quote: `pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {` / `auth.unauthenticated` |
-| `octanest-db` migrations | next free `00NN` after `0015_packages` (or after Phase 12 PR migration if present at execute) | `notifications` schema | Latest on this branch `[VERIFIED: crates/octanest-db/migrations/postgres/0015_packages.sql exists]` |
+| Axum RPC + `oxidean-api` | in-repo | `notification.*` procedures | Existing dispatch `[VERIFIED: crates/oxidean-api/src/rpc.rs:71]` quote: `pub async fn dispatch(ctx: &mut RpcCtx, req: RpcRequest) -> RpcResponse {` |
+| `require_verified` | in-repo | Gate mutating issue paths that emit events | `[VERIFIED: crates/oxidean-api/src/auth/gate.rs:23-28]` quote: `pub async fn require_verified(ctx: &RpcCtx) -> Result<UserRow, AppError> {` / `auth.unauthenticated` |
+| `oxidean-db` migrations | next free `00NN` after `0015_packages` (or after Phase 12 PR migration if present at execute) | `notifications` schema | Latest on this branch `[VERIFIED: crates/oxidean-db/migrations/postgres/0015_packages.sql exists]` |
 | Octane `.tsrx` + `@octanejs/tanstack-query` | in-repo | Bell + list UI | Project UI stack `[VERIFIED: AGENTS.md]` |
 | `SiteHeader` / `AccountActions` | in-repo | Bell insertion beside Create/Account menus | `[VERIFIED: apps/web/src/components/chrome.tsrx:512]` / `[VERIFIED: apps/web/src/components/chrome.tsrx:260-269]` signed-in cluster with `CreateMenu` + `AccountMenu` |
 
@@ -97,7 +97,7 @@ EmailSender already exists for auth/org mail `[VERIFIED: crates/octanest-api/src
 |---------|---------|---------|-------------|
 | Lucide icons (existing) | in-repo | Bell icon | Match chrome iconography |
 | `authSessionQueryOptions` | in-repo | Pattern for soft Query RPCs | Mirror for `unreadCount` `[VERIFIED: apps/web/src/lib/session-queries.ts:18-34]` |
-| `find_user_by_username` | in-repo | Resolve @mentions | `[VERIFIED: crates/octanest-db/src/lib.rs:802]` quote: `pub async fn find_user_by_username(&self, username: &str)` |
+| `find_user_by_username` | in-repo | Resolve @mentions | `[VERIFIED: crates/oxidean-db/src/lib.rs:802]` quote: `pub async fn find_user_by_username(&self, username: &str)` |
 
 ### Alternatives Considered
 
@@ -133,11 +133,11 @@ Client (signed-in)
 ### Recommended layout
 
 ```
-crates/octanest-db/migrations/{postgres,mysql,sqlite}/00NN_notifications.sql
-crates/octanest-db/src/notifications.rs
-crates/octanest-core/src/notification_types.rs
-crates/octanest-api/src/notification/mod.rs   # list/mark/unreadCount
-crates/octanest-api/src/notify/mod.rs        # fanout + mention parse (shared)
+crates/oxidean-db/migrations/{postgres,mysql,sqlite}/00NN_notifications.sql
+crates/oxidean-db/src/notifications.rs
+crates/oxidean-core/src/notification_types.rs
+crates/oxidean-api/src/notification/mod.rs   # list/mark/unreadCount
+crates/oxidean-api/src/notify/mod.rs        # fanout + mention parse (shared)
 apps/web/src/lib/notification-queries.ts
 apps/web/src/routes/notifications.tsrx
 apps/web/src/components/chrome.tsrx          # bell
@@ -166,7 +166,7 @@ apps/web/src/components/chrome.tsrx          # bell
 | Session auth | Custom JWT | Existing cookie `RpcCtx.session` + `require_verified` where writes already use it | Consistent with issues |
 | Unread badge cache | Zustand store | TanStack Query + `session-queries` pattern | Project convention |
 | Username resolve | New search index | `find_user_by_username` | Already shipped |
-| Pagination | Infinite scroll | Offset + limit like `IssueListRequest` | D-09 + Issues parity `[VERIFIED: crates/octanest-core/src/issue_types.rs:338-340]` |
+| Pagination | Infinite scroll | Offset + limit like `IssueListRequest` | D-09 + Issues parity `[VERIFIED: crates/oxidean-core/src/issue_types.rs:338-340]` |
 
 ## Schema recommendation (discretion)
 
@@ -198,8 +198,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread
 
 | Hook site | File / symbol | Events |
 |-----------|---------------|--------|
-| Issue create | `issue::create` `[VERIFIED: crates/octanest-api/src/issue/mod.rs:157]` | opened + body mentions |
-| Issue close/reopen | `issue::close` / `issue::reopen` `[VERIFIED: crates/octanest-api/src/issue/mod.rs:317,336]` | closed / reopened |
+| Issue create | `issue::create` `[VERIFIED: crates/oxidean-api/src/issue/mod.rs:157]` | opened + body mentions |
+| Issue close/reopen | `issue::close` / `issue::reopen` `[VERIFIED: crates/oxidean-api/src/issue/mod.rs:317,336]` | closed / reopened |
 | Comments | `issue.comments.create` in same module | comment + mentions; notify author, assignees, prior commenters |
 | Assignees | `issue.assignees.set` | assigned / unassigned delta |
 | PR module | **Absent on this branch** | Plan 17-03 precondition: Phase 12 PR handlers exist |
@@ -229,7 +229,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread
 - API nextest: `notification_rpc.rs` — list empty, create via issue comment → unreadCount, markRead, markAllRead, cannot mark another's id, actor not notified
 - Dialect: `dialect_notifications.rs` — migration applies on sqlite/postgres/mysql
 - Web Vitest: chrome bell when signed in; `/notifications` Unread|All; mark read navigation
-- Prior verify style: `cargo nextest run -p octanest-api -E 'test(notification)'`; `bun`/`vitest` filters matching `notification`
+- Prior verify style: `cargo nextest run -p oxidean-api -E 'test(notification)'`; `bun`/`vitest` filters matching `notification`
 
 ## Open questions for planner (discretion only)
 

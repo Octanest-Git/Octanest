@@ -8,38 +8,38 @@
 
 | New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `crates/octanest-db/migrations/{postgres,mysql,sqlite}/0008_pats.sql` | migration | CRUD | `crates/octanest-db/migrations/postgres/0002_auth.sql` (+ `0003_email_tokens.sql`) | exact |
-| `crates/octanest-db/src/pats.rs` | model | CRUD | `crates/octanest-db/src/sessions.rs` | exact |
-| `crates/octanest-db/src/lib.rs` | model | CRUD | same file — `create_session` / `insert_repository` facade | exact |
-| `crates/octanest-core/src/pat_types.rs` | model | transform | `crates/octanest-core/src/repo_types.rs` | exact |
-| `crates/octanest-core/src/lib.rs` | config | transform | same file — `pub mod` + re-exports | exact |
-| `crates/octanest-core/src/auth_types.rs` | utility | transform | same file — `RESERVED_USERNAMES` / `is_reserved_username` | exact |
-| `crates/octanest-api/src/pat/mod.rs` | controller | request-response | `crates/octanest-api/src/repo/mod.rs` (`create` + `require_verified`) | exact |
-| `crates/octanest-api/src/rpc.rs` | controller | request-response | same file — `repo.*` match arms | exact |
-| `crates/octanest-api/src/routes/git_smart_http.rs` | route | request-response / streaming | `crates/octanest-api/src/routes/repo_raw.rs` | role-match |
-| `crates/octanest-api/src/git/http_backend.rs` | service | streaming / file-I/O | `crates/octanest-git/src/cli.rs` (`Command` + stdio) | role-match |
-| `crates/octanest-api/src/git/mod.rs` | utility | file-I/O | same file — `bare_repo_path` | exact |
-| `crates/octanest-api/src/routes/mod.rs` | config | request-response | same file — `pub mod repo_raw` | exact |
-| `crates/octanest-api/src/app.rs` | config | request-response | same file — `.route(...)` mounting | exact |
-| `crates/octanest-api/src/repo/acl.rs` | middleware | request-response | same file — share ACL *decision*; split *status mapping* for git | exact |
-| `crates/octanest-api/src/auth/session.rs` | utility | request-response | same file — CSPRNG + SHA-256 hex (PAT mint/lookup) | exact |
-| `crates/octanest-api/src/auth/gate.rs` | middleware | request-response | same file — `require_verified` for `pat.create*` | exact |
-| `crates/octanest-api/tests/pat_rpc.rs` | test | request-response | `crates/octanest-api/tests/repo_create.rs` + `auth_verify_gate.rs` | exact |
-| `crates/octanest-api/tests/git_smart_http.rs` | test | request-response | `crates/octanest-api/tests/repo_private_404.rs` + `repo_create.rs` | role-match |
+| `crates/oxidean-db/migrations/{postgres,mysql,sqlite}/0008_pats.sql` | migration | CRUD | `crates/oxidean-db/migrations/postgres/0002_auth.sql` (+ `0003_email_tokens.sql`) | exact |
+| `crates/oxidean-db/src/pats.rs` | model | CRUD | `crates/oxidean-db/src/sessions.rs` | exact |
+| `crates/oxidean-db/src/lib.rs` | model | CRUD | same file — `create_session` / `insert_repository` facade | exact |
+| `crates/oxidean-core/src/pat_types.rs` | model | transform | `crates/oxidean-core/src/repo_types.rs` | exact |
+| `crates/oxidean-core/src/lib.rs` | config | transform | same file — `pub mod` + re-exports | exact |
+| `crates/oxidean-core/src/auth_types.rs` | utility | transform | same file — `RESERVED_USERNAMES` / `is_reserved_username` | exact |
+| `crates/oxidean-api/src/pat/mod.rs` | controller | request-response | `crates/oxidean-api/src/repo/mod.rs` (`create` + `require_verified`) | exact |
+| `crates/oxidean-api/src/rpc.rs` | controller | request-response | same file — `repo.*` match arms | exact |
+| `crates/oxidean-api/src/routes/git_smart_http.rs` | route | request-response / streaming | `crates/oxidean-api/src/routes/repo_raw.rs` | role-match |
+| `crates/oxidean-api/src/git/http_backend.rs` | service | streaming / file-I/O | `crates/oxidean-git/src/cli.rs` (`Command` + stdio) | role-match |
+| `crates/oxidean-api/src/git/mod.rs` | utility | file-I/O | same file — `bare_repo_path` | exact |
+| `crates/oxidean-api/src/routes/mod.rs` | config | request-response | same file — `pub mod repo_raw` | exact |
+| `crates/oxidean-api/src/app.rs` | config | request-response | same file — `.route(...)` mounting | exact |
+| `crates/oxidean-api/src/repo/acl.rs` | middleware | request-response | same file — share ACL *decision*; split *status mapping* for git | exact |
+| `crates/oxidean-api/src/auth/session.rs` | utility | request-response | same file — CSPRNG + SHA-256 hex (PAT mint/lookup) | exact |
+| `crates/oxidean-api/src/auth/gate.rs` | middleware | request-response | same file — `require_verified` for `pat.create*` | exact |
+| `crates/oxidean-api/tests/pat_rpc.rs` | test | request-response | `crates/oxidean-api/tests/repo_create.rs` + `auth_verify_gate.rs` | exact |
+| `crates/oxidean-api/tests/git_smart_http.rs` | test | request-response | `crates/oxidean-api/tests/repo_private_404.rs` + `repo_create.rs` | role-match |
 | `apps/web/src/routes/settings/tokens.tsrx` | route | request-response | `apps/web/src/routes/settings/profile.tsrx` | exact |
 | `apps/web/src/components/settings/pat-*.tsrx` | component | request-response | `apps/web/src/routes/new.tsrx` (create + verify wall) + `$owner.$repo.settings.tsrx` (AlertDialog) | role-match |
 | `apps/web/src/components/repo/clone-box.tsrx` | component | request-response | same file — extend how-to panel (D-13) | exact |
 | `apps/web/src/components/chrome.tsrx` | component | request-response | same file — `/settings/profile` nav links | exact |
 | `docker-compose.yml` | config | request-response | same file — Traefik API/web priority labels | exact |
 | `docs/API.md` / `docs/CONFIGURATION.md` | config | transform | same files — HTTP/RPC tables + env tables | exact |
-| In-memory failed-auth rate limiter (new helper under `pat/` or `routes/`) | utility | request-response | `crates/octanest-api/src/auth/verify_reset.rs` (`MAX_REDEEM_ATTEMPTS`) | partial |
+| In-memory failed-auth rate limiter (new helper under `pat/` or `routes/`) | utility | request-response | `crates/oxidean-api/src/auth/verify_reset.rs` (`MAX_REDEEM_ATTEMPTS`) | partial |
 | Basic auth parse + WWW-Authenticate responses | utility | request-response | — | none |
 
 ## Pattern Assignments
 
-### `crates/octanest-db/migrations/*/0008_pats.sql` (migration, CRUD)
+### `crates/oxidean-db/migrations/*/0008_pats.sql` (migration, CRUD)
 
-**Analog:** `crates/octanest-db/migrations/postgres/0002_auth.sql` (sessions hash-at-rest) + `0003_email_tokens.sql` (token_hash CHAR(64)) + `0007_repositories.sql` (FK + join-style indexes)
+**Analog:** `crates/oxidean-db/migrations/postgres/0002_auth.sql` (sessions hash-at-rest) + `0003_email_tokens.sql` (token_hash CHAR(64)) + `0007_repositories.sql` (FK + join-style indexes)
 
 **Schema pattern** (sessions `token_hash` UNIQUE CHAR(64) — lines 16–24 of `0002_auth.sql`):
 ```sql
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 - FG join table `personal_access_token_repos (token_id, repository_id)` with `ON DELETE CASCADE`
 - Tri-dialect parity: identical filenames under `postgres/`, `mysql/`, `sqlite/` — enforced by `migrate.rs` `migration_parity`
 
-**Parity test pattern** (`crates/octanest-db/src/migrate.rs` lines 51–60):
+**Parity test pattern** (`crates/oxidean-db/src/migrate.rs` lines 51–60):
 ```rust
 #[test]
 fn migration_parity() {
@@ -75,9 +75,9 @@ fn migration_parity() {
 
 ---
 
-### `crates/octanest-db/src/pats.rs` (model, CRUD)
+### `crates/oxidean-db/src/pats.rs` (model, CRUD)
 
-**Analog:** `crates/octanest-db/src/sessions.rs`
+**Analog:** `crates/oxidean-db/src/sessions.rs`
 
 **Imports / dialect match pattern** (lines 1–6, 69–91):
 ```rust
@@ -108,7 +108,7 @@ pub async fn create(
 - Lookup by `token_hash`; list by `user_id` where `revoked_at IS NULL`
 - Touch `last_used_at` / `last_used_ip` on successful Smart HTTP auth (mirror `touch_session`)
 
-**Facade wiring** (`crates/octanest-db/src/lib.rs` lines 343–360):
+**Facade wiring** (`crates/oxidean-db/src/lib.rs` lines 343–360):
 ```rust
 pub async fn create_session(
     &self,
@@ -125,9 +125,9 @@ Add `pub mod pats;` + thin `Database::create_pat` / `find_pat_by_token_hash` / `
 
 ---
 
-### `crates/octanest-core/src/pat_types.rs` (model, transform)
+### `crates/oxidean-core/src/pat_types.rs` (model, transform)
 
-**Analog:** `crates/octanest-core/src/repo_types.rs`
+**Analog:** `crates/oxidean-core/src/repo_types.rs`
 
 **Enum + serde pattern** (lines 6–29):
 ```rust
@@ -149,15 +149,15 @@ impl RepoVisibility {
 - Classic scopes: `repo` only (Phase 8)
 - FG: `repo_access: Selected | All`, `contents: Read | Write`
 - Request/response DTOs: `CreateClassicPatRequest`, `CreateFineGrainedPatRequest`, `PatListItem` (no secret), `CreatePatResponse { token, item }`
-- Re-export from `crates/octanest-core/src/lib.rs` like `repo_types`
+- Re-export from `crates/oxidean-core/src/lib.rs` like `repo_types`
 
 **Reserved usernames** (D-10 aliases) — extend `auth_types.rs` `RESERVED_USERNAMES` (lines 234–258) to include `git`, `token`, `oauth2` if missing (Open Question A2 from RESEARCH).
 
 ---
 
-### `crates/octanest-api/src/pat/mod.rs` (controller, request-response)
+### `crates/oxidean-api/src/pat/mod.rs` (controller, request-response)
 
-**Analog:** `crates/octanest-api/src/repo/mod.rs` + minting from `auth/session.rs`
+**Analog:** `crates/oxidean-api/src/repo/mod.rs` + minting from `auth/session.rs`
 
 **Auth gate** (`gate.rs` lines 20–42):
 ```rust
@@ -205,9 +205,9 @@ Add `pat.createClassic`, `pat.createFineGrained`, `pat.list`, `pat.revoke` the s
 
 ---
 
-### `crates/octanest-api/src/routes/git_smart_http.rs` (route, streaming)
+### `crates/oxidean-api/src/routes/git_smart_http.rs` (route, streaming)
 
-**Analog:** `crates/octanest-api/src/routes/repo_raw.rs` (non-RPC HTTP + path validation + AppState)
+**Analog:** `crates/oxidean-api/src/routes/repo_raw.rs` (non-RPC HTTP + path validation + AppState)
 
 **Critical divergence from analog:** `repo_raw` resolves **session cookies** and maps ACL failures to JSON `repo.not_found`. Smart HTTP must **ignore cookies** (D-12), use Basic + PAT, and map private unauth → **401 + WWW-Authenticate** (D-21).
 
@@ -247,7 +247,7 @@ pub fn not_found() -> AppError {
 | Case | Status |
 |------|--------|
 | Public anon upload-pack | 200 → CGI |
-| Private / no-access unauth | 401 + `WWW-Authenticate: Basic realm="Octanest Git"` |
+| Private / no-access unauth | 401 + `WWW-Authenticate: Basic realm="Oxidean Git"` |
 | Password / non-PAT secret | 401 + PAT hint (D-11) |
 | Valid PAT, insufficient scope | 403 |
 | receive-pack always | PAT + verified email |
@@ -257,9 +257,9 @@ pub fn not_found() -> AppError {
 
 ---
 
-### `crates/octanest-api/src/git/http_backend.rs` (service, streaming)
+### `crates/oxidean-api/src/git/http_backend.rs` (service, streaming)
 
-**Analog:** `crates/octanest-git/src/cli.rs` — `tokio::process::Command`, never `sh -c`
+**Analog:** `crates/oxidean-git/src/cli.rs` — `tokio::process::Command`, never `sh -c`
 
 **Spawn pattern** (lines 29–37; stdin pipe example 1044–1058):
 ```rust
@@ -283,7 +283,7 @@ let mut child = Command::new("git")
 
 **CGI env (from RESEARCH — no in-tree CGI yet):**
 - Binary: `/usr/lib/git-core/git-http-backend` (or resolve via `git --exec-path`)
-- `GIT_PROJECT_ROOT=<OCTANEST_REPOS_DIR>`
+- `GIT_PROJECT_ROOT=<OXIDEAN_REPOS_DIR>`
 - `PATH_INFO=/{owner}/{repo}.git/...`
 - `GIT_HTTP_EXPORT_ALL=1` (Phase 7 bare repos lack `git-daemon-export-ok`)
 - Forward `Git-Protocol` → `GIT_PROTOCOL`
@@ -292,9 +292,9 @@ let mut child = Command::new("git")
 
 ---
 
-### `crates/octanest-api/tests/pat_rpc.rs` (test, request-response)
+### `crates/oxidean-api/tests/pat_rpc.rs` (test, request-response)
 
-**Analog:** `crates/octanest-api/tests/repo_create.rs` + `auth_verify_gate.rs`
+**Analog:** `crates/oxidean-api/tests/repo_create.rs` + `auth_verify_gate.rs`
 
 **Harness pattern** (`repo_create.rs` lines 15–41, 76–94):
 ```rust
@@ -304,7 +304,7 @@ async fn test_app(db: Database, repos_dir: PathBuf) -> axum::Router {
     router_with_state(state, build_cors("development", None).expect("cors"))
 }
 
-fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> { /* Octanest-RPC-Version: 1 */ }
+fn rpc_req_with_cookie(body: &str, cookie: &str) -> Request<Body> { /* Oxidean-RPC-Version: 1 */ }
 
 // Mark verified so require_verified passes:
 db.set_email_verified_at(&user_id, &now).await.expect("verify");
@@ -318,9 +318,9 @@ db.set_email_verified_at(&user_id, &now).await.expect("verify");
 
 ---
 
-### `crates/octanest-api/tests/git_smart_http.rs` (test, request-response)
+### `crates/oxidean-api/tests/git_smart_http.rs` (test, request-response)
 
-**Analog:** `crates/octanest-api/tests/repo_private_404.rs` (ACL matrix) + `repo_create.rs` (bare repo + `git` subprocess)
+**Analog:** `crates/oxidean-api/tests/repo_private_404.rs` (ACL matrix) + `repo_create.rs` (bare repo + `git` subprocess)
 
 **Copy:** `test_app` + create public/private repos; hit `GET /{owner}/{repo}.git/info/refs?service=git-upload-pack` via `oneshot` **without** cookie; assert 401 headers for private; assert cookie alone does not authenticate; assert Basic with password → PAT hint; assert 403 on read-only FG push; assert 429 after N failures.
 
@@ -336,7 +336,7 @@ Use `std::process::Command::new("git")` for push/ls-remote against a hyper liste
 ```typescript
 export const Route = createFileRoute("/settings/profile")({
   component: ProfilePage,
-  head: () => ({ meta: [{ title: "Profile · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Profile · Oxidean" }] }),
   loader: async (): Promise<ProfileLoaderData> => { /* ... */ },
 });
 
@@ -375,7 +375,7 @@ const httpsUrl = httpsCloneUrl(
   repo,
 );
 ```
-Origin must stay `OCTANEST_PUBLIC_ORIGIN` / store (D-19) — do not switch to `window.location.host`.
+Origin must stay `OXIDEAN_PUBLIC_ORIGIN` / store (D-19) — do not switch to `window.location.host`.
 
 **Extend (D-13):** full how-to panel — username aliases, password=PAT, CTA to `/settings/tokens`, example `git clone` / credential prompt. Keep SSH as placeholder (Phase 9).
 
@@ -404,12 +404,12 @@ Same service port `8080`. Web remains priority `1` Host catch-all — without th
 **Analog:** existing tables in those files.
 
 - `API.md`: document Smart HTTP paths, Basic+PAT (not session), status codes, `pat.*` RPC procedures; explicitly state PATs are **not** RPC Bearer (D-01).
-- `CONFIGURATION.md`: note clone URL uses `OCTANEST_PUBLIC_ORIGIN`; Traefik `.git` routing; no new env required for CGI beyond existing `OCTANEST_REPOS_DIR`.
+- `CONFIGURATION.md`: note clone URL uses `OXIDEAN_PUBLIC_ORIGIN`; Traefik `.git` routing; no new env required for CGI beyond existing `OXIDEAN_REPOS_DIR`.
 
 ## Shared Patterns
 
 ### Opaque secret hash-at-rest (sessions → PATs)
-**Source:** `crates/octanest-api/src/auth/session.rs` lines 76–107, 221–232  
+**Source:** `crates/oxidean-api/src/auth/session.rs` lines 76–107, 221–232  
 **Apply to:** PAT create + Smart HTTP lookup  
 ```rust
 let mut token_bytes = [0u8; TOKEN_BYTES];
@@ -421,7 +421,7 @@ let token_hash = sha256_hex(raw_token.as_bytes());
 Do **not** use Argon2 for PAT verify (latency on every git request). Do **not** call `verify_password` as a success path for git (D-11).
 
 ### `require_verified` for privileged writes
-**Source:** `crates/octanest-api/src/auth/gate.rs` lines 20–42  
+**Source:** `crates/oxidean-api/src/auth/gate.rs` lines 20–42  
 **Apply to:** `pat.createClassic`, `pat.createFineGrained`, HTTPS receive-pack (email_verified_at check)  
 ```rust
 if user.email_verified_at.is_none() {
@@ -432,16 +432,16 @@ if user.email_verified_at.is_none() {
 }
 ```
 
-### Dialect SQL only in `octanest-db`
-**Source:** `crates/octanest-db/src/sessions.rs` / `lib.rs` facade  
+### Dialect SQL only in `oxidean-db`
+**Source:** `crates/oxidean-db/src/sessions.rs` / `lib.rs` facade  
 **Apply to:** all PAT persistence — API calls `Database` methods only.
 
 ### RPC registration + codegen
-**Source:** `crates/octanest-api/src/rpc.rs` match arms; rule `rpc-codegen.mdc`  
-**Apply to:** all `pat.*` procedures → change Rust → `make rpc-gen` → `make rpc-sync-check`. Never hand-edit `@octanest/api-client` as source of truth.
+**Source:** `crates/oxidean-api/src/rpc.rs` match arms; rule `rpc-codegen.mdc`  
+**Apply to:** all `pat.*` procedures → change Rust → `make rpc-gen` → `make rpc-sync-check`. Never hand-edit `@oxidean/api-client` as source of truth.
 
 ### Web vs git ACL response split
-**Source:** `crates/octanest-api/src/repo/acl.rs`  
+**Source:** `crates/oxidean-api/src/repo/acl.rs`  
 **Apply to:** Smart HTTP handlers  
 Share ownership/visibility decision; map to 401/403 for git, keep `repo.not_found` for web/RPC browse.
 
@@ -450,7 +450,7 @@ Share ownership/visibility decision; map to 401/403 for git, keep `repo.not_foun
 **Apply to:** `/settings/tokens`, clone how-to, revoke confirm.
 
 ### Rate-limit spirit (partial)
-**Source:** `crates/octanest-api/src/auth/verify_reset.rs` `MAX_REDEEM_ATTEMPTS = 10`  
+**Source:** `crates/oxidean-api/src/auth/verify_reset.rs` `MAX_REDEEM_ATTEMPTS = 10`  
 **Apply to:** failed Basic/PAT — RESEARCH defaults 20/IP and 10/user per 15m → 429 + Retry-After. Prefer **in-memory** counters for Phase 8 (single API replica); no new crate.
 
 ## No Analog Found
@@ -464,7 +464,7 @@ Planner should use RESEARCH.md Smart HTTP / Traefik / scope catalog sections for
 
 ## Metadata
 
-**Analog search scope:** `crates/octanest-{api,db,core,git}/`, `apps/web/src/{routes,components,lib}/`, `docker-compose.yml`, `docs/API.md`, `docs/CONFIGURATION.md`  
+**Analog search scope:** `crates/oxidean-{api,db,core,git}/`, `apps/web/src/{routes,components,lib}/`, `docker-compose.yml`, `docs/API.md`, `docs/CONFIGURATION.md`  
 **Files scanned:** ~80 tracked candidates; 3–5 strong analogs per role cluster  
 **Tracked-source gate:** all named analogs verified via `git ls-files`  
 **Pattern extraction date:** 2026-09-13

@@ -18,7 +18,7 @@ import {
   Wrench,
   X,
 } from "@octanejs/lucide";
-import type { RepoTemplateOption } from "@octanest/api-client";
+import type { RepoTemplateOption } from "@oxidean/api-client";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

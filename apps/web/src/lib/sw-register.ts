@@ -31,7 +31,7 @@ export function buildSwRegisterScript(buildId: string): string {
     "var refreshing=false;" +
     'navigator.serviceWorker.addEventListener("controllerchange",function(){' +
     "if(refreshing)return;refreshing=true;" +
-    'try{var k="octanest-sw-"+BUILD;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1");}catch(e){}' +
+    'try{var k="oxidean-sw-"+BUILD;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,"1");}catch(e){}' +
     "window.location.reload();" +
     "});" +
     "});" +

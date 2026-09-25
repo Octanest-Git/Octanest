@@ -1,6 +1,6 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { LabelPublic, RepoPublic } from "@octanest/api-client";
+import type { LabelPublic, RepoPublic } from "@oxidean/api-client";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";
 import { AuthErrorBanner } from "@/components/auth-shell";
@@ -17,7 +17,7 @@ export type RepoLabelsLoaderData =
   | { kind: "error"; message: string }
   | { kind: "ready"; repo: RepoPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function labelsQueryKey(owner: string, name: string) {
   return ["label", "listForRepo", owner, name, "admin"] as const;
@@ -46,7 +46,7 @@ export const Route = createFileRoute("/$owner/$repo/issues/labels")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Labels · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Labels · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),

@@ -49,10 +49,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/add-phase.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/insert-phase.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/remove-phase.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/edit-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/add-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/insert-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/remove-phase.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/edit-phase.md
 </execution_context>
 
 <context>

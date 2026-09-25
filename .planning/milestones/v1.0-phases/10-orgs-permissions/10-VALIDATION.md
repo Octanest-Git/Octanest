@@ -21,10 +21,10 @@ updated: "2026-09-14"
 |----------|-------|
 | **Framework** | cargo nextest (Rust) + Vitest (web) |
 | **Config file** | workspace Cargo / `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(org_) | test(collab) | test(repo_private) | test(git_smart) | test(pat_) | test(coalesce)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(org_) | test(collab) | test(repo_private) | test(git_smart) | test(pat_) | test(coalesce)'` |
 | **Full suite command** | `make test` |
 | **Estimated runtime** | ~90–240 seconds targeted |
-| **Phase gate (10-12)** | Quick run + `cargo test -p octanest-db --lib migration_parity` + `make rpc-sync-check` + `bun --cwd apps/web run build` |
+| **Phase gate (10-12)** | Quick run + `cargo test -p oxidean-db --lib migration_parity` + `make rpc-sync-check` + `bun --cwd apps/web run build` |
 
 ---
 
@@ -40,22 +40,22 @@ updated: "2026-09-14"
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| ORG-01 | Create org; add member by username; email invite accept | API integration | `cargo nextest run -p octanest-api -E 'test(org_)'` | ✅ |
+| ORG-01 | Create org; add member by username; email invite accept | API integration | `cargo nextest run -p oxidean-api -E 'test(org_)'` | ✅ |
 | ORG-02 | Owner/Admin admin; Member respects member_base none/read/write | unit + API | `test(coalesce)` + org ACL integration | ✅ |
 | ORG-03 | Collaborator CRUD on personal + org repos; visibility admin-gated | API + Vitest | `test(collab)` + settings collaborators Vitest | ✅ |
 | ORG-04 | Private non-grantee → web `repo.not_found`; git → 401; push denied without write | API | `test(repo_private)` / `test(git_smart)` | ✅ |
 | ORG-04 | PAT collaborator push with classic `repo` scope | API | `test(pat_)` / smart http | ✅ |
-| ORG-01 | Username lookup rate/limit shape | API | `cargo nextest run -p octanest-api -E 'test(user_lookup)'` | ✅ |
+| ORG-01 | Username lookup rate/limit shape | API | `cargo nextest run -p oxidean-api -E 'test(user_lookup)'` | ✅ |
 | ORG-01/03 | `/orgs/new`, owner picker, collaborators UI | Vitest | `orgs.new` / `new.owner-picker` / collaborators integration | ✅ |
-| ORG-* | Factory reset wipes org ACL + repos | DB + API | `cargo test -p octanest-db --test factory_reset_orgs` + `test(factory_reset)` | ✅ |
+| ORG-* | Factory reset wipes org ACL + repos | DB + API | `cargo test -p oxidean-db --test factory_reset_orgs` + `test(factory_reset)` | ✅ |
 
 ---
 
 ## Wave 0 Gaps
 
-- [x] `crates/octanest-api/tests/org_create_members.rs` — ORG-01/02
-- [x] `crates/octanest-api/tests/org_invites.rs` — email invite + closed signup
-- [x] `crates/octanest-api/tests/repo_collaborators_acl.rs` — ORG-03/04 matrix
+- [x] `crates/oxidean-api/tests/org_create_members.rs` — ORG-01/02
+- [x] `crates/oxidean-api/tests/org_invites.rs` — email invite + closed signup
+- [x] `crates/oxidean-api/tests/repo_collaborators_acl.rs` — ORG-03/04 matrix
 - [x] Extend `repo_private_404.rs` + `git_smart_http.rs` for collaborator/org Member cases
 - [x] Extend PAT authorize tests for non-owner collaborator
 - [x] `apps/web` integration tests for `/orgs/new`, owner picker, collaborators panel

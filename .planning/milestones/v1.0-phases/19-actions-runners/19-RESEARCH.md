@@ -11,7 +11,7 @@
 - **D-ACT-01…03:** `.github/workflows` YAML subset; act-compatible runner executes jobs
 - **D-ACT-04…06:** push + pull_request only; receive-pack + PR hooks; instance + repo enable gates
 - **D-ACT-07…11:** Gitea Actions–compatible open protocol; registration tokens; custom labels; no managed minutes; official runner image
-- **D-ACT-12…14:** Actions tab + routes; `OCTANEST_ACTIONS_LOG_DIR`; Compose + standalone docs
+- **D-ACT-12…14:** Actions tab + routes; `OXIDEAN_ACTIONS_LOG_DIR`; Compose + standalone docs
 - **D-ACT-15…16:** Publish check contexts for Phase 13; queryable status API/RPC
 - **D-ACT-17…20:** Repo secrets; ACL + runner-token auth; factory-reset wipe; queue until runner matches
 
@@ -25,9 +25,9 @@
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| ACT-01 | GHA-compatible YAML layout | Parse `.github/workflows/*.{yml,yaml}` from triggering commit tree via `octanest-git` |
+| ACT-01 | GHA-compatible YAML layout | Parse `.github/workflows/*.{yml,yaml}` from triggering commit tree via `oxidean-git` |
 | ACT-02 | push + pull_request triggers | Post–receive-pack hook + Phase 12 PR lifecycle dispatcher |
-| ACT-03 | Run status + logs UI | DB run/job rows + log files under `OCTANEST_ACTIONS_LOG_DIR`; Octane Actions routes |
+| ACT-03 | Run status + logs UI | DB run/job rows + log files under `OXIDEAN_ACTIONS_LOG_DIR`; Octane Actions routes |
 | ACT-04 | Official runner image | Dockerfile wrapping act_runner; register against instance |
 | ACT-05 | Docs Compose sidecar / standalone | DEPLOYMENT/CONFIGURATION + runner README |
 | ACT-06 | Open registration/job-dispatch + custom labels | Gitea actions-proto ConnectRPC-over-HTTP; `runs-on` label match |
@@ -37,9 +37,9 @@
 
 ## Summary
 
-Phase 19 adds an Actions control plane to the existing Axum API: discover/parse GitHub-shaped workflow YAML from git trees, enqueue runs on push and pull_request, expose a **Gitea Actions–compatible** runner protocol so operator and third-party runners can FetchTask/UpdateTask, store logs on a dedicated volume, show runs in repo UI, and publish **commit status contexts** that Phase 13 branch protection will require. Job execution never runs inside `octanest-api` — only on registered runners (ACT-07).
+Phase 19 adds an Actions control plane to the existing Axum API: discover/parse GitHub-shaped workflow YAML from git trees, enqueue runs on push and pull_request, expose a **Gitea Actions–compatible** runner protocol so operator and third-party runners can FetchTask/UpdateTask, store logs on a dedicated volume, show runs in repo UI, and publish **commit status contexts** that Phase 13 branch protection will require. Job execution never runs inside `oxidean-api` — only on registered runners (ACT-07).
 
-**Primary recommendation:** Mirror Gitea’s split (forge = scheduler + protocol + UI; runner = act fork) rather than embedding nektos/act in-process. Implement ConnectRPC-compatible RunnerService handlers under `/api/actions/` using `prost` (+ build-time codegen from pinned actions-proto). Ship `docker/octanest-runner` based on `gitea/act_runner` (or pinned fork) with Octanest docs for labels and `OCTANEST_PUBLIC_ORIGIN`. Publish statuses with context `{workflow_name} / {job_id}` for Phase 13.
+**Primary recommendation:** Mirror Gitea’s split (forge = scheduler + protocol + UI; runner = act fork) rather than embedding nektos/act in-process. Implement ConnectRPC-compatible RunnerService handlers under `/api/actions/` using `prost` (+ build-time codegen from pinned actions-proto). Ship `docker/oxidean-runner` based on `gitea/act_runner` (or pinned fork) with Oxidean docs for labels and `OXIDEAN_PUBLIC_ORIGIN`. Publish statuses with context `{workflow_name} / {job_id}` for Phase 13.
 
 ## Architectural Responsibility Map
 
@@ -59,7 +59,7 @@ Phase 19 adds an Actions control plane to the existing Axum API: discover/parse 
 - One product cloud + self-host; Bun + Cargo — no parallel app. [VERIFIED]
 - Octane `.tsrx` UI; TanStack Query for server data. [VERIFIED]
 - RPC: Rust → `make rpc-gen`. [VERIFIED]
-- Dialect SQL only in `octanest-db`. [VERIFIED]
+- Dialect SQL only in `oxidean-db`. [VERIFIED]
 - No secrets in commits; prefer `make test` / smokes. [VERIFIED]
 - Extend existing patterns over new frameworks. [VERIFIED]
 
@@ -71,8 +71,8 @@ Phase 19 adds an Actions control plane to the existing Axum API: discover/parse 
 | `axum` 0.8 | existing | HTTP mounts for `/api/actions/…` + session RPC | Already API framework |
 | `serde` + **`serde_yaml`** | add pin | Parse workflow YAML | De-facto Rust YAML; GHA files are YAML |
 | **`prost` / `prost-build`** | add pin | Decode/encode actions-proto messages | Matches Gitea proto source of truth |
-| `octanest-git` | workspace | Read workflow blobs from commit trees | Already used for browse |
-| `octanest-db` migrations | next after `0015_packages` | runners, runs, jobs, statuses, secrets | Dialect boundary |
+| `oxidean-git` | workspace | Read workflow blobs from commit trees | Already used for browse |
+| `oxidean-db` migrations | next after `0015_packages` | runners, runs, jobs, statuses, secrets | Dialect boundary |
 | `sha2` / `uuid` / `rand` | existing | Token hashing / IDs | Existing crypto patterns |
 | Official **act_runner**-based image | pin digest | Execute jobs | D-ACT-03 / D-ACT-11 |
 
@@ -86,7 +86,7 @@ Phase 19 adds an Actions control plane to the existing Axum API: discover/parse 
 ### Alternatives Considered
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| Gitea-compatible protocol | Custom Octanest-only runner API | Breaks ACT-06 “Blacksmith-class” / act_runner reuse |
+| Gitea-compatible protocol | Custom Oxidean-only runner API | Breaks ACT-06 “Blacksmith-class” / act_runner reuse |
 | Embed nektos/act in API | External runner | Violates ACT-07; couples API to Docker socket |
 | GitHub Actions runner binary protocol | Gitea protocol | Closed/ephemeral GitHub agent; poor self-host fit |
 | Store logs only in DB | Volume files | Huge rows; volume matches LFS/packages ops story |
@@ -99,7 +99,7 @@ Don't hand-roll: YAML parser, protobuf codecs, container job isolation (runner o
 |---------|----------|------------|------------------------|-------|
 | `serde_yaml` | crates.io | [VERIFIED] | Widely used; maintainership historically thin but standard for GHA YAML | Prefer latest 0.9.x; no substitute in-tree |
 | `prost` | crates.io | [VERIFIED] | Official protobuf for Rust (tokio org) | Pair with `prost-types` |
-| `prost-build` | crates.io | [VERIFIED] | Build dependency only | Codegen in `build.rs` of api or small `octanest-actions-proto` crate **only if** workspace pattern warrants — prefer keep codegen inside `octanest-api` build.rs to avoid new workspace crate unless proto size forces it |
+| `prost-build` | crates.io | [VERIFIED] | Build dependency only | Codegen in `build.rs` of api or small `oxidean-actions-proto` crate **only if** workspace pattern warrants — prefer keep codegen inside `oxidean-api` build.rs to avoid new workspace crate unless proto size forces it |
 | `pbjson` / `pbjson-types` | crates.io | [ASSUMED] | Optional JSON mapping for Connect | Use only if Connect JSON needed; prefer protobuf binary Connect like act_runner |
 | New npm packages | — | N/A | — | UI uses existing Octane stack only |
 
@@ -136,22 +136,22 @@ Read blob(s) from commit SHA associated with event. Skip disabled workflows if `
 
 ## Data Model (sketch)
 
-Tables (dialect SQL in `octanest-db`):
+Tables (dialect SQL in `oxidean-db`):
 - `action_runners` — uuid, name, token_hash, labels JSON, owner_id/repo_id scope, ephemeral, last_online
 - `action_runner_tokens` — registration tokens (instance/org/repo), active flag
 - `action_runs` — repo_id, workflow_path, event, head_sha, status, title, triggered_by
 - `action_jobs` — run_id, job_id, runs_on JSON, status, runner_id, started/finished
 - `commit_statuses` — repo_id, sha, context, state, description, target_url (Actions run link)
-- `action_secrets` — repo_id, name, ciphertext (reuse existing crypto patterns if present; else libsodium/chacha via existing deps — discretion: prefer OS key from env `OCTANEST_ACTIONS_SECRETS_KEY`)
+- `action_secrets` — repo_id, name, ciphertext (reuse existing crypto patterns if present; else libsodium/chacha via existing deps — discretion: prefer OS key from env `OXIDEAN_ACTIONS_SECRETS_KEY`)
 - Repo flag `actions_enabled`
 
-Files: `{OCTANEST_ACTIONS_LOG_DIR}/{run_id}/{job_id}.log`
+Files: `{OXIDEAN_ACTIONS_LOG_DIR}/{run_id}/{job_id}.log`
 
 ## Common Pitfalls
 
 | Pitfall | Why it hurts | Mitigation |
 |---------|--------------|------------|
-| Register runner with `localhost` while jobs need checkout | Job containers cannot reach forge | Docs: use `OCTANEST_PUBLIC_ORIGIN` / published hostname (Gitea design Connection 2) |
+| Register runner with `localhost` while jobs need checkout | Job containers cannot reach forge | Docs: use `OXIDEAN_PUBLIC_ORIGIN` / published hostname (Gitea design Connection 2) |
 | Executing steps inside API | Violates ACT-07; Docker socket in API | Protocol-only control plane |
 | Ignoring Phase 13 context naming | Required checks never match | Lock `{workflow} / {job}` and document |
 | Session cookie on runner API | Runner spoof / CSRF confusion | Token-only protocol auth |
@@ -187,7 +187,7 @@ Files: `{OCTANEST_ACTIONS_LOG_DIR}/{run_id}/{job_id}.log`
 | Property | Value |
 |----------|-------|
 | Framework | cargo-nextest + Vitest |
-| Quick run | `cargo nextest run -p octanest-api -E 'test(actions_)\\|test(runner_)\\|test(commit_status)'` |
+| Quick run | `cargo nextest run -p oxidean-api -E 'test(actions_)\\|test(runner_)\\|test(commit_status)'` |
 | Full | `make test` + `make smoke-actions` (skip-ok without Docker) |
 
 ### Phase Requirements → Test Map
@@ -229,7 +229,7 @@ Files: `{OCTANEST_ACTIONS_LOG_DIR}/{run_id}/{job_id}.log`
 - DeepWiki Gitea runner protocol notes
 
 ### Tertiary (LOW)
-- Blacksmith marketing (confirms “class of provider” is GitHub-oriented today; Octanest exposes open forge protocol for that class to implement)
+- Blacksmith marketing (confirms “class of provider” is GitHub-oriented today; Oxidean exposes open forge protocol for that class to implement)
 
 ---
 

@@ -1,7 +1,7 @@
 # Phase 11: Issues - Research
 
 **Researched:** 2026-09-14
-**Domain:** Repo-scoped issues (CRUD lifecycle, comments, labels, assignees, reactions, markdown autolink, PR link stubs) on Octanest Rust RPC + Octane UI + multi-dialect DB
+**Domain:** Repo-scoped issues (CRUD lifecycle, comments, labels, assignees, reactions, markdown autolink, PR link stubs) on Oxidean Rust RPC + Octane UI + multi-dialect DB
 **Confidence:** HIGH (codebase patterns) / MEDIUM (forge numbering & label-merge discretion)
 
 <user_constraints>
@@ -58,9 +58,9 @@
 
 ## Summary
 
-Phase 11 adds the first collaboration surface on top of Phase 10 ACL: repo-scoped issues with GitHub-shaped numbers, conversation, labels/assignees, reactions, and forward-compatible PR links. Implementation should mirror existing Octanest seams — `resolve_repo_for_read` / `meets(Capability)`, nested RPC dispatch in `rpc.rs`, dialect SQL only in `octanest-db`, Octane `.tsrx` + TanStack Query, and `renderGfm` with **sanitize last**.
+Phase 11 adds the first collaboration surface on top of Phase 10 ACL: repo-scoped issues with GitHub-shaped numbers, conversation, labels/assignees, reactions, and forward-compatible PR links. Implementation should mirror existing Oxidean seams — `resolve_repo_for_read` / `meets(Capability)`, nested RPC dispatch in `rpc.rs`, dialect SQL only in `oxidean-db`, Octane `.tsrx` + TanStack Query, and `renderGfm` with **sanitize last**.
 
-No new backend frameworks are required. The only likely new npm dependency is `remark-github` (for `#N` / `owner/repo#N` autolinks with a custom `buildUrl` into Octanest paths); existing remark/rehype packages already power README rendering. Schema work is a new `0011_issues` migration (after `0010_orgs_acl`) covering issues, counters, comments, revisions, labels, assignees, reactions, and link stubs — wired so factory reset continues to wipe via `DELETE FROM repositories` cascades.
+No new backend frameworks are required. The only likely new npm dependency is `remark-github` (for `#N` / `owner/repo#N` autolinks with a custom `buildUrl` into Oxidean paths); existing remark/rehype packages already power README rendering. Schema work is a new `0011_issues` migration (after `0010_orgs_acl`) covering issues, counters, comments, revisions, labels, assignees, reactions, and link stubs — wired so factory reset continues to wipe via `DELETE FROM repositories` cascades.
 
 **Primary recommendation:** Ship a dedicated `issue` API module (`issue.*` RPCs), Gitea-style `issue_counters` for non-reusing `#N`, org∪repo label effective-set with hide/local-only overrides, GitHub’s full 8-reaction content enum, typed `#N` confirm for hard-delete, and opaque PR stub rows consumed by a Linked PRs panel until Phase 12.
 
@@ -75,7 +75,7 @@ No new backend frameworks are required. The only likely new npm dependency is `r
 | Reactions | API / Backend | Browser / Client | Toggle rows server-side; emoji UI client |
 | Markdown render + `#N` autolink | Browser / Client | CDN / Static | Reuse `renderGfm` pipeline; no server HTML store |
 | Linked PR stubs / manual links | API / Backend | Browser / Client | Link table owns truth; sidebar displays stubs until Phase 12 |
-| Issues list filters / pagination | API / Backend | Database / Storage | Offset queries + dialect text search in `octanest-db` |
+| Issues list filters / pagination | API / Backend | Database / Storage | Offset queries + dialect text search in `oxidean-db` |
 | Repo chrome Issues tab / routes | Browser / Client | Frontend Server (SSR) | Extend `repo-chrome`; SSR cookie-forward like other repo pages |
 | Anti-enumeration private ACL | API / Backend | — | Identical `repo.not_found` / soft issue not-found |
 
@@ -83,7 +83,7 @@ No new backend frameworks are required. The only likely new npm dependency is `r
 
 | Rule | Directive |
 |------|-----------|
-| `octanest-core.mdc` | One product; Bun + Cargo; Octane `.tsrx` not React; `make rpc-gen` for client; dialect SQL only in `octanest-db`; no secrets; prefer existing patterns |
+| `oxidean-core.mdc` | One product; Bun + Cargo; Octane `.tsrx` not React; `make rpc-gen` for client; dialect SQL only in `oxidean-db`; no secrets; prefer existing patterns |
 | `octane-ui.mdc` | `.tsrx` with `@{` / `@if`/`@else` (no `@else if`) / `@for`; `onInput` for text; TanStack Query via session helpers; no `react`→Octane alias |
 | `rpc-codegen.mdc` | Rust types authoritative; regenerate api-client; `make rpc-sync-check` clean; stable error codes |
 | `rust-crates.mdc` | core = types; db = SQL; api = handlers; `Result` not unwrap in prod; preserve auth gates; destructive RPCs need explicit confirmation |
@@ -94,9 +94,9 @@ No new backend frameworks are required. The only likely new npm dependency is `r
 
 | Library / Component | Version | Purpose | Why Standard |
 |---------------------|---------|---------|--------------|
-| Axum RPC + `octanest-api` | in-repo | `issue.*` procedures | Existing dispatch pattern `[VERIFIED: crates/octanest-api/src/rpc.rs:66-355]` |
-| `Capability` ACL | in-repo | Read/Write/Admin gates | Phase 10 ladder `[VERIFIED: crates/octanest-api/src/repo/acl.rs:24-28]` quote: `Read = 1, Write = 2, Admin = 3` |
-| `octanest-db` migrations | `0011_issues` (next) | Schema + dialect SQL | Latest shipped is `0010_orgs_acl` `[VERIFIED: crates/octanest-db/migrations/sqlite/0010_orgs_acl.sql:1-2]` |
+| Axum RPC + `oxidean-api` | in-repo | `issue.*` procedures | Existing dispatch pattern `[VERIFIED: crates/oxidean-api/src/rpc.rs:66-355]` |
+| `Capability` ACL | in-repo | Read/Write/Admin gates | Phase 10 ladder `[VERIFIED: crates/oxidean-api/src/repo/acl.rs:24-28]` quote: `Read = 1, Write = 2, Admin = 3` |
+| `oxidean-db` migrations | `0011_issues` (next) | Schema + dialect SQL | Latest shipped is `0010_orgs_acl` `[VERIFIED: crates/oxidean-db/migrations/sqlite/0010_orgs_acl.sql:1-2]` |
 | Octane `.tsrx` + `@octanejs/tanstack-query` | in-repo | Issues UI | Project UI stack `[VERIFIED: AGENTS.md]` |
 | `renderGfm` (unified + remark-gfm + rehype-sanitize) | remark-gfm **4.0.1**, rehype-sanitize **6.0.0** | Body/comment HTML | Already shipped D-18 pipeline `[VERIFIED: apps/web/src/lib/markdown.ts:12-20]` `[VERIFIED: npm registry via apps/web/package.json]` |
 
@@ -160,7 +160,7 @@ RPC dispatch (rpc.rs) ──► issue::* handlers
   │                         ├─ revisions / reactions / links
   │                         └─ soft not_found for private denials
   ▼
-octanest-db (dialect SQL only)
+oxidean-db (dialect SQL only)
   issues, issue_counters, issue_comments, *_revisions,
   labels (+ org/repo scope), issue_labels, issue_assignees,
   issue_reactions, comment_reactions, issue_links
@@ -171,13 +171,13 @@ octanest-db (dialect SQL only)
 ### Recommended Project Structure
 
 ```
-crates/octanest-db/migrations/{sqlite,postgres,mysql}/0011_issues.sql
-crates/octanest-db/src/issues.rs          # CRUD + list filters + counters
-crates/octanest-db/src/issue_labels.rs
-crates/octanest-core/src/issue_types.rs   # DTOs / enums for rpc-gen
-crates/octanest-api/src/issue/mod.rs      # RPC handlers
-crates/octanest-api/src/issue/acl.rs      # thin helpers wrapping repo::acl
-crates/octanest-api/tests/issue_*.rs
+crates/oxidean-db/migrations/{sqlite,postgres,mysql}/0011_issues.sql
+crates/oxidean-db/src/issues.rs          # CRUD + list filters + counters
+crates/oxidean-db/src/issue_labels.rs
+crates/oxidean-core/src/issue_types.rs   # DTOs / enums for rpc-gen
+crates/oxidean-api/src/issue/mod.rs      # RPC handlers
+crates/oxidean-api/src/issue/acl.rs      # thin helpers wrapping repo::acl
+crates/oxidean-api/tests/issue_*.rs
 apps/web/src/routes/$owner.$repo.issues*.tsrx
 apps/web/src/components/repo/issues-*.tsrx
 apps/web/src/lib/markdown.ts              # extend renderGfm
@@ -189,14 +189,14 @@ apps/web/src/lib/markdown.ts              # extend renderGfm
 **Example:**
 
 ```rust
-// Source: crates/octanest-api/src/repo/acl.rs (Capability + meets + resolve_repo_for_read)
+// Source: crates/oxidean-api/src/repo/acl.rs (Capability + meets + resolve_repo_for_read)
 let accessible = resolve_repo_for_read(ctx, &owner, &name).await?;
 if !meets(accessible.capability, Capability::Write) {
     return Err(not_found()); // or issue.forbidden mapped to soft not_found for private
 }
 ```
 
-Verbatim Capability enum `[VERIFIED: crates/octanest-api/src/repo/acl.rs:24-28]`:
+Verbatim Capability enum `[VERIFIED: crates/oxidean-api/src/repo/acl.rs:24-28]`:
 
 ```rust
 pub enum Capability {
@@ -223,11 +223,11 @@ pub enum Capability {
 ### Pattern 5: Typed confirm for destructive Admin actions
 **What:** Hard-delete requires `confirmNumber` matching issue `#N` (same spirit as `confirmName` on `repo.softDelete`).
 **When to use:** Admin delete issue.
-**Existing pattern** `[VERIFIED: crates/octanest-api/src/repo/mod.rs:712-724]` — softDelete checks `confirm_name` against repo name.
+**Existing pattern** `[VERIFIED: crates/oxidean-api/src/repo/mod.rs:712-724]` — softDelete checks `confirm_name` against repo name.
 
 ### Anti-Patterns to Avoid
-- **Hand-editing `@octanest/api-client`:** always `make rpc-gen`.
-- **Dialect SQL in `octanest-api`:** list/search/LIKE belongs in `octanest-db`.
+- **Hand-editing `@oxidean/api-client`:** always `make rpc-gen`.
+- **Dialect SQL in `oxidean-api`:** list/search/LIKE belongs in `oxidean-db`.
 - **Storing rendered HTML:** XSS and sanitize drift; store markdown only.
 - **Global `user.lookup` as sole assignee source:** violates D-ISS-08; validate Read+ server-side.
 - **Enforcing `fixes #N` on push/merge:** deferred to Phase 12 (D-ISS-15).
@@ -362,7 +362,7 @@ Migration filename: **`0011_issues`** (after `0010_orgs_acl`) `[VERIFIED: migrat
 
 ### RepoPublic capability flags for UI gates
 
-`[VERIFIED: crates/octanest-core/src/repo_types.rs:92-97]`:
+`[VERIFIED: crates/oxidean-core/src/repo_types.rs:92-97]`:
 
 ```rust
 /// Caller has Admin capability (D-ORG-05 / settings UI).
@@ -379,7 +379,7 @@ pub can_write: bool,
 |--------------|------------------|--------------|--------|
 | Owner-only private ACL stub | `Capability` coalesce ladder | Phase 10 | Issues must call shared ACL, not owner_id equality |
 | README-only `renderGfm` | Same pipeline + remark-github for issue bodies | Phase 11 | Autolink without second sanitizer |
-| Gitea MAX/index races | Dedicated `issue_index` counter table | Gitea ~2021 (#15599) | Adopt counter table for Octanest |
+| Gitea MAX/index races | Dedicated `issue_index` counter table | Gitea ~2021 (#15599) | Adopt counter table for Oxidean |
 | No Issues tab | Chrome Code/Commits/Branches/Tags/(Settings) | Phase 7 | Add Issues; keep PRs omitted until Phase 12 |
 
 **Deprecated/outdated:**
@@ -453,22 +453,22 @@ Step 2.6: external tools beyond repo stack are not new; dialect DBs follow exist
 |----------|-------|
 | Framework | cargo nextest (Rust) + Vitest 5 (apps/web) |
 | Config file | `apps/web/vitest.config.ts`; Cargo nextest via Makefile |
-| Quick run command | `cargo nextest run -p octanest-api -E 'test(issue_)' ; cd apps/web && bun run test:unit` |
+| Quick run command | `cargo nextest run -p oxidean-api -E 'test(issue_)' ; cd apps/web && bun run test:unit` |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| ISS-01 | create/edit/close/reopen + ACL | API integration | `cargo nextest run -p octanest-api -E 'test(issue_lifecycle)'` | ❌ Wave 0 |
-| ISS-01 | per-repo `#N` monotonic / no reuse | dialect + API | `cargo nextest run -p octanest-db -E 'test(dialect_issues)'` | ❌ Wave 0 |
-| ISS-01 | Admin hard-delete + confirm | API | `cargo nextest run -p octanest-api -E 'test(issue_delete)'` | ❌ Wave 0 |
-| ISS-02 | comment CRUD + moderation delete | API | `cargo nextest run -p octanest-api -E 'test(issue_comments)'` | ❌ Wave 0 |
+| ISS-01 | create/edit/close/reopen + ACL | API integration | `cargo nextest run -p oxidean-api -E 'test(issue_lifecycle)'` | ❌ Wave 0 |
+| ISS-01 | per-repo `#N` monotonic / no reuse | dialect + API | `cargo nextest run -p oxidean-db -E 'test(dialect_issues)'` | ❌ Wave 0 |
+| ISS-01 | Admin hard-delete + confirm | API | `cargo nextest run -p oxidean-api -E 'test(issue_delete)'` | ❌ Wave 0 |
+| ISS-02 | comment CRUD + moderation delete | API | `cargo nextest run -p oxidean-api -E 'test(issue_comments)'` | ❌ Wave 0 |
 | ISS-02 | Write\|Preview uses renderGfm sanitize | unit | `cd apps/web && bunx vitest run src/lib/markdown.test.ts` | ✅ extend |
-| ISS-03 | labels assign Write+ / defs Admin | API | `cargo nextest run -p octanest-api -E 'test(issue_labels)'` | ❌ Wave 0 |
-| ISS-03 | assignees Read+ eligibility | API | `cargo nextest run -p octanest-api -E 'test(issue_assignees)'` | ❌ Wave 0 |
+| ISS-03 | labels assign Write+ / defs Admin | API | `cargo nextest run -p oxidean-api -E 'test(issue_labels)'` | ❌ Wave 0 |
+| ISS-03 | assignees Read+ eligibility | API | `cargo nextest run -p oxidean-api -E 'test(issue_assignees)'` | ❌ Wave 0 |
 | ISS-04 | markdown `#N` autolink | unit | `bunx vitest run src/lib/markdown.issues.test.ts` | ❌ Wave 0 |
-| ISS-04 | link stubs CRUD | API | `cargo nextest run -p octanest-api -E 'test(issue_links)'` | ❌ Wave 0 |
+| ISS-04 | link stubs CRUD | API | `cargo nextest run -p oxidean-api -E 'test(issue_links)'` | ❌ Wave 0 |
 | ISS-01..04 | private ACL soft not-found | API | extend `repo_private_404` style | ❌ Wave 0 |
 | UI | Issues tab + list/detail routes | web integration | `bunx vitest run --project integration issues` | ❌ Wave 0 |
 
@@ -478,8 +478,8 @@ Step 2.6: external tools beyond repo stack are not new; dialect DBs follow exist
 - **Phase gate:** Full suite green + `make rpc-sync-check` before `/gsd-verify-work`
 
 ### Wave 0 Gaps
-- [ ] `crates/octanest-api/tests/issue_lifecycle.rs` (and comments/labels/assignees/links/reactions) — RED stubs
-- [ ] `crates/octanest-db/tests/dialect_issues.rs` — migrate `0011_issues` presence on 3 dialects
+- [ ] `crates/oxidean-api/tests/issue_lifecycle.rs` (and comments/labels/assignees/links/reactions) — RED stubs
+- [ ] `crates/oxidean-db/tests/dialect_issues.rs` — migrate `0011_issues` presence on 3 dialects
 - [ ] `apps/web` integration stubs for `/$owner/$repo/issues` routes + chrome Issues tab
 - [ ] `apps/web/src/lib/markdown.issues.test.ts` — `#N` / `owner/repo#N` + sanitize regression
 - [ ] Extend factory reset coverage for issue tables cascade

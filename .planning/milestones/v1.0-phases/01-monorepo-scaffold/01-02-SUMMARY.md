@@ -4,10 +4,10 @@
 **Status:** done
 
 ## What shipped
-- `octanest-core` RPC types (`AppError`, health/echo, protocol version)
-- `octanest-db` Postgres pool via sqlx + `ping()` (`skipped` without `DATABASE_URL`)
+- `oxidean-core` RPC types (`AppError`, health/echo, protocol version)
+- `oxidean-db` Postgres pool via sqlx + `ping()` (`skipped` without `DATABASE_URL`)
 - Axum API: `/healthz`, `POST /api/rpc`, `GET /api/rpc/ws`
-- `Octanest-RPC-Version: 1` gate; CORS (dev mirror / prod allowlist required)
+- `Oxidean-RPC-Version: 1` gate; CORS (dev mirror / prod allowlist required)
 - Procedures `system.health`, `system.echo` (8KiB cap)
 - `rpc-gen` binary emits `packages/api-client` + TanStack Query helpers / D-21 aliases
 - Tests: HTTP (4) + WS (1) + cors unit; vitest client header check

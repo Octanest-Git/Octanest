@@ -1,10 +1,10 @@
-import type { RepoMergeSettings } from "@octanest/api-client";
+import type { RepoMergeSettings } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { apiClient } from "@/lib/api-client";
 import { toastSuccess } from "@/lib/toast";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function mergeSettingsQueryKey(owner: string, name: string) {
   return ["mergeSettings", owner, name] as const;

@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { AuthErrorBanner, AuthShell } from "@/components/auth-shell";
 import { AuthFormSkeleton } from "@/components/page-skeletons";
@@ -12,11 +12,11 @@ import { apiClient } from "@/lib/api-client";
 export const Route = createFileRoute("/invites/$token")({
   component: InviteAcceptPage,
   head: () => ({
-    meta: [{ title: "Accept invitation · Octanest" }, { name: "referrer", content: "no-referrer" }],
+    meta: [{ title: "Accept invitation · Oxidean" }, { name: "referrer", content: "no-referrer" }],
   }),
 });
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const INVALID_INVITE =
   "This invitation is invalid or has expired. Ask an organization admin to send a new invite.";
 const EMAIL_MISMATCH =

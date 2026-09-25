@@ -19,71 +19,71 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - octanest
+      - oxidean
 
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-octanest}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-octanest}
-      POSTGRES_DB: ${POSTGRES_DB:-octanest}
+      POSTGRES_USER: ${POSTGRES_USER:-oxidean}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oxidean}
+      POSTGRES_DB: ${POSTGRES_DB:-oxidean}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-octanest} -d ${POSTGRES_DB:-octanest}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oxidean} -d ${POSTGRES_DB:-oxidean}"]
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - octanest
+      - oxidean
 
   api:
     # Stable tag for CI same-run image reuse (docker save/load); local up --build retags too.
-    image: octanest-api:ci
+    image: oxidean-api:ci
     build:
       context: .
-      dockerfile: crates/octanest-api/Dockerfile
+      dockerfile: crates/oxidean-api/Dockerfile
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgres://octanest:octanest@postgres:5432/octanest}
-      OCTANEST_ENV: ${OCTANEST_ENV:-compose}
-      OCTANEST_CORS_ORIGINS: ${OCTANEST_CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      DATABASE_URL: ${DATABASE_URL:-postgres://oxidean:oxidean@postgres:5432/oxidean}
+      OXIDEAN_ENV: ${OXIDEAN_ENV:-compose}
+      OXIDEAN_CORS_ORIGINS: ${OXIDEAN_CORS_ORIGINS:-http://localhost,http://127.0.0.1}
       # Browser-facing origin for magic links + SSO (Traefik :80). Prefer
-      # OCTANEST_COMPOSE_PUBLIC_ORIGIN so a host `make dev` value of
-      # OCTANEST_PUBLIC_ORIGIN=http://localhost:3000 in `.env` does not leak in.
-      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      # OXIDEAN_COMPOSE_PUBLIC_ORIGIN so a host `make dev` value of
+      # OXIDEAN_PUBLIC_ORIGIN=http://localhost:3000 in `.env` does not leak in.
+      OXIDEAN_PUBLIC_ORIGIN: ${OXIDEAN_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
       API_BIND: 0.0.0.0:8080
-      OCTANEST_RPC_VERSION: ${OCTANEST_RPC_VERSION:-1}
+      OXIDEAN_RPC_VERSION: ${OXIDEAN_RPC_VERSION:-1}
       RUST_LOG: ${RUST_LOG:-info}
       # Absolute path required: API CWD is `/`; relative var/repos breaks seed push from /tmp worktrees.
-      OCTANEST_REPOS_DIR: /var/repos
-      # Branch-protection update-hook helper (ORG-06 / D-PKG-01) — shipped beside octanest-api.
-      OCTANEST_PROTECTION_HELPER: /usr/local/bin/octanest-protection-hook
+      OXIDEAN_REPOS_DIR: /var/repos
+      # Branch-protection update-hook helper (ORG-06 / D-PKG-01) — shipped beside oxidean-api.
+      OXIDEAN_PROTECTION_HELPER: /usr/local/bin/oxidean-protection-hook
       # Git LFS object store (D-LFS-01 / GIT-13) — absolute like REPOS_DIR.
-      OCTANEST_LFS_DIR: /var/lfs
-      OCTANEST_RELEASE_ASSETS_DIR: /var/release-assets
+      OXIDEAN_LFS_DIR: /var/lfs
+      OXIDEAN_RELEASE_ASSETS_DIR: /var/release-assets
       # Package registry blob store (D-PKG-07) — distinct from repos / LFS / release-assets.
-      OCTANEST_PACKAGES_DIR: /var/packages
-      OCTANEST_PACKAGES_MAX_BLOB_BYTES: ${OCTANEST_PACKAGES_MAX_BLOB_BYTES:-2147483648}
-      OCTANEST_PACKAGES_OWNER_QUOTA_BYTES: ${OCTANEST_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
+      OXIDEAN_PACKAGES_DIR: /var/packages
+      OXIDEAN_PACKAGES_MAX_BLOB_BYTES: ${OXIDEAN_PACKAGES_MAX_BLOB_BYTES:-2147483648}
+      OXIDEAN_PACKAGES_OWNER_QUOTA_BYTES: ${OXIDEAN_PACKAGES_OWNER_QUOTA_BYTES:-10737418240}
       # Instance template pack zips (issue #18) — content-addressed; distinct from packages.
-      OCTANEST_TEMPLATE_PACKS_DIR: /var/template-packs
+      OXIDEAN_TEMPLATE_PACKS_DIR: /var/template-packs
       # Actions job logs (D-ACT-13) — distinct from repos / LFS / packages / release-assets.
-      OCTANEST_ACTIONS_LOG_DIR: /var/actions-logs
-      OCTANEST_ACTIONS_ENABLED: ${OCTANEST_ACTIONS_ENABLED:-true}
+      OXIDEAN_ACTIONS_LOG_DIR: /var/actions-logs
+      OXIDEAN_ACTIONS_ENABLED: ${OXIDEAN_ACTIONS_ENABLED:-true}
       # Local-only default so repo Actions secrets work out of the box (D-ACT-17).
-      # Production must set a unique OCTANEST_ACTIONS_SECRETS_KEY — never reuse this value.
-      OCTANEST_ACTIONS_SECRETS_KEY: ${OCTANEST_ACTIONS_SECRETS_KEY:-compose-dev-actions-secrets-key-not-for-production}
+      # Production must set a unique OXIDEAN_ACTIONS_SECRETS_KEY — never reuse this value.
+      OXIDEAN_ACTIONS_SECRETS_KEY: ${OXIDEAN_ACTIONS_SECRETS_KEY:-compose-dev-actions-secrets-key-not-for-production}
       # Reusable runner registration token for the compose actions profile.
       # The value below is a LOCAL-ONLY default — production must set a unique
       # token or leave unset (runners then register via per-runner DB tokens).
-      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
+      OXIDEAN_RUNNER_REGISTRATION_TOKEN: ${OXIDEAN_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
       # Git-over-SSH (GIT-03 / D-SSH-07): in-process russh; raw TCP — not Traefik.
-      OCTANEST_SSH_ENABLED: ${OCTANEST_SSH_ENABLED:-true}
-      OCTANEST_SSH_PORT: ${OCTANEST_SSH_PORT:-2222}
+      OXIDEAN_SSH_ENABLED: ${OXIDEAN_SSH_ENABLED:-true}
+      OXIDEAN_SSH_PORT: ${OXIDEAN_SSH_PORT:-2222}
       # Advertised hostname for CloneBox / smoke (scp-style git@host:owner/repo.git).
-      # Fallback: hostname of OCTANEST_PUBLIC_ORIGIN (Compose default localhost).
-      OCTANEST_SSH_HOST: ${OCTANEST_SSH_HOST:-localhost}
-      OCTANEST_SSH_HOST_KEY_DIR: ${OCTANEST_SSH_HOST_KEY_DIR:-/var/ssh}
+      # Fallback: hostname of OXIDEAN_PUBLIC_ORIGIN (Compose default localhost).
+      OXIDEAN_SSH_HOST: ${OXIDEAN_SSH_HOST:-localhost}
+      OXIDEAN_SSH_HOST_KEY_DIR: ${OXIDEAN_SSH_HOST_KEY_DIR:-/var/ssh}
     ports:
       # Host TCP publish for SSH (D-SSH-07) — do not add Traefik TCP/HTTP routers for SSH.
       - "2222:2222"
@@ -115,7 +115,7 @@ services:
       start_period: 10s
     labels:
       - traefik.enable=true
-      - traefik.docker.network=octanest_octanest
+      - traefik.docker.network=oxidean_oxidean
       # Smart HTTP (D-18 / D-22): /{owner}/{repo}.git → API before SPA catch-all (priority 110 > api 100 > web 1).
       - traefik.http.routers.api-git.rule=Host(`localhost`) && PathRegexp(`^/[^/]+/[^/]+\.git`)
       - traefik.http.routers.api-git.entrypoints=web
@@ -131,30 +131,30 @@ services:
       - traefik.http.routers.api.priority=100
       - traefik.http.services.api.loadbalancer.server.port=8080
     networks:
-      - octanest
+      - oxidean
 
-  # Official Actions runner sidecar — native octanest-runner binary.
+  # Official Actions runner sidecar — native oxidean-runner binary.
   # Opt-in: docker compose --profile actions up -d runner
-  # Registration: the api accepts the same OCTANEST_RUNNER_REGISTRATION_TOKEN
+  # Registration: the api accepts the same OXIDEAN_RUNNER_REGISTRATION_TOKEN
   # (dev default below is local-only — production must set a unique value or
   # disable the env-token path; mint per-runner DB tokens instead).
   runner:
     profiles: ["actions"]
     build:
       context: .
-      dockerfile: docker/octanest-runner/Dockerfile
+      dockerfile: docker/oxidean-runner/Dockerfile
     environment:
       # Runner-side API origin — the compose-internal api address also serves
       # smart HTTP clone URLs for actions/checkout.
-      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_RUNNER_ORIGIN:-http://api:8080}
-      OCTANEST_RUNNER_REGISTRATION_TOKEN: ${OCTANEST_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
-      OCTANEST_RUNNER_NAME: ${OCTANEST_RUNNER_NAME:-compose-runner}
+      OXIDEAN_PUBLIC_ORIGIN: ${OXIDEAN_RUNNER_ORIGIN:-http://api:8080}
+      OXIDEAN_RUNNER_REGISTRATION_TOKEN: ${OXIDEAN_RUNNER_REGISTRATION_TOKEN:-compose-dev-runner-registration-token}
+      OXIDEAN_RUNNER_NAME: ${OXIDEAN_RUNNER_NAME:-compose-runner}
       # Host execution by default (no Docker daemon required). Add
       # `name:docker://image` labels to run steps inside containers — needs
       # the docker.sock mount below.
-      OCTANEST_RUNNER_LABELS: ${OCTANEST_RUNNER_LABELS:-ubuntu-latest,self-hosted}
+      OXIDEAN_RUNNER_LABELS: ${OXIDEAN_RUNNER_LABELS:-ubuntu-latest,self-hosted}
       # Optional PAT for cloning private repositories.
-      OCTANEST_RUNNER_GIT_TOKEN: ${OCTANEST_RUNNER_GIT_TOKEN:-}
+      OXIDEAN_RUNNER_GIT_TOKEN: ${OXIDEAN_RUNNER_GIT_TOKEN:-}
     volumes:
       - runner_data:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -162,32 +162,32 @@ services:
       api:
         condition: service_healthy
     networks:
-      - octanest
+      - oxidean
 
   web:
-    image: octanest-web:ci
+    image: oxidean-web:ci
     build:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
       PORT: "3000"
       # SSR Cookie-forward RPCs (bootstrap / session gate) — not 127.0.0.1 inside the container.
-      OCTANEST_API_ORIGIN: http://api:8080
+      OXIDEAN_API_ORIGIN: http://api:8080
       # Browser-facing origin for SSR clone URLs (Traefik Host(localhost)).
-      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      OXIDEAN_PUBLIC_ORIGIN: ${OXIDEAN_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
       # Same shape as api /health — dedicated probe, not SSR `/` (avoids "Started" forever).
-      # Requires Octanest-Health-Probe (public /health without header → 404).
+      # Requires Oxidean-Health-Probe (public /health without header → 404).
       test:
         [
           "CMD",
           "curl",
           "-fsS",
           "-H",
-          "Octanest-Health-Probe: 1",
+          "Oxidean-Health-Probe: 1",
           "http://127.0.0.1:3000/health",
         ]
       interval: 5s
@@ -196,17 +196,17 @@ services:
       start_period: 10s
     labels:
       - traefik.enable=true
-      - traefik.docker.network=octanest_octanest
+      - traefik.docker.network=oxidean_oxidean
       - traefik.http.routers.web.rule=Host(`localhost`)
       - traefik.http.routers.web.entrypoints=web
       - traefik.http.routers.web.priority=1
       - traefik.http.services.web.loadbalancer.server.port=3000
     networks:
-      - octanest
+      - oxidean
 
 networks:
-  octanest:
-    name: octanest_octanest
+  oxidean:
+    name: oxidean_oxidean
 
 volumes:
   postgres_data:

@@ -18,51 +18,51 @@
 services:
   mailpit:
     networks:
-      - octanest-dev-auth
-      - octanest
+      - oxidean-dev-auth
+      - oxidean
 
   stubs:
     networks:
-      - octanest-dev-auth
-      - octanest
+      - oxidean-dev-auth
+      - oxidean
 
   oidc-mock:
     networks:
-      - octanest-dev-auth
-      - octanest
+      - oxidean-dev-auth
+      - oxidean
 
   api:
     extra_hosts:
       # OIDC discovery from API container to published host port (:9090).
       # Docker Desktop resolves `host-gateway` magic; the `docker`→podman alias
-      # needs the octanest_dev_auth bridge gateway IP (auto-detected by
-      # scripts/dev-auth/host-gateway-ip.sh and injected as OCTANEST_HOST_GATEWAY_IP).
-      - "host.docker.internal:${OCTANEST_HOST_GATEWAY_IP:-host-gateway}"
+      # needs the oxidean_dev_auth bridge gateway IP (auto-detected by
+      # scripts/dev-auth/host-gateway-ip.sh and injected as OXIDEAN_HOST_GATEWAY_IP).
+      - "host.docker.internal:${OXIDEAN_HOST_GATEWAY_IP:-host-gateway}"
     environment:
       # Traefik serves the app on :80 → http://localhost (not vite :3000).
-      # Use OCTANEST_COMPOSE_PUBLIC_ORIGIN so host `.env` OCTANEST_PUBLIC_ORIGIN
+      # Use OXIDEAN_COMPOSE_PUBLIC_ORIGIN so host `.env` OXIDEAN_PUBLIC_ORIGIN
       # for `make dev` does not rewrite magic-link hosts.
-      OCTANEST_PUBLIC_ORIGIN: ${OCTANEST_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
-      OCTANEST_MAIL_FROM: ${OCTANEST_MAIL_FROM:-Octanest <noreply@localhost>}
-      # Prefer Compose-specific override so a host-oriented OCTANEST_SMTP_URL=127.0.0.1
+      OXIDEAN_PUBLIC_ORIGIN: ${OXIDEAN_COMPOSE_PUBLIC_ORIGIN:-http://localhost}
+      OXIDEAN_MAIL_FROM: ${OXIDEAN_MAIL_FROM:-Oxidean <noreply@localhost>}
+      # Prefer Compose-specific override so a host-oriented OXIDEAN_SMTP_URL=127.0.0.1
       # in `.env` (for `make dev`) does not break the API container.
-      OCTANEST_SMTP_URL: ${OCTANEST_COMPOSE_SMTP_URL:-smtp://mailpit:1025}
-      # Optional Resend stub (set OCTANEST_RESEND_API_KEY=re_dev_local in .env to prefer Resend):
-      OCTANEST_RESEND_API_KEY: ${OCTANEST_RESEND_API_KEY:-}
-      OCTANEST_RESEND_BASE_URL: ${OCTANEST_COMPOSE_RESEND_BASE_URL:-http://stubs:9092}
+      OXIDEAN_SMTP_URL: ${OXIDEAN_COMPOSE_SMTP_URL:-smtp://mailpit:1025}
+      # Optional Resend stub (set OXIDEAN_RESEND_API_KEY=re_dev_local in .env to prefer Resend):
+      OXIDEAN_RESEND_API_KEY: ${OXIDEAN_RESEND_API_KEY:-}
+      OXIDEAN_RESEND_BASE_URL: ${OXIDEAN_COMPOSE_RESEND_BASE_URL:-http://stubs:9092}
       # Optional WorkOS stub — API hits stubs; browser authorize uses published port:
       WORKOS_API_KEY: ${WORKOS_API_KEY:-}
       WORKOS_CLIENT_ID: ${WORKOS_CLIENT_ID:-}
-      OCTANEST_WORKOS_BASE_URL: ${OCTANEST_COMPOSE_WORKOS_BASE_URL:-http://stubs:9092}
-      OCTANEST_WORKOS_AUTHORIZE_BASE_URL: ${OCTANEST_WORKOS_AUTHORIZE_BASE_URL:-http://127.0.0.1:9092}
+      OXIDEAN_WORKOS_BASE_URL: ${OXIDEAN_COMPOSE_WORKOS_BASE_URL:-http://stubs:9092}
+      OXIDEAN_WORKOS_AUTHORIZE_BASE_URL: ${OXIDEAN_WORKOS_AUTHORIZE_BASE_URL:-http://127.0.0.1:9092}
       # Optional OIDC mock — issuer via host gateway so API can reach published :9090.
-      OCTANEST_OIDC_ALLOW_INSECURE: ${OCTANEST_OIDC_ALLOW_INSECURE:-1}
-      OCTANEST_OIDC_ISSUER: ${OCTANEST_COMPOSE_OIDC_ISSUER:-http://${OCTANEST_HOST_GATEWAY_IP:-host.docker.internal}:9090/default}
-      OCTANEST_OIDC_CLIENT_ID: ${OCTANEST_OIDC_CLIENT_ID:-octanest-dev}
-      OCTANEST_OIDC_CLIENT_SECRET: ${OCTANEST_OIDC_CLIENT_SECRET:-octanest-dev}
+      OXIDEAN_OIDC_ALLOW_INSECURE: ${OXIDEAN_OIDC_ALLOW_INSECURE:-1}
+      OXIDEAN_OIDC_ISSUER: ${OXIDEAN_COMPOSE_OIDC_ISSUER:-http://${OXIDEAN_HOST_GATEWAY_IP:-host.docker.internal}:9090/default}
+      OXIDEAN_OIDC_CLIENT_ID: ${OXIDEAN_OIDC_CLIENT_ID:-oxidean-dev}
+      OXIDEAN_OIDC_CLIENT_SECRET: ${OXIDEAN_OIDC_CLIENT_SECRET:-oxidean-dev}
 
 networks:
-  octanest:
-    name: octanest_octanest
-  octanest-dev-auth:
-    name: octanest_dev_auth
+  oxidean:
+    name: oxidean_oxidean
+  oxidean-dev-auth:
+    name: oxidean_dev_auth

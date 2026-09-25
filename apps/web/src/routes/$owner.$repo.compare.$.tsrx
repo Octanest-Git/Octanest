@@ -1,5 +1,5 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
-import type { RepoCompareResponse, RepoPublic, RepoRefEntry } from "@octanest/api-client";
+import type { RepoCompareResponse, RepoPublic, RepoRefEntry } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { GitCompareArrows } from "@octanejs/lucide";
 import { DiffPatch } from "@/components/repo/diff-patch";
@@ -32,7 +32,7 @@ export type CompareLoaderData =
 
 type Phase = { kind: "loading" } | CompareLoaderData;
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 function parseCompareSplat(splat: string | undefined): {
   base: string;
@@ -112,7 +112,7 @@ export const Route = createFileRoute("/$owner/$repo/compare/$")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `Compare · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Octanest`,
+        title: `Compare · ${(params as { owner: string }).owner}/${(params as { repo: string }).repo} · Oxidean`,
       },
     ],
   }),
@@ -210,7 +210,7 @@ export function RepoComparePage() @{
           <Input
             className="max-w-[14rem] truncate font-mono"
             value={baseDraft as string}
-            list="octanest-compare-refs"
+            list="oxidean-compare-refs"
             onInput={(e) => {
               setBaseDraft((e.currentTarget as HTMLInputElement).value);
             }}
@@ -222,13 +222,13 @@ export function RepoComparePage() @{
           <Input
             className="max-w-[14rem] truncate font-mono"
             value={headDraft as string}
-            list="octanest-compare-refs"
+            list="oxidean-compare-refs"
             onInput={(e) => {
               setHeadDraft((e.currentTarget as HTMLInputElement).value);
             }}
           />
         </label>
-        <datalist id="octanest-compare-refs">
+        <datalist id="oxidean-compare-refs">
           @for (const r of phase.refs; key r.name) {
             <option value={shortRefName(r.name) as string} />;
           }

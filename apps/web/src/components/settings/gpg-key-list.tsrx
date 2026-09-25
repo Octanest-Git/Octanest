@@ -1,5 +1,5 @@
-import type { GpgKeyListItem } from "@octanest/api-client";
-import { gpgKeyListQueryOptions } from "@octanest/api-client";
+import type { GpgKeyListItem } from "@oxidean/api-client";
+import { gpgKeyListQueryOptions } from "@oxidean/api-client";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { KeyRound } from "@octanejs/lucide";

@@ -1,6 +1,6 @@
 # Code practices
 
-Conventions for Octanest humans and agents. Complements [CONTRIBUTING.md](../CONTRIBUTING.md) and [AGENTS.md](../AGENTS.md).
+Conventions for Oxidean humans and agents. Complements [CONTRIBUTING.md](../CONTRIBUTING.md) and [AGENTS.md](../AGENTS.md).
 
 ## Monorepo boundaries
 
@@ -8,9 +8,9 @@ Conventions for Octanest humans and agents. Complements [CONTRIBUTING.md](../CON
 |------|------|----------|
 | `apps/web` | Octane UI, routes, Vite, Vitest projects | Dialect SQL; hand-written RPC DTOs as source of truth |
 | `packages/api-client` | Generated TS client | Manual “fixes” without regenerating from Rust |
-| `crates/octanest-api` | HTTP/RPC, auth, email, handlers | DB dialect `if` trees |
-| `crates/octanest-core` | Shared domain types / pure logic | I/O, SQL, Axum |
-| `crates/octanest-db` | Migrations + `Database` API (all dialects) | Product UI concerns |
+| `crates/oxidean-api` | HTTP/RPC, auth, email, handlers | DB dialect `if` trees |
+| `crates/oxidean-core` | Shared domain types / pure logic | I/O, SQL, Axum |
+| `crates/oxidean-db` | Migrations + `Database` API (all dialects) | Product UI concerns |
 
 Prefer the smallest change that fits an existing pattern. New dependencies need a clear gap (prefer `@octanejs/*` on the web; prefer crates already in the Cargo workspace on the API).
 
@@ -50,7 +50,7 @@ Full skill: [`.agents/skills/octane/SKILL.md`](../.agents/skills/octane/SKILL.md
 - Procedure names and shared types in Rust are authoritative.
 - Client regeneration is part of the change: `make rpc-gen` + commit.
 - Stable error codes matter for UI (`auth.email_unverified`, etc.) — don’t rename casually.
-- Cookies / CORS / Secure flags follow `OCTANEST_ENV` — see [CONFIGURATION.md](CONFIGURATION.md).
+- Cookies / CORS / Secure flags follow `OXIDEAN_ENV` — see [CONFIGURATION.md](CONFIGURATION.md).
 
 ## Testing expectations
 

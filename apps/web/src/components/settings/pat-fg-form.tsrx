@@ -1,6 +1,6 @@
 import { useEffect, useState } from "octane";
 import { useForm } from "@octanejs/tanstack-form";
-import type { RepoPublic } from "@octanest/api-client";
+import type { RepoPublic } from "@oxidean/api-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 type PatFgFormProps = {
   onCreated: (token: string) => void;

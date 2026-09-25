@@ -11,8 +11,8 @@
           "match": "authorization_code|.*",
           "claims": {
             "sub": "oidc-dev-user",
-            "aud": ["octanest-dev"],
-            "email": "oidc@octanest.local",
+            "aud": ["oxidean-dev"],
+            "email": "oidc@oxidean.local",
             "email_verified": true,
             "preferred_username": "oidcdev",
             "name": "OIDC Dev"

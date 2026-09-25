@@ -17,8 +17,8 @@ covered_files:
   - .planning/phases/16-in-repo-search/16-VALIDATION.md
   - apps/web/src/routes/$owner.$repo.search.integration.test.ts
   - apps/web/src/routes/$owner.$repo.search.tsrx
-  - crates/octanest-api/tests/repo_search.rs
-  - crates/octanest-git/src/cli.rs
+  - crates/oxidean-api/tests/repo_search.rs
+  - crates/oxidean-git/src/cli.rs
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
 covered_digest: "v1:sha256:2dc7bf0bc7b5fe99253342491356acbbed5b7a92c28e59ac4a3f97e2bf3c1f75"
@@ -53,7 +53,7 @@ Merged from ROADMAP success criteria + GIT-18.
 | `repo.search` RPC + client | Four types + ACL/limits | ✓ VERIFIED | api-client `repo.search`; `repo_search.rs` cluster |
 | GitBackend grep / log_search | Code + commit backends | ✓ VERIFIED | `16-01` / `16-02` SUMMARYs |
 | `/search` Octane UI | Type tabs + chrome entry | ✓ VERIFIED | `$owner.$repo.search.tsrx` + Vitest; RepoSearchEntry |
-| ENV timeout/caps | Documented gates | ✓ VERIFIED | `OCTANEST_SEARCH_*` in `16-03` + CONFIGURATION |
+| ENV timeout/caps | Documented gates | ✓ VERIFIED | `OXIDEAN_SEARCH_*` in `16-03` + CONFIGURATION |
 | VALIDATION gate | Nyquist complete | ✓ VERIFIED | `16-VALIDATION.md` status complete / gate green |
 
 ### Key Link Verification

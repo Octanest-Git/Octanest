@@ -22,7 +22,7 @@ SMOKE_NAME="ci-smoke-protocol"
 smoke_require_docker
 
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 
 cleanup() {
   docker compose -f "$COMPOSE_FILE" down --remove-orphans >/dev/null 2>&1 || true
@@ -32,8 +32,8 @@ trap cleanup EXIT
 echo "==> docker compose config"
 docker compose -f "$COMPOSE_FILE" config >/dev/null
 
-if [[ "${OCTANEST_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
-  echo "==> docker compose up -d --wait (OCTANEST_COMPOSE_SKIP_BUILD=1; using preloaded images)"
+if [[ "${OXIDEAN_COMPOSE_SKIP_BUILD:-}" == "1" ]]; then
+  echo "==> docker compose up -d --wait (OXIDEAN_COMPOSE_SKIP_BUILD=1; using preloaded images)"
   docker compose -f "$COMPOSE_FILE" up -d --wait
 else
   echo "==> docker compose up --build -d --wait"

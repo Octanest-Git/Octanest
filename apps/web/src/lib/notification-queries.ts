@@ -3,7 +3,7 @@ import type {
   NotificationListResponse,
   NotificationPublic,
   NotificationUnreadCountResponse,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { apiClient } from "@/lib/api-client";
 
 export const notificationUnreadCountQueryKey = ["notification", "unreadCount"] as const;

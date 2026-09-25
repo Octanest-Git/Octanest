@@ -20,11 +20,11 @@ tech-stack:
   patterns: ["denormalized star_count + membership table", "fork_network_id = id on create"]
 key-files:
   created:
-    - crates/octanest-db/migrations/sqlite/0017_social.sql
-    - crates/octanest-db/src/stars.rs
+    - crates/oxidean-db/migrations/sqlite/0017_social.sql
+    - crates/oxidean-db/src/stars.rs
   modified:
-    - crates/octanest-api/src/repo/mod.rs
-    - crates/octanest-core/src/repo_types.rs
+    - crates/oxidean-api/src/repo/mod.rs
+    - crates/oxidean-core/src/repo_types.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "Migration 0017_social (0016 taken by pull_requests)"
@@ -36,7 +36,7 @@ coverage:
     requirement: SOC-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_stars)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_stars)'"
         status: pass
     human_judgment: false
 duration: 25min

@@ -1,8 +1,8 @@
 import { createFileRoute, useLoaderData } from "@octanejs/tanstack-router";
 import { useForm } from "@octanejs/tanstack-form";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
-import type { PackagesAdminUsageResponse, UserPublic } from "@octanest/api-client";
-import { packagesAdminUsageQueryOptions } from "@octanest/api-client";
+import type { PackagesAdminUsageResponse, UserPublic } from "@oxidean/api-client";
+import { packagesAdminUsageQueryOptions } from "@oxidean/api-client";
 import { useEffect, useState } from "octane";
 import { ByteQuotaField } from "@/components/admin/byte-quota-field";
 import { AdminSettingsLayout, SettingsShell } from "@/components/settings/settings-shell";
@@ -33,12 +33,12 @@ type AdminGateLoader =
   | { kind: "error"; message: string }
   | { kind: "ready"; me: UserPublic };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 const FORBIDDEN = "You need admin access to manage package storage.";
 
 export const Route = createFileRoute("/admin/packages")({
   component: AdminPackagesPage,
-  head: () => ({ meta: [{ title: "Package storage · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Package storage · Oxidean" }] }),
   loader: async (): Promise<AdminGateLoader> => {
     try {
       const meRes = await fetchSessionMe();

@@ -1,7 +1,7 @@
 import { createFileRoute, useLoaderData, useParams } from "@octanejs/tanstack-router";
 import { useMutation, useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useState } from "octane";
-import type { ActionRunsListResponse, ActionWorkflowPublic } from "@octanest/api-client";
+import type { ActionRunsListResponse, ActionWorkflowPublic } from "@oxidean/api-client";
 import { CheckCircle2, Circle, Loader2, Play, Workflow, XCircle } from "@octanejs/lucide";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ function RunStatusIcon({ status }: { status: string }) {
   return <Circle aria-hidden size={18} className="shrink-0 text-muted-foreground" />;
 }
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 export type ActionsIndexLoaderData =
   | { kind: "not_found" }
@@ -100,7 +100,7 @@ export const Route = createFileRoute("/$owner/$repo/actions/")({
     return {
       meta: [
         {
-          title: `${String(p.owner ?? "")}/${String(p.repo ?? "")} actions · Octanest`,
+          title: `${String(p.owner ?? "")}/${String(p.repo ?? "")} actions · Oxidean`,
         },
       ],
     };

@@ -1,4 +1,4 @@
-import type { RepoLfsObjectEntry } from "@octanest/api-client";
+import type { RepoLfsObjectEntry } from "@oxidean/api-client";
 import { useQuery } from "@octanejs/tanstack-query";
 import { useState } from "octane";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export function LfsBrowser(props: { owner: string; name: string }) @{
       URL.revokeObjectURL(url);
       setDlOid(null);
     } catch {
-      setDlError("Can't reach Octanest. Check your connection and try again.");
+      setDlError("Can't reach Oxidean. Check your connection and try again.");
       setDlOid(null);
     }
   }

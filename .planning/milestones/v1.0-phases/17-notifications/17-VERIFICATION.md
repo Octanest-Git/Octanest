@@ -19,8 +19,8 @@ covered_files:
   - .planning/phases/17-notifications/17-VALIDATION.md
   - apps/web/src/components/chrome.notifications.integration.test.ts
   - apps/web/src/routes/notifications.integration.test.ts
-  - crates/octanest-api/tests/notification_rpc.rs
-  - crates/octanest-db/tests/dialect_notifications.rs
+  - crates/oxidean-api/tests/notification_rpc.rs
+  - crates/oxidean-db/tests/dialect_notifications.rs
 covered_digest: "v1:sha256:bb372fbfe9546d13b6e8dbcf0d610a075486b15ad2fb6d08aadaa07b7863bdf7"
 behavior_unverified: 0
 overrides_applied: 0

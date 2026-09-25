@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const PRESETS = join(ROOT, "crates/octanest-api/assets/stack-presets");
+const PRESETS = join(ROOT, "crates/oxidean-api/assets/stack-presets");
 const CATALOG_PATH = join(PRESETS, "catalog.json");
 
 const args = process.argv.slice(2);
@@ -42,7 +42,7 @@ for (const pack of catalog.packs) {
   console.log(
     `${pack.id}\tsource=${pack.source}\tref=${pack.source_ref}\tfiles=${countFiles(dir)}`,
   );
-  if (stampOnly || pack.source === "manual" || pack.source === "octanest") {
+  if (stampOnly || pack.source === "manual" || pack.source === "oxidean") {
     if (pack.last_synced !== today) {
       pack.last_synced = today;
       changed = true;

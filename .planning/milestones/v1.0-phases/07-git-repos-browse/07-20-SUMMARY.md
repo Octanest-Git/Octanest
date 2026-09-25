@@ -27,9 +27,9 @@ key-files:
     - .planning/phases/07-git-repos-browse/.tdd/07-20-red-evidence.json
     - .planning/phases/07-git-repos-browse/.tdd/07-20-t2-red-evidence.json
   modified:
-    - crates/octanest-git/src/cli.rs
-    - crates/octanest-api/src/routes/repo_raw.rs
-    - crates/octanest-api/tests/repo_archive.rs
+    - crates/oxidean-git/src/cli.rs
+    - crates/oxidean-api/src/routes/repo_raw.rs
+    - crates/oxidean-api/tests/repo_archive.rs
 key-decisions:
   - "RED asserts HTTP-boundary message 'invalid ref' so intentional fail remains after 07-19 CLI validate_treeish already blocked --output file writes"
   - "validate_ref mirrors archive metachar + leading- hyphen policy while allowing /"
@@ -42,7 +42,7 @@ coverage:
     requirement: GIT-07
     verification:
       - kind: integration
-        ref: "crates/octanest-api/tests/repo_archive.rs#repo_archive_rejects_option_like_treeish_no_output_file"
+        ref: "crates/oxidean-api/tests/repo_archive.rs#repo_archive_rejects_option_like_treeish_no_output_file"
         status: pass
     human_judgment: false
   - id: D2
@@ -50,10 +50,10 @@ coverage:
     requirement: GIT-07
     verification:
       - kind: unit
-        ref: "crates/octanest-git/src/cli.rs#archive argv -- before treeish"
+        ref: "crates/oxidean-git/src/cli.rs#archive argv -- before treeish"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact"
+        ref: "cargo test -p oxidean-api --test repo_archive repo_archive_rejects_option_like_treeish_no_output_file -- --exact"
         status: pass
     human_judgment: false
   - id: D3
@@ -61,10 +61,10 @@ coverage:
     requirement: GIT-05
     verification:
       - kind: unit
-        ref: "crates/octanest-api/src/routes/repo_raw.rs#validate_ref_tests"
+        ref: "crates/oxidean-api/src/routes/repo_raw.rs#validate_ref_tests"
         status: pass
       - kind: integration
-        ref: "cargo test -p octanest-api --test repo_archive"
+        ref: "cargo test -p oxidean-api --test repo_archive"
         status: pass
     human_judgment: false
 duration: 2min
@@ -110,9 +110,9 @@ _Note: No REFACTOR commit — GREEN changes were already minimal._
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/repo_archive.rs` — CR-01 `--output` injection regression
-- `crates/octanest-git/src/cli.rs` — archive argv end-of-options before treeish
-- `crates/octanest-api/src/routes/repo_raw.rs` — `validate_archive_treeish` / `validate_ref` hardening + unit tests
+- `crates/oxidean-api/tests/repo_archive.rs` — CR-01 `--output` injection regression
+- `crates/oxidean-git/src/cli.rs` — archive argv end-of-options before treeish
+- `crates/oxidean-api/src/routes/repo_raw.rs` — `validate_archive_treeish` / `validate_ref` hardening + unit tests
 - `.planning/phases/07-git-repos-browse/.tdd/07-20-red-evidence.json` — Task 1 RED evidence
 - `.planning/phases/07-git-repos-browse/.tdd/07-20-t2-red-evidence.json` — Task 2 RED evidence
 
@@ -129,7 +129,7 @@ _Note: No REFACTOR commit — GREEN changes were already minimal._
 - **Found during:** Task 1 (RED)
 - **Issue:** After 07-19, CLI `validate_treeish` already returned 4xx/`repo.invalid_ref` and blocked file creation — bare CR-01 assertions would unexpected-GREEN
 - **Fix:** Assert error message is HTTP `"invalid ref"` (not CLI `"invalid treeish: ..."`)
-- **Files modified:** `crates/octanest-api/tests/repo_archive.rs`
+- **Files modified:** `crates/oxidean-api/tests/repo_archive.rs`
 - **Verification:** Intentional RED then GREEN after `validate_archive_treeish` change
 - **Committed in:** `53c2802` / `f57d9e1`
 

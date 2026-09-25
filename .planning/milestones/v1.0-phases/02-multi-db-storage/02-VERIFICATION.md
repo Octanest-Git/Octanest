@@ -21,11 +21,11 @@ covered_files:
   - .planning/phases/02-multi-db-storage/02-UAT.md
   - .planning/phases/02-multi-db-storage/02-VALIDATION.md
   - Makefile
-  - crates/octanest-api/tests/rpc_db_probe.rs
-  - crates/octanest-db/src/dialect.rs
-  - crates/octanest-db/src/lib.rs
-  - crates/octanest-db/src/pool.rs
-  - crates/octanest-db/tests/dialect_probe.rs
+  - crates/oxidean-api/tests/rpc_db_probe.rs
+  - crates/oxidean-db/src/dialect.rs
+  - crates/oxidean-db/src/lib.rs
+  - crates/oxidean-db/src/pool.rs
+  - crates/oxidean-db/tests/dialect_probe.rs
   - docker-compose.mysql.yml
   - docker-compose.sqlite.yml
   - docker-compose.yml
@@ -50,7 +50,7 @@ overrides_applied: 0
 
 | # | Truth | Status | Evidence |
 | --- | ------- | ---------- | -------------- |
-| 1 | Dialect config: URL scheme + optional agreeing `OCTANEST_DB_DIALECT` (PLAT-07) | ✓ VERIFIED | `dialect.rs` resolve + mismatch fail-closed; `02-01-SUMMARY`; `resolve_dialect` lib tests green in VALIDATION audit |
+| 1 | Dialect config: URL scheme + optional agreeing `OXIDEAN_DB_DIALECT` (PLAT-07) | ✓ VERIFIED | `dialect.rs` resolve + mismatch fail-closed; `02-01-SUMMARY`; `resolve_dialect` lib tests green in VALIDATION audit |
 | 2 | Migrations + probe parity across three dialects (PLAT-08) | ✓ VERIFIED | `migrations/{postgres,mysql,sqlite}/`; `migration_parity` test; `dialect_probe` integration; `rpc_db_probe` API tests |
 | 3 | Empty / single / null dialect outcomes documented (PLAT-08 empty) | ✓ VERIFIED | Migrate CLI `--assert-empty`; `db-switch-dialect.sh` refuses non-empty target; bad dialect env aborts API startup (`02-03` VALIDATION row) |
 | 4 | Adjacency: dialect matrix legs stay separate (PLAT-08 adjacency) | ✓ VERIFIED | CI `db-matrix` strategy matrix `postgres` / `mysql` / `sqlite` as distinct legs; Make `smoke` / `smoke-mysql` / `smoke-sqlite` are separate targets — not merged into one composite job |
@@ -62,7 +62,7 @@ overrides_applied: 0
 
 | Artifact | Expected | Status | Details |
 | -------- | ----------- | ------ | ------- |
-| `octanest-db` dialect + pool | Multi-dialect connect | ✓ VERIFIED | `dialect.rs`, `pool.rs`, `Database::*` |
+| `oxidean-db` dialect + pool | Multi-dialect connect | ✓ VERIFIED | `dialect.rs`, `pool.rs`, `Database::*` |
 | Per-dialect migrations | Parity sets | ✓ VERIFIED | Three migration trees; parity test |
 | Dialect probe + RPC probe | Health/probe flows | ✓ VERIFIED | `dialect_probe.rs`, `rpc_db_probe.rs` |
 | Compose overlays | sqlite/mysql profiles | ✓ VERIFIED | Overlay yml + CI compose config steps |
@@ -73,7 +73,7 @@ overrides_applied: 0
 
 | From | To | Via | Status | Details |
 | ---- | -- | --- | ------ | ------- |
-| `OCTANEST_DB_DIALECT` / URL | `resolve_dialect` | fail-closed mismatch | ✓ WIRED | Unit tests in VALIDATION map |
+| `OXIDEAN_DB_DIALECT` / URL | `resolve_dialect` | fail-closed mismatch | ✓ WIRED | Unit tests in VALIDATION map |
 | Migrations | three dialects | `migration_parity` | ✓ WIRED | Lib test |
 | API startup | DB connect | dialect env gate | ✓ WIRED | `02-03` abort-on-mismatch |
 | CI | `dialect_probe` | `db-matrix` legs | ✓ WIRED | Separate postgres/mysql/sqlite services |

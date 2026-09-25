@@ -1,7 +1,7 @@
 <!-- generated-by: gsd-doc-writer -->
 # Getting started
 
-Get Octanest running locally: install prerequisites, clone the monorepo, then bring up the stack with Docker Compose (`make up`) or run the API and web app on the host (`make dev`).
+Get Oxidean running locally: install prerequisites, clone the monorepo, then bring up the stack with Docker Compose (`make up`) or run the API and web app on the host (`make dev`).
 
 ## Prerequisites
 
@@ -22,8 +22,8 @@ Optional but useful:
 1. Clone the repository and enter the project root:
 
 ```bash
-git clone git@github.com:Octanest-Git/Octanest.git
-cd Octanest
+git clone git@github.com:oxidean/oxidean.git
+cd Oxidean
 ```
 
 2. Install JavaScript workspace dependencies and confirm the Cargo workspace resolves:
@@ -40,7 +40,7 @@ cargo metadata -q
 cp .env.example .env
 ```
 
-Default `.env` targets the Compose Postgres service (`postgres://…@postgres:5432/…`). For host-only `make dev` against a DB on localhost, adjust `DATABASE_URL`, `OCTANEST_ENV=development`, and CORS as commented in `.env.example`.
+Default `.env` targets the Compose Postgres service (`postgres://…@postgres:5432/…`). For host-only `make dev` against a DB on localhost, adjust `DATABASE_URL`, `OXIDEAN_ENV=development`, and CORS as commented in `.env.example`.
 
 ## First run
 
@@ -71,9 +71,9 @@ Prints the two-terminal commands after regenerating the TypeScript RPC client:
 ```bash
 make rpc-gen
 # terminal 1
-OCTANEST_ENV=development API_BIND=127.0.0.1:8080 cargo run -p octanest-api --bin octanest-api
+OXIDEAN_ENV=development API_BIND=127.0.0.1:8080 cargo run -p oxidean-api --bin oxidean-api
 # terminal 2
-bun run --filter @octanest/web dev
+bun run --filter @oxidean/web dev
 ```
 
 Or run `make dev` to regenerate the client and echo the same commands. Vite serves the web app on `:3000` and proxies `/api`, `/uploads`, and `/health` to the API on `:8080`.
@@ -85,8 +85,8 @@ List all Make targets with `make help`.
 | Issue | What you see | Fix |
 |-------|----------------|-----|
 | **Docker / Compose missing** | `docker: command not found` or Compose errors from `make up` | Install Docker Engine and Compose v2 so `docker compose` works. Host-only path: use Option B (`make rpc-gen` + two terminals) with a reachable `DATABASE_URL`. |
-| **Port already in use** | Bind failures on **80** (Traefik), **2222** (Git SSH), **3000** (Vite/web), or **8080** (API) | Stop the conflicting process, or change binds (`API_BIND`, Vite port) for host dev. Compose exposes Traefik as `80:80` and SSH as `2222:2222` (`OCTANEST_SSH_ENABLED=false` to disable SSH). |
-| **DB dialect mismatch** | Boot exit when `OCTANEST_DB_DIALECT` disagrees with `DATABASE_URL`, or smoke expects another dialect | Keep scheme and dialect aligned (`postgres://` → postgres, `mysql://` → mysql, `sqlite:` → sqlite). Default stack is Postgres; use `make up-mysql` / `make up-sqlite` (and matching smoke targets) instead of mixing overlays. See [CONFIGURATION.md](CONFIGURATION.md) and [database.md](database.md). |
+| **Port already in use** | Bind failures on **80** (Traefik), **2222** (Git SSH), **3000** (Vite/web), or **8080** (API) | Stop the conflicting process, or change binds (`API_BIND`, Vite port) for host dev. Compose exposes Traefik as `80:80` and SSH as `2222:2222` (`OXIDEAN_SSH_ENABLED=false` to disable SSH). |
+| **DB dialect mismatch** | Boot exit when `OXIDEAN_DB_DIALECT` disagrees with `DATABASE_URL`, or smoke expects another dialect | Keep scheme and dialect aligned (`postgres://` → postgres, `mysql://` → mysql, `sqlite:` → sqlite). Default stack is Postgres; use `make up-mysql` / `make up-sqlite` (and matching smoke targets) instead of mixing overlays. See [CONFIGURATION.md](CONFIGURATION.md) and [database.md](database.md). |
 | **Missing `.env`** | Compose/API using unexpected defaults or empty secrets | `cp .env.example .env` and edit before `make up`. Never commit `.env`. |
 
 ## Next steps

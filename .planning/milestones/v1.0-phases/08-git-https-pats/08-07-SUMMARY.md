@@ -38,7 +38,7 @@ key-files:
 
 key-decisions:
   - "Separate api-git router with service=api rather than widening the PathPrefix rule (keeps /api|/uploads|/health at prio 100)"
-  - "Token examples use octanest_pat_ / octanest_fg_ (D-18 lock / critical deviation — not ona_*)"
+  - "Token examples use oxidean_pat_ / oxidean_fg_ (D-18 lock / critical deviation — not ona_*)"
   - "Smoke skips exit 0 when Docker absent; fails on HTML/SPA; ls-remote needs public SMOKE_GIT_OWNER/REPO"
 
 patterns-established:
@@ -85,8 +85,8 @@ status: complete
 
 ## Accomplishments
 - API service label `api-git`: `Host(localhost) && PathRegexp(^/[^/]+/[^/]+\.git)` at priority 110 → service `api` (D-18 / D-22)
-- Existing API router priority 100 and web catch-all priority 1 unchanged; `OCTANEST_PUBLIC_ORIGIN` semantics untouched (D-19)
-- `scripts/smoke-git-https.sh` + `make smoke-git-https`: health wait, fail on text/html, `git ls-remote`, optional `SMOKE_PAT` push (`octanest_pat_…`)
+- Existing API router priority 100 and web catch-all priority 1 unchanged; `OXIDEAN_PUBLIC_ORIGIN` semantics untouched (D-19)
+- `scripts/smoke-git-https.sh` + `make smoke-git-https`: health wait, fail on text/html, `git ls-remote`, optional `SMOKE_PAT` push (`oxidean_pat_…`)
 
 ## Task Commits
 

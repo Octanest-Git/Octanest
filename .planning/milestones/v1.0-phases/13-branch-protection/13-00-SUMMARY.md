@@ -19,11 +19,11 @@ tech-stack:
   patterns: ["Wave 0 #[ignore] nextest stubs before implementation"]
 key-files:
   created:
-    - crates/octanest-api/tests/branch_protection_rpc.rs
-    - crates/octanest-api/tests/branch_protect_push.rs
-    - crates/octanest-api/tests/branch_protect_merge.rs
-    - crates/octanest-api/tests/commit_status_rpc.rs
-    - crates/octanest-db/tests/dialect_branch_protection.rs
+    - crates/oxidean-api/tests/branch_protection_rpc.rs
+    - crates/oxidean-api/tests/branch_protect_push.rs
+    - crates/oxidean-api/tests/branch_protect_merge.rs
+    - crates/oxidean-api/tests/commit_status_rpc.rs
+    - crates/oxidean-db/tests/dialect_branch_protection.rs
   modified: []
 key-decisions:
   - "Wave 0 stubs use #[ignore] with TODO plan anchors rather than assert!(false) alone"
@@ -34,7 +34,7 @@ coverage:
     requirement: ORG-05
     verification:
       - kind: other
-        ref: "crates/octanest-api/tests/branch_protection_rpc.rs"
+        ref: "crates/oxidean-api/tests/branch_protection_rpc.rs"
         status: pass
     human_judgment: false
 duration: 8min

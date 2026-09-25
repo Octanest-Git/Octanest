@@ -9,7 +9,7 @@ requires:
     provides: 0010 schema + organizations/org_members helpers + org_types (10-02)
 provides:
   - "org.create RPC (require_verified, shared slug namespace, creator Owner)"
-  - "Generated @octanest/api-client org.create"
+  - "Generated @oxidean/api-client org.create"
   - "/orgs/new Octane create form navigating to /{slug}"
 affects:
   - 10-05 members RPCs
@@ -31,13 +31,13 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/src/org/mod.rs
+    - crates/oxidean-api/src/org/mod.rs
     - apps/web/src/routes/orgs.new.tsrx
   modified:
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
-    - crates/octanest-api/tests/org_create_members.rs
+    - crates/oxidean-api/tests/org_create_members.rs
     - apps/web/src/routes/orgs.new.integration.test.ts
     - apps/web/src/routeTree.gen.ts
 
@@ -59,7 +59,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_create)'#org_create_reserves_shared_slug_namespace"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_create)'#org_create_reserves_shared_slug_namespace"
         status: pass
     human_judgment: false
   - id: D2
@@ -67,7 +67,7 @@ coverage:
     requirement: ORG-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(org_create)'#org_create_creator_is_owner"
+        ref: "cargo nextest run -p oxidean-api -E 'test(org_create)'#org_create_creator_is_owner"
         status: pass
     human_judgment: false
   - id: D3
@@ -116,10 +116,10 @@ status: complete
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/org/mod.rs` — `org.create` handler
-- `crates/octanest-api/src/lib.rs` / `rpc.rs` — module + dispatch
-- `crates/octanest-api/src/bin/rpc_gen.rs` + `packages/api-client/src/index.ts` — generated client
-- `crates/octanest-api/tests/org_create_members.rs` — greened `org_create_*` tests (members stubs remain RED)
+- `crates/oxidean-api/src/org/mod.rs` — `org.create` handler
+- `crates/oxidean-api/src/lib.rs` / `rpc.rs` — module + dispatch
+- `crates/oxidean-api/src/bin/rpc_gen.rs` + `packages/api-client/src/index.ts` — generated client
+- `crates/oxidean-api/tests/org_create_members.rs` — greened `org_create_*` tests (members stubs remain RED)
 - `apps/web/src/routes/orgs.new.tsrx` — create UI
 - `apps/web/src/routes/orgs.new.integration.test.ts` — greened UI tests
 - `apps/web/src/routeTree.gen.ts` — `/orgs/new` route registration
@@ -136,7 +136,7 @@ None - plan executed exactly as written.
 
 ## Issues Encountered
 
-- Relative Write/StrReplace initially landed under the main checkout; reverted main and re-applied under `octanest-wt-10` (worktree absolute paths)
+- Relative Write/StrReplace initially landed under the main checkout; reverted main and re-applied under `oxidean-wt-10` (worktree absolute paths)
 
 ## User Setup Required
 
@@ -150,7 +150,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/src/org/mod.rs`
+- FOUND: `crates/oxidean-api/src/org/mod.rs`
 - FOUND: `apps/web/src/routes/orgs.new.tsrx`
 - FOUND: commit `5d7a6d3`
 

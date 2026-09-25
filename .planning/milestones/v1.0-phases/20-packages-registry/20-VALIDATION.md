@@ -22,7 +22,7 @@ validated_at: "2026-09-19"
 |----------|-------|
 | **Framework** | Rust: cargo-nextest / `cargo test`; Web: Vitest via Bun |
 | **Config file** | `.config/nextest.toml`; `apps/web/vitest.config.ts` |
-| **Quick run command** | `cargo nextest run -p octanest-api -E 'test(oci_registry)|test(npm_registry)|test(generic_registry)|test(package_acl)|test(package_rpc)|test(package_quota)|test(package_gc)'` |
+| **Quick run command** | `cargo nextest run -p oxidean-api -E 'test(oci_registry)|test(npm_registry)|test(generic_registry)|test(package_acl)|test(package_rpc)|test(package_quota)|test(package_gc)'` |
 | **Full suite command** | `make test` (+ `make rpc-sync-check`; `make smoke-packages` skip-ok without Docker) |
 | **Estimated runtime** | ~90–240 seconds (quick); full suite longer with e2e/smoke |
 
@@ -62,12 +62,12 @@ validated_at: "2026-09-19"
 
 ## Wave 0 Requirements
 
-- [x] `crates/octanest-api/tests/oci_registry.rs` — PKG-01 (20-00 → greened 20-05)
-- [x] `crates/octanest-api/tests/npm_registry.rs` — PKG-02 (20-00 → greened 20-06/07)
-- [x] `crates/octanest-api/tests/generic_registry.rs` — PKG-03 (20-00 → greened 20-04)
-- [x] `crates/octanest-api/tests/package_acl.rs` — PKG-04 (20-00 → greened 20-03)
-- [x] `crates/octanest-api/tests/package_rpc.rs` — PKG-05 (20-00 → greened 20-08/09)
-- [x] `crates/octanest-db/tests/dialect_packages.rs` — packages migration parity (20-00 → greened 20-02)
+- [x] `crates/oxidean-api/tests/oci_registry.rs` — PKG-01 (20-00 → greened 20-05)
+- [x] `crates/oxidean-api/tests/npm_registry.rs` — PKG-02 (20-00 → greened 20-06/07)
+- [x] `crates/oxidean-api/tests/generic_registry.rs` — PKG-03 (20-00 → greened 20-04)
+- [x] `crates/oxidean-api/tests/package_acl.rs` — PKG-04 (20-00 → greened 20-03)
+- [x] `crates/oxidean-api/tests/package_rpc.rs` — PKG-05 (20-00 → greened 20-08/09)
+- [x] `crates/oxidean-db/tests/dialect_packages.rs` — packages migration parity (20-00 → greened 20-02)
 - [x] `apps/web/src/routes/$owner.packages.integration.test.ts` — owner packages UI (20-01 → greened 20-10)
 - [x] `apps/web/src/routes/$owner.$repo.packages.integration.test.ts` — repo-linked packages (20-01 → greened 20-10)
 - [x] `apps/web/src/routes/admin/packages.integration.test.ts` — Admin quota (20-01 → greened 20-11)
@@ -111,8 +111,8 @@ validated_at: "2026-09-19"
 
 | Gate | Result |
 |------|--------|
-| `cargo nextest run -p octanest-api -E 'test(oci_registry)\|test(npm_registry)\|test(generic_registry)\|test(package_acl)\|test(package_rpc)\|test(package_quota)\|test(package_gc)'` | ✅ 40 passed (run id 32308722) |
-| `cargo test -p octanest-db --test dialect_packages` | ✅ ok |
+| `cargo nextest run -p oxidean-api -E 'test(oci_registry)\|test(npm_registry)\|test(generic_registry)\|test(package_acl)\|test(package_rpc)\|test(package_quota)\|test(package_gc)'` | ✅ 40 passed (run id 32308722) |
+| `cargo test -p oxidean-db --test dialect_packages` | ✅ ok |
 | Key files (oci/npm/generic/acl/rpc/quota/gc, dialect_packages, smoke-packages) | ✅ present |
 
 **Verdict:** `status: validated`, `nyquist_compliant: true`. All 14 task-map rows green. Residual: live `docker`/`npm` client paths and type-to-confirm UX (manual); OCI referrers deferred per `20-VERIFICATION.md` caveats (non-blocking for Nyquist sampling of shipped PKG-01..05).

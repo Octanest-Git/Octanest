@@ -62,7 +62,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 | Toaster | `@/components/ui/toaster` | Optional success after forced-change — prefer silent redirect |
 | AuthShell / AuthErrorBanner | `@/components/auth-shell` | **Reuse** for `/setup` + forced-change |
 | AuthFormSkeleton | `@/components/page-skeletons` | Loading while `bootstrap_status` resolves |
-| OctanestMark | `@/components/octanest-mark` | Via AuthShell (48×48) |
+| OxideanMark | `@/components/oxidean-mark` | Via AuthShell (48×48) |
 | SiteHeader / SiteFooter | `@/components/chrome` | **Gate Sign up** when `allow_signup === false` |
 | SignedInHome | `@/components/signed-in-home` | SSR target for signed-in `/` |
 
@@ -96,7 +96,7 @@ Non-exhaustive known-good list (not a closed allowlist) — executor may use any
 |------|----------|
 | Chrome | Global `SiteHeader` + `SiteFooter` — while `needs_setup`, header **omits** Sign in / Sign up account CTAs (instance not ready); mark + theme OK |
 | Page column | Centered; **max-w-md** (`28rem`); page padding **3xl** vertical / **md** horizontal |
-| Brand | `OctanestMark` **48×48** above title — no duplicate wordmark in panel |
+| Brand | `OxideanMark` **48×48** above title — no duplicate wordmark in panel |
 | Title | Heading (24 / 600 / 1.2 Sora) |
 | Support | One Body muted sentence under title |
 | Surface | Flat on `--background`; optional single `bg-card` panel only if needed for contrast |
@@ -119,7 +119,7 @@ Reuse `AuthShell` + `AuthErrorBanner`; do not fork a second shell.
 | Primary CTA | **Create system admin** (full-width on narrow, ≥44px) |
 | Success | Issue session → redirect **`/`** (SSR SignedInHome) — no toast required |
 | Unavailable | If `auth.setup_unavailable`: banner copy → then redirect `/` or Sign in |
-| Document title | `Set up Octanest` → prefer pattern **`Set up · Octanest`** (Phase 3 `Page · Octanest`) |
+| Document title | `Set up Oxidean` → prefer pattern **`Set up · Oxidean`** (Phase 3 `Page · Oxidean`) |
 
 **Field order:** Email → Username → Password → Confirm → Switch → CTA.
 
@@ -138,7 +138,7 @@ Reuse `AuthShell` + `AuthErrorBanner`; do not fork a second shell.
 | Defaults that must change | Username still equal to `system-administrator` (case-insensitive). Do **not** force email/password change when they are operator ENV values |
 | Primary CTA | **Save and continue** |
 | Success | Clear flag → honor safe `returnTo` else `/` |
-| Document title | `Confirm admin · Octanest` |
+| Document title | `Confirm admin · Oxidean` |
 
 ### `/` SSR home (folded flicker fix — D-18…D-22)
 
@@ -147,7 +147,7 @@ Reuse `AuthShell` + `AuthErrorBanner`; do not fork a second shell.
 | Priority | **`needs_setup` → `/setup`**; else valid session → **SignedInHome**; else **marketing landing** |
 | First paint | HTML matches final tree — no marketing flash for signed-in; no SignedInHome flash for anonymous |
 | `/dashboard` | Direct navigation → **404** (remove public file route / soft redirect) |
-| Presence hint | Keep `octanest_signed_in` as progressive enhancement; drop if it fights SSR |
+| Presence hint | Keep `oxidean_signed_in` as progressive enhancement; drop if it fights SSR |
 | Post-login / post-forced-change | Safe `returnTo` else `/` |
 
 ### Closed signup (`allow_signup === false`)
@@ -174,12 +174,12 @@ Reuse `AuthShell` + `AuthErrorBanner`; do not fork a second shell.
 
 | Route | `<title>` |
 |-------|-----------|
-| `/setup` | `Set up · Octanest` |
-| `/setup/credentials` | `Confirm admin · Octanest` |
+| `/setup` | `Set up · Oxidean` |
+| `/setup/credentials` | `Confirm admin · Oxidean` |
 | `/` | Existing signed-in / marketing titles — unchanged patterns |
 | Existing Phase 4/5 routes | Unchanged |
 
-Pattern: `Page · Octanest` (Phase 3 D-21).
+Pattern: `Page · Oxidean` (Phase 3 D-21).
 
 ---
 
@@ -257,7 +257,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 
 | Element | Copy |
 |---------|------|
-| Product name | **Octanest** |
+| Product name | **Oxidean** |
 | Setup title | Set up this instance |
 | Setup support | Create the system admin account. This is a one-time step for an empty database. |
 | Setup email label | Email |
@@ -278,7 +278,7 @@ Pattern: `Page · Octanest` (Phase 3 D-21).
 | Forced-change keep password | Keep current password |
 | Forced-change username default error | Choose a username other than the default system-administrator. |
 | Forced-change primary CTA | **Save and continue** |
-| Network / unreachable | Can’t reach Octanest. Check your connection and try again. |
+| Network / unreachable | Can’t reach Oxidean. Check your connection and try again. |
 | Closed signup | **No copy** — route 404; controls omitted from logged-out UI |
 | Empty state | No list empty-states; wizard is the empty-instance experience |
 | Destructive confirmation | **None** this phase |
@@ -366,7 +366,7 @@ Do not add `@registry` URLs beyond shadcn official.
 - [ ] Switch for `allow_signup` on wizard + admin auth settings (official shadcn only)
 - [ ] Forced-change: must leave username `system-administrator`; ENV email/password may be kept (Keep current password Switch)
 - [ ] Logged-out UI never links to `/signup` when closed
-- [ ] Titles `Page · Octanest`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
+- [ ] Titles `Page · Oxidean`; touch targets ≥ 44px; weights 400/600; spacing multiples of 4 (+ 44px exception)
 - [ ] No cloud/self-host detection UI
 - [ ] SW continues to bypass `/api/*`
 

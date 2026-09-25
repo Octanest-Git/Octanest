@@ -8,7 +8,7 @@ requires:
   - phase: 06-self-host-admin-bootstrap
     provides: 0006 bootstrap flags + UserPublic.must_change_credentials + allow_signup DTOs
 provides:
-  - "ENV seed username system-administrator + must_change_credentials + OCTANEST_ALLOW_SIGNUP"
+  - "ENV seed username system-administrator + must_change_credentials + OXIDEAN_ALLOW_SIGNUP"
   - "auth.confirm_admin_credentials RPC (reject default username; keep_password path)"
   - "Fail-closed boot retained (D-14 fail_closed human decision)"
 affects:
@@ -26,19 +26,19 @@ plan_head_before: e7be77e2ca3732e811c9bc627dfc1bbd04b5a4f7
 tech-stack:
   added: []
   patterns:
-    - "OCTANEST_ALLOW_SIGNUP parsed like AUTO_MIGRATE (true/1) with default false"
+    - "OXIDEAN_ALLOW_SIGNUP parsed like AUTO_MIGRATE (true/1) with default false"
     - "confirm_admin_credentials: session + must_change gate; case-insensitive system-administrator reject"
 
 key-files:
   created:
-    - crates/octanest-api/src/auth/bootstrap.rs
+    - crates/oxidean-api/src/auth/bootstrap.rs
   modified:
-    - crates/octanest-api/src/auth/seed.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-core/src/auth_types.rs
-    - crates/octanest-api/tests/auth_signup.rs
-    - crates/octanest-api/tests/auth_forced_credentials.rs
-    - crates/octanest-api/tests/auth_bootstrap.rs
+    - crates/oxidean-api/src/auth/seed.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-core/src/auth_types.rs
+    - crates/oxidean-api/tests/auth_signup.rs
+    - crates/oxidean-api/tests/auth_forced_credentials.rs
+    - crates/oxidean-api/tests/auth_bootstrap.rs
 
 key-decisions:
   - "D-14 fail_closed: keep exit(1) when both ADMIN ENV set and maybe_seed_admin returns Err (do not serve wizard fallback)"
@@ -52,11 +52,11 @@ requirements-completed: [AUTH-06]
 
 coverage:
   - id: D1
-    description: "ENV seed creates system-administrator with must_change_credentials and OCTANEST_ALLOW_SIGNUP"
+    description: "ENV seed creates system-administrator with must_change_credentials and OXIDEAN_ALLOW_SIGNUP"
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(seeded_admin)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(seeded_admin)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -64,7 +64,7 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(confirm_admin) | test(forced_credentials)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(confirm_admin) | test(forced_credentials)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -72,7 +72,7 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(partial_env) | test(seed_partial) | test(seed_second_run) | test(seeded_admin)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(partial_env) | test(seed_partial) | test(seed_second_run) | test(seeded_admin)'"
         status: pass
     human_judgment: false
 
@@ -96,7 +96,7 @@ status: complete
 ## Accomplishments
 
 - Human confirmed D-14 **fail_closed** — `main.rs` still `exit(1)` on seed Err; no wizard fallback
-- `maybe_seed_admin` uses fixed `system-administrator`, sets `must_change_credentials`, applies `OCTANEST_ALLOW_SIGNUP`
+- `maybe_seed_admin` uses fixed `system-administrator`, sets `must_change_credentials`, applies `OXIDEAN_ALLOW_SIGNUP`
 - Tracked `bootstrap.rs` + `auth.confirm_admin_credentials` (reject default username; keep-password path)
 - Partial ENV / empty-string / second-seed idempotency covered under nextest
 
@@ -121,7 +121,7 @@ status: complete
 - **Found during:** Task 2
 - **Issue:** Login JSON missing `remember_me` failed deserialization so confirm tests never obtained a session cookie
 - **Fix:** Include `remember_me:false` in test login; require cookie presence
-- **Files modified:** `crates/octanest-api/tests/auth_forced_credentials.rs`
+- **Files modified:** `crates/oxidean-api/tests/auth_forced_credentials.rs`
 - **Commit:** `93c33ea`
 
 **2. [Rule 3 - Blocking] Plan verify filter includes 06-03 Wave 0 RED**

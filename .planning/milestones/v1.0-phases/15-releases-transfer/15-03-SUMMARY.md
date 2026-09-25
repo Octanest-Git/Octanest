@@ -10,7 +10,7 @@ provides:
   - "repo.rename with bare-disk move and repository_redirects"
   - "lookup_repo_row_or_redirect for web/Smart HTTP/SSH"
   - "Expired redirect purge via orphan reconcile"
-  - "OCTANEST_REPO_REDIRECT_RETENTION_DAYS (default 90)"
+  - "OXIDEAN_REPO_REDIRECT_RETENTION_DAYS (default 90)"
 affects: [15-04, 15-05]
 actuals:
   tokens: 10818
@@ -24,18 +24,18 @@ tech-stack:
     - "Live owner/name supersedes redirect; resolve via repo_id only"
 key-files:
   created:
-    - crates/octanest-api/src/repo/rename_transfer.rs
+    - crates/oxidean-api/src/repo/rename_transfer.rs
   modified:
-    - crates/octanest-api/src/repo/acl.rs
-    - crates/octanest-api/src/routes/git_smart_http.rs
-    - crates/octanest-api/src/ssh/pack.rs
-    - crates/octanest-api/src/jobs/reconcile.rs
-    - crates/octanest-db/src/repositories.rs
+    - crates/oxidean-api/src/repo/acl.rs
+    - crates/oxidean-api/src/routes/git_smart_http.rs
+    - crates/oxidean-api/src/ssh/pack.rs
+    - crates/oxidean-api/src/jobs/reconcile.rs
+    - crates/oxidean-db/src/repositories.rs
     - packages/api-client/src/index.ts
     - docs/CONFIGURATION.md
 key-decisions:
   - "Single commit for T1–T3 — rename, resolve, and purge share lookup + disk paths"
-  - "Default redirect retention 90 days via OCTANEST_REPO_REDIRECT_RETENTION_DAYS"
+  - "Default redirect retention 90 days via OXIDEAN_REPO_REDIRECT_RETENTION_DAYS"
   - "Smart HTTP rewrites CGI path_info to current owner/name after redirect"
 requirements-completed: [GIT-16]
 coverage:
@@ -44,7 +44,7 @@ coverage:
     requirement: GIT-16
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(repo_rename)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(repo_rename)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -52,7 +52,7 @@ coverage:
     requirement: GIT-16
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(redirect)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(redirect)'"
         status: pass
     human_judgment: false
 duration: 11min
@@ -76,7 +76,7 @@ status: complete
 - Implemented `repo.rename` behind `resolve_repo_for_admin` with FS-then-DB move and compensate
 - Shared `lookup_repo_row_or_redirect` for `repo.get`, browse ACL, Smart HTTP CGI rewrite, and SSH pack
 - Create at old slug/name deletes matching redirect; reconcile purges `expires_at < now`
-- Documented `OCTANEST_REPO_REDIRECT_RETENTION_DAYS` (default 90)
+- Documented `OXIDEAN_REPO_REDIRECT_RETENTION_DAYS` (default 90)
 
 ## Task Commits
 
@@ -113,6 +113,6 @@ None.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/repo/rename_transfer.rs
+- FOUND: crates/oxidean-api/src/repo/rename_transfer.rs
 - FOUND: cb520e0
-- FOUND: OCTANEST_REPO_REDIRECT_RETENTION in docs/CONFIGURATION.md and .env.example
+- FOUND: OXIDEAN_REPO_REDIRECT_RETENTION in docs/CONFIGURATION.md and .env.example

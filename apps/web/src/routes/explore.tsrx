@@ -3,7 +3,7 @@ import { createServerFn } from "@octanejs/tanstack-start";
 import { getRequestHeader } from "@octanejs/tanstack-start/server";
 import { useState } from "octane";
 import { BookMarked, Compass, Search, Star } from "@octanejs/lucide";
-import { createClient, type RepoPublic } from "@octanest/api-client";
+import { createClient, type RepoPublic } from "@oxidean/api-client";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,8 @@ import { PageHeader } from "@/components/ui/page-header";
 
 function ssrApiOrigin(): string {
   return (
-    process.env.OCTANEST_API_ORIGIN?.replace(/\/$/, "") ||
-    process.env.OCTANEST_E2E_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_API_ORIGIN?.replace(/\/$/, "") ||
+    process.env.OXIDEAN_E2E_API_ORIGIN?.replace(/\/$/, "") ||
     "http://127.0.0.1:8080"
   );
 }
@@ -46,7 +46,7 @@ export type ExploreLoaderData = { repos: RepoPublic[]; q: string };
 
 export const Route = createFileRoute("/explore")({
   component: ExplorePage,
-  head: () => ({ meta: [{ title: "Explore · Octanest" }] }),
+  head: () => ({ meta: [{ title: "Explore · Oxidean" }] }),
   loader: async ({ location }): Promise<ExploreLoaderData> => {
     const q = new URLSearchParams(location.searchStr.replace(/^\?/, "")).get("q") ?? "";
     return fetchExplore({ data: { q } });

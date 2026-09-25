@@ -5,7 +5,7 @@ import {
   useLocation,
   useParams,
 } from "@octanejs/tanstack-router";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import { RepoChrome } from "@/components/repo/repo-chrome";
 import { RepoNotFound } from "@/components/repo/repo-not-found";
 import { RepoPageShell } from "@/components/repo/repo-page-shell";
@@ -86,7 +86,7 @@ export const Route = createFileRoute("/$owner/$repo")({
         status: "error",
         repo: null,
         me,
-        message: "Can't reach Octanest. Check your connection and try again.",
+        message: "Can't reach Oxidean. Check your connection and try again.",
         publicOrigin,
         sshHost,
         sshPort,

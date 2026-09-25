@@ -27,15 +27,15 @@ tech-stack:
     - "secret one-time reveal on create/rotate; masked elsewhere"
 key-files:
   created:
-    - crates/octanest-core/src/webhook_types.rs
-    - crates/octanest-db/src/webhooks.rs
-    - crates/octanest-db/migrations/sqlite/0017_webhooks.sql
-    - crates/octanest-api/src/webhook/mod.rs
-    - crates/octanest-api/src/webhook/dispatch.rs
-    - crates/octanest-api/src/webhook/deliver.rs
+    - crates/oxidean-core/src/webhook_types.rs
+    - crates/oxidean-db/src/webhooks.rs
+    - crates/oxidean-db/migrations/sqlite/0017_webhooks.sql
+    - crates/oxidean-api/src/webhook/mod.rs
+    - crates/oxidean-api/src/webhook/dispatch.rs
+    - crates/oxidean-api/src/webhook/deliver.rs
   modified:
-    - crates/octanest-api/src/issue/mod.rs
-    - crates/octanest-api/src/rpc.rs
+    - crates/oxidean-api/src/issue/mod.rs
+    - crates/oxidean-api/src/rpc.rs
     - packages/api-client/src/index.ts
 key-decisions:
   - "RPC namespace webhook.* (not repo.webhook.*)"
@@ -50,7 +50,7 @@ coverage:
     requirement: HOOK-01
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_create) | test(webhook_list) | test(webhook_admin)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_create) | test(webhook_list) | test(webhook_admin)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -58,7 +58,7 @@ coverage:
     requirement: HOOK-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_issues_deliver) | test(webhook_hmac)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_issues_deliver) | test(webhook_hmac)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -66,7 +66,7 @@ coverage:
     requirement: HOOK-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_issues_) | test(webhook_update) | test(webhook_delete) | test(webhook_inactive)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_issues_) | test(webhook_update) | test(webhook_delete) | test(webhook_inactive)'"
         status: pass
     human_judgment: false
 duration: 20min
@@ -125,6 +125,6 @@ None.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/webhook/mod.rs
-- FOUND: crates/octanest-db/migrations/sqlite/0017_webhooks.sql
+- FOUND: crates/oxidean-api/src/webhook/mod.rs
+- FOUND: crates/oxidean-db/migrations/sqlite/0017_webhooks.sql
 - FOUND: a37c90d

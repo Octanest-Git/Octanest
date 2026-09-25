@@ -65,7 +65,7 @@
 
 ## Summary
 
-Phase 13 adds GitHub-classic **branch protection** to Octanest. Admins define pattern-matched rules requiring PR reviews and/or named commit-status contexts. Enforcement must work on **direct pushes** (Smart HTTP `git-receive-pack` and SSH receive-pack both run git hooks in the bare repo) and on **PR merges** (application-level gate before Phase 12 merge strategies).
+Phase 13 adds GitHub-classic **branch protection** to Oxidean. Admins define pattern-matched rules requiring PR reviews and/or named commit-status contexts. Enforcement must work on **direct pushes** (Smart HTTP `git-receive-pack` and SSH receive-pack both run git hooks in the bare repo) and on **PR merges** (application-level gate before Phase 12 merge strategies).
 
 Because Phase 19 Actions is later, ORG-05’s “status checks” cannot wait on workflow runs. The standard forge approach (GitHub classic statuses, Gitea/Forgejo status tables) is a **commit_statuses** table keyed by `(repository_id, sha, context)` with latest state wins, plus RPC for CI to report. Required-check evaluation reads that store (and later Check Runs map into the same pass set).
 
@@ -77,7 +77,7 @@ Because Phase 19 Actions is later, ORG-05’s “status checks” cannot wait on
 |------------|-------------|----------------|-----------|
 | Rule + status persistence | Database / Storage | API / Backend | Tri-dialect migrations; API owns RPC |
 | Protection evaluation | API / Backend | — | Single Rust module; hooks/merge call it |
-| Git push enforcement | API / Backend | CDN/Static (ops) | Hooks inside bare repos under OCTANEST_REPOS_DIR |
+| Git push enforcement | API / Backend | CDN/Static (ops) | Hooks inside bare repos under OXIDEAN_REPOS_DIR |
 | Commit status ingest | API / Backend | — | RPC/PAT Write; no SPA auth for CI bots preferred |
 | Settings CRUD UI | Browser / Client | API / Backend | Admin Octane panel |
 | PR merge blockers UI | Browser / Client | API / Backend | Consumes structured reasons from merge/preview RPC |
@@ -87,7 +87,7 @@ Because Phase 19 Actions is later, ORG-05’s “status checks” cannot wait on
 
 - One Bun + Cargo product; Octane `.tsrx` for UI [VERIFIED]
 - RPC: Rust → `make rpc-gen` [VERIFIED]
-- Dialect SQL only in `octanest-db` [VERIFIED]
+- Dialect SQL only in `oxidean-db` [VERIFIED]
 - Prefer extending Smart HTTP / SSH / ACL patterns [VERIFIED: AGENTS.md]
 
 ## Standard Stack
@@ -98,7 +98,7 @@ Because Phase 19 Actions is later, ORG-05’s “status checks” cannot wait on
 |---------------------|---------|---------|--------------|
 | Existing Axum RPC | workspace | `repo.branchProtection.*`, `repo.commitStatus.*` | Matches forge RPC surface [VERIFIED] |
 | git hooks (`pre-receive`/`update`) | system git | Enforce on receive-pack | git-http-backend + SSH both honor bare hooks [VERIFIED: http_backend CGI; ssh pack] |
-| `octanest-db` migrations | next free | Tables for rules + statuses | Tri-dialect pattern [VERIFIED: 0015_packages.sql present] |
+| `oxidean-db` migrations | next free | Tables for rules + statuses | Tri-dialect pattern [VERIFIED: 0015_packages.sql present] |
 | Octane + TanStack Query | workspace | Settings + PR blocker UI | Existing settings panels [VERIFIED: `$owner.$repo.settings.tsrx`] |
 
 ### Supporting
@@ -134,7 +134,7 @@ Call sites: hook (Push/ForcePush/Delete), `pull.merge` (Merge), optionally `pull
 
 On `init_bare` success, write `hooks/update` (and/or `pre-receive`) executable that:
 1. Reads oldrev/newrev/ref
-2. Invokes octanest protection check with repo identity from `GIT_DIR` / env
+2. Invokes oxidean protection check with repo identity from `GIT_DIR` / env
 3. Exits non-zero with stderr message on deny
 
 Reconcile job or lazy-on-push repair for older bare repos missing hooks.
@@ -176,13 +176,13 @@ For matching rules R1..Rn:
 
 | Seam | Path | Notes |
 |------|------|-------|
-| Soft protect | `crates/octanest-api/src/repo/mod.rs` | `soft_protect_err` |
-| ACL | `crates/octanest-api/src/repo/acl.rs` | Admin/Write |
-| HTTPS receive-pack | `crates/octanest-api/src/routes/git_smart_http.rs` | CGI; hooks run inside git |
-| SSH receive-pack | `crates/octanest-api/src/ssh/pack.rs` | Same bare hooks |
-| Bare init | `crates/octanest-git/src/cli.rs` `init_bare` | Hook install |
+| Soft protect | `crates/oxidean-api/src/repo/mod.rs` | `soft_protect_err` |
+| ACL | `crates/oxidean-api/src/repo/acl.rs` | Admin/Write |
+| HTTPS receive-pack | `crates/oxidean-api/src/routes/git_smart_http.rs` | CGI; hooks run inside git |
+| SSH receive-pack | `crates/oxidean-api/src/ssh/pack.rs` | Same bare hooks |
+| Bare init | `crates/oxidean-git/src/cli.rs` `init_bare` | Hook install |
 | Settings UI | `apps/web/src/routes/$owner.$repo.settings.tsrx` | Panel pattern |
-| Migrations | `crates/octanest-db/migrations/*/0015_packages.sql` | Next = 0016+ at execute |
+| Migrations | `crates/oxidean-db/migrations/*/0015_packages.sql` | Next = 0016+ at execute |
 
 ## Phase 12 dependency
 

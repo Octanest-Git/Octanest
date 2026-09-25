@@ -32,11 +32,11 @@ tech-stack:
 key-files:
   created: []
   modified:
-    - crates/octanest-api/src/auth/bootstrap.rs
-    - crates/octanest-api/src/auth/local.rs
-    - crates/octanest-api/src/rpc.rs
-    - crates/octanest-api/tests/auth_bootstrap.rs
-    - crates/octanest-api/tests/support/mod.rs
+    - crates/oxidean-api/src/auth/bootstrap.rs
+    - crates/oxidean-api/src/auth/local.rs
+    - crates/oxidean-api/src/rpc.rs
+    - crates/oxidean-api/tests/auth_bootstrap.rs
+    - crates/oxidean-api/tests/support/mod.rs
 
 key-decisions:
   - "allow_signup false persistence proven by pre-opening settings then wizard close"
@@ -54,7 +54,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(bootstrap_allow_signup) | test(bootstrap_second)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(bootstrap_allow_signup) | test(bootstrap_second)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -62,7 +62,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(allowlist)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(allowlist)'"
         status: pass
     human_judgment: false
   - id: D3
@@ -70,7 +70,7 @@ coverage:
     requirement: AUTH-07
     verification:
       - kind: other
-        ref: "rg reject_if_setup_required crates/octanest-api/src/routes/auth_callbacks.rs"
+        ref: "rg reject_if_setup_required crates/oxidean-api/src/routes/auth_callbacks.rs"
         status: pass
     human_judgment: false
 
@@ -120,7 +120,7 @@ status: complete
 - **Found during:** Task 1 GREEN
 - **Issue:** Enforcing `auth.signup_closed` broke AUTH-01 signup tests that only seed a sys-admin via `unlock_signup`
 - **Fix:** Helper now also sets `allow_signup=true` after ensuring a sys-admin exists
-- **Files modified:** `crates/octanest-api/tests/support/mod.rs`
+- **Files modified:** `crates/oxidean-api/tests/support/mod.rs`
 - **Commit:** `897dc23`
 
 **2. [Rule 3 - Blocking] Task 1 plan verify includes allowlist RED**

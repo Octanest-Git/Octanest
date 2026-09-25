@@ -1,13 +1,13 @@
 # Stack presets
 
-Octanest ships **in-repo stack presets** used by `/new` when creating a repository. Built-in packs are embedded into the API binary at compile time (`include_dir`) — they are **not** fetched from the internet at create time.
+Oxidean ships **in-repo stack presets** used by `/new` when creating a repository. Built-in packs are embedded into the API binary at compile time (`include_dir`) — they are **not** fetched from the internet at create time.
 
 Instance admins can also upload custom packs (see Admin → Templates). Users can mark a repository as a template and create new repos from its default-branch tree. A public marketplace UI remains out of scope.
 
 ## Pack location
 
 ```text
-crates/octanest-api/assets/stack-presets/
+crates/oxidean-api/assets/stack-presets/
 ```
 
 - `catalog.json` — ordered list of packs. Required fields: `id`, `label`, `group`, `description`, `source`, `source_ref`, `last_synced`. Optional: `default_gitignore`, `verify_commands`.
@@ -17,8 +17,8 @@ Related catalogs (also vendored):
 
 | Catalog | Path |
 |---------|------|
-| `.gitignore` templates | `crates/octanest-api/assets/gitignore/` |
-| Common SPDX license texts | `crates/octanest-api/assets/licenses/` |
+| `.gitignore` templates | `crates/oxidean-api/assets/gitignore/` |
+| Common SPDX license texts | `crates/oxidean-api/assets/licenses/` |
 
 Pack IDs are allowlisted from `catalog.json` only (no path traversal).
 
@@ -29,7 +29,7 @@ Pack IDs are allowlisted from `catalog.json` only (no path traversal).
 | `cli` | Generated from an official create/init CLI (`source_ref` holds the command) |
 | `repo` | Snapshot of an upstream template repo/tag |
 | `manual` | Hand-maintained (e.g. `empty`) |
-| `octanest` | First-party Octanest starters (Octane, Ripple) |
+| `oxidean` | First-party Oxidean starters (Octane, Ripple) |
 
 ## Refresh workflow (built-ins)
 
@@ -55,7 +55,7 @@ Enforced by `make check-stack-presets` / `scripts/check-stack-presets.sh`.
 
 ## Adding or updating a built-in pack
 
-1. Create or refresh `crates/octanest-api/assets/stack-presets/<pack-id>/`.
+1. Create or refresh `crates/oxidean-api/assets/stack-presets/<pack-id>/`.
 2. Add or update the `catalog.json` entry (`source` / `source_ref` / `last_synced` required).
 3. Prefer official-style starters that are runnable after install — not one-file Hello World stubs.
 4. Open a PR describing the stack and license notes for included snippets.

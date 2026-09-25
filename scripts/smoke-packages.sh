@@ -7,7 +7,7 @@
 #   - Registry PathPrefix routers (api-packages) from Phase 20 plan 02
 #
 # Env knobs:
-#   OCTANEST_SMOKE_URL   default http://localhost (must match Traefik Host)
+#   OXIDEAN_SMOKE_URL   default http://localhost (must match Traefik Host)
 #
 # Operator hosts without Docker/stack: exits 0 with a skip message.
 # CI=true or SMOKE_REQUIRE_STACK=1 fails closed (T-11.1-40 / D-QH-04).
@@ -21,11 +21,11 @@ cd "$ROOT"
 source "${ROOT}/scripts/smoke-lib.sh"
 SMOKE_NAME="smoke-packages"
 
-BASE_URL="${OCTANEST_SMOKE_URL:-http://localhost}"
+BASE_URL="${OXIDEAN_SMOKE_URL:-http://localhost}"
 
 smoke_require_docker
 # Fast skip when Compose API isn't up (avoid 2-minute health wait).
-if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|octanest-api'; then
+if ! docker compose -f docker-compose.yml ps --status running 2>/dev/null | grep -qE 'api|oxidean-api'; then
   smoke_require_or_skip "Compose API not running; skipping smoke-packages (run make up to exercise Traefik routing)"
 fi
 

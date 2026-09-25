@@ -15,7 +15,7 @@ import type {
   RepoContributorPublic,
   RepoLanguageStat,
   RepoPublic,
-} from "@octanest/api-client";
+} from "@oxidean/api-client";
 import { useState } from "octane";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ type RepoAboutSidebarProps = {
   showActivity?: boolean;
 };
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 const META_ROW =
   "inline-flex w-full items-center gap-2 py-1 text-[12px] leading-5 text-muted-foreground no-underline hover:text-foreground";

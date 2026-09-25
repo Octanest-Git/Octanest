@@ -19,9 +19,9 @@ covered_files:
   - .planning/phases/18-webhooks/18-04-SUMMARY.md
   - .planning/phases/18-webhooks/18-VALIDATION.md
   - apps/web/src/routes/$owner.$repo.settings.webhooks.integration.test.ts
-  - crates/octanest-api/tests/webhook_delivery.rs
-  - crates/octanest-api/tests/webhook_rpc.rs
-  - crates/octanest-db/tests/dialect_webhooks.rs
+  - crates/oxidean-api/tests/webhook_delivery.rs
+  - crates/oxidean-api/tests/webhook_rpc.rs
+  - crates/oxidean-db/tests/dialect_webhooks.rs
 covered_digest: "v1:sha256:32c401d43c28af06dc964f528bb10dd4f8a5bab7d3c96c3bc52b9ac11fac6599"
 behavior_unverified: 0
 overrides_applied: 0

@@ -55,25 +55,25 @@ covered_files:
   - apps/web/src/routes/setup.tsrx
   - apps/web/src/routes/signup.integration.test.ts
   - apps/web/src/routes/signup.tsrx
-  - crates/octanest-api/src/auth/admin.rs
-  - crates/octanest-api/src/auth/bootstrap.rs
-  - crates/octanest-api/src/auth/local.rs
-  - crates/octanest-api/src/auth/seed.rs
-  - crates/octanest-api/src/main.rs
-  - crates/octanest-api/src/routes/auth_callbacks.rs
-  - crates/octanest-api/src/rpc.rs
-  - crates/octanest-api/tests/auth_bootstrap.rs
-  - crates/octanest-api/tests/auth_forced_credentials.rs
-  - crates/octanest-api/tests/auth_signup.rs
-  - crates/octanest-api/tests/boot_fail_closed.rs
-  - crates/octanest-api/tests/rpc_db_probe.rs
-  - crates/octanest-api/tests/support/mod.rs
-  - crates/octanest-core/src/auth_types.rs
-  - crates/octanest-db/migrations/mysql/0006_bootstrap_flags.sql
-  - crates/octanest-db/migrations/postgres/0006_bootstrap_flags.sql
-  - crates/octanest-db/migrations/sqlite/0006_bootstrap_flags.sql
-  - crates/octanest-db/src/auth_settings.rs
-  - crates/octanest-db/src/users.rs
+  - crates/oxidean-api/src/auth/admin.rs
+  - crates/oxidean-api/src/auth/bootstrap.rs
+  - crates/oxidean-api/src/auth/local.rs
+  - crates/oxidean-api/src/auth/seed.rs
+  - crates/oxidean-api/src/main.rs
+  - crates/oxidean-api/src/routes/auth_callbacks.rs
+  - crates/oxidean-api/src/rpc.rs
+  - crates/oxidean-api/tests/auth_bootstrap.rs
+  - crates/oxidean-api/tests/auth_forced_credentials.rs
+  - crates/oxidean-api/tests/auth_signup.rs
+  - crates/oxidean-api/tests/boot_fail_closed.rs
+  - crates/oxidean-api/tests/rpc_db_probe.rs
+  - crates/oxidean-api/tests/support/mod.rs
+  - crates/oxidean-core/src/auth_types.rs
+  - crates/oxidean-db/migrations/mysql/0006_bootstrap_flags.sql
+  - crates/oxidean-db/migrations/postgres/0006_bootstrap_flags.sql
+  - crates/oxidean-db/migrations/sqlite/0006_bootstrap_flags.sql
+  - crates/oxidean-db/src/auth_settings.rs
+  - crates/oxidean-db/src/users.rs
   - docs/CONFIGURATION.md
   - packages/api-client/src/index.ts
 covered_digest: "v1:sha256:efd5411da467e72a08cbb3fe4aaa32827bc9ea734deb432c1e7c7a9beffe84a8"
@@ -96,7 +96,7 @@ re_verification: "{'previous_status': 'human_needed', 'previous_score': '10/11',
 
 | # | Truth | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | When `OCTANEST_ADMIN_EMAIL` and `OCTANEST_ADMIN_PASSWORD` are both set, first boot creates that admin (`system-administrator`, auto-verified, `must_change_credentials`) | ✓ VERIFIED | `maybe_seed_admin` in `seed.rs`; `main.rs` calls it and exits on Err; `seeded_admin_is_auto_verified` PASS (re-check) |
+| 1 | When `OXIDEAN_ADMIN_EMAIL` and `OXIDEAN_ADMIN_PASSWORD` are both set, first boot creates that admin (`system-administrator`, auto-verified, `must_change_credentials`) | ✓ VERIFIED | `maybe_seed_admin` in `seed.rs`; `main.rs` calls it and exits on Err; `seeded_admin_is_auto_verified` PASS (re-check) |
 | 2 | When those env vars are absent, empty instance shows one-time wizard then normal signup rules (`allow_signup`) | ✓ VERIFIED | `needs_setup` + `bootstrap_setup` + `/setup` UI; `bootstrap_second_setup_unavailable` PASS (re-check) |
 | 3 | Partial ENV (either/both empty) does not seed — wizard path (`needs_setup` true) | ✓ VERIFIED | `seed_partial_env_empty_string_email_does_not_seed` PASS (re-check) |
 | 4 | D-11: real empty DB allowlists only `auth.bootstrap_status`, `auth.bootstrap_setup`, `system.health`; skipped/unconfigured DB returns `needs_setup=false` | ✓ VERIFIED | `bootstrap_strict_rpc_allowlist_while_needs_setup` PASS; `rpc.rs` allowlist + skipped-DB branch intact |
@@ -126,10 +126,10 @@ Plans declare `*.tsx` artifact paths; Octane ships `*.tsrx` (documented plan ass
 
 | Artifact | Expected | Status | Details |
 | --- | --- | --- | --- |
-| `crates/octanest-api/src/auth/seed.rs` | ENV admin seed | ✓ VERIFIED | Substantive + wired from `main.rs` |
-| `crates/octanest-api/src/auth/bootstrap.rs` | needs_setup / wizard / confirm | ✓ VERIFIED | Includes skipped-DB branch |
-| `crates/octanest-api/src/rpc.rs` | D-11 allowlist | ✓ VERIFIED | Early gate before dispatch |
-| `crates/octanest-db/migrations/*/0006_bootstrap_flags.sql` | Schema flags | ✓ VERIFIED | All three dialects |
+| `crates/oxidean-api/src/auth/seed.rs` | ENV admin seed | ✓ VERIFIED | Substantive + wired from `main.rs` |
+| `crates/oxidean-api/src/auth/bootstrap.rs` | needs_setup / wizard / confirm | ✓ VERIFIED | Includes skipped-DB branch |
+| `crates/oxidean-api/src/rpc.rs` | D-11 allowlist | ✓ VERIFIED | Early gate before dispatch |
+| `crates/oxidean-db/migrations/*/0006_bootstrap_flags.sql` | Schema flags | ✓ VERIFIED | All three dialects |
 | `apps/web/src/lib/ssr-auth.ts` | Cookie-forward + access gate | ✓ VERIFIED | Wired into `__root.tsrx` |
 | `apps/web/src/routes/__root.tsrx` | Shared SSR gate | ✓ VERIFIED | `.tsrx` rename |
 | `apps/web/src/routes/setup.index.tsrx` | Wizard UI | ✓ VERIFIED | AuthShell + Switch + CTA |
@@ -166,7 +166,7 @@ Plans declare `*.tsx` artifact paths; Octane ships `*.tsrx` (documented plan ass
 
 | Behavior | Command | Result | Status |
 | --- | --- | --- | --- |
-| D-11 allowlist empty DB | `cargo test -p octanest-api --test auth_bootstrap bootstrap_strict_rpc_allowlist_while_needs_setup -- --exact` | ok | ✓ PASS |
+| D-11 allowlist empty DB | `cargo test -p oxidean-api --test auth_bootstrap bootstrap_strict_rpc_allowlist_while_needs_setup -- --exact` | ok | ✓ PASS |
 | ENV seed admin | `… auth_signup seeded_admin_is_auto_verified -- --exact` | ok | ✓ PASS |
 | Partial ENV no seed | `… seed_partial_env_empty_string_email_does_not_seed -- --exact` | ok | ✓ PASS |
 | Wizard idempotency | `… bootstrap_second_setup_unavailable -- --exact` | ok | ✓ PASS |

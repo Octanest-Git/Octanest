@@ -17,7 +17,7 @@ updated: "2026-09-16"
 | Property | Value |
 |----------|-------|
 | **Framework** | cargo nextest + Vitest |
-| **Quick run** | `cargo nextest run -p octanest-api -E 'test(pull_)' ; cargo nextest run -p octanest-db -E 'test(dialect_pulls) \| test(factory_reset_pulls)' ; cargo nextest run -p octanest-git -E 'test(merge_)' ; cd apps/web && bunx vitest run 'src/routes/$owner.$repo.pulls.integration.test.ts'` |
+| **Quick run** | `cargo nextest run -p oxidean-api -E 'test(pull_)' ; cargo nextest run -p oxidean-db -E 'test(dialect_pulls) \| test(factory_reset_pulls)' ; cargo nextest run -p oxidean-git -E 'test(merge_)' ; cd apps/web && bunx vitest run 'src/routes/$owner.$repo.pulls.integration.test.ts'` |
 | **Full suite** | `make test` |
 | **Phase gate** | Quick run + `make rpc-sync-check` + `make web-lint` + `make web-format-check` |
 

@@ -1,4 +1,4 @@
-import type { CollaboratorPermission, RepoCollaboratorPublic } from "@octanest/api-client";
+import type { CollaboratorPermission, RepoCollaboratorPublic } from "@oxidean/api-client";
 import { Check, ChevronDown } from "@octanejs/lucide";
 import { useQuery, useQueryClient } from "@octanejs/tanstack-query";
 import { useForm } from "@octanejs/tanstack-form";
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { apiClient } from "@/lib/api-client";
 
-const NETWORK_ERROR = "Can't reach Octanest. Check your connection and try again.";
+const NETWORK_ERROR = "Can't reach Oxidean. Check your connection and try again.";
 
 const PERM_OPTIONS: { value: CollaboratorPermission; label: string }[] = [
   { value: "read", label: "Read" },

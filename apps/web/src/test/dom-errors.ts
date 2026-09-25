@@ -27,13 +27,13 @@ export function isDomRaceMessage(message: string): boolean {
 
 /** Set by a test to skip the global afterEach DOM-race assertion (rare). */
 export function allowDomRacesInThisTest(): void {
-  (globalThis as { __octanestAllowDomRaces?: boolean }).__octanestAllowDomRaces = true;
+  (globalThis as { __oxideanAllowDomRaces?: boolean }).__oxideanAllowDomRaces = true;
 }
 
 export function consumeDomRaceAllowlist(): boolean {
-  const g = globalThis as { __octanestAllowDomRaces?: boolean };
-  const allowed = g.__octanestAllowDomRaces === true;
-  g.__octanestAllowDomRaces = false;
+  const g = globalThis as { __oxideanAllowDomRaces?: boolean };
+  const allowed = g.__oxideanAllowDomRaces === true;
+  g.__oxideanAllowDomRaces = false;
   return allowed;
 }
 

@@ -34,7 +34,7 @@ created: "2026-09-11"
 | T-05-04 | Elevation of privilege | `auth.dev.privileged_ping` | high | mitigate | Env allowlist only; else `rpc.unknown_procedure` | closed |
 | T-05-05 | Denial of service | verify issue/resend | high | mitigate | ≥60s between issues; ≤5/hour; `auth.rate_limited` | closed |
 | T-05-06 | Elevation of privilege | OTP attempts | high | mitigate | ~10 fails invalidate; single-use; 30m TTL | closed |
-| T-05-07 | Spoofing | magic-link URL | high | mitigate | Links from `OCTANEST_PUBLIC_ORIGIN` only | closed |
+| T-05-07 | Spoofing | magic-link URL | high | mitigate | Links from `OXIDEAN_PUBLIC_ORIGIN` only | closed |
 | T-05-08 | Information disclosure | email/log sink | high | mitigate | No plaintext OTP/token in logs; verify mail fail ≠ signup fail | closed |
 | T-05-09 | Information disclosure | `auth.request_password_reset` | high | mitigate | Identical success anti-enumeration; mail only local-password | closed |
 | T-05-10 | Elevation of privilege | `auth.reset_password` | high | mitigate | Hashed tokens, TTL, rate limits, min password 8 | closed |

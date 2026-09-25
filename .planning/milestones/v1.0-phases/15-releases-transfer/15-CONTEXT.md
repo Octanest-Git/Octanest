@@ -73,8 +73,8 @@ Users ship tag-based releases with notes and downloadable assets, and admins can
 - `.planning/phases/14-git-lfs/14-CONTEXT.md` — LFS refs move; assets volume is separate from LFS
 
 ### Code mirrors
-- `crates/octanest-api/src/repo/acl.rs` — Write/Admin gates
-- `crates/octanest-api/src/repo/mod.rs` — repo mutate patterns
+- `crates/oxidean-api/src/repo/acl.rs` — Write/Admin gates
+- `crates/oxidean-api/src/repo/mod.rs` — repo mutate patterns
 - `apps/web/src/components/repo/repo-chrome.tsrx` — add Releases tab
 - `apps/web/src/routes/$owner.$repo.settings*.tsrx` — rename/transfer danger zone
 - `docs/CONFIGURATION.md` — new volume + size limit env knobs

@@ -37,17 +37,17 @@ tech-stack:
 
 key-files:
   created:
-    - crates/octanest-api/tests/auth_bootstrap.rs
-    - crates/octanest-api/tests/auth_forced_credentials.rs
-    - crates/octanest-api/tests/support/mod.rs
+    - crates/oxidean-api/tests/auth_bootstrap.rs
+    - crates/oxidean-api/tests/auth_forced_credentials.rs
+    - crates/oxidean-api/tests/support/mod.rs
     - apps/web/src/routes/setup.integration.test.ts
     - apps/web/src/routes/setup.credentials.integration.test.ts
     - apps/web/src/routes/dashboard.integration.test.ts
     - apps/web/src/routes/index.integration.test.ts
     - apps/web/src/components/chrome.integration.test.ts
   modified:
-    - crates/octanest-api/tests/auth_signup.rs
-    - crates/octanest-db/tests/dialect_auth.rs
+    - crates/oxidean-api/tests/auth_signup.rs
+    - crates/oxidean-db/tests/dialect_auth.rs
 
 key-decisions:
   - "Wave 0 is RED-only — no GREEN/REFACTOR; later 06-xx plans turn stubs green"
@@ -67,7 +67,7 @@ coverage:
     requirement: AUTH-06
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(bootstrap) | test(seeded_admin) | test(forced_credentials) | test(confirm_admin)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(bootstrap) | test(seeded_admin) | test(forced_credentials) | test(confirm_admin)'"
         status: fail
     human_judgment: false
   - id: D2
@@ -78,7 +78,7 @@ coverage:
         ref: "bunx vitest run --project integration src/routes/setup.integration.test.ts src/routes/setup.credentials.integration.test.ts src/routes/dashboard.integration.test.ts src/routes/index.integration.test.ts src/components/chrome.integration.test.ts"
         status: fail
       - kind: integration
-        ref: "cargo nextest run -p octanest-db -E 'test(0006_bootstrap)'"
+        ref: "cargo nextest run -p oxidean-db -E 'test(0006_bootstrap)'"
         status: fail
     human_judgment: false
 
@@ -114,11 +114,11 @@ _Note: Wave 0 TDD is RED-only by design — GREEN/REFACTOR belong to later plans
 
 ## Files Created/Modified
 
-- `crates/octanest-api/tests/auth_bootstrap.rs` — bootstrap/allowlist/allow_signup RED cases
-- `crates/octanest-api/tests/auth_forced_credentials.rs` — confirm credentials RED cases
-- `crates/octanest-api/tests/auth_signup.rs` — seeded_admin username / must_change / OCTANEST_ALLOW_SIGNUP expectations
-- `crates/octanest-api/tests/support/mod.rs` — ENV mutex + unlock_signup helpers
-- `crates/octanest-db/tests/dialect_auth.rs` — 0006 column Wave 0 stub
+- `crates/oxidean-api/tests/auth_bootstrap.rs` — bootstrap/allowlist/allow_signup RED cases
+- `crates/oxidean-api/tests/auth_forced_credentials.rs` — confirm credentials RED cases
+- `crates/oxidean-api/tests/auth_signup.rs` — seeded_admin username / must_change / OXIDEAN_ALLOW_SIGNUP expectations
+- `crates/oxidean-api/tests/support/mod.rs` — ENV mutex + unlock_signup helpers
+- `crates/oxidean-db/tests/dialect_auth.rs` — 0006 column Wave 0 stub
 - `apps/web/src/routes/setup.integration.test.ts` — Allow open signup + Create system admin
 - `apps/web/src/routes/setup.credentials.integration.test.ts` — Keep current password UI-SPEC stub
 - `apps/web/src/routes/dashboard.integration.test.ts` — notFound contract
@@ -154,7 +154,7 @@ _Note: Wave 0 TDD is RED-only by design — GREEN/REFACTOR belong to later plans
 - **Found during:** Task 1
 - **Issue:** WIP `support` called `bootstrap::lock_admin_env_for_tests`, coupling Wave 0 commits to untracked production bootstrap
 - **Fix:** Own the mutex inside `tests/support/mod.rs`
-- **Files modified:** `crates/octanest-api/tests/support/mod.rs`
+- **Files modified:** `crates/oxidean-api/tests/support/mod.rs`
 - **Verification:** nextest compiles and runs Wave 0 filter
 - **Committed in:** `7812c22`
 
@@ -180,8 +180,8 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- FOUND: `crates/octanest-api/tests/auth_bootstrap.rs`
-- FOUND: `crates/octanest-api/tests/auth_forced_credentials.rs`
+- FOUND: `crates/oxidean-api/tests/auth_bootstrap.rs`
+- FOUND: `crates/oxidean-api/tests/auth_forced_credentials.rs`
 - FOUND: `apps/web/src/routes/setup.integration.test.ts`
 - FOUND: `apps/web/src/routes/setup.credentials.integration.test.ts`
 - FOUND: `apps/web/src/routes/dashboard.integration.test.ts`

@@ -18,7 +18,7 @@ plan_head_before: "7954b4d7510db1d5db948a07e7fcabff27f6c85d"
 tech-stack:
   added: []
   patterns:
-    - "scp-style primary URL; Port via ~/.ssh/config when OCTANEST_SSH_PORT ≠ 22"
+    - "scp-style primary URL; Port via ~/.ssh/config when OXIDEAN_SSH_PORT ≠ 22"
 key-files:
   created:
     - apps/web/src/components/repo/ssh-how-to.tsrx
@@ -28,7 +28,7 @@ key-files:
     - apps/web/src/components/repo/clone-box.tsrx
     - apps/web/src/components/repo/clone-box.integration.test.ts
 key-decisions:
-  - "Default advertised SSH port 2222; host from OCTANEST_SSH_HOST or public origin hostname"
+  - "Default advertised SSH port 2222; host from OXIDEAN_SSH_HOST or public origin hostname"
 requirements-completed: [GIT-03, GIT-04]
 coverage:
   - id: D1

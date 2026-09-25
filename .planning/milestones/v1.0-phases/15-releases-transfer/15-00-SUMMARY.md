@@ -21,9 +21,9 @@ tech-stack:
   patterns: ["Wave 0 #[ignore] stubs discoverable via nextest list --run-ignored all"]
 key-files:
   created:
-    - crates/octanest-api/tests/release_rpc.rs
-    - crates/octanest-api/tests/repo_rename_transfer.rs
-    - crates/octanest-db/tests/dialect_releases.rs
+    - crates/oxidean-api/tests/release_rpc.rs
+    - crates/oxidean-api/tests/repo_rename_transfer.rs
+    - crates/oxidean-db/tests/dialect_releases.rs
     - apps/web/src/routes/$owner.$repo.releases.integration.test.ts
     - apps/web/src/routes/$owner.$repo.settings.rename-transfer.integration.test.ts
   modified: []
@@ -38,7 +38,7 @@ coverage:
     requirement: GIT-14
     verification:
       - kind: integration
-        ref: "cargo nextest list -p octanest-api -E 'test(release)' --run-ignored all"
+        ref: "cargo nextest list -p oxidean-api -E 'test(release)' --run-ignored all"
         status: pass
     human_judgment: false
 duration: 2min
@@ -94,9 +94,9 @@ None.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/tests/release_rpc.rs
-- FOUND: crates/octanest-api/tests/repo_rename_transfer.rs
-- FOUND: crates/octanest-db/tests/dialect_releases.rs
+- FOUND: crates/oxidean-api/tests/release_rpc.rs
+- FOUND: crates/oxidean-api/tests/repo_rename_transfer.rs
+- FOUND: crates/oxidean-db/tests/dialect_releases.rs
 - FOUND: apps/web/src/routes/$owner.$repo.releases.integration.test.ts
 - FOUND: apps/web/src/routes/$owner.$repo.settings.rename-transfer.integration.test.ts
 - FOUND: commit 4b21443

@@ -1,4 +1,4 @@
-import { gpgKeyAddMutationOptions } from "@octanest/api-client";
+import { gpgKeyAddMutationOptions } from "@oxidean/api-client";
 import { useMutation, useQueryClient } from "@octanejs/tanstack-query";
 import { useForm } from "@octanejs/tanstack-form";
 import { useState } from "octane";

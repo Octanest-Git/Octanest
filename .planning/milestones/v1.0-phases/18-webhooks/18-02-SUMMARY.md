@@ -21,11 +21,11 @@ tech-stack:
   patterns: ["DB-backed pending deliveries + in-process drain worker"]
 key-files:
   created:
-    - crates/octanest-api/src/webhook/worker.rs
+    - crates/oxidean-api/src/webhook/worker.rs
   modified:
-    - crates/octanest-api/src/webhook/deliver.rs
-    - crates/octanest-api/src/webhook/mod.rs
-    - crates/octanest-api/src/jobs/schedule.rs
+    - crates/oxidean-api/src/webhook/deliver.rs
+    - crates/oxidean-api/src/webhook/mod.rs
+    - crates/oxidean-api/src/jobs/schedule.rs
     - docs/CONFIGURATION.md
 key-decisions:
   - "Max attempts 5, timeout 10s, worker interval 5s via ENV"
@@ -36,7 +36,7 @@ coverage:
     requirement: HOOK-02
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_hmac) | test(webhook_ssrf) | test(webhook_timeout)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_hmac) | test(webhook_ssrf) | test(webhook_timeout)'"
         status: pass
     human_judgment: false
   - id: D2
@@ -44,7 +44,7 @@ coverage:
     requirement: HOOK-03
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(webhook_retry) | test(webhook_deliveries) | test(webhook_ping) | test(webhook_redeliver)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(webhook_retry) | test(webhook_deliveries) | test(webhook_ping) | test(webhook_redeliver)'"
         status: pass
     human_judgment: false
 duration: 7min
@@ -82,5 +82,5 @@ None - plan executed as written.
 
 ## Self-Check: PASSED
 
-- FOUND: crates/octanest-api/src/webhook/worker.rs
+- FOUND: crates/oxidean-api/src/webhook/worker.rs
 - FOUND: 1404f77

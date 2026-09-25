@@ -19,7 +19,7 @@
 - **D-PKG-06:** **Write+** on owning repo/org may **publish**; **Admin** may **delete** — **Reversibility:** reversible
 
 #### C — Storage
-- **D-PKG-07:** Separate **`OCTANEST_PACKAGES_DIR`** volume (not LFS, not release-assets) — **Reversibility:** costly — ops/backup split
+- **D-PKG-07:** Separate **`OXIDEAN_PACKAGES_DIR`** volume (not LFS, not release-assets) — **Reversibility:** costly — ops/backup split
 - **D-PKG-08:** **Content-addressed** blob store with **cross-package dedup** (especially OCI layers) — **Reversibility:** costly — GC/refcount
 - **D-PKG-09:** **Max blob size + per-owner quotas** via env defaults + Admin UI; **reject** over-limit uploads — **Reversibility:** reversible
 
@@ -63,9 +63,9 @@
 
 ## Summary
 
-Phase 20 adds a same-host, path-prefixed multi-format registry to the existing Rust Axum API: OCI at `/v2`, npm at `/npm`, generic at `/generic`. Ownership is `owner + name` with optional repo link. Auth is hybrid — reuse Phase 10 `Capability` ACL (Write+ publish, Admin delete) and extend Phase 8 PATs with `package:read` / `package:write`. Blobs live in a new `OCTANEST_PACKAGES_DIR` content-addressed store (LFS-like sharding/refcount, separate volume). Immutability matches the locked GitHub-aligned rule: OCI digests immutable / tags mutable; npm & generic versions no-overwrite (delete then republish allowed).
+Phase 20 adds a same-host, path-prefixed multi-format registry to the existing Rust Axum API: OCI at `/v2`, npm at `/npm`, generic at `/generic`. Ownership is `owner + name` with optional repo link. Auth is hybrid — reuse Phase 10 `Capability` ACL (Write+ publish, Admin delete) and extend Phase 8 PATs with `package:read` / `package:write`. Blobs live in a new `OXIDEAN_PACKAGES_DIR` content-addressed store (LFS-like sharding/refcount, separate volume). Immutability matches the locked GitHub-aligned rule: OCI digests immutable / tags mutable; npm & generic versions no-overwrite (delete then republish allowed).
 
-Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Management plus a Bearer token challenge (not cookies). Cosign/Referrers API is **not** required for basic push/pull — defer. npm needs packument GET, publish PUT with attachments, tarball GET, dist-tags, deprecate, and `/-/v1/search`. Generic should follow Gitea’s PUT/GET/DELETE file layout under Octanest’s `/generic` prefix. Critical edge work: Traefik + Vite must route `/v2|/npm|/generic` to the API before the SPA; reserve usernames `v2`, `npm`, `generic`.
+Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Management plus a Bearer token challenge (not cookies). Cosign/Referrers API is **not** required for basic push/pull — defer. npm needs packument GET, publish PUT with attachments, tarball GET, dist-tags, deprecate, and `/-/v1/search`. Generic should follow Gitea’s PUT/GET/DELETE file layout under Oxidean’s `/generic` prefix. Critical edge work: Traefik + Vite must route `/v2|/npm|/generic` to the API before the SPA; reserve usernames `v2`, `npm`, `generic`.
 
 **Primary recommendation:** Implement three Axum protocol modules + shared content-addressed package blob store and package ACL helpers in-tree (extend existing `axum`/`sha2`/`uuid`); pin OCI Distribution Spec **v1.1.1** without Referrers; use per-owner npm registry URL `/npm/{owner}/`; defer cosign/referrers.
 
@@ -77,31 +77,31 @@ Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Manag
 | npm registry protocol | API / Backend | — | npm/pnpm/yarn hit registry host paths; session cookies unused |
 | Generic/raw upload/download | API / Backend | — | curl/CI PUT/GET with PAT Basic |
 | Package ACL + PAT scope checks | API / Backend | Database / Storage | Mirror `repo/acl.rs` Capability ladder + PAT intersection |
-| Content-addressed blob persistence | Database / Storage | API / Backend | Files under `OCTANEST_PACKAGES_DIR`; metadata/refcounts in DB |
+| Content-addressed blob persistence | Database / Storage | API / Backend | Files under `OXIDEAN_PACKAGES_DIR`; metadata/refcounts in DB |
 | Owner/repo packages UI + type-to-confirm delete | Browser / Client | Frontend Server (SSR) | Octane `.tsrx` + TanStack Query; SSR loaders for lists |
 | Admin quota/usage | Browser / Client | API / Backend | Admin RPC + ENV defaults pattern from LFS decisions |
 | Edge routing `/v2|/npm|/generic` | CDN / Static (Traefik) | API / Backend | Must outrank SPA catch-all like `.git` PathRegexp |
 
 ## Project Constraints (from .cursor/rules/)
 
-- One product: cloud + self-host; Bun workspaces + Cargo crates — no parallel app structure. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- One product: cloud + self-host; Bun workspaces + Cargo crates — no parallel app structure. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 - Web UI is **Octane** (`.tsrx`), not React; load Octane skill before UI edits; TanStack Query for server data. [VERIFIED: `.cursor/rules/octane-ui.mdc`]
 - RPC types: change Rust → `make rpc-gen`; never hand-edit `packages/api-client` as source of truth. [VERIFIED: `.cursor/rules/rpc-codegen.mdc`]
-- DB dialects only inside `crates/octanest-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
-- No secrets in commits/examples; prefer `make test` / `make rpc-sync-check` / relevant e2e. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
-- Prefer extending existing patterns (Query session helpers, auth gates, Make targets) over new frameworks. [VERIFIED: `.cursor/rules/octanest-core.mdc`]
+- DB dialects only inside `crates/oxidean-db`. [VERIFIED: `.cursor/rules/rust-crates.mdc`]
+- No secrets in commits/examples; prefer `make test` / `make rpc-sync-check` / relevant e2e. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
+- Prefer extending existing patterns (Query session helpers, auth gates, Make targets) over new frameworks. [VERIFIED: `.cursor/rules/oxidean-core.mdc`]
 
 ## Standard Stack
 
 ### Core
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| `axum` | `0.8` (lock `0.8.9`) | HTTP routes for `/v2`, `/npm`, `/generic` + multipart uploads | Already API framework; multipart feature present [VERIFIED: `crates/octanest-api/Cargo.toml:26`] |
-| `tower-http` | `0.6` (lock `0.6.11`) | CORS/trace for registry clients | Existing stack [VERIFIED: `crates/octanest-api/Cargo.toml:27`] |
-| `sha2` | `0.11.0` declared (lock resolves `0.10.9`) | Content-address digests for blob store | Already used for PAT hashing patterns [VERIFIED: `crates/octanest-api/Cargo.toml:39`] |
-| `uuid` | `1.26.0` | OCI blob upload session IDs | Already depended [VERIFIED: `crates/octanest-api/Cargo.toml:41`] |
-| `tempfile` | `3` (lock `3.27.0`) | Staging incomplete uploads before digest commit | Already depended [VERIFIED: `crates/octanest-api/Cargo.toml:49`] |
-| `octanest-db` / migrations | workspace | Package metadata, blob refcounts, quotas | Dialect SQL boundary [ASSUMED: next migration after `0010_orgs_acl`] |
+| `axum` | `0.8` (lock `0.8.9`) | HTTP routes for `/v2`, `/npm`, `/generic` + multipart uploads | Already API framework; multipart feature present [VERIFIED: `crates/oxidean-api/Cargo.toml:26`] |
+| `tower-http` | `0.6` (lock `0.6.11`) | CORS/trace for registry clients | Existing stack [VERIFIED: `crates/oxidean-api/Cargo.toml:27`] |
+| `sha2` | `0.11.0` declared (lock resolves `0.10.9`) | Content-address digests for blob store | Already used for PAT hashing patterns [VERIFIED: `crates/oxidean-api/Cargo.toml:39`] |
+| `uuid` | `1.26.0` | OCI blob upload session IDs | Already depended [VERIFIED: `crates/oxidean-api/Cargo.toml:41`] |
+| `tempfile` | `3` (lock `3.27.0`) | Staging incomplete uploads before digest commit | Already depended [VERIFIED: `crates/oxidean-api/Cargo.toml:49`] |
+| `oxidean-db` / migrations | workspace | Package metadata, blob refcounts, quotas | Dialect SQL boundary [ASSUMED: next migration after `0010_orgs_acl`] |
 
 ### Supporting
 | Library | Version | Purpose | When to Use |
@@ -158,7 +158,7 @@ Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Manag
                     └─────────────────────────────┘  │
                                                      ▼
                                          ┌──────────────────────┐
-                                         │ octanest-api (Axum)  │
+                                         │ oxidean-api (Axum)  │
                                          │                      │
                                          │  /v2/*  OCI module   │
                                          │  /npm/* npm module   │
@@ -169,9 +169,9 @@ Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Manag
                                                     │
                           ┌─────────────────────────┼─────────────────────────┐
                           ▼                         ▼                         ▼
-                 package ACL helper          content-addressed           octanest-db
+                 package ACL helper          content-addressed           oxidean-db
                  (Capability + PAT           blob store                  packages /
-                  package:read/write)        OCTANEST_PACKAGES_DIR       blobs / refs
+                  package:read/write)        OXIDEAN_PACKAGES_DIR       blobs / refs
                           │                         │                         │
                           └────────────┬────────────┴────────────┬────────────┘
                                        ▼                         ▼
@@ -181,7 +181,7 @@ Research confirms docker/podman need Distribution Spec Pull+Push+Discovery+Manag
 
 ### Recommended Project Structure
 ```
-crates/octanest-api/src/
+crates/oxidean-api/src/
 ├── packages/
 │   ├── mod.rs              # shared types, mount helpers
 │   ├── acl.rs              # package Capability + visibility
@@ -193,7 +193,7 @@ crates/octanest-api/src/
 ├── routes/                 # wire mounts in router (alongside git_smart_http)
 └── … existing pat/, repo/acl.rs (extend, do not fork)
 
-crates/octanest-db/migrations/{postgres,mysql,sqlite}/
+crates/oxidean-db/migrations/{postgres,mysql,sqlite}/
 └── 00xx_packages.sql       # packages, versions, blobs, blob_refs, quotas
 
 apps/web/src/routes/
@@ -208,7 +208,7 @@ apps/web/src/routes/
 **Example:**
 ```text
 # Client
-docker login localhost -u USER -p octanest_pat_…
+docker login localhost -u USER -p oxidean_pat_…
 docker tag alpine:latest localhost/acme/api:1.0.0
 docker push localhost/acme/api:1.0.0
 
@@ -228,17 +228,17 @@ DELETE /v2/acme/api/manifests/sha256:…
 **Example:**
 ```bash
 npm config set @acme:registry https://localhost/npm/acme/
-npm config set -- '//localhost/npm/acme/:_authToken' "octanest_pat_…"
+npm config set -- '//localhost/npm/acme/:_authToken' "oxidean_pat_…"
 npm publish --access restricted
 ```
-[CITED: https://docs.gitea.com/usage/packages/npm] (Gitea uses `/api/packages/{owner}/npm/` — Octanest substitutes locked `/npm/{owner}/`)
+[CITED: https://docs.gitea.com/usage/packages/npm] (Gitea uses `/api/packages/{owner}/npm/` — Oxidean substitutes locked `/npm/{owner}/`)
 
 ### Pattern 3: Generic immutable file versions
 **What:** `PUT/GET/DELETE /generic/{owner}/{name}/{version}/{filename}` with `409` on overwrite; version DELETE removes all files for that version id.
 **When to use:** PKG-03 / D-PKG-16.
 **Example:**
 ```bash
-curl --user user:octanest_pat_… --upload-file app.bin \
+curl --user user:oxidean_pat_… --upload-file app.bin \
   https://localhost/generic/acme/tool/1.0.0/app.bin
 ```
 [CITED: https://docs.gitea.com/usage/packages/generic]
@@ -258,7 +258,7 @@ curl --user user:octanest_pat_… --upload-file app.bin \
 Extend existing enums:
 
 ```rust
-// Current classic / FG surface [VERIFIED: crates/octanest-core/src/pat_types.rs:49-51]
+// Current classic / FG surface [VERIFIED: crates/oxidean-core/src/pat_types.rs:49-51]
 // pub enum ClassicPatScope { Repo, }
 // Add: PackageRead, PackageWrite  (serialized as "package:read" / "package:write")
 // FG: add packages: ContentsPerm-like PackagesPerm { Read, Write }
@@ -266,18 +266,18 @@ Extend existing enums:
 
 Capability ladder already:
 
-```24:28:crates/octanest-api/src/repo/acl.rs
+```24:28:crates/oxidean-api/src/repo/acl.rs
 pub enum Capability {
     Read = 1,
     Write = 2,
     Admin = 3,
 }
 ```
-[VERIFIED: `crates/octanest-api/src/repo/acl.rs:24-28`]
+[VERIFIED: `crates/oxidean-api/src/repo/acl.rs:24-28`]
 
 ### Pattern 5: Content-addressed package blobs (LFS twin, not LFS store)
-**What:** Store bytes at `{OCTANEST_PACKAGES_DIR}/{algo}/{aa}/{bb}/{digest}`; DB rows track package→blob refs and refcounts; GC deletes refcount=0 after grace period.
-**When to use:** All formats (OCI layers/configs/manifests bytes, npm tarballs, generic files) — D-PKG-07/08; mirror Phase 14 LFS decisions without sharing `OCTANEST_LFS_DIR`.
+**What:** Store bytes at `{OXIDEAN_PACKAGES_DIR}/{algo}/{aa}/{bb}/{digest}`; DB rows track package→blob refs and refcounts; GC deletes refcount=0 after grace period.
+**When to use:** All formats (OCI layers/configs/manifests bytes, npm tarballs, generic files) — D-PKG-07/08; mirror Phase 14 LFS decisions without sharing `OXIDEAN_LFS_DIR`.
 
 ### Anti-Patterns to Avoid
 - **Serving registry routes from the web SPA:** Traefik priority-1 Host rule would HTML the `/v2` probe — break docker. Add API routers.
@@ -286,7 +286,7 @@ pub enum Capability {
 - **Overwriting npm/generic versions:** Violates D-PKG-10; return conflict (npm EPUBLISHCONFLICT / HTTP 409).
 - **Implementing Referrers/cosign as Phase 20 blocker:** Not required for docker/podman push/pull; clients fall back to referrers tag schema. [CITED: OCI Distribution Spec v1.1.1 “Unavailable Referrers API”]
 - **Hand-editing `packages/api-client`:** Use `make rpc-gen` for package list/delete RPCs.
-- **Dialect SQL in `octanest-api`:** Package tables go through `octanest-db` only.
+- **Dialect SQL in `oxidean-api`:** Package tables go through `oxidean-db` only.
 
 ## Don't Hand-Roll
 
@@ -312,7 +312,7 @@ pub enum Capability {
 
 ### Pitfall 2: Username collision with `v2` / `npm` / `generic`
 **What goes wrong:** Owner slug steals registry path or SPA route.
-**Why it happens:** Flat `/{owner}/{repo}` + reserved list currently omits these. [VERIFIED: `crates/octanest-core/src/auth_types.rs:254-302`] — list ends at `"oauth2"`; no `v2`/`npm`/`generic`.
+**Why it happens:** Flat `/{owner}/{repo}` + reserved list currently omits these. [VERIFIED: `crates/oxidean-core/src/auth_types.rs:254-302`] — list ends at `"oauth2"`; no `v2`/`npm`/`generic`.
 **How to avoid:** Add `v2`, `npm`, `generic` to `RESERVED_USERNAMES` in the same phase as routes.
 **Warning signs:** Org create succeeds for slug `npm`; registry 404s ambiguously.
 
@@ -324,8 +324,8 @@ pub enum Capability {
 
 ### Pitfall 4: npm tarball URLs point at wrong host/path
 **What goes wrong:** Install resolves packument then 404s tarball.
-**Why it happens:** Packument `dist.tarball` must be absolute URL under `/npm/{owner}/…/-/….tgz` using `OCTANEST_PUBLIC_ORIGIN`, not request Host alone (SSRFish Host injection / Compose internal hostnames).
-**How to avoid:** Build tarball URLs from `OCTANEST_PUBLIC_ORIGIN` (same as clone URLs Phase 8 D-19).
+**Why it happens:** Packument `dist.tarball` must be absolute URL under `/npm/{owner}/…/-/….tgz` using `OXIDEAN_PUBLIC_ORIGIN`, not request Host alone (SSRFish Host injection / Compose internal hostnames).
+**How to avoid:** Build tarball URLs from `OXIDEAN_PUBLIC_ORIGIN` (same as clone URLs Phase 8 D-19).
 **Warning signs:** Publish OK, `npm install` fails fetching tarball.
 
 ### Pitfall 5: Blob GC deletes live layers
@@ -380,7 +380,7 @@ DELETE … unpublish paths (version delete)   # Admin ACL; type-to-confirm in UI
 
 ### PAT scope extension sketch
 ```rust
-// Source: extend crates/octanest-core/src/pat_types.rs (current Repo-only classic)
+// Source: extend crates/oxidean-core/src/pat_types.rs (current Repo-only classic)
 // [VERIFIED baseline]: ClassicPatScope::Repo only today (pat_types.rs:49-51)
 
 #[serde(rename_all = "lowercase")]
@@ -443,7 +443,7 @@ pub enum ClassicPatScope {
 ## Open Questions (RESOLVED)
 
 1. **Migration numbering collision with Phases 11–19**
-   - What we know: Postgres migrations currently end at `0010_orgs_acl`. [VERIFIED: listing `crates/octanest-db/migrations/postgres/`]
+   - What we know: Postgres migrations currently end at `0010_orgs_acl`. [VERIFIED: listing `crates/oxidean-db/migrations/postgres/`]
    - What's unclear: Which phase executes first and claims `0011+`.
    - Recommendation: Planner uses placeholder `00xx_packages` and resolves at execute against latest migration.
    - RESOLVED: Plans 00/02 use `00xx_packages` placeholder; execute resolves the real id against the latest dialect migration at apply time.
@@ -484,33 +484,33 @@ Step 2.6: External tools identified and probed as above.
 |----------|-------|
 | Framework | cargo-nextest (Rust) + Vitest `^5` (web) |
 | Config file | `.config/nextest.toml`; `apps/web/vitest.config.ts` |
-| Quick run command | `cargo nextest run -p octanest-api -- packages` (filter TBD) / `cd apps/web && bun run test:unit` |
+| Quick run command | `cargo nextest run -p oxidean-api -- packages` (filter TBD) / `cd apps/web && bun run test:unit` |
 | Full suite command | `make test` |
 
 ### Phase Requirements → Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| PKG-01 | Anonymous pull public OCI; auth push; tag list/delete | integration | `cargo nextest run -p octanest-api -- oci_registry` | ❌ Wave 0 |
-| PKG-02 | Publish packument+tarball; install metadata; dist-tag; search; deprecate | integration | `cargo nextest run -p octanest-api -- npm_registry` | ❌ Wave 0 |
-| PKG-03 | Generic PUT/GET/DELETE; 409 overwrite | integration | `cargo nextest run -p octanest-api -- generic_registry` | ❌ Wave 0 |
-| PKG-04 | Private deny anonymous; Write+/package scopes enforce | integration | `cargo nextest run -p octanest-api -- package_acl` | ❌ Wave 0 |
+| PKG-01 | Anonymous pull public OCI; auth push; tag list/delete | integration | `cargo nextest run -p oxidean-api -- oci_registry` | ❌ Wave 0 |
+| PKG-02 | Publish packument+tarball; install metadata; dist-tag; search; deprecate | integration | `cargo nextest run -p oxidean-api -- npm_registry` | ❌ Wave 0 |
+| PKG-03 | Generic PUT/GET/DELETE; 409 overwrite | integration | `cargo nextest run -p oxidean-api -- generic_registry` | ❌ Wave 0 |
+| PKG-04 | Private deny anonymous; Write+/package scopes enforce | integration | `cargo nextest run -p oxidean-api -- package_acl` | ❌ Wave 0 |
 | PKG-05 | List RPC; delete Admin+confirm | integration + web | `cargo nextest run … package_rpc`; Vitest owner packages route | ❌ Wave 0 |
 | Edge | Traefik `/v2` → API | smoke | `scripts/smoke-packages.sh` (skip without Docker) | ❌ Wave 0 |
 
 ### Sampling Rate
 - **Per task commit:** targeted nextest filter for touched protocol
-- **Per wave merge:** `cargo nextest run -p octanest-api -p octanest-db` + web unit/integration for package routes
+- **Per wave merge:** `cargo nextest run -p oxidean-api -p oxidean-db` + web unit/integration for package routes
 - **Phase gate:** `make test` + smoke-packages (skip-ok) green before `/gsd-verify-work`
 
 ### Wave 0 Gaps
-- [ ] `crates/octanest-api/tests/oci_registry.rs` — covers PKG-01
-- [ ] `crates/octanest-api/tests/npm_registry.rs` — covers PKG-02 / D-PKG-14
-- [ ] `crates/octanest-api/tests/generic_registry.rs` — covers PKG-03
-- [ ] `crates/octanest-api/tests/package_acl.rs` — covers PKG-04
-- [ ] `crates/octanest-db/tests/dialect_packages.rs` — multi-dialect metadata
+- [ ] `crates/oxidean-api/tests/oci_registry.rs` — covers PKG-01
+- [ ] `crates/oxidean-api/tests/npm_registry.rs` — covers PKG-02 / D-PKG-14
+- [ ] `crates/oxidean-api/tests/generic_registry.rs` — covers PKG-03
+- [ ] `crates/oxidean-api/tests/package_acl.rs` — covers PKG-04
+- [ ] `crates/oxidean-db/tests/dialect_packages.rs` — multi-dialect metadata
 - [ ] `apps/web/src/routes/…packages*.integration.test.ts` — PKG-05 UI
 - [ ] `scripts/smoke-packages.sh` + `make smoke-packages` — edge routing
-- [ ] Compose labels + `OCTANEST_PACKAGES_DIR` volume + Vite proxies — ops Wave 0/early plan
+- [ ] Compose labels + `OXIDEAN_PACKAGES_DIR` volume + Vite proxies — ops Wave 0/early plan
 
 ## Security Domain
 
@@ -531,7 +531,7 @@ Step 2.6: External tools identified and probed as above.
 | Pull private package anonymously | Information Disclosure | D-PKG-05; 401/404 policy consistent with git vs web (prefer 401 for registry clients) |
 | PAT with only `repo` scope publishes packages | Elevation of Privilege | Require explicit `package:write` (fail closed) |
 | Overwrite immutable version (supply-chain) | Tampering | Reject overwrite; immutable digests; mutable tags only for OCI |
-| Host header tarball SSRF / wrong origin | Spoofing | `OCTANEST_PUBLIC_ORIGIN` for absolute URLs |
+| Host header tarball SSRF / wrong origin | Spoofing | `OXIDEAN_PUBLIC_ORIGIN` for absolute URLs |
 | Blob store path traversal via crafted digest/name | Tampering | Strict digest regex; reject `..`; store only hex shards |
 | Quota bypass via parallel uploads | Denial of Service | Pre-declare size / enforce on stream; reject over max; quota check before commit |
 | Cross-package blob GC ORphan abuse | Denial of Service | Refcounts + grace; rate-limit failed auth (reuse Smart HTTP limiter) |
@@ -543,7 +543,7 @@ Step 2.6: External tools identified and probed as above.
 - OCI Distribution Spec v1.1.1 — https://raw.githubusercontent.com/opencontainers/distribution-spec/v1.1.1/spec.md — endpoints, Pull MUST, referrers optional
 - CNCF Distribution Token Auth — https://distribution.github.io/distribution/spec/auth/token/ — Bearer challenge flow
 - npm Registry API — https://raw.githubusercontent.com/npm/registry/main/docs/REGISTRY-API.md — packument/search
-- In-repo: `crates/octanest-core/src/pat_types.rs`, `crates/octanest-api/src/repo/acl.rs`, `docker-compose.yml`, `crates/octanest-core/src/auth_types.rs` RESERVED_USERNAMES
+- In-repo: `crates/oxidean-core/src/pat_types.rs`, `crates/oxidean-api/src/repo/acl.rs`, `docker-compose.yml`, `crates/oxidean-core/src/auth_types.rs` RESERVED_USERNAMES
 - Phase contexts: 20/08/10/14/15 CONTEXT.md (locked decisions)
 
 ### Secondary (MEDIUM confidence)

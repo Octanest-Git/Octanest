@@ -1,5 +1,5 @@
 import { useQuery } from "@octanejs/tanstack-query";
-import type { UserPublic } from "@octanest/api-client";
+import type { UserPublic } from "@oxidean/api-client";
 import {
   authBootstrapQueryOptions,
   authProviderConfigQueryOptions,

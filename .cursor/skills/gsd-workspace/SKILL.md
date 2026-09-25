@@ -47,10 +47,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/new-workspace.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/list-workspaces.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/workflows/remove-workspace.md
-@/home/jesse/wsl-projects/personal/typescript/octanest/.cursor/gsd-core/references/ui-brand.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/new-workspace.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/list-workspaces.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/workflows/remove-workspace.md
+@/home/jesse/wsl-projects/personal/typescript/oxidean/.cursor/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

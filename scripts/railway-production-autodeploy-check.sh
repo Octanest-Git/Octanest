@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Assert Octanest Cloud production has no GitHub deployment triggers
+# Assert Oxidean Cloud production has no GitHub deployment triggers
 # (autodeploy off). Staging is expected to keep triggers — not checked here.
 #
 # Usage:

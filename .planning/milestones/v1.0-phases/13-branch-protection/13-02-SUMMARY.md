@@ -15,15 +15,15 @@ actuals:
   commits: 1
 plan_head_before: fb91fbf545ff78331b42a8504f60c12d3349a4ff
 tech-stack:
-  added: ["octanest-protection-hook binary"]
+  added: ["oxidean-protection-hook binary"]
   patterns: ["Shared evaluate for hooks + pull.merge", "init_bare installs update hook"]
 key-files:
   created:
-    - crates/octanest-api/src/protection/mod.rs
-    - crates/octanest-db/migrations/sqlite/0017_branch_protection.sql
+    - crates/oxidean-api/src/protection/mod.rs
+    - crates/oxidean-db/migrations/sqlite/0017_branch_protection.sql
   modified:
-    - crates/octanest-api/src/pull/merge_ops.rs
-    - crates/octanest-git/src/cli.rs
+    - crates/oxidean-api/src/pull/merge_ops.rs
+    - crates/oxidean-git/src/cli.rs
 key-decisions:
   - "Error code pull.merge_blocked with ProtectionBlockReasons data payload"
   - "Full schema columns shipped in tracer migration to avoid follow-on churn"
@@ -34,7 +34,7 @@ coverage:
     requirement: PR-08
     verification:
       - kind: integration
-        ref: "cargo nextest run -p octanest-api -E 'test(branch_protect)'"
+        ref: "cargo nextest run -p oxidean-api -E 'test(branch_protect)'"
         status: pass
     human_judgment: false
 duration: 90min

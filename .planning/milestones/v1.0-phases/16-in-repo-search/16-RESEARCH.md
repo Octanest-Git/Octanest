@@ -23,7 +23,7 @@
 - **D-SRCH-08:** Skip **binary** blobs for code hits; enforce **soft caps** (max matches, max files scanned/returned) and a **server-side timeout** so large repos fail soft (`search.timeout` / truncated flag) rather than hang the RPC — **Reversibility:** reversible
 
 ### D — Issues & PRs (DB; Phase 12 model)
-- **D-SRCH-09:** **Issues** search: title/body (and comment text if cheap) substring match in **`octanest-db`**, building on Phase 11 `IssueListFilters.q` / ILIKE patterns — **Reversibility:** reversible
+- **D-SRCH-09:** **Issues** search: title/body (and comment text if cheap) substring match in **`oxidean-db`**, building on Phase 11 `IssueListFilters.q` / ILIKE patterns — **Reversibility:** reversible
 - **D-SRCH-10:** **Pull requests** search: same pattern against **Phase 12 PR persistence** (shared per-repo `#N` with issues per **D-PR-02**; title/body). Assume PR tables/RPC from `.planning/phases/12-pull-requests/12-CONTEXT.md` at execute time — **Reversibility:** reversible
 - **D-SRCH-11:** Issue vs PR tabs are **separate types** (GitHub). Do not return mixed issue+PR rows in one tab — **Reversibility:** reversible
 
@@ -63,7 +63,7 @@
 
 ## Summary
 
-GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hosted forges (notably **Gitea**) ship **repo-level code search via `git grep` without an indexer**, with optional Bleve/Elasticsearch for scale. Octanest already stores bare repos on disk behind `CliGitBackend`, has paged `git log`, and has issue title/body ILIKE filters — the natural Phase 16 path is **on-demand git grep + git log search + DB issue/PR search**, gated by existing `Capability::Read`, exposed as **`repo.search`**, with a GitHub-shaped repo search page.
+GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hosted forges (notably **Gitea**) ship **repo-level code search via `git grep` without an indexer**, with optional Bleve/Elasticsearch for scale. Oxidean already stores bare repos on disk behind `CliGitBackend`, has paged `git log`, and has issue title/body ILIKE filters — the natural Phase 16 path is **on-demand git grep + git log search + DB issue/PR search**, gated by existing `Capability::Read`, exposed as **`repo.search`**, with a GitHub-shaped repo search page.
 
 **Primary recommendation:** Extend `GitBackend` with `grep` + `log_search`; implement `repo.search` dispatching by `type`; reuse issue filters and Phase 12 PR rows; ship Octane `/{owner}/{repo}/search` with type tabs. No new search crates or Compose services.
 
@@ -73,7 +73,7 @@ GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hoste
 |------------|-------------|----------------|-----------|
 | ACL + soft not_found | API / Backend | — | Same as repo browse / issue.list |
 | Code grep / commit search | API / Backend | Database / Storage (bare repo FS) | Git CLI on bare path; no browser git |
-| Issue / PR text search | Database / Storage | API / Backend | Dialect SQL LIKE/ILIKE in `octanest-db` |
+| Issue / PR text search | Database / Storage | API / Backend | Dialect SQL LIKE/ILIKE in `oxidean-db` |
 | Qualifier parsing | API / Backend | — | Single shared parser before backends |
 | Search results UI | Browser / Client | Frontend Server (SSR) | Octane route + TanStack Query; optional SSR preload |
 | Global header search | — | — | Explicitly out of scope (stub remains) |
@@ -83,7 +83,7 @@ GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hoste
 - One product; Bun + Cargo — no parallel app structure. [VERIFIED]
 - Octane `.tsrx` for UI; TanStack Query for server data. [VERIFIED]
 - RPC: Rust → `make rpc-gen`. [VERIFIED]
-- Dialect SQL only in `octanest-db`. [VERIFIED]
+- Dialect SQL only in `oxidean-db`. [VERIFIED]
 - Prefer extending `GitBackend` / ACL / issue filters over new frameworks. [VERIFIED]
 
 ## Standard Stack
@@ -92,10 +92,10 @@ GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hoste
 
 | Library / Component | Version / Location | Purpose | Why Standard |
 |---------------------|--------------------|---------|--------------|
-| `GitBackend` / `CliGitBackend` | `crates/octanest-git` | `git grep`, `git log --grep` / `--author` | Existing CLI adapter; Gitea-proven; GIT-09/10 swappable [VERIFIED: `backend.rs`] |
-| Axum RPC `repo.*` | `octanest-api` | `repo.search` | Matches browse RPCs [VERIFIED: `rpc.rs`] |
+| `GitBackend` / `CliGitBackend` | `crates/oxidean-git` | `git grep`, `git log --grep` / `--author` | Existing CLI adapter; Gitea-proven; GIT-09/10 swappable [VERIFIED: `backend.rs`] |
+| Axum RPC `repo.*` | `oxidean-api` | `repo.search` | Matches browse RPCs [VERIFIED: `rpc.rs`] |
 | `Capability::Read` | `repo/acl.rs` | Permission gate | Phase 10 |
-| `IssueListFilters.q` | `octanest-db/src/issues.rs` | Issue substring search | Already shipped [VERIFIED] |
+| `IssueListFilters.q` | `oxidean-db/src/issues.rs` | Issue substring search | Already shipped [VERIFIED] |
 | Phase 12 PR tables | (execute-time) | PR title/body search | D-PR-02 shared `#N` [ASSUMED from 12-CONTEXT] |
 | Octane + TanStack Query | `apps/web` | Search UI | Project UI stack |
 
@@ -103,9 +103,9 @@ GitHub’s hosted search uses a multi-shard indexer and rich grammar. Self-hoste
 
 | Component | Purpose | When |
 |-----------|---------|------|
-| `OCTANEST_SEARCH_TIMEOUT_MS` | Cap git subprocess wall time | Default **8000** |
-| `OCTANEST_SEARCH_MAX_MATCHES` | Cap code/commit hits returned | Default **100** |
-| `OCTANEST_SEARCH_MAX_FILES` | Cap distinct code files in page | Default **50** |
+| `OXIDEAN_SEARCH_TIMEOUT_MS` | Cap git subprocess wall time | Default **8000** |
+| `OXIDEAN_SEARCH_MAX_MATCHES` | Cap code/commit hits returned | Default **100** |
+| `OXIDEAN_SEARCH_MAX_FILES` | Cap distinct code files in page | Default **50** |
 | Qualifier parser (in-tree) | Split `is:` / `author:` / `path:` | Small pure Rust module — do not add a search-DSL crate |
 
 ### Alternatives Considered
@@ -183,7 +183,7 @@ Browser /search?q&type
 
 | Req | Behavior | Command |
 |-----|----------|---------|
-| GIT-18 code | Read user finds seeded file content via `repo.search` type=code | `cargo nextest run -p octanest-api -E 'test(repo_search_code)'` |
+| GIT-18 code | Read user finds seeded file content via `repo.search` type=code | `cargo nextest run -p oxidean-api -E 'test(repo_search_code)'` |
 | GIT-18 commits | Message/author hit via type=commits | `… test(repo_search_commits)` |
 | GIT-18 issues | Title/body hit via type=issues | `… test(repo_search_issues)` |
 | GIT-18 PRs | Title/body hit via type=pulls | `… test(repo_search_pulls)` |
@@ -206,7 +206,7 @@ Browser /search?q&type
 - Gitea docs: repository indexer + builtin git grep — https://docs.gitea.com/administration/repo-indexer/
 - Gitea PR #29998 — repo code search without indexer
 - GitHub search REST overview — https://docs.github.com/en/rest/search/search
-- In-tree: `crates/octanest-git`, `crates/octanest-db/src/issues.rs`, `apps/web/src/components/global-search.tsrx`, `12-CONTEXT.md`
+- In-tree: `crates/oxidean-git`, `crates/oxidean-db/src/issues.rs`, `apps/web/src/components/global-search.tsrx`, `12-CONTEXT.md`
 
 **Research date:** 2026-09-16  
 Research complete — ready for planning.

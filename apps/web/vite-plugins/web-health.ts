@@ -1,7 +1,7 @@
 /**
  * Container / Compose probe for the web process (PLAT smoke, docker healthcheck).
  *
- * Deliberately gated: only `Octanest-Health-Probe: 1` returns 200 JSON.
+ * Deliberately gated: only `Oxidean-Health-Probe: 1` returns 200 JSON.
  * Anything else (including Traefik/public browsers) gets 404 so the endpoint
  * is not a free liveness oracle on the SPA origin.
  *
@@ -12,7 +12,7 @@ import type { Connect, Plugin } from "vite";
 
 export const WEB_HEALTH_PATH = "/health";
 /** Node lowercases incoming header names. */
-export const WEB_HEALTH_PROBE_HEADER = "octanest-health-probe";
+export const WEB_HEALTH_PROBE_HEADER = "oxidean-health-probe";
 export const WEB_HEALTH_PROBE_VALUE = "1";
 
 export function isAuthorizedWebHealthProbe(headers: Connect.IncomingMessage["headers"]): boolean {
@@ -47,7 +47,7 @@ export function webHealthMiddleware(): Connect.NextHandleFunction {
 export function webHealthPlugin(): Plugin {
   const handle = webHealthMiddleware();
   return {
-    name: "octanest-web-health",
+    name: "oxidean-web-health",
     configureServer(server) {
       // Register before internal middleware so we win over `/health` → API proxy.
       server.middlewares.use(handle);

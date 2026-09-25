@@ -35,7 +35,7 @@ key-files:
     - apps/web/src/routes/verify.tsrx
     - apps/web/src/components/verify-banner.tsrx
   modified:
-    - crates/octanest-api/src/bin/rpc_gen.rs
+    - crates/oxidean-api/src/bin/rpc_gen.rs
     - packages/api-client/src/index.ts
     - apps/web/package.json
     - apps/web/src/routes/__root.tsrx
@@ -60,7 +60,7 @@ coverage:
     requirement: AUTH-04
     verification:
       - kind: other
-        ref: "cargo run -p octanest-api --bin rpc-gen && grep email_verified packages/api-client/src/index.ts"
+        ref: "cargo run -p oxidean-api --bin rpc-gen && grep email_verified packages/api-client/src/index.ts"
         status: pass
       - kind: other
         ref: "bun run build (apps/web)"
@@ -120,7 +120,7 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `crates/octanest-api/src/bin/rpc_gen.rs` — UserPublic.email_verified + verify/reset/privilegedPing client surface
+- `crates/oxidean-api/src/bin/rpc_gen.rs` — UserPublic.email_verified + verify/reset/privilegedPing client surface
 - `packages/api-client/src/index.ts` — regenerated (do not hand-edit)
 - `apps/web/package.json` / `bun.lock` — `input-otp@1.5.0`
 - `apps/web/src/components/ui/input-otp.tsrx` — thin OTP wrapper (8 numeric slots)
