@@ -86,12 +86,12 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
 2. GitHub → **Actions** → **Production deploy** → Run workflow:
    - **promote** — `serviceInstanceDeployV2` with `commitSha` for `api` / `web` / `gateway` (default: `main` HEAD). Gated on CI success for that SHA. Leaves production variables alone.
    - **rollback** — `deploymentRollback` to the prior `canRollback` deployment on each of those services.
-   - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN` for rollback target lookup).
+   - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN`/`RAILWAY_API_TOKEN` for rollback target lookup).
 3. Smoke `https://app.oxidean.dev/health` (skipped on dry-run).
 
 Scripts: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh), [`scripts/railway-production-autodeploy-check.sh`](../scripts/railway-production-autodeploy-check.sh) (`make cloud-production-autodeploy-check`). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 
-**GitHub Environment `Oxidean / production`:** add `RAILWAY_TOKEN`; enable required reviewers if you want an approval gate on the button.
+**GitHub Environment `Oxidean / production`:** add `RAILWAY_TOKEN` (Railway project token scoped to the production environment — sent as `Project-Access-Token`, not Bearer; an account/workspace token in `RAILWAY_API_TOKEN` also works). Enable required reviewers if you want an approval gate on the button.
 
 ## Actions runner service
 

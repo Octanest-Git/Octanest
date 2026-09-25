@@ -75,7 +75,7 @@ Do **not** use Railway Environment Sync to promote: Sync copies service **variab
    - `dry_run=true` — resolves SHA / CI / rollback targets and prints the plan only (no deploys, rollbacks, or health probe).
 3. Confirm `GET https://app.oxidean.dev/health` (skipped when `dry_run=true`).
 
-**One-time GitHub setup:** On Environment [`Oxidean / production`](https://github.com/oxidean/oxidean/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` (token with deploy rights), optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`. Confirm production Autodeploy stays off: `scripts/railway-production-autodeploy-check.sh` / `make cloud-production-autodeploy-check`.
+**One-time GitHub setup:** On Environment [`Oxidean / production`](https://github.com/oxidean/oxidean/settings/environments/22303549290/edit), add secret `RAILWAY_TOKEN` — a Railway **project token** scoped to the *production* environment (project Settings → Tokens). The deploy script sends it via the `Project-Access-Token` header; a project token passed as a `Bearer` credential is rejected. An account/workspace token works instead via `RAILWAY_API_TOKEN` (`Authorization: Bearer`). Optionally enable required reviewers. Local dry-run: `scripts/railway-production-deploy.sh list` / `promote <sha> --dry-run` / `rollback --dry-run`. Confirm production Autodeploy stays off: `scripts/railway-production-autodeploy-check.sh` / `make cloud-production-autodeploy-check`.
 
 **Avoid:** Sync staging → production unless you carefully reject variable diffs in staged changes. **Avoid:** re-enabling Autodeploy on production after an IaC apply.
 

@@ -6,8 +6,10 @@
 #   RAILWAY_TOKEN=… scripts/railway-production-autodeploy-check.sh
 #   make cloud-production-autodeploy-check
 #
-# Prefers `railway api` (CLI login). Falls back to curl + RAILWAY_TOKEN /
-# ~/.railway/config.json accessToken.
+# Prefers `railway api` (CLI login). Falls back to curl with the first
+# available credential: RAILWAY_TOKEN (project token → `Project-Access-Token`
+# header), RAILWAY_API_TOKEN (account/workspace token → `Authorization:
+# Bearer`), or ~/.railway/config.json accessToken (Bearer).
 #
 # Exit 0 when production api/web/gateway have zero deploymentTriggers.
 # Exit 1 if any trigger exists (autodeploy would fire on push to the branch).
@@ -42,9 +44,16 @@ need_jq() {
   command -v jq >/dev/null 2>&1 || die "jq is required"
 }
 
-resolve_token() {
+# Prints one curl config-file line selecting the right auth header for the
+# available credential. Railway project tokens are NOT bearer tokens — they
+# only authenticate via the `Project-Access-Token` header.
+resolve_auth_header() {
   if [[ -n "${RAILWAY_TOKEN:-}" ]]; then
-    printf '%s' "$RAILWAY_TOKEN"
+    printf 'header = "Project-Access-Token: %s"\n' "$RAILWAY_TOKEN"
+    return
+  fi
+  if [[ -n "${RAILWAY_API_TOKEN:-}" ]]; then
+    printf 'header = "Authorization: Bearer %s"\n' "$RAILWAY_API_TOKEN"
     return
   fi
   local cfg="${HOME}/.railway/config.json"
@@ -52,11 +61,11 @@ resolve_token() {
     local t
     t="$(jq -r '.user.accessToken // .user.token // empty' "$cfg" 2>/dev/null || true)"
     if [[ -n "$t" && "$t" != "null" ]]; then
-      printf '%s' "$t"
+      printf 'header = "Authorization: Bearer %s"\n' "$t"
       return
     fi
   fi
-  die "RAILWAY_TOKEN is unset and ~/.railway/config.json has no access token (run railway login or set the secret)"
+  die "no Railway credential: set RAILWAY_TOKEN (project token) or RAILWAY_API_TOKEN (account/workspace token), or run railway login"
 }
 
 # Prints response JSON to stdout.
@@ -72,8 +81,8 @@ fetch_triggers() {
     )" "$QUERY"
     return
   fi
-  local token payload raw
-  token="$(resolve_token)"
+  local auth_line payload raw
+  auth_line="$(resolve_auth_header)"
   payload="$(
     jq -n \
       --arg q "$QUERY" \
@@ -92,7 +101,7 @@ fetch_triggers() {
   raw="$(
     printf '%s' "$payload" | curl -sS "$API_URL" \
       -H "Content-Type: application/json" \
-      --config <(printf 'header = "Authorization: Bearer %s"\n' "$token") \
+      --config <(printf '%s' "$auth_line") \
       -d @-
   )" || die "Railway GraphQL request failed"
   if echo "$raw" | jq -e '.errors? | select(length > 0)' >/dev/null 2>&1; then
