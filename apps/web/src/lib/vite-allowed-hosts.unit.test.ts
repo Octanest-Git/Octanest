@@ -8,16 +8,16 @@ describe("parseViteAllowedHosts", () => {
   });
 
   it("splits and trims comma-separated hosts", () => {
-    expect(parseViteAllowedHosts(" .up.railway.app , Oxidean.jereko.dev ", undefined)).toEqual([
+    expect(parseViteAllowedHosts(" .up.railway.app , app.oxidean.dev ", undefined)).toEqual([
       ".up.railway.app",
-      "oxidean.jereko.dev",
+      "app.oxidean.dev",
     ]);
   });
 
   it("adds hostname from OXIDEAN_PUBLIC_ORIGIN", () => {
-    expect(parseViteAllowedHosts(".up.railway.app", "https://oxidean.jereko.dev/")).toEqual([
+    expect(parseViteAllowedHosts(".up.railway.app", "https://app.oxidean.dev/")).toEqual([
       ".up.railway.app",
-      "oxidean.jereko.dev",
+      "app.oxidean.dev",
     ]);
   });
 

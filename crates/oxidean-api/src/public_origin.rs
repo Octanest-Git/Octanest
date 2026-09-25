@@ -175,13 +175,13 @@ mod tests {
         let _g = ENV_LOCK.lock().unwrap();
         clear_origin_env();
         unsafe {
-            std::env::set_var("OXIDEAN_PUBLIC_ORIGIN", "https://oxidean.jereko.dev");
+            std::env::set_var("OXIDEAN_PUBLIC_ORIGIN", "https://app.oxidean.dev");
             std::env::set_var(
                 "RAILWAY_PUBLIC_DOMAIN",
                 "gateway-production.up.railway.app",
             );
         }
-        assert_eq!(resolve_public_origin(), "https://oxidean.jereko.dev");
+        assert_eq!(resolve_public_origin(), "https://app.oxidean.dev");
         clear_origin_env();
     }
 

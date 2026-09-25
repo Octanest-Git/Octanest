@@ -122,7 +122,7 @@ export default defineRailway((ctx) => {
       // Public site origin — track gateway domain (PR Environments need this).
       OXIDEAN_PUBLIC_ORIGIN: "https://${{gateway.RAILWAY_PUBLIC_DOMAIN}}",
       // Vite preview Host allowlist (comma-separated; leading `.` = suffix).
-      // Example: `.up.railway.app,oxidean.jereko.dev` — see docs/CONFIGURATION.md.
+      // Example: `.up.railway.app,app.oxidean.dev` — see docs/CONFIGURATION.md.
       OXIDEAN_VITE_ALLOWED_HOSTS: preserve(),
       // CloneBox SSH advertise (SSR’d into the page; match api listen/advertise).
       OXIDEAN_SSH_HOST: "${{gateway.RAILWAY_PUBLIC_DOMAIN}}",

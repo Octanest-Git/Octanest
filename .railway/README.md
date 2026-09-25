@@ -76,7 +76,7 @@ IaC sets public browser/SSH advertise vars from the **gateway** domain (not `pre
 
 PR Environments inherit from `preview`; dynamic gateway refs and auto-migrate on every environment (including production) keep schema current and avoid stale preview origins. The API/web also replace a stale `*.up.railway.app` origin with `RAILWAY_SERVICE_GATEWAY_URL` / `RAILWAY_PUBLIC_DOMAIN` (custom domains are left alone).
 
-On **`web`**, set `OXIDEAN_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,oxidean.jereko.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
+On **`web`**, set `OXIDEAN_VITE_ALLOWED_HOSTS` so `vite preview` accepts the gateway Host header (e.g. `.up.railway.app,app.oxidean.dev`). Details: [docs/CONFIGURATION.md](../docs/CONFIGURATION.md).
 
 ### Promote / rollback production
 
@@ -87,7 +87,7 @@ Do **not** rely on Environment Sync for promote: Sync includes variables and can
    - **promote** — `serviceInstanceDeployV2` with `commitSha` for `api` / `web` / `gateway` (default: `main` HEAD). Gated on CI success for that SHA. Leaves production variables alone.
    - **rollback** — `deploymentRollback` to the prior `canRollback` deployment on each of those services.
    - **dry_run** — toggle on to print the plan without mutating Railway (still needs `RAILWAY_TOKEN` for rollback target lookup).
-3. Smoke `https://oxidean.jereko.dev/health` (skipped on dry-run).
+3. Smoke `https://app.oxidean.dev/health` (skipped on dry-run).
 
 Scripts: [`scripts/railway-production-deploy.sh`](../scripts/railway-production-deploy.sh), [`scripts/railway-production-autodeploy-check.sh`](../scripts/railway-production-autodeploy-check.sh) (`make cloud-production-autodeploy-check`). Workflow: [`.github/workflows/production-deploy.yml`](../.github/workflows/production-deploy.yml).
 

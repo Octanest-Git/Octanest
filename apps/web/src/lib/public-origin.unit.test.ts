@@ -55,9 +55,9 @@ describe("public-origin", () => {
     const prevGw = process.env.RAILWAY_SERVICE_GATEWAY_URL;
     const prevDom = process.env.RAILWAY_PUBLIC_DOMAIN;
     delete process.env.RAILWAY_SERVICE_GATEWAY_URL;
-    process.env.OXIDEAN_PUBLIC_ORIGIN = "https://oxidean.jereko.dev";
+    process.env.OXIDEAN_PUBLIC_ORIGIN = "https://app.oxidean.dev";
     process.env.RAILWAY_PUBLIC_DOMAIN = "gateway-production.up.railway.app";
-    expect(resolvePublicOriginFromEnv()).toBe("https://oxidean.jereko.dev");
+    expect(resolvePublicOriginFromEnv()).toBe("https://app.oxidean.dev");
     if (prev === undefined) delete process.env.OXIDEAN_PUBLIC_ORIGIN;
     else process.env.OXIDEAN_PUBLIC_ORIGIN = prev;
     if (prevGw === undefined) delete process.env.RAILWAY_SERVICE_GATEWAY_URL;

@@ -53,7 +53,7 @@ jobs:
       RAILWAY_SERVICE_API_ID: 19bf0a47-2fdf-4130-b6b0-858de92cb858
       RAILWAY_SERVICE_WEB_ID: 26b7e1b6-6cfa-4c7e-942a-bed8e5ce12a2
       RAILWAY_SERVICE_GATEWAY_ID: 864fa81c-6e5d-4939-b33b-85eb435365ac
-      OXIDEAN_PRODUCTION_HEALTH_URL: https://oxidean.jereko.dev/health
+      OXIDEAN_PRODUCTION_HEALTH_URL: https://app.oxidean.dev/health
     steps:
       - name: Checkout
         uses: actions/checkout@v4
