@@ -1,4 +1,4 @@
-//! Modest GitHub-like search qualifier parser (D-SRCH-12).
+//! Modest search qualifier parser (D-SRCH-12).
 //!
 //! Supports: bare keywords, `is:open` / `is:closed`, `author:<login>`, `path:<prefix>`.
 //! Unknown `key:value` tokens are **stripped** (not treated as literal keywords).

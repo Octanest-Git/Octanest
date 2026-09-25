@@ -1,8 +1,8 @@
 //! Linguist-lite language breakdown for the About sidebar.
 //!
-//! GitHub Linguist aggregates included file bytes by detected language. We approximate
+//! Linguist aggregates included file bytes by detected language. We approximate
 //! that with extension (+ a few filenames), vendored-path skips, and prose/data exclusions —
-//! enough for a GitHub-shaped bar without shipping full linguist.
+//! enough for the About bar without shipping full linguist.
 
 use std::collections::HashMap;
 
@@ -11,7 +11,7 @@ use oxidean_core::RepoLanguageStat;
 /// Soft cap on blobs considered (matches git backend clamp).
 pub const MAX_BLOBS: u32 = 50_000;
 
-/// Max distinct languages returned (GitHub shows the long tail as “Other”).
+/// Max distinct languages returned (the long tail collapses into “Other”).
 const MAX_NAMED: usize = 8;
 
 /// Aggregate sized blobs into sorted language stats (largest first).
@@ -152,7 +152,7 @@ fn detect_language(path: &str) -> Option<&'static str> {
         "proto" => Some("Protocol Buffer"),
         "graphql" | "gql" => Some("GraphQL"),
         "sql" => Some("SQL"),
-        // Markup / style (GitHub includes these in the bar)
+        // Markup / style (included in the bar)
         "html" | "htm" | "xhtml" => Some("HTML"),
         "css" => Some("CSS"),
         "scss" => Some("SCSS"),
@@ -174,7 +174,7 @@ fn detect_language(path: &str) -> Option<&'static str> {
 }
 
 fn language_color(name: &str) -> Option<&'static str> {
-    // Subset of github-linguist colors (languages.yml).
+    // Subset of Linguist colors (languages.yml).
     Some(match name {
         "Rust" => "#dea584",
         "TSRX" => "#6f00ff", // tsrx.dev brand mark purple

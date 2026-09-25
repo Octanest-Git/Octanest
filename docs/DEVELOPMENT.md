@@ -179,11 +179,11 @@ Turbo task graph: `turbo.json` (`build`, `dev`, `test`, `lint`).
 
 Default branch: `main` (CI runs on push to `main` and on all pull requests).
 
-No repository-documented branch naming convention (no `CONTRIBUTING.md` or PR template). Recent work uses descriptive prefixes such as `cursor/…` and conventional-commit style subjects (`feat(…)`, `fix(…)`, `docs(…)`, `ci:`, `test:`). Prefer short topic branches off `main` with a clear purpose.
+Recent work uses descriptive prefixes such as `cursor/…` and conventional-commit style subjects (`feat(…)`, `fix(…)`, `docs(…)`, `ci:`, `test:`). Prefer short topic branches off `main` with a clear purpose.
 
 ## PR process
 
-No `.github/PULL_REQUEST_TEMPLATE.md` or `CONTRIBUTING.md` is present. Practical checklist inferred from CI (`.github/workflows/ci.yml`):
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for PR conventions and `.github/pull_request_template.md` for the checklist GitHub pre-fills. The gates below are what CI (`.github/workflows/ci.yml`) enforces:
 
 - Open a PR against `main`; all workflow jobs must pass.
 - **api-rust** — `cargo nextest run --workspace --profile ci`

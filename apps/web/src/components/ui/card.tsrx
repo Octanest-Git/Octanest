@@ -1,7 +1,7 @@
 import type { ComponentProps } from "octane";
 import { cn } from "@/lib/utils";
 
-/** Bordered surface panel — the base container for grouped content (GitHub "Box"). */
+/** Bordered surface panel — the base container for grouped content. */
 export function Card({ className, ...props }: ComponentProps<"div">) @{
   <div
     data-slot="card"

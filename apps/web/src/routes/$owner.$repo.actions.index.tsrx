@@ -31,7 +31,7 @@ function runStatusVariant(status: string): "success" | "destructive" | "primary"
   return "default";
 }
 
-/** GitHub-style leading status glyph for a run row. */
+/** Leading status glyph for a run row. */
 function RunStatusIcon({ status }: { status: string }) {
   const v = runStatusVariant(status);
   if (v === "success") {

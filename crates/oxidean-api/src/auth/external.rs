@@ -61,7 +61,7 @@ pub fn is_placeholder_username(username: &str) -> bool {
         && b[1..].iter().all(|c| matches!(c, b'0'..=b'9' | b'a'..=b'f'))
 }
 
-/// Sanitize email local-part into a candidate GitHub-like username.
+/// Sanitize email local-part into a candidate username.
 fn candidate_from_email(email: &str) -> String {
     let local = email.split('@').next().unwrap_or("user");
     let mut out = String::new();

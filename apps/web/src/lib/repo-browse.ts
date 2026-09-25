@@ -109,7 +109,7 @@ export function commitsHref(owner: string, repo: string, ref: string): string {
   return `/${owner}/${repo}/commits/${encodeURIComponent(ref)}`;
 }
 
-/** GitHub-shaped repository activity feed (`/:owner/:repo/activity`). */
+/** Repository activity feed (`/:owner/:repo/activity`). */
 export function activityHref(owner: string, repo: string): string {
   return `/${owner}/${repo}/activity`;
 }
@@ -139,7 +139,7 @@ export function rawBlobUrl(owner: string, repo: string, ref: string, path: strin
     .join("/")}`;
 }
 
-/** Human-readable byte size for blob headers (GitHub-style). */
+/** Human-readable byte size for blob headers. */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "0 Bytes";
   if (bytes < 1024) return `${Math.round(bytes)} Bytes`;
@@ -222,7 +222,7 @@ export function findContributingName(entries: RepoTreeEntry[]): string | null {
   return names.find((n) => /^contributing(\.|$)/i.test(n)) ?? null;
 }
 
-/** GitHub-shaped About label, e.g. "MIT license", from SPDX stub / first line / filename. */
+/** About-rail license label, e.g. "MIT license", from SPDX stub / first line / filename. */
 export function licenseSidebarLabel(fileName: string, content?: string | null): string {
   const fromContent = content ? licenseIdFromContent(content) : null;
   if (fromContent) return formatLicenseSidebarLabel(fromContent);

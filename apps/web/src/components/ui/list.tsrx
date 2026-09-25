@@ -2,7 +2,7 @@ import type { ComponentProps } from "octane";
 import { cn } from "@/lib/utils";
 
 /**
- * Bordered, rounded list container with divided rows (GitHub list "Box").
+ * Bordered, rounded list container with divided rows.
  * Compose with <ListRow> children. Use an optional <ListHeader> as the first row.
  */
 export function List({ className, ...props }: ComponentProps<"div">) @{

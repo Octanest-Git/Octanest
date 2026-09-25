@@ -28,7 +28,7 @@ impl IssueState {
     }
 }
 
-/// GitHub eight reaction contents (D-ISS-11).
+/// The eight reaction contents (D-ISS-11).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ReactionContent {
     #[serde(rename = "+1")]
@@ -138,7 +138,7 @@ pub struct IssuePublic {
     /// Aggregated reaction counts (D-ISS-11).
     #[serde(default)]
     pub reactions: Vec<ReactionGroupPublic>,
-    /// Number of comments on the issue (list rows show this like GitHub).
+    /// Number of comments on the issue (shown on list rows).
     #[serde(default)]
     pub comment_count: i64,
 }
@@ -360,7 +360,7 @@ pub enum ReactionTarget {
     Comment,
 }
 
-/// Toggle a GitHub-eight reaction on an issue or comment (Write+ / D-ISS-20).
+/// Toggle a reaction on an issue or comment (Write+ / D-ISS-20).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToggleReactionRequest {
     pub owner: String,
@@ -522,7 +522,7 @@ mod tests {
     }
 
     #[test]
-    fn reaction_content_github_eight() {
+    fn reaction_content_eight() {
         assert_eq!(ReactionContent::parse("+1").unwrap().as_str(), "+1");
         assert_eq!(ReactionContent::parse("eyes").unwrap().as_str(), "eyes");
         assert!(ReactionContent::parse("thumbs").is_err());

@@ -185,7 +185,7 @@ pub async fn delete_version(
     for d in digests {
         let _ = ctx.db.adjust_package_blob_refcount(&d, -1).await;
     }
-    // GitHub parity: deleting the last version removes the package entirely.
+    // Deleting the last version removes the package entirely.
     let remaining = ctx
         .db
         .list_package_versions(&pkg.id)

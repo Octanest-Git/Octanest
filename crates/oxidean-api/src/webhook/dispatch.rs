@@ -66,7 +66,7 @@ pub async fn emit(
     }
 }
 
-/// Build a GitHub-shaped issues payload (D-HOOK-07 / D-HOOK-08).
+/// Build a GitHub-compatible issues payload (D-HOOK-07 / D-HOOK-08).
 pub fn issues_payload(
     action: &str,
     issue_number: i64,

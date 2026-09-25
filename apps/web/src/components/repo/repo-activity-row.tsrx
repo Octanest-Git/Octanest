@@ -46,7 +46,7 @@ type RepoActivityRowProps = {
   item: RepoActivityItem;
 };
 
-/** One chronological activity feed row (GitHub density). */
+/** One chronological activity feed row (dense). */
 export function RepoActivityRow(props: RepoActivityRowProps) @{
   const { owner, repoName, item } = props;
   const action = actionCopy(item);

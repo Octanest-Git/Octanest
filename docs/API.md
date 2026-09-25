@@ -120,7 +120,7 @@ SSO start routes redirect to the IdP when configured. If WorkOS/OIDC ENV is miss
 | `issue.create` / `get` / `list` / `update` / `close` / `reopen` / `history` / `delete` | Per-repo issues (`#N`); Capability ACL | Session (+ capability) |
 | `issue.comments.*` | Comment CRUD + history; author or Write+ moderate-delete | Session (+ capability) |
 | `issue.labels.set` / `assignees.set` / `assigneeCandidates` | Assign labels / assignees (Write+; assignees must have Read+) | Session (+ capability) |
-| `issue.reactions.toggle` | Toggle GitHub-style reaction on issue or comment | Session (+ Write+) |
+| `issue.reactions.toggle` | Toggle emoji reaction on issue or comment | Session (+ Write+) |
 | `issue.links.list` / `add` / `remove` | Linked issues/PRs (`pr` preferred; legacy `pr_stub` kept) | Session (+ capability) |
 | `notification.list` | Own notifications; filter `unread` (default) \| `all`; offset pagination | Session |
 | `notification.unreadCount` | Unread badge count for session user | Session |

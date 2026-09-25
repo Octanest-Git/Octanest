@@ -149,7 +149,7 @@ mod tests {
     use axum::http::HeaderValue;
 
     #[test]
-    fn hmac_accepts_github_style_signature() {
+    fn hmac_accepts_hub_signature_256() {
         let secret = "whsec_test";
         let body = br#"{"ref":"refs/heads/main"}"#;
         let sig = format!("sha256={}", hmac_sha256_hex(secret.as_bytes(), body));

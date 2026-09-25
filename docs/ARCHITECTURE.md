@@ -3,7 +3,7 @@
 
 ## System overview
 
-Oxidean is a self-hostable GitHub-style social coding platform delivered as one product for cloud and on-prem. The system is a **layered monorepo**: a TanStack Start (Octane) web app talks to a Rust Axum API over a versioned JSON RPC (HTTP and WebSocket), which persists through a multi-dialect database adapter (`postgres` / `mysql` / `sqlite`). **Local Compose** fronts the stack with Traefik (Docker provider) so the browser hits a single origin (`Host(localhost)`), with path-based routing to web and API. **Oxidean Cloud** uses the same api/web images behind a **file-configured Caddy** gateway (`deploy/cloud/`) — no Docker socket on the host (D-CLOUD-03).
+Oxidean is a self-hostable social coding platform delivered as one product for cloud and on-prem. The system is a **layered monorepo**: a TanStack Start (Octane) web app talks to a Rust Axum API over a versioned JSON RPC (HTTP and WebSocket), which persists through a multi-dialect database adapter (`postgres` / `mysql` / `sqlite`). **Local Compose** fronts the stack with Traefik (Docker provider) so the browser hits a single origin (`Host(localhost)`), with path-based routing to web and API. **Oxidean Cloud** uses the same api/web images behind a **file-configured Caddy** gateway (`deploy/cloud/`) — no Docker socket on the host (D-CLOUD-03).
 
 ## Component diagram
 

@@ -147,8 +147,8 @@ pub async fn apply_verified_policy(
     // Forge-authored commits (seed/web-flow) sign under the instance identity,
     // which backs no user account. `allowedSignersFile` binds that principal
     // only to the web-flow key, so a crypto-valid SSH signature is already the
-    // instance vouching for the commit — skip user resolution (mirrors GitHub
-    // marking web-flow commits Verified via its own key).
+    // instance vouching for the commit — skip user resolution (the forge
+    // marks web-flow commits Verified via its own key).
     if signature_kind == "ssh" && email.eq_ignore_ascii_case(FORGE_NOREPLY_EMAIL) {
         return "valid".into();
     }

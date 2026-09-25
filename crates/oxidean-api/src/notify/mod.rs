@@ -57,7 +57,7 @@ pub async fn fanout(
     }
 }
 
-/// Extract `@username` handles (GitHub-like) from plain text.
+/// Extract `@username` handles from plain text.
 pub fn extract_mention_usernames(body: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut seen = HashSet::new();

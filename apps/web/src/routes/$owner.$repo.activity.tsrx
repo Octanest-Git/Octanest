@@ -151,7 +151,7 @@ export const Route = createFileRoute("/$owner/$repo/activity")({
   },
 });
 
-/** Repository activity feed — GitHub-shaped push / branch / merge events. */
+/** Repository activity feed — push / branch / merge events. */
 export function RepoActivityPage() @{
   const params = useParams({ from: "/$owner/$repo/activity" }) as {
     owner: string;

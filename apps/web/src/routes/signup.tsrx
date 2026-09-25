@@ -125,7 +125,7 @@ export function SignupPage() @{
   const support =
     mode === "workos" || mode === "oidc"
       ? "You'll finish signup with your identity provider."
-      : "Email, username, and password — GitHub-shaped handles.";
+      : "Email, username, and password — handles are letters, digits, and hyphens.";
 
   <AuthShell title="Create your account" support={support}>
     @if (loadError) {

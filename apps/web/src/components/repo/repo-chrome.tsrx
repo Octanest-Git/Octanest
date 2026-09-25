@@ -23,7 +23,7 @@ export function RepoChrome({ repo, active, showSettings = false }: RepoChromePro
   const account = useChromeAccountState();
   const storeRepo = useRepoStore((s) => s.repo);
   const setRepo = useRepoStore((s) => s.setRepo);
-  // Store is source of truth so About rail + chrome stay in sync (GitHub-like).
+  // Store is source of truth so About rail + chrome stay in sync.
   const live = storeRepo && storeRepo.id === repo.id ? storeRepo : repo;
   const [starBusy, setStarBusy] = useState(false);
   const [watchBusy, setWatchBusy] = useState(false);

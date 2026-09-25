@@ -65,7 +65,7 @@ describe("FileTree long name layout (07-15 / E3 overflow)", () => {
   });
 });
 
-describe("FileTree parent row (GitHub/Gitea ..)", () => {
+describe("FileTree parent row (..)", () => {
   it("shows .. linking to parent when basePath is nested", () => {
     render(FileTree, {
       props: {

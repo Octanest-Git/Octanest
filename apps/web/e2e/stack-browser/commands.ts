@@ -1263,7 +1263,7 @@ export const expectNewRepoTemplatePickerFlow: BrowserCommand<[]> = async (ctx) =
  * save crop + remove picture (happy mutate).
  * General: theme + default branch + logout (happy).
  * Unhappy: anonymous redirect away from settings.
- * Home: GitHub-classic three-column dashboard (happy).
+ * Home: classic three-column dashboard (happy).
  */
 export const expectSettingsProfileAvatarFlow: BrowserCommand<[]> = async (ctx) => {
   const { context } = asPlaywright(ctx);
@@ -1496,8 +1496,7 @@ export const expectPackagesVisualFlow: BrowserCommand<[]> = async (ctx) => {
   const pageGuard = await newGuardedPage(context);
   const page = pageGuard.page;
   try {
-    // Repo-scoped packages page before publishing — GitHub-shaped empty state
-    // + quickstart.
+    // Repo-scoped packages page before publishing — empty state + quickstart.
     await page.goto(`${webOrigin()}/${seed.owner}/${seed.repo}/packages`, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,

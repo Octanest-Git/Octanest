@@ -15,7 +15,7 @@ export type ProfileReadme = {
  */
 export const ORG_PROFILE_SPECIAL_REPOS = [".oxidean", ".github"] as const;
 
-/** Directory inside the special repo that holds the org profile README (GitHub pattern). */
+/** Directory inside the special repo that holds the org profile README (the `.github` convention). */
 export const ORG_PROFILE_README_DIR = "profile";
 
 type SpecialRepoCandidate = {
@@ -106,7 +106,7 @@ async function loadPublicRepoReadme(
 
 /**
  * User profile README: public special repo `username/username` with root `README.md`
- * (GitHub user profile README pattern).
+ * (the familiar profile README convention).
  */
 export async function fetchUserProfileReadme(
   client: OxideanClient,
@@ -119,7 +119,7 @@ export async function fetchUserProfileReadme(
 
 /**
  * Org profile README: public `.oxidean` then `.github`, file under `profile/`
- * (GitHub org profile README pattern; Oxidean-preferred special repo name).
+ * (`.oxidean` preferred; `.github` kept for compatibility).
  */
 export async function fetchOrgProfileReadme(
   client: OxideanClient,

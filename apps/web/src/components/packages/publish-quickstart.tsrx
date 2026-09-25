@@ -1,6 +1,6 @@
 import { resolvePublicOriginClient } from "@/lib/public-origin";
 
-/** GitHub-style publish quickstart for packages empty states (oci / npm / generic). */
+/** Publish quickstart for packages empty states (oci / npm / generic). */
 export function PublishQuickstart(props: { owner: string; className?: string }) @{
   const origin = resolvePublicOriginClient();
   const host = origin.replace(/^https?:\/\//, "");

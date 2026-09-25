@@ -43,7 +43,7 @@ pub use search::search;
 pub use social_lists::{forks_list, stargazers_list, watchers_list};
 
 /// Soft size limit for blob preview / raw soft-cap (D-20 / T-07-16).
-/// 1 MiB matches GitHub-like soft preview limits.
+/// 1 MiB keeps preview responses cheap without clipping most source files.
 pub const BLOB_SOFT_MAX_BYTES: usize = 1_048_576;
 
 /// Soft cap for unified patch bytes in commit/compare (aligned with git backend).

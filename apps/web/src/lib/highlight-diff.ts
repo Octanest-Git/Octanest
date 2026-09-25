@@ -186,7 +186,7 @@ export async function highlightDiffLines(
     } else if (line.kind === "add" && side.newIdx !== undefined) {
       contentHtml = newHtml[side.newIdx] ?? contentHtml;
     } else if (line.kind === "ctx" && side.newIdx !== undefined) {
-      // Prefer post-image highlighting for context (GitHub-style).
+      // Prefer post-image highlighting for context.
       contentHtml = newHtml[side.newIdx] ?? contentHtml;
     }
 

@@ -10,7 +10,7 @@ export const badgeVariants = cva(
         primary: "border-primary/40 bg-primary/10 text-primary",
         secondary: "border-secondary/40 bg-secondary/10 text-secondary",
         outline: "border-border bg-transparent text-muted-foreground",
-        // Issue / PR status pills (GitHub-adjacent).
+        // Issue / PR status pills.
         success: "border-success/40 bg-success/10 text-success",
         destructive: "border-destructive/40 bg-destructive/10 text-destructive",
         // Solid status pills used on issue/PR headers.

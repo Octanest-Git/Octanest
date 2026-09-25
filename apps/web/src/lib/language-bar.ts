@@ -1,5 +1,5 @@
 /**
- * GitHub-style language % labels: one decimal place; tiny shares show as `<0.1%`.
+ * Language % labels: one decimal place; tiny shares show as `<0.1%`.
  * Bar segment widths should still use raw byte ratios, not these rounded labels.
  */
 export function languagePercent(bytes: number, total: number): string {

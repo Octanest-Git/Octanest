@@ -36,7 +36,7 @@ export function normalizeTopicSlug(raw: string): string {
 }
 
 /**
- * GitHub-style topics editor: committed topics render as chips inside the
+ * Topics editor: committed topics render as chips inside the
  * input box; freeform text commits on `,` / Enter / autocomplete pick;
  * Backspace on empty text removes the last chip. Suggestions come from
  * `repo.topicsSuggest` (most-used first) while the field is focused.
