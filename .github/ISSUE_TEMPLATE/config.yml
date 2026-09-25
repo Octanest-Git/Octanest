@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contributor guide
+    url: https://github.com/oxidean/oxidean/blob/main/CONTRIBUTING.md
+    about: Development setup, PR conventions, and the docs map. Start here before opening a PR.
+  - name: Documentation
+    url: https://github.com/oxidean/oxidean/tree/main/docs
+    about: Getting started, deployment, configuration, architecture, and testing.
+  - name: Security vulnerability
+    url: https://github.com/oxidean/oxidean/blob/main/SECURITY.md
+    about: Please do not file public issues for vulnerabilities. Read the security policy first.

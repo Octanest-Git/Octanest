@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest an idea or improvement for Oxidean.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Who is affected, and what can they not do today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Oxidean do? UI sketches, API shapes, and examples all help.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds you use today, or other designs you ruled out.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Git over SSH / Smart HTTP
+        - Issues and comments
+        - Releases and tags
+        - Packages / registry
+        - Git LFS
+        - Web UI
+        - API / RPC
+        - Auth and accounts
+        - Organizations and permissions
+        - Repository mirroring
+        - Actions / runners
+        - Admin / setup
+        - Documentation
+        - Other
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and the roadmap for duplicates.
+          required: true
+        - label: I am interested in contributing this myself (see CONTRIBUTING.md).
+          required: false
