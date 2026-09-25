@@ -7,6 +7,14 @@
 #   RAILWAY_TOKEN=… scripts/railway-production-deploy.sh rollback [--dry-run]
 #   scripts/railway-production-deploy.sh list   # query-only (auth required)
 #
+# Auth (checked in order):
+#   RAILWAY_TOKEN       Railway *project* token — sent via the
+#                       `Project-Access-Token` header (scoped to one
+#                       environment; recommended for CI).
+#   RAILWAY_API_TOKEN   Railway *account/workspace* token — sent via
+#                       `Authorization: Bearer`.
+#   ~/.railway/config.json  CLI login access token — `Authorization: Bearer`.
+#
 # Env overrides (defaults = Oxidean Cloud production):
 #   RAILWAY_PROJECT_ID, RAILWAY_ENVIRONMENT_ID
 #   RAILWAY_SERVICE_API_ID, RAILWAY_SERVICE_WEB_ID, RAILWAY_SERVICE_GATEWAY_ID
@@ -34,9 +42,16 @@ need_jq() {
   command -v jq >/dev/null 2>&1 || die "jq is required"
 }
 
-resolve_token() {
+# Prints one curl config-file line selecting the right auth header for the
+# available credential. Railway project tokens are NOT bearer tokens — they
+# only authenticate via the `Project-Access-Token` header.
+resolve_auth_header() {
   if [[ -n "${RAILWAY_TOKEN:-}" ]]; then
-    printf '%s' "$RAILWAY_TOKEN"
+    printf 'header = "Project-Access-Token: %s"\n' "$RAILWAY_TOKEN"
+    return
+  fi
+  if [[ -n "${RAILWAY_API_TOKEN:-}" ]]; then
+    printf 'header = "Authorization: Bearer %s"\n' "$RAILWAY_API_TOKEN"
     return
   fi
   local cfg="${HOME}/.railway/config.json"
@@ -45,11 +60,11 @@ resolve_token() {
     # CLI login stores the bearer in user.accessToken (user.token may be empty).
     t="$(jq -r '.user.accessToken // .user.token // empty' "$cfg" 2>/dev/null || true)"
     if [[ -n "$t" && "$t" != "null" ]]; then
-      printf '%s' "$t"
+      printf 'header = "Authorization: Bearer %s"\n' "$t"
       return
     fi
   fi
-  die "RAILWAY_TOKEN is unset and ~/.railway/config.json has no access token (run railway login or set the secret)"
+  die "no Railway credential: set RAILWAY_TOKEN (project token) or RAILWAY_API_TOKEN (account/workspace token), or run railway login"
 }
 
 # GraphQL: prints response JSON to stdout. Fails on HTTP/transport errors or GraphQL errors.
@@ -61,15 +76,14 @@ gql() {
   else
     variables_json='{}'
   fi
-  local token
-  token="$(resolve_token)"
-  local payload
+  local auth_line payload
+  auth_line="$(resolve_auth_header)"
   payload="$(jq -n --arg q "$query" --argjson v "$variables_json" '{query: $q, variables: $v}')"
   local raw
   raw="$(
     printf '%s' "$payload" | curl -sS "$API_URL" \
       -H "Content-Type: application/json" \
-      --config <(printf 'header = "Authorization: Bearer %s"\n' "$token") \
+      --config <(printf '%s' "$auth_line") \
       -d @-
   )" || die "Railway GraphQL request failed"
   if echo "$raw" | jq -e '.errors? | select(length > 0)' >/dev/null 2>&1; then
