@@ -10,9 +10,7 @@ Security fixes land on `main` and the latest release. Older tags are not patched
 
 Do not file public issues, pull requests, or discussions for vulnerabilities.
 
-Preferred: use [GitHub private vulnerability reporting](https://github.com/oxidean/oxidean/security/advisories/new) on `oxidean/oxidean`.
-
-If that form is not available yet, open a public issue with no technical details (for example, "requesting a private channel for a security report") and a maintainer will reach out.
+Use [GitHub private vulnerability reporting](https://github.com/oxidean/oxidean/security/advisories/new) on `oxidean/oxidean`.
 
 A good report includes:
 
