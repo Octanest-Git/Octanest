@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Questions and community
+    url: https://github.com/oxidean/oxidean/discussions
+    about: Usage questions, ideas, and discussion — please don't open an issue for these.
   - name: Contributor guide
     url: https://github.com/oxidean/oxidean/blob/main/CONTRIBUTING.md
     about: Development setup, PR conventions, and the docs map. Start here before opening a PR.
@@ -9,3 +12,9 @@ contact_links:
   - name: Security vulnerability
     url: https://github.com/oxidean/oxidean/blob/main/SECURITY.md
     about: Please do not file public issues for vulnerabilities. Read the security policy first.
+  - name: Oxidean website
+    url: https://oxidean.dev
+    about: Product overview and marketing site.
+  - name: Oxidean Cloud
+    url: https://app.oxidean.dev
+    about: The hosted Oxidean instance — sign in or create an account.
