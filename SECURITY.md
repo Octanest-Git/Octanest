@@ -23,7 +23,7 @@ Please give us reasonable time to investigate and release a fix before disclosin
 
 ## Scope
 
-In scope: the Oxidean codebase itself — the API, web UI, git/SSH/LFS surfaces, auth and session handling, organizations and permissions, mirroring, actions runners, and package registry.
+In scope: the Oxidean codebase itself — the API, web UI, git/SSH/LFS surfaces, auth, sessions, and access tokens (PATs), organizations and permissions, mirroring, actions runners, and package registry.
 
 Out of scope:
 
